@@ -21,6 +21,7 @@ USEDEBUG=-g
 DVDREAD_CFLAGS=-I$(DEVKITPRO)/3rd/wii/include
 DVDREAD_LIBS=-L$(DEVKITPRO)/3rd/wii/lib -ldvdread
 
-SRC_PATH=$(DEVKITPRO)/soft/mplayer_ce/libdvdnav-trunk
-SRC_PATH_BARE=$(DEVKITPRO)/soft/mplayer_ce/libdvdnav-trunk
+# You must adjust paths
+SRC_PATH=$(DEVKITPRO)/soft/mplayer-ce/libdvdnav
+SRC_PATH_BARE=$(DEVKITPRO)/soft/mplayer-ce/libdvdnav
 
