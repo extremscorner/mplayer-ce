@@ -215,11 +215,16 @@ void plat_init (int *argc, char **argv[]) {
 	GX_InitVideo();
 
 	log_console_init(vmode, 128);
-	printf("MPlayer Christmas Edition,\n");
-	printf("unofficial scip's edition v.0.1\n\n");
-	printf("MPlayer Wii port (c) 2008 Team Twiizers\n");
-	printf("used code (c) MPlayerWii[rOn], GeeXboX,\n");
-	printf("tipolosko, rodries, Tantric, etc.\n\n");
+  printf("MPlayerCE\n");
+  printf("Unofficial MPlayer v.0.1\n\n");
+  printf("MPlayer/Wii port (c) 2008 Team Twiizers\n");
+  printf("Used Code (c) MPlayerWii[rOn], GeeXboX,\n");
+  printf("Play Media files from SD, USB, DATA-DVD, SMB & Radio Streams.\n");
+  printf("For SMB Samba Browsing, place smb.conf in apps\mplayer_ce on SD Card!\n");
+  printf("Unofficial Modified MPlayer by MPlayerCE Team!\n");
+  printf("Scip, Rodries, AgentX, DJDynamite123, Tipolosko, Tantric, etc.\n\n");	
+	
+	
 	//printf("Running under IOS%d\n", IOS_GetVersion());
 	//printf("VIDEO: %u * %u (%u * %u)\n", vmode->fbWidth, vmode->efbHeight, vmode->viWidth, vmode->viHeight);
 
