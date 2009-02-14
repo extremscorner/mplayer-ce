@@ -13,12 +13,13 @@ AR=$(DEVKITPPC)/bin/powerpc-gekko-ar
 LD=$(DEVKITPPC)/bin/powerpc-gekko-ld
 RANLIB=$(DEVKITPPC)/bin/powerpc-gekko-ranlib
 MAKE=make
-CFLAGS=-O2 -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -DWORDS_BIGENDIAN -DPATH_MAX=1024 -DHAVE_DVDCSS_DVDCSS_H -I../../mplayer-trunk/libdvdcss
+CFLAGS=-O2 -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -DWORDS_BIGENDIAN -DPATH_MAX=1024 -DHAVE_DVDCSS_DVDCSS_H -I../../mplayer/libdvdcss
 LDFLAGS=
 SHLDFLAGS=-shared
 INSTALLSTRIP=
 USEDEBUG=-g
 
-SRC_PATH=$(DEVKITPRO)/soft/mplayer_ce/libdvdread-trunk
-SRC_PATH_BARE=$(DEVKITPRO)/soft/mplayer_ce/libdvdread-trunk
+# You must adjust paths 
+SRC_PATH=$(DEVKITPRO)/soft/mplayer-ce/libdvdread
+SRC_PATH_BARE=$(DEVKITPRO)/soft/mplayer-ce/libdvdread
 
