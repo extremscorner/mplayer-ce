@@ -51,9 +51,11 @@ ip1=192.168.0.1
 share1=films
 user1=
 pass1=
+
 This share will locate your SMB share "folder" without a password/user account filled in.
 Only works like this, if your user account doesn't have folders protected, this is the same for using a Guest account no password/user.
 If you have a password on your user account, it should look like this:
+
 #Samba share1  (smb1:/)
 ip1=192.168.0.1
 share1=films
