@@ -1,0 +1,64 @@
+#summary One-sentence summary of this page.
+
+= Introduction =
+
+*How to Setup and Edit your Config Files*
+
+
+= Details =
+*Setup smb.conf*
+MPlayer_CE v0.2 now supports 5 SMB shares, this is how your smb.conf should look.
+
+#Max 5 samba shares (review menu.conf to add more samba browsing)
+#no ip or no share means samba disabled
+
+#Samba share1  (smb1:/)
+ip1=192.168.0.1
+share1=films
+user1=
+pass1=
+
+#Samba share2  (smb2:/)
+ip2=
+share2=
+user2=
+pass2=
+
+#Samba share3  (smb3:/)
+ip3=
+share3=
+user3=
+pass3=
+
+#Samba share4  (smb4:/)
+ip4=
+share4=
+user4=
+pass4=
+
+#Samba share3  (smb5:/)
+ip5=
+share5=
+user5=
+pass5=
+
+If you have a user account you can fill it in, even if you have one you don't need to unless your smb shares are protected...
+
+e.g.
+#Samba share1  (smb1:/)
+ip1=192.168.0.1
+share1=films
+user1=
+pass1=
+
+This share will locate your SMB share "folder" without a password/user account filled in.
+Only works like this, if your user account doesn't have folders protected, this is the same for using a Guest account no password/user.
+If you have a password on your user account, it should look like this:
+
+#Samba share1  (smb1:/)
+ip1=192.168.0.1
+share1=films
+user1=UserAccount
+pass1=password
+
+As always make sure your folders are "network shared."
