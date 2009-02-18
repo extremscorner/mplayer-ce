@@ -43,6 +43,8 @@ Open up your menu.conf, and compare to my example below.
 <cmdlist name="main" title="MPlayer CE" ptr="<>" >
       <e name="Stop" ok="loadfile loop.avi"/>
       <e name="Browse ..." ok="set_menu browse" />
+      <e name="Wii SD ..." ok="set_menu open_sd"/>
+      <e name="Wii USB ..." ok="set_menu open_usb"/>
       <e name="DVD ..." ok="set_menu dvd"/>
       <e name="SMB1 share ..." ok="set_menu open_smb1"/>
       <e name="SMB2 share ..." ok="set_menu open_smb2"/>
@@ -52,6 +54,9 @@ Open up your menu.conf, and compare to my example below.
       <e name="Options ..." ok="set_menu pref_main"/>
       <e name="Quit" ok="quit"/>
 
+The way in which you do this is by looking at the path e.g.
+<e name="Wii SD ..." ok="set_menu open_sd"/>
+This is usually under Browse in MPlayer, but i have removed it from their and, it now shows on main menu of MPlayer, you add the path at the bottom of menu.conf after main title etc.
 Also you can change the following, e.g. remove the Radio/About/Aspect path and head it under Options in menu.conf etc. Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
 *Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the others in the config.
 
