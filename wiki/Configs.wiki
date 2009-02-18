@@ -48,6 +48,8 @@ Open up your menu.conf, and compare to my example below.
       <e name="SMB1 share ..." ok="set_menu open_smb1"/>
       <e name="SMB2 share ..." ok="set_menu open_smb2"/>
       <e name="SMB3 share ..." ok="set_menu open_smb3"/>
+      <e name="SMB4 share ..." ok="set_menu open_smb4"/>
+      <e name="SMB5 share ..." ok="set_menu open_smb5"/>
       <e name="Options ..." ok="set_menu pref_main"/>
       <e name="Aspect ..." ok="set_menu aspect"/>
       <e name="About" ok="set_menu about"/>
