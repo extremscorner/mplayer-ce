@@ -1,102 +1,120 @@
 = Introduction =
-This is where we setup our configs, setting up SMB shares, customising the menu layout in menu.conf, adding a input into mplayer.conf and also changing the loop.avi.
+This page will explain how to set up your config files, including SMB shares, customising the menu layout in menu.conf, adding input with input.conf and changing default behaviour with mplayer.conf.
 
-*Setup and Edit your Configs.*
+This page will also explain changing the loop.avi.
 
-*smb.conf*
-Open up your smb.conf, it has 5 shares.
-Determine how many shares you want to use. and fill in the fields.
-E.g. I have a folder "network shared" on C:\ called Movies, I don't have a password on my user account, and my folder isn't protected. Therefore I don't need to add my user in the field in the example below.
+==Setup and Edit your Configs.==
 
-#Samba share1  (smb1:/)
+===smb.conf===
+Your smb.conf has 5 shares.
+Determine how many shares you want to use and fill in the fields.
+For example, I have a folder shared on C:\ called Movies.  I don't have a password on my user account, and my folder isn't protected. Therefore I don't need to add my user in the field in the example below.  Typically shares made with Windows XP won't need the username or password fields filled in.
 
-ip1=*192.168.0.1*
-
-share1*=Movies*
-
-user1=
-
+{{{
+#Samba share1  (smb1:/) 
+ip1=192.168.0.1
+share1=Movies
+user1= 
 pass1=
+}}}
 
-I now have a folder on D:\ but my "network shared" folder has a space and it's named My Music.
-Fill it out like this with the *" "* besides the share location.
+I also have a folder on D:\ but my shared folder has a space: My Music.  Therefore, quotation marks are needed:
 
+{{{
 #Samba share2  (smb2:/)
-
-ip2=*192.168.0.1*
-
-share2=*"My Music"*
-
+ip2=192.168.0.1
+share2="My Music"
 user2=
-
 pass2=
+}}}
 
-If you have a password on your user account, simply fill all fields in.
+If you need a username and password to access shared folders, simply fill all fields in.
 
 
 
-*menu.conf*
+===menu.conf===
 
-You can change the layout of your menu.conf
-Doing so will change the main menu's layout in MPlayerCE
+You can change the layout of your menu.conf.  
+Doing so will change the main menu layout in MPlayerCE.
 
-Open up your menu.conf, and compare to my example below.
-<cmdlist name="main" title="MPlayer CE" ptr="<>" >
-      <e name="Stop" ok="loadfile loop.avi"/>
-      <e name="Browse ..." ok="set_menu browse" />
-      <e name="Wii SD ..." ok="set_menu open_sd"/>
-      <e name="Wii USB ..." ok="set_menu open_usb"/>
-      <e name="DVD ..." ok="set_menu dvd"/>
-      <e name="SMB1 share ..." ok="set_menu open_smb1"/>
-      <e name="SMB2 share ..." ok="set_menu open_smb2"/>
-      <e name="SMB3 share ..." ok="set_menu open_smb3"/>
-      <e name="SMB4 share ..." ok="set_menu open_smb4"/>
-      <e name="SMB5 share ..." ok="set_menu open_smb5"/>
-      <e name="Options ..." ok="set_menu pref_main"/>
-      <e name="Quit" ok="quit"/>
+There is little existing documentation on editing menu.conf, but it is that not difficult to figure out by looking at an example.  It is an xml-like file and it takes the normal [http://www.mplayerhq.hu/DOCS/tech/slave.txt MPlayer commands].  To use it to load a specific file or stream use loadfile, e.g. to load a SopCast stream from my own network:
 
-The way in which you do this is by looking at the path e.g.
-  <e name="Wii SD ..." ok="set_menu open_sd"/>
-This is usually under Browse in MPlayer, but i have removed it from their and, it now shows on main menu of MPlayer, you add the path at the bottom of menu.conf after main title etc.
-Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
-*Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the others in the config, I have moved that into Browse etc.
+{{{
 <cmdlist name="browse" title="Browse" ptr="<>" >
-			<e name="../" ok="menu cancel"/>
-This is the area of menu.conf that we can change the paths and either have in browse like so, or remove them and add to main menu, at the bottom of menu.conf
+    ...
+    <e name="SopCast ..." ok="loadfile http://192.168.1.65:8902/"/>
+</cmdlist>
+}}}
 
+*Remember* you can add Radio streams, look under Radio in menu.conf and use the same technique as the others.
 
-*mplayer.conf*
+===input.conf===
+The Wii Remote and Gamecube controller controls are mapped as:
 
-This is where you can add a line so MPlayerCE autoboots into a specific video mode, e.g. 2:35Open up your mplayer.conf and compare to my example.
+{{{
+GAMECUBE CONTROLLER     WII REMOTE          KEY
+        A               A                   a
+        B               B                   b
+        X               1                   x
+        Z               HOME                z
+        L               MINUS               l
+        R               PLUS                r
+        LEFT            LEFT                LEFT
+        RIGHT           RIGHT               RIGHT
+        UP              UP                  UP
+        DOWN            DOWN                DOWN
+}}}
 
+The Y button on the Gamecube Controller and the 2 button on the Wii Remote
+acts as a modifier key (like shift) to add further control options:
+		
+{{{
+GAMECUBE CONTROLLER     WII REMOTE          KEY
+    Y + A               2 + A               A
+    Y + B               2 + B               B
+    Y + X               2 + 1               X
+    Y + Z               2 + HOME            Z
+    Y + L               2 + MINUS           L
+    Y + R               2 + PLUS            R
+    Y + LEFT            2 + LEFT            KP4
+    Y + RIGHT           2 + RIGHT           KP6
+    Y + UP              2 + UP              KP8
+    Y + DOWN            2 + DOWN            KP2
+}}}
+		
+To map a control in input.conf should be fairly self-explanatory.  First write the
+key you wish to map and then the mplayer option you want, listed here: http://www.mplayerhq.hu/DOCS/tech/slave.txt
+So for example, to make the OSD come up when you press 1 you would add
+{{{
+x osd
+}}}
+or to make 2+1 switch the ratio to 16:9 you would add
+{{{
+X switch_ratio 1.7778
+}}}
+===mplayer.conf===
+
+This is where you can add a line so MPlayerCE loads with a specific setting, for example forcing your aspect ratio always to 16:9.  Open up your mplayer.conf and compare to my example.
+
+{{{
 vo=gekko
-
 ao=gekko
-
 framedrop=yes
-
 alang=en
-
 really-quiet=yes
-
 menu=yes
-
 menu-startup=yes
-
 cache=8192
-
 cache-min=4
+aspect=1.7777
+}}}
 
-*aspect=1.7777*
-
-As you can see i have added the line *aspect=1.7777* therefore this autoboot MPlayerCE to 16/9 setting, therefore everything is in 16/9 and the loop.avi is fullscreen.
+As you can see, I have added the line *aspect=1.7777* MPlayerCE will default to 16/9.
+The options are the standard [http://www.mplayerhq.hu/DOCS/man/en/mplayer.1.html MPlayer options].
 Change to suit you.
 
 
-*Customising*
-You can use your own *loop.avi*
-Just replace the current one with your own
-The best dimensions are 640x456
-You can also have a music in the loop.avi
-My loop.avi is 1 minute long and has no issues. and is 3.5mb in size.
-Virtualdub is the best program to create your loop.avi, you can use a still image and add audio. make sure you compress the video with XVID MPEG4 CODEC, in compression.
+===Customising===
+You can use your own *loop.avi*, just replace the current one with your own.
+You can also have music in the loop.avi.  My loop.avi is 1 minute long and has no issues. and is 3.5mb in size.
+You can use Virtualdub and MEncoder to create your loop.avi.  You can use a still image and add audio.
