@@ -10,6 +10,8 @@ Network Initialising on startup changed, now connects "hidden" in Background of 
 
 Added 5 SMB Shares
 
+Boot-up speed increased
+
 
 = V0.1 =
 
