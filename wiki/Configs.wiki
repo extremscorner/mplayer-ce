@@ -8,17 +8,26 @@ Determine how many shares you want to use. and fill in the fields.
 E.g. I have a folder "network shared" on C:\ called Movies, I don't have a password on my user account, and my folder isn't protected. Therefore I don't need to add my user in the field in the example below.
 
 #Samba share1  (smb1:/)
+
 ip1=192.168.0.1
+
 share1=Movies
+
 user1=
+
 pass1=
 
 I now have a folder on D:\ but my "network shared" folder has a space and it's named My Music.
 Fill it out like this with the " " besides the share location.
+
 #Samba share1  (smb1:/)
+
 ip2=192.168.0.1
+
 share2="My Music"
+
 user2=
+
 pass2=
 
 
@@ -48,16 +57,25 @@ Also you can change the following, e.g. remove the Radio/About/Aspect path and h
 This is where you can add a line so MPlayerCE autoboots into a specific video mode, e.g. 2:35Open up your mplayer.conf and compare to my example.
 
 vo=gekko
+
 ao=gekko
+
 framedrop=yes
+
 alang=en
+
 really-quiet=yes
 
 menu=yes
+
 menu-startup=yes
+
 cache=8192
+
 cache-min=4
+
 loop=0
+
 *aspect=1.7777*
 
 bgvideo=sd:/apps/mplayer_ce/loop.avi
