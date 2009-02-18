@@ -51,8 +51,6 @@ Open up your menu.conf, and compare to my example below.
       <e name="SMB4 share ..." ok="set_menu open_smb4"/>
       <e name="SMB5 share ..." ok="set_menu open_smb5"/>
       <e name="Options ..." ok="set_menu pref_main"/>
-      <e name="Aspect ..." ok="set_menu aspect"/>
-      <e name="About" ok="set_menu about"/>
       <e name="Quit" ok="quit"/>
 
 Also you can change the following, e.g. remove the Radio/About/Aspect path and head it under Options in menu.conf etc. Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
