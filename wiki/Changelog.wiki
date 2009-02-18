@@ -1,24 +1,32 @@
-= Changelogs to MPlayerCE =
+= Changelog to MPlayerCE =
 
-= V0.2 =
+== V0.2 ==
 
-SD/USB Mount bugs fixed
+ * SD/USB Mount bugs fixed
 
-DVD Mount/Stop/Motor/Pause problems fixed, now mounts, only when you select DVD
+ * DVD Mount/Stop/Motor/Pause problems fixed, now mounts, only when you select DVD
 
-Network Initialising on startup changed, now connects "hidden" in Background of MPlayer.
+ * Network Initialising on startup changed, now connects "hidden" in background.
 
-Added 5 SMB Shares, review smb.conf
+ * Added 5 SMB Shares, review smb.conf
 
-Boot-up speed increased
+ * Boot-up speed increased
+
+ * Added files filter to only show audio/video files
+
+ * Same directory kept open when you open/close the menu
+
+ * Menu closes on file load
 
 
-= V0.1 =
+== V0.1 ==
 
-SMB fixes
+ * SMB fixes
 
-DVD cache bug fixed
+ * DVD cache bug fixed
 
-Small USB fixes
+ * Small USB fixes
 
-Change and now Built with new Libogc & Libfat
+ * Modified Libogc & Libfat
+
+ * 2.35:1 videos now scale correctly
