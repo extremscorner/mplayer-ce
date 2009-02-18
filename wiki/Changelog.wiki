@@ -19,4 +19,6 @@ SMB fixes
 
 DVD cache bug fixed
 
+Small USB fixes
+
 Change and now Built with new Libogc & Libfat
