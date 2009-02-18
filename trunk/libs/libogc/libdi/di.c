@@ -50,8 +50,6 @@ static bool motor_stopped=true;
 static unsigned int LastAccess=0;
 static unsigned int TimeStopMotor=DEFAULT_TIME_STOP_MOTOR;
 
-#define ticks_to_secs(ticks)		((u32)((u64)(ticks)/(u64)(TB_TIMER_CLOCK*1000)))
-
 void SetDVDMotorStopSecs(int secs)  //in seconds
 {
   if(secs<MIN_TIME_STOP_MOTOR) return;
@@ -113,25 +111,29 @@ static void * motorthreadfunc (void *ptr)
   return NULL;
 }
 
+int DI_StartMotor(){
+	if(state == (DVD_INIT | DVD_NO_DISC) ) return 0;
+	if(motor_stopped && motorthreadexit==false){ 
+		DI_Reset();
+		uint32_t val;
+		int i=200;    
+		do{  
+		   usleep(100);
+		   DI_GetCoverRegister(&val);
+		   i--;
+		   if(i==0) break;
+		}while(!(val&0x2)); // wait until dvd is ok
+		LastAccess=ticks_to_secs(gettime());
+		if(i>0) motor_stopped=false; // if you can't start motor then dvd is hang	
+		return 1;
+	}	
+	return 0;
+}
+
 void CheckAccess()
 {
-  if(motor_stopped && motorthreadexit==false)
-  { // start motor
-    DI_Reset();
-    uint32_t val;
-    int i=200;    
-    do{  
-       usleep(10);
-       DI_GetCoverRegister(&val);
-       i--;
-       if(i==0) break;
-    }while(!(val&0x2)); // wait until dvd is ok
-    
-    LastAccess=ticks_to_secs(gettime());
-    if(i>0) motor_stopped=false; // if you can't start motor then dvd is hang
-    //else ERRORRRR
-  }
-  else LastAccess=ticks_to_secs(gettime());
+	DI_StartMotor();
+	LastAccess=ticks_to_secs(gettime());  
 }
 
 ///// Cache
@@ -166,41 +168,26 @@ static void CreateDVDCache()
 static int ReadBlockFromCache(void *buf, uint32_t len, uint32_t block)
 {
 	int retval;
-	uint32_t len_read;
 
-  do
+	if(cache_read==NULL) return DI_ReadDVDptr(buf,len,block);
+
+	if( (block >= cache_read->block) && (block + len < (cache_read->block+CACHEBLOCKS)) )
+	{
+		memcpy(buf,cache_read->ptr + ((block - cache_read->block) * BLOCK_SIZE), BLOCK_SIZE * len);
+		return 0;
+	}
+
+  if(len>CACHEBLOCKS) return DI_ReadDVDptr(buf,len,block);
+	retval=DI_ReadDVDptr(cache_read->ptr,CACHEBLOCKS,block);
+	if(retval)
   {
-    len_read=len;
-    if(len_read>CACHEBLOCKS)len_read=CACHEBLOCKS; // The max len without errors on data is CACHEBLOCKS (26)
+    cache_read->block=CACHE_FREE;
+    return retval;
+  }
+	
+	cache_read->block=block;	 
+	memcpy(buf, cache_read->ptr, len*BLOCK_SIZE);	 
 
-    len-=len_read;
-  	if(cache_read==NULL) 
-    {
-      retval = DI_ReadDVDptr(buf,len_read,block);
-      block+=len_read;
-      buf+=BLOCK_SIZE * len_read;
-      if(retval) return retval;
-    }
-    else
-    {
-    	if( (block >= cache_read->block) && (block + len_read < (cache_read->block+CACHEBLOCKS)) )
-    	{
-    		memcpy(buf,cache_read->ptr + ((block - cache_read->block) * BLOCK_SIZE), BLOCK_SIZE * len_read);
-    		return 0;
-    	}
-      //if(len>CACHEBLOCKS) return DI_ReadDVDptr(buf,len_read,block);
-    	retval=DI_ReadDVDptr(cache_read->ptr,CACHEBLOCKS,block);
-    	if(retval)
-      {
-        cache_read->block=CACHE_FREE;
-        return retval;
-      }	   
-    	memcpy(buf, cache_read->ptr, len_read*BLOCK_SIZE);
-    	cache_read->block=block;
-      block+=CACHEBLOCKS;	 
-      buf+=BLOCK_SIZE * CACHEBLOCKS;
-    }	 
-  }while(len>0);
 	return 0;
 }
 

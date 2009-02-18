@@ -239,6 +239,7 @@ kprintf("Reload in 4 seconds\n");
 }
 
 char *debug_str=NULL;
+
 //just implement core for unrecoverable exceptions.
 void c_default_exceptionhandler(frame_context *pCtx)
 {
@@ -246,7 +247,7 @@ void c_default_exceptionhandler(frame_context *pCtx)
 	__console_init(exception_xfb,20,20,640,574,1280);
 
 	kprintf("\n\n\n\tException (%s) occurred!\n", exception_name[pCtx->EXCPT_Number]);
-	
+
 	if(debug_str) kprintf("function: %s\n",debug_str);
 
 	kprintf("\tGPR00 %08X GPR08 %08X GPR16 %08X GPR24 %08X\n",pCtx->GPR[0], pCtx->GPR[8], pCtx->GPR[16], pCtx->GPR[24]);
