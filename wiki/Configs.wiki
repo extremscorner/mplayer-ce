@@ -1,5 +1,5 @@
 = Introduction =
-This is where we setup our configs, this is for setting up our SMB shares, customising our menu layout, adding a input into mplayer.conf and also changing the loop.avi.
+This is where we setup our configs, setting up SMB shares, customising the menu layout in menu.conf, adding a input into mplayer.conf and also changing the loop.avi.
 
 *Setup and Edit your Configs.*
 
