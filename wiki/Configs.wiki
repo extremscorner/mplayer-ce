@@ -20,3 +20,25 @@ ip2=192.168.0.1
 share2="My Music"
 user2=
 pass2=
+
+
+*menu.conf*
+You can change the layout of your menu.conf
+Doing so will change the main menu's layout in MPlayerCE
+
+Open up your menu.conf, and compare to my example below.
+<cmdlist name="main" title="MPlayer UE" ptr="<>" >
+      <e name="Stop" ok="loadfile loop.avi"/>
+      <e name="Browse ..." ok="set_menu browse" />
+      <e name="DVD ..." ok="set_menu dvd"/>
+      <e name="Radio ..." ok="set_menu radio"/>
+      <e name="SMB1 share ..." ok="set_menu open_smb1"/>
+      <e name="SMB2 share ..." ok="set_menu open_smb2"/>
+      <e name="SMB3 share ..." ok="set_menu open_smb3"/>
+      <e name="Options ..." ok="set_menu pref_main"/>
+      <e name="Aspect ..." ok="set_menu aspect"/>
+      <e name="About" ok="set_menu about"/>
+      <e name="Quit" ok="quit"/>
+
+Also you can change the following, e.g. remove the Radio/About/Aspect path and head it under Options in menu.conf etc. Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
+*Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the other3 in their.
