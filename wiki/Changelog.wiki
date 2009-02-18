@@ -1,3 +1,5 @@
+#summary Changelog to MPlayerCE
+
 = Changelog to MPlayerCE =
 
 == V0.2 ==
