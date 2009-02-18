@@ -87,8 +87,6 @@ cache=8192
 
 cache-min=4
 
-loop=0
-
 *aspect=1.7777*
 
 As you can see i have added the line *aspect=1.7777* therefore this autoboot MPlayerCE to 16/9 setting, therefore everything is in 16/9 and the loop.avi is fullscreen.
