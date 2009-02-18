@@ -6,11 +6,6 @@
 
 
 = Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
 *smb.conf*
 Open up your smb.conf, it has 5 shares.
 Determine how many shares you want to use. and fill in the fields.
