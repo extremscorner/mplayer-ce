@@ -9,9 +9,9 @@ E.g. I have a folder "network shared" on C:\ called Movies, I don't have a passw
 
 #Samba share1  (smb1:/)
 
-ip1=192.168.0.1
+ip1=*192.168.0.1*
 
-share1=Movies
+share1*=Movies*
 
 user1=
 
@@ -22,13 +22,16 @@ Fill it out like this with the " " besides the share location.
 
 #Samba share1  (smb1:/)
 
-ip2=192.168.0.1
+ip2=*192.168.0.1*
 
-share2="My Music"
+share2=*"My Music"*
 
 user2=
 
 pass2=
+
+If you have a password on your user account, simply fill all fields in.
+
 
 
 *menu.conf*
