@@ -35,4 +35,4 @@
 
 
 == V0.1 Christmas Edition ==
-Initial project
+ * Initial project
