@@ -211,6 +211,13 @@ static void free_extensions(char **extensions){
   }
 }
 
+#include <sdcard/wiisd_io.h>
+#include <sdcard/gcsd.h>
+#include <ogc/usbstorage.h>
+
+const static DISC_INTERFACE* sd = &__io_wiisd;
+const static DISC_INTERFACE* usb = &__io_usbstorage;
+
 static int open_dir(menu_t* menu,char* args) {
   char **namelist, **tp;
   struct dirent *dp;
@@ -232,6 +239,27 @@ static int open_dir(menu_t* menu,char* args) {
     free(mpriv->p.title);
   p = strstr(mpriv->title,"%p");
 
+//set_osd_msg(124, 0, 100000, "dir: %s ", mpriv->dir);
+  if(!strcmp(mpriv->dir,"usb:/"))
+  {
+	  //set_osd_msg(124, 0, 300000, "dir: %s ", mpriv->dir);
+	  fatUnmount("usb:");
+	  if (usb->startup()) 
+		if(fatMountSimple("usb", usb))
+   			fatSetReadAhead("usb:", 4, 64);
+		else return 0;
+	  else return 0;
+  } 
+  else if(!strcmp(mpriv->dir,"dvd:/"))
+  {
+	  if(WIIDVD_DiscPresent())
+	  {
+		  WIIDVD_Unmount();
+		  WIIDVD_Mount();
+	  }else return 0;
+  }
+  //set_osd_msg(124, 0, 150000, "dir2: %s ", mpriv->dir);
+    
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);
 
   if ((dirp = opendir (mpriv->dir)) == NULL){
@@ -327,6 +355,7 @@ bailout:
 static char *action;
 
 static void read_cmd(menu_t* menu,int cmd) {
+	
   switch(cmd) {
   //case MENU_CMD_LEFT: //scip
     //mpriv->p.current = mpriv->p.menu; // Hack : we consider that the first entry is ../
@@ -364,8 +393,11 @@ static void read_cmd(menu_t* menu,int cmd) {
       char *str;
       char *action = mpriv->p.current->d ? mpriv->dir_action:mpriv->file_action;
       sprintf(filename,"%s%s",mpriv->dir,mpriv->p.current->p.txt);
+	  //set_osd_msg(124, 0, 200000, "filename: %s action: %s ", filename, action);
       str = replace_path(action, filename,1);
+	  //set_osd_msg(124, 0, 100000, "action: %s ", action);
       mp_input_parse_and_queue_cmds(str);
+	  if(!strncmp(action,"loadfile",8)) mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
       if (str != action)
 	free(str);
     }
@@ -386,6 +418,7 @@ static void read_cmd(menu_t* menu,int cmd) {
 }
 
 static int read_key(menu_t* menu,int c){
+	//set_osd_msg(124, 0, 300000, "read_key: %d ", c);
     char **str;
     for (str=mpriv->actions; str && *str; str++)
       if (c == (*str)[0]) {
@@ -404,6 +437,7 @@ static void clos(menu_t* menu) {
 }
 
 static int open_fs(menu_t* menu, char* args) {
+//set_osd_msg(124, 0, 300000, "open_fs:  ");
   char *path = mpriv->path;
   int r = 0;
   char wd[PATH_MAX+1], b[PATH_MAX+1];

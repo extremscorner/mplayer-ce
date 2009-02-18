@@ -119,6 +119,7 @@ char *heartbeat_cmd;
 
 #ifdef GEKKO
 #include "osdep/plat_gekko.h"
+#include <di/di.h>
 #endif
 
 //**************************************************************************//
@@ -2375,7 +2376,8 @@ static double update_video(int *blit_frame)
 static void pause_loop(void)
 {
     mp_cmd_t* cmd;
-    if (!quiet) {
+
+	if (!quiet) {
         // Small hack to display the pause message on the OSD line.
         // The pause string is: "\n == PAUSE == \r" so we need to
         // take the first and the last char out
@@ -2389,6 +2391,7 @@ static void pause_loop(void)
 	    mp_msg(MSGT_CPLAYER,MSGL_STATUS,MSGTR_Paused);
         mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_PAUSED\n");
     }
+
 #ifdef CONFIG_GUI
     if (use_gui)
 	guiGetEvent(guiCEvent, (char *)guiSetPause);
@@ -2422,7 +2425,23 @@ static void pause_loop(void)
 #endif
 	usec_sleep(20000);
     }
-    if (cmd && cmd->id == MP_CMD_PAUSE) {
+	if(!strncmp(filename,"dvd:",4)) 
+	{
+		DI_StartMotor();	
+		uint32_t val;
+		do{  
+			if (mpctx->sh_video && mpctx->video_out && vo_config_count)
+				mpctx->video_out->check_events();
+#ifdef CONFIG_MENU
+	if (vf_menu)
+	    vf_menu_pause_update(vf_menu);
+#endif
+		   usleep(100);
+		   DI_GetCoverRegister(&val);
+		}while(!(val&0x2));
+	}
+
+	if (cmd && cmd->id == MP_CMD_PAUSE) {
 	cmd = mp_input_get_cmd(0,1,0);
 	mp_cmd_free(cmd);
     }
@@ -2598,7 +2617,7 @@ void return_to_wii_menu(void)
 #ifndef DISABLE_MAIN
 int main(int argc,char* argv[]){
 #ifdef GEKKO
-  atexit(return_to_wii_menu);
+	atexit(return_to_wii_menu);
 #endif
 char * mem_ptr;
 
@@ -3208,6 +3227,17 @@ int vob_sub_auto = 0; //scip
   mpctx->sh_video=NULL;
 
   current_module="open_stream";
+  if(!strncmp(filename,"dvd://",6)) {
+	set_osd_msg(124, 1, 10000, "Mounting DVD, please wait");
+	update_osd_msg();
+	  if(DI_GetStatus() & DVD_INIT)
+	  {
+		DI_Mount();
+		while(DI_GetStatus() & DVD_INIT) usleep(100);
+	  }
+	  mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
+  }
+  //else if(!strncmp(filename,"dvd:/",5)) if(WIIDVD_DiscPresent())  WIIDVD_Mount();
   mpctx->stream=open_stream(filename,0,&mpctx->file_format);
   if(!mpctx->stream) { // error...
     mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY);

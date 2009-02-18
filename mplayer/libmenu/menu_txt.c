@@ -49,6 +49,7 @@ static m_option_t cfg_fields[] = {
 #define mpriv (menu->priv)
 
 static void read_cmd(menu_t* menu,int cmd) {
+
   switch(cmd) {
   case MENU_CMD_UP:
     mpriv->cur_line -= mpriv->disp_lines / 2;
