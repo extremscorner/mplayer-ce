@@ -40,11 +40,10 @@ You can change the layout of your menu.conf
 Doing so will change the main menu's layout in MPlayerCE
 
 Open up your menu.conf, and compare to my example below.
-<cmdlist name="main" title="MPlayer UE" ptr="<>" >
+<cmdlist name="main" title="MPlayer CE" ptr="<>" >
       <e name="Stop" ok="loadfile loop.avi"/>
       <e name="Browse ..." ok="set_menu browse" />
       <e name="DVD ..." ok="set_menu dvd"/>
-      <e name="Radio ..." ok="set_menu radio"/>
       <e name="SMB1 share ..." ok="set_menu open_smb1"/>
       <e name="SMB2 share ..." ok="set_menu open_smb2"/>
       <e name="SMB3 share ..." ok="set_menu open_smb3"/>
