@@ -8,7 +8,7 @@ DVD Mount/Stop/Motor/Pause problems fixed, now mounts, only when you select DVD 
 
 Network Initialising on startup changed, now connects "hidden" in Background of MPlayer.
 
-Added 5 SMB Shares
+Added 5 SMB Shares, review smb.conf
 
 Boot-up speed increased
 
