@@ -4,8 +4,6 @@
 
 *Setup and Edit your Configs.*
 
-
-= Details =
 *smb.conf*
 Open up your smb.conf, it has 5 shares.
 Determine how many shares you want to use. and fill in the fields.
