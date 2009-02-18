@@ -1,8 +1,6 @@
 = Changelogs to MPlayerCE =
 
-= Details =
-
-_*V0.2*_
+= V0.2 =
 
 SD/USB Mount bugs fixed
 
@@ -12,4 +10,4 @@ Added 5 SMB Shares
 
 
 
-_*V0.1*_
+= V0.1 =
