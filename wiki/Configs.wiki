@@ -1,4 +1,4 @@
-= #summary Setup Configs
+#summary Setup Configs
 
 = Introduction =
 
