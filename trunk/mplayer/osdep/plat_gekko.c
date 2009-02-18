@@ -240,7 +240,7 @@ void plat_init (int *argc, char **argv[]) {
 
 	mainthread=LWP_GetSelf(); 
 	lwp_t mountthread;
-	LWP_CreateThread(&mountthread, automountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
+	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
 	
 
 	chdir("sd:/apps/mplayer_ce");
