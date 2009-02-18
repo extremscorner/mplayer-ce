@@ -2,10 +2,11 @@
 <app version="1">
   <name>MPlayerCE</name>
   <coder>Scip and co</coder>
-  <version>0.1</version>
-  <release_date>20080213</release_date>
+  <version>0.2</version>
+  <release_date>20080217</release_date>
   <short_description>Powerful Media Center</short_description>
   <long_description>DATA-DVD, SDHC, USB, SMB and Radio, 
 Based on MPlayerWii, MPlayer, and GeeXbox 
-Thanx to the follwing Rodries, AgentX, djdynamite123, tipolosko, Tantric etc.</long_description>
+Thanks to the following:
+Rodries, AgentX, djdynamite123, tipolosko, Tantric etc.</long_description>
 </app>
