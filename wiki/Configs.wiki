@@ -64,6 +64,7 @@ Change it to suit you. As you can see iv'e removed "share" as this no longer wor
 This is the area of menu.conf that we can change the paths and either have in browse like so, or remove them and add to main menu, at the bottom of menu.conf
 
 *mplayer.conf*
+
 This is where you can add a line so MPlayerCE autoboots into a specific video mode, e.g. 2:35Open up your mplayer.conf and compare to my example.
 
 vo=gekko
