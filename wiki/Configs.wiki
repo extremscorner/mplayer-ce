@@ -36,6 +36,7 @@ If you have a password on your user account, simply fill all fields in.
 
 
 *menu.conf*
+
 You can change the layout of your menu.conf
 Doing so will change the main menu's layout in MPlayerCE
 
