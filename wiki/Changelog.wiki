@@ -14,3 +14,5 @@ Added 5 SMB Shares
 SMB fixes
 
 DVD cache bug fixed
+
+Change and now Built with new Libogc & Libfat
