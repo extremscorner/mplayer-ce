@@ -11,3 +11,6 @@ Added 5 SMB Shares
 
 
 = V0.1 =
+
+SMB fixes
+DVD cache bug fixed
