@@ -42,3 +42,25 @@ Open up your menu.conf, and compare to my example below.
 
 Also you can change the following, e.g. remove the Radio/About/Aspect path and head it under Options in menu.conf etc. Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
 *Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the other3 in their.
+
+
+*mplayer.conf*
+This is where you can add a line so MPlayerCE autoboots into a specific video mode, e.g. 2:35Open up your mplayer.conf and compare to my example.
+
+vo=gekko
+ao=gekko
+framedrop=yes
+alang=en
+really-quiet=yes
+
+menu=yes
+menu-startup=yes
+cache=8192
+cache-min=4
+loop=0
+*aspect=1.7777*
+
+bgvideo=sd:/apps/mplayer_ce/loop.avi
+
+As you can see i have added the line *aspect=1.7777* therefore this autoboot MPlayerCE to 16/9 setting, therefore everything is in 16/9 and the loop.avi is fullscreen.
+Change to suit you.
