@@ -1,0 +1,31 @@
+#summary One-sentence summary of this page.
+
+= Introduction =
+
+*Setup and Edit your Configs.*
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
+*smb.conf*
+Open up your smb.conf, it has 5 shares.
+Determine how many shares you want to use. and fill in the fields.
+E.g. I have a folder "network shared" on C:\ called Movies, I don't have a password on my user account, and my folder isn't protected. Therefore I don't need to add my user in the field in the example below.
+
+#Samba share1  (smb1:/)
+ip1=192.168.0.1
+share1=Movies
+user1=
+pass1=
+
+I now have a folder on D:\ but my "network shared" folder has a space and it's named My Music.
+Fill it out like this with the " " besides the share location.
+#Samba share1  (smb1:/)
+ip2=192.168.0.1
+share2="My Music"
+user2=
+pass2=
