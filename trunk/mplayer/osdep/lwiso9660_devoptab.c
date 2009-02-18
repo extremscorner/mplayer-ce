@@ -8,6 +8,7 @@
 #include <ogc/ipc.h>
 #include <gccore.h>
 #include <di/di.h>
+#include <ogc/mutex.h>
 #endif
 #include "lwiso9660_devoptab.h"
 
@@ -18,6 +19,7 @@
 #define uint8_t unsigned char
 #define uint16_t unsigned short
 #define uint32_t unsigned int
+static mutex_t _DVD_mutex=LWP_MUTEX_NULL;
 
 int totalsectors;
 int totalentries;
@@ -139,6 +141,7 @@ int WIIDVD_Init(void)
 #ifndef DEBUG
 	dotab_dvd_add();
 #endif
+	LWP_MutexInit(&_DVD_mutex, false);
 	return retval;
 }
 
@@ -149,14 +152,22 @@ void WIIDVD_Close()
 #ifndef DEBUG
 	DI_Close();
 #endif
-	
+	LWP_MutexDestroy(_DVD_mutex);
 }
 
+#include <ogc/lwp_watchdog.h>
 int WIIDVD_Mount()
 {
 #ifndef DEBUG
 	DI_Mount();
-	while(DI_GetStatus() & DVD_INIT);
+	unsigned int t1,t2;
+	t1=ticks_to_secs(gettime());
+	while(DI_GetStatus() & DVD_INIT)
+	{
+		t2=ticks_to_secs(gettime());		
+		if(t2-t1 > 12)return -1;
+		usleep(5000);
+	}
 #endif
 	DVDEnableReadAhead(32,26);  //default init
 	return DVD_ScanContent();
@@ -1118,7 +1129,7 @@ int DVD_ScanContent()
 //		debug_dump_tree();
 	}	
 	free(sectbuf);
-	return totalentries;
+	return 0;
 }
 
 #ifndef DEBUG
@@ -1172,6 +1183,17 @@ int main(int argc, char *argv[])
 ///////////////////////////////////////////
 //         CACHE FUNCTIONS              //
 ///////////////////////////////////////////
+
+
+static inline void _DVD_lock()
+{
+	LWP_MutexLock(_DVD_mutex);
+}
+
+static inline void _DVD_unlock()
+{
+	LWP_MutexUnlock(_DVD_mutex);
+}
 
 void DestroyReadAheadCache()
 {
@@ -1231,6 +1253,7 @@ int ReadSectorFromCache(void *buf, uint32_t sector)
 
 	if(ReadAheadCache==NULL) return WIIDVD_ReadDVD(buf, 1, sector);  
 
+	_DVD_lock();
 	leastUsed=0;
 	for(i = 0; i < RA_pages; i++)
 	{
@@ -1238,6 +1261,7 @@ int ReadSectorFromCache(void *buf, uint32_t sector)
 			{
 				ReadAheadCache[i].last_used=gettick();
 				memcpy(buf,ReadAheadCache[i].ptr + ((sector - ReadAheadCache[i].sector) * SECTOR_SIZE), SECTOR_SIZE);
+				_DVD_unlock();
 				return 0;
 			}
 	}
@@ -1254,12 +1278,14 @@ int ReadSectorFromCache(void *buf, uint32_t sector)
   {
     ReadAheadCache[leastUsed].sector=CACHE_FREE;
     ReadAheadCache[leastUsed].last_used=0;
+	_DVD_unlock();
     return retval;
   }
 	
 	ReadAheadCache[leastUsed].sector=sector;	 
 	ReadAheadCache[leastUsed].last_used=gettick();
 	memcpy(buf, ReadAheadCache[leastUsed].ptr, SECTOR_SIZE);	 
+	_DVD_unlock();
 
 	return 0;
 }
