@@ -4,7 +4,7 @@
 
 SD/USB Mount bugs fixed
 
-DVD Mount/Stop/Motor/Pause problems fixed, now mounts, only when you select DVD or Wii DVD
+DVD Mount/Stop/Motor/Pause problems fixed, now mounts, only when you select DVD
 
 Network Initialising on startup changed, now connects "hidden" in Background of MPlayer.
 
