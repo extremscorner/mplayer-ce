@@ -1,4 +1,7 @@
+= #summary Setup Configs
+
 = Introduction =
+
 This page will explain how to set up your config files, including SMB shares, customising the menu layout in menu.conf, adding input with input.conf and changing default behaviour with mplayer.conf.
 
 This page will also explain changing the loop.avi.
