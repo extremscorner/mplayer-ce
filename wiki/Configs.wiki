@@ -53,7 +53,7 @@ Open up your menu.conf, and compare to my example below.
       <e name="Quit" ok="quit"/>
 
 Also you can change the following, e.g. remove the Radio/About/Aspect path and head it under Options in menu.conf etc. Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
-*Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the other3 in their.
+*Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the others in the config.
 
 
 *mplayer.conf*
