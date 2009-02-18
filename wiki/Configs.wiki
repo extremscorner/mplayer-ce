@@ -21,7 +21,7 @@ pass1=
 I now have a folder on D:\ but my "network shared" folder has a space and it's named My Music.
 Fill it out like this with the *" "* besides the share location.
 
-#Samba share1  (smb1:/)
+#Samba share2  (smb2:/)
 
 ip2=*192.168.0.1*
 
