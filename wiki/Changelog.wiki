@@ -3,8 +3,13 @@
 = Details =
 
 _*V0.2*_
+
 SD/USB Mount bugs fixed
+
 DVD Mount/Stop/Motor/Pause problems fixed
+
 Added 5 SMB Shares
+
+
 
 _*V0.1*_
