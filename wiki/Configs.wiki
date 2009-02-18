@@ -64,3 +64,12 @@ bgvideo=sd:/apps/mplayer_ce/loop.avi
 
 As you can see i have added the line *aspect=1.7777* therefore this autoboot MPlayerCE to 16/9 setting, therefore everything is in 16/9 and the loop.avi is fullscreen.
 Change to suit you.
+
+
+*Customising*
+You can use your own *loop.avi*
+Just replace the current one with your own
+The best dimensions are 640x456
+You can also have a music in the loop.avi
+My loop.avi is 1 minute long and has no issues. and is 3.5mb in size.
+Virtualdub is the best program to create your loop.avi, you can use a still image and add audio. make sure you compress the video with XVID MPEG4 CODEC, in compression.
