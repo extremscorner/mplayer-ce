@@ -5,6 +5,8 @@
 This page will tell you how to compile the source, and where to make changes.
 
 ==Compiling==
+ * Compile modified libogc ('make wii' and 'make install') then compile libfat ('make ogc-install'), they are on libs directory on svn.
+
  * In order to compile mplayer_ce you first need to build libdvdread and libdvdnav.
 
  * In config.mak in both libdvdread and libdvdnav you need to set both SRC_PATH and SRC_PATH_BARE to the correct directory, eg /c/projects/mplayer_ce-source/libdvdread-trunk (remember that it is case sensitive).
