@@ -57,9 +57,11 @@ Open up your menu.conf, and compare to my example below.
 The way in which you do this is by looking at the path e.g.
   <e name="Wii SD ..." ok="set_menu open_sd"/>
 This is usually under Browse in MPlayer, but i have removed it from their and, it now shows on main menu of MPlayer, you add the path at the bottom of menu.conf after main title etc.
-Also you can change the following, e.g. remove the Radio/About/Aspect path and head it under Options in menu.conf etc. Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
-*Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the others in the config.
-
+Change it to suit you. As you can see iv'e removed "share" as this no longer works as we now have 5 shares.
+*Remember* you can add Radio streams, look under Radio in menu.conf and use the same function as the others in the config, I have moved that into Browse etc.
+<cmdlist name="browse" title="Browse" ptr="<>" >
+			<e name="../" ok="menu cancel"/>
+This is the area of menu.conf that we can change the paths and either have in browse like so, or remove them and add to main menu, at the bottom of menu.conf
 
 *mplayer.conf*
 This is where you can add a line so MPlayerCE autoboots into a specific video mode, e.g. 2:35Open up your mplayer.conf and compare to my example.
