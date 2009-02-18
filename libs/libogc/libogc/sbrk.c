@@ -18,7 +18,7 @@ void* _DEFUN(__libogc_sbrk_r,(ptr,incr),
 {
 	// Stored value of SYS_GetArena2Lo() when transitioning from MEM1 over to MEM2
 	// This is used to transition back to MEM1 when freeing memory
-	// It also serves as a flag of whether we're in MEM1 or MEM2
+ 	// It also serves as a flag of whether we're in MEM1 or MEM2
 	static char *mem2_start = 0;
 	
 	char *heap_end = 0;

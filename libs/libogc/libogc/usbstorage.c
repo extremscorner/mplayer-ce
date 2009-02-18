@@ -730,21 +730,20 @@ static bool __usbstorage_IsInserted(void)
        return false;
    memset(buffer, 0, DEVLIST_MAXSIZE << 3);
 
+   
    if(USB_GetDeviceList("/dev/usb/oh0", buffer, DEVLIST_MAXSIZE, 0, &dummy) < 0)
    {
-       if(__vid!=0 || __pid!=0) 
-       {
-        USBStorage_Close(&__usbfd);
-        memset(&__usbfd, 0, sizeof(__usbfd));
-        __lun = 0;
-        __vid = 0;
-        __pid = 0;
-       }
+       if(__vid!=0 || __pid!=0) USBStorage_Close(&__usbfd);
+       memset(&__usbfd, 0, sizeof(__usbfd));
+       __lun = 0;
+       __vid = 0;
+       __pid = 0;
 
        free(buffer);
+	   //printf("Error on USB_GetDeviceList\n");
        return false;
    }
-
+	
    if(__vid!=0 || __pid!=0)
    {
        for(i = 0; i < DEVLIST_MAXSIZE; i++)
@@ -797,8 +796,9 @@ static bool __usbstorage_IsInserted(void)
            __lun = j;
            __vid = vid;
            __pid = pid;
-           i = DEVLIST_MAXSIZE;
-           
+		   //printf("Ok reading device: VIP: %d  PID: %d \n",vid,pid);
+
+           i = DEVLIST_MAXSIZE;		   
            break;
        }
    }

@@ -105,7 +105,6 @@ bool _FAT_racache_readSectors (const PARTITION* partition, const sec_t sector, c
 	return _FAT_disc_readSectors(partition->disc, sec, count, buf);
 }
 
-extern char *debug_str;
 bool _FAT_racache_addEntry (const FILE_STRUCT* file) {
 	uint32_t i, ra_limit;
 	uint32_t ra_start, ra_end, ra_sectors;
@@ -181,7 +180,6 @@ bool _FAT_racache_addEntry (const FILE_STRUCT* file) {
 		_FAT_racache_destroyByIndex(cache, oldest);
 		entry = _FAT_racache_constructor(file->partition->disc, sector, ra_sectors);
 		cache->ra_entries[oldest] = entry;
-		debug_str=NULL;
 	} 
 	return entry != NULL;
 }

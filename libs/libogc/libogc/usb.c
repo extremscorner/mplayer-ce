@@ -270,16 +270,18 @@ static inline s32 __usb_getdesc(s32 fd, u8 *buffer, u8 type, u8 index, u8 size)
 	return __usb_control_message(fd, USB_ENDPOINT_IN ,USB_REQ_GETDESCRIPTOR, (type << 8) | index, 0, size, buffer, NULL, NULL);
 }
 
-static s16 __find_next_endpoint(u8 *buffer, u16 size)
+static s16 __find_next_endpoint(u8 *buffer,u16 size)
 {
 	u8 *ptr = buffer;
-	while (size > 0) {
-		if (buffer[1] == USB_DT_ENDPOINT || buffer[1] == USB_DT_INTERFACE)
-			break;
+
+	while(size>0) {
+		if(buffer[1]==USB_DT_ENDPOINT || buffer[1]==USB_DT_INTERFACE) break;
+
 		size -= buffer[0];
 		buffer += buffer[0];
 	}
-	return buffer - ptr;
+
+	return (buffer - ptr);
 }
 
 s32 USB_Initialize()
@@ -358,7 +360,7 @@ s32 USB_GetDescriptors(s32 fd, usb_devdesc *udd)
 	usb_interfacedesc *uid = NULL;
 	usb_endpointdesc *ued = NULL;
 	s32 retval = 0;
-	s16 size, i;
+	s16 size,i;
 	u32 iConf, iInterface, iEndpoint;
 
 	buffer = iosAlloc(hId, sizeof(*udd));
@@ -400,8 +402,8 @@ s32 USB_GetDescriptors(s32 fd, usb_devdesc *udd)
 		iosFree(hId, buffer);
 
 		ucd->wTotalLength = bswap16(ucd->wTotalLength);
-		buffer = iosAlloc(hId, ucd->wTotalLength);
 		size = ucd->wTotalLength;
+		buffer = iosAlloc(hId, size);
 		if(buffer == NULL)
 		{
 			retval = IPC_ENOHEAP;
@@ -426,9 +428,11 @@ s32 USB_GetDescriptors(s32 fd, usb_devdesc *udd)
 			memcpy(uid, ptr, USB_DT_INTERFACE_SIZE);
 			ptr += uid->bLength;
 			size -= uid->bLength;
+
 			uid->endpoints = calloc(uid->bNumEndpoints, sizeof(*uid->endpoints));
 			if(uid->endpoints == NULL)
 				goto free_and_error;
+
 			/* This skips vendor and class specific descriptors */
 			i = __find_next_endpoint(ptr, size);
 			uid->extra_size = i;
@@ -438,6 +442,7 @@ s32 USB_GetDescriptors(s32 fd, usb_devdesc *udd)
 			memcpy(uid->extra, ptr, i);
 			ptr += i;
 			size -= i;
+
 			for(iEndpoint = 0; iEndpoint < uid->bNumEndpoints; iEndpoint++)
 			{
 				ued = &uid->endpoints[iEndpoint];
@@ -476,7 +481,7 @@ void USB_FreeDescriptors(usb_devdesc *udd)
 					uid = &ucd->interfaces[iInterface];
 					if(uid->endpoints != NULL)
 						free(uid->endpoints);
-					if (uid->extra != NULL)
+					if(uid->extra != NULL)
 						free(uid->extra);
 				}
 				free(ucd->interfaces);
