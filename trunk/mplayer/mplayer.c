@@ -2425,7 +2425,7 @@ static void pause_loop(void)
 #endif
 	usec_sleep(20000);
     }
-	if(!strncmp(filename,"dvd:",4)) 
+	if(!strncmp(filename,"dvd:",4) ||  !strncmp(filename,"dvdnav:",7)) 
 	{
 		DI_StartMotor();	
 		uint32_t val;
@@ -3334,7 +3334,6 @@ if(stream_cache_size>0){
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
 
-
 //============ Open DEMUXERS --- DETECT file type =======================
 current_module="demux_open";
 
@@ -3435,7 +3434,6 @@ if (ass_enabled && ass_library) {
 #endif
 
 current_module="demux_open2";
-
 //file_format=demuxer->file_format;
 
 mpctx->d_audio=mpctx->demuxer->audio;
@@ -3484,7 +3482,6 @@ if((stream_dump_type)&&(stream_dump_type<4)){
 
 mpctx->sh_audio=mpctx->d_audio->sh;
 mpctx->sh_video=mpctx->d_video->sh;
-
 //geexbox bgvideo patch
 while(mpctx->sh_audio && !mpctx->sh_video && bg_video) {
   int bg_file_format = 0;
@@ -3514,7 +3511,6 @@ while(mpctx->sh_audio && !mpctx->sh_video && bg_video) {
   break;
 }
 //
-
 if(mpctx->sh_video){
 
   current_module="video_read_properties";
@@ -3560,7 +3556,6 @@ if(!mpctx->sh_video && !mpctx->sh_audio){
 #endif	
     goto goto_next_file; // exit_player(MSGTR_Exit_error);
 }
-
 /* display clip info */
 demux_info_print(mpctx->demuxer);
 
