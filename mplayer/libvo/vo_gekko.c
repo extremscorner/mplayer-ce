@@ -51,13 +51,14 @@ static vo_info_t info = {
 
 LIBVO_EXTERN(gekko)
 
+/*
 static int cam_pos_z = 350;
 
 static opt_t subopts[] = {
 	{ "cam_pos_z", OPT_ARG_INT,  &cam_pos_z, (opt_test_f) int_non_neg },
 	{ NULL }
 };
-
+*/
 static u8 *image_buffer[3] = { NULL, NULL, NULL };
 static u32 image_width = 0, image_height = 0;
 
@@ -113,7 +114,7 @@ static void flip_page(void) {
 }
 
 static int draw_frame(uint8_t *src[]) {
-	mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: draw_frame\n");
+	//mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: draw_frame\n");
 
 	return 0;
 }
@@ -195,6 +196,7 @@ static void check_events(void) {
 }
 
 static int preinit(const char *arg) {
+/*
 	if (subopt_parse(arg, subopts) != 0)
 		mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: ignoring unknown options: %s\n",
 				arg);
@@ -202,7 +204,7 @@ static int preinit(const char *arg) {
 	mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: cam_pos_z=%d\n", cam_pos_z);
 
 	GX_SetCamPosZ(cam_pos_z);
-
+*/
 	log_console_enable_video(false);
 
 	return 0;
