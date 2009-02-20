@@ -10,7 +10,7 @@
    5@@ ;@@@  @@. @@@,@@@@@@  @@@@ .@@@@@@ @@@ ;@@@@@@@@@r #@@@@@@@@@: @@@@   
    ,99  25i ,@@, @@@ @#A2r   :XB#  :S335. XGs   r9Ah2B@@s  rXAHHH&Xr  .2H@   
           @@@@@. @@@                              @@#@@@.                    
-          @@#A;  A@H    -|  MPlayer CE • v0.3 |-  #@#B&:                •ßrK•
+          @@#A;  A@H    -|  MPlayer CE • v0.21 |-  #@#B&:                •ßrK•
 
                     http://code.google.com/p/mplayer-ce
 
@@ -88,7 +88,7 @@ Supported Video and Audio Codecs
     * HuffYUV
     * various old simple RLE-like formats
 
-most important audio codecs:
+Most important audio codecs:
 
     * MPEG layer 1, 2, and 3 (MP3) audio
     * AC3/A52 (Dolby Digital) audio (software or SP/DIF)
@@ -132,19 +132,22 @@ pass1=fr0g
 The "ip1" is your  computer's  IP address,  the "share1"  is the name of your 
 shared folder, "user1" is the  username you use to login to your computer and
 lastly "pass1" is your password  you use to login to your computer. If you do
-not use a password  put "pass1=0" so  MPlayer CE  knows not to use a password 
-to login to your SMB share.
+not use a username and password,  leave  user1  and  pass1  blank,  "user1=",
+"pass1=" so MPlayer CE knows not to use a password to login to your SMB share.
 
-You  can also  specify  the aspect  ratio of  the screen. This is used if you 
-have  a  widescreen  TV.   To  change  to  16/9  you  will  need  to edit the 
-"mplayer.conf" file and add the following line someplace in the file.
+If your share folder has a space in it, you must surround  it  with quotation
+marks: share1="My Movies".
+
+You can also force the aspect ratio of  the screen. This means that all video
+files will be displayed at the specified ratio.  To force 16/9 you will  need
+to edit the "mplayer.conf" file and add the following line:
 
 "ratio=1.7778" (add it without the quotes)
 
-Lastly, if you wish to change the  background image you can create  your own. 
+Lastly, if you wish to change the  background image you can create  your own.
 After creating a custom background  (it can be a still image or an animation)
-simply  name  it  "loop.avi"  and place  it in the  "MPlayer_ce" folder.  The
-specifications for "loop.avi" are listed below.
+convert it to a video, name it "loop.avi" and place it  in  the  "MPlayer_ce"
+folder.  The specifications for "loop.avi" are listed below.
 
 XVID MPEG4 Compressed AVI
 640x456 or 720x480 Resolution
@@ -158,7 +161,7 @@ http://code.google.com/p/mplayer-ce/w/list
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
 After launching MPlayer CE a brief text based loading screen will appear then
-the  Main Menu  will come up.  To  navigate  through  the  menu's you use the
+the  Main Menu  will come up.  To  navigate  through  the  menus you use the
 directional  pad  and the "A" button  for selecting  and the "B" button to go 
 back. The Main Menu presents you with the following options:
 
@@ -166,7 +169,6 @@ back. The Main Menu presents you with the following options:
  Browse   - Browse Various Media 
  DVD      - DVD-Video Playing Menu
  Radio    - Radio Stream Menu
- Share    - ???
  Options  - Options Menu
  About    - Credits
  Quit     - Return to Loader
@@ -180,12 +182,19 @@ file to play with the "A" button.
  Wii SD
  Wii USB
  Wii DVD
+ SMB
+ Current Playlist
+
+-[ SMB ]-
+
+This option will bring up the SMB  sharing menu where you can choose the  SMB
+share you with to access:
+
  SMB share1
  SMB share2
  SMB share3
  SMB share4
  SMB share5
- Current Playlist
 
 -[ DVD ]-
 
@@ -204,7 +213,7 @@ movies in your Nintendo Wii. It presents you with the following options:
 -[ RADIO ]-
 
 This  option will display  a list of  the Radio  Streams you've  added to the
-"mplayer.conf" file (see "Radio Streams" below). You can pick which stream to
+"menu.conf" file (see "Radio Streams" below).  You  can  pick which stream to
 play from here.
 
 -[ OPTIONS ]-
@@ -218,7 +227,11 @@ General
   Loop: 1-999
 
 Audio
-  (No Options)
+ Audio Stream
+ Volume
+ Balance
+ Mute
+ Delay
 
 Video
   Frame Dropping: Enabled / Disabled
@@ -240,18 +253,18 @@ Aspect
 |0O×øo·                             CONTROLS                          ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
- Wiimote      GameCube Controller     Function
- ----------------------------------------------------------
-    A                 A               Pause
-    B                 B               Toggle Menu
-    1                 X               Close Menu / Show OSD
-    RIGHT             RIGHT           Seek 10s forward
-    LEFT              LEFT            Seek 10s backward
-    UP                UP              Seek 60s forward
-    DOWN              DOWN            Seek 60s backward
-    +                 R               Next Chapter
-    -                 L               Previous Chapter
-    HOME              Z               Quit
+ Wiimote      GameCube Controller     Function                 Input.conf key
+ ----------------------------------------------------------------------------
+    A                 A               Pause                           a
+    B                 B               Toggle Menu                     b
+    1                 X               Close Menu / Show OSD           x
+    RIGHT             RIGHT           Seek 10s forward                RIGHT
+    LEFT              LEFT            Seek 10s backward               LEFT
+    UP                UP              Seek 60s forward                UP
+    DOWN              DOWN            Seek 60s backward               DOWN
+    +                 R               Next Chapter                    r
+    -                 L               Previous Chapter                l
+    HOME              Z               Quit                            z
     2                 Y               Modifier Key
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
@@ -260,12 +273,12 @@ Aspect
 
 The Nintendo Wii is capable of reading DVD DATA and DVD-VIDEO discs, but this
 functionality  while  left  into  the  Nintendo  Wii  needs  to be enabled by 
-installing  DVDx from  Team Twiizer's.  You  can  locate  DVDx from the URL's 
+installing  DVDx from  Team Twiizers.  You  can  locate  DVDx  from  the URLs 
 below.  Make sure to install  the  correct version as there is one for System
 Menu 3.2/3.3 and one for 3.4
 
 DVDx 3.2/3.3 -> http://hackmii.com/2008/08/libdi-and-the-dvdx-installer
-DVDx 3.4 -> http://www.tehskeen.com/viewarticle.php?articleid=3181
+DVDx 3.4 -> http://hackmii.com/2009/02/dvdx34/
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                           RADIO STREAMS                       ·oø×O0|
@@ -284,6 +297,14 @@ Example:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+ V0.21
+
+    * Reduced font size
+    * New Readme
+    * New mplayer.conf option: component_fix=yes to fix side bars on some
+      problematic TVs
+    * Small fix in cache2.c
 
  V0.2
 
@@ -318,16 +339,17 @@ V0.1 Christmas Edition
                         tipolosko - DVD-DATA Feature Author
                      rodries - Coding, SMB & USB Improvements
                   AgentX - Source Improvements, Configs & Testing
-                DJDynamite123 - Autochain Detection Code & Testing
+               DJDynamite123 - Autochain Code/Experimenting & Testing
                             Tantric - SMB Improvements
                               Brakken - Documentation
                               
                               Thanks Goes Out To ...
                               
                                       [rOn]
-                                  Team Twiizer's
+                                  Team Twiizers
                                  GeeXboX Authors
-                                      Farter
+								  ludovic.orban
+								     dargllun									 
                                        Daca
                             Shagkur & LibOGC Contributers
                               
