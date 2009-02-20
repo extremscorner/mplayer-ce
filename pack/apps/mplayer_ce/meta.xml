@@ -2,8 +2,8 @@
 <app version="1">
   <name>MPlayerCE</name>
   <coder>Scip and co</coder>
-  <version>0.2</version>
-  <release_date>20080217</release_date>
+  <version>0.21</version>
+  <release_date>2008020</release_date>
   <short_description>Powerful Media Center</short_description>
   <long_description>DATA-DVD, SDHC, USB, SMB and Radio, 
 Based on MPlayerWii, MPlayer, and GeeXbox 
