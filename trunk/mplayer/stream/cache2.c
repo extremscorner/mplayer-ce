@@ -421,7 +421,7 @@ static void ThreadProc( void *s ){
   	if(thread_kill) break; //gekko
     if(!cache_fill((cache_vars_t*)s)){
 	 usec_sleep(FILL_USLEEP_TIME); // idle
-    }
+    }else usleep(50); //not sure but I think that help to lwp
     if(thread_kill) break; //gekko
     cache_execute_control((cache_vars_t*)s);
 //	 cache_stats(s->cache_data);

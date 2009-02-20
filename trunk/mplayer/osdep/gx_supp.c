@@ -42,6 +42,7 @@ extern "C" {
 /*** 2D ***/
 static u32 whichfb;
 static u32 *xfb[2];
+static bool component_fix=false;
 GXRModeObj *vmode = NULL;
 
 /*** 3D GX ***/
@@ -90,10 +91,12 @@ static camera cam = {
 void GX_InitVideo() {
 	vmode = VIDEO_GetPreferredMode(NULL);
 
-  vmode->viWidth = 678;
-	//vmode->viWidth = VI_MAX_WIDTH_PAL-24;
-	vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
-
+  if(!component_fix) vmode->viWidth = 688;
+	else 
+    vmode->viWidth = VI_MAX_WIDTH_PAL-12;
+  
+	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2) + 2;
+	
 	VIDEO_Configure(vmode);
 
 	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
@@ -111,6 +114,10 @@ void GX_InitVideo() {
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
+}
+
+void GX_SetComponentFix(bool f) {
+	component_fix = f;
 }
 
 void GX_SetCamPosZ(float f) {
