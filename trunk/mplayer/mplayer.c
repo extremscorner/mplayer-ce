@@ -2425,7 +2425,7 @@ static void pause_loop(void)
 #endif
 	usec_sleep(20000);
     }
-	if(!strncmp(filename,"dvd:",4) ||  !strncmp(filename,"dvdnav:",7)) 
+	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7))) 
 	{
 		DI_StartMotor();	
 		uint32_t val;
@@ -3227,7 +3227,7 @@ int vob_sub_auto = 0; //scip
   mpctx->sh_video=NULL;
 
   current_module="open_stream";
-  if(!strncmp(filename,"dvd://",6)) {
+  if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9)) {
 	set_osd_msg(124, 1, 10000, "Mounting DVD, please wait");
 	update_osd_msg();
 	  if(DI_GetStatus() & DVD_INIT)
