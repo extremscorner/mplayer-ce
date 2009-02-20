@@ -218,7 +218,7 @@ void plat_init (int *argc, char **argv[]) {
 
 	log_console_init(vmode, 128);
 	printf("MPlayerCE\n");
-	printf("Unofficial MPlayer v.0.2\n\n");
+	printf("Unofficial MPlayer v.0.21\n\n");
 	printf("MPlayer/Wii port (c) 2008 Team Twiizers\n");
 	printf("Used Code (c) MPlayerWii[rOn], GeeXboX,\n");
 	printf("Play Media files from SD, USB, DATA-DVD, SMB & Radio Streams.\n");
