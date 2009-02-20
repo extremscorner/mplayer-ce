@@ -2,6 +2,16 @@
 
 = Changelog to MPlayerCE =
 
+== V0.21 ==
+
+ * Reduced font size
+
+ * New Readme
+
+ * New mplayer.conf option: component_fix=yes to fix side bars on some problematic TVs
+
+ * Small fix in cache2.c
+
 == V0.2 ==
 
  * SD/USB Mount bugs fixed
