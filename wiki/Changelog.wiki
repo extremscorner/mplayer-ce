@@ -2,6 +2,10 @@
 
 = Changelog to MPlayerCE =
 
+== V0.21b ==
+
+ * Fixed hang when you access to dvdnav
+
 == V0.21 ==
 
  * Reduced font size
