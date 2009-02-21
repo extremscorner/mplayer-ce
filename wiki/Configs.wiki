@@ -116,7 +116,7 @@ As you can see, I have added the line *aspect=1.7778* MPlayerCE will default to 
 The options are the standard [http://www.mplayerhq.hu/DOCS/man/en/mplayer.1.html MPlayer options].
 Change to suit you.
 
-As of MPlayer CE v0.21 there is a new option *component_fix=yes*.  If your TV displays side bars when it shouldn't, add this line to your mplayer.conf.
+As of MPlayer CE v0.21b there is a new option *component_fix=yes*.  If your TV displays side bars when it shouldn't, add this line to your mplayer.conf.
 
 = Customising =
 
