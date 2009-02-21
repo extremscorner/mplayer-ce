@@ -112,7 +112,7 @@ cache-min=4
 aspect=1.7778
 }}}
 
-As you can see, I have added the line *aspect=1.7777* MPlayerCE will default to 16/9.
+As you can see, I have added the line *aspect=1.7778* MPlayerCE will default to 16/9.
 The options are the standard [http://www.mplayerhq.hu/DOCS/man/en/mplayer.1.html MPlayer options].
 Change to suit you.
 
