@@ -275,7 +275,7 @@ void plat_init (int *argc, char **argv[]) {
 
 void plat_deinit (int rc) {
 	WIIDVD_Close();
-	/*
+	
 	fatUnmount("sd");
 	fatUnmount("usb");
 
@@ -284,7 +284,7 @@ void plat_deinit (int rc) {
 	smbClose("smb3");
 	smbClose("smb4");
 	smbClose("smb5");
-*/
+
 	if (power_pressed) {
 		printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
