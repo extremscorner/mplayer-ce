@@ -109,7 +109,7 @@ menu=yes
 menu-startup=yes
 cache=8192
 cache-min=4
-aspect=1.7777
+aspect=1.7778
 }}}
 
 As you can see, I have added the line *aspect=1.7777* MPlayerCE will default to 16/9.
