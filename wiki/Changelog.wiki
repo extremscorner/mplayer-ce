@@ -2,13 +2,17 @@
 
 = Changelog to MPlayerCE =
 
+== V0.21c ==
+
+ * Updated menu.conf to allow selecting subtitles
+
 == V0.21b ==
 
  * New mplayer.conf option: component_fix=yes to fix side bars on some problematic TVs (Now fixed) Review your configs.
 
  * Stop Looping Video/Audio file.
 
- * Fixed hang when you access to dvdnav
+ * Fixed hang when you access dvdnav
 
 == V0.21 ==
 
