@@ -124,7 +124,7 @@ You can use your own *loop.avi*, just replace the current one with your own.
 You can also have music in the loop.avi.  My loop.avi is 1 minute long and has no issues. and is 3.5mb in size.
 You can use Virtualdub and MEncoder to create your loop.avi.  You can use a still image and add audio.
 
-=fonts=
+===fonts===
 
 You can also change your fonts for the menu of MPlayer, their are many different types and sizes, personally I wouldn't go under size 22 as it becomes really small, hardly readable.
 Search for MPlayer fonts, and replace the .raws with what's in your current font folder.
