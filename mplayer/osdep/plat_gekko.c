@@ -94,7 +94,6 @@ void gekko_abort(void) {
 
 void trysmb();
 
-//// Mounting code
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
 #include <ogc/usbstorage.h>
@@ -102,7 +101,6 @@ void trysmb();
 const DISC_INTERFACE* sd = &__io_wiisd;
 const DISC_INTERFACE* usb = &__io_usbstorage;
 
-static bool automountthreadexit = false;
 static lwp_t mainthread;
 
 static s32 initialise_network() 
@@ -200,6 +198,22 @@ void trysmb()
 		if(dp!=NULL) dirclose(dp);		
 	}	
 }
+void SetComponentFix() {
+  int fix=0;
+  m_config_t *comp_conf;
+	m_option_t comp_opts[] =
+	{
+	    {   "component_fix", &fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+	    {   NULL, NULL, 0, 0, 0, 0, NULL }
+	};		
+	
+	/* read configuration */
+	comp_conf = m_config_new();
+	m_config_register_options(comp_conf, comp_opts);
+	m_config_parse_config_file(comp_conf, "sd:/apps/mplayer_ce/mplayer.conf"); 
+   
+  GX_SetComponentFix(fix);  
+}
 
 void plat_init (int *argc, char **argv[]) {
 	WIIDVD_Init(); 
@@ -214,11 +228,24 @@ void plat_init (int *argc, char **argv[]) {
 	SYS_SetPowerCallback (power_cb);
 	WPAD_SetPowerButtonCallback(wpad_power_cb);
 
-	GX_InitVideo();
 
+	if (!sd->startup() || !fatMountSimple("sd",sd))
+	{
+  	GX_InitVideo();
+  	printf("MPlayerCE\n");
+	  printf("Unofficial MPlayer v.0.21b\n\n");
+  	//log_console_init(vmode, 128);
+		printf("Mount SD failed\n");
+		sleep(5);
+		exit(0);
+	}else fatSetReadAhead("sd:", 4, 128);
+
+  SetComponentFix();
+  GX_InitVideo();
 	log_console_init(vmode, 128);
+
 	printf("MPlayerCE\n");
-	printf("Unofficial MPlayer v.0.21\n\n");
+	printf("Unofficial MPlayer v.0.21b\n\n");
 	printf("MPlayer/Wii port (c) 2008 Team Twiizers\n");
 	printf("Used Code (c) MPlayerWii[rOn], GeeXboX,\n");
 	printf("Play Media files from SD, USB, DATA-DVD, SMB & Radio Streams.\n");
@@ -229,19 +256,9 @@ void plat_init (int *argc, char **argv[]) {
 	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS);
 	WPAD_SetIdleTimeout(60);
 
-
-	if (!sd->startup() || !fatMountSimple("sd",sd))
-	{
-		printf("Mount SD failed\n");
-		sleep(3);
-		exit(0);
-	}else fatSetReadAhead("sd:", 4, 128);
-
-
 	mainthread=LWP_GetSelf(); 
 	lwp_t mountthread;
 	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
-	
 
 	chdir("sd:/apps/mplayer_ce");
 	setenv("HOME", "sd:/apps/mplayer_ce", 1);
@@ -271,8 +288,8 @@ void plat_deinit (int rc) {
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
 	}
 
-	/*
 	// only needed to debug problems
+	/*
 	log_console_enable_video(true);
 
 	VIDEO_WaitVSync();
@@ -283,6 +300,5 @@ void plat_deinit (int rc) {
 	if (rc != 0) sleep(5);
 	
 	log_console_deinit();
-	*/	
-	
+	*/
 }
