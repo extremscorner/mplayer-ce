@@ -119,6 +119,12 @@ Change to suit you.
 As of MPlayer CE v0.21 there is a new option *component_fix=yes*.  If your TV displays side bars when it shouldn't, add this line to your mplayer.conf.
 
 ===Customising===
+
 You can use your own *loop.avi*, just replace the current one with your own.
 You can also have music in the loop.avi.  My loop.avi is 1 minute long and has no issues. and is 3.5mb in size.
 You can use Virtualdub and MEncoder to create your loop.avi.  You can use a still image and add audio.
+
+==fonts==
+
+You can also change your fonts for the menu of MPlayer, their are many different types and sizes, personally I wouldn't go under size 22 as it becomes really small, hardly readable.
+Search for MPlayer fonts, and replace the .raws with what's in your current font folder.
