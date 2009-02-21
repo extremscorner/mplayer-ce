@@ -4,6 +4,7 @@
 
 == V0.21b ==
  * Stop Looping Video/Audio file.
+
  * Fixed hang when you access to dvdnav
 
 == V0.21 ==
