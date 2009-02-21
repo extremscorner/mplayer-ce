@@ -60,7 +60,7 @@ static bool smbmounted = false;
 
 static char *default_args[] = {
 	"mplayer.dol",
-	"-loop", "0", "sd:/apps/mplayer_ce/loop.avi"
+  "-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "sd:/apps/mplayer_ce/loop.avi"
 }; 
 
 extern float movie_aspect;
@@ -94,6 +94,7 @@ void gekko_abort(void) {
 
 void trysmb();
 
+//// Mounting code
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
 #include <ogc/usbstorage.h>
@@ -274,6 +275,7 @@ void plat_init (int *argc, char **argv[]) {
 
 void plat_deinit (int rc) {
 	WIIDVD_Close();
+	/*
 	fatUnmount("sd");
 	fatUnmount("usb");
 
@@ -282,7 +284,7 @@ void plat_deinit (int rc) {
 	smbClose("smb3");
 	smbClose("smb4");
 	smbClose("smb5");
-
+*/
 	if (power_pressed) {
 		printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
