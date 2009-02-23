@@ -10,7 +10,7 @@
    5@@ ;@@@  @@. @@@,@@@@@@  @@@@ .@@@@@@ @@@ ;@@@@@@@@@r #@@@@@@@@@: @@@@   
    ,99  25i ,@@, @@@ @#A2r   :XB#  :S335. XGs   r9Ah2B@@s  rXAHHH&Xr  .2H@   
           @@@@@. @@@                              @@#@@@.                    
-          @@#A;  A@H   -|  MPlayer CE • v0.21c |-  #@#B&:                •ßrK•
+          @@#A;  A@H   -|  MPlayer CE • v0.21d |-  #@#B&:                •ßrK•
 
                     http://code.google.com/p/mplayer-ce
 
@@ -297,6 +297,11 @@ Example:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+ v0.21d
+
+    * Updated menu.conf to allow selecting playlist
+	* Fix rodries' loop patch
 
  v0.21c
 
