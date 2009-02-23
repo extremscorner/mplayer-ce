@@ -2,6 +2,12 @@
 
 = Changelog to MPlayerCE =
 
+== v0.21d ==
+
+ * Updated menu.conf to allow selecting playlist
+
+ * Fix rodries' loop patch
+
 == V0.21c ==
 
  * Updated menu.conf to allow selecting subtitles
