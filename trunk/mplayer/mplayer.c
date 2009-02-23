@@ -4025,20 +4025,6 @@ if(step_sec>0) {
   }
 }
 
-{ // rodries bad?? patch for bgvideo end file
-  if(mpctx->eof==1 && mpctx->loop_times<0 && bg_video)
-  {
-      int cmdstr_len = strlen(bg_video) + strlen("loadfile ") + 1;
-      char cmdstr[cmdstr_len];
-      sprintf(cmdstr,"loadfile %s",bg_video);
-     mp_cmd_t* cmd;
-     cmd = mp_input_parse_cmd(cmdstr);
-     run_command(mpctx,cmd);
-     mpctx->loop_times=0;
-     mp_cmd_free(cmd);
-     mp_input_queue_cmd(mp_input_parse_cmd("menu show"));        
-  }
-}
   mpctx->was_paused = 0;
 
   /* Looping. */
