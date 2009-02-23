@@ -3092,9 +3092,9 @@ if(!noconsolecontrols && !slave_mode){
     }
 #endif /* CONFIG_GUI */
 
-while (player_idle_mode && !filename) {
+while (player_idle_mode && !filename) {  //AgentX idle hack to make loop.avi constantly play
     play_tree_t * entry = NULL;
-    mp_cmd_t * cmd;
+    /*mp_cmd_t * cmd;
     while (!(cmd = mp_input_get_cmd(0,1,0))) { // wait for command
         if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
         usec_sleep(20000);
@@ -3119,7 +3119,10 @@ while (player_idle_mode && !filename) {
             break;
     }
 
-    mp_cmd_free(cmd);
+    mp_cmd_free(cmd);*/
+	
+	entry = play_tree_new();
+    play_tree_add_file(entry, bg_video);
 
     if (entry) { // user entered a command that gave a valid entry
         if (mpctx->playtree) // the playtree is always a node with one child. let's clear it
@@ -3143,6 +3146,7 @@ while (player_idle_mode && !filename) {
         }
         filename = play_tree_iter_get_file(mpctx->playtree_iter, 1);
     }
+	mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 }
 //---------------------------------------------------------------------------
 

@@ -60,7 +60,7 @@ static bool smbmounted = false;
 
 static char *default_args[] = {
 	"mplayer.dol",
-  "-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "sd:/apps/mplayer_ce/loop.avi"
+  "-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
 }; 
 
 extern float movie_aspect;
