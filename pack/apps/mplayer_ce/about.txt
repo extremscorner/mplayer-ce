@@ -1,5 +1,5 @@
    MPlayer CE,
-   unofficial Edition v.0.21 20.02.2009 
+   unofficial Edition v.0.21c 21.02.2009 
 
    MPlayer Wii port © 2008/09 Team Twiizers,
    used code © MPlayerWii[rOn], GeeXboX,

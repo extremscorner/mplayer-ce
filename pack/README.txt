@@ -10,7 +10,7 @@
    5@@ ;@@@  @@. @@@,@@@@@@  @@@@ .@@@@@@ @@@ ;@@@@@@@@@r #@@@@@@@@@: @@@@   
    ,99  25i ,@@, @@@ @#A2r   :XB#  :S335. XGs   r9Ah2B@@s  rXAHHH&Xr  .2H@   
           @@@@@. @@@                              @@#@@@.                    
-          @@#A;  A@H    -|  MPlayer CE • v0.21 |-  #@#B&:                •฿rK•
+          @@#A;  A@H   -|  MPlayer CE • v0.21c |-  #@#B&:                •฿rK•
 
                     http://code.google.com/p/mplayer-ce
 
@@ -298,13 +298,23 @@ Example:
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+ v0.21c
+
+    * Updated menu.conf to allow selecting subtitles
+
+ V0.21b
+
+    * New mplayer.conf option: component_fix=yes to fix side bars on some
+      problematic TVs (Now fixed) Review your configs. 
+    * Stop Looping Video/Audio file. 
+    * Fixed hang when you access dvdnav 
+
  V0.21
 
     * Reduced font size
     * New Readme
     * New mplayer.conf option: component_fix=yes to fix side bars on some
       problematic TVs
-    * Small fix in cache2.c
 
  V0.2
 
