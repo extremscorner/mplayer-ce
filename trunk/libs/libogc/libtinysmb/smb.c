@@ -738,7 +738,7 @@ s32 SMB_Reconnect(SMBCONN smbhndl, BOOL test_conn)
 	if(handle->conn_valid && test_conn)
 	{
 		SMBDIRENTRY dentry;
-		SMB_PathInfo("\\", &dentry, smbhndl);
+		if(SMB_PathInfo("\\", &dentry, smbhndl)==SMB_SUCCESS) return SMB_SUCCESS; //no need to reconnect
 	}
 
 	if(!handle->conn_valid)
