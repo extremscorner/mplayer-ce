@@ -10,7 +10,7 @@
    5@@ ;@@@  @@. @@@,@@@@@@  @@@@ .@@@@@@ @@@ ;@@@@@@@@@r #@@@@@@@@@: @@@@   
    ,99  25i ,@@, @@@ @#A2r   :XB#  :S335. XGs   r9Ah2B@@s  rXAHHH&Xr  .2H@   
           @@@@@. @@@                              @@#@@@.                    
-          @@#A;  A@H   -|  MPlayer CE • v0.21d |-  #@#B&:                •฿rK•
+          @@#A;  A@H   -|  MPlayer CE • v0.21e |-  #@#B&:                •฿rK•
 
                     http://code.google.com/p/mplayer-ce
 
@@ -298,6 +298,15 @@ Example:
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+ v0.21e
+     
+    * Fixed apostrophies in filenames
+    * Improved DVD and USB mounting devices
+    * Fixed radio
+    * Improved samba reconnection
+    * Debugging help for SMB Shares at bootup. It will pause for 10 seconds.
+      #debug_network=yes Review mplayer.conf
+
  v0.21d
 
     * Updated menu.conf to allow selecting playlist
@@ -363,8 +372,8 @@ V0.1 Christmas Edition
                                       [rOn]
                                   Team Twiizers
                                  GeeXboX Authors
-								  ludovic.orban
-								     dargllun									 
+				          ludovic.orban
+	                               dargllun									 
                                        Daca
                             Shagkur & LibOGC Contributers
                               
