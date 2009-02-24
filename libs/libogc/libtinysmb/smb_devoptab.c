@@ -1123,6 +1123,7 @@ bool smbInit(const char *user, const char *password, const char *share, const ch
 {
 	return smbInitDevice("smb", user, password, share, ip);
 }
+
 void smbClose(const char* name)
 {
 	smb_env *env;
@@ -1135,4 +1136,22 @@ void smbClose(const char* name)
 	RemoveDevice(env->name);
 	_SMB_unlock();
 	//LWP_MutexDestroy(_SMB_mutex);
+}
+
+bool CheckSMBConnection(const char* name)
+{
+	char device[50];
+	int i;
+	bool ret;
+	smb_env *env;
+
+	for(i=0;i<50 && name[i]!='\0' && name[i]!=':';i++)device[i]=name[i];
+	device[i]='\0';
+
+	env=FindSMBEnv(device);
+	if(env==NULL) return false;	
+	_SMB_lock();
+	ret=(SMB_Reconnect(env->smbconn,true)==SMB_SUCCESS);
+	_SMB_unlock();
+	return ret;
 }
