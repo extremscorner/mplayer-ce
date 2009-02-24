@@ -377,6 +377,9 @@ static unsigned int initialized_flags=0;
 
 #define mp_basename2(s) (strrchr(s,'/')==NULL?(char*)s:(strrchr(s,'/')+1))
 
+
+extern bool playing_usb;
+
 const void *mpctx_get_video_out(MPContext *mpctx)
 {
     return mpctx->video_out;
@@ -3231,17 +3234,29 @@ int vob_sub_auto = 0; //scip
   mpctx->sh_video=NULL;
 
   current_module="open_stream";
+  playing_usb=false;
   if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9)) {
 	set_osd_msg(124, 1, 10000, "Mounting DVD, please wait");
 	update_osd_msg();
-	  if(DI_GetStatus() & DVD_INIT)
-	  {
-		DI_Mount();
-		while(DI_GetStatus() & DVD_INIT) usleep(100);
-	  }
+	if(DVDMount()==-1)
+	{
+		set_osd_msg(124, 1, 10000, "Error mounting DVD");
+	    mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY);
+		goto goto_next_file;
+	}
+	else
 	  mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
+
+  }  
+  else if(!strncmp(filename,"http:",5)) 
+  {
+	stream_cache_min_percent=0;
+	stream_cache_seek_min_percent=0;
   }
-  //else if(!strncmp(filename,"dvd:/",5)) if(WIIDVD_DiscPresent())  WIIDVD_Mount();
+  else if(!strncmp(filename,"usb:",4)) 
+  {
+	  playing_usb=true;
+  }
   mpctx->stream=open_stream(filename,0,&mpctx->file_format);
   if(!mpctx->stream) { // error...
     mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY);
@@ -4039,6 +4054,7 @@ if(step_sec>0) {
     if(mpctx->loop_times==1) mpctx->loop_times=-1;
     play_n_frames=play_n_frames_mf;
     mpctx->eof=0;
+	playing_usb=false;
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec;
     loop_seek = 1;
   }

@@ -165,11 +165,11 @@ int WIIDVD_Mount()
 	while(DI_GetStatus() & DVD_INIT)
 	{
 		t2=ticks_to_secs(gettime());		
-		if(t2-t1 > 12)return -1;
+		if(t2-t1 > 15)return -1;
 		usleep(5000);
 	}
 #endif
-	DVDEnableReadAhead(32,26);  //default init
+	DVDEnableReadAhead(10,26);  //default init
 	return DVD_ScanContent();
 }
 
