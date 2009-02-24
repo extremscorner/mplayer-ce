@@ -2,6 +2,18 @@
 
 = Changelog to MPlayerCE =
 
+== v0.21e ==
+     
+ * Fixed apostrophies in filenames
+  
+ * Improved DVD and USB mounting devices
+   
+ * Fixed radio
+  
+ * Improved samba reconnection
+    
+ * Debugging help for SMB Shares at bootup, debug_network=yes (Review mplayer.conf)
+
 == v0.21d ==
 
  * Updated menu.conf to allow selecting playlist
