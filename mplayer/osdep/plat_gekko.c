@@ -211,7 +211,6 @@ static void * mountthreadfunc (void *arg)
 				usb_inserted=dp;
 				if(!dp)
 				{
-					printf("usb unpluged: %d\n",dp);
 					fatUnmount("usb:");
 				}
 			}
@@ -371,6 +370,7 @@ void plat_init (int *argc, char **argv[]) {
 	mainthread=LWP_GetSelf(); 
 	lwp_t clientthread;
 	
+	
 	dbg_network=DebugNetwork();  
 	if(dbg_network)
 	{
@@ -391,7 +391,7 @@ void plat_init (int *argc, char **argv[]) {
 	//setenv("DVDCSS_VERBOSE", "2", 1);
 	setenv("DVDCSS_VERBOSE", "0", 1);
 	setenv("DVDREAD_VERBOSE", "0", 1);
-	
+	 
 	*argv = default_args;
 	*argc = sizeof(default_args) / sizeof(char *);
   

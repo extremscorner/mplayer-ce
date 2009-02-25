@@ -59,6 +59,9 @@ static opt_t subopts[] = {
 	{ NULL }
 };
 */
+
+static	u16 pitch[3];
+
 static u8 *image_buffer[3] = { NULL, NULL, NULL };
 static u32 image_width = 0, image_height = 0;
 
@@ -104,13 +107,9 @@ static void draw_osd(void) {
 }
 
 static void flip_page(void) {
-	u16 pitch[3];
-
-	pitch[0] = image_width;
-	pitch[1] = image_width / 2;
-	pitch[2] = image_width / 2;
 
 	GX_RenderYUV(image_width, image_height, image_buffer, pitch);
+	
 }
 
 static int draw_frame(uint8_t *src[]) {
@@ -134,6 +133,21 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
           uint32_t format) {
   float sar, par, iar;
 
+  uint32_t orig_width,orig_height;
+
+  orig_width=width;
+  orig_height=height;
+
+
+  if(width%8!=0)width=((int)((width/8.0)))*8;
+  if(height%8!=0)height=((int)((height/8.0)))*8;
+
+  image_width = width;
+  image_height = height;
+
+  width=orig_width+8;
+  height=orig_height+8;
+  
   if (image_buffer[0]) {
     free(image_buffer[0]);
     free(image_buffer[1]);
@@ -147,8 +161,6 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   image_buffer[1] = (u8 *) malloc(width * height / 4);
   image_buffer[2] = (u8 *) malloc(width * height / 4);
 
-  image_width = width;
-  image_height = height;
 
   if (CONF_GetAspectRatio())
     sar = 16.0f / 9.0f;
@@ -168,10 +180,17 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     width = (float) height * par + vmode->viWidth - vmode->fbWidth;
   }
 
-  mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: SAR=%0.3f PAR=%0.3f IAR=%0.3f %ux%u -> %ux%u\n",
-      sar, par, iar, image_width, image_height, width, height);
+  //log_console_enable_video(true);
+  mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: SAR=%0.3f PAR=%0.3f IAR=%0.3f %ux%u -> %ux%u  vh:%u\n",
+      sar, par, iar, image_width, image_height, width, height,vmode->viHeight);
+  
+
+	pitch[0] = image_width;
+	pitch[1] = image_width / 2;
+	pitch[2] = image_width / 2;
 
   GX_StartYUV(image_width, image_height, width / 2, height / 2);
+  
 
   return 0;
 }
@@ -205,6 +224,7 @@ static int preinit(const char *arg) {
 
 	GX_SetCamPosZ(cam_pos_z);
 */
+  //GX_SetCamPosZ(350);
 	log_console_enable_video(false);
 
 	return 0;
