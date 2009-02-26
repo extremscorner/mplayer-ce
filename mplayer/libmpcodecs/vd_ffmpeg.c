@@ -298,6 +298,7 @@ static int init(sh_video_t *sh){
     avctx->debug_mv= lavc_param_vismv;
     avctx->skip_top   = lavc_param_skip_top;
     avctx->skip_bottom= lavc_param_skip_bottom;
+
     if(lavc_param_lowres_str != NULL)
     {
         sscanf(lavc_param_lowres_str, "%d,%d", &lavc_param_lowres, &lowres_w);
@@ -305,6 +306,13 @@ static int init(sh_video_t *sh){
             lavc_param_lowres = 0;
         avctx->lowres = lavc_param_lowres;
     }
+#ifdef GEKKO
+    else  // HD for wii
+    {
+      if(avctx->width > 1000) avctx->lowres = 1;
+    }
+#endif
+        
     avctx->skip_loop_filter = str2AVDiscard(lavc_param_skip_loop_filter_str);
     avctx->skip_idct = str2AVDiscard(lavc_param_skip_idct_str);
     avctx->skip_frame = str2AVDiscard(lavc_param_skip_frame_str);
