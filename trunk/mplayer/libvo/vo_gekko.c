@@ -77,6 +77,7 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 	int i;
 	u8 *s[3], *d[3];
 
+  w=image_width;
 	s[0] = image[0];
 	s[1] = image[1];
 	s[2] = image[2];
@@ -97,8 +98,10 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 		s[2] += stride[2];
 		d[1] += image_width / 2;
 		d[2] += image_width / 2;
+		
 	}
-
+//mp_msg(MSGT_VO, MSGL_ERR, "[draw_slice]: w=%u  h=%u  x=%u  y=%u  iw=%u ih=%u \n",w,h,x,y,image_width,image_height);
+//sleep(1);
 	return 0;
 }
 
@@ -106,19 +109,19 @@ static void draw_osd(void) {
 	vo_draw_text(image_width, image_height, draw_alpha);
 }
 
-static void flip_page(void) {
+static void inline flip_page(void) {
 
 	GX_RenderYUV(image_width, image_height, image_buffer, pitch);
 	
 }
 
-static int draw_frame(uint8_t *src[]) {
+static int inline draw_frame(uint8_t *src[]) {
 	//mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: draw_frame\n");
 
 	return 0;
 }
 
-static int query_format(uint32_t format) {
+static int inline query_format(uint32_t format) {
 	switch (format) {
 	case IMGFMT_YV12:
 		return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW |
@@ -138,15 +141,25 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   orig_width=width;
   orig_height=height;
 
-
-  if(width%8!=0)width=((int)((width/8.0)))*8;
-  if(height%8!=0)height=((int)((height/8.0)))*8;
+  if(height%8!=0)
+  {
+    height = height/8.0;    
+    //if(height%2!=0)height++;
+    height=height*8;
+  }
+  
+  if(width%8!=0)
+  {
+    width = width/8.0;    
+    if(width%2!=0)width++;
+    width=width*8;
+  }
 
   image_width = width;
   image_height = height;
 
-  width=orig_width+8;
-  height=orig_height+8;
+  width=orig_width+16;   // to be sure we have enough memory
+  height=orig_height+16;
   
   if (image_buffer[0]) {
     free(image_buffer[0]);
@@ -161,13 +174,16 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   image_buffer[1] = (u8 *) malloc(width * height / 4);
   image_buffer[2] = (u8 *) malloc(width * height / 4);
 
+	memset(image_buffer[0], 0, width * height);
+	memset(image_buffer[1], 0, width * height / 4);
+	memset(image_buffer[2], 0, width * height / 4);
 
   if (CONF_GetAspectRatio())
     sar = 16.0f / 9.0f;
   else
     sar = 4.0f / 3.0f;
 
-  iar = (float) d_width / (float) d_height;
+  iar = (float) d_width / (float) d_height;  
   par = (float) d_width / (float) d_height;
   par *= (float) vmode->fbWidth / (float) vmode->xfbHeight;
   par /= sar;
@@ -180,10 +196,13 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     width = (float) height * par + vmode->viWidth - vmode->fbWidth;
   }
 
-  //log_console_enable_video(true);
+  
   mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: SAR=%0.3f PAR=%0.3f IAR=%0.3f %ux%u -> %ux%u  vh:%u\n",
       sar, par, iar, image_width, image_height, width, height,vmode->viHeight);
   
+  //log_console_enable_video(true);
+  //sleep(3);
+  //log_console_enable_video(false);
 
 	pitch[0] = image_width;
 	pitch[1] = image_width / 2;
@@ -207,8 +226,6 @@ static void uninit(void) {
 
 	image_width = 0;
 	image_height = 0;
-
-	//log_console_enable_video(true);
 }
 
 static void check_events(void) {

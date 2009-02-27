@@ -185,6 +185,8 @@ void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 	square[3] = square[6] = haspect;
 	square[1] = square[4] = vaspect;
 	square[7] = square[10] = -vaspect;
+  
+  
 
 	/*** Allocate 32byte aligned texture memory ***/
 	texturesize = (width * height) * 2;
@@ -300,7 +302,7 @@ void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 /****************************************************************************
  * GX_StartYUV - Initialize GX for given width/height.
  ****************************************************************************/
-void GX_StartYUV(u16 width, u16 height, s16 haspect, s16 vaspect) {
+void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	static bool inited = false;
 
 	Mtx p;
@@ -609,19 +611,43 @@ void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 *pitch) {
 	u64 *Vsrc2 = (u64 *) (buffer[2] + pitch[2]);
 	u64 *Vsrc3 = (u64 *) (buffer[2] + (pitch[2] * 2));
 	u64 *Vsrc4 = (u64 *) (buffer[2] + (pitch[2] * 3));
-	u16 Yrowpitch = (pitch[0] >> 3) * 3 + pitch[0] % 8;
-	u16 UVrowpitch = (pitch[1] >> 3) * 3 + pitch[1] % 8;
-
-	vwidth = width;
-	Ywidth = vwidth;
-	UVwidth = vwidth>>1;
-	vheight = height;
-	Yheight = vheight;
-	UVheight = vheight>>1;
-
+	
+	static u16 Yrowpitch;// = (pitch[0] >> 3) * 3 + pitch[0] % 8;
+	static u16 UVrowpitch;// = (pitch[1] >> 3) * 3 + pitch[1] % 8;
+	
+	static int w1,w2,h1,h2;
 	whichfb ^= 1;
 
 	if ((oldvheight != vheight) || (oldvwidth != vwidth)) {
+
+	 Ysrc1 = (u64 *) buffer[0];
+	 Ysrc2 = (u64 *) (buffer[0] + pitch[0]);
+	 Ysrc3 = (u64 *) (buffer[0] + (pitch[0] * 2));
+	 Ysrc4 = (u64 *) (buffer[0] + (pitch[0] * 3));
+	 Usrc1 = (u64 *) buffer[1];
+	 Usrc2 = (u64 *) (buffer[1] + pitch[1]);
+	 Usrc3 = (u64 *) (buffer[1] + (pitch[1] * 2));
+	 Usrc4 = (u64 *) (buffer[1] + (pitch[1] * 3));
+	 Vsrc1 = (u64 *) buffer[2];
+	 Vsrc2 = (u64 *) (buffer[2] + pitch[2]);
+	 Vsrc3 = (u64 *) (buffer[2] + (pitch[2] * 2));
+	 Vsrc4 = (u64 *) (buffer[2] + (pitch[2] * 3));
+
+  	Yrowpitch = (pitch[0] >> 3) * 3 + pitch[0] % 8;
+	  UVrowpitch = (pitch[1] >> 3) * 3 + pitch[1] % 8;
+  	vwidth = width;
+	  Ywidth = vwidth;
+	  UVwidth = vwidth>>1;
+	
+	  vheight = height;
+	  Yheight = vheight;
+	  UVheight = vheight>>1;
+	  
+	  h1 = vheight / 4 ;
+    h2 = (vheight >> 1) / 4 ;
+    w1 = vwidth >> 3 ;
+    w2 = vwidth >> 4 ;
+
 		/** Update scaling **/
 		oldvwidth = vwidth;
 		oldvheight = vheight;
@@ -640,8 +666,10 @@ void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 *pitch) {
 
 	//Convert YUV frame to GX textures
 	//Convert Y plane to texture
-	for (h = 0; h < vheight; h+=4) {
-		for (w = 0; w < (vwidth >>3); w++) {
+	//for (h = 0; h < vheight; h+=4) {
+	//	for (w = 0; w < (vwidth >>3); w++) {
+	for (h = 0; h < h1; h++) {
+		for (w = 0; w < w1; w++) {
 			*Ydst++ = *Ysrc1++;
 			*Ydst++ = *Ysrc2++;
 			*Ydst++ = *Ysrc3++;
@@ -653,8 +681,10 @@ void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 *pitch) {
 		Ysrc4 += Yrowpitch;
 	}
 	//Convert U&V planes to textures
-	for (h = 0; h < vheight >> 1; h+=4) {
-		for (w = 0; w < (vwidth >> 4); w++) {
+	//for (h = 0; h < vheight >> 1; h+=4) {
+		//for (w = 0; w < (vwidth >> 4); w++) {
+	for (h = 0; h < h2; h++) {
+		for (w = 0; w < w2; w++) {
 			*Udst++ = *Usrc1++;
 			*Udst++ = *Usrc2++;
 			*Udst++ = *Usrc3++;
@@ -693,6 +723,7 @@ void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 *pitch) {
 	GX_SetColorUpdate(GX_TRUE);
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
+
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();

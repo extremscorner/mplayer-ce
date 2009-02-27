@@ -284,7 +284,7 @@ int file_filter=1;
 static char* bg_video = NULL;  //geexbox bgvideo patch
 
 // cache2:
-       int stream_cache_size=-1;
+int stream_cache_size=-1;
 #ifdef CONFIG_STREAM_CACHE
 extern int cache_fill_status;
 
@@ -3097,11 +3097,16 @@ if(!noconsolecontrols && !slave_mode){
 
 while (player_idle_mode && !filename) {  //AgentX idle hack to make loop.avi constantly play
     play_tree_t * entry = NULL;
-    /*mp_cmd_t * cmd;
+    mp_cmd_t * cmd;
+
+/*
     while (!(cmd = mp_input_get_cmd(0,1,0))) { // wait for command
         if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
         usec_sleep(20000);
-    }
+    }*/
+    while(cmd = mp_input_get_cmd(0,1,0))
+    {
+      if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
     switch (cmd->id) {
         case MP_CMD_LOADFILE:
             // prepare a tree entry with the new filename
@@ -3121,8 +3126,8 @@ while (player_idle_mode && !filename) {  //AgentX idle hack to make loop.avi con
             run_command(mpctx, cmd);
             break;
     }
-
-    mp_cmd_free(cmd);*/
+    mp_cmd_free(cmd);
+    }
 	
 	entry = play_tree_new();
     play_tree_add_file(entry, bg_video);
@@ -3238,6 +3243,7 @@ int vob_sub_auto = 0; //scip
   if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9)) {
 	set_osd_msg(124, 1, 10000, "Mounting DVD, please wait");
 	update_osd_msg();
+	if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
 	if(DVDMount()==-1)
 	{
 		set_osd_msg(124, 1, 10000, "Error mounting DVD");

@@ -53,7 +53,7 @@
 
 #undef abort
  
-//bool ios_reloaded = true;
+
 bool reset_pressed = false;
 bool power_pressed = false;
 bool playing_usb = false;
@@ -64,10 +64,21 @@ static bool exit_automount_thread = false;
 
 static char *default_args[] = {
 	"mplayer.dol",
-  "-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
+	//"sd:/testest.avi"
+	//"-lavdopts","lowres=1","sd:/sample.avi"
+	//"-lavdopts","lowres=1","sd:/sample.avi"
+	//"-vf", "scale=640:-2", 
+  //"-lavdopts","lowres=1,900:skipframe=nonref:fast=1:skiploopfilter=all","sd:/WALL-E.mkv"
+	//"-lavdopts","lowres=1:fast","dvd://1"
+	//"-mc=0","-lavdopts","lowres=1,1000:fast:skiploopfilter=all","dvd://1"
+	//"-nodouble","sd:/sample.avi" 
+	//"sd:/sample.avi"
+	//"sd:/ytest500.235.avi"
+  //"-really-quiet",
+  "-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
 }; 
 
-extern float movie_aspect;
+//extern float movie_aspect;
 
 static void reset_cb (void) {
 	reset_pressed = true;
@@ -91,7 +102,7 @@ int gekko_gettimeofday(struct timeval *tv, void *tz) {
 } 
  
 void gekko_abort(void) {
-	printf("abort() called\n");
+	//printf("abort() called\n");
 	plat_deinit(-1);
 	exit(-1);
 }
@@ -366,10 +377,8 @@ void plat_init (int *argc, char **argv[]) {
 	printf("Scip, Rodries, AgentX, DJDynamite123, Tipolosko, Tantric, etc.\n\n");	
 	
 
-
 	mainthread=LWP_GetSelf(); 
 	lwp_t clientthread;
-	
 	
 	dbg_network=DebugNetwork();  
 	if(dbg_network)
@@ -384,6 +393,7 @@ void plat_init (int *argc, char **argv[]) {
 	}else LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 80); // network initialization
 
 	LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
+ 
   
 	chdir("sd:/apps/mplayer_ce");
 	setenv("HOME", "sd:/apps/mplayer_ce", 1);
@@ -399,6 +409,7 @@ void plat_init (int *argc, char **argv[]) {
 
 void plat_deinit (int rc) {
 	exit_automount_thread=true;
+
 	WIIDVD_Close();
 	fatUnmount("sd");
 	fatUnmount("usb");
@@ -410,7 +421,7 @@ void plat_deinit (int rc) {
 	smbClose("smb5");
 
 	if (power_pressed) {
-		printf("shutting down\n");
+		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
 	}
 

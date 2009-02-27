@@ -39,7 +39,7 @@ void GX_SetComponentFix(bool f);
 
 void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect);
 void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch);
-void GX_StartYUV(u16 width, u16 height, s16 haspect, s16 vaspect);
+void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect);
 void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 pitch[3]);
 
 #ifdef __cplusplus

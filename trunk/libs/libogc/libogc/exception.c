@@ -210,9 +210,9 @@ static void waitForReload() {
 	} */
 u32 level;
 
-int count=4*50;
+int count=8*50;
 
-kprintf("Reload in 4 seconds\n");
+kprintf("Reload in 8 seconds\n");
 
 	while ( 1 ) {
 
