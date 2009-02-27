@@ -706,6 +706,7 @@ void uninit_player(unsigned int mask){
 
 void exit_player_with_rc(const char* how, int rc){
 
+
   if (mpctx->user_muted && !mpctx->edl_muted) mixer_mute(&mpctx->mixer); 
   uninit_player(INITIALIZED_ALL);
 #ifdef WIN32
@@ -745,6 +746,7 @@ void exit_player_with_rc(const char* how, int rc){
   if(edl_records != NULL) free(edl_records); // free mem allocated for EDL
   if(how) mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_ExitingHow,how);
   mp_msg(MSGT_CPLAYER,MSGL_DBG2,"max framesize was %d bytes\n",max_framesize);
+
 
 #ifdef GEKKO
   plat_deinit (rc);
