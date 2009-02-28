@@ -64,18 +64,7 @@ static bool exit_automount_thread = false;
 
 static char *default_args[] = {
 	"mplayer.dol",
-	//"sd:/testest.avi"
-	//"-lavdopts","lowres=1","sd:/sample.avi"
-	//"-lavdopts","lowres=1","sd:/sample.avi"
-	//"-vf", "scale=640:-2", 
-  //"-lavdopts","lowres=1,900:skipframe=nonref:fast=1:skiploopfilter=all","sd:/WALL-E.mkv"
-	//"-lavdopts","lowres=1:fast","dvd://1"
-	//"-mc=0","-lavdopts","lowres=1,1000:fast:skiploopfilter=all","dvd://1"
-	//"-nodouble","sd:/sample.avi" 
-	//"sd:/sample.avi"
-	//"sd:/ytest500.235.avi"
-  //"-really-quiet",
-  "-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
+    "-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
 }; 
 
 //extern float movie_aspect;
@@ -369,7 +358,7 @@ void plat_init (int *argc, char **argv[]) {
 	log_console_init(vmode, 128);
 
 	printf("MPlayerCE\n");
-	printf("Unofficial MPlayer v.0.21e\n\n");
+	printf("Unofficial MPlayer v.0.3\n\n");
 	printf("MPlayer/Wii port (c) 2008 Team Twiizers\n");
 	printf("Used Code (c) MPlayerWii[rOn], GeeXboX,\n");
 	printf("Play Media files from SD, USB, DATA-DVD, SMB & Radio Streams.\n");
