@@ -10,7 +10,7 @@
    5@@ ;@@@  @@. @@@,@@@@@@  @@@@ .@@@@@@ @@@ ;@@@@@@@@@r #@@@@@@@@@: @@@@   
    ,99  25i ,@@, @@@ @#A2r   :XB#  :S335. XGs   r9Ah2B@@s  rXAHHH&Xr  .2H@   
           @@@@@. @@@                              @@#@@@.                    
-          @@#A;  A@H   -|  MPlayer CE • v0.21e |-  #@#B&:                •฿rK•
+          @@#A;  A@H     -|  MPlayer CE • v0.3 |-  #@#B&:                •฿rK•
 
                     http://code.google.com/p/mplayer-ce
 
@@ -165,25 +165,35 @@ the  Main Menu  will come up.  To  navigate  through  the  menus you use the
 directional  pad  and the "A" button  for selecting  and the "B" button to go 
 back. The Main Menu presents you with the following options:
 
- Stop     - Stops the Current Movie/Song
- Browse   - Browse Various Media 
- DVD      - DVD-Video Playing Menu
- Radio    - Radio Stream Menu
- Options  - Options Menu
- About    - Credits
- Quit     - Return to Loader
+ Stop              - Stops the Current Movie/Song
+ Open              - Open File/Playlist/Radio/DVD 
+ Current playlist  - View Current Playlist
+ Options           - Options Menu
+ About             - Credits
+ Quit              - Return to Loader
 
--[ BROWSE ]-
+-[ OPEN ]-
 
-This option will display the  following sources for you to browse  and select
-which multimedia file you wish to play. Simply select your  source and pick a
-file to play with the "A" button.
+This option  will display  the following options  for you to choose  what you
+want to play. Simply select your  source and pick a file to play with the "A"
+button.
+
+ File
+ Playlist
+ Subtitle
+ DVD Video
+ Radio
+
+ -[ FILE / PLAYLIST / SUBTITILE ]-
+
+These options will display the following sources for you to browse and select
+which  files you wish to open. Simply select your  source and pick a  file to
+play with the "A" button.
 
  Wii SD
  Wii USB
  Wii DVD
  SMB
- Current Playlist
 
 -[ SMB ]-
 
@@ -287,8 +297,9 @@ DVDx 3.4 -> http://hackmii.com/2009/02/dvdx34/
 You can add your own radio  streams to MPlayer CE via editing the "menu.conf"
 file.  Locate the included streams and copy  one and enter in the  new stream
 information. As you can see below you need to specify a name and the location
-of the PLS file. MPlayer CE only supports ".pls" files for radio streams. You
-can find thousands of PLS files here -> http://www.winamp.com/media/radio
+of the PLS file. You can find thousands of PLS files here:
+
+http://www.winamp.com/media/radio
 
 Example:
 
@@ -298,6 +309,13 @@ Example:
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+ v0.3
+ 
+    * Fixed code to play videos with incompatible size
+        - We now support many video formats and unorthodox resolutions
+    * Fixed keepalive issue in samba (thanks to Ludovic Orban)
+    * New loop.avi and widescreen version (thanks to Blue_K)
+ 
  v0.21e
      
     * Fixed apostrophies in filenames
@@ -364,15 +382,16 @@ V0.1 Christmas Edition
                      rodries - Coding, SMB & USB Improvements
                   AgentX - Source Improvements, Configs & Testing
                DJDynamite123 - Autochain Code/Experimenting & Testing
-                            Tantric - SMB Improvements
+                      Ludovic Orban - Keepalive issue in samba
+                            Tantric - SMB Improvements					
                               Brakken - Documentation
+                                 Blue_K - loop.avi
                               
                               Thanks Goes Out To ...
                               
                                       [rOn]
                                   Team Twiizers
                                  GeeXboX Authors
-				          ludovic.orban
 	                               dargllun									 
                                        Daca
                             Shagkur & LibOGC Contributers
