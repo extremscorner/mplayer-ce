@@ -2,6 +2,14 @@
 
 = Changelog to MPlayerCE =
 
+== v0.3 ==
+
+ * Fixed code to play videos with incompatible size; we now support many video formats and unorthodox resolutions
+
+ * Fixed keepalive issue in samba (thanks to Ludovic Orban)
+
+ * New loop.avi and widescreen version (thanks to Blue_K)
+
 == v0.21e ==
      
  * Fixed apostrophies in filenames
