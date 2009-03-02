@@ -112,10 +112,9 @@ typedef struct
  */
 
 /*** Înitialization functions to be used with stdio API ***/
-bool smbInitDevice(const char* name, const char *user, const char *password, const char *share,	const char *ip);
 bool smbInit(const char *user, const char *password, const char *share,	const char *ip);
-void smbClose(const char* name);
-bool CheckSMBConnection(const char* name);
+void smbClose();
+s32 SMB_Reconnect(SMBCONN smbhndl, BOOL test_conn);
 
 /*** Session ***/
 s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const char *share, const char *IP);
