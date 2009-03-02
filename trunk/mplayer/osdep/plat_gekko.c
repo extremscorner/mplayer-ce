@@ -346,7 +346,7 @@ void plat_init (int *argc, char **argv[]) {
 		GX_InitVideo();
   		log_console_init(vmode, 128);
   		printf("MPlayerCE\n");
-		printf("Unofficial MPlayer v.0.21e\n\n");
+		printf("Unofficial MPlayer v.0.3a\n\n");
 		printf("Mount SD failed\n");
 		VIDEO_WaitVSync();
 		sleep(5);
@@ -358,12 +358,12 @@ void plat_init (int *argc, char **argv[]) {
 	log_console_init(vmode, 128);
 
 	printf("MPlayerCE\n");
-	printf("Unofficial MPlayer v.0.3\n\n");
+	printf("Unofficial MPlayer v.0.3a\n\n");
 	printf("MPlayer/Wii port (c) 2008 Team Twiizers\n");
 	printf("Used Code (c) MPlayerWii[rOn], GeeXboX,\n");
 	printf("Play Media files from SD, USB, DATA-DVD, SMB & Radio Streams.\n");
 	printf("Unofficial Modified MPlayer by MPlayerCE Team!\n");
-	printf("Scip, Rodries, AgentX, DJDynamite123, Tipolosko, Tantric, etc.\n\n");	
+	printf("Scip, Rodries, AgentX, DJDynamite123, Ludovic Orban, Tipolosko, Tantric,...\n\n");	
 	
 
 	mainthread=LWP_GetSelf(); 
@@ -398,7 +398,9 @@ void plat_init (int *argc, char **argv[]) {
 
 void plat_deinit (int rc) {
 	exit_automount_thread=true;
-
+	
+	// Not needed to unmount, speed up close, we don't write
+/*
 	WIIDVD_Close();
 	fatUnmount("sd");
 	fatUnmount("usb");
@@ -408,12 +410,13 @@ void plat_deinit (int rc) {
 	smbClose("smb3");
 	smbClose("smb4");
 	smbClose("smb5");
+*/
 
 	if (power_pressed) {
 		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
 	}
-
+	
 	// only needed to debug problems
 	/*
 	log_console_enable_video(true);
