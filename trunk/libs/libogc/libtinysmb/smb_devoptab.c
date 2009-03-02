@@ -21,17 +21,16 @@
 #define SMB_MAXPATH					4096
 #define SMB_SRCH_ARCHIVE			32
 
-
 static mutex_t _SMB_mutex=LWP_MUTEX_NULL;
 
 static inline void _SMB_lock()
 {
-	LWP_MutexLock(_SMB_mutex);
+  if(_SMB_mutex!=LWP_MUTEX_NULL) LWP_MutexLock(_SMB_mutex);
 }
 
 static inline void _SMB_unlock()
 {
-	LWP_MutexUnlock(_SMB_mutex);
+	if(_SMB_mutex!=LWP_MUTEX_NULL) LWP_MutexUnlock(_SMB_mutex);
 }
 
 typedef struct
@@ -198,7 +197,6 @@ void DestroySMBReadAheadCache(char *name)
 
 }
 
-#define ticks_to_msecs(ticks)		((u32)((u64)(ticks)/(u64)(TB_TIMER_CLOCK)))
 static void *process_cache_thread(void *ptr)
 {
 	int i;
@@ -211,7 +209,7 @@ static void *process_cache_thread(void *ptr)
 			{
 				if (SMBEnv[i].SMBWriteCache.used > 0)
 				{
-					if (ticks_to_msecs(gettime()-SMBEnv[i].SMBWriteCache.used) > 4000)
+					if (ticks_to_millisecs(gettime())-ticks_to_millisecs(SMBEnv[i].SMBWriteCache.used) > 500)
 					{
 						FlushWriteSMBCache(SMBEnv[i].name);
 					}
@@ -219,7 +217,7 @@ static void *process_cache_thread(void *ptr)
 			}
 		}
 		//_SMB_unlock();
-		usleep(9000);
+		usleep(10000);
 		if (end_cache_thread) break;
 	}
 
@@ -707,12 +705,12 @@ static int __smb_close(struct _reent *r, int fd)
 {
 	SMBFILESTRUCT *file = (SMBFILESTRUCT*) fd;
 	int j;
-	_SMB_lock();
 	j=file->env;
 	if (SMBEnv[j].SMBWriteCache.file == file)
 	{
 		FlushWriteSMBCache(SMBEnv[j].name);
 	}
+	_SMB_lock();
 	SMB_CloseFile(file->handle);
 	_SMB_unlock();
 	file->len = 0;
@@ -989,7 +987,6 @@ static int __smb_stat(struct _reent *r, const char *path, struct stat *st)
 		r->_errno = EINVAL;
 		return -1;
 	}
-
 	_SMB_lock();
 	if (SMB_PathInfo(path_absolute, &dentry, env->smbconn) != SMB_SUCCESS)
 	{
@@ -1130,11 +1127,14 @@ void smbClose(const char* name)
 	env=FindSMBEnv(name);
 	if(env==NULL) return;	
 	
-	_SMB_lock();
-	if(env->SMBCONNECTED) SMB_Close(env->smbconn);
+	if(env->SMBCONNECTED) 
+  {
+  	_SMB_lock();
+    SMB_Close(env->smbconn);
+  	_SMB_unlock();
+  }
 	env->SMBCONNECTED=false;
 	RemoveDevice(env->name);
-	_SMB_unlock();
 	//LWP_MutexDestroy(_SMB_mutex);
 }
 
