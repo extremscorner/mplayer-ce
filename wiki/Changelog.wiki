@@ -2,6 +2,10 @@
 
 = Changelog to MPlayerCE =
 
+==v0.3a==
+
+ * Fixed a little bug in keepalive issue that hangs the wii
+
 == v0.3 ==
 
  * Fixed code to play videos with incompatible size; we now support many video formats and unorthodox resolutions
