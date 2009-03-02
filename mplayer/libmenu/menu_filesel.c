@@ -252,12 +252,12 @@ static int open_dir(menu_t* menu,char* args) {
   { // reconnect samba if needed
 	  char device[5]="smbx";
 	  device[3]=mpriv->dir[3];
-		//set_osd_msg(124,1,1000,"reconnect %s ",device);
+		set_osd_msg(124,1,2000,"Connecting to %s ",device);
 	  if(!CheckSMBConnection(device)) 
 	  {
-		  //set_osd_msg(124,1,1000,"error reconnect %s ",device);
+		  set_osd_msg(124,1,2000,"Error reconnecting to %s ",device);
 		  return 0;
-	  }
+	  }else rm_osd_msg(124);
   }
     
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);

@@ -353,7 +353,6 @@ while(1){
 	}
 	if (sh_video) {
 		sh_video->aspect = GET_AVI_ASPECT(vprp->dwFrameAspectRatio);
-		sh_video->aspect = 0;
 	}
 	if( mp_msg_test(MSGT_HEADER,MSGL_V) ) print_vprp(vprp,MSGL_V);
 	free(vprp);
