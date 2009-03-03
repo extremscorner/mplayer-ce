@@ -77,6 +77,9 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 	int i;
 	u8 *s[3], *d[3];
 
+//mp_msg(MSGT_VO, MSGL_ERR, "[draw_slice]: w=%u  h=%u  x=%u  y=%u  iw=%u ih=%u \n",w,h,x,y,image_width,image_height);
+//sleep(1);
+
   w=image_width;
 	s[0] = image[0];
 	s[1] = image[1];
@@ -100,8 +103,6 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 		d[2] += image_width / 2;
 		
 	}
-//mp_msg(MSGT_VO, MSGL_ERR, "[draw_slice]: w=%u  h=%u  x=%u  y=%u  iw=%u ih=%u \n",w,h,x,y,image_width,image_height);
-//sleep(1);
 	return 0;
 }
 
@@ -143,23 +144,31 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 
   if(height%8!=0)
   {
-    height = height/8.0;    
+    height = (height/8.0);    
     //if(height%2!=0)height++;
     height=height*8;
+    width=width-(orig_height-height);
   }
   
   if(width%8!=0)
   {
-    width = width/8.0;    
+    width = (width/8.0); 
     if(width%2!=0)width++;
     width=width*8;
   }
 
   image_width = width;
   image_height = height;
+    
+  //mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: orig %ux%u  patch: %ux%u  disp: %ux%u\n", orig_width, orig_height,
+  //width, height,d_width,d_height);
+ 
+ 	pitch[0] = image_width;
+	pitch[1] = image_width / 2;
+	pitch[2] = image_width / 2;
 
-  width=orig_width+16;   // to be sure we have enough memory
-  height=orig_height+16;
+  width=orig_width+128;   // to be sure we have enough memory
+  height=orig_height+128;
   
   if (image_buffer[0]) {
     free(image_buffer[0]);
@@ -176,7 +185,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 
 	memset(image_buffer[0], 0, width * height);
 	memset(image_buffer[1], 0, width * height / 4);
-	memset(image_buffer[2], 0, width * height / 4);
+	memset(image_buffer[2], 255, width * height / 4);
 
   if (CONF_GetAspectRatio())
     sar = 16.0f / 9.0f;
@@ -195,7 +204,6 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     height = vmode->viHeight;
     width = (float) height * par + vmode->viWidth - vmode->fbWidth;
   }
-
   
   mp_msg(MSGT_VO, MSGL_ERR, "[VOGEKKO]: SAR=%0.3f PAR=%0.3f IAR=%0.3f %ux%u -> %ux%u  vh:%u\n",
       sar, par, iar, image_width, image_height, width, height,vmode->viHeight);
@@ -204,13 +212,9 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   //sleep(3);
   //log_console_enable_video(false);
 
-	pitch[0] = image_width;
-	pitch[1] = image_width / 2;
-	pitch[2] = image_width / 2;
-
+  //GX_SetCamPosZ(350);
   GX_StartYUV(image_width, image_height, width / 2, height / 2);
   
-
   return 0;
 }
 
