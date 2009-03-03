@@ -34,6 +34,12 @@ pass2=
 If you need a username and password to access shared folders, simply fill all fields in.
 
 
+*Tutorials for setting up a file share in Windows XP and Windows Vista are available.
+
+http://www.practicallynetworked.com/sharing/xp/filesharing.htm
+
+http://cws.internet.com/article/3592-.htm
+
 
 ===menu.conf===
 
