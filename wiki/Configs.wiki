@@ -15,7 +15,7 @@ For example, I have a folder shared on C:\ called Movies.  I don't have a passwo
 
 {{{
 #Samba share1  (smb1:/) 
-ip1=192.168.0.1
+ip1=192.168.0.2
 share1=Movies
 user1= 
 pass1=
@@ -25,7 +25,7 @@ I also have a folder on D:\ but my shared folder has a space: My Music.  Therefo
 
 {{{
 #Samba share2  (smb2:/)
-ip2=192.168.0.1
+ip2=192.168.0.2
 share2="My Music"
 user2=
 pass2=
@@ -129,8 +129,25 @@ As of MPlayer CE v0.21b there is a new option *component_fix=yes*.  If your TV d
 ===loop.avi===
 
 You can use your own *loop.avi*, just replace the current one with your own.
-You can also have music in the loop.avi.  My loop.avi is 1 minute long and has no issues. and is 3.5mb in size.
-You can use Virtualdub and MEncoder to create your loop.avi.  You can use a still image and add audio.
+You can also have music in the loop.avi.  My loop.avi is 1 minute long and is 3.5mb in size with no issues.
+
+If you are familiar with Virtualdub, you can use that to create your loop.avi. Simply editing the previous loop.avi by adding a new image or adding audio to it, etc.
+You can use anything as your loop.avi aslong as it's xvid compression.
+
+How to make static background loops for mplayer ce
+
+Software used:
+*Gimp
+*AVIDemux
+
+1. Open Gimp and create a new image (640x456 for standard defenition, 624x352 for widescreen). You can use whatever image program you want, but Gimp is free, cross-platform, and powerful. So is avidemux, btw.
+
+2. Edit the new image for your background so it looks how you want it. Save it as a jpg or png.
+
+3. Open Avidemux. Set the video codec to xvid. Open the image you created. Copy the image and paste it several times so that you have a good number of frames. I'd say 60 frames is more than enough. Save the video as "loop.avi".
+
+You're done.
+Also, please submit your themes to http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations
 
 ===Fonts===
 
