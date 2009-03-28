@@ -107,10 +107,25 @@ Most important audio codecs:
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
 To run MPlayer CE you'll need a Nintendo Wii that has been "soft modded" with
-either  the Homebrew Channel, Homebrew Launcher or LoadMii.  The archive  
-contains a folder  named "MPlayer_ce" which  you will need to copy to your
+either  the  Homebrew  Channel,  Homebrew  Launcher  or LoadMii.  The archive  
+contains a folder  named "MPlayer_ce"  which  you will  need  to copy to your
 "apps" folder  on your SD Card. 
 Once  copied  over you  can launch it  using the  loader of your choice.
+
+USB 2.0:
+You need to  install the  USB 2.0 cIOS from http://wiibrew.org/wiki/CIOS_usb2
+You must then then reinstall DVDX http://wiibrew.org/wiki/DVDx using advanced
+mode and selecting IOS202.   Even  if you don't  plan on playing DVDs this is
+necessary for MPlayer CE to detect if the cIOS is installed.
+
+Plug in your USB device before loading MPlayer, and it should be mounted.
+Some devices do not support hotplugging.
+
+Users  with  system menu 3.4 or  higher will not be  able to use  USB2.0 with
+MPlayerCE because the DVDx installer for 3.4 does not have an  advanced mode.
+Unfortunately there is nothing we can do about it.
+
+If you plan on updating make sure to install the cIOS and DVDx before updating.
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                            CONFIGURATION                      ·oø×O0|
@@ -308,6 +323,17 @@ Example:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+ v0.4
+
+    * USB 2.0 support
+    * TTF font support
+    * Fixed bug in radio streaming. 
+    * DVD-Video bugs fixed (DVDs should play much more smoothly now)
+    * Fixes in Libdi to detect chipped Wii
+    * Codec fixes
+    * Updated to latest MPlayer revision
+    * Many small fixes
 
  v0.3
  
