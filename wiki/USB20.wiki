@@ -1,5 +1,4 @@
 #summary Configuring your Wii with USB 2.0 support.
-#labels Featured
 
 =USB 2.0=
 You need to install the USB 2.0 cIOS from [http://wiibrew.org/wiki/CIOS_usb2 here]
