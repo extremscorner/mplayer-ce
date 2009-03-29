@@ -1,0 +1,12 @@
+#summary Configuring your Wii with USB 2.0 support.
+
+=USB 2.0=
+You need to install the USB 2.0 cIOS from [http://wiibrew.org/wiki/CIOS_usb2 here]
+
+You must then then reinstall [http://wiibrew.org/wiki/DVDx DVDx] using advanced mode and selecting IOS202.  Even if you don't plan on playing DVDs this is necessary for MPlayer CE to detect if the cIOS is installed.
+
+Plug in your USB device before loading MPlayer, and it should be mounted.  Some devices do not support hotplugging.
+
+Users with system menu 3.4 or higher will not be able to use USB2.0 with MPlayerCE because the DVDx installer for this system does not have an advanced mode.  Unfortunately there is nothing we can do about it.
+
+If you plan on updating make sure to install the cIOS and DVDx before updating.
