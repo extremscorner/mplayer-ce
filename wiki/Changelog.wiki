@@ -2,7 +2,25 @@
 
 = Changelog to MPlayerCE =
 
-==v0.3a==
+== v0.4 ==
+
+ * USB 2.0 support (see docs for info)
+
+ * TTF font support (see docs for info)
+
+ * Fixed bug in radio streaming. 
+
+ * DVD-Video bugs fixed (DVDs should play much more smoothly now)
+
+ * Fixes in Libdi to detect chipped Wii
+
+ * Codec fixes
+
+ * Updated to latest MPlayer revision
+
+ * Many small fixes
+
+== v0.3a ==
 
  * Fixed a little bug in keepalive issue that hangs the wii
 
