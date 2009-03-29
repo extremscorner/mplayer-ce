@@ -151,4 +151,30 @@ Also, please submit your themes to http://code.google.com/p/mplayer-ce/wiki/User
 
 ===Fonts===
 
-You can change the fonts that MPlayer uses by replacing the fonts in the mplayer_ce/fonts folder.  It is advisable not to use fonts below size 22 because they are too small to read on a TV screen.  Many fonts can be found here: http://www.mplayerhq.hu/MPlayer/contrib/fonts/
+MPlayer supports freetype fonts.  Just place a ttf font in the mplayer_ce directory named subfont.ttf.  You can use various arguments in mplayer.conf to adjust them:
+
+{{{
+subfont−autoscale <0−3>
+Sets the autoscale mode.
+NOTE: 0 means that text scale and OSD scale are font heights in points.
+The mode can be:
+0 no autoscale
+1 proportional to movie height
+2 proportional to movie width
+3 proportional to movie diagonal (default)
+
+subfont−blur <0−8>
+Sets the font blur radius (default: 2).	
+
+subfont−encoding <value>
+Sets the font encoding. When set to ’unicode’, all the glyphs from the font file will be rendered and unicode will be used (default: unicode).	
+
+subfont−osd−scale <0−100>
+Sets the autoscale coefficient of the OSD elements (default: 6).	
+
+subfont−outline <0−8>
+Sets the font outline thickness (default: 2).	
+
+subfont−text−scale <0−100>
+Sets the subtitle text autoscale coefficient as percentage of the screen size (default: 5).
+}}}
