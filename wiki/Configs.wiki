@@ -32,7 +32,10 @@ pass2=
 }}}
 
 If you need a username and password to access shared folders, simply fill all fields in.
+Windows 7 & Vista advanced settings:
+Setting the NT Access rights on the shared folder to allow "Everyone" read and execute access.
 
+Right-click folder, then pick "Security", "Advanced", "Change Permissions", "Add", "Advanced", "Find now", then pick "Everyone", then give read permissions. 
 
 *Tutorials for setting up a file share in Windows XP and Windows Vista are available.
 
