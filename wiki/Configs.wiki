@@ -32,6 +32,7 @@ pass2=
 }}}
 
 If you need a username and password to access shared folders, simply fill all fields in.
+
 Windows 7 & Vista advanced settings:
 Setting the NT Access rights on the shared folder to allow "Everyone" read and execute access.
 
