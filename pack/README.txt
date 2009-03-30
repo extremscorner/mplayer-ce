@@ -10,7 +10,7 @@
    5@@ ;@@@  @@. @@@,@@@@@@  @@@@ .@@@@@@ @@@ ;@@@@@@@@@r #@@@@@@@@@: @@@@   
    ,99  25i ,@@, @@@ @#A2r   :XB#  :S335. XGs   r9Ah2B@@s  rXAHHH&Xr  .2H@   
           @@@@@. @@@                              @@#@@@.                    
-          @@#A;  A@H     -|  MPlayer CE • v0.3 |-  #@#B&:                •ßrK•
+          @@#A;  A@H     -|  MPlayer CE • v0.4 |-  #@#B&:                •ßrK•
 
                     http://code.google.com/p/mplayer-ce
 
