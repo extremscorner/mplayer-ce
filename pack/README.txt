@@ -10,7 +10,7 @@
    5@@ ;@@@  @@. @@@,@@@@@@  @@@@ .@@@@@@ @@@ ;@@@@@@@@@r #@@@@@@@@@: @@@@   
    ,99  25i ,@@, @@@ @#A2r   :XB#  :S335. XGs   r9Ah2B@@s  rXAHHH&Xr  .2H@   
           @@@@@. @@@                              @@#@@@.                    
-          @@#A;  A@H     -|  MPlayer CE • v0.4 |-  #@#B&:                •ßrK•
+          @@#A;  A@H     -|    MPlayer CE •    |-  #@#B&:                •ßrK•
 
                     http://code.google.com/p/mplayer-ce
 
@@ -323,6 +323,18 @@ Example:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+ v0.5
+    * SMB now much more robust
+    * libfat cache improved for speed and stability
+    * USB ethernet now fixed with USB 1.1; USB 2.0 fix requires an
+      updated cIOS
+    * Added ability to manipulate picture using the nunchuck
+    * Updated to latest MPlayer revision
+    * Now using subfont.ttf instead of font folder - use mplayer.conf
+      to change font size
+    * Merged widescreen and 4:3 pack - now MPlayer will use the appropriate
+      loop.avi automatically
 
  v0.4
 
