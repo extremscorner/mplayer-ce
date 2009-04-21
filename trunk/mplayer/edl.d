@@ -1,1 +1,0 @@
-edl.d edl.o: edl.c config.h mp_msg.h edl.h help_mp.h
