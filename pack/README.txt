@@ -325,7 +325,7 @@ Example:
 `иХиииии ииииииииииииииии иииииииииииииии ииииииииииииииииииии иииииииииииии'
 
  v0.5
-    * SMB now much more robust
+    * SMB now much more robust - thanks to DennisLKJ for smb.c fix
     * libfat cache improved for speed and stability
     * USB ethernet now fixed with USB 1.1; USB 2.0 fix requires an
       updated cIOS

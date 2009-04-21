@@ -362,7 +362,7 @@ void plat_init (int *argc, char **argv[]) {
   	log_console_init(vmode, 0);
   	printf("MPlayerCE v.0.5\n\n");
 		printf("SD access failed\n");
-		printf("Please review that you have installed MPlayerCE in the rigth folder\n");
+		printf("Please check that you have installed MPlayerCE in the right folder\n");
 		printf("sd:/apps/mplayer_ce\n");
 				
 		VIDEO_WaitVSync();
