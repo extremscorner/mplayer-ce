@@ -4,7 +4,7 @@
 
 == v0.5 ==
 
- * SMB now much more robust
+ * SMB now much more robust - thanks to DennisLKJ for smb.c fix
 
  * libfat cache improved for speed and stability
 
