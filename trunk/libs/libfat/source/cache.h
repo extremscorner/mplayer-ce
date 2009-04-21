@@ -39,32 +39,24 @@
 #include "common.h"
 #include "disc.h"
 
-#define CACHE_PAGE_SIZE BYTES_PER_READ
-
-typedef struct {
-	uint32_t     sector;
-	uint8_t      count;
-	uint32_t     lastAccess;
-	uint8_t*     data;
-} RA_CACHE_ENTRY;
+#define PAGE_SECTORS 64
+#define CACHE_PAGE_SIZE (BYTES_PER_READ * PAGE_SECTORS)
 
 typedef struct {
 	sec_t        sector;
 	unsigned int count;
+	unsigned int last_access;	
 	bool         dirty;
+	uint8_t*     cache;
 } CACHE_ENTRY;
 
 typedef struct {
 	const DISC_INTERFACE* disc;
 	unsigned int          numberOfPages;
+	unsigned int          sectorsPerPage;
 	CACHE_ENTRY*          cacheEntries;
-	uint8_t*              pages;
-
-	uint32_t              ra_maxSectors;
-	uint8_t               ra_count;
-	RA_CACHE_ENTRY**      ra_entries;
+	//uint8_t*              pages;
 } CACHE;
-
 
 /*
 Read data from a sector in the cache
@@ -99,6 +91,12 @@ Precondition: offset + size <= BYTES_PER_READ
 */
 bool _FAT_cache_eraseWritePartialSector (CACHE* cache, const void* buffer, sec_t sector, unsigned int offset, size_t size);
 
+
+/*
+Read several sectors from the cache
+*/
+bool _FAT_cache_getSectors (CACHE* cache, sec_t sector, sec_t numSectors, void* buffer);
+
 /*
 Read a full sector from the cache
 */
@@ -123,16 +121,9 @@ Clear out the contents of the cache without writing any dirty sectors first
 */
 void _FAT_cache_invalidate (CACHE* cache);
 
-CACHE* _FAT_cache_constructor (unsigned int numberOfPages, const DISC_INTERFACE* discInterface);
+CACHE* _FAT_cache_constructor (unsigned int numberOfPages, unsigned int sectorsPerPage, const DISC_INTERFACE* discInterface);
 
 void _FAT_cache_destructor (CACHE* cache);
-
-#ifdef LIBFAT_READAHEAD_CACHE
-bool _FAT_racache_setParameter(CACHE* cache, const uint8_t numCaches, uint32_t cacheMaxSectors);
-void _FAT_racache_destroyByIndex(CACHE* cache, const uint8_t index);
-void _FAT_racache_destructor (CACHE* cache);
-RA_CACHE_ENTRY* _FAT_racache_getSector (CACHE* cache, const sec_t sector);
-#endif
 
 #endif // _CACHE_H
 

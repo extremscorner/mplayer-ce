@@ -50,6 +50,8 @@ static bool motor_stopped=true;
 static unsigned int LastAccess=0;
 static unsigned int TimeStopMotor=DEFAULT_TIME_STOP_MOTOR;
 
+int _DI_ReadDVD_Check(void* buf, uint32_t len, uint32_t lba);
+
 void SetDVDMotorStopSecs(int secs)  //in seconds
 {
   if(secs<MIN_TIME_STOP_MOTOR) return;
@@ -81,7 +83,7 @@ static void * motorthreadfunc (void *ptr)
 
     if(motor_stopped)
     {
-      usleep(10000);
+      usleep(50000);
       first=true;
     }  
     else 
@@ -97,13 +99,12 @@ static void * motorthreadfunc (void *ptr)
       if(t<LastAccess) LastAccess=t; // strange,  perhaps overflow 
       if( (t>LastAccess) && ((t-LastAccess) > TimeStopMotor) && ((t-LastAccess) < (TimeStopMotor*2)))
       {  // we have to stop motor        
-        //printf("\n motorthreadfunc: stop motor  t: %u  last: %u \n",t,LastAccess);VIDEO_WaitVSync(); 
         if(DVD_DiscPresent()) // only stop is dvd is present, perhpas 
         {
           DI_StopMotor();            
         }
       }  
-      usleep(10000);
+      usleep(50000);
     }
     
   }
@@ -112,7 +113,7 @@ static void * motorthreadfunc (void *ptr)
 }
 
 int DI_StartMotor(){
-	if(state == (DVD_INIT | DVD_NO_DISC) ) return 0;
+	if(state == (DVD_INIT | DVD_NO_DISC) || (DI_ReadDVDptr == _DI_ReadDVD_Check)) return 0;
 	if(motor_stopped && motorthreadexit==false){ 
 		DI_Reset();
 		uint32_t val;
@@ -229,39 +230,12 @@ int DI_Init(){
 void DI_Mount(){
 	state = DVD_INIT | DVD_NO_DISC;
 	_cover_callback(1, NULL);	// Initialize the callback chain.
-
-
-
-    int ret;
-		void *_buff;
-		_buff=memalign(32, BLOCK_SIZE );
-		ret=_DI_ReadDVD_D0(_buff, 1, 0);
-		if(_buff!=NULL)free(_buff);
-		
-		if(ret==0)
-		{
-			state |= DVD_D0;
-			DI_ReadDVDptr = _DI_ReadDVD_D0;
-			DI_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
-		}
-		else
-    {
-			state |= DVD_A8;
-			DI_ReadDVDptr = _DI_ReadDVD_A8;
-			DI_ReadDVDAsyncptr = _DI_ReadDVD_A8_Async;
-		}
-
-		
-		if(di_cb)
-			di_cb(state,0);
-		
-
 //------------------ rodries --------------  
   LastAccess=ticks_to_secs(gettime());
   motorthreadexit=true;  // close thread
-  usleep(20000); // to be sure is closed
+  //usleep(20000); // to be sure is closed
   motorthreadexit=false;
-  motor_stopped=false;
+  motor_stopped=true;
   lwp_t motorthread;  
 	main_thread = LWP_GetSelf();	
 	if(cache_read!=NULL) cache_read->block=CACHE_FREE;  // reset cache	 
@@ -276,7 +250,6 @@ void DI_Close(){
   LastAccess=0;
   motor_stopped=false;
 //---------------- end rodries ------------  
-
 	if(di_fd > 0){
 		IOS_Close(di_fd);
 	}
@@ -289,6 +262,77 @@ void DI_Close(){
 	
 
 #define COVER_CLOSED (*((uint32_t*)usrdata) & 0x2)
+/*
+static char tmpblock[BLOCK_SIZE] ATTRIBUTE_ALIGN(32);
+static int _di_read_chipcheck_cb(int ret,void *usrdata)
+{
+	if(ret<0 && DI_ReadDVDptr==_DI_ReadDVD_D0) {
+		state = (state&~DVD_D0)|DVD_A8;
+		DI_ReadDVDptr = _DI_ReadDVD_A8;
+		DI_ReadDVDAsyncptr = _DI_ReadDVD_A8_Async;
+		_DI_ReadDVD_A8_Async(tmpblock,1,0,_di_read_chipcheck_cb);
+		return 0;
+	}
+	if(ret<0) {
+		state &= ~(DVD_D0|DVD_A8);
+		DI_ReadDVDptr = NULL;
+		DI_ReadDVDAsyncptr = NULL;
+	}
+	if(ret>=0) motor_stopped=false;
+}
+*/
+int _DI_ReadDVD_Check(void* buf, uint32_t len, uint32_t lba)
+{
+	int ret;
+	
+	ret=_DI_ReadDVD_D0(buf,len,lba);
+	if(ret>=0)
+	{
+		state = state|DVD_D0;
+		DI_ReadDVDptr = _DI_ReadDVD_D0;
+		DI_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
+		motor_stopped = false;
+		//printf("libdi: D0 functions detected\n");
+		return ret;
+	}
+	ret=_DI_ReadDVD_A8(buf,len,lba);
+	if(ret>=0)
+	{
+		state = state|DVD_A8;
+		DI_ReadDVDptr = _DI_ReadDVD_A8;
+		DI_ReadDVDAsyncptr = _DI_ReadDVD_A8_Async;
+		motor_stopped = false;
+		//printf("libdi: A8 functions detected\n");
+		return ret;
+	}
+	//printf("libdi: error detection D0/A8 functions\n");
+	return ret;
+}
+
+int _DI_ReadDVD_Check_Async(void* buf, uint32_t len, uint32_t lba, ipccallback ipc_cb)
+{ // is bad code has to be done correctly using callback func
+	int ret;
+	
+	ret=_DI_ReadDVD_D0_Async(buf,len,lba,ipc_cb); 
+	if(ret>=0)
+	{
+		state = state|DVD_D0;
+		DI_ReadDVDptr = _DI_ReadDVD_D0;
+		DI_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
+		motor_stopped = false;
+		return ret;
+	}
+	ret=_DI_ReadDVD_A8_Async(buf,len,lba,ipc_cb);
+	if(ret>=0)
+	{
+		state = state|DVD_A8;
+		DI_ReadDVDptr = _DI_ReadDVD_A8;
+		DI_ReadDVDAsyncptr = _DI_ReadDVD_A8_Async;
+		motor_stopped = false;
+		return ret;
+	}
+	return ret;
+}
 
 static int _cover_callback(int ret, void* usrdata){
 	static int cur_state = 0;
@@ -329,6 +373,19 @@ static int _cover_callback(int ret, void* usrdata){
 	else		// Callback chain has completed OK. The drive is ready.
 	{
 		state = DVD_READY;
+
+		retry_count = 1;
+		state = DVD_READY;
+		
+		DI_ReadDVDptr = _DI_ReadDVD_Check;
+		DI_ReadDVDAsyncptr = _DI_ReadDVD_Check_Async;
+
+		/*
+		DI_ReadDVDptr = _DI_ReadDVD_D0;
+		DI_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
+		
+		_DI_ReadDVD_D0_Async(tmpblock,1,0,_di_read_chipcheck_cb);
+		*/			
 /*
 		if(IOS_GetVersion() < 200)
     {
@@ -440,6 +497,7 @@ int DI_GetError(uint32_t* error){
 Reset the drive.
 */
 int DI_Reset(){
+
 	// Wait for the lock
 	while(LWP_MutexLock(bufferMutex));
   //------- rodries ---------------
