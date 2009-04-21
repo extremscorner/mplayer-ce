@@ -572,8 +572,10 @@ s32 USBStorage_Close(usbstorage_handle *dev)
 	USB_CloseDevice(&dev->usb_fd);
 	LWP_MutexDestroy(dev->lock);
 	LWP_CondDestroy(dev->cond);
-	free(dev->sector_size);
-	__lwp_heap_free(&__heap, dev->buffer);
+	if(dev->sector_size!=NULL)
+		free(dev->sector_size);
+	if(dev->buffer!=NULL)
+		__lwp_heap_free(&__heap, dev->buffer);
 	memset(dev, 0, sizeof(*dev));
 	return 0;
 }
@@ -730,7 +732,6 @@ static bool __usbstorage_IsInserted(void)
        return false;
    memset(buffer, 0, DEVLIST_MAXSIZE << 3);
 
-   
    if(USB_GetDeviceList("/dev/usb/oh0", buffer, DEVLIST_MAXSIZE, 0, &dummy) < 0)
    {
        if(__vid!=0 || __pid!=0) USBStorage_Close(&__usbfd);
@@ -742,7 +743,7 @@ static bool __usbstorage_IsInserted(void)
        free(buffer);
        return false;
    }
-	
+
    if(__vid!=0 || __pid!=0)
    {
        for(i = 0; i < DEVLIST_MAXSIZE; i++)
@@ -774,14 +775,10 @@ static bool __usbstorage_IsInserted(void)
        memcpy(&vid, (buffer + (i << 3) + 4), 2);
        memcpy(&pid, (buffer + (i << 3) + 6), 2);
        if(vid == 0 || pid == 0)
-	   {
            continue;
-	   }
 
        if(USBStorage_Open(&__usbfd, "oh0", vid, pid) < 0)
-	   {
            continue;
-	   }
 
        maxLun = USBStorage_GetMaxLUN(&__usbfd);
        for(j = 0; j < maxLun; j++)
@@ -793,16 +790,13 @@ static bool __usbstorage_IsInserted(void)
            }
 
            if(retval < 0)
-		   {
                continue;
-		   }
 
            __mounted = 1;
            __lun = j;
            __vid = vid;
            __pid = pid;
-
-           i = DEVLIST_MAXSIZE;		   
+           i = DEVLIST_MAXSIZE;
            break;
        }
    }
@@ -858,7 +852,7 @@ static bool __usbstorage_Shutdown(void)
    return true;
 }
 
-const DISC_INTERFACE __io_usb1storage = {
+const DISC_INTERFACE __io_usbstorage1 = {
    DEVICE_TYPE_WII_USB,
    FEATURE_MEDIUM_CANREAD | FEATURE_MEDIUM_CANWRITE | FEATURE_WII_USB,
    (FN_MEDIUM_STARTUP)&__usbstorage_Startup,
