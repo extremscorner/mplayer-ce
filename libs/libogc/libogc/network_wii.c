@@ -53,7 +53,7 @@ distribution.
 #include "network.h"
 #include "ogcsys.h"
 
-#define NET_HEAP_SIZE				8192
+#define NET_HEAP_SIZE				34816
 
 #define IOS_O_NONBLOCK				0x04			//(O_NONBLOCK >> 16) - it's in octal representation, so this shift leads to 0 and hence nonblocking sockets didn't work. changed it to the right value.
 

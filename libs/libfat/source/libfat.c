@@ -64,7 +64,7 @@ static const devoptab_t dotab_fat = {
 	NULL	/* Device data */
 };
 
-bool fatMount (const char* name, const DISC_INTERFACE* interface, sec_t startSector, uint32_t cacheSize) {
+bool fatMount (const char* name, const DISC_INTERFACE* interface, sec_t startSector, uint32_t cacheSize, uint32_t SectorsPerPage) {
 	PARTITION* partition;
 	devoptab_t* devops;
 	char* nameCopy;
@@ -77,7 +77,7 @@ bool fatMount (const char* name, const DISC_INTERFACE* interface, sec_t startSec
 	nameCopy = (char*)(devops+1);
 
 	// Initialize the file system
-	partition = _FAT_partition_constructor (interface, cacheSize, startSector);
+	partition = _FAT_partition_constructor (interface, cacheSize, SectorsPerPage, startSector);
 	if (!partition) {
 		_FAT_mem_free (devops);
 		return false;
@@ -95,7 +95,7 @@ bool fatMount (const char* name, const DISC_INTERFACE* interface, sec_t startSec
 }
 
 bool fatMountSimple (const char* name, const DISC_INTERFACE* interface) {
-	return fatMount (name, interface, 0, DEFAULT_CACHE_PAGES);
+	return fatMount (name, interface, 0, DEFAULT_CACHE_PAGES, DEFAULT_SECTORS_PAGE);
 }
 
 void fatUnmount (const char* name) {
@@ -147,7 +147,7 @@ bool fatInit (uint32_t cacheSize, bool setAsDefaultDevice) {
 		i++)
 	{
 		disc = _FAT_disc_interfaces[i].getInterface();
-		if (disc->startup() && fatMount (_FAT_disc_interfaces[i].name, disc, 0, cacheSize)) {
+		if (disc->startup() && fatMount (_FAT_disc_interfaces[i].name, disc, 0, cacheSize, DEFAULT_SECTORS_PAGE)) {
 			// The first device to successfully mount is set as the default
 			if (defaultDevice < 0) {
 				defaultDevice = i;
@@ -196,39 +196,3 @@ bool fatInit (uint32_t cacheSize, bool setAsDefaultDevice) {
 bool fatInitDefault (void) {
 	return fatInit (DEFAULT_CACHE_PAGES, true);
 }
-
-#ifdef LIBFAT_READAHEAD_CACHE
-bool fatSetReadAhead(const char* name, const uint8_t numCaches, uint32_t cacheMaxSectors) {
-	devoptab_t *devops;
-	PARTITION* partition;
-	char *buf;
-  int namelen,i;
-  
-  namelen = strlen(name);
-  buf=(char*)malloc(sizeof(char)*namelen+2);
-  strcpy(buf,name);
-  if ( name[namelen] != ':')
-  {
-    buf[namelen]=':';  
-    buf[namelen+1]='\0';
-  } 
-  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);
-	devops = (devoptab_t*)GetDeviceOpTab(buf);
-	if (!devops || strncmp(buf,devops->name,i)) 
-  {
-    free(buf);
-    return false;
-  }
-  free(buf);
-
-	// Perform a quick check to make sure we're dealing with a libfat controlled device
-	if (devops->open_r != dotab_fat.open_r)
-		return false;
-	
-	partition = (PARTITION*)devops->deviceData;
-
-	return _FAT_racache_setParameter(partition->cache, numCaches, cacheMaxSectors);
-}
-
-#endif
-

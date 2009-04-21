@@ -1,24 +1,18 @@
 /****************************************************************************
- * TinySMB-GC
- *
- * Nintendo Gamecube SaMBa implementation.
+ * TinySMB
+ * Nintendo Wii/GameCube SMB implementation
  *
  * Copyright softdev
  * Modified by Tantric to utilize NTLM authentication
  * PathInfo added by rodries
  * SMB devoptab by scip, rodries
  *
- * Authentication modules, LMhash and DES are 
- *
- * Copyright Christopher R Hertel.
- * http://www.ubiqx.org
- *
- * You WILL find Ethereal, available from http://www.ethereal.com
- * invaluable for debugging each new SAMBA implementation.
+ * You will find WireShark (http://www.wireshark.org/)
+ * invaluable for debugging SAMBA implementations.
  *
  * Recommended Reading
  *	Implementing CIFS - Christopher R Hertel
- *	SNIA CIFS Documentation - http://www.snia.org
+ *	http://www.ubiqx.org/cifs/SMB.html
  *
  * License:
  *
@@ -36,10 +30,13 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ****************************************************************************/
+
 #ifndef __NBTSMB_H__
 #define __NBTSMB_H__
 
 #include <gctypes.h>
+
+#define SMB_MAXPATH					4096
 
 /**
 * SMB Error codes
@@ -63,11 +60,12 @@
 /**
 * FileSearch
 */
-#define SMB_SRCH_DIRECTORY			16
 #define SMB_SRCH_READONLY  			1
 #define SMB_SRCH_HIDDEN				2
 #define SMB_SRCH_SYSTEM				4
 #define SMB_SRCH_VOLUME				8
+#define SMB_SRCH_DIRECTORY			16
+#define SMB_SRCH_ARCHIVE			32
 
 /**
 * SMB File Access Modes
@@ -99,11 +97,13 @@ typedef void* SMBFILE;
 /*** SMB_FILEENTRY
      SMB Long Filename Directory Entry
  ***/
-typedef struct
+ typedef struct
 {
-  u32 size_low;
-  u32 size_high;
-  u8 attributes;
+  u64 size;
+  u64 ctime;
+  u64 atime;
+  u64 mtime;
+  u32 attributes;
   char name[256];
 } SMBDIRENTRY;
 
@@ -116,6 +116,7 @@ bool smbInitDevice(const char* name, const char *user, const char *password, con
 bool smbInit(const char *user, const char *password, const char *share,	const char *ip);
 void smbClose(const char* name);
 bool CheckSMBConnection(const char* name);
+s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn);
 
 /*** Session ***/
 s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const char *share, const char *IP);
