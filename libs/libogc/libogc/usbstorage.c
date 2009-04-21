@@ -852,7 +852,7 @@ static bool __usbstorage_Shutdown(void)
    return true;
 }
 
-const DISC_INTERFACE __io_usbstorage1 = {
+const DISC_INTERFACE __io_usb1storage = {
    DEVICE_TYPE_WII_USB,
    FEATURE_MEDIUM_CANREAD | FEATURE_MEDIUM_CANWRITE | FEATURE_WII_USB,
    (FN_MEDIUM_STARTUP)&__usbstorage_Startup,
