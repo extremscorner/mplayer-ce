@@ -18,6 +18,8 @@
 
  * Merged widescreen and 4:3 pack - now MPlayer will use the appropriate loop.avi automatically
 
+ * Improved Modchip compatibility for DVD
+
 == v0.4 ==
 
  * USB 2.0 support (see docs for info)
