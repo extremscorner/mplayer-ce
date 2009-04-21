@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "raw.h"
+#include "libavutil/intreadwrite.h"
 
 typedef struct RawVideoContext {
     unsigned char * buffer;  /* block of memory for holding one frame */
@@ -99,8 +100,10 @@ static void flip(AVCodecContext *avctx, AVPicture * picture){
 
 static int raw_decode(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     RawVideoContext *context = avctx->priv_data;
 
     AVFrame * frame = (AVFrame *) data;
@@ -142,6 +145,17 @@ static int raw_decode(AVCodecContext *avctx,
         unsigned char *tmp = picture->data[1];
         picture->data[1] = picture->data[2];
         picture->data[2] = tmp;
+    }
+
+    if(avctx->codec_tag == AV_RL32("yuv2") &&
+       avctx->pix_fmt   == PIX_FMT_YUYV422) {
+        int x, y;
+        uint8_t *line = picture->data[0];
+        for(y = 0; y < avctx->height; y++) {
+            for(x = 0; x < avctx->width; x++)
+                line[2*x + 1] ^= 0x80;
+            line += picture->linesize[0];
+        }
     }
 
     *data_size = sizeof(AVPicture);

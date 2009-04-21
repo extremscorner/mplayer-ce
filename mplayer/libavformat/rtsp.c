@@ -37,6 +37,7 @@
 #include "rtpdec.h"
 #include "rdt.h"
 #include "rtp_asf.h"
+#include "rtp_vorbis.h"
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
@@ -196,7 +197,8 @@ static int hex_to_data(uint8_t *data, const char *p)
     return len;
 }
 
-static void sdp_parse_fmtp_config(AVCodecContext *codec, char *attr, char *value)
+static void sdp_parse_fmtp_config(AVCodecContext * codec, void *ctx,
+                                  char *attr, char *value)
 {
     switch (codec->codec_id) {
         case CODEC_ID_MPEG4:
@@ -212,6 +214,9 @@ static void sdp_parse_fmtp_config(AVCodecContext *codec, char *attr, char *value
                 codec->extradata_size = len;
                 hex_to_data(codec->extradata, value);
             }
+            break;
+        case CODEC_ID_VORBIS:
+            ff_vorbis_parse_fmtp_config(codec, ctx, attr, value);
             break;
         default:
             break;
@@ -261,7 +266,9 @@ int rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *va
 static void sdp_parse_fmtp(AVStream *st, const char *p)
 {
     char attr[256];
-    char value[4096];
+    /* Vorbis setup headers can be up to 12KB and are sent base64
+     * encoded, giving a 12KB * (4/3) = 16KB FMTP line. */
+    char value[16384];
     int i;
 
     RTSPStream *rtsp_st = st->priv_data;
@@ -272,7 +279,8 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     while(rtsp_next_attr_and_value(&p, attr, sizeof(attr), value, sizeof(value)))
     {
         /* grab the codec extra_data from the config parameter of the fmtp line */
-        sdp_parse_fmtp_config(codec, attr, value);
+        sdp_parse_fmtp_config(codec, rtsp_st->dynamic_protocol_context,
+                              attr, value);
         /* Looking for a known attribute */
         for (i = 0; attr_names[i].str; ++i) {
             if (!strcasecmp(attr, attr_names[i].str)) {
@@ -512,8 +520,10 @@ static int sdp_parse(AVFormatContext *s, const char *content)
      * contain long SDP lines containing complete ASF Headers (several
      * kB) or arrays of MDPR (RM stream descriptor) headers plus
      * "rulebooks" describing their properties. Therefore, the SDP line
-     * buffer is large. */
-    char buf[8192], *q;
+     * buffer is large.
+     *
+     * The Vorbis FMTP line can be up to 16KB - see sdp_parse_fmtp. */
+    char buf[16384], *q;
     SDPParseState sdp_parse_state, *s1 = &sdp_parse_state;
 
     memset(s1, 0, sizeof(SDPParseState));
@@ -672,7 +682,12 @@ void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
     /* NOTE: we do case independent match for broken servers */
     p = buf;
     if (av_stristart(p, "Session:", &p)) {
+        int t;
         get_word_sep(reply->session_id, sizeof(reply->session_id), ";", &p);
+        if (av_stristart(p, ";timeout=", &p) &&
+            (t = strtol(p, NULL, 10)) > 0) {
+            reply->timeout = t;
+        }
     } else if (av_stristart(p, "Content-Length:", &p)) {
         reply->content_length = strtol(p, NULL, 10);
     } else if (av_stristart(p, "Transport:", &p)) {
@@ -827,7 +842,7 @@ rtsp_read_reply (AVFormatContext *s, RTSPMessageHeader *reply,
     return 0;
 }
 
-static void rtsp_send_cmd(AVFormatContext *s,
+static void rtsp_send_cmd_async (AVFormatContext *s,
                           const char *cmd, RTSPMessageHeader *reply,
                           unsigned char **content_ptr)
 {
@@ -847,6 +862,14 @@ static void rtsp_send_cmd(AVFormatContext *s,
     printf("Sending:\n%s--\n", buf);
 #endif
     url_write(rt->rtsp_hd, buf, strlen(buf));
+    rt->last_cmd_time = av_gettime();
+}
+
+static void rtsp_send_cmd (AVFormatContext *s,
+                           const char *cmd, RTSPMessageHeader *reply,
+                           unsigned char **content_ptr)
+{
+    rtsp_send_cmd_async(s, cmd, reply, content_ptr);
 
     rtsp_read_reply(s, reply, content_ptr, 0);
 }
@@ -932,6 +955,9 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         trans_pref = "x-pn-tng";
     else
         trans_pref = "RTP/AVP";
+
+    /* default timeout: 1 minute */
+    rt->timeout = 60;
 
     /* for each stream, make the setup request */
     /* XXX: we assume the same server is used for the control of each
@@ -1112,6 +1138,9 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
         if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
             goto fail;
     }
+
+    if (reply->timeout > 0)
+        rt->timeout = reply->timeout;
 
     if (rt->server_type == RTSP_SERVER_REAL)
         rt->need_subscription = 1;
@@ -1346,8 +1375,13 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
         if (url_interrupt_cb())
             return AVERROR(EINTR);
         FD_ZERO(&rfds);
-        tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
-        FD_SET(tcp_fd, &rfds);
+        if (rt->rtsp_hd) {
+            tcp_fd = fd_max = url_get_file_handle(rt->rtsp_hd);
+            FD_SET(tcp_fd, &rfds);
+        } else {
+            fd_max = 0;
+            tcp_fd = -1;
+        }
         for(i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
             if (rtsp_st->rtp_handle) {
@@ -1393,12 +1427,12 @@ static int rtsp_read_packet(AVFormatContext *s,
     RTSPStream *rtsp_st;
     int ret, len;
     uint8_t buf[10 * RTP_MAX_PACKET_LENGTH];
+    RTSPMessageHeader reply1, *reply = &reply1;
+    char cmd[1024];
 
     if (rt->server_type == RTSP_SERVER_REAL) {
         int i;
-        RTSPMessageHeader reply1, *reply = &reply1;
         enum AVDiscard cache[MAX_STREAMS];
-        char cmd[1024];
 
         for (i = 0; i < s->nb_streams; i++)
             cache[i] = s->streams[i]->discard;
@@ -1498,6 +1532,22 @@ static int rtsp_read_packet(AVFormatContext *s,
         /* more packets may follow, so we save the RTP context */
         rt->cur_transport_priv = rtsp_st->transport_priv;
     }
+
+    /* send dummy request to keep TCP connection alive */
+    if ((rt->server_type == RTSP_SERVER_WMS ||
+         rt->server_type == RTSP_SERVER_REAL) &&
+        (av_gettime() - rt->last_cmd_time) / 1000000 >= rt->timeout / 2) {
+        if (rt->server_type == RTSP_SERVER_WMS) {
+            snprintf(cmd, sizeof(cmd) - 1,
+                     "GET_PARAMETER %s RTSP/1.0\r\n",
+                     s->filename);
+            rtsp_send_cmd_async(s, cmd, reply, NULL);
+        } else {
+            rtsp_send_cmd_async(s, "OPTIONS * RTSP/1.0\r\n",
+                                reply, NULL);
+        }
+    }
+
     return 0;
 }
 

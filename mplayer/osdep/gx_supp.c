@@ -1,4 +1,3 @@
-#include "mp_msg.h"
 /****************************************************************************
 *	gx_supp.c - Generic GX Support for Emulators
 *	softdev 2007
@@ -43,7 +42,7 @@ extern "C" {
 /*** 2D ***/
 static u32 whichfb;
 static u32 *xfb[2];
-//static bool component_fix=false;
+static bool component_fix=false;
 GXRModeObj *vmode = NULL;
 
 /*** 3D GX ***/
@@ -84,7 +83,7 @@ static u8 texcoords[] ATTRIBUTE_ALIGN(32) = {
 };
 
 static camera cam = {
-	{ 0.0f, 0.0f, 370.0f },
+	{ 0.0f, 0.0f, 352.0f },
 	{ 0.0f, 0.5f, 0.0f },
 	{ 0.0f, 0.0f, -0.5f }
 };
@@ -92,16 +91,16 @@ static camera cam = {
 void GX_InitVideo() {
 	vmode = VIDEO_GetPreferredMode(NULL);
 
-/*
-  if(!component_fix) vmode->viWidth = 688;
+	vmode->viWidth = 678;
+  if(!component_fix) vmode->viWidth = 678;
 	else
   { 
-    vmode->viWidth = VI_MAX_WIDTH_PAL-12;
+    //vmode->viWidth = VI_MAX_WIDTH_PAL-20;
     //vmode->xfbHeight+=8;    
   }
-*/  
-  vmode->viWidth = 688;
-	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2) + 4;
+  
+  //vmode->viWidth = 678;
+	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2) ;
 	
 	VIDEO_Configure(vmode);
 
@@ -123,8 +122,8 @@ void GX_InitVideo() {
 }
 
 void GX_SetComponentFix(bool f) {
-  //component_fix=f;
-	if(f)	cam.pos.z = 350;
+  	component_fix=f;
+	//if(f)	cam.pos.z = 352;
 }
 
 void GX_SetCamPosZ(float f) {
@@ -311,6 +310,7 @@ void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
  ****************************************************************************/
 void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	static bool inited = false;
+	int w,h;
 
 	Mtx p;
 	GXColor gxbackground = { 0, 0, 0, 0xff };
@@ -322,8 +322,25 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	square[7] = square[10] = -vaspect;
 
 	/*** Allocate 32byte aligned texture memory ***/
-	Ytexsize = (width*height);
-	UVtexsize = (width*height)/4;
+	
+	w = (width / 16);
+	if(w % 2) w++;
+	w=w*16;
+	h = ((int)((height/8.0)))*8;
+
+	//center, to correct difference between pitch and real width
+	int diffx;
+	diffx=abs((w-width)/2) ;	
+	square[0] += diffx;
+  	square[9] += diffx;
+	square[3] += diffx;
+  	square[6] += diffx;
+
+
+	//Ytexsize = (width*height);
+	//UVtexsize = (width*height)/4;
+	Ytexsize = (w*h);
+	UVtexsize = (w*h)/4;
 	if (Ytexture)
 		free (Ytexture);
 	if (Utexture)
@@ -747,29 +764,45 @@ static int p01,p02,p03,p11,p12,p13;
 static u16 Yrowpitch;
 static u16 UVrowpitch;
 static u64 *Ydst, *Udst, *Vdst;
+getStrideInfo(int *_w1,int *_df1,int *_Yrowpitch)  // for subtitle info
+{
+	*_w1=w1;
+	*_df1=df1;
+	*_Yrowpitch=Yrowpitch;
+}
 
 void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 {
+	int diffx;
     Mtx m, mv;
 	Ydst = (u64 *) Ytexture;
 	Udst = (u64 *) Utexture;
 	Vdst = (u64 *) Vtexture;
+	
+	int wp,ww; 
+	wp=pitch[0];
+	ww=width;
 
-  	Yrowpitch = (pitch[0] >> 3) * 3 + pitch[0] % 8;
-	UVrowpitch = (pitch[1] >> 3) * 3 + pitch[1] % 8;
-	  
-    w1 = width >> 3 ;
-    w2 = width >> 4 ;
+	ww= (ww / 16);
+	if(ww % 2) ww++;
+	ww=ww*16;
+	
+	if(wp>ww)wp=ww;
+    w1 = wp >> 3 ;
+    w2 = wp >> 4 ;    
+    
+    df1 = ((ww >> 3) - w1)*4;    
+    df2 = ((ww >> 4) - w2)*4;	
+	   
+    UVrowpitch = pitch[1]/2-w2;
+    Yrowpitch = pitch[0]/2-w1;
 
-	df1 = 0;    
-	df2 = 0;    
-	    
 	
   	vwidth = width;
   	
-	Ywidth = vwidth;
-	UVwidth = vwidth>>1;
-	
+	Ywidth = ww;
+	UVwidth = ww>>1;
+		
 	vheight = height;
 	Yheight = vheight;
 	UVheight = vheight>>1;
@@ -778,6 +811,7 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 	oldvwidth = vwidth;
 	oldvheight = vheight;
 	draw_initYUV();
+	
 	memset(&view, 0, sizeof(Mtx));
 	guLookAt(view, &cam.pos, &cam.up, &cam.view);
 	guMtxIdentity(m);
@@ -797,29 +831,13 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 
 void GX_UpdatePitch(int width,u16 *pitch)
 {
-	int w;
-	w=pitch[0];
-	if(w>width)w=width;
-    w1 = w >> 3 ;
-    w2 = w >> 4 ;    
-    
-    df1 = ((width >> 3) - w1)*4;    
-    df2 = ((width >> 4) - w2)*4;
-
-    UVrowpitch = pitch[1]/2-w2;
-    Yrowpitch = pitch[0]/2-w1;
-
 	//black
+	
     memset(Ytexture, 0, Ytexsize);
 	memset(Utexture, 0x80, UVtexsize);
 	memset(Vtexture, 0x80, UVtexsize);
-		
-	p01= pitch[0];
-    p02=(pitch[0] * 2);
-    p03= (pitch[0] * 3);
-    p11= pitch[1];
-    p12= (pitch[1] * 2);
-    p13= (pitch[1] * 3);
+
+	GX_ConfigTextureYUV(width, vheight, pitch);
 }
 
 void GX_FillTextureYUV(u16 height,u8 *buffer[3]) 
@@ -887,9 +905,29 @@ void GX_FillTextureYUV(u16 height,u8 *buffer[3])
 	}
 }
 
+//nunchuk control
+extern float m_screenleft_shift, m_screenright_shift;
+extern float m_screentop_shift, m_screenbottom_shift;
+static s16 mysquare[12] ATTRIBUTE_ALIGN(32);
+void GX_UpdateSquare()
+{
+  memcpy(mysquare, square, sizeof(square));
+  
+	mysquare[0] -= m_screenleft_shift*100;
+  mysquare[9] -= m_screenleft_shift*100;
+	mysquare[3] -= m_screenright_shift*100;
+  mysquare[6] -= m_screenright_shift*100;
+	mysquare[1] -= m_screentop_shift*100;
+  mysquare[4] -= m_screentop_shift*100;
+	mysquare[7] -= m_screenbottom_shift*100;
+  mysquare[10] -= m_screenbottom_shift*100;
+
+	GX_SetArray(GX_VA_POS, mysquare, 3 * sizeof(s16));
+}
+
 void GX_RenderTexture() 
 {
-	whichfb ^= 1;
+	whichfb ^= 1;	
 
 	GX_InvVtxCache();
 	GX_InvalidateTexAll();

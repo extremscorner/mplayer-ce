@@ -415,9 +415,6 @@ int _dvdcss_close ( dvdcss_t dvdcss )
     }
 
     return 0;
-#elif defined GEKKO
-	print_debug(dvdcss, "DI: deinitializing dvd...");
-	DI_StopMotor();   
 #else
     close( dvdcss->i_fd );
 

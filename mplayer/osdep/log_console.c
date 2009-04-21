@@ -39,6 +39,7 @@ static u16 log_size = 0;
 static u16 log_next = 0;
 static bool log_active = true;
 static bool video_active = true;
+static mutex_t console_mutex = 0;
 
 static int __out_write(struct _reent *r, int fd, const char *ptr, int len) {
 	u32 level;
@@ -46,7 +47,7 @@ static int __out_write(struct _reent *r, int fd, const char *ptr, int len) {
 
 	if (!ptr || len <= 0)
 		return -1;
-
+	LWP_MutexLock(console_mutex);
 	if (video_active) {
 		dot_video->write_r(r, fd, ptr, len);
 	} else {
@@ -65,7 +66,7 @@ static int __out_write(struct _reent *r, int fd, const char *ptr, int len) {
 		usb_sendbuffer(1, ptr, len);
 		IRQ_Restore(level);
 	}
-
+	LWP_MutexUnlock(console_mutex);
 	return len;
 }
 
@@ -94,7 +95,7 @@ const devoptab_t dot_out = {
 
 void log_console_init(GXRModeObj *vmode, u16 logsize) {
 	u16 i;
-
+	LWP_MutexInit(&console_mutex, false);
 	CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
 	rcb = VIDEO_SetPostRetraceCallback(NULL);
 	VIDEO_SetPostRetraceCallback(rcb);
@@ -147,7 +148,7 @@ void log_console_deinit(void) {
 	devoptab_list[STD_ERR] = dot_video;
 
 	VIDEO_SetPostRetraceCallback(rcb);
-
+	LWP_MutexDestroy(console_mutex);
 	dot_video = NULL;
 }
 
@@ -164,7 +165,7 @@ void log_console_enable_video(bool enable) {
 
 	if (video_active == enable)
 		return;
-
+	LWP_MutexLock(console_mutex);
 	video_active = enable;
 
 	if (enable)
@@ -172,9 +173,15 @@ void log_console_enable_video(bool enable) {
 	else
 		VIDEO_SetPostRetraceCallback(NULL);
 
+	usleep(100);
+	fflush(stdout);
+	usleep(100);
 	if (!enable || !log_size)
+	{
+		LWP_MutexUnlock(console_mutex);
 		return;
-
+	}
+	LWP_MutexUnlock(console_mutex);
 	for (i = 0; i < log_size; ++i) {
 		l = (log_next + 1 + i) % log_size;
 		if (log[l]) {
@@ -183,8 +190,7 @@ void log_console_enable_video(bool enable) {
 			log[l] = NULL;
 		}
 	}
-
-	fflush(stdout);
+	
 }
 void log_console_change_state_video()
 {

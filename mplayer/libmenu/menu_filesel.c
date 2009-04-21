@@ -120,8 +120,8 @@ static char* replace_path(char* title , char* dir , int escape) {
     do {
       if (*d == '\\')
         l++;
-      else if (*d == '\'') /* ' -> \'\\\'\' */
-        l+=7;
+      else if (*d == '\'') /* ' -> \' */
+        l+=2;
     } while (*d++);
     }
     r = malloc(l + 1);
@@ -131,11 +131,8 @@ static char* replace_path(char* title , char* dir , int escape) {
       if (escape) {
       if (*dir == '\\')
         *n++ = '\\';
-      else if (*dir == '\'') { /* ' -> \'\\\'\' */
-        *n++ = '\\'; *n++ = '\'';
-        *n++ = '\\'; *n++ = '\\';
-        *n++ = '\\'; *n++ = '\'';
-        *n++ = '\\';
+      else if (*dir == '\'') { /* ' -> \' */
+        *n++ = '\\'; 
       }
       }
     } while ((*n++ = *dir++));
@@ -234,7 +231,9 @@ static void free_extensions(char **extensions){
     free (extensions);
   }
 }
-
+#ifdef GEKKO
+extern int network_inited;
+#endif
 static int open_dir(menu_t* menu,char* args) {
   char **namelist, **tp;
   struct dirent *dp;
@@ -261,8 +260,7 @@ static int open_dir(menu_t* menu,char* args) {
   {
 	  if(!DeviceMounted("usb:/"))
 	  {
-		  if(fatMountSimple("usb",usb)) fatSetReadAhead("usb:", 4, 64);
-		  else return 0;
+		  if(!fatMountSimple("usb",usb)) return 0;
 	  }
   } 
   else if(!strcmp(mpriv->dir,"dvd:/"))
@@ -272,6 +270,13 @@ static int open_dir(menu_t* menu,char* args) {
   else if(mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')
   { // reconnect samba if needed
 	  char device[5]="smbx";
+	  
+	  if(network_inited==0)
+	  {
+  		  set_osd_msg(124,1,2000,"Network not yet initialized, Please Wait");
+		  return 0;
+	  }
+	  	  
 	  device[3]=mpriv->dir[3];
 		set_osd_msg(124,1,2000,"Connecting to %s ",device);
 	  if(!CheckSMBConnection(device)) 

@@ -50,7 +50,8 @@ YASMFLAGS =
 #EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/3rd/wii/lib
 EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii
 #EXTRA_LIB = -static $(COMMONFLAGS) -ldvdread -ldvdnav -lwiiuse -lbte -lfat -ldi -ltinysmb -logc -ldb -lm
-EXTRA_LIB = -static $(COMMONFLAGS) -liberty -lwiiuse -liconv -lfreetype -ljpeg -lbte -lfat -ldi -ltinysmb -lz -logc -ldb -lm
+#EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
+EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
 #EXTRALIBS = 
 #EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
 EXTRALIBS_MPLAYER =  -specs=mplayer.spec 
@@ -60,8 +61,6 @@ DEPEND_CMD   = $(CC) -MM $(CFLAGS) $(filter-out %.h,$^) | sed "s,[0-9a-z._-]*: \
 
 MPDEPEND_CMD     = $(CC) -MM $(CFLAGS)   $(filter-out %.xpm,$(filter-out %.h,$^)) | sed -e "s,[0-9a-z._-]*: \([a-z0-9/]*/\)[^/]* ,\1&," -e "s,\(.*\)\.o: ,\1.d &,"
 MPDEPEND_CMD_CXX = $(CC) -MM $(CXXFLAGS) $(filter-out %.hh,$(filter-out %.h,$^))  | sed -e "s,[0-9a-z._-]*: \([a-z0-9/]*/\)[^/]* ,\1&," -e "s,\(.*\)\.o: ,\1.d &,"
-
-GEKKO = yes
 
 GETCH = getch2-gekko.c
 HELP_FILE = help/help_mp-en.h
@@ -257,6 +256,7 @@ LIBPOSTPROC_SO = auto
 LIBSWSCALE = yes
 LIBSWSCALE_A = yes
 LIBSWSCALE_SO = auto
+LIBBS2B = no
 
 BUILD_STATIC=yes
 SRC_PATH=..
@@ -338,6 +338,9 @@ CONFIG_H261_DECODER=yes
 CONFIG_H263_DECODER=yes
 CONFIG_H263I_DECODER=yes
 CONFIG_H264_DECODER=yes
+CONFIG_MPEG2_VAAPI_HWACCEL=no
+CONFIG_MPEG4_VAAPI_HWACCEL=no
+CONFIG_H263_VAAPI_HWACCEL=no
 CONFIG_HUFFYUV_DECODER=yes
 CONFIG_IDCIN_DECODER=yes
 CONFIG_INDEO2_DECODER=yes

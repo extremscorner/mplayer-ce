@@ -29,7 +29,8 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
+#include "put_bits.h"
 #include "dsputil.h"
 
 #define VLC_BITS 11
@@ -942,7 +943,9 @@ static void draw_slice(HYuvContext *s, int y){
     s->last_slice_end= y + h;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size){
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     HYuvContext *s = avctx->priv_data;
     const int width= s->width;
     const int width2= s->width>>1;
@@ -953,7 +956,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
 
     AVFrame *picture = data;
 
-    s->bitstream_buffer= av_fast_realloc(s->bitstream_buffer, &s->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&s->bitstream_buffer, &s->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!s->bitstream_buffer)
+        return AVERROR(ENOMEM);
 
     s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (const uint32_t*)buf, buf_size/4);
 
@@ -1376,6 +1381,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     emms_c();
 
     size+= (put_bits_count(&s->pb)+31)/8;
+    put_bits(&s->pb, 16, 0);
+    put_bits(&s->pb, 15, 0);
     size/= 4;
 
     if((s->flags&CODEC_FLAG_PASS1) && (s->picture_number&31)==0){

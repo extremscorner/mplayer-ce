@@ -223,12 +223,11 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     AMFDataType type;
     AVStream *stream, *astream, *vstream;
     ByteIOContext *ioc;
-    int i, keylen;
+    int i;
     char buffer[11]; //only needs to hold the string "onMetaData". Anything longer is something we don't want.
 
     astream = NULL;
     vstream = NULL;
-    keylen = 0;
     ioc = s->pb;
 
     //first object needs to be "onMetaData" string
@@ -342,7 +341,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if ((flags & 0xf0) == 0x50) /* video info / command frame */
             goto skip;
     } else {
-        if (type == FLV_TAG_TYPE_META && size > 13+1+4)
+        if (type == FLV_TAG_TYPE_META && size > 13+1+4 && 0)
             flv_read_metabody(s, next);
         else /* skip packet */
             av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
@@ -439,8 +438,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
+    /* skip empty data packets */
+    if (!size)
+        return AVERROR(EAGAIN);
+
     ret= av_get_packet(s->pb, pkt, size);
-    if (ret <= 0) {
+    if (ret < 0) {
         return AVERROR(EIO);
     }
     /* note: we need to modify the packet size here to handle the last

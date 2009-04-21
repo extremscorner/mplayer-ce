@@ -78,7 +78,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 #include "lpc.h"
 
@@ -1604,7 +1604,9 @@ static int parse_adts_frame_header(AACContext * ac, GetBitContext * gb) {
     return size;
 }
 
-static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data_size, const uint8_t * buf, int buf_size) {
+static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data_size, AVPacket *avpkt) {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     AACContext * ac = avccontext->priv_data;
     ChannelElement * che = NULL;
     GetBitContext gb;
@@ -1614,7 +1616,7 @@ static int aac_decode_frame(AVCodecContext * avccontext, void * data, int * data
     init_get_bits(&gb, buf, buf_size*8);
 
     if (show_bits(&gb, 12) == 0xfff) {
-        if ((err = parse_adts_frame_header(ac, &gb)) < 0) {
+        if (parse_adts_frame_header(ac, &gb) < 0) {
             av_log(avccontext, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
             return -1;
         }

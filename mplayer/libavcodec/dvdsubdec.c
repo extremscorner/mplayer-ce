@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "colorspace.h"
 #include "dsputil.h"
 
@@ -475,8 +475,10 @@ static void ppm_save(const char *filename, uint8_t *bitmap, int w, int h,
 
 static int dvdsub_decode(AVCodecContext *avctx,
                          void *data, int *data_size,
-                         const uint8_t *buf, int buf_size)
+                         AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     AVSubtitle *sub = (void *)data;
     int is_menu;
 

@@ -1,5 +1,5 @@
 // FIXME: This needs to be redone properly.
-// Partially sync'ed with help_mp-en.h $Revision: 28860 $
+// Partially sync'ed with help_mp-en.h $Revision: 29209 $
 // This is a retranslation of the file by Bogdan Butnaru <bogdanb@fastmail.fm>,
 // based on the previous translation by Codre Adrian
 // <codreadrian@softhome.net> (address bounces).
@@ -75,7 +75,6 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "FPS (nr. de cadre pe secundã) nu e specificat în header sau e greºit; foloseºte opþiunea '-fps'.\n"
 #define MSGTR_TryForceAudioFmtStr "Forþez familia de codec audio %s...\n"
 #define MSGTR_CantFindAudioCodec "Nu gãsesc codec pentru formatul audio 0x%X.\n"
-#define MSGTR_RTFMCodecs "Citeºte DOCS/HTML/en/codecs.html!\n" //lang
 #define MSGTR_TryForceVideoFmtStr "Forþez familia de codecuri video %s...\n"
 #define MSGTR_CantFindVideoCodec "Nu gãsesc codec potrivit pentru ieºirea '-vo' aleasã ºi formatul video 0x%X.\n"
 #define MSGTR_VOincompCodec "Dispozitivul de ieºire video ales e incompatibil cu acest codec.\n"

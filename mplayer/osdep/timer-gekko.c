@@ -41,7 +41,7 @@ unsigned int GetTimerMS(void) {
 static s64 relative = 0;
 static unsigned int RelativeTime=0;
 
-float GetRelativeTime(void){
+float GetRelativeTime1(void){
 unsigned int t,r;
   t=GetTimer();
 //  t*=16;printf("time=%ud\n",t);
@@ -50,7 +50,7 @@ unsigned int t,r;
   return (float)r * 0.000001F;
 }
 
-float GetRelativeTime2(void) {
+float GetRelativeTime(void) {
 	s64 t;
 	float res;
 

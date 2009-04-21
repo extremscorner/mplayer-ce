@@ -1160,7 +1160,7 @@ typedef struct Mpeg1Context {
     int slice_count;
     int swap_uv;//indicate VCR2
     int save_aspect_info;
-    int save_width, save_height;
+    int save_width, save_height, save_progressive_seq;
     AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
 
 } Mpeg1Context;
@@ -1238,6 +1238,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
         s1->save_width != s->width ||
         s1->save_height != s->height ||
         s1->save_aspect_info != s->aspect_ratio_info||
+        s1->save_progressive_seq != s->progressive_sequence ||
         0)
     {
 
@@ -1256,6 +1257,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
         s1->save_aspect_info = s->aspect_ratio_info;
         s1->save_width = s->width;
         s1->save_height = s->height;
+        s1->save_progressive_seq = s->progressive_sequence;
 
         /* low_delay may be forced, in this case we will have B-frames
          * that behave like P-frames. */
@@ -2260,8 +2262,10 @@ static int decode_chunks(AVCodecContext *avctx,
 /* handle buffering and image synchronisation */
 static int mpeg_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             const uint8_t *buf, int buf_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     Mpeg1Context *s = avctx->priv_data;
     AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;

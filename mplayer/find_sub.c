@@ -132,9 +132,11 @@ void find_sub(sub_data* subd,int key){
           vo_sub=NULL;
           return;
       }
-      printf("HEH????  ");
+//      printf("HEH????  ");
     } else {
-      if(key<=vo_sub->end) printf("JAJJ!  "); else
+      if(key<=vo_sub->end) {//printf("JAJJ!  ");
+	  } 
+	  else
       if(current_sub+1 >= subd->sub_num){
           // at the end?
           nosub_range_start=vo_sub->end;

@@ -526,7 +526,6 @@ static void slice_buffer_init(slice_buffer * buf, int line_count, int max_alloca
 
 static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
 {
-    int offset;
     IDWTELEM * buffer;
 
     assert(buf->data_stack_top >= 0);
@@ -534,7 +533,6 @@ static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
     if (buf->line[line])
         return buf->line[line];
 
-    offset = buf->line_width * line;
     buffer = buf->data_stack[buf->data_stack_top];
     buf->data_stack_top--;
     buf->line[line] = buffer;
@@ -544,13 +542,11 @@ static IDWTELEM * slice_buffer_load_line(slice_buffer * buf, int line)
 
 static void slice_buffer_release(slice_buffer * buf, int line)
 {
-    int offset;
     IDWTELEM * buffer;
 
     assert(line >= 0 && line < buf->line_count);
     assert(buf->line[line]);
 
-    offset = buf->line_width * line;
     buffer = buf->line[line];
     buf->data_stack_top++;
     buf->data_stack[buf->data_stack_top] = buffer;
@@ -1234,8 +1230,8 @@ static void spatial_compose97i_dy_buffered(DSPContext *dsp, DWTCompose *cs, slic
         if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
     }
 
-        if(y-1<(unsigned)height) dsp->horizontal_compose97i(b0, width);
-        if(y+0<(unsigned)height) dsp->horizontal_compose97i(b1, width);
+    if(y-1<(unsigned)height) dsp->horizontal_compose97i(b0, width);
+    if(y+0<(unsigned)height) dsp->horizontal_compose97i(b1, width);
 
     cs->b0=b2;
     cs->b1=b3;
@@ -1253,13 +1249,13 @@ static void spatial_compose97i_dy(DWTCompose *cs, IDWTELEM *buffer, int width, i
     IDWTELEM *b4= buffer + mirror(y+3, height-1)*stride;
     IDWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
 
-        if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
-        if(y+2<(unsigned)height) vertical_compose97iH1(b2, b3, b4, width);
-        if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
-        if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
+    if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
+    if(y+2<(unsigned)height) vertical_compose97iH1(b2, b3, b4, width);
+    if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
+    if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
 
-        if(y-1<(unsigned)height) ff_snow_horizontal_compose97i(b0, width);
-        if(y+0<(unsigned)height) ff_snow_horizontal_compose97i(b1, width);
+    if(y-1<(unsigned)height) ff_snow_horizontal_compose97i(b0, width);
+    if(y+0<(unsigned)height) ff_snow_horizontal_compose97i(b1, width);
 
     cs->b0=b2;
     cs->b1=b3;
@@ -1626,6 +1622,7 @@ static int alloc_blocks(SnowContext *s){
     s->b_width = w;
     s->b_height= h;
 
+    av_free(s->block);
     s->block= av_mallocz(w * h * sizeof(BlockNode) << (s->block_max_depth*2));
     return 0;
 }
@@ -3553,8 +3550,16 @@ static void decode_qlogs(SnowContext *s){
     }
 }
 
+#define GET_S(dst, check) \
+    tmp= get_symbol(&s->c, s->header_state, 0);\
+    if(!(check)){\
+        av_log(s->avctx, AV_LOG_ERROR, "Error " #dst " is %d\n", tmp);\
+        return -1;\
+    }\
+    dst= tmp;
+
 static int decode_header(SnowContext *s){
-    int plane_index;
+    int plane_index, tmp;
     uint8_t kstate[32];
 
     memset(kstate, MID_STATE, sizeof(kstate));
@@ -3569,21 +3574,18 @@ static int decode_header(SnowContext *s){
         s->block_max_depth= 0;
     }
     if(s->keyframe){
-        s->version= get_symbol(&s->c, s->header_state, 0);
-        if(s->version>0){
-            av_log(s->avctx, AV_LOG_ERROR, "version %d not supported", s->version);
-            return -1;
-        }
+        GET_S(s->version, tmp <= 0U)
         s->always_reset= get_rac(&s->c, s->header_state);
         s->temporal_decomposition_type= get_symbol(&s->c, s->header_state, 0);
         s->temporal_decomposition_count= get_symbol(&s->c, s->header_state, 0);
-        s->spatial_decomposition_count= get_symbol(&s->c, s->header_state, 0);
+        GET_S(s->spatial_decomposition_count, 0 < tmp && tmp <= MAX_DECOMPOSITIONS)
         s->colorspace_type= get_symbol(&s->c, s->header_state, 0);
         s->chroma_h_shift= get_symbol(&s->c, s->header_state, 0);
         s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
         s->spatial_scalability= get_rac(&s->c, s->header_state);
 //        s->rate_scalability= get_rac(&s->c, s->header_state);
-        s->max_ref_frames= get_symbol(&s->c, s->header_state, 0)+1;
+        GET_S(s->max_ref_frames, tmp < (unsigned)MAX_REF_FRAMES)
+        s->max_ref_frames++;
 
         decode_qlogs(s);
     }
@@ -3609,14 +3611,19 @@ static int decode_header(SnowContext *s){
             memcpy(s->plane[2].hcoeff, s->plane[1].hcoeff, sizeof(s->plane[1].hcoeff));
         }
         if(get_rac(&s->c, s->header_state)){
-            s->spatial_decomposition_count= get_symbol(&s->c, s->header_state, 0);
+            GET_S(s->spatial_decomposition_count, 0 < tmp && tmp <= MAX_DECOMPOSITIONS)
             decode_qlogs(s);
         }
     }
 
     s->spatial_decomposition_type+= get_symbol(&s->c, s->header_state, 1);
-    if(s->spatial_decomposition_type > 1){
+    if(s->spatial_decomposition_type > 1U){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported", s->spatial_decomposition_type);
+        return -1;
+    }
+    if(FFMIN(s->avctx-> width>>s->chroma_h_shift,
+             s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 0){
+        av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size", s->spatial_decomposition_count);
         return -1;
     }
 
@@ -3649,6 +3656,7 @@ static av_cold int common_init(AVCodecContext *avctx){
     int i, j;
 
     s->avctx= avctx;
+    s->max_ref_frames=1; //just make sure its not an invalid value in case of no initial keyframe
 
     dsputil_init(&s->dsp, avctx);
 
@@ -4111,6 +4119,18 @@ static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fr
     }
 }
 
+static void release_buffer(AVCodecContext *avctx){
+    SnowContext *s = avctx->priv_data;
+    int i;
+
+    if(s->last_picture[s->max_ref_frames-1].data[0]){
+        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
+        for(i=0; i<9; i++)
+            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
+                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
+    }
+}
+
 static int frame_start(SnowContext *s){
    AVFrame tmp;
    int w= s->avctx->width; //FIXME round up to x16 ?
@@ -4121,6 +4141,8 @@ static int frame_start(SnowContext *s){
         s->dsp.draw_edges(s->current_picture.data[1], s->current_picture.linesize[1], w>>1, h>>1, EDGE_WIDTH/2);
         s->dsp.draw_edges(s->current_picture.data[2], s->current_picture.linesize[2], w>>1, h>>1, EDGE_WIDTH/2);
     }
+
+    release_buffer(s->avctx);
 
     tmp= s->last_picture[s->max_ref_frames-1];
     memmove(s->last_picture+1, s->last_picture, (s->max_ref_frames-1)*sizeof(AVFrame));
@@ -4138,6 +4160,10 @@ static int frame_start(SnowContext *s){
             if(i && s->last_picture[i-1].key_frame)
                 break;
         s->ref_frames= i;
+        if(s->ref_frames==0){
+            av_log(s->avctx,AV_LOG_ERROR, "No reference frames\n");
+            return -1;
+        }
     }
 
     s->current_picture.reference= 1;
@@ -4399,12 +4425,7 @@ redo_frame:
 
     update_last_header_values(s);
 
-    if(s->last_picture[s->max_ref_frames-1].data[0]){
-        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
-        for(i=0; i<9; i++)
-            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
-                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
-    }
+    release_buffer(avctx);
 
     s->current_picture.coded_picture_number = avctx->frame_number;
     s->current_picture.pict_type = pict->pict_type;
@@ -4483,12 +4504,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size){
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     SnowContext *s = avctx->priv_data;
     RangeCoder * const c= &s->c;
     int bytes_read;
     AVFrame *picture = data;
-    int level, orientation, plane_index, i;
+    int level, orientation, plane_index;
 
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -4509,9 +4532,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
                                               && p->hcoeff[2]==2;
     }
 
-    if(!s->block) alloc_blocks(s);
+    alloc_blocks(s);
 
-    frame_start(s);
+    if(frame_start(s) < 0)
+        return -1;
     //keyframe flag duplication mess FIXME
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_ERROR, "keyframe:%d qlog:%d\n", s->keyframe, s->qlog);
@@ -4626,12 +4650,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const
 
     emms_c();
 
-    if(s->last_picture[s->max_ref_frames-1].data[0]){
-        avctx->release_buffer(avctx, &s->last_picture[s->max_ref_frames-1]);
-        for(i=0; i<9; i++)
-            if(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3])
-                av_free(s->halfpel_plane[s->max_ref_frames-1][1+i/3][i%3] - EDGE_WIDTH*(1+s->current_picture.linesize[i%3]));
-    }
+    release_buffer(avctx);
 
     if(!(s->avctx->debug&2048))
         *picture= s->current_picture;
@@ -4698,15 +4717,15 @@ int main(void){
     int buffer[2][width*height];
     SnowContext s;
     int i;
+    AVLFG prng;
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
-    AVLFG prn;
 
-    av_lfg_init(&prn, 1);
+    av_lfg_init(&prng, 1);
 
     printf("testing 5/3 DWT\n");
     for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prn) % 54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
 
     ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
     ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
@@ -4717,7 +4736,7 @@ int main(void){
     printf("testing 9/7 DWT\n");
     s.spatial_decomposition_type=0;
     for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prn) % 54321 - 12345;
+        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
 
     ff_spatial_dwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
     ff_spatial_idwt(buffer[0], width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);

@@ -28,7 +28,8 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
+#include "put_bits.h"
 
 const uint8_t ff_log2_run[32]={
  0, 0, 0, 0, 1, 1, 1, 1,
@@ -65,13 +66,13 @@ void align_put_bits(PutBitContext *s)
 #endif
 }
 
-void ff_put_string(PutBitContext * pbc, const char *s, int put_zero)
+void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string)
 {
     while(*s){
         put_bits(pbc, 8, *s);
         s++;
     }
-    if(put_zero)
+    if(terminate_string)
         put_bits(pbc, 8, 0);
 }
 
@@ -90,7 +91,7 @@ void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
         for(i=0; put_bits_count(pb)&31; i++)
             put_bits(pb, 8, src[i]);
         flush_put_bits(pb);
-        memcpy(pbBufPtr(pb), src+i, 2*words-i);
+        memcpy(put_bits_ptr(pb), src+i, 2*words-i);
         skip_put_bytes(pb, 2*words-i);
     }
 

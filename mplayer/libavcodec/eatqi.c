@@ -29,7 +29,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 #include "aandcttab.h"
 #include "mpeg12.h"
@@ -38,7 +38,7 @@
 typedef struct TqiContext {
     MpegEncContext s;
     AVFrame frame;
-    uint8_t *bitstream_buf;
+    void *bitstream_buf;
     unsigned int bitstream_buf_size;
 } TqiContext;
 
@@ -101,8 +101,10 @@ static void tqi_calculate_qtable(MpegEncContext *s, int quant)
 
 static int tqi_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
     TqiContext *t = avctx->priv_data;
     MpegEncContext *s = &t->s;
@@ -124,10 +126,10 @@ static int tqi_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    t->bitstream_buf = av_fast_realloc(t->bitstream_buf, &t->bitstream_buf_size, (buf_end-buf) + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_fast_malloc(&t->bitstream_buf, &t->bitstream_buf_size, (buf_end-buf) + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!t->bitstream_buf)
-        return -1;
-    s->dsp.bswap_buf((uint32_t*)t->bitstream_buf, (const uint32_t*)buf, (buf_end-buf)/4);
+        return AVERROR(ENOMEM);
+    s->dsp.bswap_buf(t->bitstream_buf, (const uint32_t*)buf, (buf_end-buf)/4);
     init_get_bits(&s->gb, t->bitstream_buf, 8*(buf_end-buf));
 
     s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 0;

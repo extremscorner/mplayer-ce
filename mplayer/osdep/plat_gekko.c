@@ -53,10 +53,11 @@
 #include "../get_path.h"
 
 #undef abort
- 
+  
 bool reset_pressed = false;
 bool power_pressed = false;
 bool playing_usb = false;
+int network_inited = 0;
 static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static int dbg_network = false;
@@ -66,8 +67,23 @@ static bool exit_automount_thread = false;
 //#define CE_DEBUG 1
 
 static char *default_args[] = {
-	"mplayer.dol",
+	"sd:/apps/mplayer_ce/mplayer.dol",
+	//"loadlist","http://radioplus.dnsalias.org:8000/listen.pls"
+    //"-really-quiet",		
+	//"-msglevel","all=5",		
+    //"-nocache",
 	"-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
+	//"-sws","4","-vf","scale=640:-2",
+	//"-lavdopts","lowres=1:fast:skiploopfilter=nonkey","dvd://"
+    //"-nomenu",
+	//"sd:/Crystal_Skull.avi"
+	//"sd:/test2.avi"
+	//"-sws","4","-vf","scale=640:-2","-lavdopts","fast:skiploopfilter=nonkey","sd:/hires.avi"
+	//"sd:/test720p.mp4"
+	//"usb:/Appaloosa.avi"
+	//"usb:/Crystal_Skull.avi"
+	//"usb:/CD1.Quantum.Of.Solace.avi"
+	//"usb:/La.Semilla.Del.Mal.avi"
 }; 
 
 //extern float movie_aspect;
@@ -87,18 +103,17 @@ static void wpad_power_cb (void) {
 #include <sys/time.h>
 #include <sys/timeb.h>
 void gekko_gettimeofday(struct timeval *tv, void *tz) {
+/*
       struct timeb timebuffer;
         ftime( &timebuffer );
         tv->tv_sec=timebuffer.time;
         tv->tv_usec=1000*timebuffer.millitm;
-/*        
+*/        
+        
 	u32 us = ticks_to_microsecs(gettime());
 
 	tv->tv_sec = us / TB_USPERSEC;
 	tv->tv_usec = us % TB_USPERSEC;
-*/
-
-	
 } 
  
 void gekko_abort(void) {
@@ -131,24 +146,32 @@ static s32 initialise_network()
 
 int wait_for_network_initialisation() 
 {
-	static int inited = 0;
-	if(inited) return 1;
+	if(network_inited) return 1;
 	
-    if (initialise_network() >= 0) {
-        char myIP[16];
-        if (if_config(myIP, NULL, NULL, true) < 0)
+	while(1)
+	{	
+	    if (initialise_network() >= 0) {
+	        char myIP[16];
+	        if (if_config(myIP, NULL, NULL, true) < 0)
+			{
+			  if(dbg_network) printf("Error getting ip\n");
+			  return 0;
+			}
+	        else
+			{
+			  network_inited = 1;
+			  if(dbg_network) printf("Netwok initialized. IP: %s\n",myIP);
+			  return 1;
+			}
+	    }
+	    if(dbg_network) 
 		{
-		  if(dbg_network) printf("Error getting ip\n");
-		  return 0;
+			printf("Error initializing netwok\n");
+			break;
 		}
-        else
-		{
-		  inited = 1;
-		  if(dbg_network) printf("Netwok initialized. IP: %s\n",myIP);
-		  return 1;
-		}
+		sleep(10);
     }
-	if(dbg_network) printf("Error initializing netwok\n");
+	
 	return 0;
 }
 
@@ -160,7 +183,9 @@ bool DVDGekkoMount()
 	if(WIIDVD_DiscPresent())
 	{
 		int ret;
+		printf("WIIDVD_Unmount\n");
 		WIIDVD_Unmount();
+		printf("WIIDVD_mount\n");
 		ret = WIIDVD_Mount();
 		dvd_mounted=true;
 		dvd_mounting=false;
@@ -174,16 +199,12 @@ bool DVDGekkoMount()
 
 static void * networkthreadfunc (void *arg)
 {
-	int i;
 	usleep(100);
-	for(i=0;i<3;i++) // 3 retrys
+	if(wait_for_network_initialisation()) 
 	{
-		if(wait_for_network_initialisation()) 
-		{
-			trysmb();
-			break;
-		}else usleep(3000);
+		trysmb();
 	}
+	usleep(100);
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
@@ -204,36 +225,20 @@ static void * mountthreadfunc (void *arg)
 {
 	int dp, dvd_inserted=0,usb_inserted=0;
 
-  usleep(200);	
-	PAD_Init();
-
-	AUDIO_Init(NULL);
-	AUDIO_RegisterDMACallback(NULL);
-	AUDIO_StopDMA();
-
-	WPAD_Init();
-	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS);
-	WPAD_SetIdleTimeout(60);
-
-	SYS_SetResetCallback (reset_cb);
-	SYS_SetPowerCallback (power_cb);
-	WPAD_SetPowerButtonCallback(wpad_power_cb);
 
 	//initialize usb
 	usb->startup();
 	if(usb->isInserted())		
 	{
-		if(fatMountSimple("usb",usb))
-		{
-		fatSetReadAhead("usb:", 4, 124);
-		usb_inserted=1;
-		}
+		if(fatMountSimple("usb",usb)) usb_inserted=1;
 	}
+	
 #ifdef CE_DEBUG
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 #endif	
-  sleep(1);	
+  
+	sleep(1);	
 	while(!exit_automount_thread)
 	{	
 		if(!playing_usb)
@@ -246,10 +251,10 @@ static void * mountthreadfunc (void *arg)
 				usb_inserted=dp;
 				if(!dp)
 				{
-					fatUnmount("usb:");
-				}
+					fatUnmount("usb");
+				}else fatMountSimple("usb",usb);
 			}
-		}	
+		}//else usb_inserted=1;	
     			
 		if(dvd_mounting==false)
 		{
@@ -346,21 +351,36 @@ int LoadParams()
 void plat_init (int *argc, char **argv[]) {	
 	WIIDVD_Init(); 
 	VIDEO_Init();
+	
+	PAD_Init();
+
+	WPAD_Init();
+	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS);
+	WPAD_SetIdleTimeout(60);
+
+	SYS_SetResetCallback (reset_cb);
+	SYS_SetPowerCallback (power_cb);
+	WPAD_SetPowerButtonCallback(wpad_power_cb);
+	
+	AUDIO_Init(NULL);
+	AUDIO_RegisterDMACallback(NULL);
+	AUDIO_StopDMA();
+
 
 	if (!sd->startup() || !fatMountSimple("sd",sd) || !LoadParams())
 	{
 		GX_InitVideo();
-  	log_console_init(vmode, 128);
-  	printf("MPlayerCE v.0.4\n\n");
+  	log_console_init(vmode, 0);
+  	printf("MPlayerCE v.0.4a\n\n");
 		printf("SD access failed\n");
-		printf("Please review that you have installed MPlayerCE in the right folder\n");
+		printf("Please review that you have installed MPlayerCE in the rigth folder\n");
 		printf("sd:/apps/mplayer_ce\n");
 				
 		VIDEO_WaitVSync();
 		sleep(6);
 		if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 		exit(0);
-	}else fatSetReadAhead("sd:", 4, 128);
+	}
 	
 	GX_SetComponentFix(component_fix);  
 	GX_InitVideo();
@@ -372,7 +392,7 @@ void plat_init (int *argc, char **argv[]) {
   __dec(cad);
   printf ("\x1b[32m");
 	printf("%s",cad);
-	printf(" v.0.4 ....\n\n");
+	printf(" v.0.4a ....\n\n");
   printf ("\x1b[37m");
   
 
@@ -383,10 +403,12 @@ void plat_init (int *argc, char **argv[]) {
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
-	
+		
 
-	LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
+LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
+
 #ifndef CE_DEBUG  //no network on debug
+
 	if(dbg_network)
 	{
 		printf("\nDebugging Network\n");
@@ -397,9 +419,11 @@ void plat_init (int *argc, char **argv[]) {
 		printf("Pause for reading (10 seconds)...");
 		VIDEO_WaitVSync();
 		sleep(10);
-	}else LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 80); // network initialization
+	}
+	else LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 80); // network initialization
 	
-	log_console_enable_video(false);
+	//log_console_enable_video(false);
+	
 #endif	
 
   
@@ -413,7 +437,7 @@ void plat_init (int *argc, char **argv[]) {
 	 
 	*argv = default_args;
 	*argc = sizeof(default_args) / sizeof(char *);
-  //log_console_enable_video(true);
+	
 	if (!*((u32*)0x80001800)) sp(); 
 }
 

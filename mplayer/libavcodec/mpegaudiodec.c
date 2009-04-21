@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 
 /*
@@ -358,7 +358,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
         for(i=1;i<16;i++) {
             const HuffTable *h = &mpa_huff_tables[i];
             int xsize, x, y;
-            unsigned int n;
             uint8_t  tmp_bits [512];
             uint16_t tmp_codes[512];
 
@@ -366,7 +365,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
             memset(tmp_codes, 0, sizeof(tmp_codes));
 
             xsize = h->xsize;
-            n = xsize * xsize;
 
             j = 0;
             for(x=0;x<xsize;x++) {
@@ -2258,8 +2256,10 @@ static int mp_decode_frame(MPADecodeContext *s,
 
 static int decode_frame(AVCodecContext * avctx,
                         void *data, int *data_size,
-                        const uint8_t * buf, int buf_size)
+                        AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
     int out_size;
@@ -2315,8 +2315,10 @@ static void flush(AVCodecContext *avctx){
 #if CONFIG_MP3ADU_DECODER
 static int decode_frame_adu(AVCodecContext * avctx,
                         void *data, int *data_size,
-                        const uint8_t * buf, int buf_size)
+                        AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
     int len, out_size;
@@ -2459,8 +2461,10 @@ static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
 
 static int decode_frame_mp3on4(AVCodecContext * avctx,
                         void *data, int *data_size,
-                        const uint8_t * buf, int buf_size)
+                        AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MP3On4DecodeContext *s = avctx->priv_data;
     MPADecodeContext *m;
     int fsize, len = buf_size, out_size = 0;

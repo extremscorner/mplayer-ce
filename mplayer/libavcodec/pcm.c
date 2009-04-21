@@ -25,7 +25,7 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h" // for ff_reverse
+#include "get_bits.h" // for ff_reverse
 #include "bytestream.h"
 
 #define MAX_CHANNELS 64
@@ -323,8 +323,10 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
 
 static int pcm_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     PCMDecode *s = avctx->priv_data;
     int sample_size, c, n;
     short *samples;
@@ -359,8 +361,11 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     n = avctx->channels * sample_size;
 
     if(n && buf_size % n){
-        av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
-        return -1;
+        if (buf_size < n) {
+            av_log(avctx, AV_LOG_ERROR, "invalid PCM packet\n");
+            return -1;
+        }else
+            buf_size -= buf_size % n;
     }
 
     buf_size= FFMIN(buf_size, *data_size/2);

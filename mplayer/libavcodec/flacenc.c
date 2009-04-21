@@ -20,10 +20,9 @@
  */
 
 #include "libavutil/crc.h"
-#include "libavutil/lls.h"
 #include "libavutil/md5.h"
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
 #include "dsputil.h"
 #include "golomb.h"
 #include "lpc.h"
@@ -84,6 +83,7 @@ typedef struct FlacEncodeContext {
     int channels;
     int samplerate;
     int sr_code[2];
+    int max_blocksize;
     int min_framesize;
     int max_framesize;
     int max_encoded_framesize;
@@ -108,8 +108,8 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
     init_put_bits(&pb, header, FLAC_STREAMINFO_SIZE);
 
     /* streaminfo metadata block */
-    put_bits(&pb, 16, s->avctx->frame_size);
-    put_bits(&pb, 16, s->avctx->frame_size);
+    put_bits(&pb, 16, s->max_blocksize);
+    put_bits(&pb, 16, s->max_blocksize);
     put_bits(&pb, 24, s->min_framesize);
     put_bits(&pb, 24, s->max_framesize);
     put_bits(&pb, 20, s->samplerate);
@@ -327,6 +327,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     } else {
         s->avctx->frame_size = select_blocksize(s->samplerate, s->options.block_time_ms);
     }
+    s->max_blocksize = s->avctx->frame_size;
     av_log(avctx, AV_LOG_DEBUG, " block size: %d\n", s->avctx->frame_size);
 
     /* set LPC precision */
@@ -595,7 +596,7 @@ void ff_flac_compute_autocorr(const int32_t *data, int len, int lag,
 
     for(j=0; j<lag; j+=2){
         double sum0 = 1.0, sum1 = 1.0;
-        for(i=0; i<len; i++){
+        for(i=j; i<len; i++){
             sum0 += data1[i] * data1[i-j];
             sum1 += data1[i] * data1[i-j-1];
         }
@@ -605,7 +606,7 @@ void ff_flac_compute_autocorr(const int32_t *data, int len, int lag,
 
     if(j==lag){
         double sum = 1.0;
-        for(i=0; i<len; i+=2){
+        for(i=j-1; i<len; i+=2){
             sum += data1[i  ] * data1[i-j  ]
                  + data1[i+1] * data1[i-j+1];
         }

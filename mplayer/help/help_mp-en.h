@@ -1,4 +1,4 @@
-// $Revision: 28860 $
+// $Revision: 29209 $
 // MASTER FILE. Use this file as base for translations.
 // Translated files should be sent to the mplayer-DOCS mailing list or
 // to the help messages maintainer, see DOCS/tech/MAINTAINERS.
@@ -75,7 +75,6 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "FPS not specified in the header or invalid, use the -fps option.\n"
 #define MSGTR_TryForceAudioFmtStr "Trying to force audio codec driver family %s...\n"
 #define MSGTR_CantFindAudioCodec "Cannot find codec for audio format 0x%X.\n"
-#define MSGTR_RTFMCodecs "Read DOCS/HTML/en/codecs.html!\n"
 #define MSGTR_TryForceVideoFmtStr "Trying to force video codec driver family %s...\n"
 #define MSGTR_CantFindVideoCodec "Cannot find codec matching selected -vo and video format 0x%X.\n"
 #define MSGTR_CannotInitVO "FATAL: Cannot initialize video driver.\n"

@@ -11,7 +11,7 @@
  *
  * Modified for use with MPlayer, changes contained in liba52_changes.diff.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: imdct.c 28396 2009-01-30 23:19:00Z diego $
+ * $Id: imdct.c 29154 2009-04-08 20:21:21Z ramiro $
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@
 
 void (*a52_imdct_512) (sample_t * data, sample_t * delay, sample_t bias);
 
-#ifdef RUNTIME_CPUDETECT
+#if CONFIG_RUNTIME_CPUDETECT
 #undef HAVE_AMD3DNOWEXT
 #define HAVE_AMD3DNOWEXT 0
 #endif

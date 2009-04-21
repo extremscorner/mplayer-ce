@@ -1,7 +1,6 @@
 
 /// \file
 /// \ingroup Properties Command2Property OSDMsgStack
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "config.h"
@@ -815,7 +814,7 @@ static void exit_sighandler(int x){
       async_quit_request = 1;
       return;  // killed from keyboard (^C) or killed [-9]
   case SIGILL:
-#ifdef RUNTIME_CPUDETECT
+#if CONFIG_RUNTIME_CPUDETECT
       mp_msg(MSGT_CPLAYER,MSGL_FATAL,MSGTR_Exit_SIGILL_RTCpuSel);
 #else
       mp_msg(MSGT_CPLAYER,MSGL_FATAL,MSGTR_Exit_SIGILL);
@@ -1149,8 +1148,10 @@ void init_vo_spudec(void) {
     spudec_set_font_factor(vo_spudec,font_factor);
   }
 
-  if (vo_spudec!=NULL)
+  if (vo_spudec!=NULL) {
     initialized_flags|=INITIALIZED_SPUDEC;
+    mp_property_do("sub_forced_only", M_PROPERTY_SET, &forced_subs_only, mpctx);
+  }
 }
 
 /*
@@ -1281,8 +1282,8 @@ return;
 
 #ifdef CONFIG_STREAM_CACHE
   // cache stats
-  if (stream_cache_size > 0)
-    saddf(line, &pos, width, "%d%% ", cache_fill_status);
+  //if (stream_cache_size > 0)
+  //  saddf(line, &pos, width, "%d%% ", cache_fill_status);
 #endif
 
   // other
@@ -1989,7 +1990,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
 
     if(mpctx->sh_audio){
     //geexbox bgvideo patch
-      if(mpctx->bg_demuxer) {
+      if(mpctx->bg_demuxer) {      
       	if(!quiet) mp_msg(MSGT_AVSYNC,MSGL_STATUS,"A:%6.1f %4.1f%% %d%%   \r"
  		       ,mpctx->delay - mpctx->audio_out->get_delay()
  		       ,(mpctx->delay>0.5)?100.0*audio_time_usage/(double)mpctx->delay:0
@@ -2023,7 +2024,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
 	    double x;
 	    if (AV_delay>0.5 && drop_frame_cnt>50 && drop_message==0){
 		++drop_message;
-		//mp_msg(MSGT_AVSYNC,MSGL_WARN,MSGTR_SystemTooSlow);
+		mp_msg(MSGT_AVSYNC,MSGL_WARN,MSGTR_SystemTooSlow);
 	    }
 	    if (autosync)
 		x = AV_delay*0.1f;
@@ -2295,7 +2296,6 @@ int reinit_video_chain(void) {
   // ========== Init display (sh_video->disp_w*sh_video->disp_h/out_fmt) ============
 
   current_module="init_vo";
-
   return 1;
 
 err_out:
@@ -2355,10 +2355,11 @@ static double update_video(int *blit_frame)
 #endif
 	current_module = "filter_video";
 	*blit_frame = (decoded_frame && filter_video(sh_video, decoded_frame,
-						    sh_video->pts));
+						    sh_video->pts));	
     }
     else {
 	int res = generate_video_frame(sh_video, mpctx->d_video);
+	if(res<0)printf("res -1 blit_frame: %i   ",blit_frame);
 	if (!res)
 	    return -1;
 	((vf_instance_t *)sh_video->vfilter)->control(sh_video->vfilter,
@@ -2379,6 +2380,8 @@ static double update_video(int *blit_frame)
 	if(mpctx->sh_audio)
 	    mpctx->delay -= frame_time;
 	*blit_frame = res > 0;
+	printf("res: %i  blit_frame: %i   \n",res,blit_frame);
+	VIDEO_WaitVSync();	
     }
     return frame_time;
 }
@@ -2448,6 +2451,13 @@ static void pause_loop(void)
 #endif
 	usec_sleep(20000);
     }
+	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7))) 
+	{
+		DI_StartMotor();
+		void *ptr=memalign(32, 0x800*2);	
+		DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
+		free(ptr);
+	}    
     if (cmd && cmd->id == MP_CMD_PAUSE) {
 	cmd = mp_input_get_cmd(0,1,0);
 	mp_cmd_free(cmd);
@@ -2781,7 +2791,7 @@ if(!codecs_file || !parse_codec_cfg(codecs_file)){
     }
     if(af_cfg.list && strcmp(af_cfg.list[0],"help")==0){
       af_help();
-      printf("\n");
+      mp_msg(MSGT_FIXME, MSGL_FIXME, "\n");
       opt_exit = 1;
     }
 #ifdef CONFIG_X11
@@ -3171,7 +3181,7 @@ int vob_sub_auto = 0; //scip
       initialized_flags|=INITIALIZED_VOBSUB;
       vobsub_set_from_lang(vo_vobsub, dvdsub_lang);
       // check if vobsub requested only to display forced subtitles /** rodries review **/
-      //forced_subs_only=vobsub_get_forced_subs_flag(vo_vobsub);
+      //mp_property_do("sub_forced_only", M_PROPERTY_SET, &forced_subs_only, mpctx);
 
       // setup global sub numbering
       mpctx->global_sub_indices[SUB_SOURCE_VOBSUB] = mpctx->global_sub_size; // the global # of the first vobsub.
@@ -3211,7 +3221,7 @@ int vob_sub_auto = 0; //scip
     stream_cache_min_percent=orig_stream_cache_min_percent;
     stream_cache_seek_min_percent=orig_stream_cache_seek_min_percent;
   }
-  if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9)) 
+  if(!strncmp(filename,"dvd:/",5) || !strncmp(filename,"dvdnav://",9)) 
   {
 	  set_osd_msg(124, 1, 10000, "Mounting DVD, please wait");
 	  update_osd_msg();
@@ -3224,8 +3234,10 @@ int vob_sub_auto = 0; //scip
 	  }
 	  else
 	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
-  }  
-  else if(!strncmp(filename,"http:",5)) 
+  }   
+  
+  
+  if(!strncmp(filename,"http:",5)) 
   {
 	 stream_cache_min_percent=1;
 	 stream_cache_seek_min_percent=5;
@@ -3579,7 +3591,6 @@ if(vo_spudec==NULL && mpctx->sh_video &&
      (mpctx->stream->type==STREAMTYPE_DVD || mpctx->stream->type == STREAMTYPE_DVDNAV)){
   init_vo_spudec();
 }
-
 if(mpctx->sh_video) {
 // after reading video params we should load subtitles because
 // we know fps so now we can adjust subtitle time to ~6 seconds AST
@@ -3606,7 +3617,6 @@ if(mpctx->sh_video) {
     }
     free(tmp);
   }
-  
   if (mpctx->set_of_sub_size > 0)  {
       // setup global sub numbering
       mpctx->global_sub_indices[SUB_SOURCE_SUBS] = mpctx->global_sub_size; // the global # of the first sub.
@@ -3685,9 +3695,14 @@ if (mpctx->global_sub_size) {
 
 if(!mpctx->sh_video) goto main; // audio-only
 
+
 if(!reinit_video_chain()) {
+
   if(!mpctx->sh_video){
-    if(!mpctx->sh_audio) goto goto_next_file;
+    if(!mpctx->sh_audio) 
+	{
+		goto goto_next_file;
+	}
     goto main; // exit_player(MSGTR_Exit_error);
   }
 }
@@ -3928,10 +3943,10 @@ if(!mpctx->sh_video) {
 
 //====================== FLIP PAGE (VIDEO BLT): =========================
 
-        current_module="flip_page";
-        if (!frame_time_remaining && blit_frame) {
-	   unsigned int t2=GetTimer();
-
+        current_module="flip_page";        
+        if (!frame_time_remaining && blit_frame) {        
+       unsigned int t2=GetTimer();
+        
 	   if(vo_config_count) mpctx->video_out->flip_page();
 	   mpctx->num_buffered_frames--;
 
@@ -3965,8 +3980,6 @@ if(auto_quality>0){
      --play_n_frames;
      if (play_n_frames <= 0) mpctx->eof = PT_NEXT_ENTRY;
  }
-
-
 // FIXME: add size based support for -endpos
  if (end_at.type == END_AT_TIME &&
          !frame_time_remaining && end_at.pos <= mpctx->sh_video->pts)
@@ -4009,7 +4022,6 @@ if(step_sec>0) {
  edl_update(mpctx);
 
 //================= Keyboard events, SEEKing ====================
-
   current_module="key_events";
 
 {
@@ -4080,6 +4092,8 @@ if(rel_seek_secs || abs_seek_pos){
 #endif
       }
 #endif /* CONFIG_GUI */
+
+
 
 } // while(!mpctx->eof)
 

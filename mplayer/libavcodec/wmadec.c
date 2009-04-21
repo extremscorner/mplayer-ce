@@ -683,9 +683,8 @@ static int wma_decode_block(WMACodecContext *s)
 
 next:
     for(ch = 0; ch < s->nb_channels; ch++) {
-        int n4, index, n;
+        int n4, index;
 
-        n = s->block_len;
         n4 = s->block_len / 2;
         if(s->channel_coded[ch]){
             ff_imdct_calc(&s->mdct_ctx[bsize], s->output, s->coefs[ch]);
@@ -752,8 +751,10 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
 
 static int wma_decode_superframe(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 const uint8_t *buf, int buf_size)
+                                 AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     WMACodecContext *s = avctx->priv_data;
     int nb_frames, bit_offset, i, pos, len;
     uint8_t *q;

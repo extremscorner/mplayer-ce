@@ -51,7 +51,6 @@ static const vo_info_t info = {
 };
 
 const LIBVO_EXTERN (gekko)
-static bool first_config=false;
 static	u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
 
@@ -97,10 +96,15 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 	srca=bufa;
 	h1 = h / 4 ;
 
-	if(dststride>image_width)w1 = image_width >> 3 ;
-	else w1 = dststride >> 3 ;
-    Yrowpitch=GetYrowpitch()*8;
-    df1 = ((image_width >> 3) - w1)*32;    
+	//if(dststride>image_width)w1 = image_width >> 3 ;
+	//else w1 = dststride >> 3 ;
+	getStrideInfo(&w1,&df1,&Yrowpitch);
+	Yrowpitch=Yrowpitch*8;
+	df1=df1*8;
+	
+	//w1 = dststride >> 3 ;
+    //Yrowpitch=GetYrowpitch()*8;
+    //df1 = ((image_width >> 3) - w1)*32;    
 
 				
 	dst=dstbase;
@@ -155,9 +159,16 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 						unsigned char *srca, int stride) {
 					
-	y0=((int)(y0/8.0))*8;				
+	int p;
+	p=pitch[0];
+	p= (p / 16);
+	if(p % 2) p++;
+	p=p*16;
+
+	y0=((int)(y0/8.0))*8;
+					
 	vo_draw_alpha_gekko(w, h, src, srca, stride,
-						GetYtexture() + (y0 * image_width),
+						GetYtexture() + (y0 * p),
 						pitch[0]);
 
 }
@@ -207,14 +218,13 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
           uint32_t d_height, uint32_t flags, char *title,
           uint32_t format) {
 	float sar, par, iar;
-	image_width = (width / 16);
-	if(image_width % 2) image_width++;
-	image_width=image_width*16;
+
+	image_width = width;
 	image_height = ((int)((height/8.0)))*8;
 	
- 	pitch[0] = image_width;
-	pitch[1] = image_width / 2;
-	pitch[2] = image_width / 2;
+ 	pitch[0] = 0;
+	pitch[1] = 0;
+	pitch[2] = 0;
 
 
   if (CONF_GetAspectRatio())
@@ -243,6 +253,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 static void uninit(void) {
 	image_width = 0;
 	image_height = 0;
+	reset_nunchuk_positions();
 }
 
 static void check_events(void) {
@@ -250,7 +261,7 @@ static void check_events(void) {
 
 static int preinit(const char *arg) {
 	log_console_enable_video(false);
-	first_config=false;
+	reset_nunchuk_positions();
 	
 	return 0;
 }
