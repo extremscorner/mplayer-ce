@@ -66,24 +66,13 @@ static bool exit_automount_thread = false;
 
 //#define CE_DEBUG 1
 
-static char *default_args[] = {
+static char *default_args1[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
-	//"loadlist","http://radioplus.dnsalias.org:8000/listen.pls"
-    //"-really-quiet",		
-	//"-msglevel","all=5",		
-    //"-nocache",
+	"-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop-wide.avi", "-idle", "sd:/apps/mplayer_ce/loop-wide.avi"
+}; 
+static char *default_args2[] = {
+	"sd:/apps/mplayer_ce/mplayer.dol",
 	"-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
-	//"-sws","4","-vf","scale=640:-2",
-	//"-lavdopts","lowres=1:fast:skiploopfilter=nonkey","dvd://"
-    //"-nomenu",
-	//"sd:/Crystal_Skull.avi"
-	//"sd:/test2.avi"
-	//"-sws","4","-vf","scale=640:-2","-lavdopts","fast:skiploopfilter=nonkey","sd:/hires.avi"
-	//"sd:/test720p.mp4"
-	//"usb:/Appaloosa.avi"
-	//"usb:/Crystal_Skull.avi"
-	//"usb:/CD1.Quantum.Of.Solace.avi"
-	//"usb:/La.Semilla.Del.Mal.avi"
 }; 
 
 //extern float movie_aspect;
@@ -371,7 +360,7 @@ void plat_init (int *argc, char **argv[]) {
 	{
 		GX_InitVideo();
   	log_console_init(vmode, 0);
-  	printf("MPlayerCE v.0.4a\n\n");
+  	printf("MPlayerCE v.0.5\n\n");
 		printf("SD access failed\n");
 		printf("Please review that you have installed MPlayerCE in the rigth folder\n");
 		printf("sd:/apps/mplayer_ce\n");
@@ -392,7 +381,7 @@ void plat_init (int *argc, char **argv[]) {
   __dec(cad);
   printf ("\x1b[32m");
 	printf("%s",cad);
-	printf(" v.0.4a ....\n\n");
+	printf(" v.0.5 ....\n\n");
   printf ("\x1b[37m");
   
 
@@ -434,10 +423,16 @@ LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mou
 	setenv("DVDREAD_VERBOSE", "0", 1);
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
 	
-	 
-	*argv = default_args;
-	*argc = sizeof(default_args) / sizeof(char *);
-	
+	if (CONF_GetAspectRatio()) 
+	{ //16:9
+		*argv = default_args1;
+		*argc = sizeof(default_args1) / sizeof(char *);
+	}		
+	else
+	{  // 4:3
+		*argv = default_args2;
+		*argc = sizeof(default_args2) / sizeof(char *);
+	}
 	if (!*((u32*)0x80001800)) sp(); 
 }
 
