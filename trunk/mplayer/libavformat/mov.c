@@ -33,7 +33,7 @@
 #include "isom.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
-#include "libavcodec/bitstream.h"
+#include "libavcodec/get_bits.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -384,6 +384,7 @@ static const AVCodecTag mp4_audio_types[] = {
     { CODEC_ID_MP3ON4, AOT_L1   }, /* layer 1 */
     { CODEC_ID_MP3ON4, AOT_L2   }, /* layer 2 */
     { CODEC_ID_MP3ON4, AOT_L3   }, /* layer 3 */
+    { CODEC_ID_MP4ALS, AOT_ALS  }, /* MPEG-4 ALS */
     { CODEC_ID_NONE,   AOT_NULL },
 };
 
@@ -997,7 +998,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
             // ttxt stsd contains display flags, justification, background
             // color, fonts, and default styles, so fake an atom to read it
             MOVAtom fake_atom = { .size = size - (url_ftell(pb) - start_pos) };
-            mov_read_glbl(c, pb, fake_atom);
+            if (format != AV_RL32("mp4s")) // mp4s contains a regular esds atom
+                mov_read_glbl(c, pb, fake_atom);
             st->codec->codec_id= id;
             st->codec->width = sc->width;
             st->codec->height = sc->height;
@@ -1033,6 +1035,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 #endif
     /* no ifdef since parameters are always those */
     case CODEC_ID_QCELP:
+        // force sample rate for qcelp when not stored in mov
+        if (st->codec->codec_tag != MKTAG('Q','c','l','p'))
+            st->codec->sample_rate = 8000;
         st->codec->frame_size= 160;
         st->codec->channels= 1; /* really needed */
         break;

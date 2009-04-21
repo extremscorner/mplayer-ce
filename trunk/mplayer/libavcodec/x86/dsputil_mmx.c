@@ -28,7 +28,6 @@
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/simple_idct.h"
 #include "dsputil_mmx.h"
-#include "mmx.h"
 #include "vp3dsp_mmx.h"
 #include "vp3dsp_sse2.h"
 #include "vp6dsp_mmx.h"
@@ -156,6 +155,7 @@ DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
 #define SET_RND  MOVQ_WONE
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
 #define PAVGB(a, b, c, e)               PAVGB_MMX_NO_RND(a, b, c, e)
+#define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
 
 #include "dsputil_mmx_rnd_template.c"
 
@@ -177,17 +177,20 @@ DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
 #undef SET_RND
 #undef PAVGBP
 #undef PAVGB
+#undef OP_AVG
 
 /***********************************/
 /* 3Dnow specific */
 
 #define DEF(x) x ## _3dnow
 #define PAVGB "pavgusb"
+#define OP_AVG PAVGB
 
 #include "dsputil_mmx_avg_template.c"
 
 #undef DEF
 #undef PAVGB
+#undef OP_AVG
 
 /***********************************/
 /* MMX2 specific */
@@ -196,11 +199,13 @@ DECLARE_ALIGNED_16(const double, ff_pd_2[2]) = { 2.0, 2.0 };
 
 /* Introduced only in MMX2 set */
 #define PAVGB "pavgb"
+#define OP_AVG PAVGB
 
 #include "dsputil_mmx_avg_template.c"
 
 #undef DEF
 #undef PAVGB
+#undef OP_AVG
 
 #define put_no_rnd_pixels16_mmx put_pixels16_mmx
 #define put_no_rnd_pixels8_mmx put_pixels8_mmx
@@ -273,22 +278,41 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
             :"memory");
 }
 
-static DECLARE_ALIGNED_8(const unsigned char, vector128[8]) =
+DECLARE_ASM_CONST(8, uint8_t, ff_vector128[8]) =
   { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 };
+
+#define put_signed_pixels_clamped_mmx_half(off) \
+            "movq    "#off"(%2), %%mm1          \n\t"\
+            "movq 16+"#off"(%2), %%mm2          \n\t"\
+            "movq 32+"#off"(%2), %%mm3          \n\t"\
+            "movq 48+"#off"(%2), %%mm4          \n\t"\
+            "packsswb  8+"#off"(%2), %%mm1      \n\t"\
+            "packsswb 24+"#off"(%2), %%mm2      \n\t"\
+            "packsswb 40+"#off"(%2), %%mm3      \n\t"\
+            "packsswb 56+"#off"(%2), %%mm4      \n\t"\
+            "paddb %%mm0, %%mm1                 \n\t"\
+            "paddb %%mm0, %%mm2                 \n\t"\
+            "paddb %%mm0, %%mm3                 \n\t"\
+            "paddb %%mm0, %%mm4                 \n\t"\
+            "movq %%mm1, (%0)                   \n\t"\
+            "movq %%mm2, (%0, %3)               \n\t"\
+            "movq %%mm3, (%0, %3, 2)            \n\t"\
+            "movq %%mm4, (%0, %1)               \n\t"
 
 void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
 {
-    int i;
+    x86_reg line_skip = line_size;
+    x86_reg line_skip3;
 
-    movq_m2r(*vector128, mm1);
-    for (i = 0; i < 8; i++) {
-        movq_m2r(*(block), mm0);
-        packsswb_m2r(*(block + 4), mm0);
-        block += 8;
-        paddb_r2r(mm1, mm0);
-        movq_r2m(mm0, *pixels);
-        pixels += line_size;
-    }
+    __asm__ volatile (
+            "movq "MANGLE(ff_vector128)", %%mm0 \n\t"
+            "lea (%3, %3, 2), %1                \n\t"
+            put_signed_pixels_clamped_mmx_half(0)
+            "lea (%0, %3, 4), %0                \n\t"
+            put_signed_pixels_clamped_mmx_half(64)
+            :"+&r" (pixels), "=&r" (line_skip3)
+            :"r" (block), "r"(line_skip)
+            :"memory");
 }
 
 void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
@@ -1795,6 +1819,9 @@ void ff_vc1dsp_init_mmx(DSPContext* dsp, AVCodecContext *avctx);
 void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
     put_pixels8_mmx(dst, src, stride, 8);
 }
+void ff_avg_vc1_mspel_mc00_mmx2(uint8_t *dst, const uint8_t *src, int stride, int rnd) {
+    avg_pixels8_mmx2(dst, src, stride, 8);
+}
 
 /* external functions, from idct_mmx.c */
 void ff_mmx_idct(DCTELEM *block);
@@ -2573,8 +2600,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
     av_log(avctx, AV_LOG_INFO, "libavcodec: CPU flags:");
     if (mm_flags & FF_MM_MMX)
         av_log(avctx, AV_LOG_INFO, " mmx");
-    if (mm_flags & FF_MM_MMXEXT)
-        av_log(avctx, AV_LOG_INFO, " mmxext");
+    if (mm_flags & FF_MM_MMX2)
+        av_log(avctx, AV_LOG_INFO, " mmx2");
     if (mm_flags & FF_MM_3DNOW)
         av_log(avctx, AV_LOG_INFO, " 3dnow");
     if (mm_flags & FF_MM_SSE)
@@ -2595,7 +2622,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
 #if CONFIG_GPL
             }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
-                if(mm_flags & FF_MM_MMXEXT){
+                if(mm_flags & FF_MM_MMX2){
                     c->idct_put= ff_libmpeg2mmx2_idct_put;
                     c->idct_add= ff_libmpeg2mmx2_idct_add;
                     c->idct    = ff_mmxext_idct;
@@ -2627,7 +2654,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct_add= ff_idct_xvid_sse2_add;
                     c->idct    = ff_idct_xvid_sse2;
                     c->idct_permutation_type= FF_SSE2_IDCT_PERM;
-                }else if(mm_flags & FF_MM_MMXEXT){
+                }else if(mm_flags & FF_MM_MMX2){
                     c->idct_put= ff_idct_xvid_mmx2_put;
                     c->idct_add= ff_idct_xvid_mmx2_add;
                     c->idct    = ff_idct_xvid_mmx2;
@@ -2675,7 +2702,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
         c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_rnd;
         c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
-        c->put_no_rnd_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx_nornd;
+        c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_vc1_chroma_mc8_mmx_nornd;
 
         c->put_rv40_chroma_pixels_tab[0]= put_rv40_chroma_mc8_mmx;
         c->put_rv40_chroma_pixels_tab[1]= put_rv40_chroma_mc4_mmx;
@@ -2694,7 +2721,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vp6_filter_diag4 = ff_vp6_filter_diag4_mmx;
         }
 
-        if (mm_flags & FF_MM_MMXEXT) {
+        if (mm_flags & FF_MM_MMX2) {
             c->prefetch = prefetch_mmx2;
 
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
@@ -2771,6 +2798,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
             c->avg_rv40_chroma_pixels_tab[0]= avg_rv40_chroma_mc8_mmx2;
             c->avg_rv40_chroma_pixels_tab[1]= avg_rv40_chroma_mc4_mmx2;
+
+            c->avg_no_rnd_vc1_chroma_pixels_tab[0]= avg_vc1_chroma_mc8_mmx2_nornd;
 
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_mmx2_rnd;
             c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_mmx2;
@@ -2921,7 +2950,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 1, ssse3);
             H264_QPEL_FUNCS(3, 2, ssse3);
             H264_QPEL_FUNCS(3, 3, ssse3);
-            c->put_no_rnd_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_ssse3_nornd;
+            c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_vc1_chroma_mc8_ssse3_nornd;
+            c->avg_no_rnd_vc1_chroma_pixels_tab[0]= avg_vc1_chroma_mc8_ssse3_nornd;
             c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_ssse3_rnd;
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_ssse3_rnd;
             c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_ssse3;
@@ -2931,7 +2961,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
 
 #if CONFIG_GPL && HAVE_YASM
-        if( mm_flags&FF_MM_MMXEXT ){
+        if (mm_flags & FF_MM_MMX2){
 #if ARCH_X86_32
             c->h264_v_loop_filter_luma_intra = ff_x264_deblock_v_luma_intra_mmxext;
             c->h264_h_loop_filter_luma_intra = ff_x264_deblock_h_luma_intra_mmxext;
@@ -2959,7 +2989,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
         }
         else{
-            if(mm_flags & FF_MM_MMXEXT){
+            if(mm_flags & FF_MM_MMX2){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
 #if HAVE_7REGS
             c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;

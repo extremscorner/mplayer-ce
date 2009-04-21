@@ -245,7 +245,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     align_put_bits(&s->pb);
 
     /* Update the pointer to last GOB */
-    s->ptr_lastgob = pbBufPtr(&s->pb);
+    s->ptr_lastgob = put_bits_ptr(&s->pb);
     put_bits(&s->pb, 22, 0x20); /* PSC */
     temp_ref= s->picture_number * (int64_t)coded_frame_rate * s->avctx->time_base.num / //FIXME use timestamp
                          (coded_frame_rate_base * (int64_t)s->avctx->time_base.den);
@@ -401,7 +401,6 @@ static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int bloc
                 else                   rate+= s->intra_ac_vlc_last_length[UNI_AC_ENC_INDEX(j-last-1, level)];
             }else
                 rate += s->ac_esc_length;
-            level-= 64;
 
             last= j;
         }
@@ -636,8 +635,8 @@ static inline void ff_mpeg4_set_one_direct_mv(MpegEncContext *s, int mx, int my,
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     const int mb_index= s->mb_x + s->mb_y*s->mb_stride;
     const int colocated_mb_type= s->next_picture.mb_type[mb_index];
-    uint16_t time_pp= s->pp_time;
-    uint16_t time_pb= s->pb_time;
+    uint16_t time_pp;
+    uint16_t time_pb;
     int i;
 
     //FIXME avoid divides
@@ -1552,7 +1551,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
 #if CONFIG_ENCODERS
 static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
 {
-    int x, y, wrap, a, c, pred_dc, scale;
+    int x, y, wrap, a, c, pred_dc;
     int16_t *dc_val;
 
     /* find prediction */
@@ -1561,13 +1560,11 @@ static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
         y = 2 * s->mb_y + ((n & 2) >> 1);
         wrap = s->b8_stride;
         dc_val = s->dc_val[0];
-        scale = s->y_dc_scale;
     } else {
         x = s->mb_x;
         y = s->mb_y;
         wrap = s->mb_stride;
         dc_val = s->dc_val[n - 4 + 1];
-        scale = s->c_dc_scale;
     }
     /* B C
      * A X
@@ -1580,7 +1577,6 @@ static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
         if(n!=2) c= 1024;
         if(n!=1 && s->mb_x == s->resync_mb_x) a= 1024;
     }
-    pred_dc = 1024;
     /* just DC prediction */
     if (a != 1024 && c != 1024)
         pred_dc = (a + c) >> 1;
@@ -1590,7 +1586,6 @@ static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
         pred_dc = c;
 
     /* we assume pred is positive */
-    //pred_dc = (pred_dc + (scale >> 1)) / scale;
     *dc_val_ptr = &dc_val[x + y * wrap];
     return pred_dc;
 }
@@ -1821,10 +1816,9 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
 
             if(mv==0) len= mvtab[0][1];
             else{
-                int val, bit_size, range, code;
+                int val, bit_size, code;
 
                 bit_size = f_code - 1;
-                range = 1 << bit_size;
 
                 val=mv;
                 if (val < 0)
@@ -3053,7 +3047,7 @@ static inline void memsetw(short *tab, int val, int n)
 
 void ff_mpeg4_init_partitions(MpegEncContext *s)
 {
-    uint8_t *start= pbBufPtr(&s->pb);
+    uint8_t *start= put_bits_ptr(&s->pb);
     uint8_t *end= s->pb.buf_end;
     int size= end - start;
     int pb_size = (((intptr_t)start + size/3)&(~3)) - (intptr_t)start;
@@ -5339,9 +5333,11 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
         }
         skip_bits1(gb); /* marker bit */
 //printf("%d %d %d %d\n", x, y, i, s->sprite_warping_accuracy);
-        d[i][0]= x;
-        d[i][1]= y;
+        s->sprite_traj[i][0]= d[i][0]= x;
+        s->sprite_traj[i][1]= d[i][1]= y;
     }
+    for(; i<4; i++)
+        s->sprite_traj[i][0]= s->sprite_traj[i][1]= 0;
 
     while((1<<alpha)<w) alpha++;
     while((1<<beta )<h) beta++; // there seems to be a typo in the mpeg4 std for the definition of w' and h'

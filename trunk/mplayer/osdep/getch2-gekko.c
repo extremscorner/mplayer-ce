@@ -19,6 +19,8 @@
    Boston, MA 02110-1301 USA.
 */
 
+#include <math.h>
+
 #include "config.h"
 #include "keycodes.h"
 #include "input/input.h"
@@ -32,6 +34,9 @@
 int screen_width = 80;
 int screen_height = 24;
 char *erase_to_end_of_line = NULL;
+
+float m_screenleft_shift=0, m_screenright_shift=0;
+float m_screentop_shift=0, m_screenbottom_shift=0;
 
 static int getch2_status=0;
 
@@ -78,12 +83,23 @@ void getch2_disable() {
 	getch2_status=0;
 }
 
+
+#define SENSIBILITY 20
+void reset_nunchuk_positions()
+{
+	m_screenleft_shift = 0;
+	m_screenright_shift = 0;
+	m_screentop_shift = 0;
+	m_screenbottom_shift = 0;
+}
+
 void getch2(void) {
 	static s64 lt = 0;
 	s64 tt;
 	u16 pad, i;
 	u32 wpad;
-	bool mod;
+	bool mod,update;
+	
 
 	if (!getch2_status)
 		return;
@@ -112,6 +128,7 @@ void getch2(void) {
 	if (WPAD_Probe (0, NULL) == WPAD_ERR_NONE) {
 		wpad = WPAD_ButtonsDown(0);
 		//if(wpad == WPAD_BUTTON_2) log_console_change_state_video();
+			
 		if (WPAD_ButtonsHeld(0) & WPAD_BUTTON_2)
 			mod = true;
 	}
@@ -129,6 +146,83 @@ void getch2(void) {
 				return;
 			}
 	}
+	
+	update=false;
+	//check nunchuk activity
+	{
+		expansion_t exp={0,};
+		WPAD_Expansion(0, &exp);
+		const float div = 3000.0f;
+		if(exp.type == EXP_NUNCHUK)
+		{
+			float diffx = exp.nunchuk.js.pos.x - exp.nunchuk.js.center.x;
+			float diffy = exp.nunchuk.js.pos.y - exp.nunchuk.js.center.y;
+			if(fabs(diffx)>SENSIBILITY) 
+			{
+				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z)) 
+					m_screenleft_shift -= diffx/div;
+				m_screenright_shift -= diffx/div;
+				update=true;
+			}
+			if(fabs(diffy)>SENSIBILITY) 
+			{
+				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z)) 
+					m_screentop_shift -= diffy/div;
+				m_screenbottom_shift -= diffy/div;
+				update=true;
+			}
+
+			if(exp.nunchuk.btns_held & NUNCHUK_BUTTON_C) 
+			{
+				m_screenleft_shift = 0;
+				m_screenright_shift = 0;
+				m_screentop_shift = 0;
+				m_screenbottom_shift = 0;
+				update=true;
+			}
+		}
+		else if(exp.type == EXP_CLASSIC)
+		{
+			{
+				float diffx = exp.classic.rjs.pos.x - exp.classic.rjs.center.x;
+				float diffy = exp.classic.rjs.pos.y - exp.classic.rjs.center.y;
+				if(fabs(diffx)>SENSIBILITY) 
+				{
+					m_screenright_shift -= diffx/div;
+					update=true;
+				}
+				if(fabs(diffy)>SENSIBILITY) 
+				{
+					m_screenbottom_shift -= diffy/div;
+					update=true;
+				}
+			}
+			{
+				float diffx = exp.classic.ljs.pos.x - exp.classic.ljs.center.x;
+				float diffy = exp.classic.ljs.pos.y - exp.classic.ljs.center.y;
+				if(fabs(diffx)>SENSIBILITY) 
+				{
+					m_screenleft_shift -= diffx/div;
+					update=true;
+				}
+				if(fabs(diffy)>SENSIBILITY) 
+				{
+					m_screentop_shift -= diffy/div;
+					update=true;
+				}
+			}
+			if(exp.classic.btns_held & CLASSIC_CTRL_BUTTON_B) 
+			{
+				m_screenleft_shift = 0;
+				m_screenright_shift = 0;
+				m_screentop_shift = 0;
+				m_screenbottom_shift = 0;
+				update=true;
+			}
+		}
+		if(update)GX_UpdateSquare();
+	}
+	
 }
 
 #if defined(HAVE_LANGINFO) && defined(CONFIG_ICONV)

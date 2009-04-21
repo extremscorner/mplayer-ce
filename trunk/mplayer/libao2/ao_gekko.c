@@ -170,7 +170,7 @@ static int play(void* data, int len, int flags) {
 	int bl, ret = 0;
 	u8 *s = (u8 *) data;
 	bool kick = false;
-
+//return len;
 	LWP_MutexLock(sfx_mutex);
 
 	while ((len > 0) && buffer_free) {

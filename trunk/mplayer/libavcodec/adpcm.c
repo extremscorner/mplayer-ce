@@ -19,7 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
+#include "put_bits.h"
 #include "bytestream.h"
 
 /**
@@ -877,8 +878,10 @@ static void xa_decode(short *out, const unsigned char *in,
 
 static int adpcm_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            const uint8_t *buf, int buf_size)
+                            AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     ADPCMContext *c = avctx->priv_data;
     ADPCMChannelStatus *cs;
     int n, m, channel, i;

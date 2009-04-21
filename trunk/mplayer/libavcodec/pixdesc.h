@@ -22,11 +22,22 @@
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
+#include "get_bits.h"
 
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component
-    uint16_t step_minus1  :3;            ///< number of bytes between 2 horizontally consecutive pixels minus 1
-    uint16_t offset_plus1 :3;            ///< number of bytes before the component of the first pixel plus 1
+
+    /**
+     * Number of elements between 2 horizontally consecutive pixels minus 1.
+     * Elements are bits for bitstream formats, bytes otherwise.
+     */
+    uint16_t step_minus1  :3;
+
+    /**
+     * Number of elements before the component of the first pixel plus 1.
+     * Elements are bits for bitstream formats, bytes otherwise.
+     */
+    uint16_t offset_plus1 :3;
     uint16_t shift        :3;            ///< number of least significant bits that must be shifted away to get the value
     uint16_t depth_minus1 :4;            ///< number of bits in the component minus 1
 }AVComponentDescriptor;
@@ -72,7 +83,24 @@ typedef struct AVPixFmtDescriptor{
  */
 extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
 
-static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4], AVPixFmtDescriptor *desc, int x, int y, int c, int w)
+/**
+ * Reads a line from an image, and writes to \p dst the values of the
+ * pixel format component \p c.
+ *
+ * @param data the array containing the pointers to the planes of the image
+ * @param linesizes the array containing the linesizes of the image
+ * @param desc the pixel format descriptor for the image
+ * @param x the horizontal coordinate of the first pixel to read
+ * @param y the vertical coordinate of the first pixel to read
+ * @param w the width of the line to read, that is the number of
+ * values to write to \p dst
+ * @param read_pal_component if not zero and the format is a paletted
+ * format writes to \p dst the values corresponding to the palette
+ * component \p c in data[1], rather than the palette indexes in
+ * data[0]. The behavior is undefined if the format is not paletted.
+ */
+static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int linesize[4],
+                             const AVPixFmtDescriptor *desc, int x, int y, int c, int w, int read_pal_component)
 {
     AVComponentDescriptor comp= desc->comp[c];
     int plane= comp.plane;
@@ -81,25 +109,31 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
     int shift= comp.shift;
     int step = comp.step_minus1+1;
     int flags= desc->flags;
-    const uint8_t *p= data[plane]+y*linesize[plane] + x * step + comp.offset_plus1 - 1;
 
-    //FIXME initial x in case of PIX_FMT_BITSTREAM is wrong
+    if (flags & PIX_FMT_BITSTREAM){
+        GetBitContext gb;
+        init_get_bits(&gb, data[plane] + y*linesize[plane], linesize[plane]*8);
+        skip_bits_long(&gb, x*step + comp.offset_plus1-1);
 
-    while(w--){
-        int val;
-        if(flags & PIX_FMT_BE) val= AV_RB16(p);
-        else                   val= AV_RL16(p);
-        val = (val>>shift) & mask;
-        if(flags & PIX_FMT_PAL)
-            val= data[1][4*val + c];
-        if(flags & PIX_FMT_BITSTREAM){
-            shift-=depth;
-            while(shift<0){
-                shift+=8;
-                p++;
-            }
-        }else
+        while(w--){
+            int val = show_bits(&gb, depth);
+            if(read_pal_component)
+                val= data[1][4*val + c];
+            skip_bits(&gb, step);
+            *dst++= val;
+        }
+    } else {
+        const uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
+
+        while(w--){
+            int val;
+            if(flags & PIX_FMT_BE) val= AV_RB16(p);
+            else                   val= AV_RL16(p);
+            val = (val>>shift) & mask;
+            if(read_pal_component)
+                val= data[1][4*val + c];
             p+= step;
-        *dst++= val;
+            *dst++= val;
+        }
     }
 }

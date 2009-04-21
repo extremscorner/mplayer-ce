@@ -443,8 +443,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!guidcmp(&g, &ff_asf_ext_stream_header)) {
             int ext_len, payload_ext_ct, stream_ct;
             uint32_t ext_d, leak_rate, stream_num;
-            int64_t pos_ex_st;
-            pos_ex_st = url_ftell(pb);
 
             get_le64(pb); // starttime
             get_le64(pb); // endtime
@@ -702,7 +700,7 @@ int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
     ASFStream *asf_st = 0;
     for (;;) {
         if(url_feof(pb))
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if (asf->packet_size_left < FRAME_HEADER_SIZE
             || asf->packet_segments < 1) {
             //asf->packet_size_left <= asf->packet_padsize) {
@@ -715,7 +713,7 @@ int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt)
             asf->packet_pos= url_ftell(pb);
             if (asf->data_object_size != (uint64_t)-1 &&
                 (asf->packet_pos - asf->data_object_offset >= asf->data_object_size))
-                return AVERROR(EIO); /* Do not exceed the size of the data object */
+                return AVERROR_EOF; /* Do not exceed the size of the data object */
             return 1;
         }
         if (asf->packet_time_start == 0) {
@@ -986,17 +984,15 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
 {
     ff_asf_guid g;
     ASFContext *asf = s->priv_data;
-    int64_t gsize, itime;
-    int64_t pos, current_pos, index_pts;
+    int64_t current_pos= url_ftell(s->pb);
     int i;
-    int pct,ict;
-
-    current_pos = url_ftell(s->pb);
 
     url_fseek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET);
     get_guid(s->pb, &g);
     if (!guidcmp(&g, &index_guid)) {
-        gsize = get_le64(s->pb);
+        int64_t itime;
+        int pct, ict;
+        int64_t av_unused gsize= get_le64(s->pb);
         get_guid(s->pb, &g);
         itime=get_le64(s->pb);
         pct=get_le32(s->pb);
@@ -1006,11 +1002,10 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
         for (i=0;i<ict;i++){
             int pktnum=get_le32(s->pb);
             int pktct =get_le16(s->pb);
+            int64_t pos      = s->data_offset + asf->packet_size*(int64_t)pktnum;
+            int64_t index_pts= av_rescale(itime, i, 10000);
+
             av_log(s, AV_LOG_DEBUG, "pktnum:%d, pktct:%d\n", pktnum, pktct);
-
-            pos=s->data_offset + asf->packet_size*(int64_t)pktnum;
-            index_pts=av_rescale(itime, i, 10000);
-
             av_add_index_entry(s->streams[stream_index], pos, index_pts, asf->packet_size, 0, AVINDEX_KEYFRAME);
         }
         asf->index_read= 1;
@@ -1050,7 +1045,6 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 
         /* find the position */
         pos = st->index_entries[index].pos;
-        pts = st->index_entries[index].timestamp;
 
     // various attempts to find key frame have failed so far
     //    asf_reset_header(s);

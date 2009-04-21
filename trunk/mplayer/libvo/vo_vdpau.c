@@ -174,7 +174,8 @@ static int                                surface_num;
 static int                                vid_surface_num;
 static uint32_t                           vid_width, vid_height;
 static uint32_t                           image_format;
-static const VdpChromaType                vdp_chroma_type = VDP_CHROMA_TYPE_420;
+static VdpChromaType                      vdp_chroma_type;
+static VdpYCbCrFormat                     vdp_pixel_format;
 
 /* draw_osd */
 static unsigned char                     *index_data;
@@ -374,6 +375,7 @@ static int win_x11_init_vdpau_procs(void)
         return -1;
     }
 
+    vdp_get_error_string = NULL;
     for (dsc = vdp_func; dsc->pointer; dsc++) {
         vdp_st = vdp_get_proc_address(vdp_device, dsc->id, dsc->pointer);
         if (vdp_st != VDP_STATUS_OK) {
@@ -598,6 +600,24 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     if (vdp_flip_queue == VDP_INVALID_HANDLE && win_x11_init_vdpau_flip_queue())
         return -1;
 
+    vdp_chroma_type = VDP_CHROMA_TYPE_420;
+    switch (image_format) {
+        case IMGFMT_YV12:
+        case IMGFMT_I420:
+        case IMGFMT_IYUV:
+            vdp_pixel_format = VDP_YCBCR_FORMAT_YV12;
+            break;
+        case IMGFMT_NV12:
+            vdp_pixel_format = VDP_YCBCR_FORMAT_NV12;
+            break;
+        case IMGFMT_YUY2:
+            vdp_pixel_format = VDP_YCBCR_FORMAT_YUYV;
+            vdp_chroma_type  = VDP_CHROMA_TYPE_422;
+            break;
+        case IMGFMT_UYVY:
+            vdp_pixel_format = VDP_YCBCR_FORMAT_UYVY;
+            vdp_chroma_type  = VDP_CHROMA_TYPE_422;
+    }
     if (create_vdp_mixer(vdp_chroma_type))
         return -1;
 
@@ -886,13 +906,18 @@ static uint32_t draw_image(mp_image_t *mpi)
         struct vdpau_render_state *rndr = get_surface(deint_counter);
         deint_counter = (deint_counter + 1) % 3;
         vid_surface_num = rndr - surface_render;
+        if (image_format == IMGFMT_NV12)
+            destdata[1] = destdata[2];
         vdp_st = vdp_video_surface_put_bits_y_cb_cr(rndr->surface,
-                                                    VDP_YCBCR_FORMAT_YV12,
+                                                    vdp_pixel_format,
                                                     (const void *const*)destdata,
                                                     mpi->stride); // pitch
         CHECK_ST_ERROR("Error when calling vdp_video_surface_put_bits_y_cb_cr")
     }
-    top_field_first = !!(mpi->fields & MP_IMGFIELD_TOP_FIRST);
+    if (mpi->fields & MP_IMGFIELD_ORDERED)
+        top_field_first = !!(mpi->fields & MP_IMGFIELD_TOP_FIRST);
+    else
+        top_field_first = 1;
 
     video_to_output_surface();
     return VO_TRUE;
@@ -927,6 +952,11 @@ static int query_format(uint32_t format)
     int default_flags = VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_OSD | VFCAP_EOSD | VFCAP_EOSD_UNSCALED;
     switch (format) {
         case IMGFMT_YV12:
+        case IMGFMT_I420:
+        case IMGFMT_IYUV:
+        case IMGFMT_NV12:
+        case IMGFMT_YUY2:
+        case IMGFMT_UYVY:
             return default_flags | VOCAP_NOSLICES;
         case IMGFMT_VDPAU_MPEG1:
         case IMGFMT_VDPAU_MPEG2:

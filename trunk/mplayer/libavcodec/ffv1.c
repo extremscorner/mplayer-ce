@@ -26,7 +26,8 @@
  */
 
 #include "avcodec.h"
-#include "bitstream.h"
+#include "get_bits.h"
+#include "put_bits.h"
 #include "dsputil.h"
 #include "rangecoder.h"
 #include "golomb.h"
@@ -529,17 +530,16 @@ static void write_header(FFV1Context *f){
 
 static av_cold int common_init(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
-    int width, height;
 
     s->avctx= avctx;
     s->flags= avctx->flags;
 
     dsputil_init(&s->dsp, avctx);
 
-    width= s->width= avctx->width;
-    height= s->height= avctx->height;
+    s->width = avctx->width;
+    s->height= avctx->height;
 
-    assert(width && height);
+    assert(s->width && s->height);
 
     return 0;
 }
@@ -936,7 +936,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, const uint8_t *buf, int buf_size){
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     FFV1Context *f = avctx->priv_data;
     RangeCoder * const c= &f->c;
     const int width= f->width;

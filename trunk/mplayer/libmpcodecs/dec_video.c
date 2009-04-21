@@ -2,9 +2,6 @@
 #include "config.h"
 
 #include <stdio.h>
-#if HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -319,7 +316,6 @@ stringset_free(&selected);
 
 if(!sh_video->initialized){
     mp_msg(MSGT_DECVIDEO,MSGL_ERR,MSGTR_CantFindVideoCodec,sh_video->format);
-    mp_msg(MSGT_DECAUDIO,MSGL_HINT, MSGTR_RTFMCodecs);
     return 0; // failed
 }
 

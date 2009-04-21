@@ -331,8 +331,10 @@ static int decode_slice(MpegEncContext *s){
 
 int ff_h263_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             const uint8_t *buf, int buf_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MpegEncContext *s = avctx->priv_data;
     int ret;
     AVFrame *pict = data;
@@ -685,10 +687,12 @@ retry:
         }
 
         if(startcode_found){
-            s->bitstream_buffer= av_fast_realloc(
-                s->bitstream_buffer,
+            av_fast_malloc(
+                &s->bitstream_buffer,
                 &s->allocated_bitstream_buffer_size,
                 buf_size - current_pos + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!s->bitstream_buffer)
+                return AVERROR(ENOMEM);
             memcpy(s->bitstream_buffer, buf + current_pos, buf_size - current_pos);
             s->bitstream_buffer_size= buf_size - current_pos;
         }

@@ -1465,9 +1465,8 @@ vobsub_out_output(void *me, const unsigned char *packet, int len, double pts)
 	    if (fwrite(buffer, remain, 1, vob->fsub) != 1)
 		perror("ERROR: vobsub blank padding write failed");
 	}
-	else if (remain < 0)
-	    fprintf(stderr,
-		    "\nERROR: wrong thing happenned...\n"
-		    "  I wrote a %i data bytes spu packet and that's too long\n", len);
+	else if (remain < 0){
+	    //fprintf(stderr,"\nERROR: wrong thing happenned...\n I wrote a %i data bytes spu packet and that's too long\n", len);
+	    }
     }
 }

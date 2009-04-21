@@ -584,12 +584,12 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     /* init rv vlc */
     if (!done) {
-        init_vlc(&rv_dc_lum, DC_VLC_BITS, 256,
+        INIT_VLC_STATIC(&rv_dc_lum, DC_VLC_BITS, 256,
                  rv_lum_bits, 1, 1,
-                 rv_lum_code, 2, 2, 1);
-        init_vlc(&rv_dc_chrom, DC_VLC_BITS, 256,
+                 rv_lum_code, 2, 2, 16384);
+        INIT_VLC_STATIC(&rv_dc_chrom, DC_VLC_BITS, 256,
                  rv_chrom_bits, 1, 1,
-                 rv_chrom_code, 2, 2, 1);
+                 rv_chrom_code, 2, 2, 16388);
         done = 1;
     }
 
@@ -727,8 +727,10 @@ static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
 
 static int rv10_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             const uint8_t *buf, int buf_size)
+                             AVPacket *avpkt)
 {
+    const uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     MpegEncContext *s = avctx->priv_data;
     int i;
     AVFrame *pict = data;

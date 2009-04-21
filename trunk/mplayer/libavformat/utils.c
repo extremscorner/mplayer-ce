@@ -260,40 +260,6 @@ AVInputFormat *av_find_input_format(const char *short_name)
 
 /* memory handling */
 
-void av_destruct_packet(AVPacket *pkt)
-{
-    av_free(pkt->data);
-    pkt->data = NULL; pkt->size = 0;
-}
-
-void av_init_packet(AVPacket *pkt)
-{
-    pkt->pts   = AV_NOPTS_VALUE;
-    pkt->dts   = AV_NOPTS_VALUE;
-    pkt->pos   = -1;
-    pkt->duration = 0;
-    pkt->convergence_duration = 0;
-    pkt->flags = 0;
-    pkt->stream_index = 0;
-    pkt->destruct= av_destruct_packet_nofree;
-}
-
-int av_new_packet(AVPacket *pkt, int size)
-{
-    uint8_t *data;
-    if((unsigned)size > (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
-        return AVERROR(ENOMEM);
-    data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!data)
-        return AVERROR(ENOMEM);
-    memset(data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-
-    av_init_packet(pkt);
-    pkt->data = data;
-    pkt->size = size;
-    pkt->destruct = av_destruct_packet;
-    return 0;
-}
 
 int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
 {
@@ -308,29 +274,11 @@ int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
     if(ret<=0)
         av_free_packet(pkt);
     else
-        pkt->size= ret;
+        av_shrink_packet(pkt, ret);
 
     return ret;
 }
 
-int av_dup_packet(AVPacket *pkt)
-{
-    if (((pkt->destruct == av_destruct_packet_nofree) || (pkt->destruct == NULL)) && pkt->data) {
-        uint8_t *data;
-        /* We duplicate the packet and don't forget to add the padding again. */
-        if((unsigned)pkt->size > (unsigned)pkt->size + FF_INPUT_BUFFER_PADDING_SIZE)
-            return AVERROR(ENOMEM);
-        data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!data) {
-            return AVERROR(ENOMEM);
-        }
-        memcpy(data, pkt->data, pkt->size);
-        memset(data + pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-        pkt->data = data;
-        pkt->destruct = av_destruct_packet;
-    }
-    return 0;
-}
 
 int av_filename_number_test(const char *filename)
 {
@@ -934,10 +882,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         pkt->convergence_duration = pc->convergence_duration;
 }
 
-void av_destruct_packet_nofree(AVPacket *pkt)
-{
-    pkt->data = NULL; pkt->size = 0;
-}
 
 static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
@@ -981,7 +925,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     pkt->pts = st->parser->pts;
                     pkt->dts = st->parser->dts;
                     pkt->pos = st->parser->pos;
-                    pkt->destruct = av_destruct_packet_nofree;
+                    pkt->destruct = NULL;
                     compute_pkt_fields(s, st, st->parser, pkt);
 
                     if((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & PKT_FLAG_KEY){
@@ -1899,41 +1843,42 @@ static int has_codec_parameters(AVCodecContext *enc)
     return enc->codec_id != CODEC_ID_NONE && val != 0;
 }
 
-static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
+static int try_decode_frame(AVStream *st, AVPacket *avpkt)
 {
     int16_t *samples;
     AVCodec *codec;
     int got_picture, data_size, ret=0;
     AVFrame picture;
 
-  if(!st->codec->codec){
-    codec = avcodec_find_decoder(st->codec->codec_id);
-    if (!codec)
-        return -1;
-    ret = avcodec_open(st->codec, codec);
-    if (ret < 0)
-        return ret;
-  }
-
-  if(!has_codec_parameters(st->codec)){
-    switch(st->codec->codec_type) {
-    case CODEC_TYPE_VIDEO:
-        ret = avcodec_decode_video(st->codec, &picture,
-                                   &got_picture, data, size);
-        break;
-    case CODEC_TYPE_AUDIO:
-        data_size = FFMAX(size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
-        samples = av_malloc(data_size);
-        if (!samples)
-            goto fail;
-        ret = avcodec_decode_audio2(st->codec, samples,
-                                    &data_size, data, size);
-        av_free(samples);
-        break;
-    default:
-        break;
+    if(!st->codec->codec){
+        codec = avcodec_find_decoder(st->codec->codec_id);
+        if (!codec)
+            return -1;
+        ret = avcodec_open(st->codec, codec);
+        if (ret < 0)
+            return ret;
     }
-  }
+
+    if(!has_codec_parameters(st->codec)){
+        switch(st->codec->codec_type) {
+        case CODEC_TYPE_VIDEO:
+            avcodec_get_frame_defaults(&picture);
+            ret = avcodec_decode_video2(st->codec, &picture,
+                                        &got_picture, avpkt);
+            break;
+        case CODEC_TYPE_AUDIO:
+            data_size = FFMAX(avpkt->size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
+            samples = av_malloc(data_size);
+            if (!samples)
+                goto fail;
+            ret = avcodec_decode_audio3(st->codec, samples,
+                                        &data_size, avpkt);
+            av_free(samples);
+            break;
+        default:
+            break;
+        }
+    }
  fail:
     return ret;
 }
@@ -2202,7 +2147,7 @@ int av_find_stream_info(AVFormatContext *ic)
              st->codec->codec_id == CODEC_ID_PPM ||
              st->codec->codec_id == CODEC_ID_SHORTEN ||
              (st->codec->codec_id == CODEC_ID_MPEG4 && !st->need_parsing))*/)
-            try_decode_frame(st, pkt->data, pkt->size);
+            try_decode_frame(st, pkt);
 
         count++;
     }
@@ -2671,10 +2616,8 @@ void ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
 
     this_pktl = av_mallocz(sizeof(AVPacketList));
     this_pktl->pkt= *pkt;
-    if(pkt->destruct == av_destruct_packet)
-        pkt->destruct= NULL; // not shared -> must keep original from being freed
-    else
-        av_dup_packet(&this_pktl->pkt);  //shared -> must dup
+    pkt->destruct= NULL;             // do not free original but only the copy
+    av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
 
     next_point = &s->packet_buffer;
     while(*next_point){

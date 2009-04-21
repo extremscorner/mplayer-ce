@@ -21,11 +21,12 @@
 
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
 
-//#define DEBUG_SI
+//#define DEBUG
 //#define DEBUG_SEEK
 
 /* 1.0 second at 24Mbit/s */
@@ -282,9 +283,8 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts, unsigned int 
     MpegTSFilter *filter;
     MpegTSSectionFilter *sec;
 
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "Filter: pid=0x%x\n", pid);
-#endif
+    dprintf(ts->stream, "Filter: pid=0x%x\n", pid);
+
     if (pid >= NB_PID_MAX || ts->pids[pid])
         return NULL;
     filter = av_mallocz(sizeof(MpegTSFilter));
@@ -491,19 +491,21 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     char language[4] = {0}; /* initialize to kill warnings */
     int has_hdmv_descr = 0;
     int has_dirac_descr = 0;
+    uint32_t reg_desc = 0; /* registration descriptor */
 
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "PMT: len %i\n", section_len);
+#ifdef DEBUG
+    dprintf(ts->stream, "PMT: len %i\n", section_len);
     av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
+
     p_end = section + section_len - 4;
     p = section;
     if (parse_section_header(h, &p, p_end) < 0)
         return;
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "sid=0x%x sec_num=%d/%d\n",
+
+    dprintf(ts->stream, "sid=0x%x sec_num=%d/%d\n",
            h->id, h->sec_num, h->last_sec_num);
-#endif
+
     if (h->tid != PMT_TID)
         return;
 
@@ -512,9 +514,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     if (pcr_pid < 0)
         return;
     add_pid_to_pmt(ts, h->id, pcr_pid);
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "pcr_pid=0x%x\n", pcr_pid);
-#endif
+
+    dprintf(ts->stream, "pcr_pid=0x%x\n", pcr_pid);
+
     program_info_length = get16(&p, p_end) & 0xfff;
     if (program_info_length < 0)
         return;
@@ -527,14 +529,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             break;
         program_info_length -= len + 2;
         if(tag == REGISTRATION_DESCRIPTOR && len >= 4) {
-            uint8_t bytes[4];
-            bytes[0] = get8(&p, p_end);
-            bytes[1] = get8(&p, p_end);
-            bytes[2] = get8(&p, p_end);
-            bytes[3] = get8(&p, p_end);
+            reg_desc = bytestream_get_le32(&p);
             len -= 4;
-            if(bytes[0] == 'H' && bytes[1] == 'D' &&
-               bytes[2] == 'M' && bytes[3] == 'V')
+            if(reg_desc == AV_RL32("HDMV"))
                 has_hdmv_descr = 1;
         }
         p += len;
@@ -571,13 +568,15 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 }
             }
             desc_len = get8(&p, desc_list_end);
+            if (desc_len < 0)
+                break;
             desc_end = p + desc_len;
             if (desc_end > desc_list_end)
                 break;
-#ifdef DEBUG_SI
-            av_log(ts->stream, AV_LOG_DEBUG, "tag: 0x%02x len=%d\n",
+
+            dprintf(ts->stream, "tag: 0x%02x len=%d\n",
                    desc_tag, desc_len);
-#endif
+
             switch(desc_tag) {
             case DVB_SUBT_DESCID:
                 if (stream_type == STREAM_TYPE_PRIVATE_DATA)
@@ -599,17 +598,12 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 language[3] = 0;
                 break;
             case REGISTRATION_DESCRIPTOR: /*MPEG-2 Registration descriptor */
-                {
-                    uint8_t bytes[4];
-                    bytes[0] = get8(&p, desc_end);
-                    bytes[1] = get8(&p, desc_end);
-                    bytes[2] = get8(&p, desc_end);
-                    bytes[3] = get8(&p, desc_end);
-                    if(bytes[0] == 'd' && bytes[1] == 'r' &&
-                       bytes[2] == 'a' && bytes[3] == 'c')
-                        has_dirac_descr = 1;
-                    break;
-                }
+                reg_desc = bytestream_get_le32(&p);
+                if(reg_desc == AV_RL32("drac"))
+                    has_dirac_descr = 1;
+                else if(reg_desc == AV_RL32("AC-3"))
+                    stream_type = STREAM_TYPE_AUDIO_AC3;
+                break;
             default:
                 break;
             }
@@ -617,10 +611,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         }
         p = desc_list_end;
 
-#ifdef DEBUG_SI
-        av_log(ts->stream, AV_LOG_DEBUG, "stream_type=%d pid=0x%x\n",
+        dprintf(ts->stream, "stream_type=%x pid=0x%x\n",
                stream_type, pid);
-#endif
 
         /* now create ffmpeg stream */
         switch(stream_type) {
@@ -680,8 +672,8 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     const uint8_t *p, *p_end;
     int sid, pmt_pid;
 
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "PAT:\n");
+#ifdef DEBUG
+    dprintf(ts->stream, "PAT:\n");
     av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
@@ -699,9 +691,9 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         pmt_pid = get16(&p, p_end) & 0x1fff;
         if (pmt_pid < 0)
             break;
-#ifdef DEBUG_SI
-        av_log(ts->stream, AV_LOG_DEBUG, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
-#endif
+
+        dprintf(ts->stream, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
+
         if (sid == 0x0000) {
             /* NIT info */
         } else {
@@ -719,12 +711,6 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     mpegts_close_filter(ts, filter);
 }
 
-static void mpegts_set_service(MpegTSContext *ts)
-{
-    mpegts_open_section_filter(ts, PAT_PID,
-                                                pat_cb, ts, 1);
-}
-
 static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
     MpegTSContext *ts = filter->u.section_filter.opaque;
@@ -733,8 +719,8 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     int onid, val, sid, desc_list_len, desc_tag, desc_len, service_type;
     char *name, *provider_name;
 
-#ifdef DEBUG_SI
-    av_log(ts->stream, AV_LOG_DEBUG, "SDT:\n");
+#ifdef DEBUG
+    dprintf(ts->stream, "SDT:\n");
     av_hex_dump_log(ts->stream, AV_LOG_DEBUG, (uint8_t *)section, section_len);
 #endif
 
@@ -771,10 +757,10 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             desc_end = p + desc_len;
             if (desc_end > desc_list_end)
                 break;
-#ifdef DEBUG_SI
-            av_log(ts->stream, AV_LOG_DEBUG, "tag: 0x%02x len=%d\n",
+
+            dprintf(ts->stream, "tag: 0x%02x len=%d\n",
                    desc_tag, desc_len);
-#endif
+
             switch(desc_tag) {
             case 0x48:
                 service_type = get8(&p, p_end);
@@ -801,13 +787,6 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         }
         p = desc_list_end;
     }
-}
-
-/* scan services in a transport stream by looking at the SDT */
-static void mpegts_scan_sdt(MpegTSContext *ts)
-{
-    mpegts_open_section_filter(ts, SDT_PID,
-                                                sdt_cb, ts, 1);
 }
 
 static int64_t get_pts(const uint8_t *p)
@@ -1278,18 +1257,18 @@ static int mpegts_read_header(AVFormatContext *s,
 
         /* first do a scaning to get all the services */
         url_fseek(pb, pos, SEEK_SET);
-        mpegts_scan_sdt(ts);
 
-        mpegts_set_service(ts);
+        mpegts_open_section_filter(ts, SDT_PID, sdt_cb, ts, 1);
+
+        mpegts_open_section_filter(ts, PAT_PID, pat_cb, ts, 1);
 
         handle_packets(ts, s->probesize);
         /* if could not find service, enable auto_guess */
 
         ts->auto_guess = 1;
 
-#ifdef DEBUG_SI
-        av_log(ts->stream, AV_LOG_DEBUG, "tuning done\n");
-#endif
+        dprintf(ts->stream, "tuning done\n");
+
         s->ctx_flags |= AVFMTCTX_NOHEADER;
     } else {
         AVStream *st;
