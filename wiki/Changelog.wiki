@@ -2,6 +2,22 @@
 
 = Changelog to MPlayerCE =
 
+== v0.5 ==
+
+ * SMB now much more robust
+
+ * libfat cache improved for speed and stability
+
+ * USB ethernet now works with USB 1.1; USB 2.0 fix requires an updated cIOS
+
+ * Added ability to manipulate picture using the nunchuck
+
+ * Updated to latest MPlayer revision
+
+ * Now using subfont.ttf instead of font folder - use mplayer.conf to change font size
+
+ * Merged widescreen and 4:3 pack - now MPlayer will use the appropriate loop.avi automatically
+
 == v0.4 ==
 
  * USB 2.0 support (see docs for info)
