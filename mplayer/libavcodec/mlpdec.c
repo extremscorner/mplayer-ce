@@ -93,7 +93,7 @@ typedef struct SubStream {
     //! Whether the LSBs of the matrix output are encoded in the bitstream.
     uint8_t     lsb_bypass[MAX_MATRICES];
     //! Matrix coefficients, stored as 2.14 fixed point.
-    int32_t     matrix_coeff[MAX_MATRICES][MAX_CHANNELS+2];
+    int32_t     matrix_coeff[MAX_MATRICES][MAX_CHANNELS];
     //! Left shift to apply to noise values in 0x31eb substreams.
     uint8_t     matrix_noise_shift[MAX_MATRICES];
     //@}
@@ -143,7 +143,7 @@ typedef struct MLPDecodeContext {
 
     int8_t      noise_buffer[MAX_BLOCKSIZE_POW2];
     int8_t      bypassed_lsbs[MAX_BLOCKSIZE][MAX_CHANNELS];
-    int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS+2];
+    int32_t     sample_buffer[MAX_BLOCKSIZE][MAX_CHANNELS];
 } MLPDecodeContext;
 
 static VLC huff_vlc[3];
@@ -335,21 +335,38 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     uint8_t checksum;
     uint8_t lossless_check;
     int start_count = get_bits_count(gbp);
+    const int max_matrix_channel = m->avctx->codec_id == CODEC_ID_MLP
+                                 ? MAX_MATRIX_CHANNEL_MLP
+                                 : MAX_MATRIX_CHANNEL_TRUEHD;
 
     sync_word = get_bits(gbp, 13);
+    s->noise_type = get_bits1(gbp);
 
-    if (sync_word != 0x31ea >> 1) {
+    if ((m->avctx->codec_id == CODEC_ID_MLP && s->noise_type) ||
+        sync_word != 0x31ea >> 1) {
         av_log(m->avctx, AV_LOG_ERROR,
                "restart header sync incorrect (got 0x%04x)\n", sync_word);
         return -1;
     }
-    s->noise_type = get_bits1(gbp);
 
     skip_bits(gbp, 16); /* Output timestamp */
 
     s->min_channel        = get_bits(gbp, 4);
     s->max_channel        = get_bits(gbp, 4);
     s->max_matrix_channel = get_bits(gbp, 4);
+
+    if (s->max_matrix_channel > max_matrix_channel) {
+        av_log(m->avctx, AV_LOG_ERROR,
+               "Max matrix channel cannot be greater than %d.\n",
+               max_matrix_channel);
+        return -1;
+    }
+
+    if (s->max_channel != s->max_matrix_channel) {
+        av_log(m->avctx, AV_LOG_ERROR,
+               "Max channel must be equal max matrix channel.\n");
+        return -1;
+    }
 
     if (s->min_channel > s->max_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
@@ -510,6 +527,9 @@ static int read_matrix_params(MLPDecodeContext *m, unsigned int substr, GetBitCo
 {
     SubStream *s = &m->substream[substr];
     unsigned int mat, ch;
+    const int max_primitive_matrices = m->avctx->codec_id == CODEC_ID_MLP
+                                     ? MAX_MATRICES_MLP
+                                     : MAX_MATRICES_TRUEHD;
 
     if (m->matrix_changed++ > 1) {
         av_log(m->avctx, AV_LOG_ERROR, "Matrices may change only once per access unit.\n");
@@ -517,6 +537,13 @@ static int read_matrix_params(MLPDecodeContext *m, unsigned int substr, GetBitCo
     }
 
     s->num_primitive_matrices = get_bits(gbp, 4);
+
+    if (s->num_primitive_matrices > max_primitive_matrices) {
+        av_log(m->avctx, AV_LOG_ERROR,
+               "Number of primitive matrices cannot be greater than %d.\n",
+               max_primitive_matrices);
+        return -1;
+    }
 
     for (mat = 0; mat < s->num_primitive_matrices; mat++) {
         int frac_bits, max_chan;

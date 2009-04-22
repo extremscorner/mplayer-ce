@@ -204,7 +204,8 @@ inline static unsigned int stream_read_int24(stream_t *s){
   y=(y<<8)|stream_read_char(s);
   return y;
 }
-
+int stream_read(stream_t *s,char* mem,int total);
+/*
 inline static int stream_read(stream_t *s,char* mem,int total){
   int len=total;
   while(len>0){
@@ -221,7 +222,7 @@ inline static int stream_read(stream_t *s,char* mem,int total){
   }
   return total;
 }
-
+*/
 inline static unsigned char* stream_read_line(stream_t *s,unsigned char* mem, int max) {
   int len;
   unsigned char* end,*ptr = mem;

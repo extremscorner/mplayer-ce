@@ -19,10 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_PIXDESC_H
+#define AVCODEC_PIXDESC_H
+
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
-#include "get_bits.h"
 
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component
@@ -111,15 +113,17 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
     int flags= desc->flags;
 
     if (flags & PIX_FMT_BITSTREAM){
-        GetBitContext gb;
-        init_get_bits(&gb, data[plane] + y*linesize[plane], linesize[plane]*8);
-        skip_bits_long(&gb, x*step + comp.offset_plus1-1);
+        int skip = x*step + comp.offset_plus1-1;
+        const uint8_t *p = data[plane] + y*linesize[plane] + (skip>>3);
+        int shift = 8 - depth - (skip&7);
 
         while(w--){
-            int val = show_bits(&gb, depth);
+            int val = (*p >> shift) & mask;
             if(read_pal_component)
                 val= data[1][4*val + c];
-            skip_bits(&gb, step);
+            shift -= step;
+            p -= shift>>3;
+            shift &= 7;
             *dst++= val;
         }
     } else {
@@ -137,3 +141,56 @@ static inline void read_line(uint16_t *dst, const uint8_t *data[4], const int li
         }
     }
 }
+
+/**
+ * Writes the values from src to the pixel format component c of an
+ * image line.
+ *
+ * @param src array containing the values to write
+ * @param data the array containing the pointers to the planes of the
+ * image to write into. It is supposed to be zeroed.
+ * @param linesizes the array containing the linesizes of the image
+ * @param desc the pixel format descriptor for the image
+ * @param x the horizontal coordinate of the first pixel to write
+ * @param y the vertical coordinate of the first pixel to write
+ * @param w the width of the line to write, that is the number of
+ * values to write to the image line
+ */
+static inline void write_line(const uint16_t *src, uint8_t *data[4], const int linesize[4],
+                              const AVPixFmtDescriptor *desc, int x, int y, int c, int w)
+{
+    AVComponentDescriptor comp = desc->comp[c];
+    int plane = comp.plane;
+    int depth = comp.depth_minus1+1;
+    int step  = comp.step_minus1+1;
+    int flags = desc->flags;
+
+    if (flags & PIX_FMT_BITSTREAM) {
+        int skip = x*step + comp.offset_plus1-1;
+        uint8_t *p = data[plane] + y*linesize[plane] + (skip>>3);
+        int shift = 8 - depth - (skip&7);
+
+        while (w--) {
+            *p |= *src++ << shift;
+            shift -= step;
+            p -= shift>>3;
+            shift &= 7;
+        }
+    } else {
+        int shift = comp.shift;
+        uint8_t *p = data[plane]+ y*linesize[plane] + x*step + comp.offset_plus1-1;
+
+        while (w--) {
+            if (flags & PIX_FMT_BE) {
+                uint16_t val = AV_RB16(p) | (*src++<<shift);
+                AV_WB16(p, val);
+            } else {
+                uint16_t val = AV_RL16(p) | (*src++<<shift);
+                AV_WL16(p, val);
+            }
+            p+= step;
+        }
+    }
+}
+
+#endif /* AVCODEC_PIXDESC_H */

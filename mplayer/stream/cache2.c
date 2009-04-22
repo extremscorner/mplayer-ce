@@ -1,3 +1,4 @@
+extern char *debug_str;
 #include "config.h"
 
 // Initial draft of my new cache system...
@@ -29,6 +30,8 @@ static void ThreadProc( void *s );
 #include <ogcsys.h>
 #include <ogc/lwp_watchdog.h>
 static void *ThreadProc( void *s );
+#define CACHE_LIMIT 1*1024*1024
+static unsigned char * global_buffer=NULL;
 #elif defined(PTHREAD_CACHE)
 #include <pthread.h>
 static void *ThreadProc(void *s);
@@ -108,7 +111,7 @@ int cache_read(cache_vars_t* s,unsigned char* buf,int size){
     if(s->read_filepos>=s->max_filepos || s->read_filepos<s->min_filepos){
 	// eof?
 	t2=ticks_to_millisecs(gettime());
-	if(t2-t1 > 5000) s->eof=1; //not needed, paranoid
+	if(t2-t1 > 5000) return total;  //not needed, paranoid
 	if(s->eof) return total; 
 
 	// waiting for buffer fill...
@@ -131,6 +134,7 @@ int cache_read(cache_vars_t* s,unsigned char* buf,int size){
     if(s->read_filepos<s->min_filepos) 
 	{
 		mp_msg(MSGT_CACHE,MSGL_ERR,"Ehh. s->read_filepos<s->min_filepos !!! Report bug...\n");
+		debug_str="Ehh. s->read_filepos<s->min_filepos !!! Report bug...\n";
 	}
     
     // len=write(mem,newb)
@@ -138,8 +142,8 @@ int cache_read(cache_vars_t* s,unsigned char* buf,int size){
     
 	if(newb<=0 || pos<0 || pos+newb > s->buffer_size) // very very odd error
     {
-		s->eof=1;
-    	return total;
+    	debug_str="Ehh. very very odd error !!! Report bug...\n";
+    	continue;
 	}
 	
     memcpy(buf,&s->buffer[pos],newb);
@@ -158,8 +162,13 @@ int cache_read(cache_vars_t* s,unsigned char* buf,int size){
 
 int cache_fill(cache_vars_t* s){
   int back,back2,newb,space,len,pos;
-  if(s->eof) return 0;
-  off_t read=s->read_filepos;
+  off_t read;
+  
+retry:
+  
+  if(s->eof) return 0;  
+  
+  read=s->read_filepos;
   if(read<s->min_filepos || read>s->max_filepos){
       // seek...
       //mp_msg(MSGT_CACHE,MSGL_DBG2,"Out of boundaries... seeking to 0x%"PRIX64"  \n",(int64_t)read);
@@ -169,8 +178,10 @@ int cache_fill(cache_vars_t* s){
       {
         s->offset= // FIXME!?
         s->min_filepos=s->max_filepos=read; // drop cache content :(
+        debug_str="cache_fill:drop cache content";
         if(s->stream->eof) stream_reset(s->stream);
         stream_seek(s->stream,read);
+        debug_str="cache_fill:stream_seek: ok";
         //mp_msg(MSGT_CACHE,MSGL_DBG2,"Seek done. new pos: 0x%"PRIX64"  \n",(int64_t)stream_tell(s->stream));
       }
   }
@@ -219,6 +230,11 @@ int cache_fill(cache_vars_t* s){
   //len=stream_fill_buffer(s->stream);
   //memcpy(&s->buffer[pos],s->stream->buffer,len); // avoid this extra copy!
   // ....
+  if(pos<0 || space<=0 || pos+space>s->buffer_size)
+  {
+  	debug_str="cache_fill: strange error";
+  	//goto retry;
+  }
   len=stream_read(s->stream,&s->buffer[pos],space);
   if(len<=0) 
   {
@@ -304,7 +320,8 @@ cache_vars_t* cache_init(int size,int sector){
 #if !defined(__MINGW32__) && !defined(PTHREAD_CACHE) && !defined(__OS2__) && !defined(GEKKO)
   s->buffer=shmem_alloc(s->buffer_size);
 #else
-  s->buffer=malloc(s->buffer_size);
+  if(global_buffer==NULL) global_buffer=malloc(CACHE_LIMIT);
+  s->buffer=global_buffer;
 #endif
 
   if(s->buffer == NULL){
@@ -340,12 +357,12 @@ void cache_uninit(stream_t *s) {
 #endif
 #endif //GEKKO
 
-  if(!c) return;
+  //if(!c) return;
 #if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__) || defined(GEKKO)
-  free(c->stream);
-  free(c->buffer);
-  c->stream==NULL;
-  c->buffer==NULL;
+  //free(c->stream);
+  //free(c->buffer); //using global var
+  //c->stream=NULL;
+  c->buffer=NULL;
   free(s->cache_data);
   s->cache_data=NULL;
   s->cache_pid=0;
@@ -369,7 +386,15 @@ int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
     //mp_msg(MSGT_CACHE,MSGL_STATUS,"\rThis stream is non-cacheable\n");
     return 1;
   }
-
+  
+if(size>CACHE_LIMIT)
+{ //limit cache 
+	int factor;
+	factor=size/CACHE_LIMIT;
+	min=min/factor;
+	seek_limit=seek_limit/factor;
+	size=CACHE_LIMIT; 
+}
   s=cache_init(size,ss);
   if(s == NULL) return 0;
   stream->cache_data=s;
@@ -570,3 +595,36 @@ int cache_do_control(stream_t *stream, int cmd, void *arg) {
   }
   return s->control_res;
 }
+
+int stream_read(stream_t *s,char* mem,int total){
+  int len=total;
+  while(len>0){
+    int x;
+    debug_str="stream_read";
+    x=s->buf_len-s->buf_pos;
+    if(x==0){
+    	debug_str="stream_read: cache_stream_fill_buffer";
+      if(!cache_stream_fill_buffer(s)) 
+	  {
+	  	debug_str="stream_read: cache_stream_fill_buffer ok return";
+	  	return total-len; // EOF
+	  }
+      debug_str="stream_read: cache_stream_fill_buffer ok";
+      x=s->buf_len-s->buf_pos;
+    }
+    if(x>len) x=len;
+    if(s->buf_pos+x>s->buf_len) 
+	{
+			debug_str="stream_read: WARNING! s->buf_pos>s->buf_len\n";
+		return total-len;
+		
+	}
+	debug_str="stream_read: memcpy";
+    memcpy(mem,&s->buffer[s->buf_pos],x);
+	debug_str="stream_read: ok memcpy";
+    s->buf_pos+=x; mem+=x; len-=x;
+  }
+  debug_str="stream_read: ok";
+  return total;
+}
+

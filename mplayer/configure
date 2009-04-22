@@ -1345,9 +1345,6 @@ if test -z "$_target" ; then
 
   # host's CPU/instruction set
    host_arch=$(uname -p 2>&1)
-   #host_arch=ppc
-   #proc=750
-   
    case "$host_arch" in
    i386|sparc|ppc|alpha|arm|mips|vax)
      ;;
