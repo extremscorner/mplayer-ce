@@ -32,10 +32,11 @@
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
 #include <ogc/usbstorage.h>
-#endif
-
 const static DISC_INTERFACE* sd = &__io_wiisd;
 const static DISC_INTERFACE* usb = &__io_usbstorage;
+extern bool playing_usb;
+#endif
+
 
 #include "config.h"
 #include "mp_msg.h"
@@ -258,10 +259,19 @@ static int open_dir(menu_t* menu,char* args) {
 #ifdef GEKKO
   if(!strcmp(mpriv->dir,"usb:/"))
   {
+  	if(!playing_usb)
+  	{
+		usb->startup();
+		if(!usb->isInserted())	return 0;	
+		fatUnmount("usb");
+		if(!fatMountSimple("usb",usb)) return 0;
+	}
+/*
 	  if(!DeviceMounted("usb:/"))
 	  {
 		  if(!fatMountSimple("usb",usb)) return 0;
 	  }
+*/	  
   } 
   else if(!strcmp(mpriv->dir,"dvd:/"))
   {

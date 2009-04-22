@@ -213,15 +213,16 @@ bool DeviceMounted(const char *device)
 static void * mountthreadfunc (void *arg)
 {
 	int dp, dvd_inserted=0,usb_inserted=0;
-
-
+/*
+	usleep(5000);
 	//initialize usb
 	usb->startup();
 	if(usb->isInserted())		
 	{
-		if(fatMountSimple("usb",usb)) usb_inserted=1;
+		fatMountSimple("usb",usb);
+		//if(fatMountSimple("usb",usb)) usb_inserted=1;
 	}
-	
+*/	
 #ifdef CE_DEBUG
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
@@ -230,6 +231,7 @@ static void * mountthreadfunc (void *arg)
 	sleep(1);	
 	while(!exit_automount_thread)
 	{	
+	/*
 		if(!playing_usb)
 		{
 			dp=usb->isInserted();
@@ -244,7 +246,7 @@ static void * mountthreadfunc (void *arg)
 				}else fatMountSimple("usb",usb);
 			}
 		}//else usb_inserted=1;	
-    			
+    */			
 		if(dvd_mounting==false)
 		{
 			dp=WIIDVD_DiscPresent();
