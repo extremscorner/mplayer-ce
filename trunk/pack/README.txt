@@ -335,6 +335,7 @@ Example:
       to change font size
     * Merged widescreen and 4:3 pack - now MPlayer will use the appropriate
       loop.avi automatically
+    * Improved modchip compatibility for DVD
 
  v0.4
 
