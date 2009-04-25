@@ -6,6 +6,8 @@ This is our current TODO list.  If you have any other feature requests please ad
 
 = TODO list for MPlayerCE =
 
+ * Green screen on exit
+
  * Able to position menu
 
  * Play whole directory: choose shuffle/continuous etc
