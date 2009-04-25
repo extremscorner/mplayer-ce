@@ -18,8 +18,6 @@ This is our current TODO list.  If you have any other feature requests please ad
 
  * Image support
 
- * Ability to adjust picture with Nunchuk
-
  * a GUI with Wii pointer support (possibly using images from Blue_K)
 
  * Wii Light integration
