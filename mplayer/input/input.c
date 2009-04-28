@@ -1736,7 +1736,8 @@ mp_input_get_section(void) {
 
 void
 mp_input_init(int use_gui) {
-  char* file;
+  char *file;
+  
 
 #ifdef CONFIG_GUI
   if(use_gui)
@@ -1755,7 +1756,9 @@ mp_input_init(int use_gui) {
       free(file);
     }
     // Try global conf dir
-    file = MPLAYER_CONFDIR "/input.conf";
+    //file = MPLAYER_CONFDIR "/input.conf";
+    file = (char*)malloc(sizeof(char)*100);
+    sprintf(file,"%s%s",MPLAYER_CONFDIR,"/input.conf");
     if(! mp_input_parse_config(file))
       mp_msg(MSGT_INPUT,MSGL_V,"Falling back on default (hardcoded) input config\n");
   }

@@ -160,17 +160,16 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 						unsigned char *srca, int stride) {
 					
 	int p;
+
 	p=pitch[0];
 	p= (p / 16);
 	if(p % 2) p++;
 	p=p*16;
-
 	y0=((int)(y0/8.0))*8;
 					
 	vo_draw_alpha_gekko(w, h, src, srca, stride,
 						GetYtexture() + (y0 * p),
-						pitch[0]);
-
+						pitch[0]);						
 }
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,

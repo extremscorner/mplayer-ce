@@ -3099,11 +3099,10 @@ attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *s
 #endif
 
 /**
- * Decodes an audio frame from \p avpkt->data into \p samples.
- * The avcodec_decode_audio3() function decodes an audio frame from the input
- * buffer \p avpkt->data of size \p avpkt->size. To decode it, it makes use of the
- * audio codec which was coupled with \p avctx using avcodec_open(). The
- * resulting decoded frame is stored in output buffer \p samples.  If no frame
+ * Decodes the audio frame of size avpkt->size from avpkt->data into samples.
+ * Some decoders may support multiple frames in a single AVPacket, such
+ * decoders would then just decode the first frame.
+ * If no frame
  * could be decompressed, \p frame_size_ptr is zero. Otherwise, it is the
  * decompressed frame size in \e bytes.
  *
@@ -3157,11 +3156,9 @@ attribute_deprecated int avcodec_decode_video(AVCodecContext *avctx, AVFrame *pi
 #endif
 
 /**
- * Decodes a video frame from \p avpkt->data into \p picture.
- * The avcodec_decode_video2() function decodes a video frame from the input
- * buffer \p avpkt->data of size \p avpkt->size. To decode it, it makes use of the
- * video codec which was coupled with \p avctx using avcodec_open(). The
- * resulting decoded frame is stored in \p picture.
+ * Decodes the video frame of size avpkt->size from avpkt->data into picture.
+ * Some decoders may support multiple frames in a single AVPacket, such
+ * decoders would then just decode the first frame.
  *
  * @warning The input buffer must be \c FF_INPUT_BUFFER_PADDING_SIZE larger than
  * the actual read bytes because some optimized bitstream readers read 32 or 64
@@ -3204,7 +3201,7 @@ attribute_deprecated int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtit
 
 /**
  * Decodes a subtitle message.
- * Returns -1 if error, otherwise returns the number of bytes used.
+ * Returns a negative value on error, otherwise returns the number of bytes used.
  * If no subtitle could be decompressed, \p got_sub_ptr is zero.
  * Otherwise, the subtitle is stored in \p *sub.
  *
@@ -3222,10 +3219,6 @@ int avcodec_parse_frame(AVCodecContext *avctx, uint8_t **pdata,
 
 /**
  * Encodes an audio frame from \p samples into \p buf.
- * The avcodec_encode_audio() function encodes an audio frame from the input
- * buffer \p samples. To encode it, it makes use of the audio codec which was
- * coupled with \p avctx using avcodec_open(). The resulting encoded frame is
- * stored in output buffer \p buf.
  *
  * @note The output buffer should be at least \c FF_MIN_BUFFER_SIZE bytes large.
  * However, for PCM audio the user will know how much space is needed
@@ -3248,10 +3241,7 @@ int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
 
 /**
  * Encodes a video frame from \p pict into \p buf.
- * The avcodec_encode_video() function encodes a video frame from the input
- * \p pict. To encode it, it makes use of the video codec which was coupled with
- * \p avctx using avcodec_open(). The resulting encoded bytes representing the
- * frame are stored in the output buffer \p buf. The input picture should be
+ * The input picture should be
  * stored using a specific format, namely \c avctx.pix_fmt.
  *
  * @param avctx the codec context

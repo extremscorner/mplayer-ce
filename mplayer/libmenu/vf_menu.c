@@ -56,6 +56,7 @@ struct vf_priv_s {
 
 static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts);
 
+
 void vf_menu_pause_update(struct vf_instance_s* vf) {
   const vo_functions_t *video_out = mpctx_get_video_out(vf->priv->current->ctx);
   if(pause_mpi) {
@@ -253,7 +254,6 @@ static int open_vf(vf_instance_t *vf, char* args){
 
   return 1;
 }
-
 
 vf_info_t vf_info_menu  = {
   "Internal filter for libmenu",

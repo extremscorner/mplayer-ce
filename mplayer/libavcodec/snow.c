@@ -635,14 +635,14 @@ static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signe
             for(i=0; i<e; i++){
                 put_rac(c, state+1+FFMIN(i,9), 1);  //1..10
             }
-            put_rac(c, state+1+FFMIN(i,9), 0);
+            put_rac(c, state+1+9, 0);
 
             for(i=e-1; i>=0; i--){
                 put_rac(c, state+22+FFMIN(i,9), (a>>i)&1); //22..31
             }
 
             if(is_signed)
-                put_rac(c, state+11 + FFMIN(e,10), v < 0); //11..21
+                put_rac(c, state+11 + 10, v < 0); //11..21
         }
 #endif /* 1 */
     }else{
@@ -665,10 +665,8 @@ static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
             a += a + get_rac(c, state+22 + FFMIN(i,9)); //22..31
         }
 
-        if(is_signed && get_rac(c, state+11 + FFMIN(e,10))) //11..21
-            return -a;
-        else
-            return a;
+        e= -(is_signed && get_rac(c, state+11 + FFMIN(e,10))); //11..21
+        return (a^e)-e;
     }
 }
 
@@ -3991,9 +3989,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
-
-    s->chroma_h_shift= 1; //FIXME XXX
-    s->chroma_v_shift= 1;
 
     s->mv_scale       = (avctx->flags & CODEC_FLAG_QPEL) ? 2 : 4;
     s->block_max_depth= (avctx->flags & CODEC_FLAG_4MV ) ? 1 : 0;
