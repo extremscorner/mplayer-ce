@@ -1209,11 +1209,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_EA:
-        samples_in_chunk = AV_RL32(src);
-        if (samples_in_chunk >= ((buf_size - 12) * 2)) {
+        if (buf_size < 4 || AV_RL32(src) >= ((buf_size - 12) * 2)) {
             src += buf_size;
             break;
         }
+        samples_in_chunk = AV_RL32(src);
         src += 4;
         current_left_sample   = (int16_t)bytestream_get_le16(&src);
         previous_left_sample  = (int16_t)bytestream_get_le16(&src);
@@ -1251,6 +1251,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 *samples++ = (unsigned short)current_right_sample;
             }
         }
+
+        if (src - buf == buf_size - 2)
+            src += 2; // Skip terminating 0x0000
+
         break;
     case CODEC_ID_ADPCM_EA_MAXIS_XA:
         for(channel = 0; channel < avctx->channels; channel++) {

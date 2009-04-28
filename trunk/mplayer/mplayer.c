@@ -374,6 +374,25 @@ static unsigned int initialized_flags=0;
 
 #define mp_basename2(s) (strrchr(s,'/')==NULL?(char*)s:(strrchr(s,'/')+1))
 
+
+
+static bool IsBackgroungImage()
+{
+	int i,j;
+	j=strlen(filename);
+	for(i=j-1;i>=0;i--)
+	{
+		if(filename[i]=='/') 
+		{
+			i++;
+			break;
+		}
+	}
+	if(!strcmp("loop.avi",&filename[i])) return true;
+	if(!strcmp("loop-wide.avi",&filename[i])) return true;
+	return false;
+}
+
 const void *mpctx_get_video_out(MPContext *mpctx)
 {
     return mpctx->video_out;
@@ -856,9 +875,11 @@ void mp_input_register_options(m_config_t* cfg);
 static void parse_cfgfiles( m_config_t* conf )
 {
 char *conffile;
+char cad[100];
 int conffile_fd;
+sprintf(cad,"%s%s",MPLAYER_CONFDIR,"/mplayer.conf");
 if (!disable_system_conf &&
-    m_config_parse_config_file(conf, MPLAYER_CONFDIR "/mplayer.conf") < 0)
+    m_config_parse_config_file(conf, cad) < 0)
   exit_player(EXIT_NONE);
 if ((conffile = get_path("")) == NULL) {
   mp_msg(MSGT_CPLAYER,MSGL_WARN,MSGTR_NoHomeDir);
@@ -1528,17 +1549,6 @@ void set_osd_bar(int type,const char* name,double min,double max,double val) {
  * 
  */
 
-void test_osd()
-{
-/*
-mpctx->bg_demuxer->video->sh
-   if (vf_menu) 
-   {
-        	if (!mpctx->sh_video && mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
-                vf_menu_pause_update(vf_menu);
-   }
-   */
-}
 static void update_osd_msg(void) {
     mp_osd_msg_t *msg;
     static char osd_text[128] = "";
@@ -1606,6 +1616,15 @@ static void update_osd_msg(void) {
         osd_text[0] = 0;
         printf("%s\n",term_osd_esc);
     }
+}
+
+void force_osd()
+{
+   if (vf_menu) 
+   {
+		update_osd_msg();
+        vf_menu_pause_update(vf_menu);
+   }
 }
 
 ///@}
@@ -2389,6 +2408,7 @@ static double update_video(int *blit_frame)
 static void pause_loop(void)
 {
     mp_cmd_t* cmd;
+    
     if (!quiet) {
         // Small hack to display the pause message on the OSD line.
         // The pause string is: "\n == PAUSE == \r" so we need to
@@ -2403,21 +2423,7 @@ static void pause_loop(void)
 	    mp_msg(MSGT_CPLAYER,MSGL_STATUS,MSGTR_Paused);
         mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_PAUSED\n");
     }
-
-//rodries test
-/*
-  if (mpctx->sh_video)
-  {
-	    char msg[128] = MSGTR_Paused;
-	    int mlen = strlen(msg);
-	    msg[mlen-1] = '\0';
-	    set_osd_msg(OSD_MSG_PAUSE, 1, 0, "%s", msg+1);
-	    update_osd_msg();
-  }
-*/  
-//rodries test
-	    
-
+    
 #ifdef CONFIG_GUI
     if (use_gui)
 	guiGetEvent(guiCEvent, (char *)guiSetPause);
@@ -2747,7 +2753,9 @@ int gui_no_filename=0;
 /* Check codecs.conf. */
 if(!codecs_file || !parse_codec_cfg(codecs_file)){
   if(!parse_codec_cfg(mem_ptr=get_path("codecs.conf"))){
-    if(!parse_codec_cfg(MPLAYER_CONFDIR "/codecs.conf")){
+  	char cad[100];
+  	sprintf(cad,"%s%s",MPLAYER_CONFDIR,"/codecs.conf");
+    if(!parse_codec_cfg(cad)){
       if(!parse_codec_cfg(NULL)){
         exit_player_with_rc(EXIT_NONE, 0);
       }
@@ -2859,7 +2867,11 @@ if(!codecs_file || !parse_codec_cfg(codecs_file)){
        vo_font=read_font_desc( mem_ptr=get_path("font/font.desc"),font_factor,verbose>1);
        free(mem_ptr); // release the buffer created by get_path()
        if(!vo_font)
-       vo_font=read_font_desc(MPLAYER_DATADIR "/font/font.desc",font_factor,verbose>1);
+       {
+       char cad[200];
+       sprintf(cad,"%s%s",MPLAYER_DATADIR,"/font/font.desc");
+       vo_font=read_font_desc(cad,font_factor,verbose>1);
+       }
   }
   if (sub_font_name)
     sub_font = read_font_desc(sub_font_name, font_factor, verbose>1);
@@ -2930,16 +2942,18 @@ stream_set_interrupt_callback(mp_input_check_interrupt);
 #ifdef CONFIG_MENU
  if(use_menu) {
    if(menu_cfg && menu_init(mpctx, menu_cfg))
-     mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_MenuInitialized, menu_cfg);
+     mp_msg(MSGT_CPLAYER, MSGL_V, MSGTR_MenuInitialized, menu_cfg);
    else {
      menu_cfg = get_path("menu.conf");
      if(menu_init(mpctx, menu_cfg))
-       mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_MenuInitialized, menu_cfg);
+       mp_msg(MSGT_CPLAYER, MSGL_V, MSGTR_MenuInitialized, menu_cfg);
      else {
-       if(menu_init(mpctx, MPLAYER_CONFDIR "/menu.conf"))
-         mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_MenuInitialized, MPLAYER_CONFDIR"/menu.conf");
+     	char cad[100];
+       sprintf(cad,"%s%s",MPLAYER_CONFDIR,"/menu.conf");
+       if(menu_init(mpctx, cad))
+         mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_MenuInitialized, cad);
        else {
-         mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_MenuInitFailed);
+         mp_msg(MSGT_CPLAYER, MSGL_ERR, MSGTR_MenuInitFailed);
          use_menu = 0;
        }
      }
@@ -3141,14 +3155,15 @@ if (edl_output_filename) {
 }
 
 //==================== Open VOB-Sub ============================
-int vob_sub_auto = 0; //scip
+int vob_sub_auto = 1; //scip
     current_module="vobsub";
     if (vobsub_name){
       vo_vobsub=vobsub_open(vobsub_name,spudec_ifo,1,&vo_spudec);
       if(vo_vobsub==NULL)
         mp_msg(MSGT_CPLAYER,MSGL_ERR,MSGTR_CantLoadSub,
 		filename_recode(vobsub_name));
-    } else if (vob_sub_auto && filename){ //scip sub_auto -> vob_sub_auto
+    } else 
+	if (vo_vobsub==NULL && vob_sub_auto && filename){ //scip sub_auto -> vob_sub_auto
       /* try to autodetect vobsub from movie filename ::atmos */
       char *buf = strdup(filename), *psub;
       char *pdot = strrchr(buf, '.');
@@ -3600,9 +3615,9 @@ if(mpctx->sh_video) {
     for (i = 0; sub_name[i] != NULL; ++i) 
         add_subtitles (sub_name[i], mpctx->sh_video->fps, 0); 
   } 
-  //scip:
-  //sub_auto = 0;
-  if(sub_auto) { // auto load sub file ...
+  //scip:      
+  sub_auto = 1;
+  if(vo_vobsub==NULL && sub_auto) { // auto load sub file ...
     //char *psub = get_path( "sub/" );
     //char **tmp = sub_filenames((psub ? psub : ""), filename);
     //printf("\n\t1\n");
@@ -3611,8 +3626,8 @@ if(mpctx->sh_video) {
     int i = 0;
     //free(psub); // release the buffer created by get_path() above
     while (tmp[i]) {
-    		//printf("\n\tSub: %s\n",tmp[i]);
         add_subtitles (tmp[i], mpctx->sh_video->fps, 1);
+        printf("added sub: %s\n",tmp[i]);sleep(4);
         free(tmp[i++]);
     }
     free(tmp);
@@ -4035,6 +4050,18 @@ if(step_sec>0) {
   }
 }
   mpctx->was_paused = 0;
+
+   if (mpctx->eof==1 && IsBackgroungImage()) 
+   {
+    play_n_frames=play_n_frames_mf;
+    mpctx->eof=0;
+    #ifdef GEKKO
+    playing_usb=false;
+    #endif
+    abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec=0;
+    loop_seek = 1;
+   
+   }
 
   /* Looping. */
   if(mpctx->eof==1 && mpctx->loop_times>=0) {

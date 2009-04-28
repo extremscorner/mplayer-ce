@@ -43,6 +43,7 @@ extern "C" {
 static u32 whichfb;
 static u32 *xfb[2];
 static bool component_fix=false;
+static int hor_pos=0, vert_pos=0;
 GXRModeObj *vmode = NULL;
 
 /*** 3D GX ***/
@@ -96,11 +97,12 @@ void GX_InitVideo() {
 	else
   { 
     //vmode->viWidth = VI_MAX_WIDTH_PAL-20;
+    vmode->viWidth = 680;
     //vmode->xfbHeight+=8;    
   }
   
   //vmode->viWidth = 678;
-	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2) ;
+	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
 	
 	VIDEO_Configure(vmode);
 
@@ -119,6 +121,12 @@ void GX_InitVideo() {
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
+}
+
+void GX_SetScreenPos(int _hor_pos,int _vert_pos)
+{
+	hor_pos = _hor_pos;
+	vert_pos = _vert_pos;
 }
 
 void GX_SetComponentFix(bool f) {
@@ -329,12 +337,29 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	h = ((int)((height/8.0)))*8;
 
 	//center, to correct difference between pitch and real width
-	int diffx;
-	diffx=abs((w-width)/2) ;	
-	square[0] += diffx;
-  	square[9] += diffx;
-	square[3] += diffx;
-  	square[6] += diffx;
+	int diffx,diffy;
+	diffx=/*abs*/((w-width)/2) ;
+	diffx=width-w ;
+	diffx+=hor_pos;
+
+	diffy=/*abs*/((height-h)/2) ;
+	diffy=/*abs*/((height-h)) ;
+		
+	//square[0] -= diffx;
+  	//square[9] -= diffx;
+	square[3] -= diffx;
+  	square[6] -= diffx;
+
+	//vert_pos = vert_pos * 100;
+//	square[1] -= diffy;
+//	square[4] -= diffy;
+	square[7] += diffy;
+	square[10] += diffy;
+
+	square[1] -= vert_pos;
+	square[4] -= vert_pos;
+	square[7] -= vert_pos;
+	square[10] -= vert_pos;
 
 
 	//Ytexsize = (width*height);
@@ -923,6 +948,8 @@ void GX_UpdateSquare()
   mysquare[10] -= m_screenbottom_shift*100;
 
 	GX_SetArray(GX_VA_POS, mysquare, 3 * sizeof(s16));
+//	set_osd_msg(124,1,5000,"fH:%u vH:%i sob:%i st:%i sb:%i",vmode->efbHeight,vmode->viHeight,square[7],mysquare[1],mysquare[7]);	
+	
 }
 
 void GX_RenderTexture() 
@@ -970,4 +997,3 @@ int GetYrowpitch() {return Yrowpitch;}
 #ifdef __cplusplus
 }
 #endif
-

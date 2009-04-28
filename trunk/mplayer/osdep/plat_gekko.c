@@ -62,17 +62,26 @@ static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static int dbg_network = false;
 static int component_fix = false;
+static int gxzoom=358;
+static float hor_pos=3;
+static float vert_pos=0;
 static bool exit_automount_thread = false;
 
 //#define CE_DEBUG 1
 
 static char *default_args1[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
-	"-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop-wide.avi", "-idle", "sd:/apps/mplayer_ce/loop-wide.avi"
+#ifndef CE_DEBUG 	
+	"-really-quiet",
+#endif	
+	"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop-wide.avi", "-idle", "sd:/apps/mplayer_ce/loop-wide.avi"
 }; 
 static char *default_args2[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
-	"-really-quiet","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
+#ifndef CE_DEBUG 	
+	"-really-quiet",
+#endif	
+	"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
 }; 
 
 //extern float movie_aspect;
@@ -92,13 +101,6 @@ static void wpad_power_cb (void) {
 #include <sys/time.h>
 #include <sys/timeb.h>
 void gekko_gettimeofday(struct timeval *tv, void *tz) {
-/*
-      struct timeb timebuffer;
-        ftime( &timebuffer );
-        tv->tv_sec=timebuffer.time;
-        tv->tv_usec=1000*timebuffer.millitm;
-*/        
-        
 	u32 us = ticks_to_microsecs(gettime());
 
 	tv->tv_sec = us / TB_USPERSEC;
@@ -129,7 +131,11 @@ static lwp_t mainthread;
 static s32 initialise_network() 
 {
     s32 result;
-    while ((result = net_init()) == -EAGAIN) usleep(500);
+    int cnt=0;
+    while ((result = net_init()) == -EAGAIN) 
+	{
+		usleep(500);
+	}
     return result;
 }
 
@@ -143,8 +149,13 @@ int wait_for_network_initialisation()
 	        char myIP[16];
 	        if (if_config(myIP, NULL, NULL, true) < 0)
 			{
-			  if(dbg_network) printf("Error getting ip\n");
-			  return 0;
+			  if(dbg_network) 
+			  {
+			  	printf("Error getting ip\n");
+			  	return 0;
+			  }
+			  sleep(5);
+			  continue;
 			}
 	        else
 			{
@@ -155,8 +166,8 @@ int wait_for_network_initialisation()
 	    }
 	    if(dbg_network) 
 		{
-			printf("Error initializing netwok\n");
-			break;
+			printf("Error initializing network\n");
+			return 0;
 		}
 		sleep(10);
     }
@@ -189,11 +200,15 @@ bool DVDGekkoMount()
 static void * networkthreadfunc (void *arg)
 {
 	usleep(100);
+	
+	while(1){
 	if(wait_for_network_initialisation()) 
 	{
 		trysmb();
+		break;
 	}
-	usleep(100);
+	sleep(10);
+	}
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
@@ -289,7 +304,9 @@ void mount_smb(int number)
 	/* read configuration */
 	smb_conf = m_config_new();
 	m_config_register_options(smb_conf, smb_opts);
-	m_config_parse_config_file(smb_conf, "sd:/apps/mplayer_ce/smb.conf");
+	char file[100];
+	sprintf(file,"%s/smb.conf",MPLAYER_DATADIR);	
+	m_config_parse_config_file(smb_conf, file);
 	
 	if(smb_ip==NULL || smb_share==NULL) return;
 
@@ -329,6 +346,9 @@ int LoadParams()
 	{
 	    {   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+	    {   "gxzoom", &gxzoom, CONF_TYPE_INT, CONF_RANGE, 1, 400, NULL},
+	    {   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
+	    {   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -4000, 4000, NULL},	  
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};		
 	
@@ -336,7 +356,9 @@ int LoadParams()
 	comp_conf = m_config_new();
 	m_config_register_options(comp_conf, comp_opts);
 	int ret;
-	return m_config_parse_config_file(comp_conf, "sd:/apps/mplayer_ce/mplayer.conf"); 
+	char cad[100];
+	sprintf(cad,"%s/mplayer.conf",MPLAYER_DATADIR);
+	return m_config_parse_config_file(comp_conf, cad); 
 }
 
 void plat_init (int *argc, char **argv[]) {	
@@ -358,46 +380,59 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_StopDMA();
 
 
-	if (!sd->startup() || !fatMountSimple("sd",sd) || !LoadParams())
+	sprintf(MPLAYER_DATADIR,"%s","sd:/apps/mplayer_ce");
+	sprintf(MPLAYER_CONFDIR,"%s","sd:/apps/mplayer_ce");
+	sprintf(MPLAYER_LIBDIR,"%s","sd:/apps/mplayer_ce");
+	if (!sd->startup() || !fatMount("sd",sd,0,2,228) || !LoadParams())
 	{
-		GX_InitVideo();
-  	log_console_init(vmode, 0);
-  	printf("MPlayerCE v.0.5\n\n");
-		printf("SD access failed\n");
-		printf("Please check that you have installed MPlayerCE in the right folder\n");
-		printf("sd:/apps/mplayer_ce\n");
-				
-		VIDEO_WaitVSync();
-		sleep(6);
-		if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
-		exit(0);
+		printf("no sd\n");
+		sprintf(MPLAYER_DATADIR,"%s","usb:/apps/mplayer_ce");
+		sprintf(MPLAYER_CONFDIR,"%s","usb:/apps/mplayer_ce");
+		sprintf(MPLAYER_LIBDIR,"%s","usb:/apps/mplayer_ce");
+		
+		if (!usb->startup() || !fatMount("usb",usb,0,2,64) || !LoadParams())
+		{
+			GX_InitVideo();
+			log_console_init(vmode, 0);
+			printf("MPlayerCE v.0.51\n\n");
+			printf("SD access failed\n");
+			printf("Please review that you have installed MPlayerCE in the rigth folder\n");
+			printf("sd:/apps/mplayer_ce  or  usb:/apps/mplayer_ce\n");
+					
+			VIDEO_WaitVSync();
+			sleep(6);
+			if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+			exit(0);
+		}
 	}
+
+	GX_SetComponentFix(component_fix);
+	GX_SetCamPosZ(gxzoom);
+	GX_SetScreenPos((int)hor_pos,(int)vert_pos);  
 	
-	GX_SetComponentFix(component_fix);  
 	GX_InitVideo();
 
 	log_console_init(vmode, 128);
 
   printf("Loading ");
+
   char cad[10]={127,130,158,147,171,151,164,117,119,0};
   __dec(cad);
   printf ("\x1b[32m");
 	printf("%s",cad);
-	printf(" v.0.5 ....\n\n");
+	printf(" v.0.51 ....\n\n");
   printf ("\x1b[37m");
-  
+
+
+	VIDEO_WaitVSync();
+
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
 
 	mainthread=LWP_GetSelf(); 
 	lwp_t clientthread;
 	 
- 	VIDEO_WaitVSync();
-
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-		
-
 LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
-
 #ifndef CE_DEBUG  //no network on debug
 
 	if(dbg_network)
@@ -413,13 +448,12 @@ LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mou
 	}
 	else LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 80); // network initialization
 	
-	//log_console_enable_video(false);
-	
-#endif	
+	log_console_enable_video(false);
 
+#endif	
   
-	chdir("sd:/apps/mplayer_ce");
-	setenv("HOME", "sd:/apps/mplayer_ce", 1);
+	chdir(MPLAYER_DATADIR);
+	setenv("HOME", MPLAYER_DATADIR, 1);
 	setenv("DVDCSS_CACHE", "off", 1);
 	setenv("DVDCSS_VERBOSE", "0", 1);
 	setenv("DVDREAD_VERBOSE", "0", 1);

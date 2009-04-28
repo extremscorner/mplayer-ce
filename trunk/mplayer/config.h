@@ -33,9 +33,12 @@
 
 #define CONFIGURATION "--with-twiizers"
 
-#define MPLAYER_DATADIR "sd:/apps/mplayer_ce"
-#define MPLAYER_CONFDIR "sd:/apps/mplayer_ce"
-#define MPLAYER_LIBDIR "sd:/apps/mplayer_ce"
+//#define MPLAYER_DATADIR "sd:/apps/mplayer_ce"
+//#define MPLAYER_CONFDIR "sd:/apps/mplayer_ce"
+//#define MPLAYER_LIBDIR "sd:/apps/mplayer_ce"
+char MPLAYER_DATADIR[100]; 
+char MPLAYER_CONFDIR[100]; 
+char MPLAYER_LIBDIR[100]; 
 
 /* definitions needed by included libraries */
 #define HAVE_INTTYPES_H 1

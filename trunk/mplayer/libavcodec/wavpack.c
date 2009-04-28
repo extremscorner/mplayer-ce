@@ -91,6 +91,7 @@ typedef struct WavpackContext {
     Decorr decorr[MAX_TERMS];
     int zero, one, zeroes;
     int and, or, shift;
+    int post_shift;
     int hybrid, hybrid_bitrate;
     WvChannel ch[2];
 } WavpackContext;
@@ -336,13 +337,15 @@ static int wv_get_value(WavpackContext *ctx, GetBitContext *gb, int channel, int
     return sign ? ~ret : ret;
 }
 
-static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
+static inline int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, void *dst, const int hires)
 {
     int i, j, count = 0;
     int last, t;
     int A, B, L, L2, R, R2, bit;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
+    int16_t *dst16 = dst;
+    int32_t *dst32 = dst;
 
     s->one = s->zero = s->zeroes = 0;
     do{
@@ -370,22 +373,36 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
                     B = s->decorr[i].samplesB[pos];
                     j = (pos + t) & 7;
                 }
-                L2 = L + ((s->decorr[i].weightA * A + 512) >> 10);
-                R2 = R + ((s->decorr[i].weightB * B + 512) >> 10);
+                if(hires){
+                    L2 = L + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
+                    R2 = R + ((s->decorr[i].weightB * (int64_t)B + 512) >> 10);
+                }else{
+                    L2 = L + ((s->decorr[i].weightA * A + 512) >> 10);
+                    R2 = R + ((s->decorr[i].weightB * B + 512) >> 10);
+                }
                 if(A && L) s->decorr[i].weightA -= ((((L ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;
                 if(B && R) s->decorr[i].weightB -= ((((R ^ B) >> 30) & 2) - 1) * s->decorr[i].delta;
                 s->decorr[i].samplesA[j] = L = L2;
                 s->decorr[i].samplesB[j] = R = R2;
             }else if(t == -1){
-                L2 = L + ((s->decorr[i].weightA * s->decorr[i].samplesA[0] + 512) >> 10);
+                if(hires)
+                    L2 = L + ((s->decorr[i].weightA * (int64_t)s->decorr[i].samplesA[0] + 512) >> 10);
+                else
+                    L2 = L + ((s->decorr[i].weightA * s->decorr[i].samplesA[0] + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightA, s->decorr[i].delta, s->decorr[i].samplesA[0], L);
                 L = L2;
-                R2 = R + ((s->decorr[i].weightB * L2 + 512) >> 10);
+                if(hires)
+                    R2 = R + ((s->decorr[i].weightB * (int64_t)L2 + 512) >> 10);
+                else
+                    R2 = R + ((s->decorr[i].weightB * L2 + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightB, s->decorr[i].delta, L2, R);
                 R = R2;
                 s->decorr[i].samplesA[0] = R;
             }else{
-                R2 = R + ((s->decorr[i].weightB * s->decorr[i].samplesB[0] + 512) >> 10);
+                if(hires)
+                    R2 = R + ((s->decorr[i].weightB * (int64_t)s->decorr[i].samplesB[0] + 512) >> 10);
+                else
+                    R2 = R + ((s->decorr[i].weightB * s->decorr[i].samplesB[0] + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightB, s->decorr[i].delta, s->decorr[i].samplesB[0], R);
                 R = R2;
 
@@ -394,7 +411,10 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
                     s->decorr[i].samplesA[0] = R;
                 }
 
-                L2 = L + ((s->decorr[i].weightA * R2 + 512) >> 10);
+                if(hires)
+                    L2 = L + ((s->decorr[i].weightA * (int64_t)R2 + 512) >> 10);
+                else
+                    L2 = L + ((s->decorr[i].weightA * R2 + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightA, s->decorr[i].delta, R2, L);
                 L = L2;
                 s->decorr[i].samplesB[0] = L;
@@ -405,9 +425,15 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
             L += (R -= (L >> 1));
         crc = (crc * 3 + L) * 3 + R;
         bit = (L & s->and) | s->or;
-        *dst++ = ((L + bit) << s->shift) - bit;
+        if(hires)
+            *dst32++ = (((L + bit) << s->shift) - bit) << s->post_shift;
+        else
+            *dst16++ = (((L + bit) << s->shift) - bit) << s->post_shift;
         bit = (R & s->and) | s->or;
-        *dst++ = ((R + bit) << s->shift) - bit;
+        if(hires)
+            *dst32++ = (((R + bit) << s->shift) - bit) << s->post_shift;
+        else
+            *dst16++ = (((R + bit) << s->shift) - bit) << s->post_shift;
         count++;
     }while(!last && count < s->samples);
 
@@ -418,13 +444,15 @@ static int wv_unpack_stereo(WavpackContext *s, GetBitContext *gb, int16_t *dst)
     return count * 2;
 }
 
-static int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, int16_t *dst)
+static inline int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, void *dst, const int hires)
 {
     int i, j, count = 0;
     int last, t;
     int A, S, T, bit;
     int pos = 0;
     uint32_t crc = 0xFFFFFFFF;
+    int16_t *dst16 = dst;
+    int32_t *dst32 = dst;
 
     s->one = s->zero = s->zeroes = 0;
     do{
@@ -444,14 +472,20 @@ static int wv_unpack_mono(WavpackContext *s, GetBitContext *gb, int16_t *dst)
                 A = s->decorr[i].samplesA[pos];
                 j = (pos + t) & 7;
             }
-            S = T + ((s->decorr[i].weightA * A + 512) >> 10);
+            if(hires)
+                S = T + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
+            else
+                S = T + ((s->decorr[i].weightA * A + 512) >> 10);
             if(A && T) s->decorr[i].weightA -= ((((T ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;
             s->decorr[i].samplesA[j] = T = S;
         }
         pos = (pos + 1) & 7;
         crc = crc * 3 + S;
         bit = (S & s->and) | s->or;
-        *dst++ = ((S + bit) << s->shift) - bit;
+        if(hires)
+            *dst32++ = (((S + bit) << s->shift) - bit) << s->post_shift;
+        else
+            *dst16++ = (((S + bit) << s->shift) - bit) << s->post_shift;
         count++;
     }while(!last && count < s->samples);
 
@@ -468,7 +502,10 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     s->stereo = (avctx->channels == 2);
-    avctx->sample_fmt = SAMPLE_FMT_S16;
+    if(avctx->bits_per_coded_sample <= 16)
+        avctx->sample_fmt = SAMPLE_FMT_S16;
+    else
+        avctx->sample_fmt = SAMPLE_FMT_S32;
     avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
 
     return 0;
@@ -481,12 +518,13 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     WavpackContext *s = avctx->priv_data;
-    int16_t *samples = data;
+    void *samples = data;
     int samplecount;
     int got_terms = 0, got_weights = 0, got_samples = 0, got_entropy = 0, got_bs = 0;
     int got_hybrid = 0;
     const uint8_t* buf_end = buf + buf_size;
     int i, j, id, size, ssize, weights, t;
+    int bpp;
 
     if (buf_size == 0){
         *data_size = 0;
@@ -502,17 +540,27 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         *data_size = 0;
         return buf_size;
     }
-    /* should not happen but who knows */
-    if(s->samples * 2 * avctx->channels > *data_size){
-        av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
-        return -1;
-    }
     s->frame_flags = AV_RL32(buf); buf += 4;
+    if((s->frame_flags&0x03) <= 1){
+        bpp = 2;
+        avctx->sample_fmt = SAMPLE_FMT_S16;
+    } else {
+        bpp = 4;
+        avctx->sample_fmt = SAMPLE_FMT_S32;
+    }
     s->stereo_in = (s->frame_flags & WV_FALSE_STEREO) ? 0 : s->stereo;
     s->joint = s->frame_flags & WV_JOINT_STEREO;
     s->hybrid = s->frame_flags & WV_HYBRID_MODE;
     s->hybrid_bitrate = s->frame_flags & WV_HYBRID_BITRATE;
+    s->post_shift = 8 * (bpp-1-(s->frame_flags&0x03)) + ((s->frame_flags >> 13) & 0x1f);
     s->CRC = AV_RL32(buf); buf += 4;
+
+    /* should not happen but who knows */
+    if(s->samples * bpp * avctx->channels > *data_size){
+        av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
+        return -1;
+    }
+
     // parse metadata blocks
     while(buf < buf_end){
         id = *buf++;
@@ -647,12 +695,14 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             got_hybrid = 1;
             break;
         case WP_ID_INT32INFO:
-            if(size != 4 || *buf){
+            if(size != 4){
                 av_log(avctx, AV_LOG_ERROR, "Invalid INT32INFO, size = %i, sent_bits = %i\n", size, *buf);
                 buf += ssize;
                 continue;
             }
-            if(buf[1])
+            if(buf[0])
+                s->post_shift = buf[0];
+            else if(buf[1])
                 s->shift = buf[1];
             else if(buf[2]){
                 s->and = s->or = 1;
@@ -699,13 +749,28 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    if(s->stereo_in)
-        samplecount = wv_unpack_stereo(s, &s->gb, samples);
-    else{
-        samplecount = wv_unpack_mono(s, &s->gb, samples);
-        if(s->stereo){
-            int16_t *dst = samples + samplecount * 2;
-            int16_t *src = samples + samplecount;
+    if(s->stereo_in){
+        if(bpp == 2)
+            samplecount = wv_unpack_stereo(s, &s->gb, samples, 0);
+        else
+            samplecount = wv_unpack_stereo(s, &s->gb, samples, 1);
+    }else{
+        if(bpp == 2)
+            samplecount = wv_unpack_mono(s, &s->gb, samples, 0);
+        else
+            samplecount = wv_unpack_mono(s, &s->gb, samples, 1);
+        if(s->stereo && bpp == 2){
+            int16_t *dst = (int16_t*)samples + samplecount * 2;
+            int16_t *src = (int16_t*)samples + samplecount;
+            int cnt = samplecount;
+            while(cnt--){
+                *--dst = *--src;
+                *--dst = *src;
+            }
+            samplecount *= 2;
+        }else if(s->stereo){ //32-bit output
+            int32_t *dst = (int32_t*)samples + samplecount * 2;
+            int32_t *src = (int32_t*)samples + samplecount;
             int cnt = samplecount;
             while(cnt--){
                 *--dst = *--src;
@@ -714,7 +779,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             samplecount *= 2;
         }
     }
-    *data_size = samplecount * 2;
+    *data_size = samplecount * bpp;
 
     return buf_size;
 }
