@@ -55,7 +55,7 @@ static	u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
 
 void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca, 
-	int srcstride, unsigned char* dstbase,int dststride)
+	int srcstride, unsigned char* dstbase,int dststride,int x0)
 {
 // can be optimized
     int y;
@@ -77,7 +77,9 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 	memset(buf, 0, dststride * h1);
 	memset(bufa, 0, dststride * h1);
 
-	buf_st=(dststride-srcstride)/2;
+//	buf_st=(dststride-srcstride)/2; //center
+//	buf_st=0; //align to left
+	buf_st=x0;  // original pos
 	tmp=buf+buf_st;
 	tmpa=bufa+buf_st;
     
@@ -169,7 +171,7 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 					
 	vo_draw_alpha_gekko(w, h, src, srca, stride,
 						GetYtexture() + (y0 * p),
-						pitch[0]);						
+						pitch[0],x0);						
 }
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,

@@ -205,7 +205,7 @@ static MPContext mpctx_s = {
 
 static MPContext *mpctx = &mpctx_s;
 
-int fixed_vo=0;
+int fixed_vo=1;
 
 // benchmark:
 double video_time_usage=0;
@@ -1622,6 +1622,9 @@ void force_osd()
 {
    if (vf_menu) 
    {
+   		if (mpctx && mpctx->sh_video && mpctx->video_out && vo_config_count)
+	    mpctx->video_out->check_events();
+
 		update_osd_msg();
         vf_menu_pause_update(vf_menu);
    }
@@ -2408,22 +2411,22 @@ static double update_video(int *blit_frame)
 static void pause_loop(void)
 {
     mp_cmd_t* cmd;
-    
+/*    
     if (!quiet) {
         // Small hack to display the pause message on the OSD line.
         // The pause string is: "\n == PAUSE == \r" so we need to
         // take the first and the last char out
 	if (term_osd && !mpctx->sh_video) {
-	    char msg[128] = MSGTR_Paused;
-	    int mlen = strlen(msg);
-	    msg[mlen-1] = '\0';
 	    set_osd_msg(OSD_MSG_PAUSE, 1, 0, "%s", msg+1);
 	    update_osd_msg();
 	} else
 	    mp_msg(MSGT_CPLAYER,MSGL_STATUS,MSGTR_Paused);
         mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_PAUSED\n");
     }
-    
+*/
+    set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
+    update_osd_msg();
+   
 #ifdef CONFIG_GUI
     if (use_gui)
 	guiGetEvent(guiCEvent, (char *)guiSetPause);
@@ -3156,7 +3159,10 @@ if (edl_output_filename) {
 
 //==================== Open VOB-Sub ============================
 int vob_sub_auto = 1; //scip
-    current_module="vobsub";
+    current_module="vobsub";  
+	set_osd_msg(OSD_MSG_TEXT, 1, 80000, "Searching vobsub subtitles...");
+	force_osd();
+	  
     if (vobsub_name){
       vo_vobsub=vobsub_open(vobsub_name,spudec_ifo,1,&vo_spudec);
       if(vo_vobsub==NULL)
@@ -3193,6 +3199,9 @@ int vob_sub_auto = 1; //scip
       free(buf);
     }
     if(vo_vobsub){
+      set_osd_msg(OSD_MSG_TEXT, 1, 1000, "Vobsub subtitles loaded");
+	  force_osd();
+
       initialized_flags|=INITIALIZED_VOBSUB;
       vobsub_set_from_lang(vo_vobsub, dvdsub_lang);
       // check if vobsub requested only to display forced subtitles /** rodries review **/
@@ -3201,22 +3210,15 @@ int vob_sub_auto = 1; //scip
       // setup global sub numbering
       mpctx->global_sub_indices[SUB_SOURCE_VOBSUB] = mpctx->global_sub_size; // the global # of the first vobsub.
       mpctx->global_sub_size += vobsub_get_indexes_count(vo_vobsub);
-    }
+    }else{
+    	rm_osd_msg(OSD_MSG_TEXT);force_osd();
+	}
+    
 
 //============ Open & Sync STREAM --- fork cache2 ====================
   
+
   mpctx->stream=NULL;
-  mpctx->demuxer=NULL;
-  if (mpctx->d_audio) {
-    //free_demuxer_stream(mpctx->d_audio);
-    mpctx->d_audio=NULL;
-  }
-  if (mpctx->d_video) {
-    //free_demuxer_stream(d_video);
-    mpctx->d_video=NULL;
-  }
-  mpctx->sh_audio=NULL;
-  mpctx->sh_video=NULL;
 
   current_module="open_stream";
   #ifdef GEKKO
@@ -3269,6 +3271,7 @@ int vob_sub_auto = 1; //scip
     goto goto_next_file;
   }
   initialized_flags|=INITIALIZED_STREAM;
+  
 
 #ifdef CONFIG_GUI
   if ( use_gui ) guiGetEvent( guiSetStream,(char *)mpctx->stream );
@@ -3364,6 +3367,37 @@ if(stream_cache_size>0){
                           stream_cache_size*1024*(stream_cache_seek_min_percent / 100.0)))
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
+
+	set_osd_msg(500, 1, 0, "Analysing Stream...");
+	force_osd();
+
+  if(mpctx->demuxer)
+  {
+  	free_demuxer(mpctx->demuxer);
+  	mpctx->demuxer=NULL;
+  }
+  if (mpctx->d_audio) {
+    //free_demuxer_stream(mpctx->d_audio);
+    mpctx->d_audio=NULL;
+  }
+  if (mpctx->d_video) {
+    //free_demuxer_stream(d_video);
+    mpctx->d_video=NULL;
+  }
+  if(mpctx->sh_audio) 
+  {
+  	uninit_audio(mpctx->sh_audio);
+  	mpctx->sh_audio=NULL;
+  	mpctx->mixer.afilter = NULL;
+  }
+  if(mpctx->sh_video) 
+  { 
+  	uninit_video(mpctx->sh_video);
+    mpctx->sh_video=NULL;
+#ifdef CONFIG_MENU
+    vf_menu=NULL;
+#endif    
+  }  
 
 //============ Open DEMUXERS --- DETECT file type =======================
 current_module="demux_open";
@@ -3627,7 +3661,6 @@ if(mpctx->sh_video) {
     //free(psub); // release the buffer created by get_path() above
     while (tmp[i]) {
         add_subtitles (tmp[i], mpctx->sh_video->fps, 1);
-        printf("added sub: %s\n",tmp[i]);sleep(4);
         free(tmp[i++]);
     }
     free(tmp);
@@ -3707,7 +3740,7 @@ if (mpctx->global_sub_size) {
           stream_control(mpctx->demuxer->stream, STREAM_CTRL_GET_NUM_CHAPTERS, &mpctx->demuxer->num_chapters);
       mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_CHAPTERS=%d\n", mpctx->demuxer->num_chapters);
   } 
-
+rm_osd_msg(500);
 if(!mpctx->sh_video) goto main; // audio-only
 
 
@@ -4168,7 +4201,8 @@ if(benchmark){
 }
 
 // time to uninit all, except global stuff:
-uninit_player(INITIALIZED_ALL-(INITIALIZED_GUI+INITIALIZED_INPUT+(fixed_vo?INITIALIZED_VO:0)));
+//rodries: INITIALIZED_DEMUXER+INITIALIZED_VCODEC  review (added for testing)
+uninit_player(INITIALIZED_ALL-(INITIALIZED_DEMUXER+INITIALIZED_INPUT+INITIALIZED_VCODEC+INITIALIZED_GUI+(fixed_vo?INITIALIZED_VO:0)));
 
 if(mpctx->set_of_sub_size > 0) {
     current_module="sub_free";
