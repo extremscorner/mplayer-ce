@@ -154,6 +154,13 @@ PARTITION* _FAT_partition_constructor (const DISC_INTERFACE* disc, uint32_t cach
 		return NULL;
 	}
 
+	// check again for the last two cases to make sure that we really have a FAT filesystem here
+	// and won't corrupt any data
+	if(memcmp(sectorBuffer + BPB_FAT16_fileSysType, "FAT", 3) != 0 && memcmp(sectorBuffer + BPB_FAT32_fileSysType, "FAT32", 5) != 0)
+	{
+		return NULL;
+	}
+
 	partition = (PARTITION*) _FAT_mem_allocate (sizeof(PARTITION));
 	if (partition == NULL) {
 		return NULL;
@@ -188,12 +195,13 @@ PARTITION* _FAT_partition_constructor (const DISC_INTERFACE* disc, uint32_t cach
 	partition->totalSize = ((uint64_t)partition->numberOfSectors - (partition->dataStart - startSector)) * (uint64_t)partition->bytesPerSector;
 
 	// Store info about FAT
-	partition->fat.lastCluster = (partition->numberOfSectors - (uint32_t)(partition->dataStart - startSector)) / partition->sectorsPerCluster;
+	uint32_t clusterCount = (partition->numberOfSectors - (uint32_t)(partition->dataStart - startSector)) / partition->sectorsPerCluster;
+	partition->fat.lastCluster = clusterCount + CLUSTER_FIRST - 1;
 	partition->fat.firstFree = CLUSTER_FIRST;
 
-	if (partition->fat.lastCluster < CLUSTERS_PER_FAT12) {
+	if (clusterCount < CLUSTERS_PER_FAT12) {
 		partition->filesysType = FS_FAT12;	// FAT12 volume
-	} else if (partition->fat.lastCluster < CLUSTERS_PER_FAT16) {
+	} else if (clusterCount < CLUSTERS_PER_FAT16) {
 		partition->filesysType = FS_FAT16;	// FAT16 volume
 	} else {
 		partition->filesysType = FS_FAT32;	// FAT32 volume
