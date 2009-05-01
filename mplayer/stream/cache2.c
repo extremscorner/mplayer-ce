@@ -30,8 +30,9 @@ static void ThreadProc( void *s );
 #include <ogcsys.h>
 #include <ogc/lwp_watchdog.h>
 static void *ThreadProc( void *s );
-#define CACHE_LIMIT 4*1024*1024
-static unsigned char global_buffer[CACHE_LIMIT];
+#define CACHE_LIMIT 88*1024*1024 //88 no limit
+static unsigned char *global_buffer=NULL;
+//static unsigned char global_buffer[CACHE_LIMIT];
 #elif defined(PTHREAD_CACHE)
 #include <pthread.h>
 static void *ThreadProc(void *s);
@@ -118,7 +119,7 @@ int cache_read(cache_vars_t* s,unsigned char* buf,int size){
 	// waiting for buffer fill...
 	//LWP_MutexUnlock(cache_mutex);
 	usec_sleep(READ_USLEEP_TIME); // 10ms
-	GetRelativeTime();
+	//GetRelativeTime();
 	//LWP_MutexLock(cache_mutex);
 	continue; // try again...
     }	
@@ -320,7 +321,7 @@ cache_vars_t* cache_init(int size,int sector){
 #if !defined(__MINGW32__) && !defined(PTHREAD_CACHE) && !defined(__OS2__) && !defined(GEKKO)
   s->buffer=shmem_alloc(s->buffer_size);
 #else
-  //if(global_buffer==NULL) global_buffer=malloc(CACHE_LIMIT);
+  if(global_buffer==NULL) global_buffer=malloc(size);
   s->buffer=global_buffer;
 #endif
 
@@ -387,6 +388,7 @@ int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
     return 1;
   }
   if(cache_mutex == LWP_MUTEX_NULL) LWP_MutexInit(&cache_mutex, false);	
+/*  
 if(size>CACHE_LIMIT)
 { //limit cache 
 	float factor;
@@ -395,6 +397,7 @@ if(size>CACHE_LIMIT)
 	seek_limit=seek_limit/factor;
 	size=CACHE_LIMIT; 
 }
+*/
   s=cache_init(size,ss);
   if(s == NULL) return 0;
   stream->cache_data=s;
@@ -520,7 +523,7 @@ int cache_stream_seek_long(stream_t *stream,off_t pos){
   cache_vars_t* s;
   off_t newpos;
   if(!stream->cache_pid) return stream_seek_long(stream,pos);
-  
+  LWP_MutexLock(cache_mutex);
   s=stream->cache_data;
 //  s->seek_lock=1;
   
@@ -530,14 +533,19 @@ int cache_stream_seek_long(stream_t *stream,off_t pos){
   stream->pos=s->read_filepos=newpos;
   s->eof=0; // !!!!!!!
 
+	LWP_MutexUnlock(cache_mutex);
   cache_stream_fill_buffer(stream);
+	LWP_MutexLock(cache_mutex);
 
   pos-=newpos;
   if(pos>=0 && pos<=stream->buf_len){
     stream->buf_pos=pos; // byte position in sector
+    GetRelativeTime();
+    LWP_MutexUnlock(cache_mutex);
     return 1;
   }
-
+  GetRelativeTime();
+	LWP_MutexUnlock(cache_mutex);
 //  stream->buf_pos=stream->buf_len=0;
 //  return 1;
 
@@ -598,7 +606,6 @@ int cache_do_control(stream_t *stream, int cmd, void *arg) {
 
 int stream_read(stream_t *s,char* mem,int total){
   int len=total;
-  LWP_MutexLock(cache_mutex);
   while(len>0){
     int x;
     //debug_str="stream_read";
@@ -606,16 +613,15 @@ int stream_read(stream_t *s,char* mem,int total){
     x=s->buf_len-s->buf_pos;
     if(x==0){
     	//debug_str="stream_read: cache_stream_fill_buffer";
-    	LWP_MutexUnlock(cache_mutex);
       if(!cache_stream_fill_buffer(s)) 
 	  {
 	  	//debug_str="stream_read: cache_stream_fill_buffer ok return";
 	  	return total-len; // EOF
 	  }
       //debug_str="stream_read: cache_stream_fill_buffer ok";
-      LWP_MutexLock(cache_mutex);
       x=s->buf_len-s->buf_pos;
     } 
+    LWP_MutexLock(cache_mutex);
     if(x>len) x=len;
     if(s->buf_pos+x>s->buf_len) 
 	{
@@ -628,9 +634,9 @@ int stream_read(stream_t *s,char* mem,int total){
     memcpy(mem,&s->buffer[s->buf_pos],x);
 	//debug_str="stream_read: ok memcpy";
     s->buf_pos+=x; mem+=x; len-=x;
-    
+    LWP_MutexUnlock(cache_mutex);
   }
-  LWP_MutexUnlock(cache_mutex);
+  
   //debug_str="stream_read: ok";
   return total;
 }

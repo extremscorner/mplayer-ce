@@ -84,8 +84,6 @@ static char *default_args2[] = {
 	"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
 }; 
 
-//extern float movie_aspect;
-
 static void reset_cb (void) {
 	reset_pressed = true;
 }
