@@ -19,6 +19,7 @@ extern char *debug_str;
 
 #include "osdep/shmem.h"
 #include "osdep/timer.h"
+#include "mp_osd.h"
 #if defined(__MINGW32__)
 #include <windows.h>
 static void ThreadProc( void *s );
@@ -30,7 +31,7 @@ static void ThreadProc( void *s );
 #include <ogcsys.h>
 #include <ogc/lwp_watchdog.h>
 static void *ThreadProc( void *s );
-#define CACHE_LIMIT 88*1024*1024 //88 no limit
+//#define CACHE_LIMIT 88*1024*1024 //88 no limit
 static unsigned char *global_buffer=NULL;
 //static unsigned char global_buffer[CACHE_LIMIT];
 #elif defined(PTHREAD_CACHE)
@@ -95,7 +96,7 @@ static int min_fill=0;
 int cache_fill_status=0;
 
 void cache_stats(cache_vars_t* s){
-  int newb=s->max_filepos-s->read_filepos; // new bytes in the buffer
+  //int newb=s->max_filepos-s->read_filepos; // new bytes in the buffer
   //mp_msg(MSGT_CACHE,MSGL_INFO,"0x%06X  [0x%06X]  0x%06X   ",(int)s->min_filepos,(int)s->read_filepos,(int)s->max_filepos);
   //mp_msg(MSGT_CACHE,MSGL_INFO,"%3d %%  (%3d%%)\n",100*newb/s->buffer_size,100*min_fill/s->buffer_size);
 }
@@ -167,8 +168,6 @@ int cache_fill(cache_vars_t* s){
   int back,back2,newb,space,len,pos;
   off_t read;
   
-retry:
-  
   if(s->eof) return 0;  
   read=s->read_filepos;
   if(read<s->min_filepos || read>s->max_filepos){
@@ -232,11 +231,13 @@ retry:
   //len=stream_fill_buffer(s->stream);
   //memcpy(&s->buffer[pos],s->stream->buffer,len); // avoid this extra copy!
   // ....
+  /*
   if(pos<0 || space<=0 || pos+space>s->buffer_size)
   {
   	debug_str="cache_fill: strange error";
   	//goto retry;
   }
+  */
   len=stream_read(s->stream,&s->buffer[pos],space);
   if(len<=0) 
   {
@@ -446,6 +447,9 @@ if(size>CACHE_LIMIT)
 	mp_msg(MSGT_CACHE,MSGL_STATUS,MSGTR_CacheFill,
 	    100.0*(float)(s->max_filepos-s->read_filepos)/(float)(s->buffer_size),
 	    (int64_t)s->max_filepos-s->read_filepos );
+
+	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Cache fill: %5.2f%%  ",(float)(100.0*(float)(s->max_filepos)/(float)(min)));
+	force_osd();
 	
 	if(s->eof) break; // file is smaller than prefill size
 	if(stream_check_interrupt(PREFILL_SLEEP_TIME))
@@ -457,7 +461,7 @@ if(size>CACHE_LIMIT)
   
 #if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__)
 }
-#ifdef PTHREAD_CACHE || defined(GEKKO)
+#if defined(PTHREAD_CACHE) || defined(GEKKO)
 static void *ThreadProc( void *s ){
 #else
 static void ThreadProc( void *s ){
@@ -504,7 +508,7 @@ int cache_stream_fill_buffer(stream_t *s){
   	//reset cache
     ((cache_vars_t*)s->cache_data)->offset = ((cache_vars_t*)s->cache_data)->min_filepos=((cache_vars_t*)s->cache_data)->max_filepos=((cache_vars_t*)s->cache_data)->read_filepos; // drop cache content :(
     if(((cache_vars_t*)s->cache_data)->stream->eof) stream_reset(s);
-	s->pos!=((cache_vars_t*)s->cache_data)->read_filepos;
+	s->pos=((cache_vars_t*)s->cache_data)->read_filepos;
   }
 
   len=cache_read(s->cache_data,s->buffer, ((cache_vars_t*)s->cache_data)->sector_size);
