@@ -74,14 +74,21 @@ static char *default_args1[] = {
 #ifndef CE_DEBUG 	
 	"-really-quiet",
 #endif	
-	"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop-wide.avi", "-idle", "sd:/apps/mplayer_ce/loop-wide.avi"
+	//"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all",
+	"-sws","4",
+	"-bgvideo", "sd:/apps/mplayer_ce/loop-wide.avi", 
+	"-idle", "sd:/apps/mplayer_ce/loop-wide.avi"
+	
 }; 
 static char *default_args2[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
 #ifndef CE_DEBUG 	
 	"-really-quiet",
 #endif	
-	"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all","-bgvideo", "sd:/apps/mplayer_ce/loop.avi", "-idle", "sd:/apps/mplayer_ce/loop.avi"
+	//"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all",
+	"-sws","4",
+	"-bgvideo", "sd:/apps/mplayer_ce/loop.avi", 
+	"-idle", "sd:/apps/mplayer_ce/loop.avi"
 }; 
 
 static void reset_cb (void) {

@@ -2278,8 +2278,16 @@ int reinit_video_chain(void) {
     }
   }
 #endif
-
   sh_video->vfilter=(void*)append_filters(sh_video->vfilter);
+
+#ifdef GEKKO
+//rodries patch for big resolution on wii
+if(sh_video->disp_w>900) {
+	char *arg_scale[]={"w","720","h","-2"};
+	sprintf(arg_scale[1],"%i",sh_video->disp_w/2);
+	sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);	   
+}	
+#endif
 
 #ifdef CONFIG_ASS
   if (ass_enabled)
@@ -3743,7 +3751,7 @@ if (mpctx->global_sub_size) {
 rm_osd_msg(500);
 if(!mpctx->sh_video) goto main; // audio-only
 
-
+  
 if(!reinit_video_chain()) {
 
   if(!mpctx->sh_video){
