@@ -36,7 +36,7 @@ Thank you.
 ==About==
 http://mplayer-ce.googlecode.com/files/mplayerCE_scr.jpg
 
-Mplayer-CE is [http://en.wikipedia.org/wiki/Wii_homebrew homebrew] media player for Nintendo Wii. It's initially created as a fork of the Team Twiizers MPlayer port, combining elements of MPlayerWii, GeeXboX and other great homebrew contributions.
+Mplayer-CE is a homebrew media player for the Nintendo Wii. It was initially created as a fork of the Team Twiizers MPlayer port, combining elements of MPlayerWii, GeeXboX and other great homebrew contributions.
 
 Some of the current features includes DVD, SDHC, USB 2.0 storage device support, multiple media, subtitle, playlist and streaming formats, customization possibilities, etc.
 
