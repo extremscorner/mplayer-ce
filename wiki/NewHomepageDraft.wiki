@@ -1,8 +1,10 @@
 #summary New Homepage draft
 #labels Deprecated
 
-==News==
+||*Mplayer CE* is a homebrew media player for Nintendo Wii based on MPlayer.<br /><br />v0.5 now out! See the [Changelog] for information.<br /><br />In order to progress development further, our main developer rodries needs a USB Gecko.  Please [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif] to help him!<br /><br />We are always looking for more volunteers to help with coding and other technical stuff, so feel free to contact us.<br /><br />Also if you made any interesting customisation, theme, config, or anything else, please [http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them] |||| http://mplayer-ce.googlecode.com/files/MPlayerCE0.3.jpg||
 
+
+----
 *Codedump warning*
 
 If you are experiencing code dumps and have the USB 2.0 cIOS installed it may be because of a known bug.
@@ -13,31 +15,4 @@ If this is a likely scenario then you must either
  * move your DVDx install back to the default position
 We are working to fix this issue.
 
-*Version 0.5 released*
-
-Updated to latest MPlayer revision, USB 2.0 support, custom font support, better samba support, lots of bug fixes ..
-
-
-==Be Involved==
-
-If you would like to support this project, you may donate to our development fund via Paypal. [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif]
-
-Any funds donated will be used to help further development on this project, by purchasing equipment (eg: USB gecko), etc.
-
-We are always looking for more volunteers to help with coding and other technical stuff, so feel free to contact us.
-
-Also if you made any interesting customisation, theme, config, or something else, please 
-[http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them].
-
 Thank you.
-
-==About==
-
-MplayerCe is homebrew media player for Nintendo Wii. 
-It's created and maintained with the good will of Wii homebrew community and the members of 
-
-Some of the current features includes ..
-
-We hope you like it! MplayerCe Team.
-
-http://mplayer-ce.googlecode.com/files/mplayerCE_scr.jpg
