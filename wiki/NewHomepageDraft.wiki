@@ -1,19 +1,9 @@
 #summary New Homepage draft
 #labels Deprecated
 
-http://mplayer-ce.googlecode.com/files/MPlayerCE0.3.jpg
+==News==
 
-*Mplayer CE* is a homebrew media player for Nintendo Wii based on MPlayer.<br/><br/>v0.5 now out! Please see the [Changelog] for information.
-
-In order to progress development further, our main developer, rodries, needs a USB Gecko.  Please [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif] to help him!
-
-We are always looking for more volunteers to help with coding and other technical elements, so feel free to contact us.
-
-Also if you have created any interesting customisations, themes, configs, or anything else, please [UserSubmittedCustomizations submit them]!
-
-
-----
-*Codedump warning*
+*23.04.2009. Codedump warning*
 
 If you are experiencing code dumps and have the USB 2.0 cIOS installed it may be because of a known bug.
 If you have the USB 2.0 cIOS installed and your Wii is configured to connect to your network, you will experience a codedump if your router is off and the Wii cannot connect.
@@ -23,4 +13,33 @@ If this is a likely scenario then you must either
  * move your DVDx install back to the default position
 We are working to fix this issue.
 
+*22.04.2009. Version 0.5 released*
+
+Updated to latest MPlayer revision, USB 2.0 support, custom font support, better samba support, lots of bug fixes .. 
+
+Review Changelog for full list of changes.
+
+
+
+==Support, submit ..==
+
+If you would like to support this project, you may donate to our development fund via Paypal. [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif]
+
+Any funds donated will be used to help further development on this project, by purchasing equipment (eg: USB gecko), etc.
+
+We are always looking for more volunteers to help with coding and other technical stuff, so feel free to [irc://irc.efnet.net/mplayer_ce contact us].
+
+Also if you made any interesting customisation like themes, config changes, or something else, please [http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them].
+
 Thank you.
+
+==About==
+http://mplayer-ce.googlecode.com/files/mplayerCE_scr.jpg
+
+Mplayer-CE is homebrew media player for Nintendo Wii. 
+
+Some of the current features includes DVD, SDHC, USB 2.0 storage device support, multiple media, subtitle, playlist and streaming formats, customisation possabilities, etc.
+
+Find further informations on our [http://code.google.com/p/mplayer-ce/w/list Wiki pages].
+
+We hope you like it ;) Mplayer-CE Team.
