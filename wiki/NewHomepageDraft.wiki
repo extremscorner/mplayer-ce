@@ -17,7 +17,7 @@ We are working to fix this issue.
 
 Updated to latest MPlayer revision, USB 2.0 support, custom font support, better samba support, lots of bug fixes .. 
 
-Review Changelog for full list of changes.
+Review [http://code.google.com/p/mplayer-ce/wiki/Changelog Changelog] for full list of changes.
 
 
 
@@ -27,7 +27,7 @@ If you would like to support this project, you may donate to our development fun
 
 Any funds donated will be used to help further development on this project, by purchasing equipment (eg: USB gecko), etc.
 
-We are always looking for more volunteers to help with coding and other technical stuff, so feel free to [irc://irc.efnet.net/mplayer_ce contact us].
+We are always looking for more volunteers to help with coding and other technical stuff, so feel free to contact us at irc://irc.efnet.net/mplayer_ce.
 
 Also if you made any interesting customization like themes, config changes, or something else, please [http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them].
 
