@@ -1,0 +1,43 @@
+#summary New Homepage draft
+#labels Deprecated
+
+==News==
+
+*Codedump warning*
+
+If you are experiencing code dumps and have the USB 2.0 cIOS installed it may be because of a known bug.
+If you have the USB 2.0 cIOS installed and your Wii is configured to connect to your network, you will experience a codedump if your router is off and the Wii cannot connect.
+If this is a likely scenario then you must either
+ * leave your router on
+ * do not install the USB 2.0 cIOS.
+ * move your DVDx install back to the default position
+We are working to fix this issue.
+
+*Version 0.5 released*
+
+Updated to latest MPlayer revision, USB 2.0 support, custom font support, better samba support, lots of bug fixes ..
+
+
+==Be Involved==
+
+If you would like to support this project, you may donate to our development fund via Paypal. [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif]
+
+Any funds donated will be used to help further development on this project, by purchasing equipment (eg: USB gecko), etc.
+
+We are always looking for more volunteers to help with coding and other technical stuff, so feel free to contact us.
+
+Also if you made any interesting customisation, theme, config, or something else, please 
+[http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them].
+
+Thank you.
+
+==About==
+
+MplayerCe is homebrew media player for Nintendo Wii. 
+It's created and maintained with the good will of Wii homebrew community and the members of 
+
+Some of the current features includes ..
+
+We hope you like it! MplayerCe Team.
+
+http://mplayer-ce.googlecode.com/files/mplayerCE_scr.jpg
