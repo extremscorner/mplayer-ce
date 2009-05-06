@@ -29,7 +29,7 @@ Any funds donated will be used to help further development on this project, by p
 
 We are always looking for more volunteers to help with coding and other technical stuff, so feel free to [irc://irc.efnet.net/mplayer_ce contact us].
 
-Also if you made any interesting customisation like themes, config changes, or something else, please [http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them].
+Also if you made any interesting customization like themes, config changes, or something else, please [http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them].
 
 Thank you.
 
@@ -38,8 +38,8 @@ http://mplayer-ce.googlecode.com/files/mplayerCE_scr.jpg
 
 Mplayer-CE is homebrew media player for Nintendo Wii. 
 
-Some of the current features includes DVD, SDHC, USB 2.0 storage device support, multiple media, subtitle, playlist and streaming formats, customisation possabilities, etc.
+Some of the current features includes DVD, SDHC, USB 2.0 storage device support, multiple media, subtitle, playlist and streaming formats, customization possibilities, etc.
 
-Find further informations on our [http://code.google.com/p/mplayer-ce/w/list Wiki pages].
+Find further information on our [http://code.google.com/p/mplayer-ce/w/list Wiki pages].
 
 We hope you like it ;) Mplayer-CE Team.
