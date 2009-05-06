@@ -1,4 +1,5 @@
 #summary Configuring your Wii with USB 2.0 support.
+#labels Featured
 
 =USB 2.0=
 You need to install the USB 2.0 cIOS from [http://mplayer-ce.googlecode.com/files/cios_installer.dol here]
