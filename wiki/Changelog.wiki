@@ -1,4 +1,5 @@
 #summary Changelog to MPlayerCE
+#labels Featured
 
 = Changelog to MPlayerCE =
 
