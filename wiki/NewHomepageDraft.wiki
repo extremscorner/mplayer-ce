@@ -1,7 +1,15 @@
 #summary New Homepage draft
 #labels Deprecated
 
-||*Mplayer CE* is a homebrew media player for Nintendo Wii based on MPlayer.<br/><br/>v0.5 now out! Please see the [Changelog] for information.<br/><br/>In order to progress development further, our main developer, rodries, needs a USB Gecko.  Please [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif] to help him!<br/><br/>We are always looking for more volunteers to help with coding and other technical elements, so feel free to contact us.<br/><br/>Also if you have created any interesting customisations, themes, configs, or anything else, please [UserSubmittedCustomizations submit them]!! |||| http://mplayer-ce.googlecode.com/files/MPlayerCE0.3.jpg||
+http://mplayer-ce.googlecode.com/files/MPlayerCE0.3.jpg
+
+*Mplayer CE* is a homebrew media player for Nintendo Wii based on MPlayer.<br/><br/>v0.5 now out! Please see the [Changelog] for information.
+
+In order to progress development further, our main developer, rodries, needs a USB Gecko.  Please [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif] to help him!
+
+We are always looking for more volunteers to help with coding and other technical elements, so feel free to contact us.
+
+Also if you have created any interesting customisations, themes, configs, or anything else, please [UserSubmittedCustomizations submit them]!
 
 
 ----
