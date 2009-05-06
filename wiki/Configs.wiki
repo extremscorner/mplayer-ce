@@ -1,4 +1,5 @@
 #summary Setup Configs
+#labels Featured
 
 = Introduction =
 
