@@ -34,7 +34,6 @@
 #if defined(HW_RVL)
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 #include <time.h>
@@ -496,12 +495,7 @@ bool sdio_Deinitialize()
 {
 	if(__sd0_fd>=0)
 		IOS_Close(__sd0_fd);
-/* 
-	if(hId>=0)
-		iosDestroyHeap(hId);
  
-	hId = -1;
-*/	
 	__sdio_initialized = 0;
 	return true;
 }
@@ -510,10 +504,10 @@ bool sdio_Startup()
 {
 	if(__sdio_initialized==1) return true;
  
-	if (hId < 0) {
+	if(hId<0) {
 		hId = iosCreateHeap(SDIO_HEAPSIZE);
 		if(hId<0) return false;
-	} 
+	}
  
 	__sd0_fd = IOS_Open(_sd0_fs,1);
 
@@ -560,6 +554,7 @@ bool sdio_ReadSectors(sec_t sector, sec_t numSectors,void* buffer)
 			__sd0_deselect();
 			return false;
 		}
+
 		ptr = (u8*)buffer;
 		while(numSectors>0) {
 			if(__sd0_sdhc == 0) blk_off = (sector*PAGE_SIZE512);

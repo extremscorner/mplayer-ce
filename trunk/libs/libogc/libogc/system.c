@@ -110,6 +110,7 @@ typedef struct _alarm_st
 	u64 periodic;
 	u64 start_per;
 	alarmcallback alarmhandler;
+	void *cb_arg;
 } alarm_st;
 
 typedef struct _yay0header {
@@ -201,8 +202,6 @@ extern u32 __PADDisableRecalibration(s32 disable);
 
 extern void __console_init_ex(void *conbuffer,int tgt_xstart,int tgt_ystart,int tgt_stride,int con_xres,int con_yres,int con_stride);
 
-extern void settime(long long);
-extern long long gettime();
 extern unsigned int gettick();
 extern unsigned int diff_usec(long long start,long long end);
 extern int clock_gettime(struct timespec *tp);
@@ -307,7 +306,7 @@ static void __sys_alarmhandler(void *arg)
 	__lwp_thread_dispatchdisable();
 	alarm = (alarm_st*)__lwp_objmgr_getnoprotection(&sys_alarm_objects,LWP_OBJMASKID(thealarm));
 	if(alarm) {
-		if(alarm->alarmhandler) alarm->alarmhandler(thealarm);
+		if(alarm->alarmhandler) alarm->alarmhandler(thealarm,alarm->cb_arg);
 		if(alarm->periodic) __lwp_wd_insert_ticks(&alarm->alarm,alarm->periodic);
 	}
 	__lwp_thread_dispatchunnest();
@@ -1181,7 +1180,7 @@ void SYS_ResetSystem(s32 reset,u32 reset_code,s32 force_menu)
 		case SYS_POWEROFF:
 			if(CONF_GetShutdownMode() == CONF_SHUTDOWN_IDLE) {
 				ret = CONF_GetIdleLedMode();
-				if(ret >= 0 && ret <= 2) STM_SetLedMode(ret);
+				if(ret <= 2) STM_SetLedMode(ret);
 				STM_ShutdownToIdle();
 			} else {
 				STM_ShutdownToStandby();
@@ -1523,13 +1522,14 @@ s32 SYS_CreateAlarm(syswd_t *thealarm)
 	return 0;
 }
 
-s32 SYS_SetAlarm(syswd_t thealarm,const struct timespec *tp,alarmcallback cb)
+s32 SYS_SetAlarm(syswd_t thealarm,const struct timespec *tp,alarmcallback cb,void *cbarg)
 {
 	alarm_st *alarm;
 
 	alarm = __lwp_syswd_open(thealarm);
 	if(!alarm) return -1;
 
+	alarm->cb_arg = cbarg;
 	alarm->alarmhandler = cb;
 	alarm->ticks = __lwp_wd_calc_ticks(tp);
 
@@ -1542,7 +1542,7 @@ s32 SYS_SetAlarm(syswd_t thealarm,const struct timespec *tp,alarmcallback cb)
 	return 0;
 }
 
-s32 SYS_SetPeriodicAlarm(syswd_t thealarm,const struct timespec *tp_start,const struct timespec *tp_period,alarmcallback cb)
+s32 SYS_SetPeriodicAlarm(syswd_t thealarm,const struct timespec *tp_start,const struct timespec *tp_period,alarmcallback cb,void *cbarg)
 {
 	alarm_st *alarm;
 
@@ -1552,6 +1552,7 @@ s32 SYS_SetPeriodicAlarm(syswd_t thealarm,const struct timespec *tp_start,const 
 	alarm->start_per = __lwp_wd_calc_ticks(tp_start);
 	alarm->periodic = __lwp_wd_calc_ticks(tp_period);
 	alarm->alarmhandler = cb;
+	alarm->cb_arg = cbarg;
 
 	alarm->ticks = 0;
 

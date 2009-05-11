@@ -128,7 +128,7 @@ static void bte_reset_all()
 	btstate.last_err = ERR_OK;
 }
 
-static void bt_alarmhandler(syswd_t alarm)
+static void bt_alarmhandler(syswd_t alarm,void *cbarg)
 {
 	__lwp_thread_dispatchdisable();
 	SYS_SwitchFiber(0,0,0,0,(u32)l2cap_tmr,(u32)(&ppc_stack[STACKSIZE]));
@@ -390,7 +390,7 @@ void BTE_Init()
 
 	tb.tv_sec = 1;
 	tb.tv_nsec = 0;
-	SYS_SetPeriodicAlarm(btstate.timer_svc,&tb,&tb,bt_alarmhandler);
+	SYS_SetPeriodicAlarm(btstate.timer_svc,&tb,&tb,bt_alarmhandler, NULL);
 }
 
 void BTE_Shutdown()

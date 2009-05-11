@@ -127,7 +127,6 @@ static u32 __si_transfer(s32 chan,void *out,u32 out_len,void *in,u32 in_len,SICa
 
 extern void __UnmaskIrq(u32);
 extern void __MaskIrq(u32);
-extern long long gettime();
 extern u32 diff_usec(long long start,long long end);
 
 static __inline__ struct _xy* __si_getxy()
@@ -150,7 +149,7 @@ static __inline__ void __si_cleartcinterrupt()
 	_siReg[13] = (_siReg[13]|SICOMCSR_TCINT)&SICOMCSR_TCINT;
 }
 
-static void __si_alarmhandler(syswd_t thealarm)
+static void __si_alarmhandler(syswd_t thealarm,void *cbarg)
 {
 	u32 chn;
 #ifdef _SI_DEBUG
@@ -586,7 +585,7 @@ u32 SI_Transfer(s32 chan,void *out,u32 out_len,void *in,u32 in_len,SICallback cb
 		if(diff<0) {
 			tb.tv_sec = 0;
 			tb.tv_nsec = ticks_to_nanosecs((fire - now));
-			SYS_SetAlarm(si_alarm[chan],&tb,__si_alarmhandler);
+			SYS_SetAlarm(si_alarm[chan],&tb,__si_alarmhandler,NULL);
 		} else if(__si_transfer(chan,out,out_len,in,in_len,cb)) {
 			_CPU_ISR_Restore(level);
 			return ret;

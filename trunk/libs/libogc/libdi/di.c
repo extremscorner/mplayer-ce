@@ -213,7 +213,6 @@ int DI_Init(){
 
 	if(!init){
 		__DI_LoadStub();	// Marcan's 1337 magics happen here!
-		LWP_MutexInit(&bufferMutex, false);
 		init = 1;
 	}
 
