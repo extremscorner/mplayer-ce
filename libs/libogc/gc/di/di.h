@@ -42,6 +42,10 @@ All buffers in this document need to be 32-byte aligned!
 #include <ogc/ipc.h>
 #include <ogc/disc_io.h>
 
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
 /*
 DEFINES GO HERE!
 */
@@ -130,5 +134,9 @@ int DI_ClosePartition(void);
 void SetDVDMotorStopSecs(int secs);
 unsigned int GetDVDMotorStopSecs(void);
 //---------------- end rodries ------------  
+
+#ifdef __cplusplus
+	}
+#endif
 
 #endif

@@ -53,7 +53,7 @@ distribution.
 #include "network.h"
 #include "ogcsys.h"
 
-#define NET_HEAP_SIZE				33729
+#define NET_HEAP_SIZE				32768
 
 #define IOS_O_NONBLOCK				0x04			//(O_NONBLOCK >> 16) - it's in octal representation, so this shift leads to 0 and hence nonblocking sockets didn't work. changed it to the right value.
 
@@ -67,14 +67,14 @@ distribution.
 
 enum {
 	IOCTL_SO_ACCEPT	= 1,
-	IOCTL_SO_BIND,   
-	IOCTL_SO_CLOSE,	
-	IOCTL_SO_CONNECT, 
+	IOCTL_SO_BIND,
+	IOCTL_SO_CLOSE,
+	IOCTL_SO_CONNECT,
 	IOCTL_SO_FCNTL,
 	IOCTL_SO_GETPEERNAME, // todo
 	IOCTL_SO_GETSOCKNAME, // todo
 	IOCTL_SO_GETSOCKOPT,  // todo    8
-	IOCTL_SO_SETSOCKOPT,  
+	IOCTL_SO_SETSOCKOPT,
 	IOCTL_SO_LISTEN,
 	IOCTL_SO_POLL,        // todo    b
 	IOCTLV_SO_RECVFROM,
@@ -120,7 +120,7 @@ struct sendto_params {
 	u32 flags;
 	u32 has_destaddr;
 	u8 destaddr[28];
-}; 
+};
 
 struct setsockopt_params {
 	u32 socket;
@@ -134,66 +134,82 @@ struct setsockopt_params {
 // I sense a pattern here...
 static u8 _net_error_code_map[] = {
 	0, // 0
-	0, 
-	0, 
-	0,
-	0, 
-	0, // 5
-	EAGAIN, 
+ 	E2BIG, 
+ 	EACCES, 
+ 	EADDRINUSE,
+ 	EADDRNOTAVAIL, 
+ 	EAFNOSUPPORT, // 5
+	EAGAIN,
 	EALREADY,
 	EBADFD,
-	0,
-	0, // 10
-	0,
-	0,
-	0,
-	0,
-	0, // 15
-	0,
-	0,
-	0,
-	0,
-	0, // 20
-	0,
-	0,
-	0,
-	0,
-	0, // 25
+ 	EBADMSG,
+ 	EBUSY, // 10
+ 	ECANCELED,
+ 	ECHILD,
+ 	ECONNABORTED,
+ 	ECONNREFUSED,
+ 	ECONNRESET, // 15
+ 	EDEADLK,
+ 	EDESTADDRREQ,
+ 	EDOM,
+ 	EDQUOT,
+ 	EEXIST, // 20
+ 	EFAULT,
+ 	EFBIG,
+ 	EHOSTUNREACH,
+ 	EIDRM,
+ 	EILSEQ, // 25
 	EINPROGRESS,
-	0,
-	0,
-	0,
+ 	EINTR,
+ 	EINVAL,
+ 	EIO,
 	EISCONN, // 30
-	0,
-	0,
-	0,
-	0,
-	0, // 35
-	0,
-	0,
-	0,
-	ENETDOWN, //?
-	0, // 40
-	0,
-	0,
-	0,
-	0,
-	0, // 45
-	0,
-	0,
-	0,
-	0,
-	0, // 50
-	0,
-	0,
-	0,
-	0,
-	0, // 55
-	0,
-	0,
-	0,
-	0,
-	0, // 60
+ 	EISDIR,
+ 	ELOOP,
+ 	EMFILE,
+ 	EMLINK,
+ 	EMSGSIZE, // 35
+ 	EMULTIHOP,
+ 	ENAMETOOLONG,
+ 	ENETDOWN,
+ 	ENETRESET,
+ 	ENETUNREACH, // 40
+ 	ENFILE,
+ 	ENOBUFS,
+ 	ENODATA,
+ 	ENODEV,
+ 	ENOENT, // 45
+ 	ENOEXEC,
+ 	ENOLCK,
+ 	ENOLINK,
+ 	ENOMEM,
+ 	ENOMSG, // 50
+ 	ENOPROTOOPT,
+ 	ENOSPC,
+ 	ENOSR,
+ 	ENOSTR,
+ 	ENOSYS, // 55
+ 	ENOTCONN,
+ 	ENOTDIR,
+ 	ENOTEMPTY,
+ 	ENOTSOCK,
+ 	ENOTSUP, // 60
+ 	ENOTTY,
+ 	ENXIO,
+ 	EOPNOTSUPP,
+ 	EOVERFLOW,
+ 	EPERM, // 65
+ 	EPIPE,
+ 	EPROTO,
+ 	EPROTONOSUPPORT,
+ 	EPROTOTYPE,
+ 	ERANGE, // 70
+ 	EROFS,
+ 	ESPIPE,
+ 	ESRCH,
+ 	ESTALE,
+ 	ETIME, // 75
+ 	ETIMEDOUT,
 };
 
 static s32 net_ip_top_fd = -1;
@@ -224,14 +240,14 @@ static s32 _open_manage_fd(void)
 	return ncd_fd;
 }
 
-s32 NCDGetLinkStatus(void) 
+s32 NCDGetLinkStatus(void)
 {
 	s32 ret, ncd_fd;
 	STACK_ALIGN(u8, linkinfo, 0x20, 32);
-  
+
 	ncd_fd = _open_manage_fd();
 	if (ncd_fd < 0) return ncd_fd;
-	
+
 	ret = _net_convert_error(IOS_IoctlvFormat(__net_hid, ncd_fd, IOCTL_NCD_GETLINKSTATUS, ":d", linkinfo, 0x20));
 	IOS_Close(ncd_fd);
 
@@ -244,13 +260,13 @@ static s32 NWC24iStartupSocket(void)
 {
 	s32 kd_fd, ret;
 	STACK_ALIGN(u8, kd_buf, 0x20, 32);
-	
+
 	kd_fd = _net_convert_error(IOS_Open(__kd_fs, 0));
 	if (kd_fd < 0) {
 		debug_printf("IOS_Open(%s) failed with code %d\n", __kd_fs, kd_fd);
 		return kd_fd;
 	}
-  
+
 	ret = _net_convert_error(IOS_Ioctl(kd_fd, IOCTL_NWC24_STARTUP, NULL, 0, kd_buf, 0x20));
 	if (ret < 0) debug_printf("IOS_Ioctl(6)=%d\n", ret);
   	IOS_Close(kd_fd);
@@ -278,16 +294,16 @@ s32 net_init(void)
 	u32 ip_addr = 0;
 
 	if (net_ip_top_fd >= 0) return 0;
-	
+
 	if (__net_hid == -1) __net_hid = iosCreateHeap(NET_HEAP_SIZE);
 	if (__net_hid < 0) return __net_hid;
-	
+
 	ret = NCDGetLinkStatus();  // this must be called as part of initialization
 	if (ret < 0) {
 		debug_printf("NCDGetLinkStatus returned %d\n", ret);
 		return ret;
 	}
-	
+
 	net_ip_top_fd = _net_convert_error(IOS_Open(__iptop_fs, 0));
 	if (net_ip_top_fd < 0) {
 		debug_printf("IOS_Open(/dev/net/ip/top)=%d\n", net_ip_top_fd);
@@ -326,12 +342,12 @@ s32 net_init(void)
 error:
 	IOS_Close(net_ip_top_fd);
 	net_ip_top_fd = -1;
-	return ret;	
+	return ret;
 }
 
 
 /* Returned value is a static buffer -- this function is not threadsafe! */
-struct hostent * net_gethostbyname(char *addrString)
+struct hostent * net_gethostbyname(const char *addrString)
 {
 	s32 ret, len, i;
 	u8 *params;
@@ -390,14 +406,14 @@ s32 net_socket(u32 domain, u32 type, u32 protocol)
 	STACK_ALIGN(u32, params, 3, 32);
 
 	if (net_ip_top_fd < 0) return -ENXIO;
- 
+
 	params[0] = domain;
 	params[1] = type;
 	params[2] = protocol;
 
 	ret = _net_convert_error(IOS_Ioctl(net_ip_top_fd, IOCTL_SO_SOCKET, params, 12, NULL, 0));
 	debug_printf("net_socket(%d, %d, %d)=%d\n", domain, type, protocol, ret);
-	return ret;		
+	return ret;
 }
 
 s32 net_shutdown(s32 s, u32 how)
@@ -412,7 +428,7 @@ s32 net_shutdown(s32 s, u32 how)
 	ret = _net_convert_error(IOS_Ioctl(net_ip_top_fd, IOCTL_SO_SHUTDOWN, params, 8, NULL, 0));
 
 	debug_printf("net_shutdown(%d, %d)=%d\n", s, how, ret);
-	return ret;             
+	return ret;
 }
 
 s32 net_bind(s32 s, struct sockaddr *name, socklen_t namelen)
@@ -450,7 +466,7 @@ s32 net_listen(s32 s, u32 backlog)
 
 	ret = _net_convert_error(IOS_Ioctl(net_ip_top_fd, IOCTL_SO_LISTEN, params, 8, NULL, 0));
   	debug_printf("net_listen(%d, %d)=%d\n", s, backlog, ret);
-	return ret;	
+	return ret;
 }
 
 s32 net_accept(s32 s, struct sockaddr *addr, socklen_t *addrlen)
@@ -484,7 +500,7 @@ s32 net_connect(s32 s, struct sockaddr *addr, socklen_t addrlen)
 {
 	s32 ret;
 	STACK_ALIGN(struct connect_params,params,1,32);
-	
+
 	if (net_ip_top_fd < 0) return -ENXIO;
 	if (addr->sa_family != AF_INET) return -EAFNOSUPPORT;
 	if (addrlen < 8) return -EINVAL;
@@ -535,15 +551,15 @@ s32 net_sendto(s32 s, const void *data, s32 len, u32 flags, struct sockaddr *to,
 		debug_printf("warning: to->sa_len was %d, setting to %d\n",	to->sa_len, tolen);
 		to->sa_len = tolen;
 	}
-	
+
 	memset(params, 0, sizeof(struct sendto_params));
 	memcpy(message_buf, data, len);   // ensure message buf is aligned
 
-	params->socket = s;  
+	params->socket = s;
 	params->flags = flags;
 	if (to) {
 		params->has_destaddr = 1;
-		memcpy(params->destaddr, to, to->sa_len);		
+		memcpy(params->destaddr, to, to->sa_len);
 	} else {
 		params->has_destaddr = 0;
 	}
@@ -557,7 +573,7 @@ s32 net_sendto(s32 s, const void *data, s32 len, u32 flags, struct sockaddr *to,
 
 s32 net_recv(s32 s, void *mem, s32 len, u32 flags)
 {
-    return net_recvfrom(s, mem, len, flags, NULL, NULL);	
+    return net_recvfrom(s, mem, len, flags, NULL, NULL);
 }
 
 s32 net_recvfrom(s32 s, void *mem, s32 len, u32 flags, struct sockaddr *from, socklen_t *fromlen)
@@ -573,7 +589,7 @@ s32 net_recvfrom(s32 s, void *mem, s32 len, u32 flags, struct sockaddr *from, so
 		debug_printf("warning: from->sa_len was %d, setting to %d\n",from->sa_len, *fromlen);
 		from->sa_len = *fromlen;
 	}
-	
+
 	message_buf = iosAlloc(__net_hid, len);
 	if (message_buf == NULL) {
     	debug_printf("SORecv: failed to alloc %d bytes\n", len);
@@ -599,7 +615,7 @@ s32 net_recvfrom(s32 s, void *mem, s32 len, u32 flags, struct sockaddr *from, so
 	}
 
 	if (fromlen && from) *fromlen = from->sa_len;
-	
+
 done:
 	if(message_buf!=NULL) iosFree(__net_hid, message_buf);
 	return ret;
@@ -652,7 +668,7 @@ s32 net_setsockopt(s32 s, u32 level, u32 optname, const void *optval, socklen_t 
 	return ret;
 }
 
-s32 net_ioctl(s32 s, u32 cmd, void *argp) 
+s32 net_ioctl(s32 s, u32 cmd, void *argp)
 {
 	u32 flags;
 	u32 *intp = (u32 *)argp;
@@ -661,7 +677,7 @@ s32 net_ioctl(s32 s, u32 cmd, void *argp)
 	if (!intp) return -EINVAL;
 
 	switch (cmd) {
-		case FIONBIO: 
+		case FIONBIO:
 			flags = net_fcntl(s, F_GETFL, 0);
 			flags &= ~IOS_O_NONBLOCK;
 			if (*intp) flags |= IOS_O_NONBLOCK;
@@ -678,7 +694,7 @@ s32 net_fcntl(s32 s, u32 cmd, u32 flags)
 
 	if (net_ip_top_fd < 0) return -ENXIO;
 	if (cmd != F_GETFL && cmd != F_SETFL) return -EINVAL;
-	
+
 
 	params[0] = s;
 	params[1] = cmd;
@@ -692,11 +708,11 @@ s32 net_fcntl(s32 s, u32 cmd, u32 flags)
 }
 
 
-/*! 
+/*!
  * \fn s32 net_poll(struct pollsd *sds, u32 nsds, s64 timeout)
  * \brief Poll a set of sockets for a set of events.
  *
- * \param[in] sds a pointer to an array of pollsd structures 
+ * \param[in] sds a pointer to an array of pollsd structures
  * \param[in] nsds the number of elements in the sds array
  * \param[in] time in milliseconds before the function should timeout
  *
@@ -722,7 +738,7 @@ s32 net_poll(struct pollsd *sds,s32 nsds,s32 timeout)
 		debug_printf("net_poll: failed to alloc %d bytes\n", nsds * sizeof(struct pollsd));
 		return IPC_ENOMEM;
 	}
-	
+
 	outv.ul[0] = 0;
 	outv.ul[1] = timeout;
 	params[0] = outv.ull;
@@ -745,7 +761,7 @@ s32 if_config(char *local_ip, char *netmask, char *gateway,boolean use_dhcp)
 	struct in_addr hostip;
 
 	if ( use_dhcp != true ) return -EINVAL;
-	
+
 	for(i=0;i<MAX_INIT_RETRIES && (ret=net_init())==-EAGAIN;i++);
 	if(ret<0) return ret;
 
@@ -753,7 +769,7 @@ s32 if_config(char *local_ip, char *netmask, char *gateway,boolean use_dhcp)
 	if ( local_ip!=NULL && hostip.s_addr ) {
 		strcpy(local_ip, inet_ntoa(hostip));
 	}
-	
+
 	return 0;
 }
 

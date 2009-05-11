@@ -20,40 +20,59 @@ extern u32 __SYS_GetRTC(u32 *gctime);
 extern syssram* __SYS_LockSram();
 extern u32 __SYS_UnlockSram(u32 write);
 
+
+
 unsigned long _DEFUN(gettick,(),
-						  _NOARGS)
+	_NOARGS)
+
 {
+	unsigned long result;
 	__asm__ __volatile__ (
-		"1:	mftb	3\n\
-		    blr"
-			: : : "memory");
-	return 0;
+		"mftb	%0\n"
+		: "=r" (result)
+	);
+	return result;
 }
 
-long long _DEFUN(gettime,(),
+
+u64 _DEFUN(gettime,(),
 						  _NOARGS)
 {
-	__asm__ __volatile__ (
-		"1:	mftbu	3\n\
-		    mftb	4\n\
-		    mftbu	5\n\
-			cmpw	3,5\n\
-			bne		1b\n\
-			blr"
-			: : : "memory");
-	return 0;
+	u32 tmp;
+	union uulc {
+		u64 ull;
+		u32 ul[2];
+	} v;
+	
+	__asm__ __volatile__(
+		"1:	mftbu	%0\n\
+		    mftb	%1\n\
+		    mftbu	%2\n\
+			cmpw	%0,%2\n\
+			bne		1b\n"
+		: "=r" (v.ul[0]), "=r" (v.ul[1]), "=r" (tmp)
+	);
+	return v.ull;
 }
 
 void _DEFUN(settime,(t),
-			long long t)
+			u64 t)
 {
+	u32 tmp;
+	union uulc {
+		u64 ull;
+		u32 ul[2];
+	} v;
+
+	v.ull = t;
 	__asm__ __volatile__ (
-		"li		5,0\n\
-		 mttbl  5\n\
-		 mttbu  3\n\
-		 mttbl  4\n\
-	     blr"
-		 : : : "memory");
+		"li		%0,0\n\
+		 mttbl  %0\n\
+		 mttbu  %1\n\
+		 mttbl  %2\n"
+		 : "=&r" (tmp)
+		 : "r" (v.ul[0]), "r" (v.ul[1])
+	);
 }
 
 u32 diff_sec(long long start,long long end)
@@ -150,9 +169,9 @@ int clock_gettime(struct timespec *tp)
 
 // this function spins till timeout is reached
 void _DEFUN(udelay,(us),
-			int us)
+			unsigned us)
 {
-	long long start, end;
+	unsigned long long start, end;
 	start = gettime();
 	while (1)
 	{
