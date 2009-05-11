@@ -40,7 +40,7 @@ uint32_t _FAT_fat_nextCluster(PARTITION* partition, uint32_t cluster)
 	uint32_t nextCluster = CLUSTER_FREE;
 	sec_t sector;
 	int offset;
-	if(!partition) return CLUSTER_ERROR;
+	
 	if (cluster == CLUSTER_FREE) {
 		return CLUSTER_FREE;
 	}

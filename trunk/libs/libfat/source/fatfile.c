@@ -36,7 +36,6 @@
 #include <errno.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include "cache.h"
 #include "file_allocation_table.h"
@@ -244,13 +243,7 @@ int _FAT_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
 	partition->firstOpenFile = file;
 	
 	_FAT_unlock(&partition->lock);
-	//extern FILE  *_EXFUN(__sfp,(struct _reent *));
-	/*
-	FILE *fp;
-	fp=__sfp(r);
-	fp->_file = (int) file;
-	setvbuf(fp,NULL,_IONBF,0);
-	*/
+	
 	return (int) file;
 }
 
