@@ -42,12 +42,8 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <stdlib.h>
 
 #if defined(__gamecube__) || defined (__wii__)
-#  ifndef LIBFAT_READAHEAD_CACHE
-#    define LIBFAT_READAHEAD_CACHE
-#  endif
 #  include <ogc/disc_io.h>
 #else
 #  ifdef NDS
@@ -93,10 +89,6 @@ Unmount the partition specified by name.
 If there are open files, it will attempt to synchronise them to disc.
 */
 extern void fatUnmount (const char* name);
-
-#ifdef LIBFAT_READAHEAD_CACHE
-extern bool fatSetReadAhead(const char* name, const uint8_t numCaches, uint32_t cacheMaxSectors);
-#endif
 
 #ifdef __cplusplus
 }
