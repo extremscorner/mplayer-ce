@@ -437,7 +437,7 @@ void plat_init (int *argc, char **argv[]) {
 		log_console_init(vmode, 0);
 		printf("MPlayerCE v.0.51\n\n");
 		printf("SD/USB access failed\n");
-		printf("Please review that you have installed MPlayerCE in the rigth folder\n");
+		printf("Please check that you have installed MPlayerCE in the right folder\n");
 		printf("Valid folders:\n");
 		printf(" sd:/apps/mplayer_ce\n sd:/mplayer\n usb:/apps/mplayer_ce\n usb:/mplayer\n");
 				
