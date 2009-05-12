@@ -173,6 +173,7 @@ typedef struct MpegTSWriteStream {
     int pid; /* stream associated pid */
     int cc;
     int payload_index;
+    int first_pts_check; ///< first pts check needed
     int64_t payload_pts;
     int64_t payload_dts;
     uint8_t payload[DEFAULT_PES_PAYLOAD_SIZE];
@@ -419,6 +420,7 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st->pid = DEFAULT_START_PID + i;
         ts_st->payload_pts = AV_NOPTS_VALUE;
         ts_st->payload_dts = AV_NOPTS_VALUE;
+        ts_st->first_pts_check = 1;
         /* update PCR pid by using the first video stream */
         if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff)
@@ -456,11 +458,11 @@ static int mpegts_write_header(AVFormatContext *s)
     pat_pmt_size = url_ftell(s->pb) - pos;
 
     total_bit_rate +=
-        total_bit_rate * 25 / (8 * DEFAULT_PES_PAYLOAD_SIZE) + /* PES header size */
-        total_bit_rate * 4 / (8 * TS_PACKET_SIZE) +            /* TS  header size */
-        SDT_RETRANS_TIME * sdt_size +                          /* SDT size */
-        PAT_RETRANS_TIME * pat_pmt_size +                      /* PAT+PMT size */
-        PCR_RETRANS_TIME * 8;                                  /* PCR size */
+        total_bit_rate * 25 / DEFAULT_PES_PAYLOAD_SIZE + /* PES header size */
+        total_bit_rate *  4 / TS_PACKET_SIZE           + /* TS  header size */
+        SDT_RETRANS_TIME * 8 * sdt_size     / 1000     + /* SDT size */
+        PAT_RETRANS_TIME * 8 * pat_pmt_size / 1000     + /* PAT+PMT size */
+        PCR_RETRANS_TIME * 8 * 8            / 1000;      /* PCR size */
 
     av_log(s, AV_LOG_DEBUG, "muxrate %d freq sdt %d pat %d\n",
            total_bit_rate, ts->sdt_packet_freq, ts->pat_packet_freq);
@@ -597,7 +599,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 header_len += 5;
                 flags |= 0x80;
             }
-            if (dts != AV_NOPTS_VALUE && dts != pts) {
+            if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
                 header_len += 5;
                 flags |= 0x40;
             }
@@ -617,6 +619,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             len = payload_size + header_len + 3;
             if (private_code != 0)
                 len++;
+            if (len > 0xffff)
+                len = 0;
             *q++ = len >> 8;
             *q++ = len;
             val = 0x80;
@@ -630,7 +634,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 write_pts(q, flags >> 6, pts);
                 q += 5;
             }
-            if (dts != AV_NOPTS_VALUE && dts != pts) {
+            if (dts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE && dts != pts) {
                 write_pts(q, 1, dts);
                 q += 5;
             }
@@ -688,11 +692,10 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
 static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
-    int size= pkt->size;
+    int len, size = pkt->size;
     uint8_t *buf= pkt->data;
     uint8_t *data= NULL;
     MpegTSWriteStream *ts_st = st->priv_data;
-    int len, max_payload_size;
     const uint8_t *access_unit_index = NULL;
     const uint64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int64_t dts = AV_NOPTS_VALUE, pts = AV_NOPTS_VALUE;
@@ -702,31 +705,13 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->dts != AV_NOPTS_VALUE)
         dts = pkt->dts + delay;
 
-    if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
-        /* for subtitle, a single PES packet must be generated */
-        mpegts_write_pes(s, st, buf, size, pts, AV_NOPTS_VALUE);
-        return 0;
+    if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
+        av_log(s, AV_LOG_ERROR, "first pts value must set\n");
+        return -1;
     }
+    ts_st->first_pts_check = 0;
 
-    if (st->codec->codec_id == CODEC_ID_DIRAC) {
-        /* for Dirac, a single PES packet must be generated */
-        mpegts_write_pes(s, st, buf, size, pts, dts);
-        return 0;
-    }
-    max_payload_size = DEFAULT_PES_PAYLOAD_SIZE;
-    if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO ||
-        st->codec->codec_id == CODEC_ID_MPEG1VIDEO) {
-        const uint8_t *p = pkt->data;
-        const uint8_t *end = pkt->data+pkt->size;
-        uint32_t state = -1;
-        while (p < end) {
-            p = ff_find_start_code(p, end, &state);
-            if (state == PICTURE_START_CODE) {
-                access_unit_index = p - 4;
-                break;
-            }
-        }
-    } if (st->codec->codec_id == CODEC_ID_H264) {
+    if (st->codec->codec_id == CODEC_ID_H264) {
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
             av_log(s, AV_LOG_ERROR, "h264 bitstream malformated\n");
             return -1;
@@ -752,8 +737,17 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
     }
 
+    if (st->codec->codec_type == CODEC_TYPE_SUBTITLE ||
+        st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        // for video and subtitle, write a single pes packet
+        mpegts_write_pes(s, st, buf, size, pts, dts);
+        av_free(data);
+        return 0;
+    }
+
+    // audio
     while (size > 0) {
-        len = max_payload_size - ts_st->payload_index;
+        len = DEFAULT_PES_PAYLOAD_SIZE - ts_st->payload_index;
         if (len > size)
             len = size;
         memcpy(ts_st->payload + ts_st->payload_index, buf, len);
@@ -766,7 +760,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             ts_st->payload_dts = dts;
             ts_st->payload_pts = pts;
         }
-        if (ts_st->payload_index >= max_payload_size) {
+        if (ts_st->payload_index >= DEFAULT_PES_PAYLOAD_SIZE) {
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
                              ts_st->payload_pts, ts_st->payload_dts);
             ts_st->payload_pts = AV_NOPTS_VALUE;
@@ -775,8 +769,6 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             access_unit_index = NULL; // unset access unit to avoid setting pts/dts again
         }
     }
-
-    av_free(data);
 
     return 0;
 }

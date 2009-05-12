@@ -1054,7 +1054,7 @@ inline static void vo_update_spudec_sub(mp_osd_obj_t* obj, int dxs, int dys)
 
 inline static void vo_draw_spudec_sub(mp_osd_obj_t* obj, void (*draw_alpha)(int x0, int y0, int w, int h, unsigned char* src, unsigned char* srca, int stride))
 {
-  spudec_draw_scaled(vo_spudec, obj->dxs, obj->dys, draw_alpha);
+  if(vo_spudec)spudec_draw_scaled(vo_spudec, obj->dxs, obj->dys, draw_alpha);
 }
 
 void *vo_spudec=NULL;

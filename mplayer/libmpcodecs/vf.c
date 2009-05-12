@@ -732,7 +732,10 @@ vf_instance_t* append_filters(vf_instance_t* last){
     for(i = 0 ; vf_settings[i].name ; i++)
       /* NOP */;
     for(i-- ; i >= 0 ; i--) {
+      //int x;
       //printf("Open filter %s\n",vf_settings[i].name);
+      //for(x=0;vf_settings[i].attribs[x];x++)printf("  attribs[%i]: %s\n",x,vf_settings[i].attribs[x]);
+      //printf("***************************************************************");
       vf = vf_open_filter(last,vf_settings[i].name,vf_settings[i].attribs);
       if(vf) last=vf;
     }

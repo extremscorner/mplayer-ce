@@ -234,6 +234,7 @@ static void free_extensions(char **extensions){
 }
 #ifdef GEKKO
 extern int network_inited;
+extern int mounting_usb;
 #endif
 static int open_dir(menu_t* menu,char* args) {
   char **namelist, **tp;
@@ -261,10 +262,13 @@ static int open_dir(menu_t* menu,char* args) {
   {
   	if(!playing_usb)
   	{
-		usb->startup();
-		if(!usb->isInserted())	return 0;	
-		fatUnmount("usb");
-		if(!fatMountSimple("usb",usb)) return 0;
+	  	usleep(500000);
+	  	while(mounting_usb)usleep(500);
+		if(!usb->isInserted())	
+		{
+			return 0;
+		}	
+		
 	}
 /*
 	  if(!DeviceMounted("usb:/"))

@@ -729,15 +729,14 @@ static void ac3_upmix_delay(AC3DecodeContext *s)
  * @param[in] end_subband subband number for end of range
  * @param[in] default_band_struct default band structure table
  * @param[out] band_struct decoded band structure
- * @param[out] num_subbands number of subbands (optionally NULL)
  * @param[out] num_bands number of bands (optionally NULL)
  * @param[out] band_sizes array containing the number of bins in each band (optionally NULL)
  */
 static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
                                   int ecpl, int start_subband, int end_subband,
                                   const uint8_t *default_band_struct,
-                                  uint8_t *band_struct, int *num_subbands,
-                                  int *num_bands, uint8_t *band_sizes)
+                                  uint8_t *band_struct, int *num_bands,
+                                  uint8_t *band_sizes)
 {
     int subbnd, bnd, n_subbands, n_bands=0;
     uint8_t bnd_sz[22];
@@ -774,8 +773,6 @@ static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
     }
 
     /* set optional output params */
-    if (num_subbands)
-        *num_subbands = n_subbands;
     if (num_bands)
         *num_bands = n_bands;
     if (band_sizes)
@@ -875,8 +872,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             /* TODO: modify coupling end freq if spectral extension is used */
             cpl_start_subband = get_bits(gbc, 4);
             cpl_end_subband   = get_bits(gbc, 4) + 3;
-            s->num_cpl_subbands = cpl_end_subband - cpl_start_subband;
-            if (s->num_cpl_subbands < 0) {
+            if (cpl_start_subband > cpl_end_subband) {
                 av_log(s->avctx, AV_LOG_ERROR, "invalid coupling range (%d > %d)\n",
                        cpl_start_subband, cpl_end_subband);
                 return -1;
@@ -884,11 +880,10 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             s->start_freq[CPL_CH] = cpl_start_subband * 12 + 37;
             s->end_freq[CPL_CH]   = cpl_end_subband   * 12 + 37;
 
-           decode_band_structure(gbc, blk, s->eac3, 0,
-                                 cpl_start_subband, cpl_end_subband,
-                                 ff_eac3_default_cpl_band_struct,
-                                 s->cpl_band_struct, &s->num_cpl_subbands,
-                                 &s->num_cpl_bands, NULL);
+            decode_band_structure(gbc, blk, s->eac3, 0, cpl_start_subband,
+                                  cpl_end_subband,
+                                  ff_eac3_default_cpl_band_struct,
+                                  s->cpl_band_struct, &s->num_cpl_bands, NULL);
         } else {
             /* coupling not in use */
             for (ch = 1; ch <= fbw_channels; ch++) {
@@ -1235,6 +1230,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     int16_t *out_samples = (int16_t *)data;
     int blk, ch, err;
     const uint8_t *channel_map;
+    const float *output[AC3_MAX_CHANNELS];
 
     /* initialize the GetBitContext with the start of valid AC-3 Frame */
     if (s->input_buffer) {
@@ -1326,14 +1322,13 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
 
     /* decode the audio blocks */
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
+    for (ch = 0; ch < s->out_channels; ch++)
+        output[ch] = s->output[channel_map[ch]];
     for (blk = 0; blk < s->num_blocks; blk++) {
-        const float *output[s->out_channels];
         if (!err && decode_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
             err = 1;
         }
-        for (ch = 0; ch < s->out_channels; ch++)
-            output[ch] = s->output[channel_map[ch]];
         s->dsp.float_to_int16_interleave(out_samples, output, 256, s->out_channels);
         out_samples += 256 * s->out_channels;
     }

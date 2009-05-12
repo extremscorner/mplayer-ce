@@ -1188,6 +1188,11 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
+    avctx->color_range= AVCOL_RANGE_MPEG;
+    if (avctx->codec->id == CODEC_ID_MPEG1VIDEO)
+        avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
+    else
+        avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
     return 0;
 }
 
@@ -1420,9 +1425,9 @@ static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
     skip_bits(&s->gb, 3); /* video format */
     color_description= get_bits1(&s->gb);
     if(color_description){
-        skip_bits(&s->gb, 8); /* color primaries */
-        skip_bits(&s->gb, 8); /* transfer_characteristics */
-        skip_bits(&s->gb, 8); /* matrix_coefficients */
+        s->avctx->color_primaries= get_bits(&s->gb, 8);
+        s->avctx->color_trc      = get_bits(&s->gb, 8);
+        s->avctx->colorspace     = get_bits(&s->gb, 8);
     }
     w= get_bits(&s->gb, 14);
     skip_bits(&s->gb, 1); //marker
@@ -1470,42 +1475,35 @@ static void mpeg_decode_picture_display_extension(Mpeg1Context *s1)
         );
 }
 
+static int load_matrix(MpegEncContext *s, uint16_t matrix0[64], uint16_t matrix1[64], int intra){
+    int i;
+
+    for(i=0; i<64; i++) {
+        int j = s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
+        int v = get_bits(&s->gb, 8);
+        if(v==0){
+            av_log(s->avctx, AV_LOG_ERROR, "matrix damaged\n");
+            return -1;
+        }
+        if(intra && i==0 && v!=8){
+            av_log(s->avctx, AV_LOG_ERROR, "intra matrix invalid, ignoring\n");
+            v= 8; // needed by pink.mpg / issue1046
+        }
+        matrix0[j] = v;
+        if(matrix1)
+            matrix1[j] = v;
+    }
+    return 0;
+}
+
 static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
 {
-    int i, v, j;
-
     dprintf(s->avctx, "matrix extension\n");
 
-    if (get_bits1(&s->gb)) {
-        for(i=0;i<64;i++) {
-            v = get_bits(&s->gb, 8);
-            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
-            s->intra_matrix[j] = v;
-            s->chroma_intra_matrix[j] = v;
-        }
-    }
-    if (get_bits1(&s->gb)) {
-        for(i=0;i<64;i++) {
-            v = get_bits(&s->gb, 8);
-            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
-            s->inter_matrix[j] = v;
-            s->chroma_inter_matrix[j] = v;
-        }
-    }
-    if (get_bits1(&s->gb)) {
-        for(i=0;i<64;i++) {
-            v = get_bits(&s->gb, 8);
-            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
-            s->chroma_intra_matrix[j] = v;
-        }
-    }
-    if (get_bits1(&s->gb)) {
-        for(i=0;i<64;i++) {
-            v = get_bits(&s->gb, 8);
-            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
-            s->chroma_inter_matrix[j] = v;
-        }
-    }
+    if(get_bits1(&s->gb)) load_matrix(s, s->chroma_intra_matrix, s->intra_matrix, 1);
+    if(get_bits1(&s->gb)) load_matrix(s, s->chroma_inter_matrix, s->inter_matrix, 0);
+    if(get_bits1(&s->gb)) load_matrix(s, s->chroma_intra_matrix, NULL           , 1);
+    if(get_bits1(&s->gb)) load_matrix(s, s->chroma_inter_matrix, NULL           , 0);
 }
 
 static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
@@ -2008,22 +2006,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 
     /* get matrix */
     if (get_bits1(&s->gb)) {
-        for(i=0;i<64;i++) {
-            v = get_bits(&s->gb, 8);
-            if(v==0){
-                av_log(s->avctx, AV_LOG_ERROR, "intra matrix damaged\n");
-                return -1;
-            }
-            j = s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
-            s->intra_matrix[j] = v;
-            s->chroma_intra_matrix[j] = v;
-        }
-#ifdef DEBUG
-        dprintf(s->avctx, "intra matrix present\n");
-        for(i=0;i<64;i++)
-            dprintf(s->avctx, " %d", s->intra_matrix[s->dsp.idct_permutation[i]]);
-        dprintf(s->avctx, "\n");
-#endif
+        load_matrix(s, s->chroma_intra_matrix, s->intra_matrix, 1);
     } else {
         for(i=0;i<64;i++) {
             j = s->dsp.idct_permutation[i];
@@ -2033,22 +2016,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         }
     }
     if (get_bits1(&s->gb)) {
-        for(i=0;i<64;i++) {
-            v = get_bits(&s->gb, 8);
-            if(v==0){
-                av_log(s->avctx, AV_LOG_ERROR, "inter matrix damaged\n");
-                return -1;
-            }
-            j = s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
-            s->inter_matrix[j] = v;
-            s->chroma_inter_matrix[j] = v;
-        }
-#ifdef DEBUG
-        dprintf(s->avctx, "non-intra matrix present\n");
-        for(i=0;i<64;i++)
-            dprintf(s->avctx, " %d", s->inter_matrix[s->dsp.idct_permutation[i]]);
-        dprintf(s->avctx, "\n");
-#endif
+        load_matrix(s, s->chroma_inter_matrix, s->inter_matrix, 0);
     } else {
         for(i=0;i<64;i++) {
             int j= s->dsp.idct_permutation[i];

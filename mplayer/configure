@@ -256,6 +256,7 @@ Optional features:
   --enable-smb           enable Samba (SMB) input [autodetect]
   --enable-live          enable LIVE555 Streaming Media [autodetect]
   --enable-nemesi        enable Nemesi Streaming Media [autodetect]
+  --disable-vcd          disable VCD support [autodetect]
   --disable-dvdnav       disable libdvdnav [autodetect]
   --disable-dvdread      disable libdvdread [autodetect]
   --disable-dvdread-internal  disable internal libdvdread [autodetect]
@@ -622,6 +623,7 @@ _faac_lavc=auto
 _ladspa=auto
 _libbs2b=auto
 _xmms=no
+_vcd=auto
 _dvdnav=auto
 _dvdnavconfig=dvdnav-config
 _dvdreadconfig=dvdread-config
@@ -1024,6 +1026,8 @@ for ac_option do
   --disable-libbs2b)	_libbs2b=no	;;
   --enable-xmms)	_xmms=yes	;;
   --disable-xmms)	_xmms=no	;;
+  --enable-vcd)         _vcd=yes        ;;
+  --disable-vcd)        _vcd=no         ;;
   --enable-dvdread)	_dvdread=yes	;;
   --disable-dvdread)	_dvdread=no	;;
   --enable-dvdread-internal)	_dvdread_internal=yes	;;
@@ -2081,12 +2085,14 @@ EOF
   ppc|ppc64|powerpc|powerpc64)
     _arch='PPC'
     def_dcbzl='#define HAVE_DCBZL 0'
+    def_ppc64='#define HAVE_PPC64 0'
     _target_arch='ARCH_PPC = yes'
     def_fast_unaligned='#define HAVE_FAST_UNALIGNED 1'
     iproc='ppc'
 
     if test "$host_arch" = "ppc64" -o "$host_arch" = "powerpc64" ; then
       def_fast_64bit='#define HAVE_FAST_64BIT 1'
+      def_ppc64='#define HAVE_PPC64 1'
     fi
     echocheck "CPU type"
     case $system_name in
@@ -3803,90 +3809,20 @@ echores "$_sys_sysinfo"
 
 if darwin; then
 
-echocheck "CoreAudio"
-if test "$_coreaudio" = auto ; then
-  cat > $TMPC <<EOF
-#include <CoreAudio/CoreAudio.h>
-int main(void) { return 0; }
-EOF
-  _coreaudio=no
-  cc_check -framework CoreAudio && _coreaudio=yes
-fi
-if test "$_coreaudio" = yes ; then
-  extra_ldflags="$extra_ldflags -framework CoreAudio -framework AudioUnit -framework AudioToolbox"
-  def_coreaudio='#define CONFIG_COREAUDIO 1'
-  _aomodules="macosx $_aomodules"
-else
-  def_coreaudio='#undef CONFIG_COREAUDIO'
-  _noaomodules="macosx $_noaomodules"
-fi
-echores $_coreaudio
-
-
-echocheck "Quartz framework"
-if test "$_quartz" = auto ; then
-  cat > $TMPC <<EOF
-#include <Carbon/Carbon.h>
-#include <QuickTime/QuickTime.h>
-int main(void) {
-    EnterMovies();
-    ExitMovies();
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, false);
-    return 0;
-}
-EOF
-  _quartz=no
-  cc_check -framework Carbon -framework QuickTime && _quartz=yes
-fi
-if test "$_quartz" = yes ; then
-  extra_ldflags="$extra_ldflags -framework Carbon -framework QuickTime"
-  def_quartz='#define CONFIG_QUARTZ 1'
-  _vomodules="quartz $_vomodules"
-  def_quicktime='#define CONFIG_QUICKTIME 1'
-else
-  def_quartz='#undef CONFIG_QUARTZ'
-  _novomodules="quartz $_novomodules"
-  def_quicktime='#undef CONFIG_QUICKTIME'
-fi
-echores $_quartz
-
-echocheck "CoreVideo"
-if test "$_corevideo" = auto ; then
-  cat > $TMPC <<EOF
-#include <Carbon/Carbon.h>
-#include <QuartzCore/CoreVideo.h>
-int main(void) { return 0; }
-EOF
-  _corevideo=no
-  cc_check -framework Carbon -framework QuartzCore -framework OpenGL && _corevideo=yes
-fi
-if test "$_corevideo" = yes ; then
-  _vomodules="macosx $_vomodules"
-  extra_ldflags="$extra_ldflags -framework Cocoa -framework QuartzCore -framework OpenGL"
-  def_corevideo='#define CONFIG_COREVIDEO 1'
-else
-  _novomodules="macosx $_novomodules"
-  def_corevideo='#undef CONFIG_COREVIDEO'
-fi
-echores "$_corevideo"
-
 echocheck "Mac OS X Finder Support"
-if test "$_macosx_finder" = yes; then
+def_macosx_finder='#undef CONFIG_MACOSX_FINDER'
+if test "$_macosx_finder" = yes ; then
   def_macosx_finder='#define CONFIG_MACOSX_FINDER 1'
-else
-  def_macosx_finder='#undef CONFIG_MACOSX_FINDER'
+  extra_ldflags="$extra_ldflags -framework Carbon"
 fi
 echores "$_macosx_finder"
 
 echocheck "Mac OS X Bundle file locations"
-if test "$_macosx_bundle" = auto ; then
-  _macosx_bundle=$_macosx_finder
-fi
-if test "$_macosx_bundle" = yes; then
+def_macosx_bundle='#undef CONFIG_MACOSX_BUNDLE'
+test "$_macosx_bundle" = auto && _macosx_bundle=$_macosx_finder
+if test "$_macosx_bundle" = yes ; then
   def_macosx_bundle='#define CONFIG_MACOSX_BUNDLE 1'
-else
-  def_macosx_bundle='#undef CONFIG_MACOSX_BUNDLE'
-  _macosx_bundle=no
+  extra_ldflags="$extra_ldflags -framework Carbon"
 fi
 echores "$_macosx_bundle"
 
@@ -3921,7 +3857,7 @@ EOF
 fi
 if test "$_apple_remote" = yes ; then
   def_apple_remote='#define CONFIG_APPLE_REMOTE 1'
-  extra_ldflags="$extra_ldflags -framework IOKit"
+  libs_mplayer="$libs_mplayer -framework IOKit -framework Cocoa"
 else
   def_apple_remote='#undef CONFIG_APPLE_REMOTE'
 fi
@@ -4859,6 +4795,56 @@ else
 fi
 
 
+if darwin; then
+
+echocheck "Quartz"
+if test "$_quartz" = auto ; then
+  cat > $TMPC <<EOF
+#include <Carbon/Carbon.h>
+#include <QuickTime/QuickTime.h>
+int main(void) {
+    EnterMovies();
+    ExitMovies();
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, false);
+    return 0;
+}
+EOF
+  _quartz=no
+  cc_check -framework Carbon -framework QuickTime && _quartz=yes
+fi
+if test "$_quartz" = yes ; then
+  libs_mplayer="$libs_mplayer -framework Carbon -framework QuickTime"
+  def_quartz='#define CONFIG_QUARTZ 1'
+  _vomodules="quartz $_vomodules"
+else
+  def_quartz='#undef CONFIG_QUARTZ'
+  _novomodules="quartz $_novomodules"
+fi
+echores $_quartz
+
+echocheck "CoreVideo"
+if test "$_corevideo" = auto ; then
+  cat > $TMPC <<EOF
+#include <Carbon/Carbon.h>
+#include <CoreServices/CoreServices.h>
+#include <OpenGL/OpenGL.h>
+#include <QuartzCore/CoreVideo.h>
+int main(void) { return 0; }
+EOF
+  _corevideo=no
+  cc_check -framework Carbon -framework Cocoa -framework QuartzCore -framework OpenGL && _corevideo=yes
+fi
+if test "$_corevideo" = yes ; then
+  _vomodules="corevideo $_vomodules"
+  libs_mplayer="$libs_mplayer -framework Carbon -framework Cocoa -framework QuartzCore -framework OpenGL"
+  def_corevideo='#define CONFIG_COREVIDEO 1'
+else
+  _novomodules="corevideo $_novomodules"
+  def_corevideo='#undef CONFIG_COREVIDEO'
+fi
+echores "$_corevideo"
+
+fi #if darwin
 
 
 echocheck "PNG support"
@@ -5683,6 +5669,30 @@ echores "$_mlib"
 fi #if sunos
 
 
+if darwin; then
+echocheck "CoreAudio"
+if test "$_coreaudio" = auto ; then
+  cat > $TMPC <<EOF
+#include <CoreAudio/CoreAudio.h>
+#include <AudioToolbox/AudioToolbox.h>
+#include <AudioUnit/AudioUnit.h>
+int main(void) { return 0; }
+EOF
+  _coreaudio=no
+  cc_check -framework CoreAudio -framework AudioUnit -framework AudioToolbox && _coreaudio=yes
+fi
+if test "$_coreaudio" = yes ; then
+  libs_mplayer="$libs_mplayer -framework CoreAudio -framework AudioUnit -framework AudioToolbox"
+  def_coreaudio='#define CONFIG_COREAUDIO 1'
+  _aomodules="coreaudio $_aomodules"
+else
+  def_coreaudio='#undef CONFIG_COREAUDIO'
+  _noaomodules="coreaudio $_noaomodules"
+fi
+echores $_coreaudio
+fi #if darwin
+
+
 if irix; then
 echocheck "SGI audio"
 if test "$_sgiaudio" = auto ; then
@@ -5758,15 +5768,17 @@ fi
 
 
 echocheck "VCD support"
-_vcd=no
-if linux || freebsd || netbsd || openbsd || dragonfly || bsdos || darwin || sunos; then
-  _vcd=yes
-elif mingw32; then
-  cat > $TMPC << EOF
+if test "$_vcd" = auto; then
+  _vcd=no
+  if linux || freebsd || netbsd || openbsd || dragonfly || bsdos || darwin || sunos; then
+    _vcd=yes
+  elif mingw32; then
+    cat > $TMPC << EOF
 #include <ddk/ntddcdrm.h>
 int main(void) { return 0; }
 EOF
   cc_check && _vcd=yes
+  fi
 fi
 if test "$_vcd" = yes; then
   _inputmodules="vcd $_inputmodules"
@@ -5803,15 +5815,15 @@ elif test "$_dvdread" = auto ; then
 #include <dvdread/nav_read.h>
 int main(void) { return 0; }
 EOF
-  fi
-  _dvdreadcflags=$($_dvdreadconfig --cflags)
-  _dvdreadlibs=$($_dvdreadconfig --libs)
-  if cc_check -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE \
-    $_dvdreadcflags $_dvdreadlibs $_ld_dl ; then
-    _dvdread=yes
-    extra_cflags="$extra_cflags $_dvdreadcflags"
-    extra_ldflags="$extra_ldflags $_dvdreadlibs"
-    _res_comment="external"
+    _dvdreadcflags=$($_dvdreadconfig --cflags)
+    _dvdreadlibs=$($_dvdreadconfig --libs)
+    if cc_check -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE \
+      $_dvdreadcflags $_dvdreadlibs $_ld_dl ; then
+      _dvdread=yes
+      extra_cflags="$extra_cflags $_dvdreadcflags"
+      extra_ldflags="$extra_ldflags $_dvdreadlibs"
+      _res_comment="external"
+    fi
   fi
 fi
 
@@ -5847,7 +5859,7 @@ if test "$_libdvdcss_internal" = yes ; then
     def_dvd_bsd='#define HAVE_BSD_DVD_STRUCT 1'
   elif darwin ; then
     def_dvd_darwin='#define DARWIN_DVD_IOCTL'
-    extra_ldflags="$extra_ldflags -framework IOKit"
+    extra_ldflags="$extra_ldflags -framework IOKit -framework Carbon"
   elif cygwin ; then
     cflags_libdvdcss="-DSYS_CYGWIN -DWIN32"
   elif beos ; then
@@ -5855,7 +5867,8 @@ if test "$_libdvdcss_internal" = yes ; then
   elif os2 ; then
     cflags_libdvdcss="-DSYS_OS2"
   fi
-  cflags_libdvdcss_dvdread="-Ilibdvdcss -DHAVE_DVDCSS_DVDCSS_H"
+  cflags_libdvdcss_dvdread="-Ilibdvdcss"
+  def_dvdcss="#define HAVE_DVDCSS_DVDCSS_H 1"
   _inputmodules="libdvdcss(internal) $_inputmodules"
   _largefiles=yes
 else
@@ -6754,10 +6767,12 @@ echores "$_real"
 echocheck "QuickTime codecs"
 _qtx_emulation=no
 def_qtx_win32='#undef CONFIG_QTX_CODECS_WIN32'
+def_quicktime='#undef CONFIG_QUICKTIME'
 if test "$_qtx" = auto ; then
   test "$_win32dll" = yes || darwin && _qtx=yes
 fi
 if test "$_qtx" = yes ; then
+    darwin && extra_ldflags="$extra_ldflags -framework QuickTime" && def_quicktime='#define CONFIG_QUICKTIME 1'
     def_qtx='#define CONFIG_QTX_CODECS 1'
     win32 && _qtx_codecs_win32=yes && def_qtx_win32='#define CONFIG_QTX_CODECS_WIN32 1'
     _codecmodules="qtx $_codecmodules"
@@ -7348,6 +7363,7 @@ else
   _libavencoders="MPEG1VIDEO_ENCODER SNOW_ENCODER"
   test "$_zlib" = yes && _libavencoders="$_libavencoders PNG_ENCODER"
   _libavmuxers=""
+  def_muxers='#define CONFIG_MUXERS 0'
 fi
 echores "$_mencoder"
 
@@ -7955,7 +7971,7 @@ EOF
 fi
 if test "$_lirc" = yes ; then
   def_lirc='#define CONFIG_LIRC 1'
-  extra_ldflags="$extra_ldflags -llirc_client"
+  libs_mplayer="$libs_mplayer -llirc_client"
 else
   def_lirc='#undef CONFIG_LIRC'
 fi
@@ -7972,7 +7988,7 @@ EOF
 fi
 if test "$_lircc" = yes ; then
   def_lircc='#define CONFIG_LIRCC 1'
-  extra_ldflags="$extra_ldflags -llircc"
+  libs_mplayer="$libs_mplayer -llircc"
 else
   def_lircc='#undef CONFIG_LIRCC'
 fi
@@ -8088,6 +8104,8 @@ cat > config.mak << EOF
 
 # Ensure that locale settings do not interfere with shell commands.
 export LC_ALL = C
+
+CONFIGURATION = $_configuration
 
 CHARSET = $_charset
 DOC_LANG = $doc_lang
@@ -8461,6 +8479,7 @@ $def_fast_inttypes
 #define READ_CACHE_TRACE 0
 /* libdvdread */
 #define HAVE_DLFCN_H 1
+$def_dvdcss
 
 
 /* system headers */
@@ -8798,6 +8817,7 @@ $def_memalign_hack
 $def_mlib
 $def_mkstemp
 $def_posix_memalign
+$def_ppc64
 $def_pthreads
 $def_ten_operands
 $def_threads

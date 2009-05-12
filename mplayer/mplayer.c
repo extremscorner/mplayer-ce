@@ -272,13 +272,13 @@ int vobsub_id=-1;
 char* audio_lang=NULL;
 char* dvdsub_lang=NULL;
 static char* spudec_ifo=NULL;
-char* filename=NULL; //"MI2-Trailer.avi";
+char* filename=NULL; 
 static char* bg_video = NULL;  //geexbox bgvideo patch
 int forced_subs_only=0;
 int file_filter=1;
 
 // cache2:
-       int stream_cache_size=-1;
+int stream_cache_size=-1;
 #ifdef CONFIG_STREAM_CACHE
 extern int cache_fill_status;
 
@@ -376,7 +376,7 @@ static unsigned int initialized_flags=0;
 
 
 
-static bool IsBackgroungImage()
+bool IsBackgroungImage()
 {
 	int i,j;
 	j=strlen(filename);
@@ -426,6 +426,11 @@ int mpctx_get_global_sub_size(MPContext *mpctx)
 int mpctx_get_osd_function(MPContext *mpctx)
 {
     return mpctx->osd_function;
+}
+
+int get_mpctx()
+{
+    return mpctx;
 }
 
 static int is_valid_metadata_type (metadata_t type) {
@@ -881,6 +886,7 @@ sprintf(cad,"%s%s",MPLAYER_CONFDIR,"/mplayer.conf");
 if (!disable_system_conf &&
     m_config_parse_config_file(conf, cad) < 0)
   exit_player(EXIT_NONE);
+#ifndef GEKKO  
 if ((conffile = get_path("")) == NULL) {
   mp_msg(MSGT_CPLAYER,MSGL_WARN,MSGTR_NoHomeDir);
 } else {
@@ -904,6 +910,7 @@ if ((conffile = get_path("")) == NULL) {
     free(conffile);
   }
 }
+#endif
 }
 
 #define PROFILE_CFG_PROTOCOL "protocol."
@@ -1871,7 +1878,11 @@ static float timing_sleep(float time_frame)
 	    if (time_frame < 0)
 		mp_msg(MSGT_AVSYNC, MSGL_WARN, MSGTR_SoftsleepUnderflow);
 	    while (time_frame > 0)
+	    {
+	    usleep(10);
 		time_frame-=GetRelativeTime(); // burn the CPU
+		}
+		
 	}
     }
     return time_frame;
@@ -2226,6 +2237,7 @@ int reinit_video_chain(void) {
     if(!fixed_vo || !(initialized_flags&INITIALIZED_VO)){
     current_module="preinit_libvo";
 
+
     //shouldn't we set dvideo->id=-2 when we fail?
     vo_config_count=0;
     //if((mpctx->video_out->preinit(vo_subdevice))!=0){
@@ -2253,9 +2265,8 @@ int reinit_video_chain(void) {
     }
   }
   if(vf_menu)
-    sh_video->vfilter=(void*)vf_menu;
+    sh_video->vfilter=(void*)vf_menu;    
 #endif
-
 #ifdef CONFIG_ASS
   if(ass_enabled) {
     int i;
@@ -2279,15 +2290,15 @@ int reinit_video_chain(void) {
   }
 #endif
   sh_video->vfilter=(void*)append_filters(sh_video->vfilter);
-
 #ifdef GEKKO
 //rodries patch for big resolution on wii
 if(sh_video->disp_w>900) {
-	char *arg_scale[]={"w","720","h","-2"};
+	char *arg_scale[]={"w","xxxx","h","-2",NULL};
 	sprintf(arg_scale[1],"%i",sh_video->disp_w/2);
 	sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);	   
-}	
+}
 #endif
+
 
 #ifdef CONFIG_ASS
   if (ass_enabled)
@@ -2432,7 +2443,7 @@ static void pause_loop(void)
         mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_PAUSED\n");
     }
 */
-    set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
+   	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
     update_osd_msg();
    
 #ifdef CONFIG_GUI
@@ -2468,6 +2479,7 @@ static void pause_loop(void)
 #endif
 	usec_sleep(20000);
     }
+    
 	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7))) 
 	{
 		DI_StartMotor();
@@ -3168,9 +3180,11 @@ if (edl_output_filename) {
 //==================== Open VOB-Sub ============================
 int vob_sub_auto = 1; //scip
     current_module="vobsub";  
-	set_osd_msg(OSD_MSG_TEXT, 1, 80000, "Searching vobsub subtitles...");
-	force_osd();
-	  
+    if(!IsBackgroungImage())
+    {
+		set_osd_msg(OSD_MSG_TEXT, 1, 80000, "Loading vobsub subtitles...");
+		force_osd();
+	}  
     if (vobsub_name){
       vo_vobsub=vobsub_open(vobsub_name,spudec_ifo,1,&vo_spudec);
       if(vo_vobsub==NULL)
@@ -3219,7 +3233,10 @@ int vob_sub_auto = 1; //scip
       mpctx->global_sub_indices[SUB_SOURCE_VOBSUB] = mpctx->global_sub_size; // the global # of the first vobsub.
       mpctx->global_sub_size += vobsub_get_indexes_count(vo_vobsub);
     }else{
-    	rm_osd_msg(OSD_MSG_TEXT);force_osd();
+    	if(!IsBackgroungImage())
+    	{
+    		rm_osd_msg(OSD_MSG_TEXT);force_osd();
+		}
 	}
     
 
@@ -3375,10 +3392,11 @@ if(stream_cache_size>0){
                           stream_cache_size*1024*(stream_cache_seek_min_percent / 100.0)))
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
-
+	if(!IsBackgroungImage())
+    {
 	set_osd_msg(500, 1, 0, "Analysing Stream...");
 	force_osd();
-
+	}
   if(mpctx->demuxer)
   {
   	free_demuxer(mpctx->demuxer);
