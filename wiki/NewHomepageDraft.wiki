@@ -19,9 +19,9 @@ Updated to latest MPlayer revision, USB 2.0 support, custom font support, better
 
 Review [http://code.google.com/p/mplayer-ce/wiki/Changelog Changelog] for full list of changes.
 
+<br />
 
-
-==Support, submit ..==
+==Support, submit==
 
 If you would like to support this project, you may donate to our development fund via Paypal. [https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5077439 http://www.paypal.com/en_US/i/btn/btn_donate_LG.gif]
 
@@ -30,6 +30,8 @@ Any funds donated will be used to help further development on this project, by p
 We are always looking for more volunteers to help with coding, customizations, etc, so feel free to contact us at irc://irc.efnet.net/mplayer_ce.
 
 Thank you.
+
+<br />
 
 ==About==
 http://mplayer-ce.googlecode.com/files/mplayerCE_scr.jpg
