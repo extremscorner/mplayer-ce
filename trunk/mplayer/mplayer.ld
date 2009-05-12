@@ -21,7 +21,8 @@ SECTIONS
 
 	/* DOL header (from TITANIK's GC docs) */
 	/* default base address */
-	. = 0x80003f00;
+	/*. = 0x80003f00;*/
+	  . = 0x80003f00;
 	.header	:
 	{
 		file_start = .;

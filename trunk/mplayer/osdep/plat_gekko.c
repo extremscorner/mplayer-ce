@@ -53,11 +53,14 @@
 #include "../get_path.h"
 
 #undef abort
+
+extern int stream_cache_size;
   
 bool reset_pressed = false;
 bool power_pressed = false;
 bool playing_usb = false;
 int network_inited = 0;
+int mounting_usb=0;
 static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static int dbg_network = false;
@@ -66,20 +69,21 @@ static int gxzoom=358;
 static float hor_pos=3;
 static float vert_pos=0;
 static bool exit_automount_thread = false;
+static bool usb_init=false;
 
 //#define CE_DEBUG 1
 
-static char *default_args1[] = {
+static char *default_args[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
+	"-bgvideo", NULL, 
+	"-idle", NULL,
 #ifndef CE_DEBUG 	
 	"-really-quiet",
 #endif	
-	//"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all",
-	"-sws","4",
-	"-bgvideo", "sd:/apps/mplayer_ce/loop-wide.avi", 
-	"-idle", "sd:/apps/mplayer_ce/loop-wide.avi"
-	
+	"-vo","gekko","-ao","gekko","-menu","-menu-startup","-menu-keepdir",
+	"-framedrop","-sws","4"
 }; 
+/*
 static char *default_args2[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
 #ifndef CE_DEBUG 	
@@ -90,7 +94,7 @@ static char *default_args2[] = {
 	"-bgvideo", "sd:/apps/mplayer_ce/loop.avi", 
 	"-idle", "sd:/apps/mplayer_ce/loop.avi"
 }; 
-
+*/
 static void reset_cb (void) {
 	reset_pressed = true;
 }
@@ -233,16 +237,12 @@ bool DeviceMounted(const char *device)
 static void * mountthreadfunc (void *arg)
 {
 	int dp, dvd_inserted=0,usb_inserted=0;
-/*
-	usleep(5000);
+
+	sleep(2);
+	
 	//initialize usb
-	usb->startup();
-	if(usb->isInserted())		
-	{
-		fatMountSimple("usb",usb);
-		//if(fatMountSimple("usb",usb)) usb_inserted=1;
-	}
-*/	
+	if(!usb_init)usb->startup();
+	
 #ifdef CE_DEBUG
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
@@ -250,10 +250,10 @@ static void * mountthreadfunc (void *arg)
   
 	sleep(1);	
 	while(!exit_automount_thread)
-	{	
-	/*
+	{		
 		if(!playing_usb)
 		{
+			mounting_usb=1;
 			dp=usb->isInserted();
 			usleep(500); // needed, I don't know why, but hang if it's deleted
 			
@@ -262,11 +262,14 @@ static void * mountthreadfunc (void *arg)
 				usb_inserted=dp;
 				if(!dp)
 				{
-					fatUnmount("usb");
-				}else fatMountSimple("usb",usb);
+					fatUnmount("usb:");
+				}else 
+				{
+					fatMount("usb",usb,0,2,64);
+				}
 			}
-		}//else usb_inserted=1;	
-    */			
+			mounting_usb=0;
+		}	
 		if(dvd_mounting==false)
 		{
 			dp=WIIDVD_DiscPresent();
@@ -366,6 +369,50 @@ int LoadParams()
 	return m_config_parse_config_file(comp_conf, cad); 
 }
 
+static bool CheckPath(char *path)
+{
+	char *filename;
+	FILE *f;
+	
+	filename=malloc(sizeof(char)*(strlen(path)+15));
+	strcpy(filename,path);
+	strcat(filename,"/mplayer.conf");
+	
+	f=fopen(filename,"r");
+	free(filename);
+	if(f==NULL) return false;
+	fclose(f);
+
+	sprintf(MPLAYER_DATADIR,"%s",path);
+	sprintf(MPLAYER_CONFDIR,"%s",path);
+	sprintf(MPLAYER_LIBDIR,"%s",path);
+	
+	return true;
+}
+static bool DetectValidPath()
+{
+	
+	if(sd->startup()) 
+	{
+		if(fatMount("sd",sd,0,2,228))
+		{	
+			if(CheckPath("sd:/apps/mplayer_ce")) return true;	
+			if(CheckPath("sd:/mplayer")) return true;
+		}
+	}
+	usb->startup();
+	usb_init=true;
+	//if (usb->startup())
+	{
+		if(fatMount("usb",usb,0,2,64))
+		{
+			if(CheckPath("usb:/apps/mplayer_ce")) return true;
+			if(CheckPath("usb:/mplayer")) return true;
+		}
+	}
+	return false;	
+}
+
 void plat_init (int *argc, char **argv[]) {	
 	WIIDVD_Init(); 
 	VIDEO_Init();
@@ -384,31 +431,20 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_RegisterDMACallback(NULL);
 	AUDIO_StopDMA();
 
-
-	sprintf(MPLAYER_DATADIR,"%s","sd:/apps/mplayer_ce");
-	sprintf(MPLAYER_CONFDIR,"%s","sd:/apps/mplayer_ce");
-	sprintf(MPLAYER_LIBDIR,"%s","sd:/apps/mplayer_ce");
-	if (!sd->startup() || !fatMount("sd",sd,0,2,228) || !LoadParams())
+	if (!DetectValidPath())
 	{
-		printf("no sd\n");
-		sprintf(MPLAYER_DATADIR,"%s","usb:/apps/mplayer_ce");
-		sprintf(MPLAYER_CONFDIR,"%s","usb:/apps/mplayer_ce");
-		sprintf(MPLAYER_LIBDIR,"%s","usb:/apps/mplayer_ce");
-		
-		if (!usb->startup() || !fatMount("usb",usb,0,2,64) || !LoadParams())
-		{
-			GX_InitVideo();
-			log_console_init(vmode, 0);
-			printf("MPlayerCE v.0.51\n\n");
-			printf("SD access failed\n");
-			printf("Please review that you have installed MPlayerCE in the rigth folder\n");
-			printf("sd:/apps/mplayer_ce  or  usb:/apps/mplayer_ce\n");
-					
-			VIDEO_WaitVSync();
-			sleep(6);
-			if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
-			exit(0);
-		}
+		GX_InitVideo();
+		log_console_init(vmode, 0);
+		printf("MPlayerCE v.0.51\n\n");
+		printf("SD/USB access failed\n");
+		printf("Please review that you have installed MPlayerCE in the rigth folder\n");
+		printf("Valid folders:\n");
+		printf(" sd:/apps/mplayer_ce\n sd:/mplayer\n usb:/apps/mplayer_ce\n usb:/mplayer\n");
+				
+		VIDEO_WaitVSync();
+		sleep(6);
+		if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+		exit(0);
 	}
 
 	GX_SetComponentFix(component_fix);
@@ -437,7 +473,6 @@ void plat_init (int *argc, char **argv[]) {
 	mainthread=LWP_GetSelf(); 
 	lwp_t clientthread;
 	 
-LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
 #ifndef CE_DEBUG  //no network on debug
 
 	if(dbg_network)
@@ -456,7 +491,8 @@ LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mou
 	log_console_enable_video(false);
 
 #endif	
-  
+LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
+
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
 	setenv("DVDCSS_CACHE", "off", 1);
@@ -464,16 +500,25 @@ LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mou
 	setenv("DVDREAD_VERBOSE", "0", 1);
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
 	
+	default_args[2]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+15);
+	strcpy(default_args[2],MPLAYER_DATADIR);
+	default_args[4]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+15);
+	strcpy(default_args[4],MPLAYER_DATADIR);
 	if (CONF_GetAspectRatio()) 
 	{ //16:9
-		*argv = default_args1;
-		*argc = sizeof(default_args1) / sizeof(char *);
+		strcat(default_args[2],"/loop-wide.avi");
+		strcat(default_args[4],"/loop-wide.avi");
 	}		
 	else
 	{  // 4:3
-		*argv = default_args2;
-		*argc = sizeof(default_args2) / sizeof(char *);
+		strcat(default_args[2],"/loop.avi");
+		strcat(default_args[4],"/loop.avi");
 	}
+	*argv = default_args;
+	*argc = sizeof(default_args) / sizeof(char *);
+	
+	stream_cache_size=8*1024; //default cache size (8mb)
+	usb->startup();	
 	if (!*((u32*)0x80001800)) sp(); 
 }
 

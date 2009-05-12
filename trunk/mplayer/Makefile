@@ -544,8 +544,8 @@ SRCS_MPLAYER-$(APPLE_REMOTE) += input/ar.c
 SRCS_MPLAYER-$(ARTS)         += libao2/ao_arts.c
 SRCS_MPLAYER-$(BL)           += libvo/vo_bl.c
 SRCS_MPLAYER-$(CACA)         += libvo/vo_caca.c
-SRCS_MPLAYER-$(COREAUDIO)    += libao2/ao_macosx.c
-SRCS_MPLAYER-$(COREVIDEO)    += libvo/vo_macosx.m
+SRCS_MPLAYER-$(COREAUDIO)    += libao2/ao_coreaudio.c
+SRCS_MPLAYER-$(COREVIDEO)    += libvo/vo_corevideo.m
 SRCS_MPLAYER-$(DART)         += libao2/ao_dart.c
 SRCS_MPLAYER-$(DFBMGA)       += libvo/vo_dfbmga.c
 SRCS_MPLAYER-$(DGA)          += libvo/vo_dga.c
@@ -738,8 +738,8 @@ COMMON_LIBS += $(COMMON_LIBS-yes)
 OBJS_COMMON    += $(addsuffix .o, $(basename $(SRCS_COMMON)))
 OBJS_MENCODER  += $(addsuffix .o, $(basename $(SRCS_MENCODER)))
 OBJS_MPLAYER   += $(addsuffix .o, $(basename $(SRCS_MPLAYER)))
-#OBJS_MPLAYER-$(PE_EXECUTABLE) += osdep/mplayer-rc.o
-OBJS_MPLAYER   += $(OBJS_MPLAYER-yes)
+OBJS_MPLAYER-$(PE_EXECUTABLE) += osdep/mplayer-rc.o
+#OBJS_MPLAYER   += $(OBJS_MPLAYER-yes)
 
 MENCODER_DEPS = $(OBJS_MENCODER) $(OBJS_COMMON) $(COMMON_LIBS)
 MPLAYER_DEPS  = $(OBJS_MPLAYER)  $(OBJS_COMMON) $(COMMON_LIBS)
@@ -905,7 +905,7 @@ $(call ADDSUFFIXES,.d .o,mpcommon vobsub stream/stream_cddb stream/network libmp
 libdvdcss/%: CFLAGS += -D__USE_UNIX98 -D_GNU_SOURCE -DVERSION=\"1.2.10\" $(CFLAGS_LIBDVDCSS)
 libdvdnav/%: CFLAGS += -D__USE_UNIX98 -D_GNU_SOURCE -DHAVE_CONFIG_H -DVERSION=\"MPlayer-custom\"
 libdvdnav/% stream/stream_dvdnav%: CFLAGS += $(CFLAGS_LIBDVDNAV)
-libdvdread4/%: CFLAGS += -D__USE_UNIX98 -D_GNU_SOURCE -DHAVE_CONFIG_H $(CFLAGS_LIBDVDCSS_DVDREAD)
+libdvdread4/%: CFLAGS += -D__USE_UNIX98 -D_GNU_SOURCE $(CFLAGS_LIBDVDCSS_DVDREAD)
 libfaad2/%: CFLAGS += -Ilibfaad2 -D_GNU_SOURCE -DHAVE_CONFIG_H $(CFLAGS_FAAD_FIXED)
 
 loader/%: CFLAGS += -Iloader -fno-omit-frame-pointer $(CFLAGS_NO_OMIT_LEAF_FRAME_POINTER)

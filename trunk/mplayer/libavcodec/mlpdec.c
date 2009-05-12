@@ -344,12 +344,17 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
                                  : MAX_MATRIX_CHANNEL_TRUEHD;
 
     sync_word = get_bits(gbp, 13);
-    s->noise_type = get_bits1(gbp);
 
-    if ((m->avctx->codec_id == CODEC_ID_MLP && s->noise_type) ||
-        sync_word != 0x31ea >> 1) {
+    if (sync_word != 0x31ea >> 1) {
         av_log(m->avctx, AV_LOG_ERROR,
                "restart header sync incorrect (got 0x%04x)\n", sync_word);
+        return -1;
+    }
+
+    s->noise_type = get_bits1(gbp);
+
+    if (m->avctx->codec_id == CODEC_ID_MLP && s->noise_type) {
+        av_log(m->avctx, AV_LOG_ERROR, "MLP must have 0x31ea sync word.\n");
         return -1;
     }
 
@@ -369,6 +374,15 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     if (s->max_channel != s->max_matrix_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Max channel must be equal max matrix channel.\n");
+        return -1;
+    }
+
+    /* This should happen for TrueHD streams with >6 channels and MLP's noise
+     * type. It is not yet known if this is allowed. */
+    if (s->max_channel > MAX_MATRIX_CHANNEL_MLP && !s->noise_type) {
+        av_log(m->avctx, AV_LOG_ERROR,
+               "Number of channels %d is larger than the maximum supported "
+               "by the decoder. %s\n", s->max_channel+2, sample_message);
         return -1;
     }
 
@@ -620,10 +634,10 @@ static int read_channel_params(MLPDecodeContext *m, unsigned int substr,
         return -1;
     }
     /* The FIR and IIR filters must have the same precision.
-        * To simplify the filtering code, only the precision of the
-        * FIR filter is considered. If only the IIR filter is employed,
-        * the FIR filter precision is set to that of the IIR filter, so
-        * that the filtering code can use it. */
+     * To simplify the filtering code, only the precision of the
+     * FIR filter is considered. If only the IIR filter is employed,
+     * the FIR filter precision is set to that of the IIR filter, so
+     * that the filtering code can use it. */
     if (!fir->order && iir->order)
         fir->shift = iir->shift;
 

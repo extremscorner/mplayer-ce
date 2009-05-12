@@ -39,12 +39,11 @@ static ao_info_t info = {
 	""
 };
 
-const LIBAO_EXTERN(gekko)
+LIBAO_EXTERN(gekko)
 
 #define SFX_BUFFER_SIZE (8*1024)
 #define SFX_BUFFERS 32
 
-static mutex_t sfx_mutex = 0;
 static u8 buffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
 static u8 buffer_fill = 0;
 static u8 buffer_play = 0;
@@ -52,30 +51,22 @@ static u8 buffer_free = SFX_BUFFERS;
 static bool playing = false;
 
 static void switch_buffers() {
-	u8 bp;
-
 	AUDIO_StopDMA();
-
-	LWP_MutexLock(sfx_mutex);
 
 	if (playing)
 		buffer_free++;
 
 	if (buffer_free == SFX_BUFFERS) {
 		playing = false;
-		buffer_play = (buffer_play + 1) % SFX_BUFFERS;
-		LWP_MutexUnlock(sfx_mutex);
 		return;
 	}
 
-	bp = buffer_play;
-	buffer_play = (buffer_play + 1) % SFX_BUFFERS;
-	playing = true;
-
-	LWP_MutexUnlock(sfx_mutex);
-
-	AUDIO_InitDMA((u32) buffer[bp], SFX_BUFFER_SIZE);
+	AUDIO_InitDMA((u32) buffer[buffer_play], SFX_BUFFER_SIZE);
 	AUDIO_StartDMA();
+
+	buffer_play = (buffer_play + 1) % SFX_BUFFERS;
+
+	playing = true;
 }
 
 static int control(int cmd, void *arg) {
@@ -85,14 +76,11 @@ static int control(int cmd, void *arg) {
 }
 
 static int init(int rate, int channels, int format, int flags) {
-	//printf("\nAO %s\n", __FUNCTION__);
-	LWP_MutexInit(&sfx_mutex, false);
-
 	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
 	AUDIO_RegisterDMACallback(switch_buffers);
 
 	ao_data.buffersize = SFX_BUFFER_SIZE * SFX_BUFFERS;
-	ao_data.outburst = SFX_BUFFER_SIZE * 2;
+	ao_data.outburst = SFX_BUFFER_SIZE;
 	ao_data.channels = 2;
 	ao_data.samplerate = 48000;
 	ao_data.format = AF_FORMAT_S16_BE;
@@ -104,10 +92,7 @@ static int init(int rate, int channels, int format, int flags) {
 static void reset(void) {
 	u8 i;
 
-	//printf("\nAO %s\n", __FUNCTION__);
 	AUDIO_StopDMA();
-
-	LWP_MutexLock(sfx_mutex);
 
 	for (i = 0; i < SFX_BUFFERS; ++i) {
 		memset(buffer[i], 0, SFX_BUFFER_SIZE);
@@ -119,24 +104,16 @@ static void reset(void) {
 	buffer_free = SFX_BUFFERS;
 
 	playing = false;
-
-	LWP_MutexUnlock(sfx_mutex);
 }
 
 static void uninit(int immed) {
-	//printf("\nAO %s\n", __FUNCTION__);
 	reset();
 
 	AUDIO_RegisterDMACallback(NULL);
-
-	LWP_MutexDestroy(sfx_mutex);
 }
 
 static void audio_pause(void) {
-	//printf("\nAO %s\n", __FUNCTION__);
 	AUDIO_StopDMA();
-
-	LWP_MutexLock(sfx_mutex);
 
 	if (playing && (buffer_free < SFX_BUFFERS)) {
 		buffer_play = (buffer_play + 1) % SFX_BUFFERS;
@@ -144,36 +121,21 @@ static void audio_pause(void) {
 	}
 
 	playing = false;
-
-	LWP_MutexUnlock(sfx_mutex);
 }
 
 static void audio_resume(void) {
-	//printf("\nAO %s\n", __FUNCTION__);
 	switch_buffers();
 }
 
 static int get_space(void) {
-	int res;
-
-	LWP_MutexLock(sfx_mutex);
-
-	res = buffer_free * SFX_BUFFER_SIZE;
-
-	LWP_MutexUnlock(sfx_mutex);
-
-	//printf("\nAO %s %d\n", __FUNCTION__, res);
-	return res;
+	return (buffer_free - 1) * SFX_BUFFER_SIZE;
 }
 
 static int play(void* data, int len, int flags) {
 	int bl, ret = 0;
 	u8 *s = (u8 *) data;
-	bool kick = false;
-//return len;
-	LWP_MutexLock(sfx_mutex);
 
-	while ((len > 0) && buffer_free) {
+	while ((len > 0) && (buffer_free > 1)) {
 		bl = len;
 		if (bl > SFX_BUFFER_SIZE)
 			bl = SFX_BUFFER_SIZE;
@@ -183,7 +145,7 @@ static int play(void* data, int len, int flags) {
 		if (bl < SFX_BUFFER_SIZE)
 			memset(buffer[buffer_fill] + bl, 0, SFX_BUFFER_SIZE - bl);
 
-		DCFlushRange(buffer[buffer_fill], bl); 
+		DCFlushRange(buffer[buffer_fill], bl);
 
 		buffer_fill = (buffer_fill + 1) % SFX_BUFFERS;
 		buffer_free--;
@@ -193,34 +155,23 @@ static int play(void* data, int len, int flags) {
 		ret += bl;
 	}
 
-	if (!playing) 
-		kick = true;
-
-	LWP_MutexUnlock(sfx_mutex);
-
-	if (kick)
+	if (!playing)
 		switch_buffers();
 
-	//printf("\nAO %s %d\n", __FUNCTION__, ret);
 	return ret;
 }
 
 static float get_delay(void) {
 	float b;
 
-	LWP_MutexLock(sfx_mutex);
-
-	if (buffer_free == SFX_BUFFERS) {
-		LWP_MutexUnlock(sfx_mutex);
+	if (buffer_free == SFX_BUFFERS)
 		return 0;
-	}
 
 	b = (SFX_BUFFERS - buffer_free) * SFX_BUFFER_SIZE;
 
 	if (playing)
 		b += AUDIO_GetDMABytesLeft();
 
-	LWP_MutexUnlock(sfx_mutex);
-
 	return b / 192000.0f;
 }
+

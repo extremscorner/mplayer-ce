@@ -1792,9 +1792,9 @@ static void globalInit(void){
 
 static SwsFunc getSwsFunc(SwsContext *c)
 {
+#if CONFIG_RUNTIME_CPUDETECT && CONFIG_GPL
     int flags = c->flags;
 
-#if CONFIG_RUNTIME_CPUDETECT && CONFIG_GPL
 #if ARCH_X86
     // ordered per speed fastest first
     if (flags & SWS_CPU_CAPS_MMX2) {
@@ -2108,11 +2108,15 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
     }
 
     if (c->dstFormat==PIX_FMT_YUV420P || c->dstFormat==PIX_FMT_YUVA420P){
-        planar2x(src[1], dst[1], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[1]);
-        planar2x(src[2], dst[2], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[2]);
+        planar2x(src[1], dst[1] + dstStride[1]*(srcSliceY >> 1), c->chrSrcW,
+                 srcSliceH >> 2, srcStride[1], dstStride[1]);
+        planar2x(src[2], dst[2] + dstStride[2]*(srcSliceY >> 1), c->chrSrcW,
+                 srcSliceH >> 2, srcStride[2], dstStride[2]);
     }else{
-        planar2x(src[1], dst[2], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[2]);
-        planar2x(src[2], dst[1], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[1]);
+        planar2x(src[1], dst[2] + dstStride[2]*(srcSliceY >> 1), c->chrSrcW,
+                 srcSliceH >> 2, srcStride[1], dstStride[2]);
+        planar2x(src[2], dst[1] + dstStride[1]*(srcSliceY >> 1), c->chrSrcW,
+                 srcSliceH >> 2, srcStride[2], dstStride[1]);
     }
     if (dst[3])
         fillPlane(dst[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
@@ -2367,7 +2371,8 @@ static int handle_jpeg(enum PixelFormat *format)
 }
 
 SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int dstW, int dstH, enum PixelFormat dstFormat, int flags,
-                           SwsFilter *srcFilter, SwsFilter *dstFilter, double *param){
+                           SwsFilter *srcFilter, SwsFilter *dstFilter, const double *param)
+{
 
     SwsContext *c;
     int i;
@@ -3396,7 +3401,7 @@ void sws_freeContext(SwsContext *c){
 struct SwsContext *sws_getCachedContext(struct SwsContext *context,
                                         int srcW, int srcH, enum PixelFormat srcFormat,
                                         int dstW, int dstH, enum PixelFormat dstFormat, int flags,
-                                        SwsFilter *srcFilter, SwsFilter *dstFilter, double *param)
+                                        SwsFilter *srcFilter, SwsFilter *dstFilter, const double *param)
 {
     static const double default_param[2] = {SWS_PARAM_DEFAULT, SWS_PARAM_DEFAULT};
 
