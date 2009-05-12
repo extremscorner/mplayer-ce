@@ -27,16 +27,14 @@ If you would like to support this project, you may donate to our development fun
 
 Any funds donated will be used to help further development on this project, by purchasing equipment (eg: USB gecko), etc.
 
-We are always looking for more volunteers to help with coding and other technical stuff, so feel free to contact us at irc://irc.efnet.net/mplayer_ce.
-
-Also if you made any interesting customization like themes, config changes, or something else, please [http://code.google.com/p/mplayer-ce/wiki/UserSubmittedCustomizations submit them].
+We are always looking for more volunteers to help with coding, customizations, etc, so feel free to contact us at irc://irc.efnet.net/mplayer_ce.
 
 Thank you.
 
 ==About==
 http://mplayer-ce.googlecode.com/files/mplayerCE_scr.jpg
 
-Mplayer-CE is a homebrew media player for the Nintendo Wii. It was initially created as a fork of the Team Twiizers MPlayer port, combining elements of MPlayerWii, GeeXboX and other great homebrew contributions.
+Mplayer-CE is a homebrew media player for the Nintendo Wii. It was initially created as a fork of the Team Twiizers MPlayer port, combining elements of MPlayerWii, GeeXboX and other great homebrew contributions. It is built with devkitPro development tools, fully homebrew driven and not associated with Nintendo in any way.
 
 Some of the current features includes DVD, SDHC, USB 2.0 storage device support, multiple media, subtitle, playlist and streaming formats, customization possibilities, etc.
 
