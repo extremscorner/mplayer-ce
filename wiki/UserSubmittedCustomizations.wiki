@@ -1,4 +1,5 @@
 #summary User Submitted Customizations
+#labels Featured
 
 = User Submitted Customizations =
 
