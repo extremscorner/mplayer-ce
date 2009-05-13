@@ -227,7 +227,6 @@ void mp_msg(int mod, int lev, const char *format, ... ){
 	if (mod == MSGT_STATUSLINE)
 		log_console_enable_log(false);
 #endif
- 
     fprintf(stream, "%s", tmp);
     fflush(stream);
     

@@ -49,7 +49,7 @@ int   network_prefer_ipv4 = 0;
 static const char *af2String(int af) {
 	switch (af) {
 		case AF_INET:	return "AF_INET";
-		
+
 #ifdef HAVE_AF_INET6
 		case AF_INET6:	return "AF_INET6";
 #endif
@@ -81,17 +81,17 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 	void *our_s_addr;	// Pointer to sin_addr or sin6_addr
 	struct hostent *hp=NULL;
 	char buf[255];
-	
+
 #if HAVE_WINSOCK2_H
 	unsigned long val;
 	int to;
 #else
 	struct timeval to;
 #endif
-	
+
 	socket_server_fd = socket(af, SOCK_STREAM, 0);
-	
-	
+
+
 	if( socket_server_fd==-1 ) {
 //		mp_msg(MSGT_NETWORK,MSGL_ERR,"Failed to create %s socket:\n", af2String(af));
 		return TCP_ERROR_FATAL;
@@ -118,10 +118,10 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 			mp_msg(MSGT_NETWORK,MSGL_ERR, MSGTR_MPDEMUX_NW_UnknownAF, af);
 			return TCP_ERROR_FATAL;
 	}
-	
-	
+
+
 	memset(&server_address, 0, sizeof(server_address));
-	
+
 #if HAVE_INET_PTON
 	if (inet_pton(af, host, our_s_addr)!=1)
 #elif HAVE_INET_ATON
@@ -131,7 +131,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 #endif
 	{
 		if(verb) mp_msg(MSGT_NETWORK,MSGL_STATUS,MSGTR_MPDEMUX_NW_ResolvingHostForAF, host, af2String(af));
-		
+
 #ifdef HAVE_GETHOSTBYNAME2
 		hp=(struct hostent*)gethostbyname2( host, af );
 #else
@@ -141,7 +141,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 			if(verb) mp_msg(MSGT_NETWORK,MSGL_ERR,MSGTR_MPDEMUX_NW_CantResolv, af2String(af), host);
 			return TCP_ERROR_FATAL;
 		}
-		
+
 		memcpy( our_s_addr, (void*)hp->h_addr_list[0], hp->h_length );
 	}
 #if HAVE_WINSOCK2_H
@@ -150,14 +150,14 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 		memcpy( our_s_addr, (void*)&addr, sizeof(addr) );
 	}
 #endif
-	
+
 	switch (af) {
 		case AF_INET:
 			server_address.four.sin_family=af;
-			server_address.four.sin_port=htons(port);			
+			server_address.four.sin_port=htons(port);
 			server_address_size = sizeof(server_address.four);
 			break;
-#ifdef HAVE_AF_INET6		
+#ifdef HAVE_AF_INET6
 		case AF_INET6:
 			server_address.six.sin6_family=af;
 			server_address.six.sin6_port=htons(port);
@@ -268,15 +268,15 @@ connect2Server(char *host, int  port, int verb) {
 	int r;
 	int s = TCP_ERROR_FATAL;
 
-	r = connect2Server_with_af(host, port, network_prefer_ipv4 ? AF_INET:AF_INET6,verb);	
+	r = connect2Server_with_af(host, port, network_prefer_ipv4 ? AF_INET:AF_INET6,verb);
 	if (r >= 0) return r;
 
 	s = connect2Server_with_af(host, port, network_prefer_ipv4 ? AF_INET6:AF_INET,verb);
 	if (s == TCP_ERROR_FATAL) return r;
 	return s;
-#else	
+#else
 	return connect2Server_with_af(host, port, AF_INET,verb);
 #endif
 
-	
+
 }

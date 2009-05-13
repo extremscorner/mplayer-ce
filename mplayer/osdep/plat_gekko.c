@@ -435,7 +435,7 @@ void plat_init (int *argc, char **argv[]) {
 	{
 		GX_InitVideo();
 		log_console_init(vmode, 0);
-		printf("MPlayerCE v.0.51\n\n");
+		printf("MPlayerCE v.0.6\n\n");
 		printf("SD/USB access failed\n");
 		printf("Please check that you have installed MPlayerCE in the right folder\n");
 		printf("Valid folders:\n");
