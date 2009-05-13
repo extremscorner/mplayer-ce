@@ -1,7 +1,7 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: decod386.c 28374 2009-01-26 09:56:27Z diego $
+ * $Id: decod386.c 29305 2009-05-13 02:58:57Z diego $
  */
 
 /*
@@ -107,7 +107,7 @@ static synth_func_t synth_func;
 #else /* HAVE_ALTIVEC */
 #define dct64_base(a,b,c) dct64(a,b,c)
 #endif /* HAVE_ALTIVEC */
- 
+
 static int synth_1to1(real *bandPtr,int channel,unsigned char *out,int *pnt)
 {
   static real buffs[2][2][0x110];

@@ -1,13 +1,13 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: l2tables.h 18786 2006-06-22 13:34:00Z diego $
+ * $Id: l2tables.h 29305 2009-05-13 02:58:57Z diego $
  */
 
 /*
- * Layer 2 Alloc tables .. 
+ * Layer 2 Alloc tables ..
  * most other tables are calculated on program start (which is (of course)
- * not ISO-conform) .. 
+ * not ISO-conform) ..
  * Layer-3 huffman table is in huffman.h
  */
 

@@ -1,5 +1,5 @@
 // FIXME: This needs to be redone properly.
-// Partially sync'ed with help_mp-en.h $Revision: 29209 $
+// Partially sync'ed with help_mp-en.h $Revision: 29305 $
 // This is a retranslation of the file by Bogdan Butnaru <bogdanb@fastmail.fm>,
 // based on the previous translation by Codre Adrian
 // <codreadrian@softhome.net> (address bounces).
@@ -442,7 +442,7 @@ static const char help_text[]=
 #define MSGTR_PREFERENCES_DXR3_LAVC "Foloseºte LAVC (FFmpeg)"
 #define MSGTR_PREFERENCES_FontEncoding1 "Unicode"
 
-// lang 
+// lang
 #define MSGTR_PREFERENCES_FontEncoding2 "Limbi vest-europene (ISO-8859-1)"
 #define MSGTR_PREFERENCES_FontEncoding3 "Limbi vest-europene cu Euro (ISO-8859-15)"
 #define MSGTR_PREFERENCES_FontEncoding4 "Limbi central-europene sau slavice (ISO-8859-2)"
