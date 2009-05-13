@@ -11,7 +11,7 @@ Please note that libdvdread and libdvdnav are now included in the main MPlayer r
 
 Build:
  * libogc with 'make wii' and 'make install'
- * libfat with 'make wii-release' and then copying the libogc folder to your DevkitPro  directory
+ * libfat with 'make wii-release' and 'make ogc-install'
  * libfreetype with 'make' and 'make install'
  * libjpeg with 'make' and 'make install'
  * libiconv with 'make' and 'make install-lib'
