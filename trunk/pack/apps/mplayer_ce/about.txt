@@ -1,8 +1,6 @@
    MPlayer CE,
    v.0.6 21.05.2009 
-
-   DATA-DVD, SDHC, USB, SMB and Radio, 
-   Based on MPlayerWii, MPlayer, and GeeXbox 
-   By scip and Rodries
+   By scip and Rodries.
+   Based on MPlayerWii, MPlayer, and GeeXbox.
    Thanks to AgentX, djdynamite123, tipolosko,
    Tantric, Ludovic Orban etc.
