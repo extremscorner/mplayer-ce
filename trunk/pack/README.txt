@@ -324,7 +324,29 @@ Example:
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
- v0.5
+v0.6
+    * No more maximum cache limit
+    * Introduced new variables into mplayer.conf to adjust screen size and
+      position, please see mplayer.conf for details (component-fix is now
+     deprecated)
+    * idx/sub subtitle support (please note that these can take up to 30
+      seconds to load so please be patient)
+    * Multiple folder locations added, it is now possible to have the files in
+       - sd:/apps/mplayer_ce
+       - sd:/mplayer
+       - usb:/apps/mplayer_ce
+       - usb:/mplayer
+    * Added resume points - video will resume at last stopped point.
+      To clear, delete resume_points file in your mplayer_ce folder.
+      To seek to the beginning of the video hold 2 and press the minus button.
+    * Added support for Hermes' cIOS.  This has greater USB compatibility
+      and enables USB LAN connector support.  Please see wiki page for details
+    * Added Fribidi library support for right-to-left languages
+    * Made cache fill visible on screen
+    * Many small bug fixes
+    * Updated to latest MPlayer svn
+
+v0.5
     * SMB now much more robust - thanks to DennisLKJ for smb.c fix
     * libfat cache improved for speed and stability
     * USB ethernet now fixed with USB 1.1; USB 2.0 fix requires an
