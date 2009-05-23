@@ -3,7 +3,7 @@
 
 =USB 2.0=
 
-You need to install the USB 2.0 cIOS from [http://mplayer-ce.googlecode.com/files/hermes_cios_installer.dol here] .
+You need to install the USB 2.0 cIOS from [http://mplayer-ce.googlecode.com/files/hermes_cios_installer.dol here].
 
 If you have installed a previous version of the USB 2.0 cIOS you must use [http://wiibrew.org/wiki/AnyTitle_Deleter/ AnyTitle Deleter] to remove it before installing.
 
