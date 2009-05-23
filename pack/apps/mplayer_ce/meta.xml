@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
-  <name>MPlayerCE</name>
-  <coder>Scip and co</coder>
+  <name>MPlayer CE</name>
+  <coder>Mplayer CE Team</coder>
   <version>0.6</version>
-  <release_date>20090521</release_date>
-  <short_description>Powerful Media Centre</short_description>
-  <long_description>DATA-DVD, SDHC, USB, SMB and Radio, 
-Based on MPlayerWii, MPlayer, and GeeXbox 
-Thanks to the following:
-Rodries, AgentX, djdynamite123, tipolosko, Tantric, Ludovic Orban etc.</long_description>
+  <release_date>20090523</release_date>
+  <short_description>Wii Media Player</short_description>
+  <long_description>Homebrew media player for Nintendo Wii.	
+
+Mplayer-CE Team
+rodries, AgentX, DJDynamite123, 
+Tantric, Scip
+
+http://mplayer-ce.googlecode.com
+
+MPlayer Wii port © Team Twiizers,
+used code © MPlayerWii[rOn], GeeXboX,
+tipolosko, Ludovic Orban, DennisLKJ, etc.
+background video © Blue_K
+</long_description>
 </app>
