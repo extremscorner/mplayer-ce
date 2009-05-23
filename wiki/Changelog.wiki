@@ -6,67 +6,40 @@
 == 0.6 ==
 
  * No more maximum cache limit
-
- * Introduced new variables into mplayer.conf to adjust screen size and position, please see mplayer.conf for details (component-fix is now deprecated) menu.conf has also been modified.
-
+ * Introduced new variables into mplayer.conf to adjust screen size and position, please see mplayer.conf for details (component-fix is now deprecated)
  * idx/sub subtitle support (please note that these can take up to 30 seconds to load so please be patient)
-
  * Multiple folder locations added, it is now possible to have the files in
-
- - sd:/apps/mplayer_ce
- - sd:/mplayer
-
- - usb:/apps/mplayer_ce
- - usb:/mplayer
-
- * Added resume points - video will resume at last stopped point.
- To clear, delete resume_points file in your mplayer_ce folder.
- To seek to the beginning of the video hold 2 and press the minus button.
-
+   * sd:/apps/mplayer_ce
+   * sd:/mplayer
+   * usb:/apps/mplayer_ce
+   * usb:/mplayer
+ * Added resume points - video will resume at last stopped point. To clear, delete resume_points file in your mplayer_ce folder. To seek to the beginning of the video hold 2 and press the minus button.
  * Added support for Hermes' cIOS.  This has greater USB compatibility and enables USB LAN connector support.  Please see wiki page for details
-
  * Added Fribidi library support for right-to-left languages
-
  * Made cache fill visible on screen
-
  * Many small bug fixes
-
  * Updated to latest MPlayer svn
 
 == v0.5 ==
 
  * SMB now much more robust - thanks to DennisLKJ for smb.c fix
-
  * libfat cache improved for speed and stability
-
  * USB ethernet now works with USB 1.1; USB 2.0 fix requires an updated cIOS
-
  * Added ability to manipulate picture using the nunchuck
-
  * Updated to latest MPlayer revision
-
  * Now using subfont.ttf instead of font folder - use mplayer.conf to change font size
-
  * Merged widescreen and 4:3 pack - now MPlayer will use the appropriate loop.avi automatically
-
  * Improved Modchip compatibility for DVD
 
 == v0.4 ==
 
  * USB 2.0 support (see docs for info)
-
  * TTF font support (see docs for info)
-
  * Fixed bug in radio streaming. 
-
  * DVD-Video bugs fixed (DVDs should play much more smoothly now)
-
  * Fixes in Libdi to detect chipped Wii
-
  * Codec fixes
-
  * Updated to latest MPlayer revision
-
  * Many small fixes
 
 == v0.3a ==
@@ -76,27 +49,20 @@
 == v0.3 ==
 
  * Fixed code to play videos with incompatible size; we now support many video formats and unorthodox resolutions
-
  * Fixed keepalive issue in samba (thanks to Ludovic Orban)
-
  * New loop.avi and widescreen version (thanks to Blue_K)
 
 == v0.21e ==
      
  * Fixed apostrophies in filenames
-  
  * Improved DVD and USB mounting devices
-   
  * Fixed radio
-  
  * Improved samba reconnection
-    
  * Debugging help for SMB Shares at bootup, debug_network=yes (Review mplayer.conf)
 
 == v0.21d ==
 
  * Updated menu.conf to allow selecting playlist
-
  * Fix rodries' loop patch
 
 == V0.21c ==
@@ -106,51 +72,33 @@
 == V0.21b ==
 
  * New mplayer.conf option: component_fix=yes to fix side bars on some problematic TVs (Now fixed) Review your configs.
-
  * Stop Looping Video/Audio file.
-
  * Fixed hang when you access dvdnav
 
 == V0.21 ==
 
  * Reduced font size
-
  * New Readme
-
  * New mplayer.conf option: component_fix=yes to fix side bars on some problematic TVs
-
  
 == V0.2 ==
 
  * SD/USB Mount bugs fixed
-
  * DVD Mount/Stop/Motor/Pause problems fixed, now mounts, only when you select DVD
-
  * Network Initialising on startup changed, now connects "hidden" in background.
-
  * Added 5 SMB Shares, review smb.conf
-
  * Boot-up speed increased
-
  * Added files filter to only show audio/video files
-
  * Same directory kept open when you open/close the menu
-
  * Menu closes on file load
-
 
 == V0.1 ==
 
  * SMB fixes
-
  * DVD cache bug fixed
-
  * Small USB fixes
-
  * Modified Libogc & Libfat
-
  * 2.35:1 videos now scale correctly
-
 
 == V0.1 Christmas Edition ==
 
