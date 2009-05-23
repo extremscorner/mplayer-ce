@@ -3,21 +3,15 @@
 
 ==News==
 
-*23.04.2009. Codedump warning*
+*23.05.2009. Version 0.6 released*
 
-If you are experiencing code dumps and have the USB 2.0 cIOS installed it may be because of a known bug.
-If you have the USB 2.0 cIOS installed and your Wii is configured to connect to your network, you will experience a codedump if your router is off and the Wii cannot connect.
-If this is a likely scenario then you must either
- * leave your router on
- * do not install the USB 2.0 cIOS.
- * move your DVDx install back to the default position
-We are working to fix this issue.
+Too many changes to list, please see the [changelog] for a full list of changes.
 
-*22.04.2009. Version 0.5 released*
+0.6 is now compatible with Hermes' cIOS, please install from [http://mplayer-ce.googlecode.com/files/hermes_cios_installer.dol here] and follow the [USB20 installation instructions].
 
-Updated to latest MPlayer revision, USB 2.0 support, custom font support, better samba support, lots of bug fixes .. 
+*Please note:* If you have installed a previous version of the USB 2.0 cIOS and are receiving a -1017 error when installing or it's hanging at downloading, you will have to use [http://wiibrew.org/wiki/AnyTitle_Deleter/ Any Title Deleter] and delete IOS202. _Be Careful_.
 
-Review [http://code.google.com/p/mplayer-ce/wiki/Changelog Changelog] for full list of changes.
+Following this, make sure you have deleted the 0000001 folder from your SD card and try again.
 
 <br />
 
