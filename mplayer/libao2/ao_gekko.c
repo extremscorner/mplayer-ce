@@ -31,6 +31,7 @@
 #include "help_mp.h"
 
 #include <ogcsys.h>
+#include "osdep/plat_gekko.h"
 
 static ao_info_t info = {
 	"gekko audio output",

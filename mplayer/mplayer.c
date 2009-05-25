@@ -310,7 +310,11 @@ bool IsBackgroungAvi(char *_file)
 }
 
 extern bool playing_usb;
+extern bool playing_dvd;
 static char* fileplaying=NULL;
+static char lowres_str[]="1,900";
+static char skip_loop_filter_str[]="all";
+		
 #define MAX_RESTORE_POINTS 10
 
 typedef struct st_restore_points restore_points_t;
@@ -326,15 +330,15 @@ void load_restore_points()
 	int i;
 	FILE *f;
 	char aux[80];
-	sprintf(aux,"%s/%s",MPLAYER_DATADIR,"restore_points");
-	f=fopen(aux,"r");
-	if(f==NULL) return;
-	setvbuf(f,NULL,_IONBF,0);
 	for(i=0;i<MAX_RESTORE_POINTS;i++)
 	{
 		restore_points[i].filename[0]='\0';
 		restore_points[i].position=0;
 	}
+	sprintf(aux,"%s/%s",MPLAYER_DATADIR,"restore_points");
+	f=fopen(aux,"r");
+	if(f==NULL) return;
+	setvbuf(f,NULL,_IONBF,0);
 	for(i=0;i<MAX_RESTORE_POINTS && !feof(f) ;i++)
 	{
 		fscanf(f,"%s\t%i\n",restore_points[i].filename,&(restore_points[i].position));
@@ -342,13 +346,39 @@ void load_restore_points()
 	fclose(f);
 }
 
-void delete_restore_point(char *filename)
+void save_restore_points_file()
+{ //save file
+	FILE *f;
+	int i;
+	char aux[80];	
+	sprintf(aux,"%s/%s",MPLAYER_DATADIR,"restore_points");
+	f=fopen(aux,"w");
+	if(f==NULL) 
+	{
+		//printf("error save rp: %s\n",aux);
+		return;
+	}
+	
+	setvbuf(f,NULL,_IONBF,0);
+	//printf("saving rp: %s\n",aux);
+	for(i=0;i<MAX_RESTORE_POINTS && restore_points[i].filename[0]!='\0';i++)
+	{
+		fprintf(f,"%s\t%i\n",restore_points[i].filename,restore_points[i].position);
+		//printf("%s\t%i\n",restore_points[i].filename,restore_points[i].position);		
+	}
+	//printf("---------------------\n");
+	fclose(f);
+}
+
+
+void delete_restore_point(char *_filename)
 {
 	int i,j;
 	if(IsBackgroungAvi(filename))return;
+	//printf("delete_restore_point: %s\n",_filename);
 	for(i=0;i<MAX_RESTORE_POINTS;i++)
 	{
-		if(!strcmp(filename,restore_points[i].filename))
+		if(!strcmp(_filename,restore_points[i].filename))
 		{
 			for(;i<MAX_RESTORE_POINTS-1 && restore_points[i].filename[0]!='\0';i++)
 			{
@@ -359,18 +389,19 @@ void delete_restore_point(char *filename)
 			restore_points[MAX_RESTORE_POINTS].filename[0]='\0';
 			restore_points[MAX_RESTORE_POINTS].position=0;
 		}	
+		save_restore_points_file();
 	}
-	
 }
 
-void save_restore_point(char *filename,int position)
+void save_restore_point(char *_filename,int position)
 {
 	int i,j;
-	if(IsBackgroungAvi(filename))return;
-	if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9))return;		
+	if(IsBackgroungAvi(_filename))return;
+	if(!strncmp(_filename,"dvd://",6) || !strncmp(_filename,"dvdnav",6))return;	
+	//printf("save_restore_point: %s - %d\n",_filename,position);	
 	for(j=0;j<MAX_RESTORE_POINTS ;j++)
 	{
-		if(restore_points[j].filename[0]=='\0' || !strcmp(filename,restore_points[j].filename))
+		if(restore_points[j].filename[0]=='\0' || !strcmp(_filename,restore_points[j].filename))
 		{
 			j++;
 			break;
@@ -382,32 +413,23 @@ void save_restore_point(char *filename,int position)
 		restore_points[i].position=restore_points[i-1].position;
 	}
 	restore_points[0].position=position;
-	strcpy(restore_points[0].filename,filename); 
-	{ //save file
-	FILE *f;
-	char aux[80];
-	sprintf(aux,"%s/%s",MPLAYER_DATADIR,"restore_points");
-	f=fopen(aux,"w");
-	if(f==NULL) return;
-	setvbuf(f,NULL,_IONBF,0);
-	for(i=0;i<MAX_RESTORE_POINTS && restore_points[i].filename[0]!='\0';i++)
-	{
-		fprintf(f,"%s\t%i\n",restore_points[i].filename,restore_points[i].position);
-	}
-	fclose(f);
-	}
+	strcpy(restore_points[0].filename,_filename); 
+	save_restore_points_file();
 }
 
-int get_restore_point(char *filename)
+int get_restore_point(char *_filename)
 {
 	int j;
+	//printf("search rp: %s - ",_filename);
 	for(j=0;j<MAX_RESTORE_POINTS;j++)
 	{
-		if(!strcmp(filename,restore_points[j].filename))
+		if(!strcmp(_filename,restore_points[j].filename))
 		{
+			//printf("forund : %i\n",restore_points[j].position);
 			return restore_points[j].position;
 		}
 	}
+	//printf("not found\n");
 	return 0;
 }
 
@@ -2393,10 +2415,23 @@ int reinit_video_chain(void) {
   sh_video->vfilter=(void*)append_filters(sh_video->vfilter);
 #ifdef GEKKO
 //rodries patch for big resolution on wii
+{
+extern char *lavc_param_lowres_str;
+extern char *lavc_param_skip_loop_filter_str;
 if(sh_video->disp_w>900) {
-	char *arg_scale[]={"w","xxxx","h","-2",NULL};
-	sprintf(arg_scale[1],"%i",sh_video->disp_w/2);
-	sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);	   
+
+	if(!strncmp(fileplaying,"dvd://",6) || !strncmp(fileplaying,"dvdnav",6))
+	{
+		char *arg_scale[]={"w","xxxx","h","-2",NULL};
+		sprintf(arg_scale[1],"%i",sh_video->disp_w/2);
+		sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);	   
+	}	
+	else
+	{
+		lavc_param_lowres_str=strdup(lowres_str);
+		lavc_param_skip_loop_filter_str=strdup(skip_loop_filter_str);
+	}
+}
 }
 #endif
 
@@ -3351,6 +3386,7 @@ int vob_sub_auto = 1; //scip
   
   // rodries
   playing_usb=false;
+  playing_dvd=false;
   static float orig_stream_cache_min_percent=-1;
   static float orig_stream_cache_seek_min_percent=-1;
   if(orig_stream_cache_min_percent==-1 && orig_stream_cache_seek_min_percent==-1)
@@ -3363,20 +3399,21 @@ int vob_sub_auto = 1; //scip
     stream_cache_min_percent=orig_stream_cache_min_percent;
     stream_cache_seek_min_percent=orig_stream_cache_seek_min_percent;
   }
-  if(!strncmp(filename,"dvd:/",5) || !strncmp(filename,"dvdnav://",9)) 
+  if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9)) 
   {
-	  set_osd_msg(124, 1, 10000, "Mounting DVD, please wait");
-	  update_osd_msg();
-	  if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
+	  set_osd_msg(OSD_MSG_TEXT, 1, 10000, "Mounting DVD, please wait");
+	  force_osd();
 	  if(!DVDGekkoMount())
 	  {
-  		set_osd_msg(124, 1, 5000, "Error mounting DVD");
+  		set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Error mounting DVD");
   		force_osd();
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 	    mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY);
   		goto goto_next_file;
 	  }
 	  else
 	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
+	  playing_dvd=true;
   }   
   
   
@@ -3397,7 +3434,7 @@ int vob_sub_auto = 1; //scip
     goto goto_next_file;
   }
   initialized_flags|=INITIALIZED_STREAM;
-  strcpy(fileplaying,filename_recode(filename));
+  strcpy(fileplaying,/*filename_recode*/(filename));
   
 
 #ifdef CONFIG_GUI
@@ -4014,18 +4051,27 @@ if (mpctx->stream->type == STREAMTYPE_DVDNAV) {
     mp_dvdnav_cell_has_changed(mpctx->stream,1);
 }
 #endif
+
+#ifdef GEKKO
 static bool first_frame;
 first_frame=false;
-
 int restore_seek;
-restore_seek=get_restore_point(fileplaying)-5;
+restore_seek=get_restore_point(fileplaying)-8;
 if(restore_seek<0)restore_seek=0;		
 
-if (restore_seek>0 && mpctx->sh_audio && !mpctx->mixer.muted) mixer_mute(&mpctx->mixer);
-
+if(!mpctx->sh_video || !strncmp(filename,"dvd",3))first_frame=true;
+else if (/*restore_seek>0 && */mpctx->sh_audio && !mpctx->mixer.muted) mixer_mute(&mpctx->mixer);
+/*
+	if(!IsBackgroungAvi(NULL))
+    {
+	set_osd_msg(500, 1, 1000, "Playing Stream...");
+	force_osd();
+	}
+*/
+#endif
 while(!mpctx->eof){
     float aq_sleep_time=0;
-
+init_while:
 if(dvd_last_chapter>0) {
   int cur_chapter = demuxer_get_current_chapter(mpctx->demuxer);
   if(cur_chapter!=-1 && cur_chapter+1>dvd_last_chapter)
@@ -4041,10 +4087,10 @@ if(!mpctx->sh_audio && mpctx->d_audio->sh) {
 /*========================== PLAY AUDIO ============================*/
 
 if (mpctx->sh_audio)
-    if (!fill_audio_out_buffers())
-	// at eof, all audio at least written to ao
-	if (!mpctx->sh_video)
-	    mpctx->eof = PT_NEXT_ENTRY;
+	    if (!fill_audio_out_buffers())
+			// at eof, all audio at least written to ao
+			if (!mpctx->sh_video)
+			    mpctx->eof = PT_NEXT_ENTRY;
 
 	//geexbox bgvideo patch
 	if(mpctx->bg_demuxer && mpctx->d_audio->eof) mpctx->eof=1;
@@ -4124,6 +4170,21 @@ if(!mpctx->sh_video) {
 #endif
     frame_time_remaining = sleep_until_update(&time_frame, &aq_sleep_time);
 
+#ifdef GEKKO
+  if(!first_frame && blit_frame && !frame_time_remaining )
+  {      
+  	first_frame=true;
+	if (restore_seek) 
+	{
+		seek(mpctx, restore_seek, SEEK_ABSOLUTE);
+		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Resume");
+		force_osd();
+		restore_seek=0;		
+	}else seek(mpctx, 0, SEEK_ABSOLUTE);
+	if (mpctx->sh_audio && mpctx->mixer.muted)mixer_mute(&mpctx->mixer);
+	goto init_while;
+  }
+#endif
 //====================== FLIP PAGE (VIDEO BLT): =========================
 
         current_module="flip_page";        
@@ -4224,6 +4285,7 @@ if(step_sec>0) {
     mpctx->eof=0;
     #ifdef GEKKO
     playing_usb=false;
+    playing_dvd=false;
     #endif
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec=0;
     loop_seek = 1;
@@ -4239,12 +4301,14 @@ if(step_sec>0) {
     mpctx->eof=0;
     #ifdef GEKKO
     playing_usb=false;
+    playing_dvd=false;
     #endif
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec;
     loop_seek = 1;
   }
+/*  
 #ifdef GEKKO  
-  if(!first_frame && blit_frame /* && !frame_time_remaining */)
+  if(!first_frame && blit_frame && !frame_time_remaining )
   {      
   	first_frame=true;
 	if (restore_seek) 
@@ -4257,6 +4321,7 @@ if(step_sec>0) {
 	if (mpctx->sh_audio && mpctx->mixer.muted)mixer_mute(&mpctx->mixer);
   }
 #endif
+*/
 if(rel_seek_secs || abs_seek_pos){
   if (seek(mpctx, rel_seek_secs, abs_seek_pos) >= 0) {
         // Set OSD:
@@ -4370,7 +4435,7 @@ if(ass_library)
 #endif
 
 #ifdef GEKKO
-if(mpctx->eof == PT_NEXT_SRC || mpctx->eof == PT_STOP)
+if(mpctx->eof == PT_NEXT_SRC || mpctx->eof == PT_STOP /*|| mpctx->eof == PT_NEXT_ENTRY*/)
 {
 //abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec;
 //int demuxer_get_current_time(mpctx->demuxer);

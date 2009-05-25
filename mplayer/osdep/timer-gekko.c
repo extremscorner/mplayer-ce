@@ -38,7 +38,7 @@ unsigned int GetTimerMS(void) {
 	return ticks_to_millisecs(gettime());
 }
 
-static s64 relative = 0;
+static u64 relative = 0;
 static unsigned int RelativeTime=0;
 
 float GetRelativeTime(void){
@@ -51,7 +51,7 @@ unsigned int t,r;
 }
 
 float GetRelativeTime1(void) {
-	s64 t;
+	u64 t;
 	float res;
 
 	t = gettime();
