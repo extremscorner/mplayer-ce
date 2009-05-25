@@ -3,6 +3,13 @@
 
 = Changelog to MPlayerCE =
 
+== 0.61 ==
+
+ * New screen size variables actually work now.
+ * Better usb device detection
+ * Using free Liberation font instead of Arial
+ * Subtitle wraparound bug fixed
+
 == 0.6 ==
 
  * No more maximum cache limit
