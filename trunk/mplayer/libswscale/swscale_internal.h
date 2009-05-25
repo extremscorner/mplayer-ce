@@ -299,6 +299,8 @@ const char *sws_format_name(int format);
 #define is16BPS(x)      (           \
            (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
+        || (x)==PIX_FMT_RGB48BE     \
+        || (x)==PIX_FMT_RGB48LE     \
         || (x)==PIX_FMT_YUV420PLE   \
         || (x)==PIX_FMT_YUV422PLE   \
         || (x)==PIX_FMT_YUV444PLE   \
@@ -376,6 +378,9 @@ const char *sws_format_name(int format);
 static inline int fmt_depth(int fmt)
 {
     switch(fmt) {
+        case PIX_FMT_RGB48BE:
+        case PIX_FMT_RGB48LE:
+            return 48;
         case PIX_FMT_BGRA:
         case PIX_FMT_ABGR:
         case PIX_FMT_RGBA:

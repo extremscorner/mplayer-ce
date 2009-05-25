@@ -48,32 +48,38 @@
 #include "gx_supp.h"
 #include "plat_gekko.h"
 
+#include "mload.h"
+#include "ehcmodule_elf.h"
+
 #include "../m_option.h"
 #include "../parser-cfg.h"
 #include "../get_path.h"
 
 #undef abort
 
+#define MPCE_VERSION "0.61"
+
 extern int stream_cache_size;
   
 bool reset_pressed = false;
 bool power_pressed = false;
 bool playing_usb = false;
+bool playing_dvd = false;
 int network_inited = 0;
 int mounting_usb=0;
 static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static int dbg_network = false;
 static int component_fix = false;
-static int gxzoom=358;
+static float gxzoom=358;
 static float hor_pos=3;
 static float vert_pos=0;
 static bool exit_automount_thread = false;
 static bool usb_init=false;
 
 //#define CE_DEBUG 1
-
-static char *default_args[] = {
+/*
+static char *default_args2[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
 	"-bgvideo", NULL, 
 	"-idle", NULL,
@@ -81,7 +87,17 @@ static char *default_args[] = {
 	"-really-quiet",
 #endif	
 	"-vo","gekko","-ao","gekko","-menu","-menu-startup","-menu-keepdir",
-	"-framedrop","-sws","4"
+	"-sws","4","-mc","5","-autosync","30"//,"-framedrop"//,"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all"
+}; */
+static char *default_args[] = {
+	"sd:/apps/mplayer_ce/mplayer.dol",
+	"-bgvideo", NULL, 
+	"-idle", NULL,
+#ifndef CE_DEBUG 	
+	"-really-quiet",
+#endif	
+	"-vo","gekko","-ao","gekko","-menu","-menu-startup","-framedrop","-lavdopts","lowres=1,900:fast=1:skiploopfilter=all"
+	"-sws","4"//,"-framedrop"//,"-lavdopts","lowres=1,900:fast=1:skiploopfilter=all"
 }; 
 /*
 static char *default_args2[] = {
@@ -110,10 +126,16 @@ static void wpad_power_cb (void) {
 #include <sys/time.h>
 #include <sys/timeb.h>
 void gekko_gettimeofday(struct timeval *tv, void *tz) {
-	u32 us = ticks_to_microsecs(gettime());
+//	u64 us = ticks_to_microsecs(gettime());
 
-	tv->tv_sec = us / TB_USPERSEC;
-	tv->tv_usec = us % TB_USPERSEC;
+//	tv->tv_sec = us / TB_USPERSEC;
+//	tv->tv_usec = us % TB_USPERSEC;
+	u64 t;
+	t=gettime();
+	tv->tv_sec = ticks_to_secs(t);
+	tv->tv_usec = ticks_to_microsecs(t);
+	
+	
 } 
  
 void gekko_abort(void) {
@@ -169,7 +191,7 @@ int wait_for_network_initialisation()
 	        else
 			{
 			  network_inited = 1;
-			  if(dbg_network) printf("Netwok initialized. IP: %s\n",myIP);
+			  if(dbg_network) printf("Network initialized. IP: %s\n",myIP);
 			  return 1;
 			}
 	    }
@@ -187,14 +209,18 @@ int wait_for_network_initialisation()
 
 bool DVDGekkoMount()
 {
-	if(dvd_mounted) return true;
+	if(playing_dvd) return true;
+		  set_osd_msg(1, 1, 10000, "Mounting DVD, please wait");
+	  force_osd();
+
+	//if(dvd_mounted) return true;
 	dvd_mounting=true;
 	if(WIIDVD_DiscPresent())
 	{
 		int ret;
-		printf("WIIDVD_Unmount\n");
+		//printf("WIIDVD_Unmount\n");
 		WIIDVD_Unmount();
-		printf("WIIDVD_mount\n");
+		//printf("WIIDVD_mount\n");
 		ret = WIIDVD_Mount();
 		dvd_mounted=true;
 		dvd_mounting=false;
@@ -226,11 +252,21 @@ static void * networkthreadfunc (void *arg)
 bool DeviceMounted(const char *device)
 {
   devoptab_t *devops;
-  int i;
-  devops = (devoptab_t*)GetDeviceOpTab(device);
+  int i,len;
+  char *buf;
+  
+  len = strlen(device);
+  buf=(char*)malloc(sizeof(char)*len+2);
+  strcpy(buf,device);
+  if ( buf[len-1] != ':')
+  {
+    buf[len]=':';  
+    buf[len+1]='\0';
+  }   
+  devops = (devoptab_t*)GetDeviceOpTab(buf);
   if (!devops) return false;
-  for(i=0;device[i]!='\0' && device[i]!=':';i++);  
-  if (!devops || strncmp(device,devops->name,i)) return false;
+  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
+  if (!devops || strncasecmp(device,devops->name,i)) return false;
   return true;
 }
 
@@ -238,22 +274,22 @@ static void * mountthreadfunc (void *arg)
 {
 	int dp, dvd_inserted=0,usb_inserted=0;
 
-	sleep(2);
 	
 	//initialize usb
-	if(!usb_init)usb->startup();
+	//if(!usb_init)usb->startup();
 	
 #ifdef CE_DEBUG
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 #endif	
-  
-	sleep(1);	
+	sleep(1);
+  if(!usb_init)usb->startup();
 	while(!exit_automount_thread)
 	{		
 		if(!playing_usb)
 		{
 			mounting_usb=1;
+			
 			dp=usb->isInserted();
 			usleep(500); // needed, I don't know why, but hang if it's deleted
 			
@@ -265,7 +301,7 @@ static void * mountthreadfunc (void *arg)
 					fatUnmount("usb:");
 				}else 
 				{
-					fatMount("usb",usb,0,2,64);
+					fatMount("usb",usb,0,2,128);
 				}
 			}
 			mounting_usb=0;
@@ -354,9 +390,9 @@ int LoadParams()
 	{
 	    {   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	    {   "gxzoom", &gxzoom, CONF_TYPE_INT, CONF_RANGE, 1, 400, NULL},
+	    {   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
 	    {   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
-	    {   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -4000, 4000, NULL},	  
+	    {   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};		
 	
@@ -413,8 +449,30 @@ static bool DetectValidPath()
 	return false;	
 }
 
+void load_echi_module()
+{
+//return;
+	int ret;  
+	data_elf my_data_elf;
+	
+	//usleep(500);
+	ret=mload_init();
+	if(ret<0) return;
+	
+	if(((u32) ehcmodule_elf) & 3) return;
+
+	mload_elf((void *) ehcmodule_elf, &my_data_elf);
+
+	mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio);
+	//usleep(500);
+	//usleep(100000);
+}
+
 void plat_init (int *argc, char **argv[]) {	
 	WIIDVD_Init(); 
+	
+	load_echi_module();
+		
 	VIDEO_Init();
 	
 	PAD_Init();
@@ -435,7 +493,7 @@ void plat_init (int *argc, char **argv[]) {
 	{
 		GX_InitVideo();
 		log_console_init(vmode, 0);
-		printf("MPlayerCE v.0.6\n\n");
+		printf("MPlayerCE v.%s\n\n",MPCE_VERSION);
 		printf("SD/USB access failed\n");
 		printf("Please check that you have installed MPlayerCE in the right folder\n");
 		printf("Valid folders:\n");
@@ -447,6 +505,7 @@ void plat_init (int *argc, char **argv[]) {
 		exit(0);
 	}
 
+	LoadParams();
 	GX_SetComponentFix(component_fix);
 	GX_SetCamPosZ(gxzoom);
 	GX_SetScreenPos((int)hor_pos,(int)vert_pos);  
@@ -461,7 +520,7 @@ void plat_init (int *argc, char **argv[]) {
   __dec(cad);
   printf ("\x1b[32m");
 	printf("%s",cad);
-	printf(" v.0.51 ....\n\n");
+	printf(" v.%s ....\n\n",MPCE_VERSION);
   printf ("\x1b[37m");
 
 
@@ -488,10 +547,10 @@ void plat_init (int *argc, char **argv[]) {
 	}
 	else LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 80); // network initialization
 	
-	log_console_enable_video(false);
+//	log_console_enable_video(false);
 
 #endif	
-LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
+//LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
 
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
@@ -518,7 +577,7 @@ LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mou
 	*argc = sizeof(default_args) / sizeof(char *);
 	
 	stream_cache_size=8*1024; //default cache size (8mb)
-	usb->startup();	
+		
 	if (!*((u32*)0x80001800)) sp(); 
 }
 
@@ -541,7 +600,7 @@ void plat_deinit (int rc) {
 		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
 	}
-	
+//	mload_close();
 	// only needed to debug problems
 /*	
 	log_console_enable_video(true);

@@ -260,16 +260,33 @@ static int open_dir(menu_t* menu,char* args) {
 #ifdef GEKKO
   if(!strcmp(mpriv->dir,"usb:/"))
   {
+
   	if(!playing_usb)
   	{
-	  	usleep(500000);
+  		if(DeviceMounted("usb"))
+  		{
+  			printf("usb mounted, unmount\n");
+  			fatUnmount("usb:");
+		}
+		if(usb->startup())
+		{
+			printf("usb mounting\n");
+			if(!fatMount("usb",usb,0,2,128)) 
+			{
+				printf("error mounting\n");
+				return 0;
+			}			
+		}else return 0;
+/*
+	  	//msleep();
 	  	while(mounting_usb)usleep(500);
 		if(!usb->isInserted())	
 		{
 			return 0;
 		}	
-		
+*/		
 	}
+
 /*
 	  if(!DeviceMounted("usb:/"))
 	  {
@@ -278,7 +295,7 @@ static int open_dir(menu_t* menu,char* args) {
 */	  
   } 
   else if(!strcmp(mpriv->dir,"dvd:/"))
-  {
+  {  
 	  if(!DVDGekkoMount()) return 0;
   }
   else if(mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')

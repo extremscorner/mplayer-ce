@@ -678,9 +678,11 @@ static int mp_property_audio_delay(m_option_t * prop, int action,
 		return ret;
 	    if (mpctx->sh_audio)
 		mpctx->delay -= audio_delay - delay;
+		printf("delay: %f",mpctx->delay);
 	}
 	return M_PROPERTY_OK;
     default:
+    printf("delay: %f",mpctx->delay);
 	return m_property_delay(prop, action, arg, &audio_delay);
     }
 }
@@ -1302,6 +1304,7 @@ static int mp_property_aspect(m_option_t * prop, int action, void *arg,
 static int mp_property_sub_pos(m_option_t * prop, int action, void *arg,
 			       MPContext * mpctx)
 {
+printf("xxx\n");
     if (!mpctx->sh_video)
 	return M_PROPERTY_UNAVAILABLE;
 

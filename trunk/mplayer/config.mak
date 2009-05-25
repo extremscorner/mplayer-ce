@@ -54,7 +54,7 @@ YASMFLAGS =
 EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii
 #EXTRA_LIB = -static $(COMMONFLAGS) -ldvdread -ldvdnav -lwiiuse -lbte -lfat -ldi -ltinysmb -logc -ldb -lm
 #EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
-EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm -ldb
+EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lfribidi -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm -ldb
 #EXTRALIBS = 
 #EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
 EXTRALIBS_MPLAYER =  -specs=mplayer.spec 
@@ -663,6 +663,7 @@ CONFIG_GXF_DEMUXER=yes
 CONFIG_H261_DEMUXER=yes
 CONFIG_H263_DEMUXER=yes
 CONFIG_H264_DEMUXER=yes
+CONFIG_QCP_DEMUXER=yes
 CONFIG_IDCIN_DEMUXER=yes
 CONFIG_IFF_DEMUXER=yes
 CONFIG_IMAGE2_DEMUXER=yes

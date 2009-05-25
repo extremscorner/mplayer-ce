@@ -127,7 +127,7 @@ void getch2(void) {
 	wpad = 0;
 	if (WPAD_Probe (0, NULL) == WPAD_ERR_NONE) {
 		wpad = WPAD_ButtonsDown(0);
-		//if(wpad == WPAD_BUTTON_2) log_console_change_state_video();
+		if(wpad == WPAD_BUTTON_2) log_console_change_state_video();
 			
 		if (WPAD_ButtonsHeld(0) & WPAD_BUTTON_2)
 			mod = true;

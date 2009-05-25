@@ -678,19 +678,20 @@ SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
 							 osdep/plat_gekko.c \
 							 libao2/ao_gekko.c \
 							 libvo/vo_gekko.c \
+							 osdep/mload.c \
 
-SRCS_MPLAYER = mplayer.c \
+SRCS_MPLAYER = command.c \
                m_property.c \
+               mixer.c \
                mp_fifo.c \
                mp_msg.c \
-               mixer.c \
+               mplayer.c \
                parser-mpcmd.c \
-               command.c \
                input/input.c \
-               libao2/audio_out.c \
                libao2/ao_mpegpes.c \
                libao2/ao_null.c \
                libao2/ao_pcm.c \
+               libao2/audio_out.c \
                libvo/aspect.c \
                libvo/geometry.c \
                libvo/spuenc.c \
@@ -740,6 +741,7 @@ OBJS_MENCODER  += $(addsuffix .o, $(basename $(SRCS_MENCODER)))
 OBJS_MPLAYER   += $(addsuffix .o, $(basename $(SRCS_MPLAYER)))
 OBJS_MPLAYER-$(PE_EXECUTABLE) += osdep/mplayer-rc.o
 #OBJS_MPLAYER   += $(OBJS_MPLAYER-yes)
+OBJS_MPLAYER   += osdep/ehcmodule.elf.o
 
 MENCODER_DEPS = $(OBJS_MENCODER) $(OBJS_COMMON) $(COMMON_LIBS)
 MPLAYER_DEPS  = $(OBJS_MPLAYER)  $(OBJS_COMMON) $(COMMON_LIBS)
@@ -1006,10 +1008,10 @@ doxygen:
 	doxygen DOCS/tech/Doxyfile
 
 TAGS:
-	rm -f $@; ( find -name '*.[chS]' -o -name '*.asm' -print ) | xargs etags -a
+	rm -f $@; find . -name '*.[chS]' -o -name '*.asm' | xargs etags -a
 
 tags:
-	rm -f $@; ( find -name '*.[chS]' -o -name '*.asm' -print ) | xargs ctags -a
+	rm -f $@; find . -name '*.[chS]' -o -name '*.asm' | xargs ctags -a
 
 
 
