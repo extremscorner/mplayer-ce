@@ -324,6 +324,12 @@ Example:
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+v0.61
+    * New screen size variables actually work now.
+    * Better usb device detection
+    * Using free Liberation font instead of Arial
+    * Subtitle wraparound bug fixed
+
 v0.6
     * No more maximum cache limit
     * Introduced new variables into mplayer.conf to adjust screen size and

@@ -1,5 +1,5 @@
    MPlayer CE
-   version 0.6 (23.05.2009)
+   version 0.61 (25.05.2009)
    
    Mplayer-CE Team
    rodries, AgentX, DJDynamite123, 
