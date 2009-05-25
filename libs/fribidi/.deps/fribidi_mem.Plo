@@ -1,0 +1,55 @@
+fribidi_mem.lo fribidi_mem.o: fribidi_mem.c fribidi_mem.h \
+  fribidi_config.h fribidi_types.h fribidi_types.i \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdlib.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/newlib.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/config.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/ieeefp.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stddef.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/reent.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/_types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_default_types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/limits.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/lock.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/stdlib.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/alloca.h
+
+fribidi_mem.h:
+
+fribidi_config.h:
+
+fribidi_types.h:
+
+fribidi_types.i:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdlib.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/newlib.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/config.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/ieeefp.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stddef.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/reent.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/_types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_default_types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/limits.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/lock.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/stdlib.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/alloca.h:
