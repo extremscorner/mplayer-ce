@@ -1,4 +1,4 @@
-#summary Lista de Cambios (Spanish Changelog)
+#summary Lista de Cambios del MplayerCE (Spanish Changelog)
 #labels Featured
 
 = Lista de cambios de MPlayerCE =
