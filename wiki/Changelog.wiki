@@ -9,6 +9,7 @@
  * Better usb device detection
  * Using free Liberation font instead of Arial
  * Subtitle wraparound bug fixed
+ * Released Spanish Edition
 
 == 0.6 ==
 
