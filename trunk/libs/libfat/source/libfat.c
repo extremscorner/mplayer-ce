@@ -107,15 +107,18 @@ void fatUnmount (const char* name) {
   namelen = strlen(name);
   buf=(char*)malloc(sizeof(char)*namelen+2);
   strcpy(buf,name);
-  if ( name[namelen] != ':')
+
+  if ( name[namelen-1] != ':')
   {
     buf[namelen]=':';  
     buf[namelen+1]='\0';
   } 
-  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);
-  
-	devops = (devoptab_t*)GetDeviceOpTab(buf);
-  if (!devops || strncmp(buf,devops->name,i)) 
+
+  devops = (devoptab_t*)GetDeviceOpTab(buf);
+
+
+  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
+  if (!devops || strncasecmp(buf,devops->name,i)) 
   {
     free(buf);
     return;
@@ -125,12 +128,12 @@ void fatUnmount (const char* name) {
 	if (devops->open_r != dotab_fat.open_r) {
 		return;
 	}
-	
+    
 	if (RemoveDevice (buf)== -1) {	 
 	 free(buf);	
 		return;
-	}
-  free(buf);	
+	}	
+  free(buf);  		
 	partition = (PARTITION*)devops->deviceData;
 	_FAT_partition_destructor (partition);
 	_FAT_mem_free (devops);
