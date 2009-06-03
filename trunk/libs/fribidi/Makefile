@@ -144,19 +144,19 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/Julian/fribidi-0.10.9/missing --run aclocal-1.9
+ACLOCAL = ${SHELL} ./missing --run aclocal-1.9
 AMDEP_FALSE = #
 AMDEP_TRUE = 
-AMTAR = ${SHELL} /home/Julian/fribidi-0.10.9/missing --run tar
-AR = ar
-AUTOCONF = ${SHELL} /home/Julian/fribidi-0.10.9/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/Julian/fribidi-0.10.9/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/Julian/fribidi-0.10.9/missing --run automake-1.9
+AMTAR = ${SHELL} ./missing --run tar
+AR = $(DEVKITPRO)/devkitPPC/bin/powerpc-gekko-ar
+AUTOCONF = ${SHELL} ./missing --run autoconf
+AUTOHEADER = ${SHELL} ./missing --run autoheader
+AUTOMAKE = ${SHELL} ./missing --run automake-1.9
 AWK = gawk
-CC = /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc
+CC = $(DEVKITPRO)/devkitPPC/bin/powerpc-gekko-gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -mcpu=750 -O2 -Wall  -pedantic  -fno-strict-aliasing 
-CPP = /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc -E
+CPP = $(DEVKITPRO)/devkitPPC/bin/powerpc-gekko-gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXCPP = g++ -E
@@ -194,7 +194,7 @@ LN_S = ln -s
 LTLIBOBJS = 
 LT_CURRENT_MINUS_AGE = -6
 LT_VERSION_INFO = 2:9:8
-MAKEINFO = ${SHELL} /home/Julian/fribidi-0.10.9/missing --run makeinfo
+MAKEINFO = ${SHELL} ./missing --run makeinfo
 OBJEXT = o
 PACKAGE = fribidi
 PACKAGE_BUGREPORT = http://fribidi.org/bug
@@ -203,14 +203,14 @@ PACKAGE_STRING = GNU FriBidi 0.10.9
 PACKAGE_TARNAME = fribidi
 PACKAGE_VERSION = 0.10.9
 PATH_SEPARATOR = :
-RANLIB = ranlib
+RANLIB = $(DEVKITPRO)/devkitPPC/bin/powerpc-gekko-ranlib.exe
 SED = /bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 SIZEOF_INT = 4
 SIZEOF_LONG = 4
 SIZEOF_SHORT = 2
-STRIP = strip
+STRIP = $(DEVKITPRO)/devkitPPC/bin/powerpc-gekko-strip.exe
 VERSION = 0.10.9
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = 
@@ -242,14 +242,14 @@ host_os = none
 host_vendor = unknown
 includedir = ${prefix}/include
 infodir = ${prefix}/share/info
-install_sh = /home/Julian/fribidi-0.10.9/install-sh
-libdir = ${exec_prefix}/lib
+install_sh = ./install-sh
+libdir = ${exec_prefix}/lib/wii
 libexecdir = ${exec_prefix}/libexec
 localstatedir = ${prefix}/var
 mandir = ${prefix}/share/man
 mkdir_p = mkdir -p --
 oldincludedir = /usr/include
-prefix = /c/devkitpro/libogc
+prefix = $(DEVKITPRO)/libogc
 program_transform_name = s,x,x,
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
@@ -894,7 +894,8 @@ installdirs:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(libfribidiincdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
-install: install-am
+install2: install-am
+install: install-data install-libLTLIBRARIES 
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
