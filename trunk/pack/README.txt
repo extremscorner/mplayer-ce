@@ -324,6 +324,17 @@ Example:
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+v0.62
+    * USB LAN Adaptor support fixed (again).  Thanks to CountZ3ro for testing.
+      Please note that you will need to install the USB 2.0 cIOS.
+    * cIOS improved to stop conflicts with other homebrew. Please note that
+      now only port0 has usb2 support. All other USB devices (including the
+      USB LAN adaptor) must go in port1.  See here for details:
+      http://mplayer-ce.googlecode.com/files/usb.jpg
+    * Horizontal stretch parameter added (see mplayer.conf)
+    * YouTube options added to menu.conf (thanks to Extrems)
+    * Many small bug fixes
+
 v0.61
     * New screen size variables actually work now.
     * Better usb device detection
