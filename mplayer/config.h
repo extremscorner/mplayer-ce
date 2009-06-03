@@ -302,12 +302,12 @@ char MPLAYER_LIBDIR[100];
 
 
 /* font stuff */
-#undef CONFIG_ASS
+#define CONFIG_ASS 1
 #define CONFIG_BITMAP_FONT 1
 #undef CONFIG_ENCA
 #undef CONFIG_FONTCONFIG
 #define CONFIG_FREETYPE 1
-#define CONFIG_FRIBIDI 1
+#undef CONFIG_FRIBIDI
 
 
 /* networking */

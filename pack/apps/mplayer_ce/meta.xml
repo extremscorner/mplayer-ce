@@ -2,8 +2,8 @@
 <app version="1">
   <name>MPlayer CE</name>
   <coder>Mplayer CE Team</coder>
-  <version>0.61</version>
-  <release_date>20090525</release_date>
+  <version>0.62</version>
+  <release_date>20090603</release_date>
   <short_description>Wii Media Player</short_description>
   <long_description>Homebrew media player for Nintendo Wii.	
 
