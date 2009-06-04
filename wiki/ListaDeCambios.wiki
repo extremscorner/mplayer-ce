@@ -3,13 +3,22 @@
 
 = Lista de cambios de MPlayerCE =
 
+
+== 0.62 ==
+
+ * Arreglado (de nuevo) el soporte para el adaptador LAN USB. Gracias a CountZ3ro por el testeo. Ten en cuenta que necesitarás instalar el nuevo cIOS USB 2.0
+ * El cIOS mejora los conflictos con otro homewbrew. Ten en cuenta que ahora es el puerto 0 (USB0) el que soporta USB 2.0. Todos los demás dispositivos USB (incluido el adaptador LAN USB) deben ir en el puerto 1 (USB1). Visita este enlace para más detalles: `http://mplayer-ce.googlecode.com/files/usb.jpg`
+ * Añadido parámetro de ensanche horizontal (ver mplayer.conf)
+ * Añadidas opciones de YouTube al menu.conf (gracias a Extrems)
+ * Algunos pequeños bugs reparados
+
 == 0.61 ==
 
  * Ahora funcionan las nuevas variables del tamaño de la pantalla
  * Mejora en la deteccion de USB
  * Se deja de usar la fuente Arial para usar Liberation (de distribucion libre)
  * Arreglados algunos bugs con los subtitulos
- * Liberada versión en español.
+ * Liberada versión en español
 
 == 0.6 ==
 
