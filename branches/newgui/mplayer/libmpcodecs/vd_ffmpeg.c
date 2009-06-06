@@ -73,8 +73,8 @@ static int lavc_param_skip_top=0;
 static int lavc_param_skip_bottom=0;
 static int lavc_param_fast=0;
 static int lavc_param_lowres=0;
-/*static*/ char *lavc_param_lowres_str=NULL;
-/*static*/ char *lavc_param_skip_loop_filter_str = NULL;
+static char *lavc_param_lowres_str=NULL;
+static char *lavc_param_skip_loop_filter_str = NULL;
 static char *lavc_param_skip_idct_str = NULL;
 static char *lavc_param_skip_frame_str = NULL;
 static int lavc_param_threads=1;
@@ -758,6 +758,7 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
     AVCodecContext *avctx = ctx->avctx;
     mp_image_t *mpi=NULL;
     int dr1= ctx->do_dr1;
+    AVPacket pkt;
 
     if(len<=0) return NULL; // skipped frame
 
@@ -778,8 +779,12 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
 
     mp_msg(MSGT_DECVIDEO, MSGL_DBG2, "vd_ffmpeg data: %04x, %04x, %04x, %04x\n",
            ((int *)data)[0], ((int *)data)[1], ((int *)data)[2], ((int *)data)[3]);
-    ret = avcodec_decode_video(avctx, pic,
-             &got_picture, data, len);
+    av_init_packet(&pkt);
+    pkt.data = data;
+    pkt.size = len;
+    // HACK: make PNGs decode normally instead of as CorePNG delta frames
+    pkt.flags = PKT_FLAG_KEY;
+    ret = avcodec_decode_video2(avctx, pic, &got_picture, &pkt);
 
     dr1= ctx->do_dr1;
     if(ret<0) mp_msg(MSGT_DECVIDEO, MSGL_WARN, "Error while decoding frame!\n");

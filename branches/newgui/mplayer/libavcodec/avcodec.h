@@ -30,8 +30,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 29
-#define LIBAVCODEC_VERSION_MICRO  0
+#define LIBAVCODEC_VERSION_MINOR 30
+#define LIBAVCODEC_VERSION_MICRO  2
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -950,7 +950,10 @@ typedef struct AVPacket {
      */
     int64_t convergence_duration;
 } AVPacket;
-#define PKT_FLAG_KEY   0x0001
+#define AV_PKT_FLAG_KEY   0x0001
+#if LIBAVCODEC_VERSION_MAJOR < 53
+#define PKT_FLAG_KEY AV_PKT_FLAG_KEY
+#endif
 
 /**
  * Audio Video Frame.
@@ -1117,7 +1120,9 @@ typedef struct AVCodecContext {
      */
     int frame_size;
     int frame_number;   ///< audio or video frame number
+#if LIBAVCODEC_VERSION_MAJOR < 53
     int real_pict_num;  ///< Returns the real picture number of previous encoded frame.
+#endif
 
     /**
      * Number of frames the decoded output will be delayed relative to
@@ -3213,6 +3218,9 @@ attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *s
  * @param[out] samples the output buffer
  * @param[in,out] frame_size_ptr the output buffer size in bytes
  * @param[in] avpkt The input AVPacket containing the input buffer.
+ *            You can create such packet with av_init_packet() and by then setting
+ *            data and size, some decoders might in addition need other fields.
+ *            All decoders are designed to use the least fields possible though.
  * @return On error a negative value is returned, otherwise the number of bytes
  * used or zero if no frame could be decompressed.
  */
@@ -3266,6 +3274,10 @@ attribute_deprecated int avcodec_decode_video(AVCodecContext *avctx, AVFrame *pi
  * @param avctx the codec context
  * @param[out] picture The AVFrame in which the decoded video frame will be stored.
  * @param[in] avpkt The input AVpacket containing the input buffer.
+ *            You can create such packet with av_init_packet() and by then setting
+ *            data and size, some decoders might in addition need other fields like
+ *            flags&PKT_FLAG_KEY. All decoders are designed to use the least
+ *            fields possible.
  * @param[in,out] got_picture_ptr Zero if no frame could be decompressed, otherwise, it is nonzero.
  * @return On error a negative value is returned, otherwise the number of bytes
  * used or zero if no frame could be decompressed.
@@ -3708,5 +3720,31 @@ void av_register_hwaccel(AVHWAccel *hwaccel);
  * after hwaccel, or NULL if hwaccel is the last one.
  */
 AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel);
+
+
+/**
+ * Lock operation used by lockmgr
+ */
+enum AVLockOp {
+  AV_LOCK_CREATE,  ///< Create a mutex
+  AV_LOCK_OBTAIN,  ///< Lock the mutex
+  AV_LOCK_RELEASE, ///< Unlock the mutex
+  AV_LOCK_DESTROY, ///< Free mutex resources
+};
+
+/**
+ * Register a user provided lock manager supporting the operations
+ * specified by AVLockOp. \p mutex points to a (void *) where the
+ * lockmgr should store/get a pointer to a user allocated mutex. It's
+ * NULL upon AV_LOCK_CREATE and != NULL for all other ops.
+ *
+ * @param cb User defined callback. Note: FFmpeg may invoke calls to this
+ *           callback during the call to av_lockmgr_register().
+ *           Thus, the application must be prepared to handle that.
+ *           If cb is set to NULL the lockmgr will be unregistered.
+ *           Also note that during unregistration the previously registered
+ *           lockmgr callback may also be invoked.
+ */
+int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
 
 #endif /* AVCODEC_AVCODEC_H */

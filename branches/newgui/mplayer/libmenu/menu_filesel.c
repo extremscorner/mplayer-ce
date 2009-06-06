@@ -260,23 +260,37 @@ static int open_dir(menu_t* menu,char* args) {
 #ifdef GEKKO
   if(!strcmp(mpriv->dir,"usb:/"))
   {
-
+	printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
   	if(!playing_usb)
   	{
+  		printf("checking DeviceMounted\n");VIDEO_WaitVSync();
   		if(DeviceMounted("usb"))
   		{
-  			printf("usb mounted, unmount\n");
+  			printf("usb mounted, unmount\n");VIDEO_WaitVSync();
   			fatUnmount("usb:");
+		}else
+		{
+		printf("usb not mounted\n");VIDEO_WaitVSync();
 		}
+		printf("startup\n");VIDEO_WaitVSync();
 		if(usb->startup())
 		{
-			printf("usb mounting\n");
-			if(!fatMount("usb",usb,0,2,128)) 
+			printf("startup ok\n");VIDEO_WaitVSync();
+			usleep(50000);
+			if(usb->isInserted())
 			{
-				printf("error mounting\n");
-				return 0;
+				printf("usb mounting\n");VIDEO_WaitVSync();
+				if(!fatMount("usb",usb,0,2,128)) 
+				{
+					printf("error mounting\n");VIDEO_WaitVSync();
+					return 0;
+				}
 			}			
-		}else return 0;
+		}else 
+		{
+			printf("startup error\n");VIDEO_WaitVSync();
+			return 0;
+		}
 /*
 	  	//msleep();
 	  	while(mounting_usb)usleep(500);

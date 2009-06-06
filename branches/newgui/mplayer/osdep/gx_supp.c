@@ -43,7 +43,7 @@ extern "C" {
 static u32 whichfb;
 static u32 *xfb[2];
 static bool component_fix=false;
-static int hor_pos=0, vert_pos=0;
+static int hor_pos=0, vert_pos=0, stretch=0;
 GXRModeObj *vmode = NULL;
 
 /*** 3D GX ***/
@@ -123,10 +123,11 @@ void GX_InitVideo() {
 		VIDEO_WaitVSync();
 }
 
-void GX_SetScreenPos(int _hor_pos,int _vert_pos)
+void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
 {
 	hor_pos = _hor_pos;
 	vert_pos = _vert_pos;
+	stretch = _stretch;
 }
 
 void GX_SetComponentFix(bool f) {
@@ -338,7 +339,7 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 
 	//center, to correct difference between pitch and real width
 	int diffx,diffy;
-	diffx=/*abs*/((w-width)/2) ;
+	//diffx=/*abs*/((w-width)/2) ;
 	diffx=width-w ;
 	diffx+=hor_pos;
 
@@ -360,6 +361,12 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	square[4] -= vert_pos;
 	square[7] -= vert_pos;
 	square[10] -= vert_pos;
+
+
+	square[0] += stretch/2;
+  	square[9] += stretch/2;
+	square[3] -= stretch/2;
+  	square[6] -= stretch/2;
 
 
 	//Ytexsize = (width*height);
@@ -993,6 +1000,7 @@ void GX_ResetTextureYUVPointers()
 
 u8* GetYtexture() {return Ytexture;}
 int GetYrowpitch() {return Yrowpitch;}
+int GetYrowpitchDf() {return Yrowpitch+df1;}
 
 #ifdef __cplusplus
 }

@@ -108,6 +108,8 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_YUVA420P    \
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
+        || (x)==PIX_FMT_RGB48BE     \
+        || (x)==PIX_FMT_RGB48LE     \
         || (x)==PIX_FMT_RGB32       \
         || (x)==PIX_FMT_RGB32_1     \
         || (x)==PIX_FMT_BGR24       \
@@ -281,17 +283,17 @@ static unsigned char clip_table[768];
 
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b);
 
-static const uint8_t  __attribute__((aligned(8))) dither_2x2_4[2][8]={
+DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_4[2][8])={
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 {  2,   0,   2,   0,   2,   0,   2,   0, },
 };
 
-static const uint8_t  __attribute__((aligned(8))) dither_2x2_8[2][8]={
+DECLARE_ALIGNED(8, static const uint8_t, dither_2x2_8[2][8])={
 {  6,   2,   6,   2,   6,   2,   6,   2, },
 {  0,   4,   0,   4,   0,   4,   0,   4, },
 };
 
-const uint8_t  __attribute__((aligned(8))) dither_8x8_32[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32[8][8])={
 { 17,   9,  23,  15,  16,   8,  22,  14, },
 {  5,  29,   3,  27,   4,  28,   2,  26, },
 { 21,  13,  19,  11,  20,  12,  18,  10, },
@@ -303,7 +305,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_32[8][8]={
 };
 
 #if 0
-const uint8_t  __attribute__((aligned(8))) dither_8x8_64[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_64[8][8])={
 {  0,  48,  12,  60,   3,  51,  15,  63, },
 { 32,  16,  44,  28,  35,  19,  47,  31, },
 {  8,  56,   4,  52,  11,  59,   7,  55, },
@@ -315,7 +317,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_64[8][8]={
 };
 #endif
 
-const uint8_t  __attribute__((aligned(8))) dither_8x8_73[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73[8][8])={
 {  0,  55,  14,  68,   3,  58,  17,  72, },
 { 37,  18,  50,  32,  40,  22,  54,  35, },
 {  9,  64,   5,  59,  13,  67,   8,  63, },
@@ -327,7 +329,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_73[8][8]={
 };
 
 #if 0
-const uint8_t  __attribute__((aligned(8))) dither_8x8_128[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_128[8][8])={
 { 68,  36,  92,  60,  66,  34,  90,  58, },
 { 20, 116,  12, 108,  18, 114,  10, 106, },
 { 84,  52,  76,  44,  82,  50,  74,  42, },
@@ -340,7 +342,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_128[8][8]={
 #endif
 
 #if 1
-const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 {117,  62, 158, 103, 113,  58, 155, 100, },
 { 34, 199,  21, 186,  31, 196,  17, 182, },
 {144,  89, 131,  76, 141,  86, 127,  72, },
@@ -352,7 +354,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
 };
 #elif 1
 // tries to correct a gamma of 1.5
-const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 {  0, 143,  18, 200,   2, 156,  25, 215, },
 { 78,  28, 125,  64,  89,  36, 138,  74, },
 { 10, 180,   3, 161,  16, 195,   8, 175, },
@@ -364,7 +366,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
 };
 #elif 1
 // tries to correct a gamma of 2.0
-const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 {  0, 124,   8, 193,   0, 140,  12, 213, },
 { 55,  14, 104,  42,  66,  19, 119,  52, },
 {  3, 168,   1, 145,   6, 187,   3, 162, },
@@ -376,7 +378,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
 };
 #else
 // tries to correct a gamma of 2.5
-const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 {  0, 107,   3, 187,   0, 125,   6, 212, },
 { 39,   7,  86,  28,  49,  11, 102,  36, },
 {  1, 158,   0, 131,   3, 180,   1, 151, },
@@ -851,6 +853,24 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
 #define YSCALE_YUV_2_ANYRGB_C(func, func2, func_g16, func_monoblack)\
     switch(c->dstFormat)\
     {\
+    case PIX_FMT_RGB48BE:\
+    case PIX_FMT_RGB48LE:\
+        func(uint8_t,0)\
+            ((uint8_t*)dest)[ 0]= r[Y1];\
+            ((uint8_t*)dest)[ 1]= r[Y1];\
+            ((uint8_t*)dest)[ 2]= g[Y1];\
+            ((uint8_t*)dest)[ 3]= g[Y1];\
+            ((uint8_t*)dest)[ 4]= b[Y1];\
+            ((uint8_t*)dest)[ 5]= b[Y1];\
+            ((uint8_t*)dest)[ 6]= r[Y2];\
+            ((uint8_t*)dest)[ 7]= r[Y2];\
+            ((uint8_t*)dest)[ 8]= g[Y2];\
+            ((uint8_t*)dest)[ 9]= g[Y2];\
+            ((uint8_t*)dest)[10]= b[Y2];\
+            ((uint8_t*)dest)[11]= b[Y2];\
+            dest+=12;\
+        }\
+        break;\
     case PIX_FMT_RGBA:\
     case PIX_FMT_BGRA:\
         if (CONFIG_SMALL){\
@@ -1119,6 +1139,48 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
     for (i=0; i<height; i++){
         memset(ptr, val, width);
         ptr += stride;
+    }
+}
+
+static inline void rgb48ToY(uint8_t *dst, const uint8_t *src, int width)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        int r = src[i*6+0];
+        int g = src[i*6+2];
+        int b = src[i*6+4];
+
+        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static inline void rgb48ToUV(uint8_t *dstU, uint8_t *dstV,
+                             uint8_t *src1, uint8_t *src2, int width)
+{
+    int i;
+    assert(src1==src2);
+    for (i = 0; i < width; i++) {
+        int r = src1[6*i + 0];
+        int g = src1[6*i + 2];
+        int b = src1[6*i + 4];
+
+        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static inline void rgb48ToUV_half(uint8_t *dstU, uint8_t *dstV,
+                                  uint8_t *src1, uint8_t *src2, int width)
+{
+    int i;
+    assert(src1==src2);
+    for (i = 0; i < width; i++) {
+        int r= src1[12*i + 0] + src1[12*i + 6];
+        int g= src1[12*i + 2] + src1[12*i + 8];
+        int b= src1[12*i + 4] + src1[12*i + 10];
+
+        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
+        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
     }
 }
 

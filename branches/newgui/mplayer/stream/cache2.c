@@ -446,7 +446,7 @@ if(size>CACHE_LIMIT)
 	    100.0*(float)(s->max_filepos-s->read_filepos)/(float)(s->buffer_size),
 	    (int64_t)s->max_filepos-s->read_filepos );
 
-	if(!IsBackgroungAvi(NULL))
+	if(!IsLoopAvi(NULL))
     {
 	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Cache fill: %5.2f%%  ",(float)(100.0*(float)(s->max_filepos)/(float)(min)));
 	force_osd();

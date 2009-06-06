@@ -141,12 +141,6 @@ static int lavf_check_file(demuxer_t *demuxer){
 
     av_register_all();
 
-    if(stream_read(demuxer->stream, buf, PROBE_BUF_SIZE)!=PROBE_BUF_SIZE)
-        return 0;
-    avpd.filename= demuxer->stream->url;
-    avpd.buf= buf;
-    avpd.buf_size= PROBE_BUF_SIZE;
-
     if (opt_format) {
         if (strcmp(opt_format, "help") == 0) {
            list_formats();
@@ -160,6 +154,13 @@ static int lavf_check_file(demuxer_t *demuxer){
         mp_msg(MSGT_DEMUX,MSGL_INFO,"Forced lavf %s demuxer\n", priv->avif->long_name);
         return DEMUXER_TYPE_LAVF;
     }
+
+    if(stream_read(demuxer->stream, buf, PROBE_BUF_SIZE)!=PROBE_BUF_SIZE)
+        return 0;
+    avpd.filename= demuxer->stream->url;
+    avpd.buf= buf;
+    avpd.buf_size= PROBE_BUF_SIZE;
+
     priv->avif= av_probe_input_format(&avpd, 1);
     if(!priv->avif){
         mp_msg(MSGT_HEADER,MSGL_V,"LAVF_check: no clue about this gibberish!\n");
@@ -170,7 +171,7 @@ static int lavf_check_file(demuxer_t *demuxer){
     return DEMUXER_TYPE_LAVF;
 }
 
-static const char *preferred_list[] = {
+static const char * const preferred_list[] = {
     "dxa",
     "wv",
     "nuv",
@@ -187,7 +188,7 @@ static const char *preferred_list[] = {
 
 static int lavf_check_preferred_file(demuxer_t *demuxer){
     if (lavf_check_file(demuxer)) {
-        char **p = preferred_list;
+        const char * const *p = preferred_list;
         lavf_priv_t *priv = demuxer->priv;
         while (*p) {
             if (strcmp(*p, priv->avif->name) == 0)
@@ -476,7 +477,7 @@ static demuxer_t* demux_open_lavf(demuxer_t *demuxer){
         return NULL;
     }
 
-    if(avfc->title    [0]) demux_info_add(demuxer, "name"     , avfc->title    );
+    if(avfc->title    [0]) demux_info_add(demuxer, "title"    , avfc->title    );
     if(avfc->author   [0]) demux_info_add(demuxer, "author"   , avfc->author   );
     if(avfc->copyright[0]) demux_info_add(demuxer, "copyright", avfc->copyright);
     if(avfc->comment  [0]) demux_info_add(demuxer, "comments" , avfc->comment  );
