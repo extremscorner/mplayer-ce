@@ -30,5 +30,16 @@ extern struct SCESettings CESettings;
 void ExitApp();
 extern int ExitRequested;
 extern FreeTypeGX *fontSystem;
+extern char loadedFile[];
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int main2 (int argc, char **argv);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

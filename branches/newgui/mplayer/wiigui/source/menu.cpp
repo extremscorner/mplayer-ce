@@ -507,8 +507,6 @@ static void OnScreenKeyboard(char * var, u16 maxlen)
 /****************************************************************************
  * MenuBrowseDevice
  ***************************************************************************/
-int main2 (int argc, char **argv);
-//extern int main2(int argc,char* argv[]);
 
 static int MenuBrowseDevice()
 {
@@ -596,7 +594,7 @@ static int MenuBrowseDevice()
 
 		// update file browser based on arrow buttons
 		// set MENU_EXIT if A button pressed on a file
-		for(int i=0; i<PAGESIZE; i++)
+		for(int i=0; i<FILES_PAGESIZE; i++)
 		{
 			if(fileBrowser.fileList[i]->GetState() == STATE_CLICKED)
 			{
@@ -618,21 +616,8 @@ static int MenuBrowseDevice()
 				}
 				else
 				{
-
-char *default_args[] = {
-	"",
-	"-really-quiet",
-	"-vo","gekko","-ao","gekko",browserList[browser.selIndex].filename	
-}; 
-					
-					
-					#ifdef HW_RVL
-					ShutoffRumble();
-					#endif
-					mainWindow->SetState(STATE_DISABLED);
-					// load file
-					main2(sizeof(default_args) / sizeof(char *),default_args);					
-					mainWindow->SetState(STATE_DEFAULT);
+					sprintf(loadedFile, "%s%s", rootdir, browserList[browser.selIndex].filename);
+					menu = MENU_EXIT;
 				}
 			}
 		}

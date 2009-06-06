@@ -453,7 +453,7 @@ static bool load_echi_module()
 static void * mloadthreadfunc (void *arg)
 {
 	sleep(2);
-	if(!load_echi_module()) DisableUSB2(true);
+	//if(!load_echi_module()) DisableUSB2(true);
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
@@ -560,7 +560,7 @@ printf("Loading ");
 	if(usb_init)
 	{
 		usleep(5000);
-		if(!load_echi_module()) DisableUSB2(true);
+		//if(!load_echi_module()) DisableUSB2(true);
 		fatUnmount("usb:");
 		usb_mp->startup();
 		fatMount("usb",usb_mp,0,2,256);

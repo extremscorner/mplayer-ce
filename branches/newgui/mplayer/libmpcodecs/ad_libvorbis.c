@@ -25,7 +25,7 @@ static ad_info_t info =
 LIBAD_EXTERN(libvorbis)
 
 #ifdef CONFIG_TREMOR
-#include <tremor/ivorbiscodec.h>
+#include "../tremor/ivorbiscodec.h"
 #else
 #include <vorbis/codec.h>
 #endif

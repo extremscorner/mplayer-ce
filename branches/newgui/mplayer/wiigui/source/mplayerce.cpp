@@ -24,6 +24,7 @@
 FreeTypeGX *fontSystem;
 struct SCESettings CESettings;
 int ExitRequested = 0;
+char loadedFile[1024];
 
 void ExitApp()
 {
@@ -38,6 +39,7 @@ main(int argc, char *argv[])
 	PAD_Init();
 	WPAD_Init();
 	InitVideo(); // Initialise video
+	AUDIO_Init(NULL);
 
 	// read wiimote accelerometer and IR data
 	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
@@ -50,5 +52,18 @@ main(int argc, char *argv[])
 
 	InitGUIThreads();
 	InitDeviceThread();
-	Menu(MENU_MAIN);
+
+	while(1)
+	{
+		Menu(MENU_MAIN);
+
+		// load video
+		char *mplayer_args[] = {
+			"",
+			"-really-quiet",
+			"-vo","gekko","-ao","gekko",loadedFile
+		};
+
+		main2(sizeof(mplayer_args) / sizeof(char *),mplayer_args);
+	}
 }
