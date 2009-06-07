@@ -86,7 +86,7 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 
 	for(int i=0; i<FILES_PAGESIZE; i++)
 	{
-		fileListText[i] = new GuiText("File", 22, (GXColor){255, 255, 255, 0xff});
+		fileListText[i] = new GuiText(NULL, 22, (GXColor){255, 255, 255, 0xff});
 		fileListText[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
 		fileListText[i]->SetPosition(8,0);
 
@@ -207,7 +207,7 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 	if(scrollbarBoxBtn->GetState() == STATE_HELD &&
 		scrollbarBoxBtn->GetStateChan() == t->chan &&
 		t->wpad.ir.valid &&
-		browser.numEntries > PAGESIZE
+		browser.numEntries > FILES_PAGESIZE
 		)
 	{
 		scrollbarBoxBtn->SetPosition(0,0);
@@ -223,12 +223,10 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 		if(browser.pageIndex <= 0)
 		{
 			browser.pageIndex = 0;
-			selectedItem = 0;
 		}
-		else if(browser.pageIndex+PAGESIZE >= browser.numEntries)
+		else if(browser.pageIndex+FILES_PAGESIZE >= browser.numEntries)
 		{
-			browser.pageIndex = browser.numEntries-PAGESIZE;
-			selectedItem = PAGESIZE-1;
+			browser.pageIndex = browser.numEntries-FILES_PAGESIZE;
 		}
 		listChanged = true;
 		focus = false;
@@ -339,15 +337,18 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 			}
 		}
 
-		if(focus)
-		{
-			if(i != selectedItem && fileList[i]->GetState() == STATE_SELECTED)
-				fileList[i]->ResetState();
-			else if(i == selectedItem && fileList[i]->GetState() == STATE_DEFAULT)
-				fileList[selectedItem]->SetState(STATE_SELECTED, t->chan);
-		}
+		if(i != selectedItem && fileList[i]->GetState() == STATE_SELECTED)
+			fileList[i]->ResetState();
+		else if(focus && i == selectedItem && fileList[i]->GetState() == STATE_DEFAULT)
+			fileList[selectedItem]->SetState(STATE_SELECTED, t->chan);
+
+		int currChan = t->chan;
+
+		if(t->wpad.ir.valid && !fileList[i]->IsInside(t->wpad.ir.x, t->wpad.ir.y))
+			t->chan = -1;
 
 		fileList[i]->Update(t);
+		t->chan = currChan;
 
 		if(fileList[i]->GetState() == STATE_SELECTED)
 		{
@@ -358,9 +359,18 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 
 	// update the location of the scroll box based on the position in the file list
 	if(positionWiimote > 0)
+	{
 		position = positionWiimote; // follow wiimote cursor
+	}
 	else
-		position = 190*(browser.pageIndex + selectedItem) / browser.numEntries;
+	{
+		position = 190*(browser.pageIndex + FILES_PAGESIZE/2.0) / (browser.numEntries*1.0);
+
+		if(browser.pageIndex/(FILES_PAGESIZE/2.0) < 1)
+			position = 0;
+		else if((browser.pageIndex+FILES_PAGESIZE)/(FILES_PAGESIZE*1.0) >= (browser.numEntries)/(FILES_PAGESIZE*1.0))
+			position = 190;
+	}
 
 	scrollbarBoxBtn->SetPosition(0,position+36);
 

@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <exception>
+#include <wchar.h>
 #include <math.h>
 #include <wiiuse/wpad.h>
 #include "pngu/pngu.h"
@@ -817,7 +819,6 @@ class GuiOptionBrowser : public GuiElement
 
 		GuiButton * arrowUpBtn;
 		GuiButton * arrowDownBtn;
-		GuiButton * scrollbarBoxBtn;
 
 		GuiImage * bgOptionsImg;
 		GuiImage * scrollbarImg;
@@ -825,8 +826,6 @@ class GuiOptionBrowser : public GuiElement
 		GuiImage * arrowDownOverImg;
 		GuiImage * arrowUpImg;
 		GuiImage * arrowUpOverImg;
-		GuiImage * scrollbarBoxImg;
-		GuiImage * scrollbarBoxOverImg;
 
 		GuiImageData * bgOptions;
 		GuiImageData * bgOptionsEntry;
@@ -835,8 +834,6 @@ class GuiOptionBrowser : public GuiElement
 		GuiImageData * arrowDownOver;
 		GuiImageData * arrowUp;
 		GuiImageData * arrowUpOver;
-		GuiImageData * scrollbarBox;
-		GuiImageData * scrollbarBoxOver;
 
 		GuiSound * btnSoundOver;
 		GuiSound * btnSoundClick;

@@ -161,20 +161,21 @@ void GuiMenuBrowser::Update(GuiTrigger * t)
 
 	for(int i=0; i<items->length; i++)
 	{
-		if(focus)
-		{
-			if(i != selectedItem && itemBtn[i]->GetState() == STATE_SELECTED)
-				itemBtn[i]->ResetState();
-			else if(i == selectedItem && itemBtn[i]->GetState() == STATE_DEFAULT)
-				itemBtn[selectedItem]->SetState(STATE_SELECTED, t->chan);
-		}
+		if(i != selectedItem && itemBtn[i]->GetState() == STATE_SELECTED)
+			itemBtn[i]->ResetState();
+		else if(focus && i == selectedItem && itemBtn[i]->GetState() == STATE_DEFAULT)
+			itemBtn[selectedItem]->SetState(STATE_SELECTED, t->chan);
+
+		int currChan = t->chan;
+
+		if(t->wpad.ir.valid && !itemBtn[i]->IsInside(t->wpad.ir.x, t->wpad.ir.y))
+			t->chan = -1;
 
 		itemBtn[i]->Update(t);
+		t->chan = currChan;
 
 		if(itemBtn[i]->GetState() == STATE_SELECTED)
-		{
 			selectedItem = i;
-		}
 	}
 
 	// pad/joystick navigation

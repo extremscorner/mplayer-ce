@@ -1126,10 +1126,8 @@ void Menu(int menu)
 		usleep(THREAD_SLEEP);
 	}
 
-	ResumeGui();
-	ExitRequested = 1;
-	while(1) usleep(THREAD_SLEEP);
-
+	ShutoffRumble();
+	CancelAction();
 	HaltGui();
 
 	delete bgImg;

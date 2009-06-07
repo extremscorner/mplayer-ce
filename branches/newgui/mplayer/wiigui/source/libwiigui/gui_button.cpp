@@ -161,7 +161,7 @@ void GuiButton::Update(GuiTrigger * t)
 
 	#ifdef HW_RVL
 	// cursor
-	if(t->wpad.ir.valid)
+	if(t->wpad.ir.valid && t->chan >= 0)
 	{
 		if(this->IsInside(t->wpad.ir.x, t->wpad.ir.y))
 		{
@@ -171,6 +171,9 @@ void GuiButton::Update(GuiTrigger * t)
 
 				if(this->Rumble())
 					rumbleRequest[t->chan] = 1;
+
+				//if(soundOver)
+				//	soundOver->Play();
 
 				if(effectsOver && !effects)
 				{
@@ -215,15 +218,21 @@ void GuiButton::Update(GuiTrigger * t)
 
 				if(
 					(t->wpad.btns_d > 0 &&
-					wm_btns == wm_btns_trig ||
-					(cc_btns == cc_btns_trig && t->wpad.exp.type == EXP_CLASSIC)) ||
+					(wm_btns == wm_btns_trig ||
+					(cc_btns == cc_btns_trig && t->wpad.exp.type == EXP_CLASSIC))) ||
 					(t->pad.btns_d == trigger[i]->pad.btns_d && t->pad.btns_d > 0))
 				{
 					if(t->chan == stateChan || stateChan == -1)
 					{
 						if(state == STATE_SELECTED)
 						{
-							this->SetState(STATE_CLICKED, t->chan);
+							if(!t->wpad.ir.valid ||	this->IsInside(t->wpad.ir.x, t->wpad.ir.y))
+							{
+								this->SetState(STATE_CLICKED, t->chan);
+
+								//if(soundClick)
+								//	soundClick->Play();
+							}
 						}
 						else if(trigger[i]->type == TRIGGER_BUTTON_ONLY)
 						{
@@ -261,8 +270,8 @@ void GuiButton::Update(GuiTrigger * t)
 
 				if(
 					(t->wpad.btns_d > 0 &&
-					wm_btns == wm_btns_trig ||
-					(cc_btns == cc_btns_trig && t->wpad.exp.type == EXP_CLASSIC)) ||
+					(wm_btns == wm_btns_trig ||
+					(cc_btns == cc_btns_trig && t->wpad.exp.type == EXP_CLASSIC))) ||
 					(t->pad.btns_d == trigger[i]->pad.btns_h && t->pad.btns_d > 0))
 				{
 					if(trigger[i]->type == TRIGGER_HELD && state == STATE_SELECTED &&
@@ -272,8 +281,8 @@ void GuiButton::Update(GuiTrigger * t)
 
 				if(
 					(t->wpad.btns_h > 0 &&
-					wm_btns_h == wm_btns_trig ||
-					(cc_btns_h == cc_btns_trig && t->wpad.exp.type == EXP_CLASSIC)) ||
+					(wm_btns_h == wm_btns_trig ||
+					(cc_btns_h == cc_btns_trig && t->wpad.exp.type == EXP_CLASSIC))) ||
 					(t->pad.btns_h == trigger[i]->pad.btns_h && t->pad.btns_h > 0))
 				{
 					if(trigger[i]->type == TRIGGER_HELD)
