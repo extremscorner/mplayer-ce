@@ -80,7 +80,7 @@ static unsigned const	base = 256;
 static unsigned const first_char = 33;
 #define MAX_CHARSET_SIZE 60000
 
-static FT_Library library;
+extern FT_Library library;
 
 #define OSD_CHARSET_SIZE 15
 
@@ -1112,12 +1112,12 @@ int init_freetype(void)
     int err;
 
     /* initialize freetype */
-    err = FT_Init_FreeType(&library);
+    /*err = FT_Init_FreeType(&library);
     if (err) {
 	mp_msg(MSGT_OSD, MSGL_ERR, "Init_FreeType failed.\n");
 	return -1;
     }
-    mp_msg(MSGT_OSD, MSGL_V, "init_freetype\n");
+    mp_msg(MSGT_OSD, MSGL_V, "init_freetype\n");*/
     using_freetype = 1;
     return 0;
 }
@@ -1126,14 +1126,14 @@ int done_freetype(void)
 {
     int err;
 
-    if (!using_freetype)
+    /*if (!using_freetype)
 	return 0;
 
     err = FT_Done_FreeType(library);
     if (err) {
 	mp_msg(MSGT_OSD, MSGL_ERR, MSGTR_LIBVO_FONT_LOAD_FT_DoneFreeTypeFailed);
 	return -1;
-    }
+    }*/
 
     return 0;
 }

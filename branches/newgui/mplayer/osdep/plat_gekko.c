@@ -61,12 +61,12 @@
 
 extern int stream_cache_size;
 
-bool reset_pressed = false;
-bool power_pressed = false;
-bool playing_usb = false;
+//bool reset_pressed = false;
+//bool power_pressed = false;
+//bool playing_usb = false;
 bool playing_dvd = false;
-int network_inited = 0;
-int mounting_usb=0;
+//int network_inited = 0;
+//int mounting_usb=0;
 static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static int dbg_network = false;
@@ -80,6 +80,16 @@ static bool usb_init=false;
 
 #define CE_DEBUG 1
 
+struct SMBSettings {
+	char	ip[16];
+	char	share[20];
+	char	user[20];
+	char	pwd[20];
+};
+
+struct SMBSettings smbConf[5];
+
+/*
 static char *default_args[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
 	"-bgvideo", NULL,
@@ -187,7 +197,7 @@ int wait_for_network_initialisation()
 
 	return 0;
 }
-
+*/
 
 bool DVDGekkoMount()
 {
@@ -213,7 +223,7 @@ bool DVDGekkoMount()
 	dvd_mounted=false;
 	return false;
 }
-
+/*
 static void * networkthreadfunc (void *arg)
 {
 
@@ -326,7 +336,7 @@ void mount_smb(int number)
 	sprintf(cad,"user%d",number);smb_opts[2].name=strdup(cad);
 	sprintf(cad,"pass%d",number);smb_opts[3].name=strdup(cad);
 
-	/* read configuration */
+	// read configuration
 	smb_conf = m_config_new();
 	m_config_register_options(smb_conf, smb_opts);
 	char file[100];
@@ -362,29 +372,6 @@ void trysmb()
 		dp=diropen(cad);
 		if(dp!=NULL) dirclose(dp);
 	}
-}
-
-int LoadParams()
-{
-  m_config_t *comp_conf;
-	m_option_t comp_opts[] =
-	{
-	    {   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	    {   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
-	    {   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	    {   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	    {   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	    {   NULL, NULL, 0, 0, 0, 0, NULL }
-	};
-
-	/* read configuration */
-	comp_conf = m_config_new();
-	m_config_register_options(comp_conf, comp_opts);
-	int ret;
-	char cad[100];
-	sprintf(cad,"%s/mplayer.conf",MPLAYER_DATADIR);
-	return m_config_parse_config_file(comp_conf, cad);
 }
 
 static bool CheckPath(char *path)
@@ -457,116 +444,92 @@ static void * mloadthreadfunc (void *arg)
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
+*/
+/****************************************************************************
+ * LoadConfig
+ *
+ * Loads all MPlayer .conf files
+ ***************************************************************************/
+void LoadConfig(char * path)
+{
+	int i;
+	char filepath[1024];
+	char tmp[20];
+	char* smb_ip;
+	char* smb_share;
+	char* smb_user;
+	char* smb_pass;
 
-void plat_init (int *argc, char **argv[]) {
-#ifndef WIILIB
-
-	WIIDVD_Init();
-
-
-
-	VIDEO_Init();
-
-	PAD_Init();
-
-	WPAD_Init();
-	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS);
-	WPAD_SetIdleTimeout(60);
-
-	WPAD_SetPowerButtonCallback(wpad_power_cb);
-
-	AUDIO_Init(NULL);
-	AUDIO_RegisterDMACallback(NULL);
-	AUDIO_StopDMA();
-
-	if (!DetectValidPath())
+	// mplayer.conf
+	m_config_t *comp_conf;
+	m_option_t comp_opts[] =
 	{
-		GX_InitVideo();
-		log_console_init(vmode, 0);
-		printf("MPlayerCE v.%s\n\n",MPCE_VERSION);
-		printf("SD/USB access failed\n");
-		printf("Please check that you have installed MPlayerCE in the right folder\n");
-		printf("Valid folders:\n");
-		printf(" sd:/apps/mplayer_ce\n sd:/mplayer\n usb:/apps/mplayer_ce\n usb:/mplayer\n");
+	{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+	{   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+	{   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
+	{   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
+	{   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
+	{   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
+	{   NULL, NULL, 0, 0, 0, 0, NULL }
+	};
 
-		VIDEO_WaitVSync();
-		sleep(6);
-		if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
-		exit(0);
+	comp_conf = m_config_new();
+	m_config_register_options(comp_conf, comp_opts);
+	sprintf(filepath,"%s/mplayer.conf", path);
+	m_config_parse_config_file(comp_conf, filepath);
+
+	// smb.conf
+	memset(&smbConf, 0, sizeof(smbConf));
+
+	m_config_t *smb_conf;
+	m_option_t smb_opts[] =
+	{
+		{   NULL, &smb_ip, CONF_TYPE_STRING, 0, 0, 0, NULL },
+		{   NULL, &smb_share, CONF_TYPE_STRING, 0, 0, 0, NULL },
+		{   NULL, &smb_user, CONF_TYPE_STRING, 0, 0, 0, NULL },
+		{   NULL, &smb_pass, CONF_TYPE_STRING, 0, 0, 0, NULL },
+		{   NULL, NULL, 0, 0, 0, 0, NULL }
+	};
+
+	for(i=1; i<=5; i++)
+	{
+		smb_ip = NULL;
+		smb_share = NULL;
+		smb_user = NULL;
+		smb_pass = NULL;
+
+		sprintf(tmp,"ip%d",i); smb_opts[0].name=strdup(tmp);
+		sprintf(tmp,"share%d",i); smb_opts[1].name=strdup(tmp);
+		sprintf(tmp,"user%d",i); smb_opts[2].name=strdup(tmp);
+		sprintf(tmp,"pass%d",i); smb_opts[3].name=strdup(tmp);
+
+		smb_conf = m_config_new();
+		m_config_register_options(smb_conf, smb_opts);
+		sprintf(filepath,"%s/smb.conf", path);
+		m_config_parse_config_file(smb_conf, filepath);
+
+		if(smb_ip!=NULL && smb_share!=NULL)
+		{
+			if(smb_user==NULL) smb_user=strdup("");
+			if(smb_pass==NULL) smb_pass=strdup("");
+
+			snprintf(smbConf[i-1].ip, 16, "%s", smb_ip);
+			snprintf(smbConf[i-1].share, 20, "%s", smb_share);
+			snprintf(smbConf[i-1].user, 20, "%s", smb_user);
+			snprintf(smbConf[i-1].pwd, 20, "%s", smb_pass);
+		}
 	}
-#else
-DetectValidPath();
-log_console_init(vmode, 128);
-log_console_enable_video(false);
-printf("Loading ");
-#endif
-	SYS_SetResetCallback (reset_cb);
-	SYS_SetPowerCallback (power_cb);
 
-	LoadParams();
-	GX_SetComponentFix(component_fix);
+	sprintf(MPLAYER_DATADIR,"%s",path);
+	sprintf(MPLAYER_CONFDIR,"%s",path);
+	sprintf(MPLAYER_LIBDIR,"%s",path);
+}
+
+void plat_init (int *argc, char **argv[])
+{
 	GX_SetCamPosZ(gxzoom);
 	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
 
-#ifndef WIILIB
-	GX_InitVideo();
-
-	log_console_init(vmode, 128);
-
-  printf("Loading ");
-
-  char cad[10]={127,130,158,147,171,151,164,117,119,0};
-  __dec(cad);
-  printf ("\x1b[32m");
-	printf("%s",cad);
-	printf(" v.%s ....\n\n",MPCE_VERSION);
-  printf ("\x1b[37m");
-
-
-	VIDEO_WaitVSync();
-
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-
-//usb->startup(); //init usb before network (testing)
-
-	mainthread=LWP_GetSelf();
-	lwp_t clientthread;
-
-#ifndef CE_DEBUG  //no network on debug
-
-	if(dbg_network)
-	{
-		printf("\nDebugging Network\n");
-		if(wait_for_network_initialisation())
-		{
-			trysmb();
-		}
-		printf("Pause for reading (10 seconds)...");
-		VIDEO_WaitVSync();
-		sleep(10);
-	}
-	else
-	{
-		LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 80); // network initialization
-		usleep(1000);
-	}
-
-
-//	log_console_enable_video(false);
-
-#endif
-//LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 80); // auto-mount file system
-	if(usb_init)
-	{
-		usleep(5000);
-		//if(!load_echi_module()) DisableUSB2(true);
-		fatUnmount("usb:");
-		usb_mp->startup();
-		fatMount("usb",usb_mp,0,2,256);
-	}
-	else LWP_CreateThread(&clientthread, mloadthreadfunc, NULL, NULL, 0, 80); // network initialization
-#endif
 	//chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
 	setenv("DVDCSS_CACHE", "off", 1);
@@ -574,64 +537,7 @@ printf("Loading ");
 	setenv("DVDREAD_VERBOSE", "0", 1);
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
 
-#ifndef WIILIB
-
-	default_args[2]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
-	strcpy(default_args[2],MPLAYER_DATADIR);
-	default_args[4]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
-	strcpy(default_args[4],MPLAYER_DATADIR);
-
-	if (CONF_GetAspectRatio())
-	{ //16:9
-		strcat(default_args[2],"/loop-wide.avi");
-		strcat(default_args[4],"/loop-wide.avi");
-	}
-	else
-	{  // 4:3
-		strcat(default_args[2],"/loop.avi");
-		strcat(default_args[4],"/loop.avi");
-	}
-
-	*argv = default_args;
-	*argc = sizeof(default_args) / sizeof(char *);
-
-#endif
 	stream_cache_size=8*1024; //default cache size (8MB)
 
-	if (!*((u32*)0x80001800)) sp();
-}
-
-void plat_deinit (int rc) {
-	exit_automount_thread=true;
-	// Not needed to unmount, speed up close, we don't write
-/*
-	WIIDVD_Close();
-	fatUnmount("sd");
-	fatUnmount("usb");
-
-	smbClose("smb1");
-	smbClose("smb2");
-	smbClose("smb3");
-	smbClose("smb4");
-	smbClose("smb5");
-*/
-
-	if (power_pressed) {
-		//printf("shutting down\n");
-		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
-	}
-//	mload_close();
-	// only needed to debug problems
-/*
-	log_console_enable_video(true);
-
-	VIDEO_WaitVSync();
-
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-
-	//if (rc != 0) sleep(5);
-	sleep(5);
-	log_console_deinit();
-*/
+	//if (!*((u32*)0x80001800)) sp();
 }

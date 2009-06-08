@@ -12,6 +12,7 @@
 #include <ogcsys.h>
 #include <unistd.h>
 #include <wiiuse/wpad.h>
+#include <di/di.h>
 
 #include "FreeTypeGX.h"
 #include "video.h"
@@ -23,19 +24,86 @@
 
 FreeTypeGX *fontSystem;
 struct SCESettings CESettings;
+int ScreenshotRequested = 0;
+int ConfigRequested = 0;
+int ShutdownRequested = 0;
+int ResetRequested = 0;
 int ExitRequested = 0;
+char appPath[1024];
 char loadedFile[1024];
 
-void ExitApp()
+/****************************************************************************
+ * Shutdown / Reboot / Exit
+ ***************************************************************************/
+
+static void ExitCleanup()
 {
 	ShutoffRumble();
 	StopGX();
-	exit(0);
+	HaltDeviceThread();
+	UnmountAllFAT();
+	DI_Close();
+}
+
+void ExitApp()
+{
+	ExitCleanup();
+
+	if(ShutdownRequested == 1)
+		SYS_ResetSystem(SYS_POWEROFF, 0, 0); // Shutdown Wii
+
+	char * sig = (char *)0x80001804;
+	if(
+		sig[0] == 'S' &&
+		sig[1] == 'T' &&
+		sig[2] == 'U' &&
+		sig[3] == 'B' &&
+		sig[4] == 'H' &&
+		sig[5] == 'A' &&
+		sig[6] == 'X' &&
+		sig[7] == 'X')
+		exit(0); // Exit to HBC
+	else
+		SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0); // HBC not found
+}
+
+void ShutdownCB()
+{
+	ConfigRequested = 1;
+	ShutdownRequested = 1;
+}
+void ResetCB()
+{
+	ResetRequested = 1;
+}
+
+static void CreateAppPath(char origpath[])
+{
+	char path[1024];
+	strcpy(path, origpath); // make a copy so we don't mess up original
+
+	char * loc;
+	int pos = -1;
+
+	loc = strrchr(path,'/');
+	if (loc != NULL)
+		*loc = 0; // strip file name
+
+	loc = strchr(path,'/'); // looking for / from fat:/ or sd:/
+	if (loc != NULL)
+		pos = loc - path + 1;
+
+	if(pos >= 0 && pos < 1024)
+		sprintf(appPath, &(path[pos]));
 }
 
 int
 main(int argc, char *argv[])
 {
+	DI_Init();	// first
+
+	InitDeviceThread();
+	VIDEO_Init();
 	PAD_Init();
 	WPAD_Init();
 	InitVideo(); // Initialise video
@@ -45,25 +113,44 @@ main(int argc, char *argv[])
 	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
 	WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth, screenheight);
 
+	// Wii Power/Reset buttons
+	WPAD_SetPowerButtonCallback((WPADShutdownCallback)ShutdownCB);
+	SYS_SetPowerCallback(ShutdownCB);
+	SYS_SetResetCallback(ResetCB);
+
+	// store path app was loaded from
+	sprintf(appPath, "sd:/apps/mplayer_ce");
+	//if(argc > 0 && argv[0] != NULL)
+	//	CreateAppPath(argv[0]);
+
+	MountAllFAT(); // Initialize libFAT for SD and USB
+
+	LoadConfig(appPath);
+
 	// Initialize font system
 	fontSystem = new FreeTypeGX();
 	fontSystem->loadFont(font_ttf, font_ttf_size, 0);
 	fontSystem->setCompatibilityMode(FTGX_COMPATIBILITY_DEFAULT_TEVOP_GX_PASSCLR | FTGX_COMPATIBILITY_DEFAULT_VTXDESC_GX_NONE);
 
 	InitGUIThreads();
-	InitDeviceThread();
 
 	while(1)
 	{
+		AUDIO_RegisterDMACallback(NULL);
+		AUDIO_StopDMA();
+		ResetVideo_Menu();
+
+		ResumeDeviceThread();
 		Menu(MENU_MAIN);
+		HaltDeviceThread();
 
 		// load video
-		char *mplayer_args[] = {
+		const char *mplayer_args[] = {
 			"",
 			"-really-quiet",
 			"-vo","gekko","-ao","gekko",loadedFile
 		};
 
-		main2(sizeof(mplayer_args) / sizeof(char *),mplayer_args);
+		main2(sizeof(mplayer_args) / sizeof(char *),(char **)mplayer_args);
 	}
 }

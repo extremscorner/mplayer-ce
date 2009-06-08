@@ -22,6 +22,8 @@
 
 #include "FreeTypeGX.h"
 
+FT_Library library; // for MPlayer
+
 /**
  * Default constructor for the FreeTypeGX class.
  *
@@ -30,6 +32,7 @@
  */
 FreeTypeGX::FreeTypeGX(uint8_t textureFormat, uint8_t vertexIndex) {
 	FT_Init_FreeType(&this->ftLibrary);
+	library = this->ftLibrary;
 
 	this->textureFormat = textureFormat;
 	this->setVertexFormat(vertexIndex);

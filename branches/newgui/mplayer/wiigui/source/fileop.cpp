@@ -41,6 +41,34 @@ bool isMounted[2] = { false, false };
  * deviceThreading
  ***************************************************************************/
 lwp_t devicethread = LWP_THREAD_NULL;
+static bool deviceHalt = true;
+
+/****************************************************************************
+ * ResumeDeviceThread
+ *
+ * Signals the device thread to start, and resumes the thread.
+ ***************************************************************************/
+void
+ResumeDeviceThread()
+{
+	deviceHalt = false;
+	LWP_ResumeThread(devicethread);
+}
+
+/****************************************************************************
+ * HaltGui
+ *
+ * Signals the device thread to stop.
+ ***************************************************************************/
+void
+HaltDeviceThread()
+{
+	deviceHalt = true;
+
+	// wait for thread to finish
+	while(!LWP_ThreadIsSuspended(devicethread))
+		usleep(100);
+}
 
 /****************************************************************************
  * devicecallback
@@ -48,10 +76,19 @@ lwp_t devicethread = LWP_THREAD_NULL;
  * This checks our devices for changes (SD/USB removed) and
  * initializes the network in the background
  ***************************************************************************/
+static int devsleep = 1*1000*1000;
+
 static void *
 devicecallback (void *arg)
 {
-	sleep(1);
+	while(devsleep > 0)
+	{
+		if(deviceHalt)
+			LWP_SuspendThread(devicethread);
+		usleep(100);
+		devsleep -= 100;
+	}
+
 	while (1)
 	{
 		if(isMounted[DEVICE_SD])
@@ -72,7 +109,15 @@ devicecallback (void *arg)
 			}
 		}
 		InitializeNetwork(SILENT);
-		sleep(1); // suspend thread for 1 sec
+		devsleep = 1000*1000; // 1 sec
+
+		while(devsleep > 0)
+		{
+			if(deviceHalt)
+				LWP_SuspendThread(devicethread);
+			usleep(100);
+			devsleep -= 100;
+		}
 	}
 	return NULL;
 }
@@ -127,7 +172,7 @@ bool MountFAT(int device)
 			return false; // unknown device
 	}
 
-	sprintf(rootdir, "%s:/", name);
+	sprintf(rootdir, "%s:", name);
 
 	if(unmountRequired[device])
 	{

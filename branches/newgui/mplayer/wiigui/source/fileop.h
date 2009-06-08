@@ -18,6 +18,8 @@
 #include <unistd.h>
 
 void InitDeviceThread();
+void ResumeDeviceThread();
+void HaltDeviceThread();
 void MountAllFAT();
 void UnmountAllFAT();
 bool ChangeInterface(int device, int devnum, bool silent);

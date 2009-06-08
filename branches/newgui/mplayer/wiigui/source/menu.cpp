@@ -207,7 +207,7 @@ UpdateGUI (void *arg)
 			if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
 				ExitRequested = 1;
 
-			if(ExitRequested)
+			if(ExitRequested || ShutdownRequested)
 			{
 				for(int a = 0; a < 255; a += 15)
 				{
@@ -616,7 +616,7 @@ static int MenuBrowseDevice()
 				}
 				else
 				{
-					sprintf(loadedFile, "%s%s", rootdir, browserList[browser.selIndex].filename);
+					sprintf(loadedFile, "%s%s/%s", rootdir, browser.dir, browserList[browser.selIndex].filename);
 					menu = MENU_EXIT;
 				}
 			}
@@ -1051,7 +1051,7 @@ static int MenuMain()
 				break;
 
 			case 4: // Exit
-				menu = MENU_EXIT;
+				ExitRequested = 1;
 				break;
 		}
 	}

@@ -11,9 +11,9 @@
 
 struct SMBSettings {
 	char	ip[16];
+	char	share[20];
 	char	user[20];
 	char	pwd[20];
-	char	share[20];
 };
 
 void InitializeNetwork(bool silent);

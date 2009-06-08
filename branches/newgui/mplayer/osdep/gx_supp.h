@@ -35,6 +35,7 @@ extern GXRModeObj *vmode;
 
 void GX_SetCamPosZ(float f);
 void GX_SetComponentFix(bool f);
+void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch);
 
 void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect);
 void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch);

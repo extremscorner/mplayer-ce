@@ -232,10 +232,7 @@ static void free_extensions(char **extensions){
     free (extensions);
   }
 }
-#ifdef GEKKO
-extern int network_inited;
-extern int mounting_usb;
-#endif
+
 static int open_dir(menu_t* menu,char* args) {
   char **namelist, **tp;
   struct dirent *dp;
@@ -257,80 +254,6 @@ static int open_dir(menu_t* menu,char* args) {
     free(mpriv->p.title);
   p = strstr(mpriv->title,"%p");
 
-#ifdef GEKKO
-  if(!strcmp(mpriv->dir,"usb:/"))
-  {
-	printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
-  	if(!playing_usb)
-  	{
-  		printf("checking DeviceMounted\n");VIDEO_WaitVSync();
-  		if(DeviceMounted("usb"))
-  		{
-  			printf("usb mounted, unmount\n");VIDEO_WaitVSync();
-  			fatUnmount("usb:");
-		}else
-		{
-		printf("usb not mounted\n");VIDEO_WaitVSync();
-		}
-		printf("startup\n");VIDEO_WaitVSync();
-		if(usb->startup())
-		{
-			printf("startup ok\n");VIDEO_WaitVSync();
-			usleep(50000);
-			if(usb->isInserted())
-			{
-				printf("usb mounting\n");VIDEO_WaitVSync();
-				if(!fatMount("usb",usb,0,2,128)) 
-				{
-					printf("error mounting\n");VIDEO_WaitVSync();
-					return 0;
-				}
-			}			
-		}else 
-		{
-			printf("startup error\n");VIDEO_WaitVSync();
-			return 0;
-		}
-/*
-	  	//msleep();
-	  	while(mounting_usb)usleep(500);
-		if(!usb->isInserted())	
-		{
-			return 0;
-		}	
-*/		
-	}
-
-/*
-	  if(!DeviceMounted("usb:/"))
-	  {
-		  if(!fatMountSimple("usb",usb)) return 0;
-	  }
-*/	  
-  } 
-  else if(!strcmp(mpriv->dir,"dvd:/"))
-  {  
-	  if(!DVDGekkoMount()) return 0;
-  }
-  else if(mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')
-  { // reconnect samba if needed
-	  char device[5]="smbx";
-	  
-	  if(network_inited==0)
-	  {
-  		  set_osd_msg(124,1,2000,"Network not yet initialized, Please Wait");
-		  return 0;
-	  }
-	  	  
-	  device[3]=mpriv->dir[3];
-		set_osd_msg(124,1,2000,"Connecting to %s ",device);
-	  if(!CheckSMBConnection(device)) 
-	  {
-		  set_osd_msg(124,1,2000,"Error reconnecting to %s ",device);
-		  return 0;
-	  }else rm_osd_msg(124);
-  }
-#endif
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);
 
   if ((dirp = opendir (mpriv->dir)) == NULL){

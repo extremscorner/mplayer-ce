@@ -16,7 +16,7 @@
 #include "menu.h"
 #include "networkop.h"
 
-struct SMBSettings smbConf[5];
+extern struct SMBSettings smbConf[5];
 
 static bool inNetworkInit = false;
 static bool networkInit = false;
@@ -34,16 +34,6 @@ void InitializeNetwork(bool silent)
 	// in which case, manual initialization is required
 	if(networkInit || !autoNetworkInit)
 		return;
-
-	memset(&smbConf, 0, sizeof(smbConf));
-	sprintf(smbConf[0].ip, "192.168.0.1");
-	sprintf(smbConf[0].share, "Wii");
-	sprintf(smbConf[1].share, "Movies");
-	sprintf(smbConf[2].share, "Favorite Shows");
-	sprintf(smbConf[3].share, "Home Videos");
-	sprintf(smbConf[4].share, "Other Stuff");
-	sprintf(smbConf[0].user, "Wiiuser");
-	sprintf(smbConf[0].pwd, "password");
 
 	if(!silent)
 		ShowAction ("Initializing network...");
@@ -98,7 +88,7 @@ void CloseShare(int num)
 bool
 ConnectShare (int num, bool silent)
 {
-	sprintf(rootdir, "smb%d:/", num+1);
+	sprintf(rootdir, "smb%d:", num+1);
 	char mountpoint[6];
 	sprintf(mountpoint, "smb%d", num+1);
 

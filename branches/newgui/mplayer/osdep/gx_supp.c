@@ -87,51 +87,12 @@ static camera cam = {
 	{ 0.0f, 0.5f, 0.0f },
 	{ 0.0f, 0.0f, -0.5f }
 };
-/*
-void GX_InitVideo() {
-	vmode = VIDEO_GetPreferredMode(NULL);
 
-	vmode->viWidth = 678;
-  if(!component_fix) vmode->viWidth = 678;
-	else
-  {
-    //vmode->viWidth = VI_MAX_WIDTH_PAL-20;
-    vmode->viWidth = 680;
-    //vmode->xfbHeight+=8;
-  }
-
-  //vmode->viWidth = 678;
-	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
-
-	VIDEO_Configure(vmode);
-
-	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
-	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
-	//gp_fifo = (u8 *) memalign(32, DEFAULT_FIFO_SIZE);
-
-	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
-	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
-
-	whichfb = 0;
-	VIDEO_SetNextFramebuffer(xfb[whichfb]);
-	VIDEO_SetBlack(FALSE);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-}
-*/
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
 {
 	hor_pos = _hor_pos;
 	vert_pos = _vert_pos;
 	stretch = _stretch;
-}
-
-void GX_SetComponentFix(bool f) {
-  	component_fix=f;
-	//if(f)	cam.pos.z = 352;
 }
 
 void GX_SetCamPosZ(float f) {
@@ -188,13 +149,13 @@ static void draw_square(Mtx v) {
 /****************************************************************************
  * StartGX
  ****************************************************************************/
-void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
+/*void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 	//static bool inited = false;
 
 	Mtx p;
 	//GXColor gxbackground = { 0, 0, 0, 0xff };
 
-	/*** Set new aspect ***/
+	// Set new aspect
 	square[0] = square[9] = -haspect;
 	square[3] = square[6] = haspect;
 	square[1] = square[4] = vaspect;
@@ -202,7 +163,7 @@ void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 
 
 
-	/*** Allocate 32byte aligned texture memory ***/
+	// Allocate 32byte aligned texture memory
 	texturesize = (width * height) * 2;
 	if (texturemem)
 		free (texturemem);
@@ -211,7 +172,7 @@ void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 
 	memset(texturemem, 0, texturesize);
 
-	/*** Setup for first call to scaler ***/
+	// Setup for first call to scaler
 	oldvwidth = oldvheight = -1;
 
 	//if (inited)
@@ -219,10 +180,10 @@ void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 
 	//inited = true;
 
-	/*** Clear out FIFO area ***/
+	// Clear out FIFO area
 	//memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
 
-	/*** Initialise GX ***/
+	// Initialise GX
 	//GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
 	//GX_SetCopyClear(gxbackground, 0x00ffffff);
 
@@ -245,14 +206,14 @@ void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
 
 	GX_Flush();
-}
+}*/
 
 /****************************************************************************
 * GX_Render
 *
 * Pass in a buffer, width and height to update as a tiled RGB565 texture
 ****************************************************************************/
-void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
+/*void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 	u16 h, w;
 	u64 *dst = (u64 *) texturemem;
 	u64 *src1 = (u64 *) buffer;
@@ -267,7 +228,7 @@ void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 	whichfb ^= 1;
 
 	if ((oldvheight != vheight) || (oldvwidth != vwidth)) {
-		/** Update scaling **/
+		// Update scaling
 		oldvwidth = vwidth;
 		oldvheight = vheight;
 		draw_init();
@@ -311,7 +272,7 @@ void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
-}
+}*/
 
 /****************************************************************************
  * GX_StartYUV - Initialize GX for given width/height.

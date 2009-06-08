@@ -28,6 +28,10 @@ extern struct SCESettings CESettings;
 #define SILENT 1
 
 void ExitApp();
+extern struct SGCSettings GCSettings;
+extern int ScreenshotRequested;
+extern int ConfigRequested;
+extern int ShutdownRequested;
 extern int ExitRequested;
 extern FreeTypeGX *fontSystem;
 extern char loadedFile[];
@@ -37,6 +41,7 @@ extern "C" {
 #endif
 
 int main2 (int argc, char **argv);
+void LoadConfig(char * path);
 
 #ifdef __cplusplus
 }

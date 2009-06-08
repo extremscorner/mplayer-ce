@@ -904,10 +904,10 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   mp_msg(MSGT_CPLAYER,MSGL_DBG2,"max framesize was %d bytes\n",max_framesize);
 
 #ifdef GEKKO
-  plat_deinit (rc);
+  //plat_deinit (rc);
 #endif
 
-  exit(rc);
+  //exit(rc);
 }
 
 void exit_player(exit_reason_t how){
@@ -2756,10 +2756,6 @@ void return_to_wii_menu(void)
 #ifndef DISABLE_MAIN
 int main2(int argc,char* argv[]){
 
-#ifdef GEKKO
-	atexit(return_to_wii_menu);
-#endif
-
 char * mem_ptr;
 
 // movie info:
@@ -2815,7 +2811,7 @@ int gui_no_filename=0;
           use_gui=1;
   }
 
-    parse_cfgfiles(mconfig);
+    //parse_cfgfiles(mconfig);
 
 #ifdef CONFIG_GUI
     if ( use_gui ) cfg_read();
@@ -3390,8 +3386,6 @@ int vob_sub_auto = 1; //scip
 
 
   // rodries
-  playing_usb=false;
-  playing_dvd=false;
   static float orig_stream_cache_min_percent=-1;
   static float orig_stream_cache_seek_min_percent=-1;
   if(orig_stream_cache_min_percent==-1 && orig_stream_cache_seek_min_percent==-1)
@@ -3427,10 +3421,7 @@ int vob_sub_auto = 1; //scip
 	 stream_cache_min_percent=1;
 	 stream_cache_seek_min_percent=5;
   }
-  else if(!strncmp(filename,"usb:",4))
-  {
-	  playing_usb=true;
-  }
+
   //end rodries
   #endif
   mpctx->stream=open_stream(filename,0,&mpctx->file_format);
@@ -4313,10 +4304,6 @@ if(step_sec>0) {
    {
     play_n_frames=play_n_frames_mf;
     mpctx->eof=0;
-    #ifdef GEKKO
-    playing_usb=false;
-    playing_dvd=false;
-    #endif
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec=0;
     loop_seek = 1;
    }
@@ -4329,10 +4316,6 @@ if(step_sec>0) {
     if(mpctx->loop_times==1) mpctx->loop_times=-1;
     play_n_frames=play_n_frames_mf;
     mpctx->eof=0;
-    #ifdef GEKKO
-    playing_usb=false;
-    playing_dvd=false;
-    #endif
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec;
     loop_seek = 1;
   }

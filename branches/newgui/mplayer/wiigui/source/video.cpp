@@ -197,7 +197,6 @@ InitVideo ()
 		VIDEO_WaitVSync ();
 
 	StartGX();
-	ResetVideo_Menu();
 	// Finally, the video is up and ready for use :)
 }
 
