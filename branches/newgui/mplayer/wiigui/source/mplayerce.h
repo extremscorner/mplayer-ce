@@ -40,8 +40,12 @@ extern char loadedFile[];
 extern "C" {
 #endif
 
-int main2 (int argc, char **argv);
+int mplayer_loadfile(const char* _file);
 void LoadConfig(char * path);
+void log_console_init(GXRModeObj *vmode, u16 logsize);
+//void log_console_deinit(void);
+//void log_console_enable_log(bool enable);
+void log_console_enable_video(bool enable);
 
 #ifdef __cplusplus
 }

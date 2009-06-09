@@ -30,7 +30,7 @@
 
 #include "gx_supp.h"
 
-//#define DEFAULT_FIFO_SIZE (256 * 1024)
+#define DEFAULT_FIFO_SIZE (256 * 1024)
 
 #define HASPECT 320
 #define VASPECT 240
@@ -40,13 +40,22 @@ extern "C" {
 #endif
 
 /*** 2D ***/
+#ifdef WIILIB
 extern u32 whichfb;
 extern u32 *xfb[2];
+#else
+static u32 whichfb;
+static u32 *xfb[2];
+GXRModeObj *vmode = NULL;
+#endif
+
 static bool component_fix=false;
 static int hor_pos=0, vert_pos=0, stretch=0;
 
 /*** 3D GX ***/
-//static u8 *gp_fifo;
+#ifndef WIILIB
+static u8 *gp_fifo;
+#endif
 
 /*** Texture memory ***/
 static u8 *texturemem = NULL, *Ytexture = NULL,*Utexture = NULL,*Vtexture = NULL;
@@ -87,7 +96,41 @@ static camera cam = {
 	{ 0.0f, 0.5f, 0.0f },
 	{ 0.0f, 0.0f, -0.5f }
 };
+#ifndef WIILIB
+void GX_InitVideo() {
+	vmode = VIDEO_GetPreferredMode(NULL);
 
+	vmode->viWidth = 678;
+  if(!component_fix) vmode->viWidth = 678;
+	else
+  { 
+    //vmode->viWidth = VI_MAX_WIDTH_PAL-20;
+    vmode->viWidth = 680;
+    //vmode->xfbHeight+=8;    
+  }
+  
+  //vmode->viWidth = 678;
+	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
+	
+	VIDEO_Configure(vmode);
+
+	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
+	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
+	gp_fifo = (u8 *) memalign(32, DEFAULT_FIFO_SIZE);
+
+	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
+
+	whichfb = 0;
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+}
+#endif
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
 {
 	hor_pos = _hor_pos;
@@ -149,11 +192,11 @@ static void draw_square(Mtx v) {
 /****************************************************************************
  * StartGX
  ****************************************************************************/
-/*void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
-	//static bool inited = false;
+void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
+	static bool inited = false;
 
 	Mtx p;
-	//GXColor gxbackground = { 0, 0, 0, 0xff };
+	GXColor gxbackground = { 0, 0, 0, 0xff };
 
 	// Set new aspect
 	square[0] = square[9] = -haspect;
@@ -175,18 +218,18 @@ static void draw_square(Mtx v) {
 	// Setup for first call to scaler
 	oldvwidth = oldvheight = -1;
 
-	//if (inited)
-	//	return;
+	if (inited)
+		return;
 
-	//inited = true;
-
+	inited = true;
+#ifndef WIILIB
 	// Clear out FIFO area
-	//memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
+	memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
 
 	// Initialise GX
-	//GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
-	//GX_SetCopyClear(gxbackground, 0x00ffffff);
-
+	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
+	GX_SetCopyClear(gxbackground, 0x00ffffff);
+#endif
 	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
 	GX_SetDispCopyYScale((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
 	GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
@@ -206,14 +249,14 @@ static void draw_square(Mtx v) {
 	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
 
 	GX_Flush();
-}*/
+}
 
 /****************************************************************************
 * GX_Render
 *
 * Pass in a buffer, width and height to update as a tiled RGB565 texture
 ****************************************************************************/
-/*void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
+void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 	u16 h, w;
 	u64 *dst = (u64 *) texturemem;
 	u64 *src1 = (u64 *) buffer;
@@ -272,7 +315,7 @@ static void draw_square(Mtx v) {
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
-}*/
+}
 
 /****************************************************************************
  * GX_StartYUV - Initialize GX for given width/height.
@@ -282,7 +325,7 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	int w,h;
 
 	Mtx p;
-	//GXColor gxbackground = { 0, 0, 0, 0xff };
+	GXColor gxbackground = { 0, 0, 0, 0xff };
 
 	/*** Set new aspect ***/
 	square[0] = square[9] = -haspect;
@@ -299,7 +342,6 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 
 	//center, to correct difference between pitch and real width
 	int diffx,diffy;
-	//diffx=/*abs*/((w-width)/2) ;
 	diffx=width-w ;
 	diffx+=hor_pos;
 
@@ -351,18 +393,18 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	/*** Setup for first call to scaler ***/
 	oldvwidth = oldvheight = oldpitch = -1;
 
-	//if (inited)
-	//	return;
+#ifndef WIILIB
+	if (inited)
+		return;
 
-	//inited = true;
+	inited = true;
 
 	/*** Clear out FIFO area ***/
-//(gp_fifo, 0, DEFAULT_FIFO_SIZE);
+	(gp_fifo, 0, DEFAULT_FIFO_SIZE);
 
 	/*** Initialise GX ***/
-	//GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
-	//GX_SetCopyClear(gxbackground, 0x00ffffff);
-
+	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
+	GX_SetCopyClear(gxbackground, 0x00ffffff);
 	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
 	GX_SetDispCopyYScale((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
 	GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
@@ -370,6 +412,8 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	GX_SetDispCopyDst(vmode->fbWidth, vmode->xfbHeight);
 	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
 	GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
+#endif
+
 	GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 	GX_SetCullMode(GX_CULL_NONE);
 	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);

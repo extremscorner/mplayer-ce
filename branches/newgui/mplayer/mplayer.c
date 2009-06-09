@@ -889,6 +889,7 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   case EXIT_QUIT:
     mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_ExitingHow,MSGTR_Exit_quit);
     mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_EXIT=QUIT\n");
+    printf("1a\n");
     break;
   case EXIT_EOF:
     mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_ExitingHow,MSGTR_Exit_eof);
@@ -904,14 +905,16 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   mp_msg(MSGT_CPLAYER,MSGL_DBG2,"max framesize was %d bytes\n",max_framesize);
 
 #ifdef GEKKO
-  //plat_deinit (rc);
+  plat_deinit (rc);
 #endif
 
   //exit(rc);
 }
 
 void exit_player(exit_reason_t how){
+printf("0a\n");sleep(3);
   exit_player_with_rc(how, 1);
+  printf("1b\n");sleep(3);
 }
 
 #if !defined(__MINGW32__) && !defined(GEKKO)
@@ -1142,7 +1145,9 @@ static int libmpdemux_was_interrupted(int eof) {
   if((cmd = mp_input_get_cmd(0,0,0)) != NULL) {
        switch(cmd->id) {
        case MP_CMD_QUIT:
+       printf("e1\n");sleep(3);
 	 exit_player_with_rc(EXIT_QUIT, (cmd->nargs > 0)? cmd->args[0].v.i : 0);
+	 printf("e2\n");sleep(3);
        case MP_CMD_PLAY_TREE_STEP: {
 	 eof = (cmd->args[0].v.i > 0) ? PT_NEXT_ENTRY : PT_PREV_ENTRY;
 	 mpctx->play_tree_step = (cmd->args[0].v.i == 0) ? 1 : cmd->args[0].v.i;
@@ -2754,8 +2759,18 @@ void return_to_wii_menu(void)
 /* This preprocessor directive is a hack to generate a mplayer-nomain.o object
  * file for some tools to link against. */
 #ifndef DISABLE_MAIN
-int main2(int argc,char* argv[]){
-
+#ifdef WIILIB
+int mplayer_loadfile(const char* _file){
+int argc;
+char *argv[] = {
+	"",
+	"-vo","gekko","-ao","gekko",
+	_file
+}; 
+argc=6;
+#else 
+int main(int argc,char* argv[]){
+#endif
 char * mem_ptr;
 
 // movie info:
@@ -2901,9 +2916,13 @@ int gui_no_filename=0;
       opt_exit = 1;
     }
 
+#ifdef GEKKO
+load_builtin_codecs();
+#else
 /* Check codecs.conf. */
 if(!codecs_file || !parse_codec_cfg(codecs_file)){
-  if(!parse_codec_cfg(mem_ptr=get_path("codecs.conf"))){
+  mem_ptr=get_path("codecs.conf");
+  if(!parse_codec_cfg(mem_ptr)){
   	char cad[100];
   	sprintf(cad,"%s%s",MPLAYER_CONFDIR,"/codecs.conf");
     if(!parse_codec_cfg(cad)){
@@ -2915,6 +2934,7 @@ if(!codecs_file || !parse_codec_cfg(codecs_file)){
   }
   free( mem_ptr ); // release the buffer created by get_path()
 }
+#endif
 
 #if 0
     if(video_codec_list){
@@ -3168,7 +3188,6 @@ m_config_set_option(mconfig,"sws","4");
 m_config_set_option(mconfig,"framedrop",NULL);
 m_config_set_option(mconfig,"lavdopts","lowres=1,900");
 
-
   if (filename) {
     load_per_protocol_config (mconfig, filename);
     load_per_extension_config (mconfig, filename);
@@ -3255,7 +3274,9 @@ while (player_idle_mode && !filename) { //AgentX idle hack to make loop.avi cons
             entry = parse_playlist_file(cmd->args[0].v.s);
             break;
         case MP_CMD_QUIT:
+			printf("e3\n");sleep(3);            
             exit_player_with_rc(EXIT_QUIT, (cmd->nargs > 0)? cmd->args[0].v.i : 0);
+			printf("e4\n");sleep(3);            
             break;
         case MP_CMD_GET_PROPERTY:
         case MP_CMD_SET_PROPERTY:
@@ -4065,10 +4086,10 @@ else if (/*restore_seek>0 && */mpctx->sh_audio && !mpctx->mixer.muted) mixer_mut
 	}
 */
 #endif
-
+mpctx->eof=0;
 while(!mpctx->eof){
     float aq_sleep_time=0;
-init_while:
+//init_while:
 if(dvd_last_chapter>0) {
   int cur_chapter = demuxer_get_current_chapter(mpctx->demuxer);
   if(cur_chapter!=-1 && cur_chapter+1>dvd_last_chapter)
@@ -4307,7 +4328,6 @@ if(step_sec>0) {
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec=0;
     loop_seek = 1;
    }
-
   /* Looping. */
   if(mpctx->eof==1 && mpctx->loop_times>=0) {
     mp_msg(MSGT_CPLAYER,MSGL_V,"loop_times = %d, eof = %d\n", mpctx->loop_times,mpctx->eof);
@@ -4319,7 +4339,6 @@ if(step_sec>0) {
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec;
     loop_seek = 1;
   }
-
 
 if(rel_seek_secs || abs_seek_pos){
   if (seek(mpctx, rel_seek_secs, abs_seek_pos) >= 0) {
@@ -4365,9 +4384,10 @@ if(rel_seek_secs || abs_seek_pos){
 #endif /* CONFIG_GUI */
 
 
-
 } // while(!mpctx->eof)
-
+#ifdef WIILIB
+if(mpctx->eof==1) return 1;
+#endif
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);
 
 #ifdef CONFIG_DVBIN
@@ -4471,7 +4491,6 @@ if(mpctx->eof == PT_NEXT_ENTRY || mpctx->eof == PT_PREV_ENTRY) {
 }
 
 if(mpctx->eof == 0) mpctx->eof = 1;
-
 while(mpctx->playtree_iter != NULL) {
     filename = play_tree_iter_get_file(mpctx->playtree_iter,mpctx->eof);
     if(filename == NULL) {
@@ -4482,7 +4501,6 @@ while(mpctx->playtree_iter != NULL) {
     } else
         break;
 }
-
 #ifdef CONFIG_GUI
 if(use_gui && !mpctx->playtree_iter) {
 #ifdef CONFIG_DVDREAD
@@ -4493,16 +4511,13 @@ if(use_gui && !mpctx->playtree_iter) {
 #endif
 
 
-
 if(use_gui || mpctx->playtree_iter != NULL || player_idle_mode){
     if(!mpctx->playtree_iter) filename = NULL;
     mpctx->eof = 0;
     goto play_next_file;
 }
 
-
 exit_player_with_rc(EXIT_EOF, 0);
-
 return 1;
 }
 #endif /* DISABLE_MAIN */

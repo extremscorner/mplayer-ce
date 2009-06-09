@@ -1,5 +1,5 @@
 /****************************************************************************
-*   gx_supp.h - Generic GX Scaler
+*   gx_supp.h - Generic GX Scaler 
 *   softdev 2007
 *   dhewg 2008
 *   sepp256 2008 - Coded YUV->RGB conversion in TEV.
@@ -33,9 +33,9 @@ extern "C" {
 
 extern GXRModeObj *vmode;
 
+void GX_InitVideo();
 void GX_SetCamPosZ(float f);
 void GX_SetComponentFix(bool f);
-void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch);
 
 void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect);
 void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch);

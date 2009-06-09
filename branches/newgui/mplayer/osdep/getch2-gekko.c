@@ -99,10 +99,15 @@ void getch2(void) {
 	u16 pad, i;
 	u32 wpad;
 	bool mod,update;
-
+	
 
 	if (!getch2_status)
 		return;
+
+	if (reset_pressed || power_pressed) {
+		mplayer_put_key(KEY_CLOSE_WIN);
+		return;
+	}
 
 	tt = gettime();
 	if (ticks_to_millisecs(tt - lt) < (TB_MSPERSEC / 60))
@@ -123,7 +128,7 @@ void getch2(void) {
 	if (WPAD_Probe (0, NULL) == WPAD_ERR_NONE) {
 		wpad = WPAD_ButtonsDown(0);
 		//if(wpad == WPAD_BUTTON_2) log_console_change_state_video();
-
+			
 		if (WPAD_ButtonsHeld(0) & WPAD_BUTTON_2)
 			mod = true;
 	}
@@ -141,7 +146,7 @@ void getch2(void) {
 				return;
 			}
 	}
-
+	
 	update=false;
 	//check nunchuk activity
 	{
@@ -152,22 +157,22 @@ void getch2(void) {
 		{
 			float diffx = exp.nunchuk.js.pos.x - exp.nunchuk.js.center.x;
 			float diffy = exp.nunchuk.js.pos.y - exp.nunchuk.js.center.y;
-			if(fabs(diffx)>SENSIBILITY)
+			if(fabs(diffx)>SENSIBILITY) 
 			{
-				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z))
+				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z)) 
 					m_screenleft_shift -= diffx/div;
 				m_screenright_shift -= diffx/div;
 				update=true;
 			}
-			if(fabs(diffy)>SENSIBILITY)
+			if(fabs(diffy)>SENSIBILITY) 
 			{
-				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z))
+				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z)) 
 					m_screentop_shift -= diffy/div;
 				m_screenbottom_shift -= diffy/div;
 				update=true;
 			}
 
-			if(exp.nunchuk.btns_held & NUNCHUK_BUTTON_C)
+			if(exp.nunchuk.btns_held & NUNCHUK_BUTTON_C) 
 			{
 				m_screenleft_shift = 0;
 				m_screenright_shift = 0;
@@ -181,12 +186,12 @@ void getch2(void) {
 			{
 				float diffx = exp.classic.rjs.pos.x - exp.classic.rjs.center.x;
 				float diffy = exp.classic.rjs.pos.y - exp.classic.rjs.center.y;
-				if(fabs(diffx)>SENSIBILITY)
+				if(fabs(diffx)>SENSIBILITY) 
 				{
 					m_screenright_shift -= diffx/div;
 					update=true;
 				}
-				if(fabs(diffy)>SENSIBILITY)
+				if(fabs(diffy)>SENSIBILITY) 
 				{
 					m_screenbottom_shift -= diffy/div;
 					update=true;
@@ -195,18 +200,18 @@ void getch2(void) {
 			{
 				float diffx = exp.classic.ljs.pos.x - exp.classic.ljs.center.x;
 				float diffy = exp.classic.ljs.pos.y - exp.classic.ljs.center.y;
-				if(fabs(diffx)>SENSIBILITY)
+				if(fabs(diffx)>SENSIBILITY) 
 				{
 					m_screenleft_shift -= diffx/div;
 					update=true;
 				}
-				if(fabs(diffy)>SENSIBILITY)
+				if(fabs(diffy)>SENSIBILITY) 
 				{
 					m_screentop_shift -= diffy/div;
 					update=true;
 				}
 			}
-			if(exp.classic.btns_held & CLASSIC_CTRL_BUTTON_B)
+			if(exp.classic.btns_held & CLASSIC_CTRL_BUTTON_B) 
 			{
 				m_screenleft_shift = 0;
 				m_screenright_shift = 0;
@@ -217,7 +222,7 @@ void getch2(void) {
 		}
 		if(update)GX_UpdateSquare();
 	}
-
+	
 }
 
 #if defined(HAVE_LANGINFO) && defined(CONFIG_ICONV)
@@ -230,7 +235,7 @@ char* get_term_charset(void) {
 
 #ifdef HAVE_LANGINFO
   	static const char *charset_aux = "ASCII";
-    char *charset = NULL;
+    char *charset = NULL; 
     setlocale(LC_CTYPE, "");
     charset = nl_langinfo(CODESET);
     setlocale(LC_CTYPE, "C");

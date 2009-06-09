@@ -96,7 +96,9 @@ const devoptab_t dot_out = {
 void log_console_init(GXRModeObj *vmode, u16 logsize) {
 	u16 i;
 	LWP_MutexInit(&console_mutex, false);
+#ifndef WIILIB	
 	CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
+#endif
 	rcb = VIDEO_SetPostRetraceCallback(NULL);
 	VIDEO_SetPostRetraceCallback(rcb);
 

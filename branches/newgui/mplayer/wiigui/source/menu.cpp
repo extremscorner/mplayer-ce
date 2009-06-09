@@ -616,7 +616,7 @@ static int MenuBrowseDevice()
 				}
 				else
 				{
-					sprintf(loadedFile, "%s%s/%s", rootdir, browser.dir, browserList[browser.selIndex].filename);
+					sprintf(loadedFile, "%s%s%s", rootdir, browser.dir, browserList[browser.selIndex].filename);
 					menu = MENU_EXIT;
 				}
 			}

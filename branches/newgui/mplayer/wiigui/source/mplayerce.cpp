@@ -109,6 +109,8 @@ main(int argc, char *argv[])
 	InitVideo(); // Initialise video
 	AUDIO_Init(NULL);
 
+	//extern GXRModeObj *vmode;
+	//log_console_init(vmode, 0);
 	// read wiimote accelerometer and IR data
 	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
 	WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth, screenheight);
@@ -133,7 +135,6 @@ main(int argc, char *argv[])
 	fontSystem->setCompatibilityMode(FTGX_COMPATIBILITY_DEFAULT_TEVOP_GX_PASSCLR | FTGX_COMPATIBILITY_DEFAULT_VTXDESC_GX_NONE);
 
 	InitGUIThreads();
-
 	while(1)
 	{
 		AUDIO_RegisterDMACallback(NULL);
@@ -143,14 +144,11 @@ main(int argc, char *argv[])
 		ResumeDeviceThread();
 		Menu(MENU_MAIN);
 		HaltDeviceThread();
-
+		//log_console_enable_video(true);
 		// load video
-		const char *mplayer_args[] = {
-			"",
-			"-really-quiet",
-			"-vo","gekko","-ao","gekko",loadedFile
-		};
-
-		main2(sizeof(mplayer_args) / sizeof(char *),(char **)mplayer_args);
+		VIDEO_SetPostRetraceCallback (NULL);//disable callback in mplayer, reasigned in ResetVideo_Menu
+		mplayer_loadfile(loadedFile);
+		//log_console_enable_video(true);
+		//printf("test\n");sleep(5);
 	}
 }

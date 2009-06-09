@@ -2510,6 +2510,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_QUIT:
+		printf("xxx1\n");sleep(3);
 	    exit_player_with_rc(EXIT_QUIT,
 				(cmd->nargs > 0) ? cmd->args[0].v.i : 0);
 
@@ -2529,10 +2530,11 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 		} else
 #endif
 		{
+			#ifndef WIILIB
 		    if (!force && mpctx->playtree_iter) {
 			play_tree_iter_t *i =
 			    play_tree_iter_new_copy(mpctx->playtree_iter);
-			if (play_tree_iter_step(i, n, 0) ==
+			if (i && play_tree_iter_step(i, n, 0) ==
 			    PLAY_TREE_ITER_ENTRY)
 			    mpctx->eof =
 				(n > 0) ? PT_NEXT_ENTRY : PT_PREV_ENTRY;
@@ -2541,6 +2543,9 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 			mpctx->eof = (n > 0) ? PT_NEXT_ENTRY : PT_PREV_ENTRY;
 		    if (mpctx->eof)
 			mpctx->play_tree_step = n;
+		    #else
+		    mpctx->eof = 1;
+			#endif
 		    brk_cmd = 1;
 		}
 	    }

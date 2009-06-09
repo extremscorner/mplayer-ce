@@ -77,6 +77,29 @@ StartGX ()
 
 	GX_SetDispCopyGamma (GX_GM_1_0);
 	GX_SetCullMode (GX_CULL_NONE);
+	
+	
+	///////////////////////////////////////////////
+	Mtx44 p;
+	f32 yscale;
+	u32 xfbHeight;
+	
+	GX_SetViewport(0,0,vmode->fbWidth,vmode->efbHeight,0,1);
+	// clears the bg to color and clears the z buffer
+	
+	GX_SetCopyClear (background, 0x00ffffff);
+
+	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GX_SetAlphaUpdate(GX_TRUE);
+
+	yscale = GX_GetYScaleFactor(vmode->efbHeight,vmode->xfbHeight);
+	xfbHeight = GX_SetDispCopyYScale(yscale);
+	GX_SetScissor(0,0,vmode->fbWidth,vmode->efbHeight);
+	GX_SetDispCopySrc(0,0,vmode->fbWidth,vmode->efbHeight);
+	GX_SetDispCopyDst(vmode->fbWidth,xfbHeight);
+	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,GX_TRUE,vmode->vfilter);
+	GX_SetFieldMode(vmode->field_rendering,((vmode->viHeight==2*vmode->xfbHeight)?GX_ENABLE:GX_DISABLE));
+	
 }
 
 /****************************************************************************
@@ -104,18 +127,21 @@ ResetVideo_Menu()
 	GXColor background = {0, 0, 0, 255};
 	GX_SetCopyClear (background, 0x00ffffff);
 
-	yscale = GX_GetYScaleFactor(vmode->efbHeight,vmode->xfbHeight);
-	xfbHeight = GX_SetDispCopyYScale(yscale);
-	GX_SetScissor(0,0,vmode->fbWidth,vmode->efbHeight);
-	GX_SetDispCopySrc(0,0,vmode->fbWidth,vmode->efbHeight);
-	GX_SetDispCopyDst(vmode->fbWidth,xfbHeight);
-	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,GX_TRUE,vmode->vfilter);
-	GX_SetFieldMode(vmode->field_rendering,((vmode->viHeight==2*vmode->xfbHeight)?GX_ENABLE:GX_DISABLE));
 
 	if (vmode->aa)
 		GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
 	else
 		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+
+
+
+	GX_SetNumChans(1);
+	GX_SetNumTevStages(1);
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GX_SetTevOp (GX_TEVSTAGE0, GX_PASSCLR);
+
+	GX_SetNumTexGens(1);
+	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
 
 	// setup the vertex descriptor
 	// tells the flipper to expect direct data
@@ -132,11 +158,8 @@ ResetVideo_Menu()
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	GX_SetZMode (GX_FALSE, GX_LEQUAL, GX_TRUE);
 
-	GX_SetNumChans(1);
-	GX_SetNumTexGens(1);
-	GX_SetTevOp (GX_TEVSTAGE0, GX_PASSCLR);
-	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+	
+
 
 	guMtxIdentity(GXmodelView2D);
 	guMtxTransApply (GXmodelView2D, GXmodelView2D, 0.0F, 0.0F, -50.0F);
@@ -144,10 +167,11 @@ ResetVideo_Menu()
 
 	guOrtho(p,0,479,0,639,0,300);
 	GX_LoadProjectionMtx(p, GX_ORTHOGRAPHIC);
+	
+	// video callback
+	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
+	
 
-	GX_SetViewport(0,0,vmode->fbWidth,vmode->efbHeight,0,1);
-	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-	GX_SetAlphaUpdate(GX_TRUE);
 }
 
 /****************************************************************************
@@ -180,8 +204,8 @@ InitVideo ()
 	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 
 	// A console is always useful while debugging
-	console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * 2);
-
+	//console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * 2);
+	CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
 	// Clear framebuffers etc.
 	VIDEO_ClearFrameBuffer (vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer (vmode, xfb[1], COLOR_BLACK);

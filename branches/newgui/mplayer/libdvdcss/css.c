@@ -50,7 +50,6 @@
 #include <fcntl.h>
 
 #ifdef HAVE_LIMITS_H
-#define _GCC_LIMITS_H_ // we need this to avoid a compilation error?
 #   include <syslimits.h>
 #endif
 

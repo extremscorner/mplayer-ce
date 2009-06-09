@@ -1,0 +1,1 @@
+C:\devkitPro\devkitPPC\bin\powerpc-gekko-addr2line -e mplayer-ce.elf %1

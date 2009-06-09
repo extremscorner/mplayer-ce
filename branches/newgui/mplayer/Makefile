@@ -879,6 +879,9 @@ mplayer$(EXESUF): $(MPLAYER_DEPS)
 mplayer-wiilib.o: mplayer.c
 	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
 
+command-wiilib.o: command.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
 osdep/gx_supp-wiilib.o: osdep/gx_supp.c
 	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
 
@@ -888,7 +891,8 @@ osdep/plat_gekko-wiilib.o: osdep/plat_gekko.c
 A1 =	$(subst gx_supp.o,gx_supp-wiilib.o,$(OBJS_MPLAYER))
 A2 =	$(subst mplayer.o,mplayer-wiilib.o,$(A1))
 A3 =	$(subst plat_gekko.o,plat_gekko-wiilib.o,$(A2))
-MPLAYERWIILIB = $(A3) 
+A4 =	$(subst command.o,command-wiilib.o,$(A3))
+MPLAYERWIILIB = $(A4) 
 MPLAYERWIILIB += $(OBJS_COMMON) 
 
 libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
