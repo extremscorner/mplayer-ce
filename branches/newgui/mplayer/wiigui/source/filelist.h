@@ -14,10 +14,29 @@
 extern const u8		font_ttf[];
 extern const u32	font_ttf_size;
 
+extern const u8		logo_png[];
+extern const u32	logo_png_size;
+
+extern const u8		bg_top_png[];
+extern const u32	bg_top_png_size;
+
+extern const u8		bg_bottom_png[];
+extern const u32	bg_bottom_png_size;
+
 extern const u8		button_png[];
 extern const u32	button_png_size;
 extern const u8		button_over_png[];
 extern const u32	button_over_png_size;
+
+extern const u8		button_small_png[];
+extern const u32	button_small_png_size;
+extern const u8		button_small_over_png[];
+extern const u32	button_small_over_png_size;
+
+extern const u8		button_large_png[];
+extern const u32	button_large_png_size;
+extern const u8		button_large_over_png[];
+extern const u32	button_large_over_png_size;
 
 extern const u8		bg_menuitem_png[];
 extern const u32	bg_menuitem_png_size;
@@ -124,6 +143,15 @@ extern const u32	throbber_png_size;
 
 extern const u8		folder_png[];
 extern const u32	folder_png_size;
+
+extern const u8		battery_png[];
+extern const u32	battery_png_size;
+
+extern const u8		battery_red_png[];
+extern const u32	battery_red_png_size;
+
+extern const u8		battery_bar_png[];
+extern const u32	battery_bar_png_size;
 
 extern const u8		player1_point_png[];
 extern const u32	player1_point_png_size;

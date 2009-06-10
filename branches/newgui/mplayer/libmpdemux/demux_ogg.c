@@ -37,8 +37,13 @@
 #define FOURCC_THEORA mmioFOURCC('t', 'h', 'e', 'o')
 
 #ifdef CONFIG_TREMOR
+#ifdef GEKKO
+#include "../tremor/ogg.h"
+#include "../tremor/ivorbiscodec.h"
+#else
 #include <tremor/ogg.h>
 #include <tremor/ivorbiscodec.h>
+#endif
 #else
 #include <ogg/ogg.h>
 #include <vorbis/codec.h>

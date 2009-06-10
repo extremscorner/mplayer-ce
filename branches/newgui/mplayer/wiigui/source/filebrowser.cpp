@@ -87,12 +87,6 @@ int UpdateDirName()
 		{
 			/* update current directory name */
 			sprintf(browser.dir, "%s%s/",browser.dir, browserList[browser.selIndex].filename);
-			/*
-			if(strlen(browser.dir) == 1)
-				sprintf(browser.dir, "%s%s/",browser.dir, browserList[browser.selIndex].filename);
-			else
-				sprintf(browser.dir, "%s/%s",browser.dir, browserList[browser.selIndex].filename);
-			*/
 			return 1;
 		}
 		else

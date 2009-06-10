@@ -26,8 +26,15 @@
 #define THREAD_SLEEP 100
 
 static GuiImageData * pointer[4];
+static GuiImage * videoImg = NULL;
 static GuiImage * bgImg = NULL;
+static GuiImage * bgImgTop = NULL;
+static GuiImage * bgImgBottom = NULL;
+static GuiButton * btnLogo = NULL;
 static GuiWindow * mainWindow = NULL;
+
+static int lastMenu = MENU_NONE;
+
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
 static bool guiHalt = true;
@@ -502,6 +509,225 @@ static void OnScreenKeyboard(char * var, u16 maxlen)
 	mainWindow->Remove(&keyboard);
 	mainWindow->SetState(STATE_DEFAULT);
 	ResumeGui();
+}
+
+/****************************************************************************
+ * MenuHome
+ *
+ * Menu displayed when returning to the menu from in-video.
+ ***************************************************************************/
+static int MenuHome()
+{
+	int menu = MENU_NONE;
+
+	GuiText titleTxt("MPlayer CE", 24, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(50,50);
+
+	GuiImageData btnCloseOutline(button_small_png);
+	GuiImageData btnCloseOutlineOver(button_small_over_png);
+	GuiImageData btnLargeOutline(button_large_png);
+	GuiImageData btnLargeOutlineOver(button_large_over_png);
+
+	GuiImageData battery(battery_png);
+	GuiImageData batteryRed(battery_red_png);
+	GuiImageData batteryBar(battery_bar_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiTrigger trigHome;
+	trigHome.SetButtonOnlyTrigger(-1, WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME, 0);
+
+	GuiText mainmenuBtnTxt("Main Menu", 24, (GXColor){0, 0, 0, 255});
+	GuiImage mainmenuBtnImg(&btnLargeOutline);
+	GuiImage mainmenuBtnImgOver(&btnLargeOutlineOver);
+	GuiButton mainmenuBtn(btnLargeOutline.GetWidth(), btnLargeOutline.GetHeight());
+	mainmenuBtn.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
+	mainmenuBtn.SetPosition(-125, 120);
+	mainmenuBtn.SetLabel(&mainmenuBtnTxt);
+	mainmenuBtn.SetImage(&mainmenuBtnImg);
+	mainmenuBtn.SetImageOver(&mainmenuBtnImgOver);
+	mainmenuBtn.SetTrigger(&trigA);
+	mainmenuBtn.SetEffectGrow();
+
+	GuiText exitBtnTxt("Exit", 24, (GXColor){0, 0, 0, 255});
+	GuiImage exitBtnImg(&btnLargeOutline);
+	GuiImage exitBtnImgOver(&btnLargeOutlineOver);
+	GuiButton exitBtn(btnLargeOutline.GetWidth(), btnLargeOutline.GetHeight());
+	exitBtn.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
+	exitBtn.SetPosition(125, 120);
+	exitBtn.SetLabel(&exitBtnTxt);
+	exitBtn.SetImage(&exitBtnImg);
+	exitBtn.SetImageOver(&exitBtnImgOver);
+	exitBtn.SetTrigger(&trigA);
+	exitBtn.SetEffectGrow();
+
+	GuiText closeBtnTxt("Close", 22, (GXColor){0, 0, 0, 255});
+	GuiImage closeBtnImg(&btnCloseOutline);
+	GuiImage closeBtnImgOver(&btnCloseOutlineOver);
+	GuiButton closeBtn(btnCloseOutline.GetWidth(), btnCloseOutline.GetHeight());
+	closeBtn.SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
+	closeBtn.SetPosition(-50, 35);
+	closeBtn.SetLabel(&closeBtnTxt);
+	closeBtn.SetImage(&closeBtnImg);
+	closeBtn.SetImageOver(&closeBtnImgOver);
+	closeBtn.SetTrigger(&trigA);
+	closeBtn.SetTrigger(&trigHome);
+	closeBtn.SetEffectGrow();
+
+	int i, level;
+	char txt[3];
+	GuiText * batteryTxt[4];
+	GuiImage * batteryImg[4];
+	GuiImage * batteryBarImg[4];
+	GuiButton * batteryBtn[4];
+
+	for(i=0; i < 4; i++)
+	{
+		if(i == 0)
+			sprintf(txt, "P %d", i+1);
+		else
+			sprintf(txt, "P%d", i+1);
+
+		batteryTxt[i] = new GuiText(txt, 22, (GXColor){255, 255, 255, 255});
+		batteryTxt[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
+		batteryImg[i] = new GuiImage(&battery);
+		batteryImg[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
+		batteryImg[i]->SetPosition(30, 0);
+		batteryBarImg[i] = new GuiImage(&batteryBar);
+		batteryBarImg[i]->SetTile(0);
+		batteryBarImg[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
+		batteryBarImg[i]->SetPosition(34, 0);
+
+		batteryBtn[i] = new GuiButton(70, 20);
+		batteryBtn[i]->SetLabel(batteryTxt[i]);
+		batteryBtn[i]->SetImage(batteryImg[i]);
+		batteryBtn[i]->SetIcon(batteryBarImg[i]);
+		batteryBtn[i]->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+		batteryBtn[i]->SetRumble(false);
+		batteryBtn[i]->SetAlpha(150);
+	}
+
+	batteryBtn[0]->SetPosition(45, -65);
+	batteryBtn[1]->SetPosition(135, -65);
+	batteryBtn[2]->SetPosition(45, -40);
+	batteryBtn[3]->SetPosition(135, -40);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&titleTxt);
+	w.Append(&mainmenuBtn);
+	w.Append(&exitBtn);
+	w.Append(batteryBtn[0]);
+	w.Append(batteryBtn[1]);
+	w.Append(batteryBtn[2]);
+	w.Append(batteryBtn[3]);
+
+	w.Append(&closeBtn);
+
+	mainWindow->Append(&w);
+
+	if(lastMenu == MENU_NONE)
+	{
+		bgImgTop->SetVisible(true);
+		bgImgBottom->SetVisible(true);
+
+		bgImgTop->SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_IN, 35);
+		closeBtn.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_IN, 35);
+		titleTxt.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_IN, 35);
+		mainmenuBtn.SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
+		bgImgBottom->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
+
+		batteryBtn[0]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
+		batteryBtn[1]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
+		batteryBtn[2]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
+		batteryBtn[3]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
+
+		w.SetEffect(EFFECT_FADE, 15);
+	}
+
+	ResumeGui();
+
+	while(menu == MENU_NONE)
+	{
+		usleep(THREAD_SLEEP);
+
+		for(i=0; i < 4; i++)
+		{
+			if(WPAD_Probe(i, NULL) == WPAD_ERR_NONE) // controller connected
+			{
+				level = (userInput[i].wpad.battery_level / 100.0) * 4;
+				if(level > 4) level = 4;
+				batteryBarImg[i]->SetTile(level);
+
+				if(level == 0)
+					batteryImg[i]->SetImage(&batteryRed);
+				else
+					batteryImg[i]->SetImage(&battery);
+
+				batteryBtn[i]->SetAlpha(255);
+			}
+			else // controller not connected
+			{
+				batteryBarImg[i]->SetTile(0);
+				batteryImg[i]->SetImage(&battery);
+				batteryBtn[i]->SetAlpha(150);
+			}
+		}
+
+		if(exitBtn.GetState() == STATE_CLICKED)
+		{
+			ExitRequested = 1;
+		}
+		else if(mainmenuBtn.GetState() == STATE_CLICKED)
+		{
+			if(videoImg)
+			{
+				mainWindow->Remove(videoImg);
+				delete videoImg;
+				videoImg = NULL;
+			}
+			if(videoScreenshot)
+			{
+				free(videoScreenshot);
+				videoScreenshot = NULL;
+			}
+			menu = MENU_MAIN;
+			loadedFile[0] = 0;
+		}
+		else if(closeBtn.GetState() == STATE_CLICKED)
+		{
+			menu = MENU_EXIT;
+
+			bgImgTop->SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_OUT, 15);
+			closeBtn.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_OUT, 15);
+			titleTxt.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_OUT, 15);
+			mainmenuBtn.SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
+			bgImgBottom->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
+
+			batteryBtn[0]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
+			batteryBtn[1]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
+			batteryBtn[2]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
+			batteryBtn[3]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
+
+			w.SetEffect(EFFECT_FADE, -15);
+			usleep(350000); // wait for effects to finish
+		}
+	}
+
+	HaltGui();
+
+	for(i=0; i < 4; i++)
+	{
+		delete batteryTxt[i];
+		delete batteryImg[i];
+		delete batteryBarImg[i];
+		delete batteryBtn[i];
+	}
+
+	mainWindow->Remove(&w);
+	return menu;
 }
 
 /****************************************************************************
@@ -1068,20 +1294,37 @@ static int MenuMain()
 void Menu(int menu)
 {
 	int currentMenu = menu;
+	lastMenu = MENU_NONE;
 
-	#ifdef HW_RVL
 	pointer[0] = new GuiImageData(player1_point_png);
 	pointer[1] = new GuiImageData(player2_point_png);
 	pointer[2] = new GuiImageData(player3_point_png);
 	pointer[3] = new GuiImageData(player4_point_png);
-	#endif
 
 	mainWindow = new GuiWindow(screenwidth, screenheight);
 
 	bgImg = new GuiImage();
 	bgImg->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
 	bgImg->SetPosition(0, 0);
+	GuiImageData bgTop(bg_top_png);
+	bgImgTop = new GuiImage(&bgTop);
+	bgImgTop->SetVisible(false);
+	GuiImageData bgBottom(bg_bottom_png);
+	bgImgBottom = new GuiImage(&bgBottom);
+	bgImgBottom->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	bgImgBottom->SetVisible(false);
+
+	if(videoScreenshot)
+	{
+		videoImg = new GuiImage(videoScreenshot, screenwidth, screenheight);
+		videoImg->SetAlpha(192);
+		videoImg->ColorStripe(30);
+		mainWindow->Append(videoImg);
+	}
+
 	mainWindow->Append(bgImg);
+	mainWindow->Append(bgImgTop);
+	mainWindow->Append(bgImgBottom);
 
 	GuiTrigger trigA;
 	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
@@ -1119,10 +1362,14 @@ void Menu(int menu)
 			case MENU_OPTIONS_MENU:
 				currentMenu = MenuOptionsMenu();
 				break;
+			case MENU_HOME:
+				currentMenu = MenuHome();
+				break;
 			default: // unrecognized menu
 				currentMenu = MenuMain();
 				break;
 		}
+		lastMenu = currentMenu;
 		usleep(THREAD_SLEEP);
 	}
 
@@ -1131,6 +1378,8 @@ void Menu(int menu)
 	HaltGui();
 
 	delete bgImg;
+	delete bgImgTop;
+	delete bgImgBottom;
 	delete mainWindow;
 
 	delete pointer[0];
@@ -1139,4 +1388,15 @@ void Menu(int menu)
 	delete pointer[3];
 
 	mainWindow = NULL;
+
+	if(videoImg)
+	{
+		delete videoImg;
+		videoImg = NULL;
+	}
+	if(videoScreenshot)
+	{
+		free(videoScreenshot);
+		videoScreenshot = NULL;
+	}
 }

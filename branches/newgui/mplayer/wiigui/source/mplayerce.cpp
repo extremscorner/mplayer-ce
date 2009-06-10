@@ -128,6 +128,7 @@ main(int argc, char *argv[])
 	MountAllFAT(); // Initialize libFAT for SD and USB
 
 	LoadConfig(appPath);
+	loadedFile[0] = 0;
 
 	// Initialize font system
 	fontSystem = new FreeTypeGX();
@@ -142,7 +143,10 @@ main(int argc, char *argv[])
 		ResetVideo_Menu();
 
 		ResumeDeviceThread();
-		Menu(MENU_MAIN);
+		if(strlen(loadedFile) > 0)
+			Menu(MENU_HOME);
+		else
+			Menu(MENU_MAIN);
 		HaltDeviceThread();
 		//log_console_enable_video(true);
 		// load video

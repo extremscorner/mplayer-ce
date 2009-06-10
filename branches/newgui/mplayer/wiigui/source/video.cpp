@@ -18,11 +18,13 @@
 #include "libwiigui/gui.h"
 
 #define DEFAULT_FIFO_SIZE 256 * 1024
+static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN (32);
+static Mtx GXmodelView2D;
+
 unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 int whichfb = 0; // Switch
 GXRModeObj *vmode; // Menu video mode
-static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN (32);
-static Mtx GXmodelView2D;
+u8 * videoScreenshot = NULL;
 int screenheight;
 int screenwidth;
 
@@ -77,29 +79,40 @@ StartGX ()
 
 	GX_SetDispCopyGamma (GX_GM_1_0);
 	GX_SetCullMode (GX_CULL_NONE);
-	
-	
-	///////////////////////////////////////////////
-	Mtx44 p;
-	f32 yscale;
-	u32 xfbHeight;
-	
+
 	GX_SetViewport(0,0,vmode->fbWidth,vmode->efbHeight,0,1);
+
 	// clears the bg to color and clears the z buffer
-	
 	GX_SetCopyClear (background, 0x00ffffff);
 
 	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 	GX_SetAlphaUpdate(GX_TRUE);
 
-	yscale = GX_GetYScaleFactor(vmode->efbHeight,vmode->xfbHeight);
-	xfbHeight = GX_SetDispCopyYScale(yscale);
+	f32 yscale = GX_GetYScaleFactor(vmode->efbHeight,vmode->xfbHeight);
+	u32 xfbHeight = GX_SetDispCopyYScale(yscale);
 	GX_SetScissor(0,0,vmode->fbWidth,vmode->efbHeight);
 	GX_SetDispCopySrc(0,0,vmode->fbWidth,vmode->efbHeight);
 	GX_SetDispCopyDst(vmode->fbWidth,xfbHeight);
 	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,GX_TRUE,vmode->vfilter);
 	GX_SetFieldMode(vmode->field_rendering,((vmode->viHeight==2*vmode->xfbHeight)?GX_ENABLE:GX_DISABLE));
-	
+}
+
+/****************************************************************************
+ * TakeScreenshot
+ *
+ * Copies the current screen into a GX texture
+ ***************************************************************************/
+void TakeScreenshot()
+{
+	if(videoScreenshot != NULL) free(videoScreenshot);
+	int texSize = vmode->fbWidth * vmode->efbHeight * 4;
+	videoScreenshot = (u8 *)memalign(32, texSize);
+	if(videoScreenshot == NULL) return;
+	GX_SetTexCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
+	GX_SetTexCopyDst(vmode->fbWidth, vmode->efbHeight, GX_TF_RGBA8, GX_FALSE);
+	GX_CopyTex(videoScreenshot, GX_FALSE);
+	GX_PixModeSync();
+	DCFlushRange(videoScreenshot, texSize);
 }
 
 /****************************************************************************
@@ -111,8 +124,6 @@ void
 ResetVideo_Menu()
 {
 	Mtx44 p;
-	f32 yscale;
-	u32 xfbHeight;
 
 	VIDEO_Configure (vmode);
 	VIDEO_Flush();
@@ -127,13 +138,10 @@ ResetVideo_Menu()
 	GXColor background = {0, 0, 0, 255};
 	GX_SetCopyClear (background, 0x00ffffff);
 
-
 	if (vmode->aa)
 		GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
 	else
 		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-
-
 
 	GX_SetNumChans(1);
 	GX_SetNumTevStages(1);
@@ -158,20 +166,15 @@ ResetVideo_Menu()
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	GX_SetZMode (GX_FALSE, GX_LEQUAL, GX_TRUE);
 
-	
-
-
 	guMtxIdentity(GXmodelView2D);
 	guMtxTransApply (GXmodelView2D, GXmodelView2D, 0.0F, 0.0F, -50.0F);
 	GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
 
 	guOrtho(p,0,479,0,639,0,300);
 	GX_LoadProjectionMtx(p, GX_ORTHOGRAPHIC);
-	
+
 	// video callback
 	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
-	
-
 }
 
 /****************************************************************************
@@ -204,15 +207,12 @@ InitVideo ()
 	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 
 	// A console is always useful while debugging
-	//console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * 2);
-	CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
+	//CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
+
 	// Clear framebuffers etc.
 	VIDEO_ClearFrameBuffer (vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer (vmode, xfb[1], COLOR_BLACK);
 	VIDEO_SetNextFramebuffer (xfb[0]);
-
-	// video callback
-	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
 
 	VIDEO_SetBlack (FALSE);
 	VIDEO_Flush ();
