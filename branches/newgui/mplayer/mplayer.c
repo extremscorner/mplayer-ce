@@ -888,8 +888,7 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   switch(how) {
   case EXIT_QUIT:
     mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_ExitingHow,MSGTR_Exit_quit);
-    mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_EXIT=QUIT\n");
-    printf("1a\n");
+    mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_EXIT=QUIT\n");    
     break;
   case EXIT_EOF:
     mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_ExitingHow,MSGTR_Exit_eof);
@@ -908,13 +907,11 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   plat_deinit (rc);
 #endif
 
-  //exit(rc);
+  exit(rc);
 }
 
 void exit_player(exit_reason_t how){
-printf("0a\n");sleep(3);
   exit_player_with_rc(how, 1);
-  printf("1b\n");sleep(3);
 }
 
 #if !defined(__MINGW32__) && !defined(GEKKO)
@@ -1145,9 +1142,7 @@ static int libmpdemux_was_interrupted(int eof) {
   if((cmd = mp_input_get_cmd(0,0,0)) != NULL) {
        switch(cmd->id) {
        case MP_CMD_QUIT:
-       printf("e1\n");sleep(3);
 	 exit_player_with_rc(EXIT_QUIT, (cmd->nargs > 0)? cmd->args[0].v.i : 0);
-	 printf("e2\n");sleep(3);
        case MP_CMD_PLAY_TREE_STEP: {
 	 eof = (cmd->args[0].v.i > 0) ? PT_NEXT_ENTRY : PT_PREV_ENTRY;
 	 mpctx->play_tree_step = (cmd->args[0].v.i == 0) ? 1 : cmd->args[0].v.i;
@@ -3274,9 +3269,7 @@ while (player_idle_mode && !filename) { //AgentX idle hack to make loop.avi cons
             entry = parse_playlist_file(cmd->args[0].v.s);
             break;
         case MP_CMD_QUIT:
-			printf("e3\n");sleep(3);            
             exit_player_with_rc(EXIT_QUIT, (cmd->nargs > 0)? cmd->args[0].v.i : 0);
-			printf("e4\n");sleep(3);            
             break;
         case MP_CMD_GET_PROPERTY:
         case MP_CMD_SET_PROPERTY:
@@ -4317,7 +4310,7 @@ if(step_sec>0) {
       brk_cmd = run_command(mpctx, cmd);
       mp_cmd_free(cmd);
       if (brk_cmd == 2)
-	  goto goto_enable_cache;
+	  	goto goto_enable_cache;
   }
 }
   mpctx->was_paused = 0;
@@ -4331,7 +4324,6 @@ if(step_sec>0) {
   /* Looping. */
   if(mpctx->eof==1 && mpctx->loop_times>=0) {
     mp_msg(MSGT_CPLAYER,MSGL_V,"loop_times = %d, eof = %d\n", mpctx->loop_times,mpctx->eof);
-
     if(mpctx->loop_times>1) mpctx->loop_times--; else
     if(mpctx->loop_times==1) mpctx->loop_times=-1;
     play_n_frames=play_n_frames_mf;
@@ -4390,6 +4382,7 @@ if(mpctx->eof==1) return 1;
 #endif
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);
 
+
 #ifdef CONFIG_DVBIN
 if(mpctx->dvbin_reopen)
 {
@@ -4403,7 +4396,6 @@ if(mpctx->dvbin_reopen)
 }
 
 goto_next_file:  // don't jump here after ao/vo/getch initialization!
-
 mp_msg(MSGT_CPLAYER,MSGL_INFO,"\n");
 
 if(benchmark){
@@ -4434,7 +4426,6 @@ if(benchmark){
 // time to uninit all, except global stuff:
 //rodries: INITIALIZED_DEMUXER+INITIALIZED_VCODEC  review (added for testing)
 uninit_player(INITIALIZED_ALL-(INITIALIZED_DEMUXER+INITIALIZED_INPUT+INITIALIZED_VCODEC+INITIALIZED_GUI+(fixed_vo?INITIALIZED_VO:0)));
-
 if(mpctx->set_of_sub_size > 0) {
     current_module="sub_free";
     for(i = 0; i < mpctx->set_of_sub_size; ++i) {
@@ -4463,7 +4454,6 @@ if(mpctx->eof == PT_NEXT_SRC || mpctx->eof == PT_STOP /*|| mpctx->eof == PT_NEXT
 	save_restore_point(fileplaying,demuxer_get_current_time(mpctx->demuxer));
 }else delete_restore_point(fileplaying);
 #endif
-
 if(mpctx->eof == PT_NEXT_ENTRY || mpctx->eof == PT_PREV_ENTRY) {
     mpctx->eof = mpctx->eof == PT_NEXT_ENTRY ? 1 : -1;
     if(play_tree_iter_step(mpctx->playtree_iter,mpctx->play_tree_step,0) == PLAY_TREE_ITER_ENTRY) {
@@ -4489,7 +4479,6 @@ if(mpctx->eof == PT_NEXT_ENTRY || mpctx->eof == PT_PREV_ENTRY) {
 } else { // NEXT PREV SRC
     mpctx->eof = mpctx->eof == PT_PREV_SRC ? -1 : 1;
 }
-
 if(mpctx->eof == 0) mpctx->eof = 1;
 while(mpctx->playtree_iter != NULL) {
     filename = play_tree_iter_get_file(mpctx->playtree_iter,mpctx->eof);

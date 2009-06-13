@@ -678,11 +678,9 @@ static int mp_property_audio_delay(m_option_t * prop, int action,
 		return ret;
 	    if (mpctx->sh_audio)
 		mpctx->delay -= audio_delay - delay;
-		printf("delay: %f",mpctx->delay);
 	}
 	return M_PROPERTY_OK;
     default:
-    printf("delay: %f",mpctx->delay);
 	return m_property_delay(prop, action, arg, &audio_delay);
     }
 }
@@ -1304,7 +1302,6 @@ static int mp_property_aspect(m_option_t * prop, int action, void *arg,
 static int mp_property_sub_pos(m_option_t * prop, int action, void *arg,
 			       MPContext * mpctx)
 {
-printf("xxx\n");
     if (!mpctx->sh_video)
 	return M_PROPERTY_UNAVAILABLE;
 
@@ -2510,7 +2507,6 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_QUIT:
-		printf("xxx1\n");sleep(3);
 	    exit_player_with_rc(EXIT_QUIT,
 				(cmd->nargs > 0) ? cmd->args[0].v.i : 0);
 
@@ -2932,7 +2928,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 				j=strlen(vobsub_filename);
 				for(i=j-1;i>0 && vobsub_filename[i]!='.';i--);
 				vobsub_filename[i]='\0';							
-				printf("vobsub_filename: %s\n",vobsub_filename); sleep(3);
+				
 				aux_vobsub=vobsub_open(vobsub_filename,NULL,0,&vo_spudec);
 				if(aux_vobsub){
 				  if(vo_vobsub) 

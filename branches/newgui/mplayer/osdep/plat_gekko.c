@@ -139,7 +139,7 @@ static s32 initialise_network()
     while ((result = net_init()) == -EAGAIN) 
 	{
 		usleep(500);
-		printf("err net\n");
+		//printf("err net\n");
 	}
     return result;
 }
@@ -498,7 +498,6 @@ void plat_init (int *argc, char **argv[]) {
 	}
 
 	
-//	log_console_enable_video(false);
 
 #endif
 	if(usb_init)
@@ -542,7 +541,10 @@ void plat_init (int *argc, char **argv[]) {
 
 	stream_cache_size=8*1024; //default cache size (8MB)
 		
-	if (!*((u32*)0x80001800)) sp(); 
+	if (!*((u32*)0x80001800)) sp();
+	
+	log_console_enable_video(false);
+	 
 }
 #endif
 
