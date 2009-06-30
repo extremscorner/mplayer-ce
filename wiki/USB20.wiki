@@ -5,7 +5,7 @@
 
 You need to install the USB 2.0 cIOS from [http://mplayer-ce.googlecode.com/files/hermes_cios_installer.dol here].
 
-If you have installed a previous version of the USB 2.0 cIOS you must use [http://wiibrew.org/wiki/AnyTitle_Deleter/ AnyTitle Deleter] to remove it before installing. (Only if the new installation keeps giving errors, also remove the 0000000 folder it may have created on root of SD)
+If you have installed a previous version of the USB 2.0 cIOS you must use [http://wiibrew.org/wiki/AnyTitle_Deleter/ AnyTitle Deleter] and remove the existing IOS202. (Only if the new installation keeps giving errors, also remove the 0000000 folder it may have created on root of SD)
 If you don't have wifi you can use the offline install via [http://wiibrew.org/wiki/Talk:CIOS_usb2#Offline_Installation here]
 
 In the installer, choose to install as IOS202 using IOS60 as the base.
