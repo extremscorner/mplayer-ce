@@ -10,6 +10,9 @@ This page will also explain changing the loop.avi.
 ==Setup and Edit your Configs.==
 
 ===smb.conf===
+
+First of all if you are planning on using SMB, be sure to follow the USB2.0 installation as the IOS60 as a base to install as IOS202 gives much better wifi stability. The Instalation can be found: [http://code.google.com/p/mplayer-ce/wiki/USB20 Here].
+
 Your smb.conf has 5 shares.
 Determine how many shares you want to use and fill in the fields.
 For example, I have a folder shared on C:\ called Movies.  I don't have a password on my user account, and my folder isn't protected. Therefore I don't need to add my user in the field in the example below.  Typically shares made with Windows XP won't need the username or password fields filled in.
