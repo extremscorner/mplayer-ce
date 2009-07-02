@@ -11,7 +11,6 @@
 
 #include <ogcsys.h>
 
-void InitGUIThreads();
 void Menu (int menuitem);
 void ErrorPrompt(const char * msg);
 int ErrorPromptRetry(const char * msg);

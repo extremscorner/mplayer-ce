@@ -46,6 +46,58 @@ static int progressDone = 0;
 static int progressTotal = 0;
 
 /****************************************************************************
+ * UpdateGUI
+ *
+ * Primary thread to allow GUI to respond to state changes, and draws GUI
+ ***************************************************************************/
+
+static void *
+UpdateGUI (void *arg)
+{
+	while(1)
+	{
+		if(guiHalt)
+		{
+			break;
+		}
+		else
+		{
+			mainWindow->Draw();
+
+			#ifdef HW_RVL
+			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
+			{
+				if(userInput[i].wpad.ir.valid)
+					Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
+						96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
+				DoRumble(i);
+			}
+			#endif
+
+			Menu_Render();
+
+			for(int i=0; i < 4; i++)
+				mainWindow->Update(&userInput[i]);
+
+			if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
+				ExitRequested = 1;
+
+			if(ExitRequested || ShutdownRequested)
+			{
+				for(int a = 0; a < 255; a += 15)
+				{
+					mainWindow->Draw();
+					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
+					Menu_Render();
+				}
+				ExitApp();
+			}
+		}
+	}
+	return NULL;
+}
+
+/****************************************************************************
  * ResumeGui
  *
  * Signals the GUI thread to start, and resumes the thread. This is called
@@ -56,7 +108,9 @@ static void
 ResumeGui()
 {
 	guiHalt = false;
-	LWP_ResumeThread (guithread);
+
+	if(guithread == LWP_THREAD_NULL)
+		LWP_CreateThread (&guithread, UpdateGUI, NULL, NULL, 0, 70);
 }
 
 /****************************************************************************
@@ -72,9 +126,12 @@ HaltGui()
 {
 	guiHalt = true;
 
+	if(guithread == LWP_THREAD_NULL)
+		return;
+
 	// wait for thread to finish
-	while(!LWP_ThreadIsSuspended(guithread))
-		usleep(THREAD_SLEEP);
+	LWP_JoinThread(guithread, NULL);
+	guithread = LWP_THREAD_NULL;
 }
 
 /****************************************************************************
@@ -175,58 +232,6 @@ WindowPrompt(const char *title, const char *msg, const char *btn1Label, const ch
 	mainWindow->SetState(STATE_DEFAULT);
 	ResumeGui();
 	return choice;
-}
-
-/****************************************************************************
- * UpdateGUI
- *
- * Primary thread to allow GUI to respond to state changes, and draws GUI
- ***************************************************************************/
-
-static void *
-UpdateGUI (void *arg)
-{
-	while(1)
-	{
-		if(guiHalt)
-		{
-			LWP_SuspendThread(guithread);
-		}
-		else
-		{
-			mainWindow->Draw();
-
-			#ifdef HW_RVL
-			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
-			{
-				if(userInput[i].wpad.ir.valid)
-					Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
-						96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
-				DoRumble(i);
-			}
-			#endif
-
-			Menu_Render();
-
-			for(int i=0; i < 4; i++)
-				mainWindow->Update(&userInput[i]);
-
-			if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
-				ExitRequested = 1;
-
-			if(ExitRequested || ShutdownRequested)
-			{
-				for(int a = 0; a < 255; a += 15)
-				{
-					mainWindow->Draw();
-					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
-					Menu_Render();
-				}
-				ExitApp();
-			}
-		}
-	}
-	return NULL;
 }
 
 /****************************************************************************
@@ -338,24 +343,12 @@ static void * ProgressThread (void *arg)
 	while(1)
 	{
 		if(!showProgress)
-			LWP_SuspendThread (progressthread);
+			break;
 
 		ProgressWindow(progressTitle, progressMsg);
 		usleep(THREAD_SLEEP);
 	}
 	return NULL;
-}
-
-/****************************************************************************
- * InitGUIThread
- *
- * Startup GUI threads
- ***************************************************************************/
-void
-InitGUIThreads()
-{
-	LWP_CreateThread (&guithread, UpdateGUI, NULL, NULL, 0, 70);
-	LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 40);
 }
 
 /****************************************************************************
@@ -370,9 +363,12 @@ CancelAction()
 {
 	showProgress = 0;
 
+	if(progressthread == LWP_THREAD_NULL)
+		return;
+
 	// wait for thread to finish
-	while(!LWP_ThreadIsSuspended(progressthread))
-		usleep(THREAD_SLEEP);
+	LWP_JoinThread(progressthread, NULL);
+	progressthread = LWP_THREAD_NULL;
 }
 
 /****************************************************************************
@@ -400,7 +396,9 @@ ShowProgress (const char *msg, int done, int total)
 	showProgress = 1;
 	progressTotal = total;
 	progressDone = done;
-	LWP_ResumeThread (progressthread);
+
+	if(progressthread == LWP_THREAD_NULL)
+		LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 40);
 }
 
 /****************************************************************************
@@ -420,7 +418,9 @@ ShowAction (const char *msg)
 	showProgress = 2;
 	progressDone = 0;
 	progressTotal = 0;
-	LWP_ResumeThread (progressthread);
+
+	if(progressthread == LWP_THREAD_NULL)
+		LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 40);
 }
 
 void ErrorPrompt(const char *msg)

@@ -17,7 +17,6 @@
 #include <fat.h>
 #include <unistd.h>
 
-void InitDeviceThread();
 void ResumeDeviceThread();
 void HaltDeviceThread();
 void MountAllFAT();

@@ -102,7 +102,6 @@ main(int argc, char *argv[])
 {
 	DI_Init();	// first
 
-	InitDeviceThread();
 	VIDEO_Init();
 	PAD_Init();
 	WPAD_Init();
@@ -135,7 +134,6 @@ main(int argc, char *argv[])
 	fontSystem->loadFont(font_ttf, font_ttf_size, 0);
 	fontSystem->setCompatibilityMode(FTGX_COMPATIBILITY_DEFAULT_TEVOP_GX_PASSCLR | FTGX_COMPATIBILITY_DEFAULT_VTXDESC_GX_NONE);
 
-	InitGUIThreads();
 	while(1)
 	{
 		AUDIO_RegisterDMACallback(NULL);
@@ -148,6 +146,7 @@ main(int argc, char *argv[])
 		else
 			Menu(MENU_MAIN);
 		HaltDeviceThread();
+
 		//log_console_enable_video(true);
 		// load video
 		VIDEO_SetPostRetraceCallback (NULL);//disable callback in mplayer, reasigned in ResetVideo_Menu

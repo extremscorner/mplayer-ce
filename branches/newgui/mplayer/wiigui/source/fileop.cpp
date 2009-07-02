@@ -44,33 +44,6 @@ lwp_t devicethread = LWP_THREAD_NULL;
 static bool deviceHalt = true;
 
 /****************************************************************************
- * ResumeDeviceThread
- *
- * Signals the device thread to start, and resumes the thread.
- ***************************************************************************/
-void
-ResumeDeviceThread()
-{
-	deviceHalt = false;
-	LWP_ResumeThread(devicethread);
-}
-
-/****************************************************************************
- * HaltGui
- *
- * Signals the device thread to stop.
- ***************************************************************************/
-void
-HaltDeviceThread()
-{
-	deviceHalt = true;
-
-	// wait for thread to finish
-	while(!LWP_ThreadIsSuspended(devicethread))
-		usleep(100);
-}
-
-/****************************************************************************
  * devicecallback
  *
  * This checks our devices for changes (SD/USB removed) and
@@ -84,7 +57,7 @@ devicecallback (void *arg)
 	while(devsleep > 0)
 	{
 		if(deviceHalt)
-			LWP_SuspendThread(devicethread);
+			return NULL;
 		usleep(100);
 		devsleep -= 100;
 	}
@@ -114,7 +87,7 @@ devicecallback (void *arg)
 		while(devsleep > 0)
 		{
 			if(deviceHalt)
-				LWP_SuspendThread(devicethread);
+				return NULL;
 			usleep(100);
 			devsleep -= 100;
 		}
@@ -123,15 +96,31 @@ devicecallback (void *arg)
 }
 
 /****************************************************************************
- * InitDeviceThread
+ * ResumeDeviceThread
  *
- * libOGC provides a nice wrapper for LWP access.
- * This function sets up a new local queue and attaches the thread to it.
+ * Signals the device thread to start, and resumes the thread.
  ***************************************************************************/
 void
-InitDeviceThread()
+ResumeDeviceThread()
 {
-	LWP_CreateThread (&devicethread, devicecallback, NULL, NULL, 0, 40);
+	deviceHalt = false;
+	if(!devicethread)
+		LWP_CreateThread (&devicethread, devicecallback, NULL, NULL, 0, 40);
+}
+
+/****************************************************************************
+ * HaltGui
+ *
+ * Signals the device thread to stop.
+ ***************************************************************************/
+void
+HaltDeviceThread()
+{
+	deviceHalt = true;
+
+	// wait for thread to finish
+	LWP_JoinThread(devicethread, NULL);
+	devicethread = LWP_THREAD_NULL;
 }
 
 /****************************************************************************
@@ -185,7 +174,7 @@ bool MountFAT(int device)
 	{
 		if(!disc->startup())
 			mounted = false;
-		else if(!fatMountSimple(name, disc))
+		else if(!fatMount(name, disc, 0, 2, 256))
 			mounted = false;
 	}
 
