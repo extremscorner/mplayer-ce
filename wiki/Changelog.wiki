@@ -3,6 +3,27 @@
 
 = Changelog to MPlayerCE =
 
+
+== 0.7 ==
+
+ * Files now first analyse, followed by cache, as cache was emptied on analysing previously so now you'll see cache filling later.
+ * Improved audio/video internet cache, detects if it is a internet stream, if it's a radio stream then initial cache fill is small.
+ * Optimizing memory access suggestion from Shagkur, cache thread is now more stable.
+ * A8 patch added for DVD playback in cIOS202 to avoid problems with old ModChips.
+ * Improved libfat and fix for special characters.
+ * Using latest Libfat to prevent possible corruption on sd.
+ * Improved USB hotplug and dvd detection, echi module modified for more compatability with usb devices.
+ * Can now mount any fat partition, shouldn't matter if partition is set as primary or activated.
+ * Now has real fat32 limit therfore can now play larger files.
+ * Video files that hadn't worked previously may work now.
+ * New buffering system implemented for when buffering is low, if cache becomes low, it will pause and re-buffer to fill cache-min value, to prevent possible hangs with bad connections. You can see the cache by pressing 1 twice on the wiimote, when cache drops to 3% then it will pause.
+ * Shoutcast TV is complete with caching, thanx to Extrems, Review menu.conf.
+ * If IOS202 is installed via the Installer then DVDx is not required for DVD Access.
+
+== New cIOS Installer ==
+
+ * MPlayerCE will now detect the presence of IOS202 to decide to use DVDx or not, so people that install the cIOS202 don't need to install DVDx to use the DVD functions. Default DVDx install can be used if you install IOS202 now. The new installer is for Homebrew USB2 only, this will install IOS202 using base IOS60 automatically as IOS60 has improvements in wifi. Now you can select the IOS to use to do the installation, so you can select a IOS with the fake sign bug. (The reason for DVDx not having to be installed if IOS202 is installed on the wii, is that there is a patch in IOS202 that doesn't require DVDx, and can access DVD without it). The cIOS is needed for MPlayerCE to use the USB2 driver. For more details read the README that is part of the package.
+
 == 0.62 ==
 
  * USB LAN Adaptor support fixed (again).  Thanks to CountZ3ro for testing. Please note that you will need to install the USB 2.0 cIOS.
