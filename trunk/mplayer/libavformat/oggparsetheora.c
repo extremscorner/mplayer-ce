@@ -86,6 +86,11 @@ theora_header (AVFormatContext * s, int idx)
         }
         st->codec->time_base.den = get_bits_long(&gb, 32);
         st->codec->time_base.num = get_bits_long(&gb, 32);
+        if (!(st->codec->time_base.num > 0 && st->codec->time_base.den > 0)) {
+            av_log(s, AV_LOG_WARNING, "Invalid time base in theora stream, assuming 25 FPS\n");
+            st->codec->time_base.num = 1;
+            st->codec->time_base.den = 25;
+        }
         st->time_base = st->codec->time_base;
 
         st->sample_aspect_ratio.num = get_bits_long(&gb, 24);
@@ -106,7 +111,8 @@ theora_header (AVFormatContext * s, int idx)
         vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
     }
 
-    st->codec->extradata = av_realloc (st->codec->extradata, cds);
+    st->codec->extradata = av_realloc (st->codec->extradata,
+                                       cds + FF_INPUT_BUFFER_PADDING_SIZE);
     cdp = st->codec->extradata + st->codec->extradata_size;
     *cdp++ = os->psize >> 8;
     *cdp++ = os->psize & 0xff;

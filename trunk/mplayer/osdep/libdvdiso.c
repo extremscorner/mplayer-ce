@@ -20,6 +20,7 @@
 #define uint16_t unsigned short
 #define uint32_t unsigned int
 static mutex_t _DVD_mutex=LWP_MUTEX_NULL;
+static bool dvd_initied=false;
 
 int totalsectors;
 int totalentries;
@@ -117,7 +118,7 @@ void dump_hex(uint8_t *ptr, int len)
 }
 */
 
-int WIIDVD_Init(void)
+int WIIDVD_Init(bool dvdx)
 {
 	int retval;
 	direntriesptr=0;
@@ -127,7 +128,10 @@ int WIIDVD_Init(void)
 	totalentries=0;
 	
 #ifndef DEBUG
-	retval=DI_Init();
+	if(dvdx)retval=DI_Init();
+	else retval=DI_InitNoDVDx();
+	if(retval>=0) dvd_initied=true;
+	else dvd_initied=false;
 #else
 	fpin=fopen("/dev/sr0","rb");
 	
@@ -192,7 +196,7 @@ int WIIDVD_ReadDVD(void* buf, uint32_t len, uint32_t lba)
 	return 0;
 #else
 	retval=DI_ReadDVD(buf,len,lba);
-	if(retval)printf("Error %d reading sectors %d->%d\n",retval,lba,lba+len-1);
+	//if(retval)printf("Error %d reading sectors %d->%d\n",retval,lba,lba+len-1);
 	return retval;
 #endif
 }
@@ -203,7 +207,7 @@ int WIIDVD_DiscPresent()
 	return 1;
 #else
 	uint32_t val;
-
+	if(!dvd_initied) return 0;
 	DI_GetCoverRegister(&val);	
 	if(val&0x2)return 1;
 	return 0;
@@ -851,7 +855,7 @@ int DVD_ScanContent_recurse(int jolietmode, struct DIRENTRY * parent, uint8_t le
 		retval=ReadSectorFromCache(localsectbuf,sect);
 		if(retval!=0)
 		{
-			for(i=0;i<=level;i++)printf("  ");printf("Error reading sector %d\n",sect);
+			//for(i=0;i<=level;i++)printf("  ");printf("Error reading sector %d\n",sect);
 			return -1;
 		}
 		

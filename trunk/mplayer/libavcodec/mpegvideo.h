@@ -116,6 +116,7 @@ typedef struct Picture{
     int field_poc[2];           ///< h264 top/bottom POC
     int poc;                    ///< h264 frame POC
     int frame_num;              ///< h264 frame_num (raw frame_num from slice header)
+    int mmco_reset;             ///< h264 MMCO_RESET set this 1. Reordering code must not mix pictures before and after MMCO_RESET.
     int pic_id;                 /**< h264 pic_num (short -> no wrap version of pic_num,
                                      pic_num & max_pic_num; long -> long_pic_num) */
     int long_ref;               ///< 1->long term reference 0->short term reference
@@ -710,6 +711,12 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][6
 
 void ff_init_block_index(MpegEncContext *s);
 void ff_copy_picture(Picture *dst, Picture *src);
+
+/**
+ * allocates a Picture
+ * The pixels are allocated/set by calling get_buffer() if shared=0
+ */
+int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared);
 
 extern const enum PixelFormat ff_pixfmt_list_420[];
 extern const enum PixelFormat ff_hwaccel_pixfmt_list_420[];

@@ -70,6 +70,12 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 			*srca4,*src4;
 
 
+	getStrideInfo(&w1,&df1,&Yrowpitch);
+	Yrowpitch=Yrowpitch*8;
+	df1=df1*8;
+
+
+
 	h1 = ((h/8.0)+0.5)*8;
 	buf = malloc(dststride * h1);
 	bufa = malloc(dststride * h1);
@@ -82,6 +88,8 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 	buf_st=x0;  // original pos
 	tmp=buf+buf_st;
 	tmpa=bufa+buf_st;
+
+
     
     for(y=0;y<h;y++){
     	memcpy(tmp, src, w);
@@ -91,22 +99,12 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
         tmp+=dststride;
         tmpa+=dststride;        
     }	
-	w=srcstride=dststride;
-	h=h1;
+	//w=srcstride=dststride;
+	//h=h1;
 	
 	src=buf;
 	srca=bufa;
 	h1 = h / 4 ;
-
-	//if(dststride>image_width)w1 = image_width >> 3 ;
-	//else w1 = dststride >> 3 ;
-	getStrideInfo(&w1,&df1,&Yrowpitch);
-	Yrowpitch=Yrowpitch*8;
-	df1=df1*8;
-	
-	//w1 = dststride >> 3 ;
-    //Yrowpitch=GetYrowpitch()*8;
-    //df1 = ((image_width >> 3) - w1)*32;    
 
 				
 	dst=dstbase;
@@ -163,12 +161,13 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 					
 	int p;
 
-	p=pitch[0];
+	//p=pitch[0];
+	p=image_width;
 	p= (p / 16);
 	if(p % 2) p++;
 	p=p*16;
 	y0=((int)(y0/8.0))*8;
-					
+
 	vo_draw_alpha_gekko(w, h, src, srca, stride,
 						GetYtexture() + (y0 * p),
 						pitch[0],x0);						
@@ -248,6 +247,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   
   GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
   GX_ConfigTextureYUV(image_width, image_height, pitch);	
+  
   return 0;
 }
 

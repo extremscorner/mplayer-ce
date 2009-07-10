@@ -37,8 +37,13 @@
 #define FOURCC_THEORA mmioFOURCC('t', 'h', 'e', 'o')
 
 #ifdef CONFIG_TREMOR
+#ifdef GEKKO
+#include "../tremor/ogg.h"
+#include "../tremor/ivorbiscodec.h"
+#else
 #include <tremor/ogg.h>
 #include <tremor/ivorbiscodec.h>
+#endif
 #else
 #include <ogg/ogg.h>
 #include <vorbis/codec.h>
@@ -375,7 +380,7 @@ static void demux_ogg_check_comments(demuxer_t *d, ogg_stream_t *os, int id, vor
   } table[] = {
     { "ENCODED_USING", "Software" },
     { "ENCODER_URL", "Encoder URL" },
-    { "TITLE", "Name" },
+    { "TITLE", "Title" },
     { "ARTIST", "Artist" },
     { "COMMENT", "Comments" },
     { "DATE", "Creation Date" },

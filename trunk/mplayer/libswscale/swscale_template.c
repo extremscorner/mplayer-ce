@@ -2221,10 +2221,10 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    int srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal, int isAlpha)
 {
-    int32_t *mmx2FilterPos = c->lumMmx2FilterPos;
-    int16_t *mmx2Filter = c->lumMmx2Filter;
-    int canMMX2BeUsed = c->canMMX2BeUsed;
-    void *funnyYCode = c->funnyYCode;
+    int32_t av_unused *mmx2FilterPos = c->lumMmx2FilterPos;
+    int16_t av_unused *mmx2Filter    = c->lumMmx2Filter;
+    int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
+    void    av_unused *funnyYCode    = c->funnyYCode;
     void (*internal_func)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->hascale_internal : c->hyscale_internal;
 
     if (isAlpha) {
@@ -2234,6 +2234,9 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         if (srcFormat == PIX_FMT_RGB32_1 || srcFormat == PIX_FMT_BGR32_1)
             src += ALT32_CORR;
     }
+
+    if (srcFormat == PIX_FMT_RGB48LE)
+        src++;
 
     if (internal_func) {
         internal_func(formatConvBuffer, src, srcW, pal);
@@ -2255,7 +2258,7 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #if HAVE_MMX2
         int i;
 #if defined(PIC)
-        uint64_t ebxsave __attribute__((aligned(8)));
+        DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
         if (canMMX2BeUsed)
         {
@@ -2411,10 +2414,10 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
                                    int srcFormat, uint8_t *formatConvBuffer,
                                    uint32_t *pal)
 {
-    int32_t *mmx2FilterPos = c->chrMmx2FilterPos;
-    int16_t *mmx2Filter = c->chrMmx2Filter;
-    int canMMX2BeUsed = c->canMMX2BeUsed;
-    void *funnyUVCode = c->funnyUVCode;
+    int32_t av_unused *mmx2FilterPos = c->chrMmx2FilterPos;
+    int16_t av_unused *mmx2Filter    = c->chrMmx2Filter;
+    int     av_unused canMMX2BeUsed  = c->canMMX2BeUsed;
+    void    av_unused *funnyUVCode   = c->funnyUVCode;
 
     if (isGray(srcFormat) || srcFormat==PIX_FMT_MONOBLACK || srcFormat==PIX_FMT_MONOWHITE)
         return;
@@ -2422,6 +2425,11 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
     if (srcFormat==PIX_FMT_RGB32_1 || srcFormat==PIX_FMT_BGR32_1) {
         src1 += ALT32_CORR;
         src2 += ALT32_CORR;
+    }
+
+    if (srcFormat==PIX_FMT_RGB48LE) {
+        src1++;
+        src2++;
     }
 
     if (c->hcscale_internal) {
@@ -2446,7 +2454,7 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
 #if HAVE_MMX2
         int i;
 #if defined(PIC)
-        uint64_t ebxsave __attribute__((aligned(8)));
+        DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
         if (canMMX2BeUsed)
         {
@@ -3047,6 +3055,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
+        case PIX_FMT_RGB48BE:
+        case PIX_FMT_RGB48LE: c->hcscale_internal = rgb48ToUV_half; break;
         case PIX_FMT_RGB32  :
         case PIX_FMT_RGB32_1: c->hcscale_internal = bgr32ToUV_half; break;
         case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV_half); break;
@@ -3060,6 +3070,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         }
     } else {
         switch(srcFormat) {
+        case PIX_FMT_RGB48BE:
+        case PIX_FMT_RGB48LE: c->hcscale_internal = rgb48ToUV; break;
         case PIX_FMT_RGB32  :
         case PIX_FMT_RGB32_1: c->hcscale_internal = bgr32ToUV; break;
         case PIX_FMT_BGR24  : c->hcscale_internal = RENAME(bgr24ToUV); break;
@@ -3103,6 +3115,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     case PIX_FMT_RGB32_1: c->hyscale_internal = bgr32ToY; break;
     case PIX_FMT_BGR32  :
     case PIX_FMT_BGR32_1: c->hyscale_internal = rgb32ToY; break;
+    case PIX_FMT_RGB48BE:
+    case PIX_FMT_RGB48LE: c->hyscale_internal = rgb48ToY; break;
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {
