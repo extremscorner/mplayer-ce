@@ -45,6 +45,7 @@ static rar_stream_t *
 rar_open(const char *const filename, const char *const mode)
 {
     rar_stream_t *stream;
+    
     /* unrar_exec can only read */
     if (strcmp("r", mode) && strcmp("rb", mode)) {
 	errno = EINVAL;
@@ -116,6 +117,13 @@ rar_open(const char *const filename, const char *const mode)
 		free(stream);
 		return NULL;
 	    }
+	}
+	else
+	{
+		free(rar_filename);
+		free(stream);
+		return NULL;
+
 	}
 
 	free(rar_filename);
@@ -982,6 +990,15 @@ vobsub_open(const char *const name,const char *const ifo,const int force,void** 
 	    /* read in the index */
 	    strcpy(buf, name);
 	    strcat(buf, ".idx");
+	    {
+		    struct stat file;
+		    if(stat(buf,&file)!=0 )
+		    {
+			  free(buf);
+			  free(vob);
+			  return NULL;
+		    }
+    	}
 	    fd = rar_open(buf, "rb");
 	    if (fd == NULL) {
 		if(force)

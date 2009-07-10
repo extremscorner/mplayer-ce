@@ -425,6 +425,20 @@ Audio output:
   --disable-coreaudio    disable CoreAudio audio output [autodetect]
   --disable-select       disable using select() on the audio device [enable]
 
+Language options:
+  --charset=charset      convert the console messages to this character set
+  --language-doc=lang    language to use for the documentation [en]
+  --language-man=lang    language to use for the man pages [en]
+  --language-msg=lang    language to use for the messages and the GUI [en]
+  --language=lang        default language to use [en]
+Specific options override --language. You can pass a list of languages separated
+by whitespace or commas instead of a single language. Nonexisting translations
+will be dropped from each list. All documentation and man page translations
+available in the list will be installed, for the messages the first available
+translation will be used. The value "all" will activate all translations. The
+LINGUAS environment variable is honored. In all cases the fallback is English.
+Available values are: all $msg_lang_all
+
 Miscellaneous options:
   --enable-runtime-cpudetection    enable runtime CPU detection [disable]
   --enable-cross-compile enable cross-compilation [autodetect]
@@ -438,12 +452,6 @@ Miscellaneous options:
   --windres=WINDRES      windres to build MPlayer [windres]
   --target=PLATFORM      target platform (i386-linux, arm-linux, etc)
   --enable-static        build a statically linked binary
-  --charset=charset      convert the console messages to this character set
-  --language=list        a white space or comma separated list of languages for
-                         translated man pages, the first language is used for
-                         messages and the GUI (the environment variable
-                         \$LINGUAS is also honored) [en]
-                         (Available: all $msg_lang_all)
   --with-install=PATH    path to a custom install program
 
 Advanced options:
@@ -532,7 +540,7 @@ _libamr_wb=auto
 _libavdecoders_all=$(sed -n 's/^[^#]*DEC.*(.*, *\(.*\)).*/\1_decoder/p' libavcodec/allcodecs.c | tr '[a-z]' '[A-Z]')
 _libavdecoders=$(echo $_libavdecoders_all | sed -e 's/ LIB[A-Z0-9_]*_DECODER//g' -e s/MPEG4AAC_DECODER//)
 _libavencoders_all=$(sed -n 's/^[^#]*ENC.*(.*, *\(.*\)).*/\1_encoder/p' libavcodec/allcodecs.c | tr '[a-z]' '[A-Z]')
-_libavencoders=$(echo $_libavencoders_all | sed 's/ LIB[A-Z0-9_]*_ENCODER//g')
+_libavencoders=$(echo $_libavencoders_all | sed -e 's/ LIB[A-Z0-9_]*_ENCODER//g' -e s/AAC_ENCODER//)
 _libavparsers_all=$(sed -n 's/^[^#]*PARSER.*(.*, *\(.*\)).*/\1_parser/p' libavcodec/allcodecs.c | tr '[a-z]' '[A-Z]')
 _libavparsers=$_libavparsers_all
 _libavbsfs_all=$(sed -n 's/^[^#]*BSF.*(.*, *\(.*\)).*/\1_bsf/p' libavcodec/allcodecs.c | tr '[a-z]' '[A-Z]')
@@ -694,7 +702,7 @@ _directfb=auto
 _zr=auto
 _bl=no
 _largefiles=yes
-#_language=en
+#language=en
 _shm=auto
 _linux_devfs=no
 _charset="UTF-8"
@@ -849,8 +857,17 @@ for ac_option do
   --charset=*)
     _charset=$(echo $ac_option | cut -d '=' -f 2)
     ;;
+  --language-doc=*)
+    language_doc=$(echo $ac_option | cut -d '=' -f 2)
+    ;;
+  --language-man=*)
+    language_man=$(echo $ac_option | cut -d '=' -f 2)
+    ;;
+  --language-msg=*)
+    language_msg=$(echo $ac_option | cut -d '=' -f 2)
+    ;;
   --language=*)
-    _language=$(echo $ac_option | cut -d '=' -f 2)
+    language=$(echo $ac_option | cut -d '=' -f 2)
     ;;
 
   --enable-static)
@@ -2790,40 +2807,40 @@ echores "$_langinfo"
 
 
 echocheck "language"
-test -z "$_language" && _language=$LINGUAS
-_language=$(echo $_language | tr , " ")
-if $(echo $_language | grep -q all) ; then
-  doc_lang=en ; doc_langs=$doc_lang_all
-  man_lang=en ; man_langs=$man_lang_all
-  msg_lang=en
-else
-  for lang in $_language ; do
-    if test -d DOCS/man/$lang ; then
-      tmp_man_langs="$tmp_man_langs $lang"
-    fi
-    if test -d DOCS/xml/$lang ; then
-      tmp_doc_langs="$tmp_doc_langs $lang"
-    fi
-  done
-  man_langs=$tmp_man_langs
-  doc_langs=$tmp_man_langs
-  for lang in $_language ; do
-    if test -f "help/help_mp-${lang}.h" ; then
-      msg_lang=$lang
-      break
-    else
-      echo ${_echo_n} "$lang not found, ${_echo_c}"
-      _language=$(echo $_language | sed "s/$lang *//")
-    fi
-  done
-fi
-test -z "$doc_langs" && doc_langs=en
-test -z "$man_langs" && man_langs=en
-test -z "$doc_lang" && doc_lang=$(echo $doc_langs | cut -f1 -d" ")
-test -z "$man_lang" && man_lang=$(echo $man_langs | cut -f1 -d" ")
-test -z "$msg_lang" && msg_lang=en
-_mp_help="help/help_mp-${msg_lang}.h"
-echores "messages: $msg_lang - man pages: $man_langs - documentation: $doc_langs"
+# Set preferred languages, "all" uses English as main language.
+test -z "$language" && language=$LINGUAS
+test -z "$language_doc" && language_doc=$language
+test -z "$language_man" && language_man=$language
+test -z "$language_msg" && language_msg=$language
+language_doc=$(echo $language_doc | tr , " ")
+language_man=$(echo $language_man | tr , " ")
+language_msg=$(echo $language_msg | tr , " ")
+
+test "$language_doc" = "all" && language_doc=$doc_lang_all
+test "$language_man" = "all" && language_man=$man_lang_all
+test "$language_msg" = "all" && language_msg=en
+
+# Prune non-existing translations from language lists.
+# Set message translation to the first available language.
+# Fall back on English.
+for lang in $language_doc ; do
+  test -d DOCS/xml/$lang && tmp_language_doc="$tmp_language_doc $lang"
+done
+language_doc=$tmp_language_doc
+test -z "$language_doc" && language_doc=en
+
+for lang in $language_man ; do
+  test -d DOCS/man/$lang && tmp_language_man="$tmp_language_man $lang"
+done
+language_man=$tmp_language_man
+test -z "$language_man" && language_man=en
+
+for lang in $language_msg ; do
+  test -f "help/help_mp-${lang}.h" && language_msg=$lang && break
+done
+test -z "$language_msg" && language_msg=en
+_mp_help="help/help_mp-${language_msg}.h"
+echores "messages: $language_msg - man pages: $language_man - documentation: $language_doc"
 
 
 echocheck "enable sighandler"
@@ -5753,6 +5770,9 @@ elif openbsd ; then
   default_cdrom_device="/dev/rcd0a"
 elif sunos ; then
   default_cdrom_device="/vol/dev/aliases/cdrom0"
+  # Modern Solaris versions use HAL instead of the vold daemon, the volfs
+  # file system and the volfs service.
+  test -r "/cdrom/cdrom0" && default_cdrom_device="/cdrom/cdrom0"
 elif amigaos ; then
   default_cdrom_device="a1ide.device:2"
 else
@@ -7270,6 +7290,7 @@ if test "$_libnut" = auto ; then
 #include <stdlib.h>
 #include <inttypes.h>
 #include <libnut.h>
+nut_context_tt * nut;
 int main(void) { (void)nut_error(0); return 0; }
 EOF
   _libnut=no
@@ -7936,7 +7957,7 @@ fi
 # (FIXME: 'echocheck "dynamic linking"' above and modify here accordingly)
 _ld_dl_dynamic=''
 freebsd || netbsd || openbsd || dragonfly || bsdos && _ld_dl_dynamic='-rdynamic'
-if test "$_real" = yes || test "$_xanim" = yes && ! win32 && ! qnx && ! darwin && ! os2 ; then
+if test "$_real" = yes || test "$_xanim" = yes && ! win32 && ! qnx && ! darwin && ! os2 && ! sunos; then
   _ld_dl_dynamic='-rdynamic'
 fi
 
@@ -8109,11 +8130,9 @@ export LC_ALL = C
 CONFIGURATION = $_configuration
 
 CHARSET = $_charset
-DOC_LANG = $doc_lang
-DOC_LANGS = $doc_langs
+DOC_LANGS = $language_doc
 DOC_LANG_ALL = $doc_lang_all
-MAN_LANG = $man_lang
-MAN_LANGS = $man_langs
+MAN_LANGS = $language_man
 MAN_LANG_ALL = $man_lang_all
 
 prefix = \$(DESTDIR)$_prefix
@@ -8250,7 +8269,6 @@ LIBNEMESI = $_nemesi
 LIBNUT = $_libnut
 LIBSMBCLIENT = $_smb
 LIBTHEORA = $_theora
-LIBVORBIS = $_vorbis
 LIRC = $_lirc
 LIVE555 = $_live
 MACOSX_BUNDLE = $_macosx_bundle
@@ -8320,6 +8338,7 @@ VIDIX_S3=$_vidix_drv_s3
 VIDIX_SH_VEU=$_vidix_drv_sh_veu
 VIDIX_SIS=$_vidix_drv_sis
 VIDIX_UNICHROME=$_vidix_drv_unichrome
+VORBIS = $_vorbis
 VSTREAM = $_vstream
 WII = $_wii
 WIN32DLL = $_win32dll
@@ -8906,8 +8925,9 @@ Config files successfully generated by ./configure $_configuration !
   Optimizing for: $_optimizing
 
   Languages:
-    Messages/GUI: $msg_lang
-    Manual pages: $man_langs
+    Messages/GUI: $language_msg
+    Manual pages: $language_man
+    Documentation: $language_doc
 
   Enabled optional drivers:
     Input: $_inputmodules

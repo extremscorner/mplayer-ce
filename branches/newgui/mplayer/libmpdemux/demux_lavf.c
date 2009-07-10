@@ -220,21 +220,21 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
     lavf_priv_t *priv= demuxer->priv;
     AVStream *st= avfc->streams[i];
     AVCodecContext *codec= st->codec;
+    AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL, 0);
     int g;
 
     switch(codec->codec_type){
         case CODEC_TYPE_AUDIO:{
             int override_tag;
-            WAVEFORMATEX *wf= calloc(sizeof(WAVEFORMATEX) + codec->extradata_size, 1);
+            WAVEFORMATEX *wf;
             sh_audio_t* sh_audio;
-            if(priv->audio_streams >= MAX_A_STREAMS)
-                break;
             sh_audio=new_sh_audio(demuxer, i);
             mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "lavf", i);
             if(!sh_audio)
                 break;
             priv->astreams[priv->audio_streams] = i;
             priv->audio_streams++;
+            wf= calloc(sizeof(WAVEFORMATEX) + codec->extradata_size, 1);
             // For some formats (like PCM) always trust CODEC_ID_* more than codec_tag
             override_tag= av_codec_get_tag(mp_wav_override_taglists, codec->codec_id);
             if (override_tag)
@@ -291,8 +291,10 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
                     sh_audio->format = 0x7;
                     break;
             }
-            if (st->language)
-              sh_audio->lang = strdup(st->language);
+            if (lang && lang->value) {
+              sh_audio->lang = strdup(lang->value);
+              mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_AID_%d_LANG=%s\n", i, sh_audio->lang);
+            }
             if (st->disposition & AV_DISPOSITION_DEFAULT)
               sh_audio->default_track = 1;
             if(mp_msg_test(MSGT_HEADER,MSGL_V) ) print_wave_header(sh_audio->wf, MSGL_V);
@@ -307,8 +309,6 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
         case CODEC_TYPE_VIDEO:{
             sh_video_t* sh_video;
             BITMAPINFOHEADER *bih;
-            if(priv->video_streams >= MAX_V_STREAMS)
-                break;
             sh_video=new_sh_video(demuxer, i);
             mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_VideoID, "lavf", i);
             if(!sh_video) break;
@@ -376,8 +376,6 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
         case CODEC_TYPE_SUBTITLE:{
             sh_sub_t* sh_sub;
             char type;
-            if(priv->sub_streams >= MAX_S_STREAMS)
-                break;
             /* only support text subtitles for now */
             if(codec->codec_id == CODEC_ID_TEXT)
                 type = 't';
@@ -399,8 +397,10 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
                 memcpy(sh_sub->extradata, codec->extradata, codec->extradata_size);
                 sh_sub->extradata_len = codec->extradata_size;
             }
-            if (st->language)
-              sh_sub->lang = strdup(st->language);
+            if (lang && lang->value) {
+              sh_sub->lang = strdup(lang->value);
+              mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_SID_%d_LANG=%s\n", priv->sub_streams, sh_sub->lang);
+            }
             if (st->disposition & AV_DISPOSITION_DEFAULT)
               sh_sub->default_track = 1;
             priv->sub_streams++;

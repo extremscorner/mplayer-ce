@@ -129,6 +129,15 @@ void GX_InitVideo() {
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
+		
+	//make memory fixed (max texture 900*700, gx can't manage more)
+	if (!Ytexture)
+		Ytexture = (u8 *) memalign(32,900*700);
+	if (!Utexture)
+		Utexture = (u8 *) memalign(32,900*700/4);
+	if (!Vtexture)
+		Vtexture = (u8 *) memalign(32,900*700/4);
+		
 }
 #endif
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
@@ -375,6 +384,7 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	//UVtexsize = (width*height)/4;
 	Ytexsize = (w*h);
 	UVtexsize = (w*h)/4;
+/*
 	if (Ytexture)
 		free (Ytexture);
 	if (Utexture)
@@ -385,6 +395,8 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	Ytexture = (u8 *) memalign(32,Ytexsize);
 	Utexture = (u8 *) memalign(32,UVtexsize);
 	Vtexture = (u8 *) memalign(32,UVtexsize);
+
+*/
 
 	memset(Ytexture, 255, Ytexsize);
 	memset(Utexture, 255, UVtexsize);

@@ -28,7 +28,6 @@
 #endif
 
 #include "libavutil/avutil.h"
-#include "libavutil/internal.h"
 
 #define STR(s)         AV_TOSTRING(s) //AV_STRINGIFY is too long
 
@@ -294,7 +293,7 @@ void ff_yuv2packedX_altivec(SwsContext *c,
                             const int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
                             uint8_t *dest, int dstW, int dstY);
 
-const char *sws_format_name(int format);
+const char *sws_format_name(enum PixelFormat format);
 
 //FIXME replace this with something faster
 #define is16BPS(x)      (           \

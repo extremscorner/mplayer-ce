@@ -31,12 +31,12 @@ RANLIB = $(DEVKITPPC)/bin/powerpc-gekko-ranlib
 WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-gekko-objcopy
 
-EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav
+EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2
 #EXTRA_INC =  -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include 
 EXTRAXX_INC = $(EXTRA_INC)
 
-#COMMONFLAGS = -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O4 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
-COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O4 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+#COMMONFLAGS = -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS = $(EXTRA_INC) $(COMMONFLAGS) 
 OPTFLAGS =  $(EXTRA_INC) $(COMMONFLAGS)
 CXXFLAGS = $(COMMONFLAGS) -D__STDC_LIMIT_MACROS $(EXTRAXX_INC)
@@ -55,7 +55,7 @@ YASMFLAGS =
 EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii
 #EXTRA_LIB = -static $(COMMONFLAGS) -ldvdread -ldvdnav -lwiiuse -lbte -lfat -ldi -ltinysmb -logc -ldb -lm
 #EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
-EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lfribidi -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm -ldb
+EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lfribidi -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
 #EXTRALIBS = 
 #EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
 EXTRALIBS_MPLAYER =  -specs=mplayer.spec 
@@ -198,6 +198,7 @@ TDFXVID = no
 TGA = yes
 TOOLAME=no
 TREMOR_INTERNAL = yes
+VORBIS = yes
 TV = no
 TV_BSDBT848 = auto
 TV_DSHOW = no
@@ -279,7 +280,7 @@ CONFIG_MDCT=yes
 CONFIG_RDFT=yes
 
 CONFIG_BZLIB=no
-CONFIG_ENCODERS=yes
+CONFIG_ENCODERS=no
 CONFIG_GPL=yes
 CONFIG_LIBAMR=
 CONFIG_LIBAMR_NB=no
@@ -528,9 +529,10 @@ CONFIG_ADPCM_YAMAHA_DECODER=yes
 CONFIG_DVBSUB_DECODER=yes
 CONFIG_DVDSUB_DECODER=yes
 CONFIG_XSUB_DECODER=yes
-CONFIG_MPEG1VIDEO_ENCODER=yes
-CONFIG_SNOW_ENCODER=yes
-CONFIG_PNG_ENCODER=yes
+CONFIG_MPEG1VIDEO_ENCODER=no
+CONFIG_SNOW_ENCODER=no
+CONFIG_PNG_ENCODER=no
+CONFIG_AAC_ENCODER=no
 CONFIG_AAC_PARSER=yes
 CONFIG_AC3_PARSER=yes
 CONFIG_CAVSVIDEO_PARSER=yes
