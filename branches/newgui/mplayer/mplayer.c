@@ -2557,6 +2557,15 @@ static double update_video(int *blit_frame)
     return frame_time;
 }
 
+#ifdef WIILIB
+bool controlledbygui=false;
+void PauseAndGotoGUI()
+{
+	mp_input_queue_cmd(mp_input_parse_cmd("pause"));
+	controlledbygui==true;
+}
+#endif
+
 static void low_cache_loop(void)
 {
     float percent;
@@ -2660,8 +2669,21 @@ static void pause_loop(void)
         mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_PAUSED\n");
     }
 */
+#ifdef WIILIB
+	bool external_control=false;
+	if(!controlledbygui)
+	{
    	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
     update_osd_msg();
+	}else 
+	{
+		external_control=true;
+		getch2_disable(); //wiimote controlled by gui
+	}
+#else
+   	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
+    update_osd_msg();
+#endif
 
 #ifdef CONFIG_GUI
     if (use_gui)
@@ -2695,6 +2717,15 @@ static void pause_loop(void)
 	    vf_menu_pause_update(vf_menu);
 #endif
 	usec_sleep(20000);
+	
+#ifdef WIILIB
+	if(external_control==true && controlledbygui==false) 
+	{
+		getch2_enable(); //wiimote controlled by mplayer
+		break;
+	}
+#endif
+	
     }
 
 	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
