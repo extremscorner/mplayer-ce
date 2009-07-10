@@ -151,6 +151,7 @@ enum RTSPClientState {
     RTSP_STATE_IDLE,    /**< not initialized */
     RTSP_STATE_PLAYING, /**< initialized and receiving data */
     RTSP_STATE_PAUSED,  /**< initialized, but not receiving data */
+    RTSP_STATE_SEEKING, /**< initialized, requesting a seek */
 };
 
 /**
@@ -207,7 +208,7 @@ typedef struct RTSPState {
 
     /** timestamp of the last RTSP command that we sent to the RTSP server.
      * This is used to calculate when to send dummy commands to keep the
-     * connection alive, in conjunction with \p timeout. */
+     * connection alive, in conjunction with timeout. */
     int64_t last_cmd_time;
 
     /** the negotiated data/packet transport protocol; e.g. RTP or RDT */

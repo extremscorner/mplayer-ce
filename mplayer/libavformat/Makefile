@@ -8,7 +8,7 @@ HEADERS = avformat.h avio.h
 OBJS = allformats.o cutils.o metadata.o metadata_compat.o options.o os_support.o sdp.o utils.o
 
 # muxers/demuxers
-OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o id3v2.o
+OBJS-$(CONFIG_AAC_DEMUXER)               += raw.o id3v1.o id3v2.o
 OBJS-$(CONFIG_AC3_DEMUXER)               += raw.o
 OBJS-$(CONFIG_AC3_MUXER)                 += raw.o
 OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o
@@ -96,7 +96,7 @@ OBJS-$(CONFIG_MMF_MUXER)                 += mmf.o riff.o
 OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o riff.o isom.o
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o riff.o isom.o avc.o
 OBJS-$(CONFIG_MP2_MUXER)                 += mp3.o
-OBJS-$(CONFIG_MP3_DEMUXER)               += mp3.o id3v2.o
+OBJS-$(CONFIG_MP3_DEMUXER)               += mp3.o id3v1.o id3v2.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3.o
 OBJS-$(CONFIG_MP4_MUXER)                 += movenc.o riff.o isom.o avc.o
 OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o id3v2.o
@@ -197,13 +197,15 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc.o      \
                                             rtpenc_h264.o \
                                             avc.o
-OBJS-$(CONFIG_RTSP_DEMUXER)              += rdt.o rtsp.o
-OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o rtp.o rtpdec.o rtp_h264.o rtp_vorbis.o
+OBJS-$(CONFIG_RTSP_DEMUXER)              += rdt.o rtsp.o rtp_vorbis.o rtp_asf.o
+OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o rtp.o rtpdec.o rtp_h264.o rtp_vorbis.o rtp_asf.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += raw.o id3v2.o
 OBJS-$(CONFIG_SIFF_DEMUXER)              += siff.o
 OBJS-$(CONFIG_SMACKER_DEMUXER)           += smacker.o
 OBJS-$(CONFIG_SOL_DEMUXER)               += sol.o raw.o
+OBJS-$(CONFIG_SOX_DEMUXER)               += soxdec.o
+OBJS-$(CONFIG_SOX_MUXER)                 += soxenc.o
 OBJS-$(CONFIG_STR_DEMUXER)               += psxstr.o
 OBJS-$(CONFIG_SWF_DEMUXER)               += swfdec.o
 OBJS-$(CONFIG_SWF_MUXER)                 += swfenc.o
@@ -249,7 +251,7 @@ OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
 # libavdevice dependencies
-OBJS-$(CONFIG_JACK_DEMUXER)              += timefilter.o
+OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o
 
 EXAMPLES  = output
 TESTPROGS = timefilter

@@ -231,12 +231,9 @@ static int decode_pce(AACContext * ac, enum ChannelPosition new_che_pos[4][MAX_E
     skip_bits(gb, 2);  // object_type
 
     sampling_index = get_bits(gb, 4);
-    if(sampling_index > 12) {
-        av_log(ac->avccontext, AV_LOG_ERROR, "invalid sampling rate index %d\n", ac->m4ac.sampling_index);
-        return -1;
-    }
-    ac->m4ac.sampling_index = sampling_index;
-    ac->m4ac.sample_rate = ff_mpeg4audio_sample_rates[ac->m4ac.sampling_index];
+    if (ac->m4ac.sampling_index != sampling_index)
+        av_log(ac->avccontext, AV_LOG_WARNING, "Sample rate index in program config element does not match the sample rate index configured by the container.\n");
+
     num_front       = get_bits(gb, 4);
     num_side        = get_bits(gb, 4);
     num_back        = get_bits(gb, 4);
@@ -323,7 +320,7 @@ static int decode_ga_specific_config(AACContext * ac, GetBitContext * gb, int ch
     int extension_flag, ret;
 
     if(get_bits1(gb)) {  // frameLengthFlag
-        ff_log_missing_feature(ac->avccontext, "960/120 MDCT window is", 1);
+        av_log_missing_feature(ac->avccontext, "960/120 MDCT window is", 1);
         return -1;
     }
 
@@ -568,16 +565,16 @@ static int decode_ics_info(AACContext * ac, IndividualChannelStream * ics, GetBi
             }
         }
         ics->num_windows   = 8;
-        ics->swb_offset    =      swb_offset_128[ac->m4ac.sampling_index];
-        ics->num_swb       =  ff_aac_num_swb_128[ac->m4ac.sampling_index];
-        ics->tns_max_bands =   tns_max_bands_128[ac->m4ac.sampling_index];
+        ics->swb_offset    =    ff_swb_offset_128[ac->m4ac.sampling_index];
+        ics->num_swb       =   ff_aac_num_swb_128[ac->m4ac.sampling_index];
+        ics->tns_max_bands = ff_tns_max_bands_128[ac->m4ac.sampling_index];
         ics->predictor_present = 0;
     } else {
         ics->max_sfb       = get_bits(gb, 6);
         ics->num_windows   = 1;
-        ics->swb_offset    =     swb_offset_1024[ac->m4ac.sampling_index];
-        ics->num_swb       = ff_aac_num_swb_1024[ac->m4ac.sampling_index];
-        ics->tns_max_bands =  tns_max_bands_1024[ac->m4ac.sampling_index];
+        ics->swb_offset    =    ff_swb_offset_1024[ac->m4ac.sampling_index];
+        ics->num_swb       =   ff_aac_num_swb_1024[ac->m4ac.sampling_index];
+        ics->tns_max_bands = ff_tns_max_bands_1024[ac->m4ac.sampling_index];
         ics->predictor_present = get_bits1(gb);
         ics->predictor_reset_group = 0;
         if (ics->predictor_present) {
@@ -591,7 +588,7 @@ static int decode_ics_info(AACContext * ac, IndividualChannelStream * ics, GetBi
                 memset(ics, 0, sizeof(IndividualChannelStream));
                 return -1;
             } else {
-                ff_log_missing_feature(ac->avccontext, "Predictor bit set but LTP is", 1);
+                av_log_missing_feature(ac->avccontext, "Predictor bit set but LTP is", 1);
                 memset(ics, 0, sizeof(IndividualChannelStream));
                 return -1;
             }
@@ -1043,7 +1040,7 @@ static int decode_ics(AACContext * ac, SingleChannelElement * sce, GetBitContext
         if ((tns->present = get_bits1(gb)) && decode_tns(ac, tns, gb, ics))
             return -1;
         if (get_bits1(gb)) {
-            ff_log_missing_feature(ac->avccontext, "SSR", 1);
+            av_log_missing_feature(ac->avccontext, "SSR", 1);
             return -1;
         }
     }
@@ -1248,7 +1245,7 @@ static int decode_cce(AACContext * ac, GetBitContext * gb, ChannelElement * che)
  */
 static int decode_sbr_extension(AACContext * ac, GetBitContext * gb, int crc, int cnt) {
     // TODO : sbr_extension implementation
-    ff_log_missing_feature(ac->avccontext, "SBR", 0);
+    av_log_missing_feature(ac->avccontext, "SBR", 0);
     skip_bits_long(gb, 8*cnt - 4); // -4 due to reading extension type
     return cnt;
 }
@@ -1591,7 +1588,7 @@ static int parse_adts_frame_header(AACContext * ac, GetBitContext * gb) {
             if (!hdr_info.crc_absent)
                 skip_bits(gb, 16);
         } else {
-            ff_log_missing_feature(ac->avccontext, "More than one AAC RDB per ADTS frame is", 0);
+            av_log_missing_feature(ac->avccontext, "More than one AAC RDB per ADTS frame is", 0);
             return -1;
         }
     }

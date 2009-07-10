@@ -260,23 +260,33 @@ static int open_dir(menu_t* menu,char* args) {
 #ifdef GEKKO
   if(!strcmp(mpriv->dir,"usb:/"))
   {
-
+	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
   	if(!playing_usb)
   	{
-  		if(DeviceMounted("usb"))
-  		{
-  			printf("usb mounted, unmount\n");
-  			fatUnmount("usb:");
-		}
+  		while(mounting_usb)usleep(500);
+  		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
+  		if(!DeviceMounted("usb")) return 0;
+		/*
+		printf("startup\n");VIDEO_WaitVSync();
 		if(usb->startup())
 		{
-			printf("usb mounting\n");
-			if(!fatMount("usb",usb,0,2,128)) 
+			printf("startup ok\n");VIDEO_WaitVSync();
+			usleep(50000);
+			if(usb->isInserted())
 			{
-				printf("error mounting\n");
-				return 0;
+				printf("usb mounting\n");VIDEO_WaitVSync();
+				if(!fatMount("usb",usb,0,2,128)) 
+				{
+					printf("error mounting\n");VIDEO_WaitVSync();
+					return 0;
+				}
 			}			
-		}else return 0;
+		}else 
+		{
+			printf("startup error\n");VIDEO_WaitVSync();
+			return 0;
+		}
+		*/
 /*
 	  	//msleep();
 	  	while(mounting_usb)usleep(500);
@@ -347,6 +357,7 @@ static int open_dir(menu_t* menu,char* args) {
     }
     if (mylstat(args,dp->d_name,&st))
       continue;
+      
     if (file_filter && extensions && !S_ISDIR(st.st_mode)) {
       if((ext = strrchr(dp->d_name,'.')) == NULL)
         continue;

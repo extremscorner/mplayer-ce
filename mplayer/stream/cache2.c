@@ -30,6 +30,8 @@ static void ThreadProc( void *s );
 #include <ogc/lwp_watchdog.h>
 static void *ThreadProc( void *s );
 static unsigned char *global_buffer=NULL;
+#include "osdep/mem2_manager.h"
+
 //static unsigned char global_buffer[8*1024*1024];
 #elif defined(PTHREAD_CACHE)
 #include <pthread.h>
@@ -90,7 +92,7 @@ typedef struct {
 
 static int min_fill=0;
 
-int cache_fill_status=0;
+float cache_fill_status=0;
 
 void cache_stats(cache_vars_t* s){
   int newb=s->max_filepos-s->read_filepos; // new bytes in the buffer
@@ -167,7 +169,11 @@ int cache_fill(cache_vars_t* s){
 
 retry:
   
-  if(s->eof) return 0;  
+  if(s->eof) 
+  {
+      cache_fill_status=-1;
+	  return 0;
+  }  
   read=s->read_filepos;
   if(read<s->min_filepos || read>s->max_filepos){
       // seek...
@@ -200,6 +206,9 @@ retry:
 
   if(space<s->fill_limit){
 //    printf("Buffer is full (%d bytes free, limit: %d)\n",space,s->fill_limit);
+	  if(s->eof) cache_fill_status=-1;
+  	else cache_fill_status=(s->max_filepos-s->read_filepos)*100.0/s->buffer_size;
+
     return 0; // no fill...
   }
   // calc bufferpos:
@@ -247,6 +256,9 @@ retry:
       // wrap...
       s->offset+=s->buffer_size;
   }
+
+  if(s->eof) cache_fill_status=-1;
+  else cache_fill_status=(s->max_filepos-s->read_filepos)*100.0/s->buffer_size;
 
   return len;
 
@@ -320,7 +332,8 @@ cache_vars_t* cache_init(int size,int sector){
 #if !defined(__MINGW32__) && !defined(PTHREAD_CACHE) && !defined(__OS2__) && !defined(GEKKO)
   s->buffer=shmem_alloc(s->buffer_size);
 #else
-  if(global_buffer==NULL) global_buffer=malloc(size);
+  if(global_buffer==NULL) global_buffer=mem2_malloc(size);
+  //if(global_buffer==NULL) global_buffer=malloc(size);
   s->buffer=global_buffer;
 #endif
 
@@ -334,7 +347,11 @@ cache_vars_t* cache_init(int size,int sector){
   }
 
   s->fill_limit=8*sector;
+#if defined(GEKKO)
+  s->back_size=s->buffer_size/4; // 1/4 back  3/4 forward
+#else
   s->back_size=s->buffer_size/2;
+#endif
   return s;
 }
 
@@ -380,6 +397,8 @@ static void exit_sighandler(int x){
 int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
   int ss = stream->sector_size ? stream->sector_size : STREAM_BUFFER_SIZE;
   cache_vars_t* s;
+
+	cache_fill_status=-1;
 
   if (stream->type==STREAMTYPE_STREAM && stream->fd < 0) {
     // The stream has no 'fd' behind it, so is non-cacheable
@@ -446,9 +465,9 @@ if(size>CACHE_LIMIT)
 	    100.0*(float)(s->max_filepos-s->read_filepos)/(float)(s->buffer_size),
 	    (int64_t)s->max_filepos-s->read_filepos );
 
-	if(!IsBackgroungAvi(NULL))
+	if(!IsLoopAvi(NULL))
     {
-	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Cache fill: %5.2f%%  ",(float)(100.0*(float)(s->max_filepos)/(float)(min)));
+	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Precache fill: %5.2f%%  ",(float)(100.0*(float)(s->max_filepos)/(float)(min)));
 	force_osd();
 	}
 	
@@ -656,3 +675,25 @@ int stream_read(stream_t *s,char* mem,int total){
   return total;
 }
 
+void refillcache(stream_t *stream,float min)
+{
+	cache_vars_t* s;
+	s=stream->cache_data;
+    while(cache_fill_status<min)
+    {
+
+		if(!IsLoopAvi(NULL))
+	    {
+		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Cache fill: %5.2f%%  ",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
+		force_osd();
+		}
+		
+		if(s->eof) break; // file is smaller than prefill size
+		if(stream_check_interrupt(PREFILL_SLEEP_TIME))
+			return 0;
+		//printf("Cache fill: %5.2f%%  \n",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
+	  
+    }
+    //printf("end Cache fill: %5.2f%%  \n",cache_fill_status);
+    
+}

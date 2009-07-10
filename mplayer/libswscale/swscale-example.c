@@ -28,7 +28,17 @@
 #include "libavutil/avutil.h"
 #include "libavutil/lfg.h"
 #include "swscale.h"
-#include "swscale_internal.h"
+
+/* HACK Duplicated from swscale_internal.h.
+ * Should be removed when a cleaner pixel format system exists. */
+const char *sws_format_name(enum PixelFormat format);
+#define isALPHA(x)      (           \
+           (x)==PIX_FMT_BGR32       \
+        || (x)==PIX_FMT_BGR32_1     \
+        || (x)==PIX_FMT_RGB32       \
+        || (x)==PIX_FMT_RGB32_1     \
+        || (x)==PIX_FMT_YUVA420P    \
+    )
 
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
     int x,y;
@@ -66,11 +76,15 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
         // avoid stride % bpp != 0
         if (srcFormat==PIX_FMT_RGB24 || srcFormat==PIX_FMT_BGR24)
             srcStride[i]= srcW*3;
+        else if (srcFormat==PIX_FMT_RGB48BE || srcFormat==PIX_FMT_RGB48LE)
+            srcStride[i]= srcW*6;
         else
             srcStride[i]= srcW*4;
 
         if (dstFormat==PIX_FMT_RGB24 || dstFormat==PIX_FMT_BGR24)
             dstStride[i]= dstW*3;
+        else if (dstFormat==PIX_FMT_RGB48BE || dstFormat==PIX_FMT_RGB48LE)
+            dstStride[i]= dstW*6;
         else
             dstStride[i]= dstW*4;
 

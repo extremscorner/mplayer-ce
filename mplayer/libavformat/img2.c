@@ -74,6 +74,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_SUNRAST   , "im24"},
     { CODEC_ID_SUNRAST   , "sunras"},
     { CODEC_ID_JPEG2000  , "jp2"},
+    { CODEC_ID_DPX       , "dpx"},
     { CODEC_ID_NONE      , NULL}
 };
 
@@ -265,8 +266,10 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                                   s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
-            if (url_fopen(&f[i], filename, URL_RDONLY) < 0)
+            if (url_fopen(&f[i], filename, URL_RDONLY) < 0) {
+                av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
+            }
             size[i]= url_fsize(f[i]);
 
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
@@ -341,8 +344,10 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
                                   img->path, img->img_number) < 0 && img->img_number>1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
-            if (url_fopen(&pb[i], filename, URL_WRONLY) < 0)
+            if (url_fopen(&pb[i], filename, URL_WRONLY) < 0) {
+                av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
+            }
 
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
                 break;

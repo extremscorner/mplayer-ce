@@ -193,8 +193,6 @@ SRCS_COMMON-$(LIBNUT)                += libmpdemux/demux_nut.c
 SRCS_COMMON-$(LIBPOSTPROC)           += libmpcodecs/vf_pp.c
 SRCS_COMMON-$(LIBSMBCLIENT)          += stream/stream_smb.c
 SRCS_COMMON-$(LIBTHEORA)             += libmpcodecs/vd_theora.c
-SRCS_COMMON-$(LIBVORBIS)             += libmpcodecs/ad_libvorbis.c \
-                                        libmpdemux/demux_ogg.c
 SRCS_COMMON-$(LIVE555)               += libmpdemux/demux_rtp.cpp \
                                         libmpdemux/demux_rtp_codec.cpp \
                                         stream/stream_live555.c
@@ -232,10 +230,10 @@ SRCS_COMMON-$(NEED_SHMEM)            += osdep/shmem.c
 SRCS_COMMON-$(NEED_STRSEP)           += osdep/strsep.c
 SRCS_COMMON-$(NEED_SWAB)             += osdep/swab.c
 SRCS_COMMON-$(NEED_VSSCANF)          += osdep/vsscanf.c
-
 SRCS_COMMON-$(NETWORK)               += stream/stream_netstream.c \
                                         stream/asf_mmst_streaming.c \
                                         stream/asf_streaming.c \
+                                        stream/cookies.c \
                                         stream/http.c \
                                         stream/network.c \
                                         stream/pnm.c \
@@ -244,25 +242,12 @@ SRCS_COMMON-$(NETWORK)               += stream/stream_netstream.c \
                                         stream/tcp.c \
                                         stream/stream_rtp.c \
                                         stream/stream_udp.c \
-
-#SRCS_COMMON-$(NETWORK)               += stream/stream_netstream.c \
-#                                        stream/asf_mmst_streaming.c \
-#                                        stream/asf_streaming.c \
-#                                        stream/cookies.c \
-#                                        stream/http.c \
-#                                        stream/network.c \
-#                                        stream/pnm.c \
-#                                        stream/rtp.c \
-#                                        stream/udp.c \
-#                                        stream/tcp.c \
-#                                        stream/stream_rtp.c \
-#                                        stream/stream_udp.c \
-#                                        stream/librtsp/rtsp.c \
-#                                        stream/realrtsp/asmrp.c \
-#                                        stream/realrtsp/real.c \
-#                                        stream/realrtsp/rmff.c \
-#                                        stream/realrtsp/sdpplin.c \
-#                                        stream/realrtsp/xbuffer.c \
+                                        stream/librtsp/rtsp.c \
+                                        stream/realrtsp/asmrp.c \
+                                        stream/realrtsp/real.c \
+                                        stream/realrtsp/rmff.c \
+                                        stream/realrtsp/sdpplin.c \
+                                        stream/realrtsp/xbuffer.c \
 
 SRCS_COMMON-$(PNG)                   += libmpcodecs/vd_mpng.c
 SRCS_COMMON-$(PRIORITY)              += osdep/priority.c
@@ -284,7 +269,7 @@ SRCS_COMMON-$(TREMOR_INTERNAL)       += tremor/bitwise.c \
                                         tremor/floor1.c \
                                         tremor/framing.c \
                                         tremor/info.c \
-                                        tremor/mapping0.c \
+										tremor/mapping0.c \
                                         tremor/mdct.c \
                                         tremor/registry.c \
                                         tremor/res012.c \
@@ -301,6 +286,8 @@ SRCS_COMMON-$(TV_V4L1)               += stream/tvi_v4l.c  stream/audio_in.c
 SRCS_COMMON-$(TV_V4L2)               += stream/tvi_v4l2.c stream/audio_in.c
 SRCS_COMMON-$(UNRAR_EXEC)            += unrar_exec.c
 SRCS_COMMON-$(VCD)                   += stream/stream_vcd.c
+SRCS_COMMON-$(VORBIS)                += libmpcodecs/ad_libvorbis.c \
+                                        libmpdemux/demux_ogg.c
 SRCS_COMMON-$(VSTREAM)               += stream/stream_vstream.c
 SRCS_COMMON-$(WIN32_EMULATION)       += loader/elfdll.c \
                                         loader/ext.c \
@@ -438,6 +425,7 @@ SRCS_COMMON = asxparser.c \
               libmpcodecs/vf_flip.c \
               libmpcodecs/vf_format.c \
               libmpcodecs/vf_framestep.c \
+              libmpcodecs/vf_gradfun.c \
               libmpcodecs/vf_halfpack.c \
               libmpcodecs/vf_harddup.c \
               libmpcodecs/vf_hqdn3d.c \
@@ -676,6 +664,7 @@ SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
 							 osdep/glob_gekko.c \
 							 osdep/libdvdiso.c \
 							 osdep/plat_gekko.c \
+							 osdep/mem2_manager.c \
 							 libao2/ao_gekko.c \
 							 libvo/vo_gekko.c \
 							 osdep/mload.c \
@@ -868,8 +857,43 @@ $(FFMPEGLIBS): $(FFMPEGFILES) config.h
 mencoder$(EXESUF): $(MENCODER_DEPS)
 	$(CC) -o $@ $^ $(LDFLAGS_MENCODER)
 
-mplayer$(EXESUF): $(MPLAYER_DEPS)
+
+mplayer$(EXESUF): $(MPLAYER_DEPS) 
 	$(CC) -o $@ $^ $(LDFLAGS_MPLAYER)
+
+#############################################################
+#                   MPLAYER WII LIB                         #
+#############################################################
+
+mplayer-wiilib.o: mplayer.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+command-wiilib.o: command.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+osdep/gx_supp-wiilib.o: osdep/gx_supp.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+osdep/plat_gekko-wiilib.o: osdep/plat_gekko.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+A1 =	$(subst gx_supp.o,gx_supp-wiilib.o,$(OBJS_MPLAYER))
+A2 =	$(subst mplayer.o,mplayer-wiilib.o,$(A1))
+A3 =	$(subst plat_gekko.o,plat_gekko-wiilib.o,$(A2))
+A4 =	$(subst command.o,command-wiilib.o,$(A3))
+MPLAYERWIILIB = $(A4) 
+MPLAYERWIILIB += $(OBJS_COMMON) 
+
+libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
+	rm -f $@
+	$(AR) rc $@ $(MPLAYERWIILIB)
+	 
+#	$(RANLIB) $@
+#############################################################
+
+#TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(filter-out %mencoder.o,$(OBJS_MENCODER)) $(OBJS_COMMON) $(COMMON_LIBS)
+#	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
+
 
 #codec-cfg$(EXESUF): codec-cfg.c help_mp.h
 #	$(HOST_CC) -O -DCODECS2HTML -I. -o $@ $<
