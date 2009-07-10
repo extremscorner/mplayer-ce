@@ -22,7 +22,6 @@
 #include "fileop.h"
 #include "mplayerce.h"
 
-FreeTypeGX *fontSystem;
 struct SCESettings CESettings;
 int ScreenshotRequested = 0;
 int ConfigRequested = 0;
@@ -97,6 +96,8 @@ static void CreateAppPath(char origpath[])
 		sprintf(appPath, &(path[pos]));
 }
 
+extern bool controlledbygui;
+
 int
 main(int argc, char *argv[])
 {
@@ -130,9 +131,7 @@ main(int argc, char *argv[])
 	loadedFile[0] = 0;
 
 	// Initialize font system
-	fontSystem = new FreeTypeGX();
-	fontSystem->loadFont(font_ttf, font_ttf_size, 0);
-	fontSystem->setCompatibilityMode(FTGX_COMPATIBILITY_DEFAULT_TEVOP_GX_PASSCLR | FTGX_COMPATIBILITY_DEFAULT_VTXDESC_GX_NONE);
+	InitFreeType((u8*)font_ttf, font_ttf_size);
 
 	while(1)
 	{
@@ -140,12 +139,16 @@ main(int argc, char *argv[])
 		AUDIO_StopDMA();
 		ResetVideo_Menu();
 
+		controlledbygui = true;
+
 		ResumeDeviceThread();
 		if(strlen(loadedFile) > 0)
 			Menu(MENU_HOME);
 		else
 			Menu(MENU_MAIN);
 		HaltDeviceThread();
+
+		controlledbygui = false;
 
 		//log_console_enable_video(true);
 		// load video

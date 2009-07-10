@@ -33,7 +33,7 @@ extern int ScreenshotRequested;
 extern int ConfigRequested;
 extern int ShutdownRequested;
 extern int ExitRequested;
-extern FreeTypeGX *fontSystem;
+extern FreeTypeGX *fontSystem[];
 extern char loadedFile[];
 
 #ifdef __cplusplus

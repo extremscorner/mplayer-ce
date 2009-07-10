@@ -18,6 +18,7 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 {
 	width = w;
 	height = h;
+	numEntries = 0;
 	selectedItem = 0;
 	selectable = true;
 	listChanged = true; // trigger an initial list update
@@ -89,6 +90,7 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 		fileListText[i] = new GuiText(NULL, 22, (GXColor){255, 255, 255, 0xff});
 		fileListText[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
 		fileListText[i]->SetPosition(8,0);
+		fileListText[i]->SetMaxWidth(540);
 
 		fileListBg[i] = new GuiImage(bgBrowseEntryOver);
 		fileListFolder[i] = new GuiImage(fileFolder);
@@ -308,7 +310,7 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 
 	for(int i=0; i<FILES_PAGESIZE; i++)
 	{
-		if(listChanged)
+		if(listChanged || numEntries != browser.numEntries)
 		{
 			if(browser.pageIndex+i < browser.numEntries)
 			{
@@ -355,6 +357,11 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 			selectedItem = i;
 			browser.selIndex = browser.pageIndex + i;
 		}
+
+		if(selectedItem == i)
+			fileListText[i]->SetScroll(SCROLL_HORIZONTAL);
+		else
+			fileListText[i]->SetScroll(SCROLL_NONE);
 	}
 
 	// update the location of the scroll box based on the position in the file list
@@ -375,6 +382,7 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 	scrollbarBoxBtn->SetPosition(0,position+36);
 
 	listChanged = false;
+	numEntries = browser.numEntries;
 
 	if(updateCB)
 		updateCB(this);

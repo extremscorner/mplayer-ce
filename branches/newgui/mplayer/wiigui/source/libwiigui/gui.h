@@ -46,14 +46,15 @@
 #include "../filelist.h"
 #include "../input.h"
 
-extern FreeTypeGX *fontSystem;
+extern FreeTypeGX *fontSystem[];
 
 #define SCROLL_INITIAL_DELAY 	20
-#define SCROLL_LOOP_DELAY 		3
-#define PAGESIZE			 	8
-#define FILES_PAGESIZE	 		9
+#define SCROLL_LOOP_DELAY		3
+#define FILES_PAGESIZE 			9
+#define PAGESIZE 				8
 #define MAX_OPTIONS 			30
 #define MAX_MENUITEMS 			10
+#define MAX_KEYBOARD_DISPLAY	32
 
 typedef void (*UpdateCallback)(void * e);
 
@@ -78,6 +79,12 @@ enum
 
 enum
 {
+	SOUND_PCM,
+	SOUND_OGG
+};
+
+enum
+{
 	IMAGE_TEXTURE,
 	IMAGE_COLOR,
 	IMAGE_DATA
@@ -89,6 +96,12 @@ enum
 	TRIGGER_HELD,
 	TRIGGER_BUTTON_ONLY,
 	TRIGGER_BUTTON_ONLY_IN_FOCUS
+};
+
+enum
+{
+	SCROLL_NONE,
+	SCROLL_HORIZONTAL
 };
 
 typedef struct _paddata {
@@ -602,7 +615,9 @@ class GuiText : public GuiElement
 		//!Sets the maximum width of the drawn texture image
 		//!If the text exceeds this, it is wrapped to the next line
 		//!\param w Maximum width
-		void SetMaxWidth(int w);
+		void SetMaxWidth(int width);
+		void SetScroll(int s);
+		void SetWrap(bool w, int width = 0);
 		//!Sets the font color
 		//!\param c Font color
 		void SetColor(GXColor c);
@@ -616,9 +631,16 @@ class GuiText : public GuiElement
 		//!Constantly called to draw the text
 		void Draw();
 	protected:
+		char * origText;
 		wchar_t* text; //!< Unicode text value
 		int size; //!< Font size
 		int maxWidth; //!< Maximum width of the generated text object (for text wrapping)
+		bool wrap;
+		wchar_t* textDyn;
+		int textScroll;
+		int textScrollPos;
+		int textScrollInitialDelay;
+		int textScrollDelay;
 		u16 style; //!< FreeTypeGX style attributes
 		GXColor color; //!< Font color
 };
@@ -789,8 +811,8 @@ class GuiMenuBrowser : public GuiElement
 
 typedef struct _optionlist {
 	int length;
-	char name[MAX_OPTIONS][150];
-	char value[MAX_OPTIONS][150];
+	char name[MAX_OPTIONS][50];
+	char value[MAX_OPTIONS][50];
 } OptionList;
 
 //!Display a list of menu options
@@ -854,6 +876,7 @@ class GuiFileBrowser : public GuiElement
 		GuiButton * fileList[FILES_PAGESIZE];
 	protected:
 		int selectedItem;
+		int numEntries;
 		bool listChanged;
 
 		GuiText * fileListText[FILES_PAGESIZE];
@@ -883,6 +906,8 @@ class GuiFileBrowser : public GuiElement
 		GuiImageData * scrollbarBox;
 		GuiImageData * scrollbarBoxOver;
 
+		GuiSound * btnSoundOver;
+		GuiSound * btnSoundClick;
 		GuiTrigger * trigA;
 		GuiTrigger * trigHeldA;
 };
