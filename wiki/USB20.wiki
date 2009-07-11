@@ -19,3 +19,7 @@ There is a work around for this but we cannot advise about it.
 Unfortunately there is nothing we can do about it.
 
 If you plan on updating make sure to install the cIOS and DVDx before updating.
+
+== How can I install the cIOS without Wifi? ==
+
+Follow the offline installation guide, [http://www.tehskeen.com/forums/showthread.php?p=62838#post62838 Here]. 
