@@ -15,8 +15,7 @@
  * Ahora se puede montar cualquier partición FAT, no debe dar ningún problema si la partición está configurada como primaria o activada.
  * Establecido soporte FAT32 así que ahora puedes reproducir archivos de mayor tamaño.
  * Los archivos de vídeo que no habían funcionado antes puede que ahora lo hagan.
- * Implementado nuevo sistema de buffer para cuando el caché comienza a bajar, que para el sistema y realiza un re-buffer para conseguir un valor mínimo de caché, lo que previene posibles cuelgues con malas conexiones. 
-Puedes ver el caché pulsando 1 en el Wiimando, cuando el caché llegue al 3% se parará.
+ * Implementado nuevo sistema de buffer para cuando el caché comienza a bajar, que para el sistema y realiza un re-buffer para conseguir un valor mínimo de caché, lo que previene posibles cuelgues con malas conexiones. Puedes ver el caché pulsando 1 en el Wiimando, cuando el caché llegue al 3% se parará.
  * Shoutcast TV es completo gracias a Extrems, revisa menu.conf.
  * No es necesario DVDx si se tiene instalado cIOS202 para el acceso a DVD.
 
