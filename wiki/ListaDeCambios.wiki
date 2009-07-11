@@ -3,6 +3,25 @@
 
 = Lista de cambios de MPlayerCE =
 
+== 0.7 ==
+
+ * Ahora los archivos se analizan al principio, seguido del cache cuando este se haya liberado del análisis previo, así que después verás llenarse el caché.
+ * Mejorado cache de audio/video por internet, detecta si es un streaming por internet, y si es un stream de radio el caché inicial será pequeño.
+ * Optimizado el acceso a la memoria por sugerencia de Shagkur, el código de cahé ahora es más estable.
+ * Añadido parche A8 para reproducción de DVD en cIOS202 para evitar problemas con viejos ModChips.
+ * Mejorado el libfat y arreglados caracteres especiales.
+ * Uso de el último libfat para prevenir la posible corrupción de las tarjetas SD.
+ * Mejorada conexión USB  y detección de DVD, modificando el módulo ECHI para una mayor compatibilidad con las memorias USB.
+ * Ahora se puede montar cualquier partición FAT, no debe dar ningún problema si la partición está configurada como primaria o activada.
+ * Establecido soporte FAT32 así que ahora puedes reproducir archivos de mayor tamaño.
+ * Los archivos de vídeo que no habían funcionado antes puede que ahora lo hagan.
+ * Implementado nuevo sistema de buffer para cuando el caché comienza a bajar, que para el sistema y realiza un re-buffer para conseguir un valor mínimo de caché, lo que previene posibles cuelgues con malas conexiones. Puedes ver el caché pulsando 1 en el Wiimando, cuando el caché llegue al 3% se parará.
+ * Shoutcast TV es completo gracias a Extrems, revisa menu.conf.
+ * No es necesario DVDx si se tiene instalado cIOS202 para el acceso a DVD.
+
+== Nuevo Instalador de cIOS ==
+
+ * Ahora MPlayerCE detectará la presencia del IOS202 para decidir si usar el DVDx o no, así que la gente que instale el cIOS202 no necesita instalar DVDx para tener sus funciones. La instalación de DVDx por defecto puede ser usada si instalas IOS202 ahora. El nuevo instalador es para el USB2 únicamente, e instalará IOS202 basándose en IOS60 por sus mejoras del Wi-Fi. Ahora se puede seleccionar el IOS para correr la instalación, así que puedes seleccionar el IOS que posea el bug de firma falsa o bug treucha. (El motivo de que DVDx no sea necesario al tener cIOS202 es que existe un parche en IOS202 que permite acceder al DVD sin DVDx). El cIOS es necesario para MPlayer para usar el driver USB2. Para más detalles lee el LÉEME que forma parte de este paquete.
 
 == 0.62 ==
 
