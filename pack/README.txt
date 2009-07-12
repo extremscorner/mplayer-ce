@@ -113,16 +113,18 @@ contains a folder  named "MPlayer_ce"  which  you will  need  to copy to your
 Once  copied  over you  can launch it  using the  loader of your choice.
 
 USB 2.0:
-You need to  install the  USB 2.0 cIOS from http://wiibrew.org/wiki/CIOS_usb2
-You must then then reinstall DVDX http://wiibrew.org/wiki/DVDx using advanced
-mode and selecting IOS202.   Even  if you don't  plan on playing DVDs this is
-necessary for MPlayer CE to detect if the cIOS is installed.
+You need to  install the  USB 2.0 cIOS from here: 
+http://code.google.com/p/mplayer-ce/downloads/list 
+(Please note that this requires a internet connection).
+The installer is for Homebrew USB2 only, this will install IOS202 using base 
+IOS60 automatically. You can select the IOS to use to do the installation, 
+so you can select a IOS with the fake sign bug.
+(IOS60 is downloaded to SD via the Nintendo's Update Server).
+We are using IOS60 as a base as there has been improvements in wifi.
+Those that install this cIOS do not require a DVDx instalation.
 
-Plug in your USB device before loading MPlayer, and it should be mounted.
-Some devices do not support hotplugging.
-
-Users  with  system menu 3.4 or  higher will not be  able to use  USB2.0 with
-MPlayerCE because the DVDx installer for 3.4 does not have an  advanced mode.
+Users without the fakesign bug cannot install the cIOS to use USB2.
+There is a work around for this but we cannot advise about it.
 Unfortunately there is nothing we can do about it.
 
 If you plan on updating make sure to install the cIOS and DVDx before updating.
@@ -298,12 +300,15 @@ Aspect
 
 The Nintendo Wii is capable of reading DVD DATA and DVD-VIDEO discs, but this
 functionality  while  left  into  the  Nintendo  Wii  needs  to be enabled by 
-installing  DVDx from  Team Twiizers.  You  can  locate  DVDx  from  the URLs 
-below.  Make sure to install  the  correct version as there is one for System
-Menu 3.2/3.3 and one for 3.4
-
+installing  DVDx from  Team Twiizers.  If you use USB2 and have installed the 
+cIOS202 then you don't need a DVDx install at all, as the cIOS has a patch to 
+access DVD without it.
+You  can  locate  DVDx  from  the URLs below.  
+Make sure to install  the  correct version as there is one for System Menu 
+3.2/3.3  3.4  and 4.0
 DVDx 3.2/3.3 -> http://hackmii.com/2008/08/libdi-and-the-dvdx-installer
 DVDx 3.4 -> http://hackmii.com/2009/02/dvdx34/
+DVDx 4.0 -> http://bootmii.org/download/
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                           RADIO STREAMS                       ·oø×O0|
@@ -321,8 +326,50 @@ Example:
 <e name="Woxy radio" ok="loadlist 'http://woxy.lala.com/stream/aac32.pls'"/>
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
+|0O×øo·                         Youtube/SHOUTcast                    · oø×O0|
+`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+You can add changes to the Youtube/SHOUTcast, review your'e menu.conf as by 
+default it is running via Extrems Server.
+
+×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+v0.7
+   * Files now first analyse, followed by cache, as cache was emptied on 
+     analysing previously so now you'll see cache filling later.
+   * Improved audio/video internet cache, detects if it is a internet stream, 
+     if it's a radio stream then initial cache fill is small.
+   * Optimizing memory access suggestion from Shagkur, cache thread is now more stable.
+   * A8 patch added for DVD playback in cIOS202 to avoid problems with old ModChips.
+   * Improved libfat and fix for special characters.
+   * Using latest Libfat to prevent possible corruption on sd.
+   * Improved USB hotplug and dvd detection, echi module modified for more 
+     compatability with usb devices.
+   * Can now mount any fat partition, shouldn't matter if partition is set 
+     as primary or activated.
+   * Now has real fat32 limit therfore can now play larger files.
+   * Video files that hadn't worked previously may work now.
+   * New buffering system implemented for when buffering is low, if cache becomes low, 
+     it will pause and re-buffer to fill cache-min value, to prevent possible hangs 
+     with bad connections. You can see the cache by pressing 1 twice on the wiimote, 
+     when cache drops to 3% then it will pause.
+   * Shoutcast TV is complete with caching, thanx to Extrems, Review menu.conf.
+   * If IOS202 is installed via the Installer then DVDx is not required for DVD Access.
+
+New cIOS Installer:
+
+    MPlayerCE will now detect the presence of IOS202 to decide to use DVDx or not, 
+	so people that install the cIOS202 don't need to install DVDx to use the DVD functions.
+    Default DVDx install can be used if you install IOS202 now.
+    The new installer is for Homebrew USB2 only, this will install IOS202 
+    using base IOS60 automatically as IOS60 has improvements in wifi.
+	Now you can select the IOS to use to do the installation, 
+    so you can select a IOS with the fake sign bug.
+    (The reason for DVDx not having to be installed if IOS202 is installed on the wii, 
+    is that there is a patch in IOS202 that doesn't require DVDx, 
+    and can access DVD without it).
+    The cIOS is needed for MPlayerCE to use the USB2 driver.
 
 v0.62
     * USB LAN Adaptor support fixed (again).  Thanks to CountZ3ro for testing.
@@ -390,7 +437,7 @@ v0.5
  v0.3
  
     * Fixed code to play videos with incompatible size
-        - We now support many video formats and unorthodox resolutions
+    * We now support many video formats and unorthodox resolutions
     * Fixed keepalive issue in samba (thanks to Ludovic Orban)
     * New loop.avi and widescreen version (thanks to Blue_K)
  
@@ -461,6 +508,7 @@ V0.1 Christmas Edition
                   AgentX - Source Improvements, Configs & Testing
                DJDynamite123 - Autochain Code/Experimenting & Testing
                       Ludovic Orban - Keepalive issue in samba
+                         Extrems - SHOUTcast/Youtube Patches
                             Tantric - SMB Improvements					
                               Brakken - Documentation
                                  Blue_K - loop.avi
@@ -470,8 +518,8 @@ V0.1 Christmas Edition
                                       [rOn]
                                   Team Twiizers
                                  GeeXboX Authors
-	                               dargllun									 
-                                       Daca
-                            Shagkur & LibOGC Contributers
+	                            dargllun									 
+                                      Daca
+                           Shagkur & LibOGC Contributers
                               
 ×¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨•ßrK•
