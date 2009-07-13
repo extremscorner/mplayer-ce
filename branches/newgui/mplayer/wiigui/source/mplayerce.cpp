@@ -31,6 +31,10 @@ int ExitRequested = 0;
 char appPath[1024];
 char loadedFile[1024];
 
+#define TSTACK (128*1024)
+static lwp_t mthread = LWP_THREAD_NULL;
+static unsigned char mstack[TSTACK];
+
 /****************************************************************************
  * Shutdown / Reboot / Exit
  ***************************************************************************/
@@ -98,6 +102,14 @@ static void CreateAppPath(char origpath[])
 
 extern bool controlledbygui;
 
+static void *
+mplayerthread (void *arg)
+{
+	mplayer_loadfile(loadedFile);
+	controlledbygui = true;
+	return NULL;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -139,8 +151,6 @@ main(int argc, char *argv[])
 		AUDIO_StopDMA();
 		ResetVideo_Menu();
 
-		controlledbygui = true;
-
 		ResumeDeviceThread();
 		if(strlen(loadedFile) > 0)
 			Menu(MENU_HOME);
@@ -152,8 +162,14 @@ main(int argc, char *argv[])
 
 		//log_console_enable_video(true);
 		// load video
-		VIDEO_SetPostRetraceCallback (NULL);//disable callback in mplayer, reasigned in ResetVideo_Menu
-		mplayer_loadfile(loadedFile);
+		VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
+
+		if(mthread == LWP_THREAD_NULL)
+			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 100);
+
+		while(!controlledbygui) // wait for MPlayer to pause
+			usleep(100);
+
 		//log_console_enable_video(true);
 		//printf("test\n");sleep(5);
 	}

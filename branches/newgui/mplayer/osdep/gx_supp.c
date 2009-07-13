@@ -68,9 +68,9 @@ static u16 Ywidth, Yheight, UVwidth, UVheight;
 
 /* New texture based scaler */
 typedef struct tagcamera {
-	Vector pos;
-	Vector up;
-	Vector view;
+	guVector pos;
+	guVector up;
+	guVector view;
 } camera;
 
 static s16 square[] ATTRIBUTE_ALIGN(32) = {
@@ -103,15 +103,15 @@ void GX_InitVideo() {
 	vmode->viWidth = 678;
   if(!component_fix) vmode->viWidth = 678;
 	else
-  { 
+  {
     //vmode->viWidth = VI_MAX_WIDTH_PAL-20;
     vmode->viWidth = 680;
-    //vmode->xfbHeight+=8;    
+    //vmode->xfbHeight+=8;
   }
-  
+
   //vmode->viWidth = 678;
 	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
-	
+
 	VIDEO_Configure(vmode);
 
 	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
@@ -129,7 +129,7 @@ void GX_InitVideo() {
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
-		
+
 	//make memory fixed (max texture 900*700, gx can't manage more)
 	if (!Ytexture)
 		Ytexture = (u8 *) memalign(32,900*700);
@@ -137,7 +137,7 @@ void GX_InitVideo() {
 		Utexture = (u8 *) memalign(32,900*700/4);
 	if (!Vtexture)
 		Vtexture = (u8 *) memalign(32,900*700/4);
-		
+
 }
 #endif
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
@@ -397,6 +397,15 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	Vtexture = (u8 *) memalign(32,UVtexsize);
 
 */
+#ifdef WIILIB
+	//make memory fixed (max texture 900*700, gx can't manage more)
+	if (!Ytexture)
+		Ytexture = (u8 *) memalign(32,900*700);
+	if (!Utexture)
+		Utexture = (u8 *) memalign(32,900*700/4);
+	if (!Vtexture)
+		Vtexture = (u8 *) memalign(32,900*700/4);
+#endif
 
 	memset(Ytexture, 255, Ytexsize);
 	memset(Utexture, 255, UVtexsize);
