@@ -1,4 +1,4 @@
-prefix=/c/devkitpro/libogc
+prefix=${DEVKITPRO}/libogc
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

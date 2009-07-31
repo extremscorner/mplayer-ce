@@ -1,6 +1,6 @@
 #!/bin/sh
 
-prefix=/c/devkitpro/libogc
+prefix=${DEVKITPRO}/libogc
 exec_prefix=${prefix}
 exec_prefix_set=no
 

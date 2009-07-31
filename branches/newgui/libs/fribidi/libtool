@@ -82,13 +82,13 @@ AR="ar"
 AR_FLAGS="cru"
 
 # A C compiler.
-LTCC="/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc"
+LTCC="${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-gcc"
 
 # LTCC compiler flags.
 LTCFLAGS="-mcpu=750 -O2"
 
 # A language-specific compiler.
-CC="/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc"
+CC="${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-gcc"
 
 # Is the compiler the GNU C compiler?
 with_gcc=yes
@@ -266,7 +266,8 @@ finish_cmds=""
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)\\{0,1\\}\$/\\1 \\2 \\2/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)
+\\{0,1\\}\$/\\1 \\2 \\2/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
@@ -7301,7 +7302,7 @@ AR="ar"
 AR_FLAGS="cru"
 
 # A C compiler.
-LTCC="/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc"
+LTCC="${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-gcc"
 
 # LTCC compiler flags.
 LTCFLAGS="-mcpu=750 -O2"
@@ -7485,7 +7486,8 @@ finish_cmds=""
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)\\{0,1\\}\$/\\1 \\2 \\2/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)
+\\{0,1\\}\$/\\1 \\2 \\2/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"

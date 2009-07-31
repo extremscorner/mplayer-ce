@@ -12,7 +12,7 @@
 # fully.
 
 
-CC           := /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc
+CC           := ${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-gcc
 COMPILER_SEP := $(SEP)
 
 LIBTOOL ?= $(BUILD_DIR)/libtool
