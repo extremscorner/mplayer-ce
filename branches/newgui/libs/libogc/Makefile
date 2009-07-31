@@ -96,6 +96,7 @@ INCLUDES	:=	$(DEFINCS) -I$(BASEDIR)/gc/netif -I$(BASEDIR)/gc/ipv4 \
 
 MACHDEP		:= -DBIGENDIAN -DGEKKO -mcpu=750 -meabi -msdata=eabi -mhard-float -fmodulo-sched -ffunction-sections -fdata-sections
 
+
 ifeq ($(PLATFORM),wii)
 MACHDEP		+=	-DHW_RVL
 endif
@@ -104,7 +105,7 @@ ifeq ($(PLATFORM),cube)
 MACHDEP		+=	-DHW_DOL
 endif
 
-CFLAGS		:= -DLIBOGC_INTERNAL -DGAMECUBE -O2 -Wall $(MACHDEP) -fno-strict-aliasing $(INCLUDES)
+CFLAGS		:= -DLIBOGC_INTERNAL -DGAMECUBE -O2 -mregnames -Wall $(MACHDEP)  -fno-strict-aliasing $(INCLUDES)
 
 
 #---------------------------------------------------------------------------------
@@ -151,7 +152,7 @@ OGCOBJ		:=	\
 			gx.o gu.o gu_psasm.o audio.o cache.o decrementer.o			\
 			message.o card.o aram.o depackrnc.o decrementer_handler.o	\
 			depackrnc1.o dsp.o si.o tpl.o ipc.o ogc_crt0.o \
-			console_font_8x16.o timesupp.o lock_supp.o newlibc.o usbgecko.o \
+			console_font_8x16.o timesupp.o lock_supp.o newlibc.o usbgecko.o usbmouse.o \
 			sbrk.o malloc_lock.o kprintf.o stm.o ios.o es.o isfs.o usb.o network_common.o \
 			sdgecko_io.o sdgecko_buf.o gcsd.o argv.o network_wii.o wiisd.o conf.o usbstorage.o usb2storage.o \
 			texconv.o wiilaunch.o

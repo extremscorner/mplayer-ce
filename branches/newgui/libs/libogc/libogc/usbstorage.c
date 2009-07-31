@@ -32,7 +32,6 @@ distribution.
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <ogc/cond.h>
 #include <errno.h>
 #include <lwp_heap.h>
 #include <malloc.h>
@@ -732,11 +731,16 @@ s32 USBStorage_Suspend(usbstorage_handle *dev)
 The following is for implementing a DISC_INTERFACE 
 as used by libfat
 */
+static bool __usbstorage_IsInserted(void);
+extern const DISC_INTERFACE __io_usb2storage;
+bool USB2Available();
+static bool usb_initied=false;
 
 static bool __usbstorage_IsInserted(void);
 
 static bool __usbstorage_Startup(void)
 {
+	usb_initied=true;
 	USB_Initialize();
 	USBStorage_Initialize();
 	return __usbstorage_IsInserted();
@@ -751,9 +755,25 @@ static bool __usbstorage_IsInserted(void)
    s32 maxLun;
    s32 retval;
 
+	if(!usb_initied)
+	{
+		usb_initied=true;
+		USB_Initialize();
+		USBStorage_Initialize();
+	}
+
    __mounted = 0;		//reset it here and check if device is still attached
 
-   buffer = memalign(32, DEVLIST_MAXSIZE << 3);
+	if(USB2Available())
+	{
+		if(__io_usb2storage.isInserted())
+		{
+			__io_usbstorage = __io_usb2storage;
+			return true;
+		}
+	}
+
+   buffer = __lwp_heap_allocate(&__heap, DEVLIST_MAXSIZE << 3);
    if(buffer == NULL)
        return false;
    memset(buffer, 0, DEVLIST_MAXSIZE << 3);
@@ -766,10 +786,19 @@ static bool __usbstorage_IsInserted(void)
        __vid = 0;
        __pid = 0;
 
-       free(buffer);
+       __lwp_heap_free(&__heap,buffer);
+       
+		if(USB2Available())
+		{
+			if(__io_usb2storage.isInserted())
+			{
+				__io_usbstorage = __io_usb2storage;
+				return true;
+			}
+		}       
        return false;
    }
-
+   
    if(__vid!=0 || __pid!=0)
    {
        for(i = 0; i < DEVLIST_MAXSIZE; i++)
@@ -782,7 +811,7 @@ static bool __usbstorage_IsInserted(void)
                if( (vid == __vid) && (pid == __pid))
                {
                    __mounted = 1;
-                   free(buffer);
+				   __lwp_heap_free(&__heap,buffer);
                    usleep(50); // I don't know why I have to wait but it's needed
                    return true;
                }
@@ -800,6 +829,7 @@ static bool __usbstorage_IsInserted(void)
    {
        memcpy(&vid, (buffer + (i << 3) + 4), 2);
        memcpy(&pid, (buffer + (i << 3) + 6), 2);
+
        if(vid == 0 || pid == 0)
            continue;
 
@@ -826,7 +856,7 @@ static bool __usbstorage_IsInserted(void)
            break;
        }
    }
-   free(buffer);
+   __lwp_heap_free(&__heap,buffer);
    if(__mounted == 1)
        return true;
    return false;

@@ -651,11 +651,15 @@ s32 WPAD_Init()
 			return WPAD_ERR_BADCONF;
 		}
 
-		if(__wpad_devs.num_registered == 0)
+		if(__wpad_devs.num_registered == 0) {
+			_CPU_ISR_Restore(level);
 			return WPAD_ERR_NONEREGISTERED;
+		}
 
-		if(__wpad_devs.num_registered > CONF_PAD_MAX_REGISTERED)
+		if(__wpad_devs.num_registered > CONF_PAD_MAX_REGISTERED) {
+			_CPU_ISR_Restore(level);
 			return WPAD_ERR_BADCONF;
+		}
 
 		__wpads = wiiuse_init(WPAD_MAX_WIIMOTES,__wpad_eventCB);
 		if(__wpads==NULL) {
@@ -1041,6 +1045,7 @@ void WPAD_Shutdown()
 	SYS_RemoveAlarm(__wpad_timer);
 	for(i=0;i<WPAD_MAX_WIIMOTES;i++) {
 		wpdcb = &__wpdcb[i];
+		SYS_RemoveAlarm(wpdcb->sound_alarm);
 		__wpad_disconnect(wpdcb);
 	}
 
@@ -1050,9 +1055,6 @@ void WPAD_Shutdown()
 
 	while(__wpads_active)
 		usleep(50);
-
-	for(i=0;i<WPAD_MAX_WIIMOTES;i++) SYS_RemoveAlarm(__wpdcb[i].sound_alarm);
-	SYS_RemoveAlarm(__wpad_timer);
 
 	BTE_Shutdown();
 }

@@ -1,9 +1,9 @@
 /*
 	libfat.c
 	Simple functionality for startup, mounting and unmounting of FAT-based devices.
-	
+
  Copyright (c) 2006 Michael "Chishm" Chisholm
-	
+
  Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
 
@@ -68,9 +68,18 @@ bool fatMount (const char* name, const DISC_INTERFACE* interface, sec_t startSec
 	PARTITION* partition;
 	devoptab_t* devops;
 	char* nameCopy;
-	
+
+	if(!interface->startup())
+		return false;
+
+	if(!interface->isInserted()) {
+		interface->shutdown();
+		return false;
+	}
+
 	devops = _FAT_mem_allocate (sizeof(devoptab_t) + strlen(name) + 1);
 	if (!devops) {
+		interface->shutdown();
 		return false;
 	}
 	// Use the space allocated at the end of the devoptab struct for storing the name
@@ -80,17 +89,18 @@ bool fatMount (const char* name, const DISC_INTERFACE* interface, sec_t startSec
 	partition = _FAT_partition_constructor (interface, cacheSize, SectorsPerPage, startSector);
 	if (!partition) {
 		_FAT_mem_free (devops);
+		interface->shutdown();
 		return false;
 	}
-	
+
 	// Add an entry for this device to the devoptab table
 	memcpy (devops, &dotab_fat, sizeof(dotab_fat));
 	strcpy (nameCopy, name);
 	devops->name = nameCopy;
 	devops->deviceData = partition;
-	
+
 	AddDevice (devops);
-	
+
 	return true;
 }
 
@@ -101,6 +111,7 @@ bool fatMountSimple (const char* name, const DISC_INTERFACE* interface) {
 void fatUnmount (const char* name) {
 	devoptab_t *devops;
 	PARTITION* partition;
+	const DISC_INTERFACE *disc;	
 	char *buf;
   int namelen,i;
   
@@ -135,9 +146,10 @@ void fatUnmount (const char* name) {
 	}	
   free(buf);  		
 	partition = (PARTITION*)devops->deviceData;
+	disc = partition->disc;
 	_FAT_partition_destructor (partition);
 	_FAT_mem_free (devops);
-		
+	disc->shutdown();
 }
 
 bool fatInit (uint32_t cacheSize, bool setAsDefaultDevice) {
@@ -145,38 +157,38 @@ bool fatInit (uint32_t cacheSize, bool setAsDefaultDevice) {
 	int defaultDevice = -1;
 	const DISC_INTERFACE *disc;
 
-	for (i = 0; 
-		_FAT_disc_interfaces[i].name != NULL && _FAT_disc_interfaces[i].getInterface != NULL; 
+	for (i = 0;
+		_FAT_disc_interfaces[i].name != NULL && _FAT_disc_interfaces[i].getInterface != NULL;
 		i++)
 	{
 		disc = _FAT_disc_interfaces[i].getInterface();
-		if (disc->startup() && fatMount (_FAT_disc_interfaces[i].name, disc, 0, cacheSize, DEFAULT_SECTORS_PAGE)) {
+		if (fatMount (_FAT_disc_interfaces[i].name, disc, 0, cacheSize, DEFAULT_SECTORS_PAGE)) {
 			// The first device to successfully mount is set as the default
 			if (defaultDevice < 0) {
 				defaultDevice = i;
 			}
 		}
 	}
-	
+
 	if (defaultDevice < 0) {
 		// None of our devices mounted
 		return false;
 	}
-	
+
 	if (setAsDefaultDevice) {
 		char filePath[MAXPATHLEN * 2];
 		strcpy (filePath, _FAT_disc_interfaces[defaultDevice].name);
 		strcat (filePath, ":/");
 #ifdef ARGV_MAGIC
-		if ( __system_argv->argvMagic == ARGV_MAGIC && __system_argv->argc >= 1 ) {
+		if ( __system_argv->argvMagic == ARGV_MAGIC && __system_argv->argc >= 1 && strrchr( __system_argv->argv[0], '/' )!=NULL ) {
 			// Check the app's path against each of our mounted devices, to see
 			// if we can support it. If so, change to that path.
-			for (i = 0; 
-				_FAT_disc_interfaces[i].name != NULL && _FAT_disc_interfaces[i].getInterface != NULL; 
+			for (i = 0;
+				_FAT_disc_interfaces[i].name != NULL && _FAT_disc_interfaces[i].getInterface != NULL;
 				i++)
 			{
-				if ( !strncasecmp( __system_argv->argv[0], _FAT_disc_interfaces[i].name, 
-					strlen(_FAT_disc_interfaces[i].name))) 
+				if ( !strncasecmp( __system_argv->argv[0], _FAT_disc_interfaces[i].name,
+					strlen(_FAT_disc_interfaces[i].name)))
 				{
 					char *lastSlash;
 					strcpy(filePath, __system_argv->argv[0]);

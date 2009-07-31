@@ -33,7 +33,6 @@
 
 #include <asm.h>
 #include <unistd.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -51,6 +50,7 @@
 
 #define IOS_O_NONBLOCK				0x04
 #define RECV_TIMEOUT				5000  // in ms
+
 
 /**
  * Field offsets.
@@ -789,10 +789,10 @@ static s32 do_netconnect(SMBHANDLE *handle)
 		ret = net_connect(sock,(struct sockaddr*)&handle->server_addr,sizeof(handle->server_addr));
 		t2=ticks_to_millisecs(gettime());
 		usleep(1000);
-		if(t2-t1 > 3000) break; // 3 secs to try to connect to handle->server_addr
-	} while(ret!=-EISCONN);
+		if(t2-t1 > 2000) break; // 3 secs to try to connect to handle->server_addr
+	} while(ret!=-127);
 
-	if(ret!=-EISCONN)
+	if(ret!=-127)
 	{
 		net_close(sock);
 		return -1;
@@ -831,12 +831,19 @@ static s32 do_smbconnect(SMBHANDLE *handle)
 /****************************************************************************
  * Primary setup, logon and connection all in one :)
  ****************************************************************************/
-s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const char *share, const char *IP)
+s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const char *share, const char *server)
 {
-	s32 ret;
+	s32 ret = 0;
 	SMBHANDLE *handle;
+	struct hostent *hp;
+	struct in_addr val;
 
-	*smbhndl = SMB_HANDLE_NULL;
+	if(!user || !password || !share || !server ||
+		strlen(user) > 20 || strlen(password) > 14 ||
+		strlen(share) > 80 || strlen(server) > 80)
+	{
+		return SMB_BAD_LOGINDATA;
+	}
 
 	if(smb_inited==FALSE) {
 		u32 level;
@@ -845,28 +852,59 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 		_CPU_ISR_Restore(level);
 	}
 
+	*smbhndl = SMB_HANDLE_NULL;
+
 	handle = __smb_allocate_handle();
 	if(!handle) return SMB_ERROR;
 
 	handle->user = strdup(user);
 	handle->pwd = strdup(password);
-	handle->server_name = strdup(IP);
+	handle->server_name = strdup(server);
 	handle->share_name = strdup(share);
-
 	handle->server_addr.sin_family = AF_INET;
 	handle->server_addr.sin_port = htons(445);
-	handle->server_addr.sin_addr.s_addr = inet_addr(IP);
 
-	ret = do_netconnect(handle);
-	if(ret==0) ret = do_smbconnect(handle);
-	if(ret!=0) {
-		__smb_free_handle(handle);
+	if(strlen(server) < 16 && inet_aton(server, &val))
+	{
+		handle->server_addr.sin_addr.s_addr = val.s_addr;
+	}
+	else // might be a hostname
+	{
+		hp = net_gethostbyname(server);
+		if (!hp || !(hp->h_addrtype == PF_INET))
+			ret = SMB_BAD_LOGINDATA;
+		else
+			memcpy((char *)&handle->server_addr.sin_addr.s_addr, hp->h_addr_list[0], hp->h_length);
+	}
+
+	if(ret==0)
+	{
+		ret = do_netconnect(handle);
+
+		if(ret==0) ret = do_smbconnect(handle);
+
+		if(ret!=0)
+		{
+			// try port 139
+			handle->server_addr.sin_port = htons(139);
+			ret = do_netconnect(handle);
+			if(ret==0) ret = do_smbconnect(handle);
+		}
+	}
+
+	*smbhndl =(SMBCONN)(LWP_OBJMASKTYPE(SMB_OBJTYPE_HANDLE)|LWP_OBJMASKID(handle->object.id));
+
+	if(ret!=0)
+	{
+//		__smb_free_handle(handle);
 		return SMB_ERROR;
 	}
-	*smbhndl =(SMBCONN)(LWP_OBJMASKTYPE(SMB_OBJTYPE_HANDLE)|LWP_OBJMASKID(handle->object.id));
-	return SMB_SUCCESS;
+	else
+	{
+//		*smbhndl =(SMBCONN)(LWP_OBJMASKTYPE(SMB_OBJTYPE_HANDLE)|LWP_OBJMASKID(handle->object.id));
+		return SMB_SUCCESS;
+	}
 }
-
 
 /****************************************************************************
  * SMB_Destroy
@@ -890,7 +928,9 @@ s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn)
 	SMBCONN smbhndl = *_smbhndl;
 	SMBHANDLE *handle = __smb_handle_open(smbhndl);
 	if(!handle)
+	{
 		return SMB_ERROR; // we have no handle, so we can't reconnect
+	}
 
 	if(handle->conn_valid && test_conn)
 	{
@@ -923,7 +963,7 @@ SMBFILE SMB_OpenFile(const char *filename, u16 access, u16 creation,SMBCONN smbh
 	SMBHANDLE *handle;
 	char realfile[256];
 
-	if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return NULL;
+	//if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return NULL;
 
 	handle = __smb_handle_open(smbhndl);
 	if(!handle) return NULL;
@@ -1287,7 +1327,7 @@ s32 SMB_FindFirst(const char *filename, unsigned short flags, SMBDIRENTRY *sdir,
 	SMBHANDLE *handle;
 	SMBSESSION *sess;
 
-	if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return SMB_ERROR;
+	//if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return SMB_ERROR;
 
 	handle = __smb_handle_open(smbhndl);
 	if(!handle) return SMB_ERROR;
@@ -1376,7 +1416,7 @@ s32 SMB_FindNext(SMBDIRENTRY *sdir,SMBCONN smbhndl)
 	SMBHANDLE *handle;
 	SMBSESSION *sess;
 
-	if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return SMB_ERROR;
+	//if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return SMB_ERROR;
 
 	handle = __smb_handle_open(smbhndl);
 	if(!handle) return SMB_ERROR;
@@ -1460,7 +1500,7 @@ s32 SMB_FindClose(SMBCONN smbhndl)
 	SMBHANDLE *handle;
 	SMBSESSION *sess;
 
-	if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return SMB_ERROR;
+	//if(SMB_Reconnect(&smbhndl,TRUE)!=SMB_SUCCESS) return SMB_ERROR;
 
 	handle = __smb_handle_open(smbhndl);
 	if(!handle) return SMB_ERROR;

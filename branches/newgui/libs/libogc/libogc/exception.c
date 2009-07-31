@@ -58,7 +58,7 @@ typedef struct _framerec {
 	void *lr;
 } frame_rec, *frame_rec_t;
 
-static void *exception_xfb = (void*)0xC1710000;			//we use a static address above ArenaHi.
+static void *exception_xfb = (void*)0xC1700000;			//we use a static address above ArenaHi.
 
 void __exception_sethandler(u32 nExcept, void (*pHndl)(frame_context*));
 
@@ -243,6 +243,14 @@ char *debug_str=NULL;
 //just implement core for unrecoverable exceptions.
 void c_default_exceptionhandler(frame_context *pCtx)
 {
+/*
+	kprintf("\n\n");
+
+_cpu_print_stack((void*)pCtx->SRR0,(void*)pCtx->LR,(void*)pCtx->GPR[1]);
+
+	waitForReload();
+	return;
+*/	
 	VIDEO_SetFramebuffer(exception_xfb);
 	__console_init(exception_xfb,20,20,640,574,1280);
 

@@ -615,6 +615,10 @@ static off_t __smb_seek(struct _reent *r, int fd, off_t pos, int dir)
 
 static ssize_t __smb_read(struct _reent *r, int fd, char *ptr, size_t len)
 {
+	size_t offset = 0;
+	size_t readsize;
+	int ret = 0;
+	int cnt_retry=2;
 	SMBFILESTRUCT *file = (SMBFILESTRUCT*) fd;
 
 	if (file == NULL)
@@ -634,12 +638,6 @@ static ssize_t __smb_read(struct _reent *r, int fd, char *ptr, size_t len)
 	if (len + file->offset > file->len)
 	{
 		len = file->len - file->offset;
-		if (len < 0)
-			len = 0;
-		r->_errno = EOVERFLOW;
-
-		if (len == 0)
-			return 0;
 	}
 
 	// Short circuit cases where len is 0 (or less)
@@ -649,9 +647,18 @@ static ssize_t __smb_read(struct _reent *r, int fd, char *ptr, size_t len)
 		return -1;
 	}
 
-	int cnt_retry=2;
-	retry_read:
-	if (ReadSMBFromCache(ptr, len, file) < 0)
+retry_read:
+	while(offset < len)
+	{
+		readsize = len - offset;
+		if(readsize > SMB_READ_BUFFERSIZE) readsize = SMB_READ_BUFFERSIZE;
+		ret = ReadSMBFromCache(ptr+offset, readsize, file);
+		if(ret < 0)	break;
+		offset += readsize;
+		file->offset += readsize;
+	}
+
+	if (ret < 0)
 	{
 		retry_reconnect:
 		cnt_retry--;
@@ -672,16 +679,14 @@ static ssize_t __smb_read(struct _reent *r, int fd, char *ptr, size_t len)
 				goto retry_read;
 			}
 			_SMB_unlock();
-			usleep(50000);
+			usleep(10000);
 			goto retry_reconnect;
 		}
 		r->_errno = EOVERFLOW;
 		return -1;
 	}
-	file->offset += len;
 
 	return len;
-
 }
 
 static ssize_t __smb_write(struct _reent *r, int fd, const char *ptr, size_t len)
@@ -1096,6 +1101,7 @@ bool smbInitDevice(const char* name, const char *user, const char *password, con
 {
 	char myIP[16];
 	int i;
+	
 	if(FirstInit)
 	{
 		for(i=0;i<MAX_SMB_MOUNTED;i++)
@@ -1109,27 +1115,7 @@ bool smbInitDevice(const char* name, const char *user, const char *password, con
 		}
 		FirstInit=false;
 	}
-
-	for(i=0;i<MAX_SMB_MOUNTED && SMBEnv[i].SMBCONNECTED;i++);
-	if(i==MAX_SMB_MOUNTED) return false; //all allowed samba connections reached
-
-	if (if_config(myIP, NULL, NULL, true) < 0)
-		return false;
-	SMBCONN smbconn;
-	if(_SMB_mutex==LWP_MUTEX_NULL)LWP_MutexInit(&_SMB_mutex, false);
-
-	//root connect
-	_SMB_lock();
-	if (SMB_Connect(&smbconn, user, password, share, ip) != SMB_SUCCESS)
-	{
-		_SMB_unlock();
-		//LWP_MutexDestroy(_SMB_mutex);
-		return false;
-	}
-	_SMB_unlock();
-
-	MountDevice(name,smbconn,i);
-
+	
 	if(end_cache_thread == true) // never close thread
 	{
 		lwp_t client_thread;
@@ -1137,6 +1123,30 @@ bool smbInitDevice(const char* name, const char *user, const char *password, con
 		end_cache_thread = false;
 		LWP_CreateThread(&client_thread, process_cache_thread, NULL, NULL, 0, 80);
 	}
+	
+	for(i=0;i<MAX_SMB_MOUNTED && SMBEnv[i].SMBCONNECTED;i++);
+	if(i==MAX_SMB_MOUNTED) return false; //all allowed samba connections reached
+
+	if (if_config(myIP, NULL, NULL, true) < 0)
+	{
+		return false;
+	}
+	SMBCONN smbconn;
+	if(_SMB_mutex==LWP_MUTEX_NULL)LWP_MutexInit(&_SMB_mutex, false);
+
+	//root connect
+	_SMB_lock();
+	if (SMB_Connect(&smbconn, user, password, share, ip) != SMB_SUCCESS)
+	{
+		MountDevice(name,smbconn,i);
+		_SMB_unlock();
+		//LWP_MutexDestroy(_SMB_mutex);
+		return false;
+	}
+	MountDevice(name,smbconn,i);
+	_SMB_unlock();
+	
+
 	return true;
 }
 

@@ -54,7 +54,7 @@ distribution.
 
 #define IPC_HEAP_SIZE			4096
 #define IPC_REQUESTSIZE			64
-#define IPC_NUMHEAPS			8
+#define IPC_NUMHEAPS			16
 
 #define IOS_MAXFMT_PARAMS		32
 
@@ -166,7 +166,7 @@ static struct _ipcheap _ipc_heaps[IPC_NUMHEAPS] =
 	{NULL, 0, {}} // all other elements should be inited to zero, says C standard, so this should do
 };
 
-static vu32 *_ipcReg = (u32*)0xCD000000;
+static vu32* const _ipcReg = (u32*)0xCD000000;
 
 extern void __MaskIrq(u32 nMask);
 extern void __UnmaskIrq(u32 nMask);

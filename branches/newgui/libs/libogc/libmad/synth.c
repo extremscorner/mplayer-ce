@@ -32,6 +32,8 @@
  * NAME:	synth->init()
  * DESCRIPTION:	initialize synth struct
  */
+ 
+
 void mad_synth_init(struct mad_synth *synth)
 {
   mad_synth_mute(synth);
@@ -830,6 +832,7 @@ void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
  */
 void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
 {
+/*
   u32 nch, ns;
   void (*synth_frame)(struct mad_synth *, struct mad_frame const *,
 		      u32, u32);
@@ -853,4 +856,6 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame)
   synth_frame(synth, frame, nch, ns);
 
   synth->phase = (synth->phase + ns) % 16;
+*/  
 }
+

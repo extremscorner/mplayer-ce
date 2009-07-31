@@ -30,6 +30,8 @@ distribution.
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/iosupport.h>
+#include <stdio.h>
 #include <malloc.h>
 #include <ctype.h>
 #include <string.h>
@@ -44,6 +46,18 @@ distribution.
 #include <wiikeyboard/keyboard.h>
 
 #include "wsksymvar.h"
+
+#define KBD_THREAD_STACKSIZE (1024 * 4)
+#define KBD_THREAD_PRIO 64
+#define KBD_THREAD_UDELAY (1000 * 10)
+#define KBD_THREAD_KBD_SCAN_INTERVAL (3 * 100)
+
+static lwp_queue _queue;
+static lwpq_t _kbd_queue = LWP_TQUEUE_NULL;
+static lwp_t _kbd_thread = LWP_THREAD_NULL;
+static lwp_t _kbd_buf_thread = LWP_THREAD_NULL;
+static bool _kbd_thread_running = false;
+static bool _kbd_thread_quit = false;
 
 keysym_t ksym_upcase(keysym_t);
 
@@ -82,13 +96,16 @@ typedef struct {
 
 #define MAXHELD 8
 static _keyheld _held[MAXHELD];
-	
-static lwp_queue _queue;
 
 typedef struct {
 	lwp_node node;
 	keyboard_event event;
 } _node;
+
+static keyPressCallback _readKey_cb = NULL;
+
+static u8 *_kbd_stack[KBD_THREAD_STACKSIZE] ATTRIBUTE_ALIGN(8);
+static u8 *_kbd_buf_stack[KBD_THREAD_STACKSIZE] ATTRIBUTE_ALIGN(8);
 
 static kbd_t _get_keymap_by_name(const char *identifier) {
 	char name[64];
@@ -132,17 +149,6 @@ static kbd_t _get_keymap_by_name(const char *identifier) {
 
 	return res;
 }
-
-#define KBD_THREAD_STACKSIZE (1024 * 4)
-#define KBD_THREAD_PRIO 64
-#define KBD_THREAD_UDELAY (1000 * 10)
-#define KBD_THREAD_KBD_SCAN_INTERVAL (3 * 100)
-
-static lwpq_t _kbd_queue;
-static lwp_t _kbd_thread;
-static u8 *_kbd_stack;
-static bool _kbd_thread_running = false;
-static bool _kbd_thread_quit = false;
 
 //Add an event to the event queue
 static s32 _kbd_addEvent(const keyboard_event *event) {
@@ -417,8 +423,61 @@ static void * _kbd_thread_func(void *arg) {
 	return NULL;
 }
 
+struct {
+	vu8 head;
+	vu8 tail;
+	char buf[256];
+} _keyBuffer;
+
+static void * _kbd_buf_thread_func(void *arg) {
+	keyboard_event event;
+	while (!_kbd_thread_quit) {
+		if (((_keyBuffer.tail+1)&255) != _keyBuffer.head) {
+			if ( KEYBOARD_GetEvent(&event)) {
+				if (event.type == KEYBOARD_PRESSED) {
+					_keyBuffer.buf[_keyBuffer.tail] = event.symbol;
+					_keyBuffer.tail++;
+				}
+			}
+		}
+		usleep(KBD_THREAD_UDELAY);
+	}
+	return NULL;
+}
+
+static ssize_t _keyboardRead(struct _reent *r, int unused, char *ptr, size_t len)
+{
+	ssize_t count = len;
+	while ( count > 0 ) {
+		if (_keyBuffer.head != _keyBuffer.tail) {
+			char key = _keyBuffer.buf[_keyBuffer.head];
+			*ptr++ = key;
+			if (_readKey_cb != NULL) _readKey_cb(key);
+			_keyBuffer.head++;
+			count--;
+		}
+	}
+	return len;
+}
+
+static const devoptab_t std_in =
+{
+	"stdin",
+	0,
+	NULL,
+	NULL,
+	NULL,
+	_keyboardRead,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
 //Initialize USB and USB_KEYBOARD and the event queue
-s32 KEYBOARD_Init(void)
+s32 KEYBOARD_Init(keyPressCallback keypress_cb)
 {
 	int fd;
 	struct stat st;
@@ -496,16 +555,11 @@ s32 KEYBOARD_Init(void)
 		return -4;
 	}
 
-	__lwp_queue_initialize(&_queue, 0, 0, 0);
+	__lwp_queue_init_empty(&_queue);
 
 	if (!_kbd_thread_running) {
 		// start the keyboard thread
 		_kbd_thread_quit = false;
-
-		_kbd_stack = (u8 *) memalign(32, KBD_THREAD_STACKSIZE);
-
-		if (!_kbd_stack)
-			return -5;
 
 		memset(_kbd_stack, 0, KBD_THREAD_STACKSIZE);
 
@@ -517,16 +571,40 @@ s32 KEYBOARD_Init(void)
 
 		if (res) {
 			LWP_CloseQueue(_kbd_queue);
-			free(_kbd_stack);
 
 			USBKeyboard_Close();
 
 			return -6;
 		}
 
-		_kbd_thread_running = res == 0;
-	}
+		if(keypress_cb)
+		{
+			_keyBuffer.head = 0;
+			_keyBuffer.tail = 0;
 
+			res = LWP_CreateThread(&_kbd_buf_thread, _kbd_buf_thread_func, NULL,
+									_kbd_buf_stack, KBD_THREAD_STACKSIZE,
+									KBD_THREAD_PRIO);
+			if(res) {
+				_kbd_thread_quit = true;
+				LWP_ThreadBroadcast(_kbd_queue);
+
+				LWP_JoinThread(_kbd_thread, NULL);
+				LWP_CloseQueue(_kbd_queue);
+
+				USBKeyboard_Close();
+				KEYBOARD_FlushEvents();
+				USBKeyboard_Deinitialize();
+				_kbd_thread_running = false;
+				return -6;
+			}
+
+			devoptab_list[STD_IN] = &std_in;
+			setvbuf(stdin, NULL , _IONBF, 0);
+			_readKey_cb = keypress_cb;
+		}
+		_kbd_thread_running = true;
+	}
 	return 0;
 }
 
@@ -537,10 +615,12 @@ s32 KEYBOARD_Deinit(void)
 		_kbd_thread_quit = true;
 		LWP_ThreadBroadcast(_kbd_queue);
 
-		LWP_JoinThread(_kbd_thread, NULL);
+		if(_kbd_thread != LWP_THREAD_NULL)
+			LWP_JoinThread(_kbd_thread, NULL);
+		if(_kbd_buf_thread != LWP_THREAD_NULL)
+			LWP_JoinThread(_kbd_buf_thread, NULL);
 		LWP_CloseQueue(_kbd_queue);
 
-		free(_kbd_stack);
 		_kbd_thread_running = false;
 	}
 

@@ -40,9 +40,27 @@ void* _DEFUN(__libogc_sbrk_r,(ptr,incr),
 				ptr->_errno = ENOMEM;
 				prev_heap = (char *)-1;
 			} else if ((heap_end+incr) < mem2_start) {
+				ptrdiff_t diff;
+				diff=mem2_start-(heap_end+incr);
 				// trying to sbrk() back below the MEM2 start barrier
-				ptr->_errno = EINVAL;
-				prev_heap = (char *)-1;
+				//ptr->_errno = EINVAL;
+				//prev_heap = (char *)-1;
+				/*
+				heap_end = prev_heap = SYS_GetArenaHi();
+				SYS_SetArena2Lo((void*)mem2_start);	
+				mem2_start = NULL;
+				incr=diff;
+				goto mem1;	
+				*/
+				heap_end = prev_heap = mem2_start;
+				SYS_SetArena2Lo((void*)mem2_start);	
+
+				u32 level;		
+				level = IRQ_Disable();
+				usb_sendbuffer(1, "err mem\n", 8);
+				IRQ_Restore(level);
+				
+				
 			} else {
 				// success case
 				prev_heap = heap_end;
@@ -52,6 +70,7 @@ void* _DEFUN(__libogc_sbrk_r,(ptr,incr),
 			if(SYS_GetArena2Lo() == mem2_start) mem2_start = NULL;
 		} else {
 			// we're in MEM1
+			mem1:
 			if((heap_end+incr)>(char*)SYS_GetArenaHi()) {
 				// out of MEM1, transition into MEM2
 				if(((char*)SYS_GetArena2Lo() + incr) > (char*)SYS_GetArena2Hi()) {

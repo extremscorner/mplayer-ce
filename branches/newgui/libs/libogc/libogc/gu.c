@@ -1,7 +1,7 @@
 #include <gu.h>
 #include <math.h>
 
-extern void __ps_guMtxRotAxisRadInternal(register Mtx mt,const register Vector *axis,register f32 sT,register f32 cT);
+extern void __ps_guMtxRotAxisRadInternal(register Mtx mt,const register guVector *axis,register f32 sT,register f32 cT);
 
 void guFrustum(Mtx44 mt,f32 t,f32 b,f32 l,f32 r,f32 n,f32 f)
 {
@@ -160,9 +160,9 @@ void guLightFrustum(Mtx mt,f32 t,f32 b,f32 l,f32 r,f32 n,f32 scaleS,f32 scaleT,f
     mt[2][3] =  0.0f;
 }
 
-void guLookAt(Mtx mt,Vector *camPos,Vector *camUp,Vector *target)
+void guLookAt(Mtx mt,guVector *camPos,guVector *camUp,guVector *target)
 {
-	Vector vLook,vRight,vUp;
+	guVector vLook,vRight,vUp;
 
 	vLook.x = camPos->x - target->x;
 	vLook.y = camPos->y - target->y;
@@ -223,7 +223,7 @@ void ps_guMtxRotRad(register Mtx mt,const register char axis,register f32 rad)
 	ps_guMtxRotTrig(mt,axis,sinA,cosA);
 }
 
-void ps_guMtxRotAxisRad(Mtx mt,Vector *axis,f32 rad)
+void ps_guMtxRotAxisRad(Mtx mt,guVector *axis,f32 rad)
 {
 	f32 sinT,cosT;
  
@@ -261,7 +261,7 @@ void c_guMtxRotTrig(Mtx mt,const char axis,f32 sinA,f32 cosA)
 	}
 }
 
-void c_guMtxRotAxisRad(Mtx mt,Vector *axis,f32 rad)
+void c_guMtxRotAxisRad(Mtx mt,guVector *axis,f32 rad)
 {
 	f32 s,c;
 	f32 t;
@@ -478,7 +478,7 @@ void c_guMtxTranspose(Mtx src,Mtx xPose)
         c_guMtxCopy(mTmp,xPose);
 }
 
-void c_guMtxReflect(Mtx m,Vector *p,Vector *n)
+void c_guMtxReflect(Mtx m,guVector *p,guVector *n)
 {
     f32 vxy, vxz, vyz, pdotn;
 
@@ -504,21 +504,21 @@ void c_guMtxReflect(Mtx m,Vector *p,Vector *n)
 }
 
 
-void c_guVecAdd(Vector *a,Vector *b,Vector *ab)
+void c_guVecAdd(guVector *a,guVector *b,guVector *ab)
 {
     ab->x = a->x + b->x;
     ab->y = a->y + b->y;
     ab->z = a->z + b->z;
 }
 
-void c_guVecSub(Vector *a,Vector *b,Vector *ab)
+void c_guVecSub(guVector *a,guVector *b,guVector *ab)
 {
     ab->x = a->x - b->x;
     ab->y = a->y - b->y;
     ab->z = a->z - b->z;
 }
 
-void c_guVecScale(Vector *src,Vector *dst,f32 scale)
+void c_guVecScale(guVector *src,guVector *dst,f32 scale)
 {
     dst->x = src->x * scale;
     dst->y = src->y * scale;
@@ -526,7 +526,7 @@ void c_guVecScale(Vector *src,Vector *dst,f32 scale)
 }
 
 
-void c_guVecNormalize(Vector *v)
+void c_guVecNormalize(guVector *v)
 {
 	f32 m;
 
@@ -537,9 +537,9 @@ void c_guVecNormalize(Vector *v)
 	v->z *= m;
 }
 
-void c_guVecCross(Vector *a,Vector *b,Vector *axb)
+void c_guVecCross(guVector *a,guVector *b,guVector *axb)
 {
-	Vector vTmp;
+	guVector vTmp;
 
 	vTmp.x = (a->y*b->z)-(a->z*b->y);
 	vTmp.y = (a->z*b->x)-(a->x*b->z);
@@ -550,9 +550,9 @@ void c_guVecCross(Vector *a,Vector *b,Vector *axb)
 	axb->z = vTmp.z;
 }
 
-void c_guVecMultiply(Mtx mt,Vector *src,Vector *dst)
+void c_guVecMultiply(Mtx mt,guVector *src,guVector *dst)
 {
-	Vector tmp;
+	guVector tmp;
 	
     tmp.x = mt[0][0]*src->x + mt[0][1]*src->y + mt[0][2]*src->z + mt[0][3];
     tmp.y = mt[1][0]*src->x + mt[1][1]*src->y + mt[1][2]*src->z + mt[1][3];
@@ -563,9 +563,9 @@ void c_guVecMultiply(Mtx mt,Vector *src,Vector *dst)
     dst->z = tmp.z;
 }
 
-void c_guVecMultiplySR(Mtx mt,Vector *src,Vector *dst)
+void c_guVecMultiplySR(Mtx mt,guVector *src,guVector *dst)
 {
-	Vector tmp;
+	guVector tmp;
 	
     tmp.x = mt[0][0]*src->x + mt[0][1]*src->y + mt[0][2]*src->z;
     tmp.y = mt[1][0]*src->x + mt[1][1]*src->y + mt[1][2]*src->z;
@@ -577,7 +577,7 @@ void c_guVecMultiplySR(Mtx mt,Vector *src,Vector *dst)
     dst->z = tmp.z;
 }
 
-f32 c_guVecDotProduct(Vector *a,Vector *b)
+f32 c_guVecDotProduct(guVector *a,guVector *b)
 {
     f32 dot;
 
@@ -586,7 +586,7 @@ f32 c_guVecDotProduct(Vector *a,Vector *b)
     return dot;
 }
 
-void c_guQuatAdd(Quaternion *a,Quaternion *b,Quaternion *ab)
+void c_guQuatAdd(guQuaternion *a,guQuaternion *b,guQuaternion *ab)
 {
 	ab->x = a->x + b->x;
 	ab->y = a->x + b->y;
@@ -594,7 +594,28 @@ void c_guQuatAdd(Quaternion *a,Quaternion *b,Quaternion *ab)
 	ab->w = a->x + b->w;
 }
 
-void c_guQuatSub(Quaternion *a,Quaternion *b,Quaternion *ab)
+#ifdef GEKKO
+void ps_guQuatAdd(register guQuaternion *a,register guQuaternion *b,register guQuaternion *ab)
+{
+	register f32 tmp0,tmp1;
+
+	__asm__ __volatile__ (
+		"psq_l		%0,0(%2),0,0\n"		// [ax][ay]
+		"psq_l		%1,0(%3),0,0\n"		// [bx][by]
+		"ps_add		%1,%0,%1\n"			// [ax+bx][ay+by]
+		"psq_st		%1,0(%4),0,0\n"		// X = [ax+bx], Y = [ay+by]
+		"psq_l		%0,8(%2),0,0\n"		// [az][aw]
+		"psq_l		%1,8(%3),0,0\n"		// [bz][bw]
+		"ps_add		%1,%0,%1\n"			// [az+bz][aw+bw]
+		"psq_st		%1,8(%4),0,0"		// Z = [az+bz], W = [aw+bw]
+		: "=&f"(tmp0),"=&f"(tmp1)
+		: "b"(a),"b"(b),"b"(ab)
+		: "memory"
+	);
+}
+#endif
+
+void c_guQuatSub(guQuaternion *a,guQuaternion *b,guQuaternion *ab)
 {
 	ab->x = a->x - b->x;
 	ab->y = a->x - b->y;
@@ -602,25 +623,234 @@ void c_guQuatSub(Quaternion *a,Quaternion *b,Quaternion *ab)
 	ab->w = a->x - b->w;
 }
 
-void c_guQuatMultiply(Quaternion *a,Quaternion *b,Quaternion *ab)
+#ifdef GEKKO
+void ps_guQuatSub(register guQuaternion *a,register guQuaternion *b,register guQuaternion *ab)
 {
-	Quaternion *r;
-	Quaternion ab_tmp;
+	register f32 tmp0,tmp1;
+
+	__asm__ __volatile__ (
+		"psq_l		%0,0(%2),0,0\n"			// [ax][ay]
+		"psq_l		%1,0(%3),0,0\n"			// [bx][by]
+		"ps_sub		%1,%0,%1\n"				// [ax-bx][ay-by]
+		"psq_st		%1,0(%4),0,0\n"			// X = [ax-bx], Y = [ay-by]
+		"psq_l		%0,8(%2),0,0\n"			// [az][aw]
+		"psq_l		%1,8(%3),0,0\n"			// [bz][bw]
+		"ps_sub		%1,%0,%1\n"				// [az-bz][aw-bw]
+		"psq_st		%1,8(%4),0,0"			// Z = [az-bz], W = [aw-bw]
+		: "=&f"(tmp0),"=&f"(tmp1)
+		: "b"(a),"b"(b),"b"(ab)
+		: "memory"
+	);
+}
+#endif
+
+void c_guQuatMultiply(guQuaternion *a,guQuaternion *b,guQuaternion *ab)
+{
+	guQuaternion *r;
+	guQuaternion ab_tmp;
 	
 	if(a==ab || b==ab) r = &ab_tmp;
 	else r = ab;
 	
 	r->w = a->w*b->w - a->x*b->x - a->y*b->y - a->z*b->z;
-	r->x = a->w*b->x + a->x*b->w + a->y*b->z + a->z*b->y;
-	r->y = a->w*b->y + a->y*b->w + a->z*b->x + a->x*b->z;
-	r->z = a->w*b->z + a->z*b->w + a->x*b->y + a->y*b->x;
+	r->x = a->w*b->x + a->x*b->w + a->y*b->z - a->z*b->y;
+	r->y = a->w*b->y + a->y*b->w + a->z*b->x - a->x*b->z;
+	r->z = a->w*b->z + a->z*b->w + a->x*b->y - a->y*b->x;
 
 	if(r==&ab_tmp) *ab = ab_tmp;
 }
 
-void guVecHalfAngle(Vector *a,Vector *b,Vector *half)
+#ifdef GEKKO
+void ps_guQuatMultiply(register guQuaternion *a,register guQuaternion *b,register guQuaternion *ab)
 {
-	Vector tmp1,tmp2,tmp3;
+	register f32 aXY,aZW,bXY,bZW;
+	register f32 tmp0,tmp1,tmp2,tmp3,tmp4,tmp5,tmp6,tmp7;
+	
+	__asm__ __volatile__ (
+		"psq_l		%0,0(%12),0,0\n"		// [px][py]
+		"psq_l		%1,8(%12),0,0\n"		// [pz][pw]
+		"psq_l		%2,0(%13),0,0\n"		// [qx][qy]
+		"ps_neg		%4,%0\n"				// [-px][-py]
+		"psq_l		%3,8(%13),0,0\n"		// [qz][qw]
+		"ps_neg		%5,%1\n"				// [-pz][-pw]
+		"ps_merge01	%6,%4,%0\n"				// [-px][py]
+		"ps_muls0	%8,%1,%2\n"				// [pz*qx][pw*qx]
+		"ps_muls0	%9,%4,%2\n"				// [-px*qx][-py*qx]
+		"ps_merge01	%7,%5,%1\n"				// [-pz][pw]
+		"ps_muls1	%11,%6,%2\n"			// [-px*qy][py*qy]
+		"ps_madds0	%8,%6,%3,%8\n"			// [-px*qz+pz*qx][py*qz+pw*qx]
+		"ps_muls1	%10,%7,%2\n"			// [-pz*qy][pw*qy]
+		"ps_madds0	%9,%7,%3,%9\n"			// [-pz*qz+-px*qx][pw*qz+-py*qx]
+		"ps_madds1	%11,%5,%3,%11\n"		// [-pz*qw+-px*qy][-pw*qw+py*qy]
+		"ps_merge10	%8,%8,%8\n"				// [py*qz+pw*qx][-px*qz+pz*qx]
+		"ps_madds1	%10,%0,%3,%10\n"		// [px*qw+-pz*qy][py*qw+pw*qy]
+		"ps_merge10	%9,%9,%9\n"				// [pw*qz+-py*qx][-pz*qz+-px*qx]
+		"ps_add		%8,%8,%10\n"			// [py*qz+pw*qx+px*qw+-pz*qy][-px*qz+pz*qx+py*qw+pw*qy]
+		"psq_st		%8,0(%14),0,0\n"		// X = [py*qz+pw*qx+px*qw+-pz*qy], Y = [-px*qz+pz*qx+py*qw+pw*qy]
+		"ps_sub		%9,%9,%11\n"			// [pw*qz+-py*qx--pz*qw+-px*qy][-pz*qz+-px*qx--pw*qw+py*qy]
+		"psq_st		%9,8(%14),0,0"			// Z = [pw*qz+-py*qx--pz*qw+-px*qy], W = [-pz*qz+-px*qx--pw*qw+py*qy]
+		: "=&f"(aXY),"=&f"(aZW),"=&f"(bXY),"=&f"(bZW),"=&f"(tmp0),"=&f"(tmp1),"=&f"(tmp2),"=&f"(tmp3),"=&f"(tmp4),"=&f"(tmp5),"=&f"(tmp6),"=&f"(tmp7)
+		: "b"(a),"b"(b),"b"(ab)
+		: "memory"
+	);
+}
+#endif
+
+void c_guQuatNormalize(guQuaternion *a,guQuaternion *d)
+{
+	f32 dot,scale;
+
+	dot = (a->x*a->x) + (a->y*a->y) + (a->z*a->z) + (a->w*a->w);
+	if(dot==0.0f) d->x = d->y = d->z = d->w = 0.0f;
+	else {
+		scale = 1.0f/sqrtf(dot);
+		d->x = a->x*scale;
+		d->y = a->y*scale;
+		d->z = a->z*scale;
+		d->w = a->w*scale;
+	}
+}
+
+#ifdef GEKKO
+void ps_guQuatNormalize(register guQuaternion *a,register guQuaternion *d)
+{
+	register f32 c_zero = 0.0f;
+	register f32 c_half = 0.5f;
+	register f32 c_three = 3.0f;
+	register f32 axy,azw,tmp0,tmp1,tmp2,tmp3;
+
+	__asm__ __volatile__ (
+		"psq_l		%0,0(%6),0,0\n"		// [ax][ay]
+		"ps_mul		%2,%0,%0\n"			// [ax*ax][ay*ay]
+		"psq_l		%1,8(%6),0,0\n"		// [az][aw]
+		"ps_madd	%2,%1,%1,%2\n"		// [az*az+ax*ax][aw*aw+ay*ay]
+		"ps_sum0	%2,%2,%2,%2\n"		// [az*az+ax*ax+aw*aw+ay*ay][aw*aw+ay*ay]
+		"frsqrte	%3,%2\n"			// reciprocal sqrt estimated
+		//Newton-Raphson refinement 1 step: (E/2)*(3 - x*E*E)
+		"fmul		%4,%3,%3\n"			// E*E
+		"fmul		%5,%3,%8\n"			// E*0.5 = E/2
+		"fnmsub		%4,%4,%2,%9\n"		// -(E*E*x - 3) = (3 - x*E*E)
+		"fmul		%3,%4,%5\n"			// (E/2)*(3 - x*E*E)
+		"ps_sel		%3,%2,%3,%10\n"		// NaN check: if(mag==0.0f)
+		"ps_muls0	%0,%0,%3\n"			// [ax*rsqmag][ay*rsqmag]
+		"ps_muls0	%1,%1,%3\n"			// [az*rsqmag][aw*rsqmag]
+		"psq_st		%0,0(%7),0,0\n"		// X = [az*rsqmag], Y = [aw*rsqmag]
+		"psq_st		%1,8(%7),0,0\n"		// Z = [az*rsqmag], W = [aw*rsqmag]	
+		: "=&f"(axy),"=&f"(azw),"=&f"(tmp0),"=&f"(tmp1),"=&f"(tmp2),"=&f"(tmp3)
+		: "b"(a),"b"(d),"f"(c_half),"f"(c_three),"f"(c_zero)
+		: "memory"
+	);
+}
+#endif
+
+void c_guQuatInverse(guQuaternion *a,guQuaternion *d)
+{
+	f32 mag,nrminv;
+
+	mag = (a->x*a->x) + (a->y*a->y) + (a->z*a->z) + (a->w*a->w);
+	if(mag==0.0f) mag = 1.0f;
+
+	nrminv = 1.0f/mag;
+	d->x = -a->x*nrminv;
+	d->y = -a->y*nrminv;
+	d->z = -a->z*nrminv;
+	d->w =  a->w*nrminv;
+}
+
+#ifdef GEKKO
+void ps_guQuatInverse(register guQuaternion *a,register guQuaternion *d)
+{
+	register f32 c_one = 1.0f;
+	register f32 axy,azw,tmp0,tmp1,tmp2,tmp3,tmp4,tmp5;
+
+	__asm__ __volatile__ (
+		"psq_l		%0,0(%8),0,0\n"		// [ax][ay]
+		"ps_mul		%2,%0,%0\n"			// [ax*ax][ay*ay]
+		"ps_sub		%3,%10,%10\n"		// [1 - 1][1 - 1]
+		"psq_l		%1,8(%8),0,0\n"		// [az][aw]
+		"ps_madd	%2,%1,%1,%2\n"		// [az*az+ax*ax][aw*aw+ay*ay]
+		"ps_add		%7,%0,%10\n"		// [1 + 1][1 + 1]
+		"ps_sum0	%2,%2,%2,%2\n"		// [az*az+ax*ax+aw*aw+ay*ay][aw*aw+ay*ay]
+		"fcmpu		cr0,%2,%3\n"		// [az*az+ax*ax+aw*aw+ay*ay] == 0.0f
+		"beq-		1f\n"
+		"fres		%4,%2\n"			// 1.0f/mag
+		"ps_neg		%5,%2\n"			// -mag
+		// Newton-Rapson refinement (x1) : E' = 2E-X*E*E
+		"ps_nmsub	%6,%2,%4,%7\n"		//
+		"ps_mul		%4,%4,%6\n"			//
+		"b			2f\n"
+		"1:\n"
+		"fmr		%4,%10\n"
+		"2:\n"
+		"ps_neg		%7,%4\n"
+		"ps_muls1	%5,%4,%1\n"
+		"ps_muls0	%0,%0,%7\n"
+		"psq_st		%5,12(%9),1,0\n"
+		"ps_muls0	%6,%1,%7\n"
+		"psq_st		%0,0(%9),0,0\n"
+		"psq_st		%6,8(%9),1,0\n"
+		: "=&f"(axy),"=&f"(azw),"=&f"(tmp0),"=&f"(tmp1),"=&f"(tmp2),"=&f"(tmp3),"=&f"(tmp4),"=&f"(tmp5)
+		: "b"(a),"b"(d),"f"(c_one)
+	);
+}
+#endif
+
+void c_guQuatMtx(guQuaternion *a,Mtx m)
+{
+	const f32 diag = guMtxRowCol(m,0,0) + guMtxRowCol(m,1,1) + guMtxRowCol(m,2,2) + 1;
+
+	if(diag>0.0f) {
+		const f32 scale = sqrtf(diag)*2.0f;
+
+		a->x = (guMtxRowCol(m,2,1) - guMtxRowCol(m,1,2))/scale;
+		a->y = (guMtxRowCol(m,0,2) - guMtxRowCol(m,2,0))/scale;
+		a->z = (guMtxRowCol(m,1,0) - guMtxRowCol(m,0,1))/scale;
+		a->w = 0.25f*scale;
+	} else {
+		if(guMtxRowCol(m,0,0)>guMtxRowCol(m,1,1) && guMtxRowCol(m,0,0)>guMtxRowCol(m,2,2)) {
+			const f32 scale = sqrtf(1.0f + guMtxRowCol(m,0,0) + guMtxRowCol(m,1,1) + guMtxRowCol(m,2,2))*2.0f;
+
+			a->x = 0.25f*scale;
+			a->y = (guMtxRowCol(m,0,1) + guMtxRowCol(m,1,0))/scale;
+			a->z = (guMtxRowCol(m,2,0) + guMtxRowCol(m,0,2))/scale;
+			a->w = (guMtxRowCol(m,2,1) - guMtxRowCol(m,1,2))/scale;
+		} else if(guMtxRowCol(m,1,1)>guMtxRowCol(m,2,2)) {
+			const f32 scale = sqrtf(1.0f + guMtxRowCol(m,0,0) + guMtxRowCol(m,1,1) + guMtxRowCol(m,2,2))*2.0f;
+
+			a->x = (guMtxRowCol(m,0,1) + guMtxRowCol(m,1,0))/scale;
+			a->y = 0.25f*scale;
+			a->z = (guMtxRowCol(m,1,2) + guMtxRowCol(m,2,1))/scale;
+			a->w = (guMtxRowCol(m,0,2) - guMtxRowCol(m,2,0))/scale;
+		} else {
+			const f32 scale = sqrtf(1.0f + guMtxRowCol(m,0,0) + guMtxRowCol(m,1,1) + guMtxRowCol(m,2,2))*2.0f;
+
+			a->x = (guMtxRowCol(m,0,2) + guMtxRowCol(m,2,0))/scale;
+			a->y = (guMtxRowCol(m,1,2) + guMtxRowCol(m,2,1))/scale;
+			a->z = 0.25f*scale;
+			a->w = (guMtxRowCol(m,1,0) - guMtxRowCol(m,0,1))/scale;
+		}
+	}
+	c_guQuatNormalize(a,a);
+}
+
+void c_guMtxQuat(Mtx m,guQuaternion *a)
+{
+	guMtxRowCol(m,0,0) = 1.0f - 2.0f*a->y*a->y - 2.0f*a->z*a->z;
+	guMtxRowCol(m,1,0) = 2.0f*a->x*a->y - 2.0f*a->z*a->w;
+	guMtxRowCol(m,2,0) = 2.0f*a->x*a->z + 2.0f*a->y*a->w;
+
+	guMtxRowCol(m,0,1) = 2.0f*a->x*a->y + 2.0f*a->z*a->w;
+	guMtxRowCol(m,1,1) = 1.0f - 2.0f*a->x*a->x - 2.0f*a->z*a->z;
+	guMtxRowCol(m,2,1) = 2.0f*a->z*a->y - 2.0f*a->x*a->w;
+
+	guMtxRowCol(m,0,2) = 2.0f*a->x*a->z - 2.0f*a->y*a->w;
+	guMtxRowCol(m,1,2) = 2.0f*a->z*a->y + 2.0f*a->x*a->w;
+	guMtxRowCol(m,2,2) = 1.0f - 2.0f*a->x*a->x - 2.0f*a->y*a->y;
+}
+
+void guVecHalfAngle(guVector *a,guVector *b,guVector *half)
+{
+	guVector tmp1,tmp2,tmp3;
 
 	tmp1.x = -a->x;
 	tmp1.y = -a->y;

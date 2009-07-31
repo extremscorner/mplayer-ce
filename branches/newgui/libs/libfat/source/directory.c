@@ -71,13 +71,13 @@ enum LFN_offset {
 	LFN_offset_char11 = 0x1C,
 	LFN_offset_char12 = 0x1E
 };
-const int LFN_offset_table[13]={0x01,0x03,0x05,0x07,0x09,0x0E,0x10,0x12,0x14,0x16,0x18,0x1C,0x1E}; 
+static const int LFN_offset_table[13]={0x01,0x03,0x05,0x07,0x09,0x0E,0x10,0x12,0x14,0x16,0x18,0x1C,0x1E}; 
 
 #define LFN_END 0x40
 #define LFN_DEL 0x80
 
-const char ILLEGAL_ALIAS_CHARACTERS[] = "\\/:;*?\"<>|&+,=[] ";
-const char ILLEGAL_LFN_CHARACTERS[] = "\\/:*?\"<>|";
+static const char ILLEGAL_ALIAS_CHARACTERS[] = "\\/:;*?\"<>|&+,=[] ";
+static const char ILLEGAL_LFN_CHARACTERS[] = "\\/:*?\"<>|";
 
 /* 
 Returns number of UCS-2 characters needed to encode an LFN
@@ -187,18 +187,19 @@ static int _FAT_directory_mbsncasecmp (const char* s1, const char* s2, size_t le
 	if (len1 == 0) {
 		return 0;
 	}
-	
 	do {
 		s1 += b1;
 		s2 += b2;
 		b1 = mbrtowc(&wc1, s1, MB_CUR_MAX, &ps1);
 		b2 = mbrtowc(&wc2, s2, MB_CUR_MAX, &ps2);
 		if ((int)b1 < 0 || (int)b2 < 0) {
-			break;
+			wc1=*s1;
+			wc2=*s2;
+			b1=b2=-b1;
+			//break;
 		}
 		len1 -= b1;
 	} while (len1 > 0 && towlower(wc1) == towlower(wc2) && wc1 != 0);
-	
 	return towlower(wc1) - towlower(wc2);
 }
 
@@ -492,7 +493,6 @@ bool _FAT_directory_entryFromPath (PARTITION* partition, DIR_ENTRY* entry, const
 	
 	found = false;
 	notFound = false;
-
 	if (pathEnd == NULL) {
 		// Set pathEnd to the end of the path string
 		pathEnd = strchr (path, '\0');
@@ -549,7 +549,7 @@ bool _FAT_directory_entryFromPath (PARTITION* partition, DIR_ENTRY* entry, const
 			// Check if the alias matches
 			_FAT_directory_entryGetAlias (entry->entryData, alias);
 			if ((dirnameLength == strnlen(alias, MAX_ALIAS_LENGTH))
-				&& (_FAT_directory_mbsncasecmp(pathPosition, alias, dirnameLength) == 0)) {
+				&& (strncasecmp(pathPosition, alias, dirnameLength) == 0)) {
 					found = true;
 			}
 
@@ -723,8 +723,7 @@ static bool _FAT_directory_entryExists (PARTITION* partition, const char* name, 
 
 		// Check if the alias matches
 		_FAT_directory_entryGetAlias (tempEntry.entryData, alias);
-		if ((dirnameLength == strnlen(alias, MAX_ALIAS_LENGTH))
-			&& (_FAT_directory_mbsncasecmp(name, alias, dirnameLength) == 0)) {
+		if ((strncasecmp(name, alias, MAX_ALIAS_LENGTH) == 0)) {
 				return true;
 		}
 		foundFile = _FAT_directory_getNextEntry (partition, &tempEntry);
@@ -926,6 +925,7 @@ bool _FAT_directory_addEntry (PARTITION* partition, DIR_ENTRY* entry, uint32_t d
 					memmove (alias + j, alias + i, strlen(alias) - i);
 					// Pad primary component
 					memset (alias + i, '_', j - i);
+					alias[MAX_ALIAS_LENGTH-1]=0;
 				}
 				
 				// Generate numeric tail

@@ -206,6 +206,23 @@ Initialize the DI interface, should always be called first!
 
 s32 __DI_LoadStub();
 
+int DI_InitNoDVDx(){
+
+	state = DVD_INIT | DVD_NO_DISC;
+
+	if(di_fd < 0)
+		di_fd = IOS_Open(di_path, 2);
+
+	if(!bufferMutex)
+		LWP_MutexInit(&bufferMutex, false);
+
+//------------------ rodries --------------  
+  LastAccess=0;
+  CreateDVDCache();
+//---------------- end rodries ------------  
+	return (di_fd >= 0)? di_fd : -1;
+}
+
 int DI_Init(){
 	static int init = 0;
 

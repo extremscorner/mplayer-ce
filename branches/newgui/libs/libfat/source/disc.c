@@ -40,35 +40,35 @@ The list is terminated by a NULL/NULL entry.
 
 /* ====================== Wii ====================== */
 #if   defined (__wii__)
-#include <sdcard/gcsd.h>
 #include <sdcard/wiisd_io.h>
 #include <ogc/usbstorage.h>
- 
+#include <sdcard/gcsd.h>
+
 static const DISC_INTERFACE* get_io_wiisd (void) {
 	return &__io_wiisd;
 }
+static const DISC_INTERFACE* get_io_usbstorage (void) {
+	return &__io_usbstorage;
+}
+
 static const DISC_INTERFACE* get_io_gcsda (void) {
 	return &__io_gcsda;
 }
 static const DISC_INTERFACE* get_io_gcsdb (void) {
 	return &__io_gcsdb;
 }
-static const DISC_INTERFACE* get_io_usbstorage (void) {
-	return &__io_usbstorage;
-}
 
 const INTERFACE_ID _FAT_disc_interfaces[] = {
 	{"sd", get_io_wiisd},
+	{"usb", get_io_usbstorage},
 	{"carda", get_io_gcsda},
 	{"cardb", get_io_gcsdb},
-	{"usb", get_io_usbstorage},
 	{NULL, NULL}
 };	
 	
 /* ==================== Gamecube ==================== */
 #elif defined (__gamecube__)
 #include <sdcard/gcsd.h>
-#include <sdcard/wiisd_io.h>
 
 static const DISC_INTERFACE* get_io_gcsda (void) {
 	return &__io_gcsda;
