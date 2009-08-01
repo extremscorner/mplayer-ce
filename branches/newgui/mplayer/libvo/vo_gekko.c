@@ -180,6 +180,7 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 		GX_ResetTextureYUVPointers();
 		if(stride[0]!=pitch[0])
 		{
+			//printf("w: %i  h: %i  st0: %i  iw: %i ih: %i\n",w,h,stride[0],image_width , image_height);
 			pitch[0]=stride[0];
 			pitch[1]=stride[1];
 			pitch[2]=stride[2];
@@ -218,6 +219,8 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
           uint32_t d_height, uint32_t flags, char *title,
           uint32_t format) {
 	float sar, par, iar;
+	
+	uint32_t orig_height=height;
 
 	image_width = width;
 	image_height = ((int)((height/8.0)))*8;
@@ -247,7 +250,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   
   GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
   GX_ConfigTextureYUV(image_width, image_height, pitch);	
-  
+  image_height = orig_height;
   return 0;
 }
 

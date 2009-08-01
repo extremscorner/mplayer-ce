@@ -10,14 +10,18 @@ static bool mem2_initied=false;
 static u32 mem2_size=0;
 //u32 MALLOC_MEM2=1;  // to disable/enable sbrk.c mem2 management
 
+<<<<<<< .mine
+u32 InitMem2Manager (u32 size) 
+=======
 u32 InitMem2Manager ()
+>>>>>>> .r278
 {
-	u32 level,size;
+	u32 level;
 	unsigned char *mem2_heap_ptr;
 	if(mem2_initied) return mem2_size;
 	_CPU_ISR_Disable(level);
 	//size = (u32)SYS_GetArena2Hi() - (u32)SYS_GetArena2Lo() - (1024*1024);  //we reserved 1MB at end (for example for usb2), we habe about 63MB
-	size = 32*1024*1024; //32Mb
+	//size = 16*1024*1024; //16Mb
 
 	size &= ~0x1f;          //round down, because otherwise we may exceed the area
 

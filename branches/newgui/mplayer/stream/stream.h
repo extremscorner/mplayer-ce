@@ -108,6 +108,7 @@ typedef struct stream_st {
   unsigned int buf_pos,buf_len;
   off_t pos,start_pos,end_pos;
   int eof;
+  int error;
   int mode; //STREAM_READ or STREAM_WRITE
   unsigned int cache_pid;
   void* cache_data;

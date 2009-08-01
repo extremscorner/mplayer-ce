@@ -245,10 +245,26 @@ retry:
   	//goto retry;
   }
   len=stream_read(s->stream,&s->buffer[pos],space);
-  if(len<=0) 
+  if(len==0) 
   {
-  	s->eof=1;
-  	len=0;
+  	if(s->stream->error)
+	{
+		s->stream->error=0; //reset read error
+	  //printf("Error reading stream\n");
+	  //retry if we have cache
+	  cache_fill_status=(s->max_filepos-s->read_filepos)*100.0/s->buffer_size;
+	  if(cache_fill_status<5)
+  		s->eof=1;
+  	  else 
+		{
+		s->stream->eof=0;
+		//printf("retry read\n");
+		}
+	}
+  	else
+  	{
+  		s->eof=1;
+  	}
   }
 
   s->max_filepos+=len;
@@ -546,7 +562,10 @@ int cache_stream_fill_buffer(stream_t *s){
 int cache_stream_seek_long(stream_t *stream,off_t pos){
   cache_vars_t* s;
   off_t newpos;
-  if(!stream->cache_pid) return stream_seek_long(stream,pos);
+  if(!stream->cache_pid) 
+  {
+  	return stream_seek_long(stream,pos);
+  }
   LWP_MutexLock(cache_mutex);
 
   s=stream->cache_data;
@@ -640,7 +659,7 @@ int stream_read(stream_t *s,char* mem,int total){
       if(!cache_stream_fill_buffer(s)) 
 	  {
 	  	//debug_str="stream_read: cache_stream_fill_buffer ok return";
-	  	return total-len; // EOF
+	  	return total-len; // EOF or error
 	  }
       //debug_str="stream_read: cache_stream_fill_buffer ok";
       x=s->buf_len-s->buf_pos;
@@ -686,12 +705,12 @@ void refillcache(stream_t *stream,float min)
 	    {
 		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Cache fill: %5.2f%%  ",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
 		force_osd();
+		//printf("Cache fill: %5.2f%%  \n",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
 		}
-		
 		if(s->eof) break; // file is smaller than prefill size
 		if(stream_check_interrupt(PREFILL_SLEEP_TIME))
 			return 0;
-		//printf("Cache fill: %5.2f%%  \n",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
+		
 	  
     }
     //printf("end Cache fill: %5.2f%%  \n",cache_fill_status);

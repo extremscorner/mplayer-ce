@@ -268,7 +268,17 @@ int stream_fill_buffer(stream_t *s){
   default:
     len= s->fill_buffer ? s->fill_buffer(s,s->buffer,STREAM_BUFFER_SIZE) : 0;
   }
-  if(len<=0){ s->eof=1; s->buf_pos=s->buf_len=0; return 0; }
+  //if(len<=0){ s->eof=1; s->buf_pos=s->buf_len=0; return 0; }
+  if(len<STREAM_BUFFER_SIZE)
+  { s->eof=1; s->buf_pos=s->buf_len=0;
+  	if(len<0) 
+	{
+		s->error=1;
+	  	return 0;
+	} 
+	s->buf_len=len;
+  	s->pos+=len;  	
+  	return 0; }
   s->buf_pos=0;
   s->buf_len=len;
   s->pos+=len;

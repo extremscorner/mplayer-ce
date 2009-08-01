@@ -42,8 +42,8 @@ static ao_info_t info = {
 
 LIBAO_EXTERN(gekko)
 
-#define SFX_BUFFER_SIZE (8*1024)
-#define SFX_BUFFERS 32
+#define SFX_BUFFER_SIZE (4*1024)
+#define SFX_BUFFERS 64
 
 static u8 buffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
 static u8 buffer_fill = 0;

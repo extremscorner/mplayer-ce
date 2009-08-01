@@ -317,6 +317,11 @@ static ass_image_t* my_draw_bitmap(unsigned char* bitmap, int bitmap_w, int bitm
 {
 	ass_image_t* img = calloc(1, sizeof(ass_image_t));
 
+	assert(dst_x >= 0);
+	assert(dst_y >= 0);
+	assert(dst_x + bitmap_w <= frame_context.width);
+	assert(dst_y + bitmap_h <= frame_context.height);
+
 	img->w = bitmap_w;
 	img->h = bitmap_h;
 	img->stride = stride;
@@ -346,19 +351,18 @@ static ass_image_t** render_glyph(bitmap_t* bm, int dst_x, int dst_y, uint32_t c
 	// color = color left of brk
 	// color2 = color right of brk
 	int b_x0, b_y0, b_x1, b_y1; // visible part of the bitmap
-	int clip_x0, clip_y0, clip_x1, clip_y1;
 	int tmp;
 	ass_image_t* img;
+
+	const int clip_x0 = render_context.clip_x0;
+	const int clip_y0 = render_context.clip_y0;
+	const int clip_x1 = render_context.clip_x1;
+	const int clip_y1 = render_context.clip_y1;
 
 	dst_x += bm->left;
 	dst_y += bm->top;
 	brk -= bm->left;
 
-	// clipping
-	clip_x0 = render_context.clip_x0;
-	clip_y0 = render_context.clip_y0;
-	clip_x1 = render_context.clip_x1;
-	clip_y1 = render_context.clip_y1;
 	b_x0 = 0;
 	b_y0 = 0;
 	b_x1 = bm->w;
@@ -405,6 +409,21 @@ static ass_image_t** render_glyph(bitmap_t* bm, int dst_x, int dst_y, uint32_t c
 		tail = &img->next;
 	}
 	return tail;
+}
+
+/**
+ * \brief Replaces the bitmap buffer in ass_image_t with its copy.
+ *
+ * @param img Image to operate on.
+ * @return Address of the old buffer.
+ */
+static unsigned char* clone_bitmap_data(ass_image_t* img)
+{
+	unsigned char* old_bitmap = img->bitmap;
+	int size = img->stride * (img->h - 1) + img->w;
+	img->bitmap = malloc(size);
+	memcpy(img->bitmap, old_bitmap, size);
+	return old_bitmap;
 }
 
 /**
@@ -474,12 +493,8 @@ static void render_overlap(ass_image_t** last_tail, ass_image_t** tail, bitmap_h
 	}
 
 	// Allocate new bitmaps and copy over data
-	a = (*last_tail)->bitmap;
-	b = (*tail)->bitmap;
-	(*last_tail)->bitmap = malloc(as*ah);
-	(*tail)->bitmap = malloc(bs*bh);
-	memcpy((*last_tail)->bitmap, a, as*ah);
-	memcpy((*tail)->bitmap, b, bs*bh);
+	a = clone_bitmap_data(*last_tail);
+	b = clone_bitmap_data(*tail);
 
 	// Composite overlapping area
 	for (y=0; y<h; y++)
@@ -588,6 +603,7 @@ static double x2scr_pos(double x) {
 	return x*frame_context.orig_width / frame_context.track->PlayResX +
 		global_settings->left_margin;
 }
+
 /**
  * \brief Mapping between script and screen coordinates
  */
@@ -2137,6 +2153,11 @@ static int ass_render_event(ass_event_t* event, event_images_t* event_images)
 		render_context.clip_y0 = y2scr_pos(render_context.clip_y0);
 		render_context.clip_y1 = y2scr_pos(render_context.clip_y1);
 	}
+
+	render_context.clip_x0 = FFMIN(FFMAX(render_context.clip_x0, 0), frame_context.width);
+	render_context.clip_x1 = FFMIN(FFMAX(render_context.clip_x1, 0), frame_context.width);
+	render_context.clip_y0 = FFMIN(FFMAX(render_context.clip_y0, 0), frame_context.height);
+	render_context.clip_y1 = FFMIN(FFMAX(render_context.clip_y1, 0), frame_context.height);
 
 	// calculate rotation parameters
 	{

@@ -101,15 +101,7 @@ void GX_InitVideo() {
 	vmode = VIDEO_GetPreferredMode(NULL);
 
 	vmode->viWidth = 678;
-  if(!component_fix) vmode->viWidth = 678;
-	else
-  {
-    //vmode->viWidth = VI_MAX_WIDTH_PAL-20;
-    vmode->viWidth = 680;
-    //vmode->xfbHeight+=8;
-  }
 
-  //vmode->viWidth = 678;
 	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
 
 	VIDEO_Configure(vmode);
@@ -130,7 +122,7 @@ void GX_InitVideo() {
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
 
-	//make memory fixed (max texture 900*700, gx can't manage more)
+	//make texture memory fixed (max texture 900*700, gx can't manage more) and in mem1 (is faster)
 	if (!Ytexture)
 		Ytexture = (u8 *) memalign(32,900*700);
 	if (!Utexture)
@@ -395,7 +387,6 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	Ytexture = (u8 *) memalign(32,Ytexsize);
 	Utexture = (u8 *) memalign(32,UVtexsize);
 	Vtexture = (u8 *) memalign(32,UVtexsize);
-
 */
 #ifdef WIILIB
 	//make memory fixed (max texture 900*700, gx can't manage more)
@@ -407,9 +398,9 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 		Vtexture = (u8 *) memalign(32,900*700/4);
 #endif
 
-	memset(Ytexture, 255, Ytexsize);
-	memset(Utexture, 255, UVtexsize);
-	memset(Vtexture, 255, UVtexsize);
+	memset(Ytexture, 0, Ytexsize);
+	memset(Utexture, 128, UVtexsize);
+	memset(Vtexture, 128, UVtexsize);
 
 	/*** Setup for first call to scaler ***/
 	oldvwidth = oldvheight = oldpitch = -1;

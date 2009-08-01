@@ -900,9 +900,10 @@ void free_font_desc(font_desc_t *desc)
     if (desc->tables.omt) free(desc->tables.omt);
     if (desc->tables.tmp) free(desc->tables.tmp);
 
-    for(i = 0; i < desc->face_cnt; i++) {
-	FT_Done_Face(desc->faces[i]);
-    }
+//don't uncoment, needed because the face is cached
+//    for(i = 0; i < desc->face_cnt; i++) {
+//	FT_Done_Face(desc->faces[i]);
+//    }
 
     free(desc);
 }
@@ -915,12 +916,12 @@ static int load_sub_face(const char *name, int face_index, FT_Face *face)
 
     if (err) {
 	char *font_file = get_path("subfont.ttf");
-	err = FT_New_Face(library, font_file, 0, face);
+	err = FT_New_Face(library, font_file, face_index, face);
 	free(font_file);
 	if (err) {
 		char cad[100];
-		sprintf(cad,"%s%s",MPLAYER_DATADIR,"/subfont.ttf");
-	    err = FT_New_Face(library, cad, 0, face);
+		sprintf(cad,"%s%s",MPLAYER_DATADIR,"/subfont.ttf");	
+	    err = FT_New_Face(library, cad, face_index, face);
 	    if (err) {
 	        mp_msg(MSGT_OSD, MSGL_ERR, MSGTR_LIBVO_FONT_LOAD_FT_NewFaceFailed);
 		return -1;
@@ -956,6 +957,9 @@ int kerning(font_desc_t *desc, int prevc, int c)
     return f266ToInt(kern.x);
 }
 
+static FT_Face cache_face;
+static int face_cached=0;
+
 font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_width, int movie_height, float font_scale_factor)
 {
     font_desc_t *desc = NULL;
@@ -966,7 +970,7 @@ font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_widt
     FT_ULong *my_charcodes = malloc(MAX_CHARSET_SIZE * sizeof(FT_ULong)); /* character codes in 'encoding' */
 
     char *charmap = "ucs-4";
-    int err;
+    int err=0;
     int charset_size;
     int i, j;
     int unicode;
@@ -1011,14 +1015,20 @@ font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_widt
     } else {
 	unicode = 0;
     }
-
     desc = init_font_desc();
     if(!desc) goto err_out;
 
 //    t=GetTimer();
 
     /* generate the subtitle font */
-    err = load_sub_face(fname, face_index, &face);
+    if(!face_cached)
+    {	//rodries: need to be improved, (detect fname change)
+    	err = load_sub_face(fname, face_index, &cache_face);
+    	if (!err)face_cached=1;
+    }
+
+    if (!err) face=cache_face;
+    
     if (err) {
 	mp_msg(MSGT_OSD, MSGL_WARN, MSGTR_LIBVO_FONT_LOAD_FT_SubFaceFailed);
 	goto gen_osd;
@@ -1054,7 +1064,6 @@ font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_widt
 	mp_msg(MSGT_OSD, MSGL_ERR, MSGTR_LIBVO_FONT_LOAD_FT_CannotPrepareSubtitleFont);
 	goto err_out;
     }
-
 gen_osd:
 
     /* generate the OSD font */
@@ -1072,7 +1081,6 @@ gen_osd:
 	mp_msg(MSGT_OSD, MSGL_ERR, MSGTR_LIBVO_FONT_LOAD_FT_CannotPrepareOSDFont);
 	goto err_out;
     }
-
     err = generate_tables(desc, subtitle_font_thickness, subtitle_font_radius);
 
     if (err) {
@@ -1138,8 +1146,17 @@ int done_freetype(void)
     return 0;
 }
 
+void ReInitTTFLib()
+{
+  if (sub_font && sub_font != vo_font) free_font_desc(sub_font);
+  sub_font = NULL;
+  if (vo_font) free_font_desc(vo_font);
+  vo_font = NULL;
+
+}
 void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_name, float font_scale_factor)
 {
+//printf("load_font_ft(%s) w: %i  h: %i  sc: %f\n",font_name,width, height,font_scale_factor);
 #ifdef CONFIG_FONTCONFIG
     FcPattern *fc_pattern;
     FcPattern *fc_pattern2;
@@ -1153,7 +1170,6 @@ void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_n
 
     // protection against vo_aa font hacks
     if (vo_font && !vo_font->dynamic) return;
-
     if (vo_font) free_font_desc(vo_font);
 
 #ifdef CONFIG_FONTCONFIG
@@ -1181,10 +1197,13 @@ void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_n
 	// s doesn't need to be freed according to fontconfig docs
 	FcPatternGetString(fc_pattern, FC_FILE, 0, &s);
 	FcPatternGetInteger(fc_pattern, FC_INDEX, 0, &face_index);
-	*fontp=read_font_desc_ft(s, face_index, width, height, font_scale_factor);
+	
+	
+	*fontp=read_font_desc_ft(s, face_index, _width, _height, font_scale_factor);
 	FcPatternDestroy(fc_pattern);
     }
     else
 #endif
     *fontp=read_font_desc_ft(font_name, 0, width, height, font_scale_factor);
+//  printf("load_font_ft end\n");  
 }

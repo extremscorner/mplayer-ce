@@ -20,7 +20,7 @@ extern bool power_pressed;
 // yeah, i know...
 // there is no _FILE_OFFSET_BITS in newlib and mplayer expects a 64bit off_t,
 // so thats what it gets
-#define off_t s64
+//#define off_t s64
 
 #define PATH_MAX MAXPATHLEN
 

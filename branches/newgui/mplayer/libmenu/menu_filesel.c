@@ -32,6 +32,7 @@
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
 #include <ogc/usbstorage.h>
+#include "mp_osd.h"
 const static DISC_INTERFACE* sd = &__io_wiisd;
 const static DISC_INTERFACE* usb = &__io_usbstorage;
 extern bool playing_usb;
@@ -53,7 +54,7 @@ extern bool playing_usb;
 #include "input/input.h"
 #include "osdep/keycodes.h"
 
-#define MENU_KEEP_PATH "/tmp/mp_current_path"
+#define MENU_KEEP_PATH "mp_current_path"
 
 int menu_keepdir = 0;
 char *menu_chroot = NULL;
@@ -102,6 +103,73 @@ static m_option_t cfg_fields[] = {
 };
 
 #define mpriv (menu->priv)
+
+
+static list_entry_t* actual_list;
+static char *next_file=NULL;
+static char *file_dir=NULL;
+
+
+
+/*****************************************************/
+/*Function prototypes and libraries needed to compile*/
+/*****************************************************/
+
+int levenshtein_distance(char *s,char*t);
+int minimum(int a,int b,int c);
+
+/****************************************/
+/*Implementation of Levenshtein distance*/
+/****************************************/
+
+int levenshtein_distance(char *s,char*t)
+/*Compute levenshtein distance between s and t*/
+{
+  //Step 1
+  int k,i,j,n,m,cost,*d,distance;
+  n=strlen(s); 
+  m=strlen(t);
+  if(n!=0&&m!=0)
+  {
+    d=malloc((sizeof(int))*(m+1)*(n+1));
+    m++;
+    n++;
+    //Step 2	
+    for(k=0;k<n;k++)
+	d[k]=k;
+    for(k=0;k<m;k++)
+      d[k*n]=k;
+    //Step 3 and 4	
+    for(i=1;i<n;i++)
+      for(j=1;j<m;j++)
+	{
+        //Step 5
+        if(s[i-1]==t[j-1])
+          cost=0;
+        else
+          cost=1;
+        //Step 6			 
+        d[j*n+i]=minimum(d[(j-1)*n+i]+1,d[j*n+i-1]+1,d[(j-1)*n+i-1]+cost);
+      }
+    distance=d[n*m-1];
+    free(d);
+    return distance;
+  }
+  else 
+    return -1; //a negative return value means that one or both strings are empty.
+}
+
+int minimum(int a,int b,int c)
+/*Gets the minimum of three values*/
+{
+  int min=a;
+  if(b<min)
+    min=b;
+  if(c<min)
+    min=c;
+  return min;
+}
+
 
 static void free_entry(list_entry_t* entry) {
   free(entry->p.txt);
@@ -265,48 +333,26 @@ static int open_dir(menu_t* menu,char* args) {
   	{
   		while(mounting_usb)usleep(500);
   		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
-  		if(!DeviceMounted("usb")) return 0;
-		/*
-		printf("startup\n");VIDEO_WaitVSync();
-		if(usb->startup())
+  		if(!DeviceMounted("usb")) 
 		{
-			printf("startup ok\n");VIDEO_WaitVSync();
-			usleep(50000);
-			if(usb->isInserted())
-			{
-				printf("usb mounting\n");VIDEO_WaitVSync();
-				if(!fatMount("usb",usb,0,2,128)) 
-				{
-					printf("error mounting\n");VIDEO_WaitVSync();
-					return 0;
-				}
-			}			
-		}else 
-		{
-			printf("startup error\n");VIDEO_WaitVSync();
+			rm_osd_msg(OSD_MSG_TEXT);
+		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "USB device not mounted");
+		  	update_osd_msg();
+  			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 			return 0;
 		}
-		*/
-/*
-	  	//msleep();
-	  	while(mounting_usb)usleep(500);
-		if(!usb->isInserted())	
-		{
-			return 0;
-		}	
-*/		
 	}
-
-/*
-	  if(!DeviceMounted("usb:/"))
-	  {
-		  if(!fatMountSimple("usb",usb)) return 0;
-	  }
-*/	  
   } 
   else if(!strcmp(mpriv->dir,"dvd:/"))
   {  
-	  if(!DVDGekkoMount()) return 0;
+	  if(!DVDGekkoMount()) 
+	  {
+	    rm_osd_msg(OSD_MSG_TEXT);
+  		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
+  		update_osd_msg();
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		  return 0;
+	  }
   }
   else if(mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')
   { // reconnect samba if needed
@@ -314,17 +360,20 @@ static int open_dir(menu_t* menu,char* args) {
 	  
 	  if(network_inited==0)
 	  {
-  		  set_osd_msg(124,1,2000,"Network not yet initialized, Please Wait");
+  		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Network not yet initialized, Please Wait");
+  		  update_osd_msg();
 		  return 0;
 	  }
 	  	  
 	  device[3]=mpriv->dir[3];
-		set_osd_msg(124,1,2000,"Connecting to %s ",device);
 	  if(!CheckSMBConnection(device)) 
 	  {
-		  set_osd_msg(124,1,2000,"Error reconnecting to %s ",device);
+		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Error reconnecting to %s ",device);
+		  update_osd_msg();
+		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		  return 0;
-	  }else rm_osd_msg(124);
+	  }	  
+	  
   }
 #endif
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);
@@ -335,7 +384,10 @@ static int open_dir(menu_t* menu,char* args) {
   }
 
   if (menu_keepdir) {
-    path_fp = open (MENU_KEEP_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+  	char file[100];
+	sprintf(file,"%s/%s",MPLAYER_DATADIR,MENU_KEEP_PATH);	
+
+    path_fp = open (file, O_CREAT | O_WRONLY | O_TRUNC, 0666);
     if (path_fp >= 0) {
       write (path_fp, mpriv->dir, strlen (mpriv->dir));
       close (path_fp);
@@ -463,7 +515,21 @@ static void read_cmd(menu_t* menu,int cmd) {
       str = replace_path(action, filename,1);      
       mp_input_parse_and_queue_cmds(str);
       //rodries
-      if(!strncmp(action,"loadfile",8)) mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
+      if(strstr(action,"loadfile")!=NULL)
+	  {	  	
+	  	file_dir=mpriv->dir;
+	  	//mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
+	  	if(mpriv->p.current->p.next!=NULL)
+	  	{
+		  	actual_list=mpriv->p.current->p.next;
+		  	next_file=actual_list->p.txt;
+		}
+		else
+		{
+			next_file=NULL;
+			actual_list=NULL;
+		}
+	  }
       if (str != action)
 	free(str);
     }
@@ -516,8 +582,10 @@ static int open_fs(menu_t* menu, char* args) {
     if (!path || path[0] == '\0') {
       struct stat st;
       int path_fp;
+  	  char file[100];
+	  sprintf(file,"%s/%s",MPLAYER_DATADIR,MENU_KEEP_PATH);	
 
-      path_fp = open (MENU_KEEP_PATH, O_RDONLY);
+      path_fp = open (file, O_RDONLY);
       if (path_fp >= 0) {
         if (!fstat (path_fp, &st) && (st.st_size > 0)) {
           path = malloc(st.st_size+1);
@@ -584,6 +652,24 @@ static int open_fs(menu_t* menu, char* args) {
   r = open_dir(menu,path);
 
   return r;
+}
+
+
+bool check_play_next_file(char *fileplaying,char *next_filename)
+{
+	if(next_file==NULL) return false;
+	
+	sprintf(next_filename,"%s%s",file_dir,next_file);
+	int dist=levenshtein_distance(fileplaying,next_filename);
+	if(dist>0 && dist<3)
+	{
+		actual_list=actual_list->p.next;
+		if(!actual_list) next_file=NULL;
+		else next_file=actual_list->p.txt;
+				
+		return true;
+	}
+	return false;
 }
 
 const menu_info_t menu_info_filesel = {

@@ -44,6 +44,8 @@
 static struct vf_priv_s* st_priv = NULL;
 
 static mp_image_t* pause_mpi = NULL;
+static mp_image_t* gekko_mpi_menu = NULL;
+
 static int go2pause = 0;
 /// if nonzero display menu at startup
 int menu_startup = 0;
@@ -56,6 +58,10 @@ struct vf_priv_s {
 
 static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts);
 
+void clear_pause_mpi()
+{
+	clear_mpi(pause_mpi);
+}
 
 void vf_menu_pause_update(struct vf_instance_s* vf) {
   const vo_functions_t *video_out = mpctx_get_video_out(vf->priv->current->ctx);
@@ -66,7 +72,44 @@ void vf_menu_pause_update(struct vf_instance_s* vf) {
     video_out->flip_page();
   }
 }
+/*
+void vf_menu_pause_update_gekko(struct vf_instance_s* vf) {
+  const vo_functions_t *video_out = mpctx_get_video_out(vf->priv->current->ctx);
+  if(gekko_mpi_menu) {
+  	printf("vf_menu_pause_update_gekko -> gekko\n");
+  	
+    if(pause_mpi && (gekko_mpi_menu->w != pause_mpi->w || gekko_mpi_menu->h != pause_mpi->h ||
+		     gekko_mpi_menu->imgfmt != pause_mpi->imgfmt)) {
+	
+		free_mp_image(pause_mpi);
+		pause_mpi = NULL;	
+	}
+	if(!pause_mpi)pause_mpi = alloc_mpi(gekko_mpi_menu->w,gekko_mpi_menu->h,gekko_mpi_menu->imgfmt);
+     copy_mpi(pause_mpi,gekko_mpi_menu);
+    	
+ 	
+	    put_image(vf,pause_mpi, MP_NOPTS_VALUE);
+	    // Don't draw the osd atm
+	    vf->control(vf,VFCTRL_DRAW_OSD,NULL);
+	    video_out->flip_page();
+  }
+}
 
+void vf_copy_menu_pause_gekko() {
+	if(gekko_mpi_menu) 
+	{
+		free_mp_image(gekko_mpi_menu);
+		gekko_mpi_menu=NULL;		
+	}
+
+  if(pause_mpi) {
+
+	 gekko_mpi_menu = alloc_mpi(pause_mpi->w,pause_mpi->h,pause_mpi->imgfmt);
+     copy_mpi(gekko_mpi_menu,pause_mpi);
+	printf("pause_mpi copied\n");
+  }  
+}
+*/
 static int cmd_filter(mp_cmd_t* cmd, int paused, struct vf_priv_s * priv) {
 
   switch(cmd->id) {
@@ -137,7 +180,10 @@ static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
 static int key_cb(int code) {
   return menu_read_key(st_priv->current,code);
 }
-
+menu_t * get_vf_menu()
+{
+	return st_priv->current;
+}
 static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
   mp_image_t *dmpi = NULL;
 
@@ -218,11 +264,13 @@ static void uninit(vf_instance_t *vf) {
 static int config(struct vf_instance_s* vf, int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt) {
 #ifdef CONFIG_FREETYPE
+/*
   // here is the right place to get screen dimensions
   if (force_load_font) {
     force_load_font = 0;
-    load_font_ft(width,height,&vo_font,font_name,osd_font_scale_factor);
+    load_font_ft(width,height,&vo_font,font_name,osd_font_scale_factor);    
   }
+  */
 #endif
   if(outfmt == IMGFMT_MPEGPES)
     vf->priv->passthrough = 1;

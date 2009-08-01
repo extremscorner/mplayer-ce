@@ -59,7 +59,6 @@ untested special converters
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
-#include <unistd.h>
 #include "config.h"
 #include <assert.h>
 #if HAVE_SYS_MMAN_H
@@ -90,7 +89,6 @@ unsigned swscale_version(void)
 //#define HAVE_AMD3DNOW
 //#undef HAVE_MMX
 //#undef ARCH_X86
-//#define WORDS_BIGENDIAN
 #define DITHER1XBPP
 
 #define FAST_BGR2YV12 // use 7 bit coefficients instead of 15 bit
@@ -1326,14 +1324,10 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 #endif //ARCH_X86
 
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#undef HAVE_ALTIVEC
-#define HAVE_MMX 0
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 0
-#define HAVE_ALTIVEC 0
+#define COMPILE_TEMPLATE_MMX 0
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_AMD3DNOW 0
+#define COMPILE_TEMPLATE_ALTIVEC 0
 
 #ifdef COMPILE_C
 #define RENAME(a) a ## _C
@@ -1342,8 +1336,8 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 
 #ifdef COMPILE_ALTIVEC
 #undef RENAME
-#undef HAVE_ALTIVEC
-#define HAVE_ALTIVEC 1
+#undef COMPILE_TEMPLATE_ALTIVEC
+#define COMPILE_TEMPLATE_ALTIVEC 1
 #define RENAME(a) a ## _altivec
 #include "swscale_template.c"
 #endif
@@ -1353,12 +1347,12 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //MMX versions
 #ifdef COMPILE_MMX
 #undef RENAME
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX 1
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 0
+#undef COMPILE_TEMPLATE_MMX
+#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_AMD3DNOW
+#define COMPILE_TEMPLATE_MMX 1
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
 #include "swscale_template.c"
 #endif
@@ -1366,12 +1360,12 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //MMX2 versions
 #ifdef COMPILE_MMX2
 #undef RENAME
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX 1
-#define HAVE_MMX2 1
-#define HAVE_AMD3DNOW 0
+#undef COMPILE_TEMPLATE_MMX
+#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_AMD3DNOW
+#define COMPILE_TEMPLATE_MMX 1
+#define COMPILE_TEMPLATE_MMX2 1
+#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX2
 #include "swscale_template.c"
 #endif
@@ -1379,19 +1373,17 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //3DNOW versions
 #ifdef COMPILE_3DNOW
 #undef RENAME
-#undef HAVE_MMX
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX 1
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 1
+#undef COMPILE_TEMPLATE_MMX
+#undef COMPILE_TEMPLATE_MMX2
+#undef COMPILE_TEMPLATE_AMD3DNOW
+#define COMPILE_TEMPLATE_MMX 1
+#define COMPILE_TEMPLATE_MMX2 0
+#define COMPILE_TEMPLATE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNow
 #include "swscale_template.c"
 #endif
 
 #endif //ARCH_X86
-
-// minor note: the HAVE_xyz are messed up after this line so don't use them
 
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
 {
@@ -1458,9 +1450,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     {
         int i;
         int xDstInSrc;
-        if      (flags&SWS_BICUBIC) filterSize= 4;
-        else if (flags&SWS_X      ) filterSize= 4;
-        else                        filterSize= 2; // SWS_BILINEAR / SWS_AREA
+        filterSize= 2;
         filter= av_malloc(dstW*sizeof(*filter)*filterSize);
 
         xDstInSrc= xInc/2 - 0x8000;
@@ -1898,6 +1888,13 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
             int b=((xpos+xInc)>>16) - xx;
             int c=((xpos+xInc*2)>>16) - xx;
             int d=((xpos+xInc*3)>>16) - xx;
+            int inc                = (d+1<4);
+            uint8_t *fragment      = (d+1<4) ? fragmentB       : fragmentA;
+            x86_reg imm8OfPShufW1  = (d+1<4) ? imm8OfPShufW1B  : imm8OfPShufW1A;
+            x86_reg imm8OfPShufW2  = (d+1<4) ? imm8OfPShufW2B  : imm8OfPShufW2A;
+            x86_reg fragmentLength = (d+1<4) ? fragmentLengthB : fragmentLengthA;
+            int maxShift= 3-(d+inc);
+            int shift=0;
 
             filter[i  ] = (( xpos         & 0xFFFF) ^ 0xFFFF)>>9;
             filter[i+1] = (((xpos+xInc  ) & 0xFFFF) ^ 0xFFFF)>>9;
@@ -1905,53 +1902,24 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
             filter[i+3] = (((xpos+xInc*3) & 0xFFFF) ^ 0xFFFF)>>9;
             filterPos[i/2]= xx;
 
-            if (d+1<4)
+            memcpy(funnyCode + fragmentPos, fragment, fragmentLength);
+
+            funnyCode[fragmentPos + imm8OfPShufW1]=
+                (a+inc) | ((b+inc)<<2) | ((c+inc)<<4) | ((d+inc)<<6);
+            funnyCode[fragmentPos + imm8OfPShufW2]=
+                a | (b<<2) | (c<<4) | (d<<6);
+
+            if (i+4-inc>=dstW) shift=maxShift; //avoid overread
+            else if ((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //Align
+
+            if (shift && i>=shift)
             {
-                int maxShift= 3-(d+1);
-                int shift=0;
-
-                memcpy(funnyCode + fragmentPos, fragmentB, fragmentLengthB);
-
-                funnyCode[fragmentPos + imm8OfPShufW1B]=
-                    (a+1) | ((b+1)<<2) | ((c+1)<<4) | ((d+1)<<6);
-                funnyCode[fragmentPos + imm8OfPShufW2B]=
-                    a | (b<<2) | (c<<4) | (d<<6);
-
-                if (i+3>=dstW) shift=maxShift; //avoid overread
-                else if ((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //Align
-
-                if (shift && i>=shift)
-                {
-                    funnyCode[fragmentPos + imm8OfPShufW1B]+= 0x55*shift;
-                    funnyCode[fragmentPos + imm8OfPShufW2B]+= 0x55*shift;
-                    filterPos[i/2]-=shift;
-                }
-
-                fragmentPos+= fragmentLengthB;
+                funnyCode[fragmentPos + imm8OfPShufW1]+= 0x55*shift;
+                funnyCode[fragmentPos + imm8OfPShufW2]+= 0x55*shift;
+                filterPos[i/2]-=shift;
             }
-            else
-            {
-                int maxShift= 3-d;
-                int shift=0;
 
-                memcpy(funnyCode + fragmentPos, fragmentA, fragmentLengthA);
-
-                funnyCode[fragmentPos + imm8OfPShufW1A]=
-                funnyCode[fragmentPos + imm8OfPShufW2A]=
-                    a | (b<<2) | (c<<4) | (d<<6);
-
-                if (i+4>=dstW) shift=maxShift; //avoid overread
-                else if ((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //partial align
-
-                if (shift && i>=shift)
-                {
-                    funnyCode[fragmentPos + imm8OfPShufW1A]+= 0x55*shift;
-                    funnyCode[fragmentPos + imm8OfPShufW2A]+= 0x55*shift;
-                    filterPos[i/2]-=shift;
-                }
-
-                fragmentPos+= fragmentLengthA;
-            }
+            fragmentPos+= fragmentLength;
 
             funnyCode[fragmentPos]= RET;
         }
@@ -2005,16 +1973,16 @@ static SwsFunc getSwsFunc(SwsContext *c)
     return swScale_C;
 #endif /* ARCH_X86 && CONFIG_GPL */
 #else //CONFIG_RUNTIME_CPUDETECT
-#if   HAVE_MMX2
+#if   COMPILE_TEMPLATE_MMX2
     sws_init_swScale_MMX2(c);
     return swScale_MMX2;
-#elif HAVE_AMD3DNOW
+#elif COMPILE_TEMPLATE_AMD3DNOW
     sws_init_swScale_3DNow(c);
     return swScale_3DNow;
-#elif HAVE_MMX
+#elif COMPILE_TEMPLATE_MMX
     sws_init_swScale_MMX(c);
     return swScale_MMX;
-#elif HAVE_ALTIVEC
+#elif COMPILE_TEMPLATE_ALTIVEC
     sws_init_swScale_altivec(c);
     return swScale_altivec;
 #else
@@ -2567,13 +2535,13 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
 #if !CONFIG_RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
     flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC|SWS_CPU_CAPS_BFIN);
-#if   HAVE_MMX2
+#if   COMPILE_TEMPLATE_MMX2
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
-#elif HAVE_AMD3DNOW
+#elif COMPILE_TEMPLATE_AMD3DNOW
     flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_3DNOW;
-#elif HAVE_MMX
+#elif COMPILE_TEMPLATE_MMX
     flags |= SWS_CPU_CAPS_MMX;
-#elif HAVE_ALTIVEC
+#elif COMPILE_TEMPLATE_ALTIVEC
     flags |= SWS_CPU_CAPS_ALTIVEC;
 #elif ARCH_BFIN
     flags |= SWS_CPU_CAPS_BFIN;
@@ -2682,9 +2650,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
         c->param[0] =
         c->param[1] = SWS_PARAM_DEFAULT;
     }
-
-    c->chrIntHSubSample= c->chrDstHSubSample;
-    c->chrIntVSubSample= c->chrSrcVSubSample;
 
     // Note the -((-x)>>y) is so that we always round toward +inf.
     c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
@@ -3165,25 +3130,25 @@ int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 
             switch(c->dstFormat) {
             case PIX_FMT_BGR32:
-#ifndef WORDS_BIGENDIAN
+#if !HAVE_BIGENDIAN
             case PIX_FMT_RGB24:
 #endif
                 c->pal_rgb[i]=  r + (g<<8) + (b<<16);
                 break;
             case PIX_FMT_BGR32_1:
-#ifdef  WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
             case PIX_FMT_BGR24:
 #endif
                 c->pal_rgb[i]= (r + (g<<8) + (b<<16)) << 8;
                 break;
             case PIX_FMT_RGB32_1:
-#ifdef  WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
             case PIX_FMT_RGB24:
 #endif
                 c->pal_rgb[i]= (b + (g<<8) + (r<<16)) << 8;
                 break;
             case PIX_FMT_RGB32:
-#ifndef WORDS_BIGENDIAN
+#if !HAVE_BIGENDIAN
             case PIX_FMT_BGR24:
 #endif
             default:
