@@ -100,7 +100,7 @@ gcc_ver=`gcc -dumpversion`
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld.exe"
+LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -7320,7 +7320,7 @@ gcc_ver=`gcc -dumpversion`
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld.exe"
+LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"

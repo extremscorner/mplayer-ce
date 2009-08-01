@@ -97,7 +97,7 @@ with_gcc=yes
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld.exe"
+LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -199,7 +199,7 @@ library_names_spec=""
 soname_spec=""
 
 # Commands used to build and install an old-style archive.
-RANLIB="${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-ranlib.exe"
+RANLIB="${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-ranlib"
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
 old_postuninstall_cmds=""
@@ -323,7 +323,7 @@ variables_saved_for_relink="PATH  LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBR
 link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec="/c:/devkitpro/devkitppc/lib/gcc /c:/devkitpro/devkitppc/lib/gcc/powerpc-gekko/4.2.4 /c:/devkitpro/devkitppc/powerpc-gekko/lib"
+sys_lib_search_path_spec="${DEVKITPRO}/devkitppc/lib/gcc ${DEVKITPRO}/devkitppc/lib/gcc/powerpc-gekko/4.2.4 ${DEVKITPRO}/devkitppc/powerpc-gekko/lib"
 
 # Run-time system search path for libraries
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
@@ -7337,7 +7337,7 @@ with_gcc=yes
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld.exe"
+LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -7439,7 +7439,7 @@ library_names_spec=""
 soname_spec=""
 
 # Commands used to build and install an old-style archive.
-RANLIB="${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-ranlib.exe"
+RANLIB="${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-ranlib"
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
 old_postuninstall_cmds=""
@@ -7563,7 +7563,7 @@ variables_saved_for_relink="PATH  LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBR
 link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec="/c:/devkitpro/devkitppc/lib/gcc /c:/devkitpro/devkitppc/lib/gcc/powerpc-gekko/4.2.4 /c:/devkitpro/devkitppc/powerpc-gekko/lib"
+sys_lib_search_path_spec="${DEVKITPRO}/devkitppc/lib/gcc ${DEVKITPRO}/devkitppc/lib/gcc/powerpc-gekko/4.2.4 ${DEVKITPRO}/devkitppc/powerpc-gekko/lib"
 
 # Run-time system search path for libraries
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
