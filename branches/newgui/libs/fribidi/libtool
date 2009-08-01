@@ -100,7 +100,7 @@ gcc_ver=`gcc -dumpversion`
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld"
+LD="${DEVKITPRO}/devkitppc/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -326,7 +326,7 @@ variables_saved_for_relink="PATH  LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBR
 link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec=`echo " =c:/devkitpro/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/ c:/devkitpro/devkitppc/bin/../lib/gcc/ c:/devkitpro/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/ /usr/lib/gcc/powerpc-gekko/4.2.4/ c:/devkitpro/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/powerpc-gekko/4.2.4/ c:/devkitpro/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/ c:/devkitpro/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/powerpc-gekko/4.2.4/ c:/devkitpro/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/" | $SED -e "s@${gcc_dir}@\${gcc_dir}@g;s@${gcc_ver}@\${gcc_ver}@g"`
+sys_lib_search_path_spec=`echo " =${DEVKITPRO}/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/ ${DEVKITPRO}/devkitppc/bin/../lib/gcc/ ${DEVKITPRO}/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/ /usr/lib/gcc/powerpc-gekko/4.2.4/ ${DEVKITPRO}/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/powerpc-gekko/4.2.4/ ${DEVKITPRO}/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/ ${DEVKITPRO}/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/powerpc-gekko/4.2.4/ ${DEVKITPRO}/devkitppc/bin/../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/lib/" | $SED -e "s@${gcc_dir}@\${gcc_dir}@g;s@${gcc_ver}@\${gcc_ver}@g"`
 
 # Run-time system search path for libraries
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
@@ -7320,7 +7320,7 @@ gcc_ver=`gcc -dumpversion`
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld"
+LD="${DEVKITPRO}/devkitppc/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"

@@ -260,7 +260,7 @@ striplib="strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld"
+LD="${DEVKITPRO}/devkitppc/powerpc-gekko/bin/ld"
 
 # Commands used to build an old-style archive.
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
