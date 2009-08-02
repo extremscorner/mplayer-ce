@@ -112,36 +112,37 @@ contains a folder  named "MPlayer_ce"  which  you will  need  to copy to your
 "apps" folder  on your SD Card. 
 Once  copied  over you  can launch it  using the  loader of your choice.
 
-USB 2.0:
-You need to  install the  USB 2.0 cIOS from here: 
-http://mplayer-ce.googlecode.com/files/cIOS_Installer.rar
-(Please note that this requires a internet connection).
-There is a offline instalation available, to read the guide, visit: 
-http://www.tehskeen.com/forums/showthread.php?p=62838#post62838
-The installer is for Homebrew USB2 only, this will install IOS202 using base 
-IOS60 and IOS36 automatically. You can select the IOS to use to do the 
-installation, so you can select a IOS with the fake sign bug. watch it download, 
-install incase it fails and returns to HBC, it should now install successfully.
-(IOS60 and IOS36 are downloaded to SD via the Nintendo's Update Server).
-We are using IOS60 as a base as there has been improvements in wifi.
-Those that install this cIOS do not require a DVDx instalation.
+×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
+|0O×øo·                              USB 2.0                          ·oø×O0|
+`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
-Users without the fakesign bug cannot install the cIOS to use USB2:
-There is a work around for this but requires you to downgrade a certain IOS, 
-to be able to place trucha into another.
-Trucha Bug Restorer is an application in which to get IOS with the trucha bug back 
-on all Wiis (and new) with system menu up to 4.1. Usually the error codes -1017 and -2011 
-indicate that the trucha bug is required and missing.
-Make sure you understand what you are doing before using this.
-Only use it if you have an idea what the trucha bug (http://wiibrew.org/wiki/Signing_bug)
-is and why you need it).
-For more information regarding this, and the download, visit: 
-http://www.tehskeen.com/viewarticle.php?articleid=4295
+For  USB 2.0  support  you  will  need  to install the USB 2.0 cIOS from here
+(please note that this requires an internet connection): 
 
-Once complete, Download the cIOS Installer for USB2 here:
-http://mplayer-ce.googlecode.com/files/cIOS_Installer.rar and choose IOS36 as the IOS
-in the selection screen, then Press A to install, watch it incase it fails and 
-returns to HBC, it should now install successfully.
+   http://mplayer-ce.googlecode.com/files/cIOS_Installer.rar
+
+Make sure to watch it download and install in case it fails and returns to HBC.
+Those that install this cIOS do not require DVDx.
+
+Offline installation is available.  For a guide please see here:
+
+   http://www.tehskeen.com/forums/showthread.php?p=62838
+
+If you receive the error codes -1017 or -2011 your Wii probably does not have
+an  IOS  with the  fakesigning bug.  Users without  the  fakesign  bug cannot
+install this cIOS. Trucha Bug Restorer is an  application to workaround this.
+It is  compatible  with  all  Wiis and  up to  system menu 4.1. Only use this
+program if you have an idea what the trucha bug
+
+   http://wiibrew.org/wiki/Signing_bug
+
+is and why you need it. For more information and to download visit:
+
+   http://www.tehskeen.com/viewarticle.php?articleid=4295
+
+Once complete, download the cIOS Installer and choose IOS36 as the IOS in the
+selection screen.
+Make sure to watch it download and install in case it fails and returns to HBC.
 
 If you plan on updating make sure to install the cIOS and DVDx before updating.
 
@@ -356,98 +357,66 @@ Example:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         Youtube/SHOUTcast                    · oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-You can add changes to the Youtube/SHOUTcast, review your'e menu.conf as by 
+You can add changes to the Youtube/SHOUTcast, review your menu.conf as by 
 default it is running via Extrems Server.
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
-v0.71     
-   * Improved memory management, due to MPlayer hanging if out of memory. 
-     Also new feature added if you press 1 twice it will show mem 1 and mem 2 info.
-   * Driver improved with autodetection error, on error the device is reinitied  
-     and read is retried, meaning it is very hard to hang the device. 
-   * EHCI Improvements have been made and now more usb devices are supported. 
-   * Now you don't need the fat partition to be primary or active, patch in libfat 
-     and now libfat searches in all partitions to find a fat partition. 
-   * If test.dol http://mplayer-ce.googlecode.com/files/USB%20Test.rar say usb device is 
-     100% compatible and a device is not working in the last MPlayer revision. Then  
-     there isn't a fat partition on the device, as a lot of people use ntfs instead. 
-   * Restore Points fixed, in previous release when you quit restore point was not saved,  
-     now quit or power off saves restore point and can resume properly. 
-     Delete your'e previous restore point incase it is corrupted, and check SD isn't locked.
-   * Improved smb connections, will always reconnect. (so you can remove shares from pc,  
-     and re-enable them, MPlayer will reconnect, so it's a easier way to test smb if you  
-     have problems setting it up).  
-   * Improved stream initilization. 
-   * Fixed green lines at the top of screen whilst loading MPlayerCE. 
-   * Video files (which may be badly encoded) that may have unexpectedly froze at some 
-     point during playback in previous releases may playback without a possible glitch 
-     (such as that freeze/hang). 
-   * Change in MPlayer but it's only for testing usb2, now you can load a external  
-     driver from sd. If you copy the driver to sd that driver will be used instead 
-     of the internal driver, more details (drivers) will be added to google code at a  
-     later date, thanx to hermes's patch. 
-   * Finnally found/fixed the problem with network and usb2 conflicts, because the driver 
-     was using a bad device the name /dev/usb2 is good, but /dev/usb/ehc is bad  
-     Because it is used by the network driver http://wiibrew.org/wiki//dev/usb/ehc 
-     http://wiibrew.org/wiki//dev/usb/oh0 In previous releases there was a possible conflict. 
-   * Autoload implemented, so if the next file has a very similar name it will autoload it. 
-     Using a levenshtein distance of 2. So if you need to change only 1 or 2 letter/numbers  
-     then it is similar. 
-     Examples: film.part1.avi > film.part2.avi only 1 change is needed to get the same name. 
-     Also house.s01e09.avi > house.s01e10.avi works, (2 changes). 
-   * Removed the need to load fonts twice when you load a video file as the fonts have to be 
-     loaded to adjust to the film size, 2 fonts are always loaded. 1 for menu and 1 for subs.  
-     Now font for subs are loaded only if it's needed, and the font face is cached, so fonts  
-     are loaded faster, making the video file load quicker. 
-   * Improved error reading streams/files (example if you remove share from your pc then  
-     MPlayer stops film when cache has finished, now while MPlayer has cache it will try to  
-     read again, so if you enable share again then MPlayer will continue playing without any  
-     problems, only stops video file if can't read, or cache is empty. Now MPlayer is more  
-     robust on errors). If you unplug & plug usb MPlayer will stop film because usb is off  
-     and you need to remount. But if you get an error reading from usb or sd etc MPlayer  
-     will try to read again. (For example when a hd usb's motor stops due to inactivity on  
-     pause then when you press start again MPlayer will use cache and can recieve an error  
-     because motor is not ready). 
+v0.71
+   * Autoload implemented. If the next file has a very similar name (using a
+     Levenshtein distance of 2) it will be autoloaded. 
+     Examples: film.part1.avi > film.part2.avi (1 change)
+               episode.s01e09.avi > episode.s01e10.avi works (2 changes)
+   * Improved memory management: fixes MPlayer hanging if out of memory.
+   * OSD level 3 now shows mem1 and mem2 info.
+   * Driver improved with autodetection error: on error the device is reinitied
+     and read is retried.
+   * Restore Points fixed. Now quit or power off saves restore point and can
+     resume properly. Please delete your previous restore_point file in case
+     it is corrupted, and check that your SD card isn't locked.
+   * Improved SMB connections: now SMB will always reconnect.
+   * Improved stream initialisation.
+   * Fixed green lines at the top of loading screen.
+   * Further improved video compatibility
+   * Added ability to load an external driver from SD for USB 2.0 testing.
+     More details (and drivers) will be added to the Google Code page at a
+     later date.  Thanks to Hermes for the patch.
+   * Finally fixed the problem with network and USB 2.0 conflicts
+     (due to the driver using a bad device).
+   * Font loading improved.
+   * Improved MPlayer support when a file unexpectedly disappears and reappears.
    * Many other small fixes and code cleanup.
+   * New USB test:
+      - If http://mplayer-ce.googlecode.com/files/USB%20Test.rar says USB device
+        is compatible but a device is not working then there is no FAT partition
+        on the device.  Check if you are using NTFS instead.
 
 v0.7
-   * Files now first analyse, followed by cache, as cache was emptied on 
-     analysing previously so now you'll see cache filling later.
-   * Improved audio/video internet cache, detects if it is a internet stream, 
-     if it's a radio stream then initial cache fill is small.
-   * Optimizing memory access suggestion from Shagkur, cache thread is now more stable.
-   * A8 patch added for DVD playback in cIOS202 to avoid problems with old ModChips.
-   * Improved libfat and fix for special characters.
-   * Using latest Libfat to prevent possible corruption on sd.
-   * Improved USB hotplug and dvd detection, echi module modified for more 
-     compatability with usb devices.
-   * Can now mount any fat partition, shouldn't matter if partition is set 
-     as primary or activated.
-   * Now has real fat32 limit therfore can now play larger files.
-   * Video files that hadn't worked previously may work now.
-   * New buffering system implemented for when buffering is low, if cache becomes low, 
-     it will pause and re-buffer to fill cache-min value, to prevent possible hangs 
-     with bad connections. You can see the cache by pressing 1 twice on the wiimote, 
-     when cache drops to 3% then it will pause.
-   * Shoutcast TV is complete with caching, thanx to Extrems, Review menu.conf.
-   * If IOS202 is installed via the Installer then DVDx is not required for DVD Access.
-
-New cIOS Installer:
-
-    MPlayerCE will now detect the presence of IOS202 to decide to use DVDx or not, 
-    so people that install the cIOS202 don't need to install DVDx to use the DVD functions.
-    Default DVDx install can be used if you install IOS202 now.
-    The new installer is for Homebrew USB2 only, this will install IOS202 
-    using base IOS60 automatically as IOS60 has improvements in wifi.
-    Now you can select the IOS to use to do the installation, 
-    so you can select a IOS with the fake sign bug.
-    (The reason for DVDx not having to be installed if IOS202 is installed on the wii, 
-    is that there is a patch in IOS202 that doesn't require DVDx, 
-    and can access DVD without it).
-    The cIOS is needed for MPlayerCE to use the USB2 driver.
+   * Use small cache if opening an internet stream (audio and video).
+   * Optimized memory access (thanks to a suggestion from Shagkur); cache thread
+     is now more stable.
+   * A8 patch added for DVD playback in cIOS202 to avoid problems with old
+     modchips.
+   * Improved Libfat:
+      - fix for special characters
+      - prevent possible corruption on sd
+      - can now mount any FAT partition, whether primary or active
+      - real FAT32 limit so larger files can be played
+   * Improved USB hotplug and DVD detection
+   * ECHI module modified for greater compatibility with USB devices.
+   * Improved video compatibility.
+   * New buffering system implemented.  If the cache drops below 3% MPlayer will
+     pause and re-buffer to prevent possible hangs with bad connections. Cache is
+     shown on OSD level 3.
+   * Shoutcast TV is complete with caching, thanks to Extrems.  Please see
+     menu.conf.
+   * If new cIOS is used then DVDx is not required for DVD access.
+   * New cIOS Installer:
+      - Installs IOS202 using base IOS60 automatically for greater WiFi support.
+      - Ability to select the IOS to use so you can select an IOS with the
+        fakesign bug.
 
 v0.62
     * USB LAN Adaptor support fixed (again).  Thanks to CountZ3ro for testing.
