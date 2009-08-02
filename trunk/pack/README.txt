@@ -114,18 +114,34 @@ Once  copied  over you  can launch it  using the  loader of your choice.
 
 USB 2.0:
 You need to  install the  USB 2.0 cIOS from here: 
-http://code.google.com/p/mplayer-ce/downloads/list 
+http://mplayer-ce.googlecode.com/files/cIOS_Installer.rar
 (Please note that this requires a internet connection).
+There is a offline instalation available, to read the guide, visit: 
+http://www.tehskeen.com/forums/showthread.php?p=62838#post62838
 The installer is for Homebrew USB2 only, this will install IOS202 using base 
-IOS60 automatically. You can select the IOS to use to do the installation, 
-so you can select a IOS with the fake sign bug.
-(IOS60 is downloaded to SD via the Nintendo's Update Server).
+IOS60 and IOS36 automatically. You can select the IOS to use to do the 
+installation, so you can select a IOS with the fake sign bug. watch it download, 
+install incase it fails and returns to HBC, it should now install successfully.
+(IOS60 and IOS36 are downloaded to SD via the Nintendo's Update Server).
 We are using IOS60 as a base as there has been improvements in wifi.
 Those that install this cIOS do not require a DVDx instalation.
 
-Users without the fakesign bug cannot install the cIOS to use USB2.
-There is a work around for this but we cannot advise about it.
-Unfortunately there is nothing we can do about it.
+Users without the fakesign bug cannot install the cIOS to use USB2:
+There is a work around for this but requires you to downgrade a certain IOS, 
+to be able to place trucha into another.
+Trucha Bug Restorer is an application in which to get IOS with the trucha bug back 
+on all Wiis (and new) with system menu up to 4.1. Usually the error codes -1017 and -2011 
+indicate that the trucha bug is required and missing.
+Make sure you understand what you are doing before using this.
+Only use it if you have an idea what the trucha bug (http://wiibrew.org/wiki/Signing_bug)
+is and why you need it).
+For more information regarding this, and the download, visit: 
+http://www.tehskeen.com/viewarticle.php?articleid=4295
+
+Once complete, Download the cIOS Installer for USB2 here:
+http://mplayer-ce.googlecode.com/files/cIOS_Installer.rar and choose IOS36 as the IOS
+in the selection screen, then Press A to install, watch it incase it fails and 
+returns to HBC, it should now install successfully.
 
 If you plan on updating make sure to install the cIOS and DVDx before updating.
 
@@ -168,6 +184,18 @@ folder.  The specifications for "loop.avi" are listed below.
 
 XVID MPEG4 Compressed AVI
 640x456 or 720x480 Resolution
+
+How to change colour of subtitles?
+
+to change colour of subs you need to add some params to your'e mplayer.conf
+e.g. with this param now subs are yellow
+ass=yes
+ass-font-scale=2.2
+ass-color=FFFF0000
+ass-font-scale to change subs size
+
+More information can be found here: 
+http://www.mplayerhq.hu/DOCS/man/en/mplayer.1.html#OSD/SUBTITLE%20OPTIONS
 
 Further Customization Instructions can be found on the MPlayer CE Wiki
 
@@ -335,6 +363,56 @@ default it is running via Extrems Server.
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+v0.71     
+   * Improved memory management, due to MPlayer hanging if out of memory. 
+     Also new feature added if you press 1 twice it will show mem 1 and mem 2 info.
+   * Driver improved with autodetection error, on error the device is reinitied  
+     and read is retried, meaning it is very hard to hang the device. 
+   * EHCI Improvements have been made and now more usb devices are supported. 
+   * Now you don't need the fat partition to be primary or active, patch in libfat 
+     and now libfat searches in all partitions to find a fat partition. 
+   * If test.dol http://mplayer-ce.googlecode.com/files/USB%20Test.rar say usb device is 
+     100% compatible and a device is not working in the last MPlayer revision. Then  
+     there isn't a fat partition on the device, as a lot of people use ntfs instead. 
+   * Restore Points fixed, in previous release when you quit restore point was not saved,  
+     now quit or power off saves restore point and can resume properly. 
+     Delete your'e previous restore point incase it is corrupted, and check SD isn't locked.
+   * Improved smb connections, will always reconnect. (so you can remove shares from pc,  
+     and re-enable them, MPlayer will reconnect, so it's a easier way to test smb if you  
+     have problems setting it up).  
+   * Improved stream initilization. 
+   * Fixed green lines at the top of screen whilst loading MPlayerCE. 
+   * Video files (which may be badly encoded) that may have unexpectedly froze at some 
+     point during playback in previous releases may playback without a possible glitch 
+     (such as that freeze/hang). 
+   * Change in MPlayer but it's only for testing usb2, now you can load a external  
+     driver from sd. If you copy the driver to sd that driver will be used instead 
+     of the internal driver, more details (drivers) will be added to google code at a  
+     later date, thanx to hermes's patch. 
+   * Finnally found/fixed the problem with network and usb2 conflicts, because the driver 
+     was using a bad device the name /dev/usb2 is good, but /dev/usb/ehc is bad  
+     Because it is used by the network driver http://wiibrew.org/wiki//dev/usb/ehc 
+     http://wiibrew.org/wiki//dev/usb/oh0 In previous releases there was a possible conflict. 
+   * Autoload implemented, so if the next file has a very similar name it will autoload it. 
+     Using a levenshtein distance of 2. So if you need to change only 1 or 2 letter/numbers  
+     then it is similar. 
+     Examples: film.part1.avi > film.part2.avi only 1 change is needed to get the same name. 
+     Also house.s01e09.avi > house.s01e10.avi works, (2 changes). 
+   * Removed the need to load fonts twice when you load a video file as the fonts have to be 
+     loaded to adjust to the film size, 2 fonts are always loaded. 1 for menu and 1 for subs.  
+     Now font for subs are loaded only if it's needed, and the font face is cached, so fonts  
+     are loaded faster, making the video file load quicker. 
+   * Improved error reading streams/files (example if you remove share from your pc then  
+     MPlayer stops film when cache has finished, now while MPlayer has cache it will try to  
+     read again, so if you enable share again then MPlayer will continue playing without any  
+     problems, only stops video file if can't read, or cache is empty. Now MPlayer is more  
+     robust on errors). If you unplug & plug usb MPlayer will stop film because usb is off  
+     and you need to remount. But if you get an error reading from usb or sd etc MPlayer  
+     will try to read again. (For example when a hd usb's motor stops due to inactivity on  
+     pause then when you press start again MPlayer will use cache and can recieve an error  
+     because motor is not ready). 
+   * Many other small fixes and code cleanup.
+
 v0.7
    * Files now first analyse, followed by cache, as cache was emptied on 
      analysing previously so now you'll see cache filling later.
@@ -360,11 +438,11 @@ v0.7
 New cIOS Installer:
 
     MPlayerCE will now detect the presence of IOS202 to decide to use DVDx or not, 
-	so people that install the cIOS202 don't need to install DVDx to use the DVD functions.
+    so people that install the cIOS202 don't need to install DVDx to use the DVD functions.
     Default DVDx install can be used if you install IOS202 now.
     The new installer is for Homebrew USB2 only, this will install IOS202 
     using base IOS60 automatically as IOS60 has improvements in wifi.
-	Now you can select the IOS to use to do the installation, 
+    Now you can select the IOS to use to do the installation, 
     so you can select a IOS with the fake sign bug.
     (The reason for DVDx not having to be installed if IOS202 is installed on the wii, 
     is that there is a patch in IOS202 that doesn't require DVDx, 
@@ -509,7 +587,8 @@ V0.1 Christmas Edition
                DJDynamite123 - Autochain Code/Experimenting & Testing
                       Ludovic Orban - Keepalive issue in samba
                          Extrems - SHOUTcast/Youtube Patches
-                            Tantric - SMB Improvements					
+                            Tantric - SMB Improvements		
+                                hax - FTP devoptab						
                               Brakken - Documentation
                                  Blue_K - loop.avi
                               
