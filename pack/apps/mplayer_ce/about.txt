@@ -1,5 +1,5 @@
    MPlayer CE
-   version v0.7 (09.07.2009)
+   version v0.71 (02.08.2009)
    
    Mplayer-CE Team
    Scip, rodries, AgentX, DJDynamite123, 
@@ -9,6 +9,6 @@
    
    MPlayer Wii port © Team Twiizers,
    used code © MPlayerWii[rOn], GeeXboX,
-   tipolosko, Ludovic Orban, DennisLKJ.
+   tipolosko, Ludovic Orban, hax, DennisLKJ.
    Background video © Blue_K
    
