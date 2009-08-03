@@ -22,7 +22,7 @@
  * Improved MPlayer support when a file unexpectedly disappears and reappears.
  * Many other small fixes and code cleanup.
  * New USB test:
-    * If http://mplayer-ce.googlecode.com/files/USB%20Test.rar says USB device is compatible but a device is not working then there is no FAT partition on the device.  Check if you are using NTFS instead.
+    * If http://mplayer-ce.googlecode.com/files/USB%20Test.rar says USB device is compatible but a device is not working then there is no FAT partition on the device.  Check if you are using NTFS or exFat instead.
 
 == 0.7 ==
 
