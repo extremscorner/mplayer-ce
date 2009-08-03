@@ -30,6 +30,8 @@ void gekko_abort(void);
 bool DVDGekkoMount();
 
 #define gettimeofday(TV, TZ) gekko_gettimeofday((TV), (TZ))
+#define _gettimeofday_r(__reent, __tp, __tzp)     gettimeofday(__tp, __tzp)
+
 #define abort(x) gekko_abort(x)
 
 void plat_init (int *argc, char **argv[]);

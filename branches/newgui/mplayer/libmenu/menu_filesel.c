@@ -366,7 +366,7 @@ static int open_dir(menu_t* menu,char* args) {
 	  }
 	  	  
 	  device[3]=mpriv->dir[3];
-	  if(!CheckSMBConnection(device)) 
+	  if(!smbCheckConnection(device)) 
 	  {
 		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Error reconnecting to %s ",device);
 		  update_osd_msg();
