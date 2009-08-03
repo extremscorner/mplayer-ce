@@ -61,7 +61,7 @@
 
 #undef abort
 
-#define MPCE_VERSION "0.71"
+#define MPCE_VERSION "0.72"
 
 extern int stream_cache_size;
   
@@ -103,6 +103,7 @@ static char *default_args[] = {
 	"-really-quiet",
 #endif	
 	"-vo","gekko","-ao","gekko",
+	"-framedrop",
 	"-menu","-menu-startup"
 }; 
 
