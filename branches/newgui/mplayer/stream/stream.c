@@ -278,7 +278,7 @@ int stream_fill_buffer(stream_t *s){
 	} 
 	s->buf_len=len;
   	s->pos+=len;  	
-  	return 0; }
+  	return len; }
   s->buf_pos=0;
   s->buf_len=len;
   s->pos+=len;

@@ -518,7 +518,6 @@ static void read_cmd(menu_t* menu,int cmd) {
       if(strstr(action,"loadfile")!=NULL)
 	  {	  	
 	  	file_dir=mpriv->dir;
-	  	//mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
 	  	if(mpriv->p.current->p.next!=NULL)
 	  	{
 		  	actual_list=mpriv->p.current->p.next;

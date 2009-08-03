@@ -109,8 +109,9 @@ char *heartbeat_cmd;
 
 #ifdef CONFIG_DVBIN
 #include "stream/dvbin.h"
-#include "stream/cache2.h"
 #endif
+
+#include "stream/cache2.h"
 
 #ifdef GEKKO
 #include "osdep/plat_gekko.h"

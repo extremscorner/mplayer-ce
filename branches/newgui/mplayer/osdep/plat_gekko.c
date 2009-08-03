@@ -127,7 +127,13 @@ void gekko_gettimeofday(struct timeval *tv, void *tz) {
 	tv->tv_sec = ticks_to_secs(t);
 	tv->tv_usec = ticks_to_microsecs(t);
 } 
- 
+
+/*
+void gettimeofday(struct timeval *tv, void *tz)
+{
+	gekko_gettimeofday(tv, tz);
+} 
+ */
 void gekko_abort(void) {
 	//printf("abort() called\n");
 	plat_deinit(-1);

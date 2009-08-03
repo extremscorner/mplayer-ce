@@ -94,7 +94,7 @@
 #ifdef CONFIG_LIBNEMESI
         {"rtsp-stream-over-sctp", &rtsp_transport_sctp, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 #else
-        {"rtsp-stream-over-sctp", "-rtsp-stream-over-sctp requires the", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
+        {"rtsp-stream-over-sctp", "-rtsp-stream-over-sctp requires the \"libnemesi\" library\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 #endif /* CONFIG_LIBNEMESI */
 #ifdef CONFIG_NETWORK
 #ifndef GEKKO
