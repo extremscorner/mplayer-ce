@@ -10,11 +10,7 @@ static bool mem2_initied=false;
 static u32 mem2_size=0;
 //u32 MALLOC_MEM2=1;  // to disable/enable sbrk.c mem2 management
 
-<<<<<<< .mine
 u32 InitMem2Manager (u32 size) 
-=======
-u32 InitMem2Manager ()
->>>>>>> .r278
 {
 	u32 level;
 	unsigned char *mem2_heap_ptr;
