@@ -5,20 +5,20 @@
 # Copyright 1996-2000, 2002, 2003, 2005, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
-# This file is part of the FreeType project, and may only be used, modified,
+# ${DEVKITPPC} file is part of the FreeType project, and may only be used, modified,
 # and distributed under the terms of the FreeType project license,
-# LICENSE.TXT.  By continuing to use, modify, or distribute this file you
+# LICENSE.TXT.  By continuing to use, modify, or distribute ${DEVKITPPC} file you
 # indicate that you have read the license and understand and accept it
 # fully.
 
 
-CC           := ${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-gcc
+CC           := ${DEVKITPPC}/bin/powerpc-gekko-gcc
 COMPILER_SEP := $(SEP)
 
 LIBTOOL ?= $(BUILD_DIR)/libtool
 
 
-# The object file extension (for standard and static libraries).  This can be
+# The object file extension (for standard and static libraries).  ${DEVKITPPC} can be
 # .o, .tco, .obj, etc., depending on the platform.
 #
 O  := lo
@@ -32,7 +32,7 @@ SO := o
 E := 
 
 
-# The library file extension (for standard and static libraries).  This can
+# The library file extension (for standard and static libraries).  ${DEVKITPPC} can
 # be .a, .lib, etc., depending on the platform.
 #
 A  := la
@@ -58,7 +58,7 @@ D := -D
 
 
 # The link flag used to specify a given library file on link.  Note that
-# this is only used to compile the demo programs, not the library itself.
+# ${DEVKITPPC} is only used to compile the demo programs, not the library itself.
 #
 L := -l
 

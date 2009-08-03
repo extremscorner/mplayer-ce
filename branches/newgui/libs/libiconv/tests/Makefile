@@ -6,7 +6,7 @@
 srcdir = .
 
 # Programs used by "make":
-CC = ${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-gcc
+CC = ${DEVKITPPC}/bin/powerpc-gekko-gcc
 CFLAGS = -mcpu=750
 CPPFLAGS = 
 LDFLAGS = 

@@ -12,7 +12,7 @@ exec_prefix = ${prefix}
 libdir = ${exec_prefix}/lib
 
 # Programs used by "make":
-CC = ${DEVKITPRO}/devkitPPC/bin/powerpc-gekko-gcc
+CC = ${DEVKITPPC}/bin/powerpc-gekko-gcc
 CFLAGS = -mcpu=750 -fvisibility=hidden
 CPPFLAGS = 
 LDFLAGS =  $(LDFLAGS_no)
