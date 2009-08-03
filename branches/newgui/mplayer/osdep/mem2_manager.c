@@ -1,4 +1,3 @@
-#include <malloc.h>
 #include <ogc/machine/asm.h>
 #include <ogc/lwp_heap.h>
 #include <ogc/system.h>
@@ -18,13 +17,13 @@ u32 InitMem2Manager (u32 size)
 	_CPU_ISR_Disable(level);
 	//size = (u32)SYS_GetArena2Hi() - (u32)SYS_GetArena2Lo() - (1024*1024);  //we reserved 1MB at end (for example for usb2), we habe about 63MB
 	//size = 16*1024*1024; //16Mb
-
+	
 	size &= ~0x1f;          //round down, because otherwise we may exceed the area
 
 	mem2_heap_ptr = (u32)SYS_GetArena2Hi()-size;
 
 	//SYS_SetArena2Lo(mem2_heap_ptr + size);
-
+	
 	SYS_SetArena2Hi(mem2_heap_ptr );
 	//SYS_SetArena2Lo(mem2_heap_ptr + size);
 	_CPU_ISR_Restore(level);
@@ -44,7 +43,7 @@ void* mem2_malloc(u32 size)
 BOOL mem2_free(void *ptr)
 {
 	if(mem2_initied) return __lwp_heap_free(&mem2_heap, ptr);
-	else
+	else 
 	{
 		free(ptr);
 		return true;
