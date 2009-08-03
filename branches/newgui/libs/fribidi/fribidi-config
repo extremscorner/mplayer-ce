@@ -75,7 +75,7 @@ if test "$echo_cflags" = "yes"; then
 fi
 
 if test "$echo_libs" = "yes"; then
-      libdirs=-L${exec_prefix}/lib
+      libdirs=-L${DEVKITPRO}/libogc/lib/wii
       echo $libdirs -lfribidi
 fi      
 
