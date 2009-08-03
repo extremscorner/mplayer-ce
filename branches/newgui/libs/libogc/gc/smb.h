@@ -50,6 +50,7 @@
 #define SMB_BAD_KEYLEN			   -6
 #define SMB_BAD_DATALEN			   -7
 #define SMB_BAD_LOGINDATA		   -8
+#define SMB_NOT_FOUND			   -9
 
 /**
 * SMB File Open Function
@@ -112,16 +113,16 @@ typedef void* SMBFILE;
  * Prototypes
  */
 
-/*** Înitialization functions to be used with stdio API ***/
+/*** Functions to be used with stdio API ***/
 bool smbInitDevice(const char* name, const char *user, const char *password, const char *share,	const char *ip);
 bool smbInit(const char *user, const char *password, const char *share,	const char *ip);
 void smbClose(const char* name);
-bool CheckSMBConnection(const char* name);
-s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn);
+bool smbCheckConnection(const char* name);
 
 /*** Session ***/
 s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const char *share, const char *IP);
 void SMB_Close(SMBCONN smbhndl);
+s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn);
 
 /*** File Find ***/
 s32 SMB_PathInfo(const char *filename, SMBDIRENTRY *sdir, SMBCONN smbhndl);
@@ -132,8 +133,8 @@ s32 SMB_FindClose(SMBCONN smbhndl);
 /*** File I/O ***/
 SMBFILE SMB_OpenFile(const char *filename, unsigned short access, unsigned short creation,SMBCONN smbhndl);
 void SMB_CloseFile(SMBFILE sfid);
-s32 SMB_ReadFile(char *buffer, int size, int offset, SMBFILE sfid);
-s32 SMB_WriteFile(const char *buffer, int size, int offset, SMBFILE sfid);
+s32 SMB_ReadFile(char *buffer, size_t size, off_t offset, SMBFILE sfid);
+s32 SMB_WriteFile(const char *buffer, size_t size, off_t offset, SMBFILE sfid);
 
 #ifdef __cplusplus
 	}
