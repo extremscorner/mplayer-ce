@@ -364,6 +364,12 @@ default it is running via Extrems Server.
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+v0.72
+   * Fix playlist bug
+   * More SMB servers detected (thanks to hax)
+   * SMB now supports user-level share security (thanks to hax)
+   * SMB now supports plain text passwords (thanks to hax)
+
 v0.71
    * Autoload implemented. If the next file has a very similar name (using a
      Levenshtein distance of 2) it will be autoloaded. 
@@ -391,7 +397,7 @@ v0.71
    * New USB test:
       - If http://mplayer-ce.googlecode.com/files/USB%20Test.rar says USB device
         is compatible but a device is not working then there is no FAT partition
-        on the device.  Check if you are using NTFS instead.
+        on the device.  Check if you are using NTFS or exFAT instead.
 
 v0.7
    * Use small cache if opening an internet stream (audio and video).
