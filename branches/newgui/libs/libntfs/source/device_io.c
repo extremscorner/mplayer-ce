@@ -23,6 +23,8 @@
 #include "config.h"
 #endif
 
+#include "device_io.h"
+
 #ifndef NO_NTFS_DEVICE_DEFAULT_IO_OPS
 
 #endif /* NO_NTFS_DEVICE_DEFAULT_IO_OPS */

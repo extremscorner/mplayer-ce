@@ -56,6 +56,7 @@
 #include "ntfs.h"
 #include "types.h"
 #include "logging.h"
+#include "device_io.h"
 #include "gekko_io.h"
 #include "device.h"
 #include "bootsect.h"
@@ -496,7 +497,45 @@ static int ntfs_device_gekko_io_ioctl(struct ntfs_device *dev, int request, void
 {
     ntfs_log_trace("dev %p, request %i, argp %p\n", dev, request, argp);
     
-    // Operation not supported, fail silently
+    // Handle the i/o control request
+    switch (request) {
+        
+        #if defined(BLKGETSIZE)
+        case BLKGETSIZE:
+            errno = EOPNOTSUPP;
+            return -1;
+        #endif
+        
+        #if defined(BLKGETSIZE64)
+        case BLKGETSIZE64:
+            errno = EOPNOTSUPP;
+            return -1;
+        #endif
+        
+        #ifdef HDIO_GETGEO
+        case HDIO_GETGEO:
+            errno = EOPNOTSUPP;
+            return -1;
+        #endif
+        
+        #ifdef BLKSSZGET
+        case BLKSSZGET:
+            errno = EOPNOTSUPP;
+            return -1;
+        #endif
+        
+        #ifdef BLKBSZSET
+        case BLKBSZSET:
+            errno = EOPNOTSUPP;
+            return -1;
+            
+        #endif
+        
+        default:
+            errno = EOPNOTSUPP;
+            return -1;
+            
+    }
     
     return 0;
 }
