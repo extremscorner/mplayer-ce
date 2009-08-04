@@ -165,15 +165,16 @@ int main(int argc, char **argv) {
                 sprintf(path, "%s:/", mounts[mountIndex].name);
                 list_dir(path);
                 
+                printf("\n\n");
                 sprintf(path, "%s:/ntfs-test", mounts[mountIndex].name);
                 struct stat st;
-                if (stat(path, &st) != 0) {
-                    printf("creating test dir \"%s\"\n", path);
-                    if (mkdir(path, S_IRWXU | S_IROTH | S_IXOTH) != 0) {
+                if(stat(path, &st)) {
+                    printf("Creating directory \"%s\"\n", path);
+                    if (mkdir(path, S_IRWXU | S_IROTH | S_IXOTH)) {
                         printf("mkdir(%s) FAILED!\n", path);
                     }
                 } else {
-                    printf("test dir \"%s\" already exists, not creating\n", path);
+                    printf("Directory \"%s\" already exists, not creating\n", path);
                 }
 
                 printf("\nPress 'HOME' to quit.\n\n");

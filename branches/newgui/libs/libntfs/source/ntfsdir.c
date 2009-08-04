@@ -55,7 +55,7 @@ int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
     if (ret)
         r->_errno = errno;
 
-    return 0;
+    return ret;
 }
 
 int ntfs_link_r (struct _reent *r, const char *existing, const char *newLink)
