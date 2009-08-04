@@ -1,0 +1,102 @@
+fribidi-char-sets-cp1256.lo fribidi-char-sets-cp1256.o:  \
+ fribidi-char-sets-cp1256.c ../lib/common.h ../config.h \
+  ../lib/fribidi-common.h ../lib/fribidi-config.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdlib.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/newlib.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/config.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/ieeefp.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stddef.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/reent.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/_types.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_types.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_default_types.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/lock.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/stdlib.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/string.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/string.h \
+  ../lib/debug.h ../lib/common.h ../lib/fribidi-types.h \
+  ../lib/fribidi-common.h ../lib/fribidi-begindecls.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/inttypes.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdint.h \
+  ../lib/fribidi-enddecls.h ../lib/fribidi-begindecls.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdio.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stdarg.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/types.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/types.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/features.h \
+  d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/stdio.h \
+  ../lib/fribidi-enddecls.h fribidi-char-sets-cp1256.h
+
+../lib/common.h:
+
+../config.h:
+
+../lib/fribidi-common.h:
+
+../lib/fribidi-config.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdlib.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/newlib.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/config.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/ieeefp.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stddef.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/reent.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/_types.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_types.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_default_types.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/lock.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/stdlib.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/string.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/string.h:
+
+../lib/debug.h:
+
+../lib/common.h:
+
+../lib/fribidi-types.h:
+
+../lib/fribidi-common.h:
+
+../lib/fribidi-begindecls.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/inttypes.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdint.h:
+
+../lib/fribidi-enddecls.h:
+
+../lib/fribidi-begindecls.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdio.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stdarg.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/types.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/types.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/features.h:
+
+d:\projects\wii\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/stdio.h:
+
+../lib/fribidi-enddecls.h:
+
+fribidi-char-sets-cp1256.h:
