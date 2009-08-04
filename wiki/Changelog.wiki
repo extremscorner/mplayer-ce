@@ -3,6 +3,13 @@
 
 = Changelog to MPlayerCE =
 
+== 0.72 ==
+
+ * Fix playlist bug
+ * More SMB servers detected (thanks to hax)
+ * SMB now supports user-level share security (thanks to hax)
+ * SMB now supports plain text passwords (thanks to hax)
+
 == 0.71 ==
 
  * Autoload implemented. If the next file has a very similar name (using a Levenshtein distance of 2) it will be autoloaded. For example:
