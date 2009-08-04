@@ -45,7 +45,7 @@ extern "C" {
 #define NTFS_FORCE                  NTFS_RECOVER & NTFS_IGNORE_HIBERFILE
 
 /**
- * ntfs_mount - NTFS mount descriptor
+ * ntfs_md - NTFS mount descriptor
  */
 typedef struct _ntfs_md {
     char name[32];

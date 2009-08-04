@@ -37,6 +37,9 @@
 #include "ntfsinternal.h"
 #include "ntfsfile.h"
 #include "ntfsdir.h"
+#include "gekko_io.h"
+
+#define MAX_MOUNT_NAMES 99
 
 // NTFS device driver devoptab
 static const devoptab_t devops_ntfs = {
@@ -72,7 +75,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     sec_t partition_starts[32];
     int partition_count = 0;
     int i;
-    u8 *ptr;
+    u8 *ptr = NULL;
     
     union {
         u8 buffer[SECTOR_SIZE];
@@ -151,7 +154,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
 
     // Shutdown the device
     interface->shutdown();
-
+    
     // Return the found partitions (if any)
     if (partition_count > 0) {
         *partitions = (sec_t*)ntfs_alloc(sizeof(sec_t) * partition_count);
@@ -170,8 +173,8 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
     ntfs_md mount;
     int mount_count = 0;
     int partition_count;
-    sec_t *partitions;
-    const INTERFACE_ID *disc;
+    sec_t *partitions = NULL;
+    const INTERFACE_ID *disc = NULL;
     int i, j, k;
 
     // Find and mount all NTFS partitions on all known devices
@@ -179,19 +182,23 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
         disc = &ntfs_disc_interfaces[i];
         partition_count = ntfsFindPartitions(disc->interface, &partitions);
         if (partition_count > 0 && partitions) {
-            for (j = 0; j < partition_count; j++) {
+            for (j = 0, k = 0; j < partition_count; j++) {
                 
                 // Set the partition mount details
                 memset(&mount, 0, sizeof(ntfs_md));
                 mount.interface = disc->interface;
                 mount.startSector = partitions[j];
-                
+
                 // Find the next unused mount name
-                k = 0;
-                do {
-                    sprintf(mount.name, "%s%i", disc->name, k++);
+                do {                    
+                    if (k++ > MAX_MOUNT_NAMES) {
+                        ntfs_free(partitions);
+                        errno = EADDRNOTAVAIL;
+                        return -1;
+                    }
+                    sprintf(mount.name, "%s%i", disc->name, k);
                 } while (ntfsGetDeviceOpTab(mount.name));
-                
+
                 // Mount the partition
                 if (ntfsMount(mount.name, mount.interface, mount.startSector, flags)) {
                     _mounts[mount_count] = mount;
@@ -221,7 +228,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
     ntfs_md mount;
     int mount_count = 0;
     int partition_count;
-    sec_t *partitions;
+    sec_t *partitions = NULL;
     const INTERFACE_ID *disc = NULL;
     int i, j, k;
     
@@ -230,7 +237,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
         if (ntfs_disc_interfaces[i].interface == interface) {
             disc = &ntfs_disc_interfaces[i];
             partition_count = ntfsFindPartitions(disc->interface, &partitions);
-            for (j = 0; j < partition_count; j++) {
+            for (j = 0, k = 0; j < partition_count; j++) {
                 
                 // Set the partition mount details
                 memset(&mount, 0, sizeof(ntfs_md));
@@ -238,9 +245,13 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
                 mount.startSector = partitions[j];
                 
                 // Find the next unused mount name
-                k = 0;
-                do {
-                    sprintf(mount.name, "%s%i", disc->name, k++);
+                do {                    
+                    if (k++ > MAX_MOUNT_NAMES) {
+                        ntfs_free(partitions);
+                        errno = EADDRNOTAVAIL;
+                        return -1;
+                    }
+                    sprintf(mount.name, "%s%i", disc->name, k);
                 } while (ntfsGetDeviceOpTab(mount.name));
                 
                 // Mount the partition
@@ -277,13 +288,12 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
 
 bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 flags)
 {
-    devoptab_t* devops;
-    char* devname;
-    struct ntfs_device* dev;
-    ntfs_volume* vol;
-    gekko_fd *fd;
-    u32 mount_flags = 0;
-    
+    devoptab_t *devops = NULL;
+    char *devname = NULL;
+    struct ntfs_device *dev = NULL;
+    ntfs_vd *vd = NULL;
+    gekko_fd *fd = NULL;
+
     // Set the local environment
     ntfs_set_locale();
     ntfs_log_set_handler(ntfs_log_handler_stderr);
@@ -310,7 +320,7 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     // Use the space allocated at the end of the devoptab for storing the device name
     devname = (char*)(devops + 1);
     
-    // Allocate the device driver settings
+    // Allocate the device driver descriptor
     fd = (gekko_fd*)ntfs_alloc(sizeof(gekko_fd));
     if (!fd) {
         ntfs_free(devops);
@@ -318,15 +328,11 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         return false;
     }
     
-    // Setup the device driver settings
+    // Setup the device driver descriptor
     fd->interface = interface;
     fd->startSector = startSector;
-    fd->uid = 0;
-    fd->gid = 0;
-    fd->fmask = 0;
-    fd->dmask = 0;
-    fd->atime = ((flags & NTFS_UPDATE_ACCESS_TIMES) ? ATIME_ENABLED : ATIME_DISABLED);
-    fd->showSystemFiles = (flags & NTFS_SHOW_SYSTEM_FILES);
+    fd->sectorSize = 0;
+    fd->sectorCount = 0;
     
     // Allocate the device driver
     dev = ntfs_device_alloc(name, 0, &ntfs_device_gekko_io_ops, fd);
@@ -336,19 +342,40 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         return false;
     }
     
+    // Allocate the volume descriptor
+    vd = (ntfs_vd*)ntfs_alloc(sizeof(ntfs_vd));
+    if (!vd) {
+        ntfs_device_free(dev);
+        ntfs_free(fd);
+        ntfs_free(devops);
+        errno = ENOMEM;
+        return false;
+    }
+    
+    // Setup the volume descriptor
+    vd->id = interface->ioType;
+    vd->flags = 0;
+    vd->uid = 0;
+    vd->gid = 0;
+    vd->fmask = 0;
+    vd->dmask = 0;
+    vd->atime = ((flags & NTFS_UPDATE_ACCESS_TIMES) ? ATIME_ENABLED : ATIME_DISABLED);
+    vd->showSystemFiles = (flags & NTFS_SHOW_SYSTEM_FILES);
+    vd->cwd_ni = NULL;
+    
     // Build the mount flags
     if (!(interface->features & FEATURE_MEDIUM_CANWRITE))
-        mount_flags |= MS_RDONLY;
+        vd->flags |= MS_RDONLY;
     if ((interface->features & FEATURE_MEDIUM_CANREAD) && (interface->features & FEATURE_MEDIUM_CANWRITE))
-        mount_flags |= MS_EXCLUSIVE;
+        vd->flags |= MS_EXCLUSIVE;
     if (flags & NTFS_RECOVER)
-        mount_flags |= MS_RECOVER;
+        vd->flags |= MS_RECOVER;
     if (flags & NTFS_IGNORE_HIBERFILE)
-        mount_flags |= MS_IGNORE_HIBERFILE;
+        vd->flags |= MS_IGNORE_HIBERFILE;
     
     // Mount the device
-    vol = ntfs_device_mount(dev, mount_flags);
-    if (!vol) {
+    vd->vol = ntfs_device_mount(dev, vd->flags);
+    if (!vd->vol) {
         switch(ntfs_volume_error(errno)) {
             case NTFS_VOLUME_NOT_NTFS: errno = EINVALPART; break;
             case NTFS_VOLUME_CORRUPT: errno = EINVALPART; break;
@@ -356,17 +383,21 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
             case NTFS_VOLUME_UNCLEAN_UNMOUNT: errno = EDIRTY; break;
             default: errno = EINVAL; break;
         }
+        ntfs_free(vd);
         ntfs_device_free(dev);
         ntfs_free(fd);
         ntfs_free(devops);
         return false;
     }
     
+    // Initialise the volume lock
+    LWP_MutexInit(&vd->lock, false);
+    
     // Add the device to the devoptab table
     memcpy(devops, &devops_ntfs, sizeof(devops_ntfs));
     strcpy(devname, name);
     devops->name = devname;
-    devops->deviceData = vol;
+    devops->deviceData = vd;
     AddDevice(devops);
     
     return true;
@@ -374,8 +405,8 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
 
 void ntfsUnmount (const char *name, bool force)
 {
-    devoptab_t* devops;
-    ntfs_volume* vol;
+    devoptab_t *devops = NULL;
+    ntfs_vd *vd = NULL;
     
     // Get the device for this mount
     devops = (devoptab_t*)ntfsGetDeviceOpTab(name);
@@ -389,10 +420,21 @@ void ntfsUnmount (const char *name, bool force)
     // Remove the device from the devoptab table
     RemoveDevice(name);
     
-    // Unmount the device
-    vol = (ntfs_volume*)devops->deviceData;
-    if (vol) {
-        ntfs_umount(vol, force);
+    // Get the devices volume descriptor
+    vd = (ntfs_vd*)devops->deviceData;
+    if (vd) {
+        
+        // Deinitialise the volume lock
+        LWP_MutexDestroy(vd->lock);
+        
+        // Close the volumes current directory (if any)
+        if (vd->cwd_ni) 
+            ntfs_inode_close(vd->cwd_ni);
+        
+        // Unmount and free the volume
+        ntfs_umount(vd->vol, force);
+        ntfs_free(vd);
+        
     }
     
     // Free the devoptab for the device
@@ -402,8 +444,8 @@ void ntfsUnmount (const char *name, bool force)
 
 const char *ntfsGetVolumeName (const char *name)
 {
-    devoptab_t* devops;
-    ntfs_volume* vol;
+    devoptab_t *devops = NULL;
+    ntfs_vd *vd = NULL;
 
     // Get the device for this mount
     devops = (devoptab_t*)ntfsGetDeviceOpTab(name);
@@ -418,22 +460,22 @@ const char *ntfsGetVolumeName (const char *name)
         return NULL;
     }
 
-    // Get the devices NTFS volume
-    vol = (ntfs_volume*)devops->deviceData;
-    if (!vol) {
+    // Get the devices volume descriptor
+    vd = (ntfs_vd*)devops->deviceData;
+    if (!vd) {
         errno = ENODEV;
         return NULL;
     }
 
-    return vol->vol_name;
+    return vd->vol->vol_name;
 }
 
 bool ntfsSetVolumeName (const char *name, const char *volumeName)
 {
-    devoptab_t* devops;
-    ntfs_volume* vol;
-    ntfs_attr_search_ctx *ctx;
-    ATTR_RECORD *attr;
+    devoptab_t *devops = NULL;
+    ntfs_vd *vd = NULL;
+    ntfs_attr_search_ctx *ctx = NULL;
+    ATTR_RECORD *attr = NULL;
     ntfschar *label = NULL;
     int label_len;
     
@@ -450,15 +492,15 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
         return false;
     }
 
-    // Get the devices NTFS volume
-    vol = (ntfs_volume*)devops->deviceData;
-    if (!vol) {
+    // Get the devices volume descriptor
+    vd = (ntfs_vd*)devops->deviceData;
+    if (!vd) {
         errno = ENODEV;
         return false;
     }
     
     // Get the volumes attribute search context
-    ctx = ntfs_attr_get_search_ctx(vol->vol_ni, NULL);
+    ctx = ntfs_attr_get_search_ctx(vd->vol->vol_ni, NULL);
     if (!ctx) {
         return false;
     }
@@ -494,7 +536,7 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
     }
     
     // Sync the volume node
-    if (ntfs_inode_sync(vol->vol_ni)) {
+    if (ntfs_inode_sync(vd->vol->vol_ni)) {
         ntfs_free(label);
         return false;
     }
@@ -512,16 +554,17 @@ const devoptab_t *ntfsDeviceOpTab (void)
 
 const devoptab_t *ntfsGetDeviceOpTab (const char *name)
 {
-    const devoptab_t *devoptab;
+    const devoptab_t *devoptab = NULL;
     int i;
     
-    // Search the devoptab table for the specified file name/path
-    for(i = 0; devoptab_list[i] != NULL && devoptab_list[i]->name != NULL; i++) {
+    // Search the devoptab table for the specified device name
+    // TODO: FIX THIS SO THAT IT DOESN'T CODE DUMP!!!
+    for (i = 0; devoptab_list[i] != NULL && devoptab_list[i]->name != NULL; i++) {
         devoptab = devoptab_list[i];
-        if(strncmp(devoptab->name, name, strlen(devoptab->name)) == 0) {
+        if (strncmp(name, devoptab->name, strlen(devoptab->name)) == 0) {
             return devoptab;
         }
     }
-    
+
     return NULL;
 }

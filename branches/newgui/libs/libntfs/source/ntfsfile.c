@@ -29,6 +29,9 @@
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
@@ -40,61 +43,97 @@
 #include "ntfsfile.h"
 
 #define STATE(x)    ((ntfs_file_state*)x)
-#define DEV_FD(x)   ((gekko_fd*)(x)->dev->d_private)
 
 int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags, int mode)
 {
-    printf("ntfs_open_r\n");
+    ntfs_log_trace("fileStruct %p, path %s, flags %i, mode %i\n", fileStruct, path, flags, mode);
     
     ntfs_file_state* file = STATE(fileStruct);
     
-    // Get the volume for this path
-    file->vol = ntfsGetVolumeFromPath(path);
-    if (!file->vol) {
+    // Get the volume descriptor for this path
+    file->vd = ntfsGetVolume(path);
+    if (!file->vd) {
         r->_errno = ENODEV;
         return -1;
     }
-    
-    // Move the path pointer to the start of the actual path
-    if (strchr(path, ':') != NULL) {
-        path = strchr(path, ':') + 1;
-    }
-    if (strchr(path, ':') != NULL) {
-        r->_errno = EINVAL;
-        return -1;
-    }
-    
+
     // Lock
-    ntfsLock(DEV_FD(file->vol));
+    ntfsLock(file->vd);
     
-    // Find the file
-    file->ni = ntfs_pathname_to_inode(file->vol, NULL, path);
-    if (!file->ni) {
-        ntfsUnlock(DEV_FD(file->vol));
-        r->_errno = ENOENT;
+    // Determine which mode the file is opened for
+    file->flags = flags;
+    if ((flags & 0x03) == O_RDONLY) {
+        file->read = true;
+        file->write = false;
+        file->append = false;
+    } else if ((flags & 0x03) == O_WRONLY) {
+        file->read = false;
+        file->write = true;
+        file->append = (flags & O_APPEND);
+    } else if ((flags & 0x03) == O_RDWR) {
+        file->read = true;
+        file->write = true;
+        file->append = (flags & O_APPEND);
+    } else {
+        r->_errno = EACCES;
+        ntfsUnlock(file->vd);
         return -1;
+    }
+    
+    // Try and find the file and (if found) ensure that it is not a directory
+    file->ni = ntfsOpenEntry(file->vd, path);
+    if (file->ni && (file->ni->mrec->flags & MFT_RECORD_IS_DIRECTORY)) {
+        ntfsCloseEntry(file->vd, file->ni);
+        ntfsUnlock(file->vd);
+        r->_errno = EISDIR;
+        return -1;
+    }
+    
+    // Are we creating this file?
+    if (flags & O_CREAT) {
+        
+        // The file SHOULD NOT exist if we are creating it
+        if (file->ni && (flags & O_EXCL)) {
+            ntfsCloseEntry(file->vd, file->ni);
+            ntfsUnlock(file->vd);
+            r->_errno = EEXIST;
+            return -1;
+        }
+        
+        //...
+        
+    // Else we must be opening it
+    } else {
+       
+        // The file SHOULD exist if we are creating it
+        if (!file->ni) {
+            ntfsUnlock(file->vd);
+            r->_errno = ENOENT;
+            return -1;
+        }
+        
     }
     
     // Unlock
-    ntfsUnlock(DEV_FD(file->vol));
+    ntfsUnlock(file->vd);
     
     return (int)fileStruct;
 }
 
 int ntfs_close_r (struct _reent *r, int fd)
 {
-    printf("ntfs_close_r\n");
+    ntfs_log_trace("fd %p\n", fd);
     
     ntfs_file_state* file = STATE(fd);
     
     // Sanity check
-    if (!file->vol) {
+    if (!file->vd) {
         r->_errno = EBADF;
         return -1;
     }
     
     // Lock
-    ntfsLock(DEV_FD(file->vol));
+    ntfsLock(file->vd);
     
     // Close the file data attribute (if open)
     if (file->data_na)
@@ -102,22 +141,28 @@ int ntfs_close_r (struct _reent *r, int fd)
     
     // Close the file (if open)
     if (file->ni)
-        ntfs_inode_close(file->ni);
+        ntfsCloseEntry(file->vd, file->ni);
     
     // Reset the file state
     file->ni = NULL;
     file->data_na = NULL;
-    file->mode = 0;
+    file->flags = 0;
+    file->read = false;
+    file->write = false;
+    file->append = false;
+    file->pos = 0;
+    file->len = 0;
     
     // Unlock
-    ntfsUnlock(DEV_FD(file->vol));
+    ntfsUnlock(file->vd);
     
     return 0;
 }
 
-ssize_t ntfs_write_r (struct _reent *r,int fd, const char *ptr, size_t len)
+ssize_t ntfs_write_r (struct _reent *r, int fd, const char *ptr, size_t len)
 {
-    printf("ntfs_write_r\n");
+    ntfs_log_trace("fd %p, ptr %p, len %Li\n", fd, ptr, len);
+    
     ssize_t written = 0;
     
     //...
@@ -127,7 +172,8 @@ ssize_t ntfs_write_r (struct _reent *r,int fd, const char *ptr, size_t len)
 
 ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
 {
-    printf("ntfs_read_r\n");
+    ntfs_log_trace("fd %p, ptr %p, len %Li\n", fd, ptr, len);
+    
     ssize_t read = 0;
     
     //...
@@ -137,7 +183,8 @@ ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
 
 off_t ntfs_seek_r (struct _reent *r, int fd, off_t pos, int dir)
 {
-    printf("ntfs_seek_r\n");
+    ntfs_log_trace("fd %p, pos %Li, dir %i\n", fd, pos, dir);
+    
     off_t position = 0;
     
     //...
@@ -147,7 +194,8 @@ off_t ntfs_seek_r (struct _reent *r, int fd, off_t pos, int dir)
 
 int ntfs_fstat_r (struct _reent *r, int fd, struct stat *st)
 {
-    printf("ntfs_fstat_r\n");
+    ntfs_log_trace("fd %p\n", fd);
+    
     //...
     
     return 0;
@@ -155,7 +203,8 @@ int ntfs_fstat_r (struct _reent *r, int fd, struct stat *st)
 
 int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
 {
-    printf("ntfs_ftruncate_r\n");
+    ntfs_log_trace("fd %p, len %Li\n", fd, len);
+    
     //...
     
     return 0;
@@ -163,7 +212,8 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
 
 int ntfs_fsync_r (struct _reent *r, int fd)
 {
-    printf("ntfs_fsync_r\n");
+    ntfs_log_trace("fd %p\n", fd);
+    
     //...
     
     return 0;

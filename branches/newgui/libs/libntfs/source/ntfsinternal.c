@@ -35,8 +35,6 @@
 
 #include "ntfsinternal.h"
 
-#define DEV_FD(x) ((gekko_fd*)(x)->dev->d_private)
-
 #if defined(__wii__)
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
@@ -61,60 +59,75 @@ const INTERFACE_ID ntfs_disc_interfaces[] = {
 
 #endif
 
-ntfs_volume *ntfsGetVolumeFromPath (const char *path)
+const char *ntfsRealPath (const char *path)
+{    
+    // Move the path pointer to the start of the actual path
+    if (strchr(path, ':') != NULL) {
+        path = strchr(path, ':') + 1;
+    }
+    if (strchr(path, ':') != NULL) {
+        return NULL;
+    }
+    
+    return path;
+}
+
+ntfs_vd *ntfsGetVolume (const char *path)
 {
-    // Get the volume from the paths associated devoptab (if possible)
+    // Get the volume descriptor from the paths associated devoptab (if possible)
     const devoptab_t *devops_ntfs = ntfsDeviceOpTab();
     const devoptab_t *devops = ntfsGetDeviceOpTab(path);
     if (devops && devops_ntfs && (devops->open_r == devops_ntfs->open_r))
-        return (ntfs_volume*)devops->deviceData;
+        return (ntfs_vd*)devops->deviceData;
     
     return NULL;
 }
 
-int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int outs_len)
+ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path)
 {
-    int len = 0;
-    int i;
-
-    // Convert the unicode string to our current local
-    len = ntfs_ucstombs(ins, ins_len, outs, outs_len); 
-    if (len == -1 && errno == EILSEQ) {
-        
-        // The string could not be converted to the current local,
-        // do it manually by replacing non-ASCII characters with underscores
-        if (!*outs || outs_len >= ins_len) {
-            if (!*outs) {
-                *outs = ntfs_alloc(ins_len + 1);
-                if (!*outs) {
-                    errno = ENOMEM;
-                    return -1;
-                }
-            }
-            for (i = 0; i < ins_len; i++) {
-                ntfschar uc = le16_to_cpu(ins[i]);
-                if (uc > 0xff)
-                    uc = (ntfschar)'_';
-                *outs[i] = (char)uc;
-            }
-            *outs[ins_len] = (ntfschar)'\0';
-            len = ins_len;
-        }
-        
+    ntfs_inode *ni = NULL;
+    
+    // Sanity check
+    if (!vd) {
+        errno = ENODEV;
+        return NULL;
+    }
+    
+    // Get the actual path of the entry
+    path = ntfsRealPath(path);
+    if (!path) {
+        errno = EINVAL;
+        return NULL;
     }
 
-    return len;
+    // Find the entry taking into account our current directory (if any)
+    if (path[0] == PATH_SEP)
+        if (vd->cwd_ni)
+            ni = ntfs_pathname_to_inode(vd->vol, vd->cwd_ni, path++);
+        else
+            ni = ntfs_pathname_to_inode(vd->vol, NULL, path++);
+    else
+        ni = ntfs_pathname_to_inode(vd->vol, NULL, path);
+    
+    return ni;
 }
 
-int ntfsLocalToUnicode(const char *ins, ntfschar **outs)
+void ntfsCloseEntry (ntfs_vd *vd, ntfs_inode *ni)
 {
-    // Convert the local string to unicode
-    return ntfs_mbstoucs(ins, outs);
+    // Sanity check
+    if (!vd) {
+        errno = ENODEV;
+        return;
+    }
+    
+    // Close the entry
+    ntfs_inode_close(ni);
+    
+    return;
 }
 
-int ntfsCreate (const char *path, dev_t type, dev_t dev, const char *target)
+int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target)
 {
-    ntfs_volume *vol = NULL;
     ntfs_inode *dir_ni = NULL, *ni = NULL;
     char *dir = NULL;
     char *name = NULL;
@@ -122,32 +135,22 @@ int ntfsCreate (const char *path, dev_t type, dev_t dev, const char *target)
     int uname_len, utarget_len;
     int res = 0;
     
-    // Get the volume for this path
-    vol = ntfsGetVolumeFromPath(path);
-    if (!vol) {
+    // Sanity check
+    if (!vd) {
         errno = ENODEV;
         return -1;
     }
     
     // You cannot link between devices
     if(target) {
-        if(vol != ntfsGetVolumeFromPath(target)) {
+        if(vd != ntfsGetVolume(target)) {
             errno = EXDEV;
             return -1;
         }
     }
 
-    // Move the path pointer to the start of the actual path
-    if (strchr(path, ':') != NULL) {
-        path = strchr(path, ':') + 1;
-    }
-    if (strchr(path, ':') != NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-    
     // Lock
-    ntfsLock(DEV_FD(vol));
+    ntfsLock(vd);
     
     // Copy the path
     dir = strdup(path);
@@ -175,7 +178,7 @@ int ntfsCreate (const char *path, dev_t type, dev_t dev, const char *target)
     }
     
     // Open the entries parent directory
-    dir_ni = ntfs_pathname_to_inode(vol, NULL, dir);
+    dir_ni = ntfsOpenEntry(vd, dir);
     if (!dir_ni) {
         goto cleanup;
         res = -1;
@@ -211,8 +214,8 @@ int ntfsCreate (const char *path, dev_t type, dev_t dev, const char *target)
 
     // If the entry was created, close it and update its parent directories times
     if (ni) {
-        ntfs_inode_close(ni);
-        ntfsUpdateTimes(dir_ni, NTFS_UPDATE_MCTIME);
+        ntfsCloseEntry(vd, ni);
+        ntfsUpdateTimes(vd, dir_ni, NTFS_UPDATE_MCTIME);
     } else {
         res = -1;
     }
@@ -220,7 +223,7 @@ int ntfsCreate (const char *path, dev_t type, dev_t dev, const char *target)
 cleanup:
 
     if(dir_ni)
-        ntfs_inode_close(dir_ni);
+        ntfsCloseEntry(vd, dir_ni);
         
     if(utarget)
         ntfs_free(utarget);
@@ -232,14 +235,13 @@ cleanup:
         ntfs_free(dir);
     
     // Unlock
-    ntfsUnlock(DEV_FD(vol));
+    ntfsUnlock(vd);
     
     return res;
 }
 
-int ntfsLink (const char *old_path, const char *new_path)
+int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path)
 {
-    ntfs_volume *vol = NULL;
     ntfs_inode *dir_ni = NULL, *ni = NULL;
     char *dir = NULL;
     char *name = NULL;
@@ -247,37 +249,20 @@ int ntfsLink (const char *old_path, const char *new_path)
     int uname_len;
     int res = 0;
     
-    // Get the volume for this path
-    vol = ntfsGetVolumeFromPath(old_path);
-    if (!vol) {
+    // Sanity check
+    if (!vd) {
         errno = ENODEV;
         return -1;
     }
     
     // You cannot link between devices
-    if(vol != ntfsGetVolumeFromPath(new_path)) {
+    if(vd != ntfsGetVolume(new_path)) {
         errno = EXDEV;
         return -1;
     }
-    
-    // Move the path pointers to the start of the actual path
-    if (strchr(old_path, ':') != NULL) {
-        old_path = strchr(old_path, ':') + 1;
-    }
-    if (strchr(new_path, ':') != NULL) {
-        new_path = strchr(new_path, ':') + 1;
-    }
-    if (strchr(old_path, ':') != NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-    if (strchr(new_path, ':') != NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-    
+
     // Lock
-    ntfsLock(DEV_FD(vol));
+    ntfsLock(vd);
     
     // Copy the destination path
     dir = strdup(new_path);
@@ -305,7 +290,7 @@ int ntfsLink (const char *old_path, const char *new_path)
     }
     
     // Find the entry
-    ni = ntfs_pathname_to_inode(vol, NULL, old_path);
+    ni = ntfsOpenEntry(vd, old_path);
     if (!ni) {
         errno = ENOENT;
         res = -1;
@@ -313,7 +298,7 @@ int ntfsLink (const char *old_path, const char *new_path)
     }
     
     // Open the entries new parent directory
-    dir_ni = ntfs_pathname_to_inode(vol, NULL, dir);
+    dir_ni = ntfsOpenEntry(vd, dir);
     if (!dir_ni) {
         errno = ENOENT;
         res = -1;
@@ -327,16 +312,16 @@ int ntfsLink (const char *old_path, const char *new_path)
     }
     
     // Update entry times
-    ntfsUpdateTimes(ni, NTFS_UPDATE_CTIME);
-    ntfsUpdateTimes(dir_ni, NTFS_UPDATE_MCTIME);
+    ntfsUpdateTimes(vd, ni, NTFS_UPDATE_CTIME);
+    ntfsUpdateTimes(vd, dir_ni, NTFS_UPDATE_MCTIME);
     
 cleanup:
     
     if(dir_ni)
-        ntfs_inode_close(dir_ni);
+        ntfsCloseEntry(vd, dir_ni);
 
     if(ni)
-        ntfs_inode_close(ni);
+        ntfsCloseEntry(vd, ni);
     
     if(uname)
         ntfs_free(uname);
@@ -345,14 +330,13 @@ cleanup:
         ntfs_free(dir);
     
     // Unlock
-    ntfsUnlock(DEV_FD(vol));
+    ntfsUnlock(vd);
     
     return res;
 }
 
-int ntfsUnlink (const char *path)
+int ntfsUnlink (ntfs_vd *vd, const char *path)
 {
-    ntfs_volume *vol = NULL;
     ntfs_inode *dir_ni = NULL, *ni = NULL;
     char *dir = NULL;
     char *name = NULL;
@@ -360,24 +344,14 @@ int ntfsUnlink (const char *path)
     int uname_len;
     int res = 0;
     
-    // Get the volume for this path
-    vol = ntfsGetVolumeFromPath(path);
-    if (!vol) {
+    // Sanity check
+    if (!vd) {
         errno = ENODEV;
         return -1;
     }
     
-    // Move the path pointer to the start of the actual path
-    if (strchr(path, ':') != NULL) {
-        path = strchr(path, ':') + 1;
-    }
-    if (strchr(path, ':') != NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-    
     // Lock
-    ntfsLock(DEV_FD(vol));
+    ntfsLock(vd);
     
     // Copy the path
     dir = strdup(path);
@@ -405,7 +379,7 @@ int ntfsUnlink (const char *path)
     }
     
     // Find the entry
-    ni = ntfs_pathname_to_inode(vol, NULL, path);
+    ni = ntfsOpenEntry(vd, path);
     if (!ni) {
         errno = ENOENT;
         res = -1;
@@ -413,7 +387,7 @@ int ntfsUnlink (const char *path)
     }
     
     // Open the entries parent directory
-    dir_ni = ntfs_pathname_to_inode(vol, NULL, dir);
+    dir_ni = ntfsOpenEntry(vd, dir);
     if (!dir_ni) {
         errno = ENOENT;
         res = -1;
@@ -431,10 +405,10 @@ int ntfsUnlink (const char *path)
 cleanup:
     
     if(dir_ni)
-        ntfs_inode_close(dir_ni);
+        ntfsCloseEntry(vd, dir_ni);
     
     if(ni)
-        ntfs_inode_close(ni);
+        ntfsCloseEntry(vd, ni);
     
     if(uname)
         ntfs_free(uname);
@@ -443,60 +417,41 @@ cleanup:
         ntfs_free(dir);
     
     // Unlock
-    ntfsUnlock(DEV_FD(vol));
+    ntfsUnlock(vd);
     
     return 0;
 }
 
-int ntfsStat (const char *path, struct stat *st)
+int ntfsStat (ntfs_vd *vd, const char *path, struct stat *st)
 {
-    ntfs_volume *vol = NULL;
-    gekko_fd *fd = NULL;
     ntfs_inode *ni = NULL;
     ntfs_attr *na = NULL;
     INTX_FILE *intx_file = NULL;
     int res = 0;
     
-    // Get the volume for this path
-    vol = ntfsGetVolumeFromPath(path);
-    if (!vol) {
+    // Sanity check
+    if (!vd) {
         errno = ENODEV;
         return -1;
     }
-    
-    // Get the device driver descriptor
-    fd = DEV_FD(vol);
-    if (!vol) {
-        errno = EBADF;
-        return -1;
-    }
-    
-    // Move the path pointer to the start of the actual path
-    if (strchr(path, ':') != NULL) {
-        path = strchr(path, ':') + 1;
-    }
-    if (strchr(path, ':') != NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-    
+
     // Lock
-    ntfsLock(DEV_FD(vol));
+    ntfsLock(vd);
     
     // Find the entry
-    ni = ntfs_pathname_to_inode(vol, NULL, path);
+    ni = ntfsOpenEntry(vd, path);
     if (!ni) {
         errno = ENOENT;
         res = -1;
         goto cleanup;
     }
-    
+
     // Zero out the stat buffer
     //memset(st, 0, sizeof(struct stat));
 
     // Is this entry a directory
     if (ni->mrec->flags & MFT_RECORD_IS_DIRECTORY) {
-        st->st_mode = S_IFDIR | (0777 & ~fd->dmask);
+        st->st_mode = S_IFDIR | (0777 & ~vd->dmask);
         st->st_nlink = 1;
         na = ntfs_attr_open(ni, AT_INDEX_ALLOCATION, NTFS_INDEX_I30, 4);
         if (na) {
@@ -557,20 +512,20 @@ int ntfsStat (const char *path, struct stat *st)
             }
             
         }
-        st->st_mode |= (0777 & ~fd->fmask);
+        st->st_mode |= (0777 & ~vd->fmask);
     }
     
     // Fill in the generic entry stats
-    st->st_dev = fd->interface->ioType;
-    st->st_uid = fd->uid;
-    st->st_gid = fd->gid;
+    st->st_dev = vd->id;
+    st->st_uid = vd->uid;
+    st->st_gid = vd->gid;
     st->st_ino = ni->mft_no;
     st->st_atime = ni->last_access_time;
     st->st_ctime = ni->last_mft_change_time;
     st->st_mtime = ni->last_data_change_time;
     
     // Update entry times
-    ntfsUpdateTimes(ni, NTFS_UPDATE_ATIME);
+    ntfsUpdateTimes(vd, ni, NTFS_UPDATE_ATIME);
     
 cleanup:
 
@@ -581,22 +536,20 @@ cleanup:
         ntfs_attr_close(na);
     
     if(ni)
-        ntfs_inode_close(ni);
+        ntfsCloseEntry(vd, ni);
     
     // Unlock
-    ntfsUnlock(DEV_FD(vol));
+    ntfsUnlock(vd);
     
     return res;
 }
 
-void ntfsUpdateTimes (ntfs_inode *ni, ntfs_time_update_flags mask)
+void ntfsUpdateTimes (ntfs_vd *vd, ntfs_inode *ni, ntfs_time_update_flags mask)
 {
-    gekko_fd *fd = DEV_FD(ni->vol);
-    
     // Run access time updates against the device driver settings first
-    if (fd->atime == ATIME_DISABLED)
+    if (vd->atime == ATIME_DISABLED)
         mask &= ~NTFS_UPDATE_ATIME;
-    if (fd->atime == ATIME_RELATIVE && mask == NTFS_UPDATE_ATIME &&
+    if (vd->atime == ATIME_RELATIVE && mask == NTFS_UPDATE_ATIME &&
         ni->last_access_time >= ni->last_data_change_time &&
         ni->last_access_time >= ni->last_mft_change_time)
         return;
@@ -605,4 +558,44 @@ void ntfsUpdateTimes (ntfs_inode *ni, ntfs_time_update_flags mask)
     ntfs_inode_update_times(ni, mask);
     
     return;
+}
+
+int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int outs_len)
+{
+    int len = 0;
+    int i;
+    
+    // Convert the unicode string to our current local
+    len = ntfs_ucstombs(ins, ins_len, outs, outs_len); 
+    if (len == -1 && errno == EILSEQ) {
+        
+        // The string could not be converted to the current local,
+        // do it manually by replacing non-ASCII characters with underscores
+        if (!*outs || outs_len >= ins_len) {
+            if (!*outs) {
+                *outs = ntfs_alloc(ins_len + 1);
+                if (!*outs) {
+                    errno = ENOMEM;
+                    return -1;
+                }
+            }
+            for (i = 0; i < ins_len; i++) {
+                ntfschar uc = le16_to_cpu(ins[i]);
+                if (uc > 0xff)
+                    uc = (ntfschar)'_';
+                *outs[i] = (char)uc;
+            }
+            *outs[ins_len] = (ntfschar)'\0';
+            len = ins_len;
+        }
+        
+    }
+    
+    return len;
+}
+
+int ntfsLocalToUnicode(const char *ins, ntfschar **outs)
+{
+    // Convert the local string to unicode
+    return ntfs_mbstoucs(ins, outs);
 }

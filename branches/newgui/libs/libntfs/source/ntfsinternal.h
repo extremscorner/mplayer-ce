@@ -36,11 +36,36 @@
 #include "inode.h"
 #include "attrib.h"
 #include "unistr.h"
-#include "gekko_io.h"
 
 #include <gccore.h>
 #include <ogc/disc_io.h>
 #include <sys/iosupport.h>
+
+/**
+* ntfs_atime_t - File access time state
+*/
+typedef enum {
+    ATIME_ENABLED,
+    ATIME_DISABLED,
+    ATIME_RELATIVE
+} ntfs_atime_t;
+
+/**
+ * ntfs_vd - NTFS volume descriptor
+ */
+typedef struct _ntfs_vd {
+    ntfs_volume *vol;
+    mutex_t lock;
+    s64 id;
+    u32 flags;
+    u16 uid;
+    u16 gid;
+    u16 fmask;
+    u16 dmask;
+    ntfs_atime_t atime;
+    bool showSystemFiles;
+    ntfs_inode *cwd_ni;
+} ntfs_vd;
 
 /**
  * INTERFACE_ID - Disc interface identifier
@@ -50,30 +75,34 @@ typedef struct _INTERFACE_ID {
     const DISC_INTERFACE *interface;
 } INTERFACE_ID;
 
-/* All know disc interfaces */
+/* All known disc interfaces */
 extern const INTERFACE_ID ntfs_disc_interfaces[];
 
-/* Lock gekko NTFS device driver */
-static inline void ntfsLock (gekko_fd *fd)
+/* Lock volume */
+static inline void ntfsLock (ntfs_vd *vd)
 {
-    LWP_MutexLock(fd->lock);
+    LWP_MutexLock(vd->lock);
 }
 
-/* Unlock gekko NTFS device driver */
-static inline void ntfsUnlock (gekko_fd *fd)
+/* Unlock volume */
+static inline void ntfsUnlock (ntfs_vd *vd)
 {
-    LWP_MutexUnlock(fd->lock);
+    LWP_MutexUnlock(vd->lock);
 }
 
 /* Miscellaneous helper/support routines */
-ntfs_volume *ntfsGetVolumeFromPath (const char *path);
+const char *ntfsRealPath (const char *path);
+ntfs_vd *ntfsGetVolume (const char *path);
+ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path);
+void ntfsCloseEntry (ntfs_vd *vd, ntfs_inode *ni);
+int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target);
+int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path);
+int ntfsUnlink (ntfs_vd *vd, const char *path);
+int ntfsStat (ntfs_vd *vd, const char *path, struct stat *st);
+void ntfsUpdateTimes (ntfs_vd *vd, ntfs_inode *ni, ntfs_time_update_flags mask);
+
 int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int outs_len);
 int ntfsLocalToUnicode (const char *ins, ntfschar **outs);
-int ntfsCreate (const char *path, dev_t type, dev_t dev, const char *target);
-int ntfsLink (const char *old_path, const char *new_path);
-int ntfsUnlink (const char *path);
-int ntfsStat (const char *path, struct stat *st);
-void ntfsUpdateTimes (ntfs_inode *ni, ntfs_time_update_flags mask);
 
 /* Gekko devoptab related routines */
 const devoptab_t *ntfsDeviceOpTab (void);

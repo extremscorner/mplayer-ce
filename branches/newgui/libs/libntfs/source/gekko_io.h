@@ -32,15 +32,6 @@
 #define SECTOR_SIZE     512
 
 /**
- * ntfs_atime_t - File access time state
- */
-typedef enum {
-    ATIME_ENABLED,
-    ATIME_DISABLED,
-    ATIME_RELATIVE
-} ntfs_atime_t;
-
-/**
  * gekko_fd - Gekko device driver descriptor
  */
 typedef struct _gekko_fd {
@@ -51,13 +42,6 @@ typedef struct _gekko_fd {
     s64 pos;
     s64 len;
     ino_t ino;
-    u16 uid;
-    u16 gid;
-    u16 fmask;
-    u16 dmask;
-    ntfs_atime_t atime;
-    bool showSystemFiles;
-    mutex_t lock;
 } gekko_fd;
 
 /* Forward declaration. */

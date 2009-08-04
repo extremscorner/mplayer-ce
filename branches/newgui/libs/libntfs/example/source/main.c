@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <dirent.h>
 
 #ifndef MAX_PATH
@@ -37,10 +38,11 @@
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
 
-void list_dir(const char *path)
+void list(const char *path)
 {
     DIR *pdir;
     struct dirent *pent;
+    struct stat st;
     
     // Open the directory
     pdir = opendir(path);
@@ -48,7 +50,31 @@ void list_dir(const char *path)
         
         // List the contents of the directory
         while ((pent = readdir(pdir)) != NULL) {
-            printf(" > %s\n", pent->d_name);
+            if ((strcmp(pent->d_name, ".") == 0) || (strcmp(pent->d_name, "..") == 0))
+                continue;
+            
+            // Get the entries stats
+            stat(pent->d_name, &st);
+            //if (stat(pent->d_name, &st) == -1)
+            //    continue;
+            
+            // List the entry
+            if (S_ISBLK(st.st_mode)) {
+                printf(" B %s\n", pent->d_name);
+            } else if (S_ISCHR(st.st_mode)) {
+                printf(" C %s\n", pent->d_name);
+            } else if (S_ISDIR(st.st_mode)) {
+                printf(" D %s\n", pent->d_name);
+            } else if (S_ISFIFO(st.st_mode)) {
+                printf(" P %s\n", pent->d_name);
+            } else if (S_ISREG(st.st_mode)) {
+                printf(" F %s\n", pent->d_name);
+            } else if (S_ISLNK(st.st_mode)) {
+                printf(" L %s\n", pent->d_name);
+            } else {
+                printf(" ? %s\n", pent->d_name);
+            }
+            
         }
         
         // Close the directory
@@ -58,6 +84,9 @@ void list_dir(const char *path)
         printf("opendir(%s) failure.\n", path);
     }
     
+    printf("\n");
+    
+    return;
 }
 
 //---------------------------------------------------------------------------------
@@ -115,6 +144,7 @@ int main(int argc, char **argv) {
     ntfs_md *mounts = NULL;
     int mountCount = 0;
     int mountIndex = 0;
+    char path[MAX_PATH] = {0};
     int i;
     
     // Initialise and mount FAT devices
@@ -122,7 +152,9 @@ int main(int argc, char **argv) {
     
     // Mount all NTFS volumes on all inserted block devices
     mountCount = ntfsMountAll(&mounts, NTFS_DEFAULT | NTFS_RECOVER);
-    if (mountCount)
+    if (mountCount == -1)
+        printf("Error whilst mounting devices.\n");
+    else if (mountCount > 0)
         printf("%i NTFS volumes(s) found!\n\n", mountCount);
     else
         printf("No NTFS volumes were found.\n");
@@ -160,12 +192,14 @@ int main(int argc, char **argv) {
             if (pressed & WPAD_BUTTON_A) {
                 printf("\n\n");
                 
-                // Move to the root directory of the volume and enumerate its contents
-                char path[128];
-                sprintf(path, "%s:/", mounts[mountIndex].name);
-                list_dir(path);
+                // Move to the volumes root directory
+                strcpy(path, mounts[mountIndex].name);
+                strcat(path, ":/");
+                //chdir(path);
                 
-                printf("\n\n");
+                // Enumerate the volumes contents
+                list(path);
+                
                 sprintf(path, "%s:/ntfs-test", mounts[mountIndex].name);
                 struct stat st;
                 if(stat(path, &st)) {
@@ -177,6 +211,15 @@ int main(int argc, char **argv) {
                     printf("Directory \"%s\" already exists, not creating\n", path);
                 }
 
+                strcat(path, "/results.txt");
+                FILE *f = fopen(path, "w");
+                if (f) {
+                    fputs("If you are reading this then the test was successful!", f);
+                    fclose(f);
+                } else {
+                    printf("fopen(%s) FAILED!\n", path);
+                }
+                
                 printf("\nPress 'HOME' to quit.\n\n");
                 
                 listed = true;

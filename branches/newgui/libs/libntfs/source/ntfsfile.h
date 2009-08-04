@@ -33,16 +33,21 @@
  * ntfs_file_state - File state
  */
 typedef struct _ntfs_file {
-    ntfs_volume *vol;
+    ntfs_vd *vd;
     ntfs_inode *ni;
     ntfs_attr *data_na;
-    int mode;
+    int flags;
+    bool read;
+    bool write;
+    bool append;
+    s64 pos;
+    s64 len;
 } ntfs_file_state;
 
 /* Gekko devoptab file routines for NTFS-based devices */
 extern int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags, int mode);
 extern int ntfs_close_r (struct _reent *r, int fd);
-extern ssize_t ntfs_write_r (struct _reent *r,int fd, const char *ptr, size_t len);
+extern ssize_t ntfs_write_r (struct _reent *r, int fd, const char *ptr, size_t len);
 extern ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len);
 extern off_t ntfs_seek_r (struct _reent *r, int fd, off_t pos, int dir);
 extern int ntfs_fstat_r (struct _reent *r, int fd, struct stat *st);

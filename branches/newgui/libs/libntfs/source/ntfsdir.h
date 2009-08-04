@@ -29,7 +29,7 @@
  * ntfs_dir_state - Director state
  */
 typedef struct _ntfs_dir_state {
-    ntfs_volume *vol;
+    ntfs_vd *vd;
     ntfs_inode *ni;
     s64 position;
     char *current;
