@@ -96,7 +96,6 @@ static int ntfs_device_gekko_io_open(struct ntfs_device *dev, int flags)
     }
     if (!interface->isInserted()) {
         ntfs_log_perror("device media is not inserted\n");
-        interface->shutdown();
         errno = EIO;
         return -1;
     }
@@ -112,38 +111,36 @@ static int ntfs_device_gekko_io_open(struct ntfs_device *dev, int flags)
     NTFS_BOOT_SECTOR boot;
     if (interface->readSectors(fd->startSector, 1, &boot)) {
         if (!ntfs_boot_sector_is_ntfs(&boot)) {
-            interface->shutdown();
             errno = EINVALPART;
             return -1;
         }
     } else {
         ntfs_log_perror("read failure @ sector %d\n", fd->startSector);
-        interface->shutdown();
         errno = EIO;
         return -1;
     }
     
     // Parse the boot sector
+    fd->hiddenSectors = le32_to_cpu(boot.bpb.hidden_sectors);
     fd->sectorSize = le16_to_cpu(boot.bpb.bytes_per_sector);
     fd->sectorCount = sle64_to_cpu(boot.number_of_sectors);
     fd->pos = 0;
     fd->len = (fd->sectorCount * fd->sectorSize);
     fd->ino = le64_to_cpu(boot.volume_serial_number);
     
-    // If the device sector size is not 512 bytes we cannot continue,
+    // If the device sector size is not 512 bytes then we cannot continue,
     // gekko disc I/O works on the assumption that sectors are always 512 bytes long.
     // TODO: Implement support for non-512 byte sector sizes through some fancy maths!?
     if (fd->sectorSize != SECTOR_SIZE) {
         ntfs_log_error("Boot sector claims there is %i bytes per sector; expected %i\n", fd->sectorSize, SECTOR_SIZE);
-        interface->shutdown();
         errno = EIO;
         return -1;
     }
 
     // Mark the device as read-only (if required)
-    //if (flags & O_RDWR) {
-    //    NDevSetReadOnly(dev);
-    //}
+    if (flags & O_RDONLY) {
+        NDevSetReadOnly(dev);
+    }
     
     // Mark the device as open
     NDevSetBlock(dev);
@@ -185,10 +182,10 @@ static int ntfs_device_gekko_io_close(struct ntfs_device *dev)
     }
 
     // Shutdown the device interface
-    const DISC_INTERFACE* interface = fd->interface;
+    /*const DISC_INTERFACE* interface = fd->interface;
     if (interface) {
         interface->shutdown();
-    }
+    }*/
     
     // Mark the device as closed
     NDevClearBlock(dev);
@@ -477,7 +474,7 @@ static int ntfs_device_gekko_io_stat(struct ntfs_device *dev, struct stat *buf)
                   ((!NDevReadOnly(dev)) ? (S_IWUSR | S_IWGRP | S_IWOTH) : 0);
 
     // Zero out the stat buffer
-    //memset(buf, 0, sizeof(struct stat));
+    /*memset(buf, 0, sizeof(struct stat));*/
 
     // Build the device stats
     buf->st_dev = fd->interface->ioType;
@@ -497,43 +494,72 @@ static int ntfs_device_gekko_io_ioctl(struct ntfs_device *dev, int request, void
 {
     ntfs_log_trace("dev %p, request %i, argp %p\n", dev, request, argp);
     
+    // Get the device driver descriptor
+    gekko_fd *fd = DEV_FD(dev);
+    if (!fd) {
+        errno = EBADF;
+        return -1;
+    }
+    
     // Handle the i/o control request
     switch (request) {
         
+        // Get size (sectors)
         #if defined(BLKGETSIZE)
-        case BLKGETSIZE:
-            errno = EOPNOTSUPP;
-            return -1;
+        case BLKGETSIZE: {
+            *(u32*)argp = fd->sectorCount;
+            return 0;
+        }
         #endif
         
+        // Get size (bytes)
         #if defined(BLKGETSIZE64)
-        case BLKGETSIZE64:
-            errno = EOPNOTSUPP;
-            return -1;
+        case BLKGETSIZE64: {
+            *(u64*)argp = (fd->sectorCount * fd->sectorSize);
+            return 0;
+        }
         #endif
         
-        #ifdef HDIO_GETGEO
-        case HDIO_GETGEO:
-            errno = EOPNOTSUPP;
+        // Get geometry
+        #if defined(HDIO_GETGEO)
+        case HDIO_GETGEO: {
+            struct hd_geometry *geo = (struct hd_geometry*)argp;
+            geo->heads = 0;
+            geo->sectors = 0;
+            geo->cylinders = 0;
+            geo->start = fd->hiddenSectors;
             return -1;
+        }
         #endif
         
-        #ifdef BLKSSZGET
-        case BLKSSZGET:
-            errno = EOPNOTSUPP;
-            return -1;
+        // Get sector size (bytes)
+        #if defined(BLKSSZGET)
+        case BLKSSZGET: {
+            *(int*)argp = fd->sectorSize;
+            return 0;
+        }
         #endif
         
-        #ifdef BLKBSZSET
-        case BLKBSZSET:
-            errno = EOPNOTSUPP;
-            return -1;
-            
+        // Set block size (bytes)
+        #if defined(BLKBSZSET)
+        case BLKBSZSET: {
+            int sectorSize = *(int*)argp;
+            if (sectorSize != SECTOR_SIZE) {
+                ntfs_log_perror("Attempt to set sector size to an unsupported value (%i)\n", sectorSize);
+                errno = EOPNOTSUPP;
+                return -1;
+            }
+            fd->sectorSize = sectorSize;
+            return 0;
+        }
         #endif
         
-        default:
+        // Unimplemented ioctrl
+        default: {
+            ntfs_log_perror("Unimplemented ioctrl %i\n", request); 
             errno = EOPNOTSUPP;
             return -1;
+        }
             
     }
     

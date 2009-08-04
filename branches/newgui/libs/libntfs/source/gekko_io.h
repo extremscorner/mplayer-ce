@@ -37,10 +37,11 @@
 typedef struct _gekko_fd {
     const DISC_INTERFACE* interface;
     sec_t startSector;
+    sec_t hiddenSectors;
     u16 sectorSize;
-    s64 sectorCount;
-    s64 pos;
-    s64 len;
+    u64 sectorCount;
+    u64 pos;
+    u64 len;
     ino_t ino;
 } gekko_fd;
 

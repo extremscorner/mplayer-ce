@@ -70,7 +70,7 @@ static const devoptab_t devops_ntfs = {
 
 int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
 {
-    static const u64 ntfs_oem_id = cpu_to_le64(0x202020205346544eULL); /* "NTFS    " */
+    const u64 ntfs_oem_id = cpu_to_le64(0x202020205346544eULL); /* "NTFS    " */
     u8 partition_table[16 * 4];
     sec_t partition_starts[32];
     int partition_count = 0;
@@ -96,7 +96,6 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
         memcpy(partition_table, sector.buffer + 0x1BE, 16 * 4);
         ptr = partition_table;
     } else {
-        interface->shutdown();
         errno = EIO;
         return -1;
     }
@@ -117,14 +116,12 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
             int n;
             for (n = 0; n < 8; n++) {
                 if (!interface->readSectors(part_lba + next_lba2, 1, &sector)) {
-                    interface->shutdown();
                     errno = EIO;
                     return -1;
                 }
                 part_lba2 = part_lba + next_lba2 + u8array_to_u32(sector.buffer, 0x1C6) ;
                 next_lba2 = u8array_to_u32(sector.buffer, 0x1D6);
                 if(!interface->readSectors(part_lba2, 1, &sector)) {
-                    interface->shutdown();
                     errno = EIO;
                     return -1;
                 }
@@ -139,7 +136,6 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
             }
         } else {
             if (!interface->readSectors(part_lba, 1, &sector)) {
-                interface->shutdown();
                 errno = EIO;
                 return -1;
             }
@@ -153,7 +149,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     }
 
     // Shutdown the device
-    interface->shutdown();
+    /*interface->shutdown();*/
     
     // Return the found partitions (if any)
     if (partition_count > 0) {
@@ -185,7 +181,6 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
             for (j = 0, k = 0; j < partition_count; j++) {
                 
                 // Set the partition mount details
-                memset(&mount, 0, sizeof(ntfs_md));
                 mount.interface = disc->interface;
                 mount.startSector = partitions[j];
 
@@ -201,7 +196,9 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
 
                 // Mount the partition
                 if (ntfsMount(mount.name, mount.interface, mount.startSector, flags)) {
-                    _mounts[mount_count] = mount;
+                    strcpy(_mounts[mount_count].name, mount.name);
+                    _mounts[mount_count].interface = mount.interface;
+                    _mounts[mount_count].startSector = mount.startSector;
                     mount_count++;
                 }
                 
@@ -240,7 +237,6 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
             for (j = 0, k = 0; j < partition_count; j++) {
                 
                 // Set the partition mount details
-                memset(&mount, 0, sizeof(ntfs_md));
                 mount.interface = disc->interface;
                 mount.startSector = partitions[j];
                 
@@ -256,8 +252,9 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
                 
                 // Mount the partition
                 if (ntfsMount(mount.name, mount.interface, mount.startSector, flags)) {
-                    _mounts[mount_count] = mount;
-                    mount_count++;
+                    strcpy(_mounts[mount_count].name, mount.name);
+                    _mounts[mount_count].interface = mount.interface;
+                    _mounts[mount_count].startSector = mount.startSector;
                 }
                 
             }
