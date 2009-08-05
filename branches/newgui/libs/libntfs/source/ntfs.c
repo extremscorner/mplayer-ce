@@ -475,7 +475,7 @@ void ntfsUnmount (const char *name, bool force)
     // Get the devices volume descriptor
     vd = (ntfs_vd*)devops->deviceData;
     if (vd) {
-        
+
         // Deinitialise the volume lock
         LWP_MutexDestroy(vd->lock);
         

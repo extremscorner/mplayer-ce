@@ -247,8 +247,8 @@ int main(int argc, char **argv) {
 
     // Unmount all NTFS volumes and clean up
     if (mounts) {
-        for (i = 0; i < mountCount - 1; i++) {
-            ntfsUnmount(mounts[0].name, true); 
+        for (i = 0; i < mountCount; i++) {
+            ntfsUnmount(mounts[i].name, true); 
         }
         free(mounts);
     }
