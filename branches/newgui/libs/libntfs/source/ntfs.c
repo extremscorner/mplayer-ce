@@ -603,19 +603,28 @@ const devoptab_t *ntfsDeviceOpTab (void)
     return &devops_ntfs;
 }
 
-const devoptab_t *ntfsGetDeviceOpTab (const char *name)
+const devoptab_t *ntfsGetDeviceOpTab (const char *path)
 {
     const devoptab_t *devoptab = NULL;
+    char name[128];
+    char *ptr = NULL;
     int i;
     
+    // Get the device name from the path
+    strcpy(name, path);
+    ptr = strchr(name, ':');
+    if (ptr)
+        ptr = '\0';
+    
     // Search the devoptab table for the specified device name
-    // TODO: FIX THIS SO THAT IT DOESN'T CODE DUMP!!!
-    for (i = 0; devoptab_list[i] != NULL && devoptab_list[i]->name != NULL; i++) {
+    for (i = 0; i < STD_MAX; i++) {
         devoptab = devoptab_list[i];
-        if (strncmp(name, devoptab->name, strlen(devoptab->name)) == 0) {
-            return devoptab;
+        if (devoptab && devoptab->name) {
+            if (strcmp(name, devoptab->name) == 0) {
+                return devoptab;
+            }
         }
     }
-
+    
     return NULL;
 }

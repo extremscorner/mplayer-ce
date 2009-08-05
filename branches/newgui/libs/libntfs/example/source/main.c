@@ -22,7 +22,7 @@
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 
-//#include <fat.h>
+#include <fat.h>
 #include <ntfs.h>
 
 #include <stdio.h>
@@ -30,6 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
@@ -144,12 +145,12 @@ int main(int argc, char **argv) {
     int i;
     
     // Initialise and mount FAT devices
-    //fatInitDefault();
+    fatInitDefault();
 
     // Mount all NTFS volumes on all inserted block devices
     mountCount = ntfsMountAll(&mounts, NTFS_DEFAULT | NTFS_RECOVER);
     if (mountCount == -1)
-        printf("Error whilst mounting devices.\n");
+        printf("Error whilst mounting devices (%i).\n", errno);
     else if (mountCount > 0)
         printf("%i NTFS volumes(s) found!\n\n", mountCount);
     else
