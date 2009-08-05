@@ -48,41 +48,47 @@
 #define PARTITION_STATUS_BOOTABLE       0x80 /* Bootable (active) */
 
 #define PARTITION_TYPE_EMPTY            0x00 /* Empty */
-#define PARTITION_TYPE_DOS33_EXTENDED   0x06 /* DOS 3.3+ extended partition */
+#define PARTITION_TYPE_DOS33_EXTENDED   0x05 /* DOS 3.3+ extended partition */
 #define PARTITION_TYPE_NTFS             0x07 /* Windows NT NTFS */
 #define PARTITION_TYPE_WIN95_EXTENDED   0x0F /* Windows 95 extended partition, LBA-mapped*/
 
 /**
  * PRIMARY_PARTITION - Block device partition record
  */
-typedef struct _PARTITION_RECORD {
+struct _PARTITION_RECORD {
     u8 status;                          /* Partition status; see above */
     u8 chs_start[3];                    /* Cylinder-head-sector address to first block of partition */
     u8 type;                            /* Partition type; see above */
     u8 chs_end[3];                      /* Cylinder-head-sector address to last block of partition */
     u32 lba_start;                      /* Local block address to first sector of partition */
     u32 block_count;                    /* Number of blocks in partition */
-} PARTITION_RECORD;
+} __attribute__ ((packed));
+
+typedef struct _PARTITION_RECORD PARTITION_RECORD ;
 
 /**
  * MASTER_BOOT_RECORD - Block device master boot record
  */
-typedef struct _MASTER_BOOT_RECORD {
+struct _MASTER_BOOT_RECORD {
     u8 code_area[446];                  /* Code area; Normally empty */
     PARTITION_RECORD partitions[4];     /* 4 primary partitions */
     u16 signature;                      /* MBR signature; 0xAA55 */
-} MASTER_BOOT_RECORD;
+} __attribute__ ((packed));
+
+typedef struct _MASTER_BOOT_RECORD MASTER_BOOT_RECORD;
 
 /**
  * EXTENDED_PARTITION - Block device extended boot record
  */
-typedef struct _EXTENDED_BOOT_RECORD {
+struct _EXTENDED_BOOT_RECORD {
     u8 code_area[446];                  /* Normally empty */
     PARTITION_RECORD partition;         /* Primary partition */
     PARTITION_RECORD next_ebr;          /* Next extended boot record in the chain */
     u8 reserved[32];                    /* Normally empty */
     u16 signature;                      /* EBR signature; 0xAA55 */
-} EXTENDED_BOOT_RECORD;
+} __attribute__ ((packed));
+
+typedef struct _EXTENDED_BOOT_RECORD EXTENDED_BOOT_RECORD;
 
 /**
  * INTERFACE_ID - Disc interface identifier
@@ -135,10 +141,10 @@ const char *ntfsRealPath (const char *path);
 ntfs_vd *ntfsGetVolume (const char *path);
 ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path);
 void ntfsCloseEntry (ntfs_vd *vd, ntfs_inode *ni);
-int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target);
+ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target);
 int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path);
 int ntfsUnlink (ntfs_vd *vd, const char *path);
-int ntfsStat (ntfs_vd *vd, const char *path, struct stat *st);
+int ntfsStat (ntfs_vd *vd, ntfs_inode *ni, struct stat *st);
 void ntfsUpdateTimes (ntfs_vd *vd, ntfs_inode *ni, ntfs_time_update_flags mask);
 
 int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int outs_len);

@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
                 // Enumerate the volumes contents
                 list(path);
                 
-                sprintf(path, "%s:/ntfs-test", mounts[mountIndex].name);
+                sprintf(path, "%s:/test", mounts[mountIndex].name);
                 struct stat st;
                 if(stat(path, &st)) {
                     printf("Creating directory \"%s\"\n", path);
@@ -211,11 +211,22 @@ int main(int argc, char **argv) {
                     printf("Directory \"%s\" already exists, not creating\n", path);
                 }
 
-                strcat(path, "/results.txt");
-                FILE *f = fopen(path, "w");
+                printf("\n");
+                strcat(path, "/text.txt");
+                FILE *f = fopen(path, "r");
                 if (f) {
-                    fputs("If you are reading this then the test was successful!", f);
+                    char buf[1024] = {0};
+                    
+                    fseek(f, 0, SEEK_END);
+                    ssize_t size = ftell(f);
+                    printf("File Size: %d\n", size);
+                    
+                    fseek(f, 100, SEEK_SET);
+                    fread(&buf, sizeof(char), 300, f);
+                    printf("File Contents (pos: 100, len: 300):\n\n%s\n", buf);
+                    
                     fclose(f);
+                    
                 } else {
                     printf("fopen(%s) FAILED!\n", path);
                 }

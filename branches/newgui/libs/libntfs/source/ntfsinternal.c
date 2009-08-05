@@ -132,26 +132,25 @@ void ntfsCloseEntry (ntfs_vd *vd, ntfs_inode *ni)
     return;
 }
 
-int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target)
+ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target)
 {
     ntfs_inode *dir_ni = NULL, *ni = NULL;
     char *dir = NULL;
     char *name = NULL;
     ntfschar *uname = NULL, *utarget = NULL;
     int uname_len, utarget_len;
-    int res = 0;
-    
+ 
     // Sanity check
     if (!vd) {
         errno = ENODEV;
-        return -1;
+        return NULL;
     }
     
     // You cannot link between devices
     if(target) {
         if(vd != ntfsGetVolume(target)) {
             errno = EXDEV;
-            return -1;
+            return NULL;
         }
     }
 
@@ -162,7 +161,6 @@ int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char
     dir = strdup(path);
     if (!dir) {
         errno = EINVAL;
-        res = -1;
         goto cleanup;
     }
     
@@ -173,13 +171,11 @@ int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char
         uname_len = ntfsLocalToUnicode(name, &uname);
         if (uname_len < 0) {
             errno = EINVAL;
-            res = -1;
             goto cleanup;
         }
         *name = 0;
     } else {
         errno = EINVAL;
-        res = -1;
         goto cleanup;
     }
     
@@ -187,8 +183,6 @@ int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char
     dir_ni = ntfsOpenEntry(vd, dir);
     if (!dir_ni) {
         goto cleanup;
-        res = -1;
-        return -1;
     }
 
     // Create the entry
@@ -205,7 +199,6 @@ int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char
             utarget_len = ntfsLocalToUnicode(target, &utarget);
             if (utarget_len < 0) {
                 errno = EINVAL;
-                res = -1;
                 goto cleanup;
             }
             ni = ntfs_create_symlink(dir_ni, uname, uname_len,  utarget, utarget_len);
@@ -218,12 +211,9 @@ int ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char
             
     }
 
-    // If the entry was created, close it and update its parent directories times
+    // If the entry was created then update its parent directories times
     if (ni) {
-        ntfsCloseEntry(vd, ni);
         ntfsUpdateTimes(vd, dir_ni, NTFS_UPDATE_MCTIME);
-    } else {
-        res = -1;
     }
     
 cleanup:
@@ -243,7 +233,7 @@ cleanup:
     // Unlock
     ntfsUnlock(vd);
     
-    return res;
+    return ni;
 }
 
 int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path)
@@ -428,9 +418,8 @@ cleanup:
     return 0;
 }
 
-int ntfsStat (ntfs_vd *vd, const char *path, struct stat *st)
+int ntfsStat (ntfs_vd *vd, ntfs_inode *ni, struct stat *st)
 {
-    ntfs_inode *ni = NULL;
     ntfs_attr *na = NULL;
     INTX_FILE *intx_file = NULL;
     int res = 0;
@@ -441,17 +430,15 @@ int ntfsStat (ntfs_vd *vd, const char *path, struct stat *st)
         return -1;
     }
 
+    // Sanity check
+    if (!ni) {
+        errno = ENOENT;
+        return -1;
+    }
+    
     // Lock
     ntfsLock(vd);
     
-    // Find the entry
-    ni = ntfsOpenEntry(vd, path);
-    if (!ni) {
-        errno = ENOENT;
-        res = -1;
-        goto cleanup;
-    }
-
     // Zero out the stat buffer
     //memset(st, 0, sizeof(struct stat));
 
@@ -540,9 +527,6 @@ cleanup:
     
     if(na)
         ntfs_attr_close(na);
-    
-    if(ni)
-        ntfsCloseEntry(vd, ni);
     
     // Unlock
     ntfsUnlock(vd);

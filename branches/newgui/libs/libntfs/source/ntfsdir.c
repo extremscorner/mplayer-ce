@@ -49,11 +49,35 @@ int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
 {
     ntfs_log_trace("path %s, st %p\n", path, st);
 
+    ntfs_vd *vd = NULL;
+    ntfs_inode *ni = NULL;
+    
+    // Get the volume descriptor for this path
+    vd = ntfsGetVolume(path);
+    if (!vd) {
+        r->_errno = ENODEV;
+        return -1;
+    }
+    
+    // Lock
+    ntfsLock(vd);
+    
+    // Find the entry
+    ni = ntfsOpenEntry(vd, path);
+    if (!ni) {
+        r->_errno = errno;
+        ntfsUnlock(vd);
+        return -1;
+    }
+    
     // Get the entry stats
-    int ret = ntfsStat(ntfsGetVolume(path), path, st);
+    int ret = ntfsStat(vd, ni, st);
     if (ret)
         r->_errno = errno;
 
+    // Close the entry
+    ntfsCloseEntry(vd, ni);
+    
     return ret;
 }
 
@@ -180,12 +204,34 @@ int ntfs_mkdir_r (struct _reent *r, const char *path, int mode)
 {
     ntfs_log_trace("path %s, mode %i\n", path, mode);
     
-    // Create the directory
-    int ret = ntfsCreate(ntfsGetVolume(path), path, S_IFDIR, 0, NULL);
-    if (ret)
-        r->_errno = errno;
+    ntfs_vd *vd = NULL;
+    ntfs_inode *ni = NULL;
     
-    return ret;
+    // Get the volume descriptor for this path
+    vd = ntfsGetVolume(path);
+    if (!vd) {
+        r->_errno = ENODEV;
+        return -1;
+    }
+    
+    // Lock
+    ntfsLock(vd);
+    
+    // Create the directory
+    ni = ntfsCreate(vd, path, S_IFDIR, 0, NULL);
+    if (!ni) {
+        ntfsUnlock(vd);
+        r->_errno = errno;
+        return -1;
+    }
+    
+    // Close the directory
+    ntfsCloseEntry(vd, ni);
+    
+    // Unlock
+    ntfsUnlock(vd);
+    
+    return 0;
 }
 
 int ntfs_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
@@ -260,28 +306,40 @@ int ntfs_readdir_filler (DIR_ITER *dirState, const ntfschar *name, const int nam
     ntfs_dir_state* dir = STATE(dirState);
     
     // Sanity check
-    if (!dir || !dir->vd)
+    if (!dir || !dir->vd) {
+        errno = EINVAL;
         return -1;
+    }
+    
+    // Lock
+    ntfsLock(dir->vd);
     
     // If we have a entry waiting to be fetched (dirnext()), then abort
-    if (dir->current)
+    if (dir->current) {
+        ntfsUnlock(dir->vd);
         return -1;
-
+    }
+    
     // Computer says no...
-    if (name_type == FILE_NAME_DOS)
+    if (name_type == FILE_NAME_DOS) {
+        ntfsUnlock(dir->vd);
         return 0;
-
+    }
+    
     // Check that this entry can be enumerated (as described by the volume descriptor)
     if (MREF(mref) == FILE_root || MREF(mref) >= FILE_first_user || dir->vd->showSystemFiles) {
         
         // Convert the entry name to our current local and line it up for fetching
         if (ntfsUnicodeToLocal(name, name_len, &dir->current, 0) < 0) {
-            ntfs_log_perror("Entry name decoding failed (inode %llu)", (unsigned long long)MREF(mref));
+            ntfsUnlock(dir->vd);
             dir->current = NULL;
             return -1;
         }
         
     }
+    
+    // Unlock
+    ntfsUnlock(dir->vd);
     
     return 0;
 }
@@ -339,7 +397,7 @@ int ntfs_dirreset_r (struct _reent *r, DIR_ITER *dirState)
     ntfs_dir_state* dir = STATE(dirState);
     
     // Sanity check
-    if (!dir->vd || !dir->ni) {
+    if (!dir || !dir->vd || !dir->ni) {
         r->_errno = EBADF;
         return -1;
     }
@@ -370,9 +428,10 @@ int ntfs_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
     ntfs_log_trace("dirState %p, filename %p, filestat %p\n", dirState, filename, filestat);
     
     ntfs_dir_state* dir = STATE(dirState);
+    ntfs_inode *ni = NULL;
     
     // Sanity check
-    if (!dir->vd || !dir->ni) {
+    if (!dir || !dir->vd || !dir->ni) {
         r->_errno = EBADF;
         return -1;
     }
@@ -390,7 +449,11 @@ int ntfs_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
     // Fetch the current entry
     strcpy(filename, dir->current);
     if(filestat != NULL) {
-        ntfsStat(dir->vd, dir->current, filestat);
+        ni = ntfsOpenEntry(dir->vd, dir->current);
+        if (ni) {
+            ntfsStat(dir->vd, ni, filestat);
+            ntfsCloseEntry(dir->vd, ni);
+        }
     }
     
     // Free the current entry
@@ -416,7 +479,7 @@ int ntfs_dirclose_r (struct _reent *r, DIR_ITER *dirState)
     ntfs_dir_state* dir = STATE(dirState);
     
     // Sanity check
-    if (!dir->vd) {
+    if (!dir || !dir->vd) {
         r->_errno = EBADF;
         return -1;
     }

@@ -40,7 +40,7 @@
 #include "gekko_io.h"
 
 #define MAX_PARTITIONS                  100 /* Maximum partitions to try find */
-#define MAX_MOUNT_NAMES                 100 /* Maximum mount names to try use */
+#define MAX_MOUNTS                      100 /* Maximum partitions to try mount */
 
 // NTFS device driver devoptab
 static const devoptab_t devops_ntfs = {
@@ -97,15 +97,12 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     }
     
     // Read the first sector on the device
-    if (!interface->readSectors(0, 1, &sector)) {
+    if (!interface->readSectors(0, 1, &sector.buffer)) {
         errno = EIO;
         return -1;
     }
-    
-    printf("u8[446] = %i part[4] = %i, u16 = %i, mbr = %i, ebr = %i, prec = %i\n", sizeof ( u8[446] ), sizeof ( PARTITION_RECORD[4] ), sizeof(u16), sizeof(struct _MASTER_BOOT_RECORD), sizeof(struct _EXTENDED_BOOT_RECORD), sizeof(PARTITION_RECORD));
-    
+
     // If this is the devices master boot record
-    printf("%i == %i\n", sector.mbr.signature, cpu_to_le16(MBR_SIGNATURE));
     if (sector.mbr.signature == cpu_to_le16(MBR_SIGNATURE)) {
         memcpy(&mbr, &sector, sizeof(MASTER_BOOT_RECORD));
         
@@ -119,7 +116,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                 
                 // NTFS partition
                 case PARTITION_TYPE_NTFS: {
-                    printf("found primary\n");
+                    
                     // Read and validate the NTFS partition
                     if (interface->readSectors(part_lba, 1, &sector)) {
                         if (sector.boot.oem_id == ntfs_oem_id) {
@@ -134,35 +131,35 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                 // DOS 3.3+ or Windows 95 extended partition
                 case PARTITION_TYPE_DOS33_EXTENDED:
                 case PARTITION_TYPE_WIN95_EXTENDED: {
-                    printf("found extended\n");
                     
                     // Walk the extended partition chain, finding all NTFS partitions
                     sec_t ebr_lba = part_lba;
-                    while (ebr_lba) {
-                            
+                    sec_t next_erb_lba = ebr_lba;
+                    /*while (next_erb_lba) {
+                        
                         // Read and validate the extended boot record
-                        if (interface->readSectors(ebr_lba, 1, &sector)) {
+                        if (interface->readSectors(ebr_lba + next_erb_lba, 1, &sector)) {
                             if (sector.ebr.signature == cpu_to_le16(EBR_SIGNATURE)) {
-                                printf("found extened record\n");
                                 
                                 // Get the start sector of the current partition
                                 // and the next extended boot record in the chain
-                                part_lba = le32_to_cpu(sector.ebr.partition.lba_start);
-                                ebr_lba = le32_to_cpu(sector.ebr.next_ebr.lba_start);
+                                part_lba = ebr_lba + next_erb_lba + le32_to_cpu(sector.ebr.partition.lba_start);
+                                next_erb_lba = le32_to_cpu(sector.ebr.next_ebr.lba_start);
                                 
                                 // Check if this patition is NTFS
                                 if (interface->readSectors(part_lba, 1, &sector)) {
                                     if (sector.boot.oem_id == ntfs_oem_id) {
-                                        printf("found extended ntfs\n");
                                         partition_starts[partition_count] = part_lba;
                                         partition_count++;
                                     }
                                 }
                             
+                            } else {
+                                next_erb_lba = 0;
                             }
                         }
                         
-                    };
+                    };*/
                     
                     break;
                     
@@ -174,29 +171,24 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
             
     // Else it is assumed this device has no master boot record
     } else {
-        printf("no mbr\n");
-        
+       
         // Check the first sector on the device for a NTFS partition
         if (sector.boot.oem_id == ntfs_oem_id) {
-            printf("found ntfs @ first sector\n");
             partition_starts[partition_count] = 0;
             partition_count++;
          
         // Ugh?, as a last-ditched effort, search the first 8kb of the device for stray NTFS partitions
         } else {
-            printf("last ditch search\n");
             for (i = 0; i < 16; i++) {
                 if (!interface->readSectors(i + 1, 1, &sector)) {
                     errno = EIO;
                     return -1;
                 }
                 if (sector.boot.oem_id == ntfs_oem_id) {
-                    printf("found ntfs @ sector %i\n", i);
                     partition_starts[partition_count] = i;
                     partition_count++;
                 }
             }
-            if (!partition_count) ntfs_log_info("your drive sucks\n"); // :P
         }
         
     }
@@ -220,11 +212,11 @@ int ntfsMountAll (ntfs_md **mounts, u16 flags)
 {
     const INTERFACE_ID *discs = ntfsGetDiscInterfaces();
     const INTERFACE_ID *disc = NULL;
-    ntfs_md _mounts[32];
-    ntfs_md mount;
-    int mount_count = 0;
-    int partition_count;
+    ntfs_md mount_points[MAX_MOUNTS];
     sec_t *partitions = NULL;
+    int mount_count = 0;
+    int partition_count = 0;
+    char name[128];
     int i, j, k;
 
     // Find and mount all NTFS partitions on all known devices
@@ -233,26 +225,22 @@ int ntfsMountAll (ntfs_md **mounts, u16 flags)
         partition_count = ntfsFindPartitions(disc->interface, &partitions);
         if (partition_count > 0 && partitions) {
             for (j = 0, k = 0; j < partition_count; j++) {
-                
-                // Set the partition mount details
-                mount.interface = disc->interface;
-                mount.startSector = partitions[j];
 
                 // Find the next unused mount name
                 do {                    
-                    if (k++ > MAX_MOUNT_NAMES) {
+                    if (k++ > MAX_MOUNTS) {
                         ntfs_free(partitions);
                         errno = EADDRNOTAVAIL;
                         return -1;
                     }
-                    sprintf(mount.name, "%s%i", disc->name, k);
-                } while (ntfsGetDeviceOpTab(mount.name));
+                    sprintf(name, "%s%i", disc->name, k);
+                } while (ntfsGetDeviceOpTab(name));
 
                 // Mount the partition
-                if (ntfsMount(mount.name, mount.interface, mount.startSector, flags)) {
-                    strcpy(_mounts[mount_count].name, mount.name);
-                    _mounts[mount_count].interface = mount.interface;
-                    _mounts[mount_count].startSector = mount.startSector;
+                if (ntfsMount(name, disc->interface, partitions[j], flags)) {
+                    strcpy(mount_points[mount_count].name, name);
+                    mount_points[mount_count].interface = disc->interface;
+                    mount_points[mount_count].startSector = partitions[j];
                     mount_count++;
                 }
                 
@@ -265,7 +253,7 @@ int ntfsMountAll (ntfs_md **mounts, u16 flags)
     if (mount_count > 0) {
         *mounts = (ntfs_md*)ntfs_alloc(sizeof(ntfs_md) * mount_count);
         if (*mounts) {
-            memcpy(*mounts, _mounts, sizeof(ntfs_md) * mount_count);
+            memcpy(*mounts, mount_points, sizeof(ntfs_md) * mount_count);
             return mount_count;
         }
     }
@@ -277,11 +265,11 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u16 flag
 {
     const INTERFACE_ID *discs = ntfsGetDiscInterfaces();
     const INTERFACE_ID *disc = NULL;
-    ntfs_md _mounts[32];
-    ntfs_md mount;
-    int mount_count = 0;
-    int partition_count;
+    ntfs_md mount_points[MAX_MOUNTS];
     sec_t *partitions = NULL;
+    int mount_count = 0;
+    int partition_count = 0;
+    char name[128];
     int i, j, k;
     
     // Find the specified device then find and mount all NTFS partitions on it
@@ -291,25 +279,22 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u16 flag
             partition_count = ntfsFindPartitions(disc->interface, &partitions);
             for (j = 0, k = 0; j < partition_count; j++) {
                 
-                // Set the partition mount details
-                mount.interface = disc->interface;
-                mount.startSector = partitions[j];
-                
                 // Find the next unused mount name
                 do {                    
-                    if (k++ > MAX_MOUNT_NAMES) {
+                    if (k++ > MAX_MOUNTS) {
                         ntfs_free(partitions);
                         errno = EADDRNOTAVAIL;
                         return -1;
                     }
-                    sprintf(mount.name, "%s%i", disc->name, k);
-                } while (ntfsGetDeviceOpTab(mount.name));
+                    sprintf(name, "%s%i", disc->name, k);
+                } while (ntfsGetDeviceOpTab(name));
                 
                 // Mount the partition
-                if (ntfsMount(mount.name, mount.interface, mount.startSector, flags)) {
-                    strcpy(_mounts[mount_count].name, mount.name);
-                    _mounts[mount_count].interface = mount.interface;
-                    _mounts[mount_count].startSector = mount.startSector;
+                if (ntfsMount(name, disc->interface, partitions[j], flags)) {
+                    strcpy(mount_points[mount_count].name, name);
+                    mount_points[mount_count].interface = disc->interface;
+                    mount_points[mount_count].startSector = partitions[j];
+                    mount_count++;
                 }
                 
             }
@@ -330,7 +315,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u16 flag
     if (mount_count > 0) {
         *mounts = (ntfs_md*)ntfs_alloc(sizeof(ntfs_md) * mount_count);
         if (*mounts) {
-            memcpy(*mounts, _mounts, sizeof(ntfs_md) * mount_count);
+            memcpy(*mounts, mount_points, sizeof(ntfs_md) * mount_count);
             return mount_count;
         }
     }
