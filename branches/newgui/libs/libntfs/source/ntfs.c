@@ -71,8 +71,6 @@ static const devoptab_t devops_ntfs = {
 
 int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
 {
-    const u64 ntfs_oem_id = cpu_to_le64(0x202020205346544eULL); /* "NTFS    " */
-    
     MASTER_BOOT_RECORD mbr;
     PARTITION_RECORD *partition = NULL;
     sec_t partition_starts[MAX_PARTITIONS] = {0};
@@ -125,7 +123,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                     
                     // Read and validate the NTFS partition
                     if (interface->readSectors(part_lba, 1, &sector)) {
-                        if (sector.boot.oem_id == ntfs_oem_id) {
+                        if (sector.boot.oem_id == magicNTFS) {
                             printf("Partition %i: Valid NTFS boot sector found\n", i + 1);
                             partition_starts[partition_count] = part_lba;
                             partition_count++;
@@ -144,13 +142,13 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                     
                     // Walk the extended partition chain, finding all NTFS partitions
                     sec_t ebr_lba = part_lba;
-                    sec_t next_erb_lba = ebr_lba;
-                    while (next_erb_lba) {
+                    sec_t next_erb_lba = 0;
+                    do {
                         
                         // Read and validate the extended boot record
                         if (interface->readSectors(ebr_lba + next_erb_lba, 1, &sector)) {
                             if (sector.ebr.signature == cpu_to_le16(EBR_SIGNATURE)) {
-                                printf("Extended Boot Record found at sector %d\n", ebr_lba + next_erb_lba);
+                                printf("Extended Boot Record found at sector %d, type 0x%x\n", ebr_lba + next_erb_lba, sector.ebr.partition.type);
                                 
                                 // Get the start sector of the current partition
                                 // and the next extended boot record in the chain
@@ -162,7 +160,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                                     
                                     // Check if this patition is NTFS
                                     if (interface->readSectors(part_lba, 1, &sector)) {
-                                        if (sector.boot.oem_id == ntfs_oem_id) {
+                                        if (sector.boot.oem_id == magicNTFS) {
                                             printf("Logical Partition @ %d: Valid NTFS boot sector found\n", part_lba);
                                             partition_starts[partition_count] = part_lba;
                                             partition_count++;
@@ -178,7 +176,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                             }
                         }
                         
-                    };
+                    } while (next_erb_lba);
                     
                     break;
                     
@@ -195,7 +193,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
         // As a last-ditched effort, search the first 64 sectors of the device for stray NTFS partitions
         for (i = 0; i < 64; i++) {
             if (interface->readSectors(i, 1, &sector)) {
-                if (sector.boot.oem_id == ntfs_oem_id) {
+                if (sector.boot.oem_id == magicNTFS) {
                     printf("Valid NTFS boot sector found at sector %d!\n", i);
                     partition_starts[partition_count] = i;
                     partition_count++;
@@ -249,13 +247,12 @@ int ntfsMountAll (ntfs_md **mounts, u16 flags)
                 } while (ntfsGetDeviceOpTab(name));
 
                 // Mount the partition
-                printf("not mounting \"%s\" on purpose\n", name);
-                /*if (ntfsMount(name, disc->interface, partitions[j], flags)) {
+                if (ntfsMount(name, disc->interface, partitions[j], flags)) {
                     strcpy(mount_points[mount_count].name, name);
                     mount_points[mount_count].interface = disc->interface;
                     mount_points[mount_count].startSector = partitions[j];
                     mount_count++;
-                }*/
+                }
                 
             }
             ntfs_free(partitions);
@@ -611,7 +608,7 @@ const devoptab_t *ntfsGetDeviceOpTab (const char *name)
     // TODO: FIX THIS SO THAT IT DOESN'T CODE DUMP!!!
     for (i = 0; devoptab_list[i] != NULL && devoptab_list[i]->name != NULL; i++) {
         devoptab = devoptab_list[i];
-        if (strncmp(name, devoptab->name, strlen(devoptab->name))) {
+        if (strncmp(name, devoptab->name, strlen(devoptab->name)) == 0) {
             return devoptab;
         }
     }
