@@ -229,14 +229,18 @@ ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
         return -1;
     }
     
+    // Short circuit cases where read length is 0 (or less)
+    if (len <= 0) {
+        return 0;
+    }
+    
     // Lock
     ntfsLock(file->vd);
-    
-    // Don't waste our time
-    if (len <= 0 || len > file->len) {
-        ntfsUnlock(file->vd);
+
+    // Don't read past the end of file
+    if (file->pos + len > file->len) {
         r->_errno = EOVERFLOW;
-        return -1;
+        len = file->len - file->pos;
     }
 
     // Read from the files data attribute
@@ -244,10 +248,7 @@ ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
     if (read > 0) {
         file->pos += read;
     }
-    
-    // Update file times
-    ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_ATIME);
-    
+
     // Unlock 
     ntfsUnlock(file->vd);
     
