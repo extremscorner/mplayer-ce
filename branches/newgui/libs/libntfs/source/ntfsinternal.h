@@ -41,8 +41,9 @@
 #include <ogc/disc_io.h>
 #include <sys/iosupport.h>
 
-#define MBR_SIGNATURE                   0xAA55
-#define EBR_SIGNATURE                   0xAA55
+#define MBR_SIGNATURE                   cpu_to_le16(0xAA55)
+#define EBR_SIGNATURE                   cpu_to_le16(0xAA55)
+#define NTFS_OEM_ID                     cpu_to_le64(0x202020205346544eULL)
 
 #define PARTITION_STATUS_NONBOOTABLE    0x00 /* Non-bootable */
 #define PARTITION_STATUS_BOOTABLE       0x80 /* Bootable (active) */
@@ -114,7 +115,7 @@ typedef struct _ntfs_vd {
     ntfs_volume *vol;                   /* NTFS volume handle */
     mutex_t lock;                       /* Volume lock mutex */
     s64 id;                             /* Filesystem id */
-    u16 flags;                          /* Mount flags */
+    u32 flags;                          /* Mount flags */
     u16 uid;                            /* User id for entry creation */
     u16 gid;                            /* Group id for entry creation */
     u16 fmask;                          /* Unix style permissions mask for file creation */

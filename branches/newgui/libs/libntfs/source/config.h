@@ -2,7 +2,9 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to 1 if debug should be enabled */
-/* #undef ENABLE_DEBUG */
+#ifdef DEBUG
+#   define ENABLE_DEBUG
+#endif
 
 /* Define to 1 if using internal fuse */
 /* #undef FUSE_INTERNAL */

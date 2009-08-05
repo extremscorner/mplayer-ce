@@ -22,7 +22,7 @@
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 
-#include <fat.h>
+//#include <fat.h>
 #include <ntfs.h>
 
 #include <stdio.h>
@@ -30,10 +30,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
-
-#ifndef MAX_PATH
-#define MAX_PATH 4096
-#endif
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
@@ -144,7 +140,7 @@ int main(int argc, char **argv) {
     ntfs_md *mounts = NULL;
     int mountCount = 0;
     int mountIndex = 0;
-    char path[MAX_PATH] = {0};
+    char path[256] = {0};
     int i;
     
     // Initialise and mount FAT devices

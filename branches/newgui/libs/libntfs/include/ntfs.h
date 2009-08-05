@@ -73,7 +73,7 @@ extern int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitio
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno).
  * @note The caller is responsible for freeing MOUNTS when finished with it.
  */
-extern int ntfsMountAll (ntfs_md **mounts, u16 flags);
+extern int ntfsMountAll (ntfs_md **mounts, u32 flags);
 
 /**
  * Mount all NTFS partitions on a block devices.
@@ -85,7 +85,7 @@ extern int ntfsMountAll (ntfs_md **mounts, u16 flags);
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno).
  * @note The caller is responsible for freeing MOUNTS when finished with it.
  */
-extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u16 flags);
+extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u32 flags);
 
 /**
  * Mount a NTFS partition from a specific sector on a block device.
@@ -98,7 +98,7 @@ extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u
  * @return True if mount was successful, false if no partition was found or an error occurred (see errno).
  * @note @ntfsFindPartitions should be used first to locate the partitions start sector.
  */
-extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u16 flags);
+extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 flags);
 
 /**
  * Unmount a NTFS partition.

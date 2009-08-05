@@ -85,6 +85,9 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
         NTFS_BOOT_SECTOR boot;
     } sector;
     
+    // Set the log handler
+    ntfs_log_set_handler(ntfs_log_handler_stderr);
+    
     // Start the device and check that it is inserted
     if (!interface->startup()) {
         errno = EIO;
@@ -101,34 +104,34 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     }
 
     // If this is the devices master boot record
-    if (sector.mbr.signature == cpu_to_le16(MBR_SIGNATURE)) {
+    if (sector.mbr.signature == MBR_SIGNATURE) {
         memcpy(&mbr, &sector, sizeof(MASTER_BOOT_RECORD));
-        printf("Valid Master Boot Record found\n");
+        ntfs_log_debug("Valid Master Boot Record found\n");
         
         // Search the partition table for all NTFS partitions (max. 4 primary partitions)
         for (i = 0; i < 4; i++) {
             partition = &mbr.partitions[i];
             part_lba = le32_to_cpu(partition->lba_start);
             
-            printf("Partition %i: %s, type 0x%x\n", i + 1,
-                   partition->status == PARTITION_STATUS_BOOTABLE ? "bootable (active)" : "non-bootable",
-                   partition->type);
+            ntfs_log_debug("Partition %i: %s, sector %d, type 0x%x\n", i + 1,
+                           partition->status == PARTITION_STATUS_BOOTABLE ? "bootable (active)" : "non-bootable",
+                           part_lba, partition->type);
             
             // Figure out what type of partition this is
             switch (partition->type) {
                 
                 // NTFS partition
                 case PARTITION_TYPE_NTFS: {
-                    printf("Partition %i: Claims to be NTFS\n", i + 1);
+                    ntfs_log_debug("Partition %i: Claims to be NTFS\n", i + 1);
                     
                     // Read and validate the NTFS partition
                     if (interface->readSectors(part_lba, 1, &sector)) {
-                        if (sector.boot.oem_id == magicNTFS) {
-                            printf("Partition %i: Valid NTFS boot sector found\n", i + 1);
+                        if (sector.boot.oem_id == NTFS_OEM_ID) {
+                            ntfs_log_debug("Partition %i: Valid NTFS boot sector found\n", i + 1);
                             partition_starts[partition_count] = part_lba;
                             partition_count++;
                         } else {
-                            printf("Partition %i: Invalid NTFS boot sector, not actually NTFS\n", i + 1);
+                            ntfs_log_debug("Partition %i: Invalid NTFS boot sector, not actually NTFS\n", i + 1);
                         }
                     }
                     break;
@@ -138,7 +141,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                 // DOS 3.3+ or Windows 95 extended partition
                 case PARTITION_TYPE_DOS33_EXTENDED:
                 case PARTITION_TYPE_WIN95_EXTENDED: {
-                    printf("Partition %i: Claims to be Extended\n", i + 1);
+                    ntfs_log_debug("Partition %i: Claims to be Extended\n", i + 1);
                     
                     // Walk the extended partition chain, finding all NTFS partitions
                     sec_t ebr_lba = part_lba;
@@ -147,30 +150,30 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                         
                         // Read and validate the extended boot record
                         if (interface->readSectors(ebr_lba + next_erb_lba, 1, &sector)) {
-                            if (sector.ebr.signature == cpu_to_le16(EBR_SIGNATURE)) {
-                                printf("Extended Boot Record found at sector %d, type 0x%x\n", ebr_lba + next_erb_lba, sector.ebr.partition.type);
+                            if (sector.ebr.signature == EBR_SIGNATURE) {
+                                ntfs_log_debug("Logical Partition @ %d: type 0x%x\n", ebr_lba + next_erb_lba,
+                                               sector.ebr.partition.status == PARTITION_STATUS_BOOTABLE ? "bootable (active)" : "non-bootable",
+                                               sector.ebr.partition.type);
                                 
                                 // Get the start sector of the current partition
                                 // and the next extended boot record in the chain
                                 part_lba = ebr_lba + next_erb_lba + le32_to_cpu(sector.ebr.partition.lba_start);
                                 next_erb_lba = le32_to_cpu(sector.ebr.next_ebr.lba_start);
-                                
-                                if (sector.ebr.partition.type == PARTITION_TYPE_NTFS) {
-                                    printf("Logical Partition @ %d: Claims to be NTFS\n", part_lba);
-                                    
-                                    // Check if this patition is NTFS
-                                    if (interface->readSectors(part_lba, 1, &sector)) {
-                                        if (sector.boot.oem_id == magicNTFS) {
-                                            printf("Logical Partition @ %d: Valid NTFS boot sector found\n", part_lba);
-                                            partition_starts[partition_count] = part_lba;
-                                            partition_count++;
-                                        } else {
-                                            printf("Logical Partition @ %d: Invalid NTFS boot sector, not actually NTFS\n", part_lba);
-                                        }
-                                    }
 
+                                // Check if this partition has a valid NTFS boot record
+                                if (interface->readSectors(part_lba, 1, &sector)) {
+                                    if (sector.boot.oem_id == NTFS_OEM_ID) {
+                                        ntfs_log_debug("Logical Partition @ %d: Valid NTFS boot sector found\n", part_lba);
+                                        if(sector.ebr.partition.type != PARTITION_TYPE_NTFS) {
+                                            ntfs_log_warning("Logical Partition @ %d: Is NTFS but type is 0x%x; 0x%x was expected\n", part_lba, sector.ebr.partition.type, PARTITION_TYPE_NTFS);
+                                        }
+                                        partition_starts[partition_count] = part_lba;
+                                        partition_count++;
+                                    } else {
+                                        ntfs_log_debug("Logical Partition @ sector %d: Invalid NTFS boot sector, not actually NTFS\n", part_lba);
+                                    }
                                 }
-                                
+
                             } else {
                                 next_erb_lba = 0;
                             }
@@ -188,13 +191,13 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
             
     // Else it is assumed this device has no master boot record
     } else {
-        printf("No Master Boot Record was found!\n");
+        ntfs_log_debug("No Master Boot Record was found!\n");
 
         // As a last-ditched effort, search the first 64 sectors of the device for stray NTFS partitions
         for (i = 0; i < 64; i++) {
             if (interface->readSectors(i, 1, &sector)) {
-                if (sector.boot.oem_id == magicNTFS) {
-                    printf("Valid NTFS boot sector found at sector %d!\n", i);
+                if (sector.boot.oem_id == NTFS_OEM_ID) {
+                    ntfs_log_debug("Valid NTFS boot sector found at sector %d!\n", i);
                     partition_starts[partition_count] = i;
                     partition_count++;
                 }
@@ -218,7 +221,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     return 0;
 }
 
-int ntfsMountAll (ntfs_md **mounts, u16 flags)
+int ntfsMountAll (ntfs_md **mounts, u32 flags)
 {
     const INTERFACE_ID *discs = ntfsGetDiscInterfaces();
     const INTERFACE_ID *disc = NULL;
@@ -271,7 +274,7 @@ int ntfsMountAll (ntfs_md **mounts, u16 flags)
     return 0;
 }
 
-int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u16 flags)
+int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flags)
 {
     const INTERFACE_ID *discs = ntfsGetDiscInterfaces();
     const INTERFACE_ID *disc = NULL;
@@ -333,7 +336,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u16 flag
     return 0;
 }
 
-bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u16 flags)
+bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 flags)
 {
     devoptab_t *devops = NULL;
     char *devname = NULL;
@@ -420,6 +423,9 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     if (flags & NTFS_IGNORE_HIBERFILE)
         vd->flags |= MS_IGNORE_HIBERFILE;
     
+    if (vd->flags & MS_RDONLY)
+        ntfs_log_warning("Mounting \"%s\" read-only\n", name);
+        
     // Mount the device
     vd->vol = ntfs_device_mount(dev, vd->flags);
     if (!vd->vol) {
@@ -432,7 +438,6 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         }
         ntfs_free(vd);
         ntfs_device_free(dev);
-        ntfs_free(fd);
         ntfs_free(devops);
         return false;
     }
@@ -480,8 +485,7 @@ void ntfsUnmount (const char *name, bool force)
         
         // Unmount and free the volume
         ntfs_umount(vd->vol, force);
-        ntfs_free(vd);
-        
+
     }
     
     // Free the devoptab for the device
