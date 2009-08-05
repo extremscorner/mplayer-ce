@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
     
     // Initialise and mount FAT devices
     //fatInitDefault();
-    
+
     // Mount all NTFS volumes on all inserted block devices
     mountCount = ntfsMountAll(&mounts, NTFS_DEFAULT | NTFS_RECOVER);
     if (mountCount == -1)

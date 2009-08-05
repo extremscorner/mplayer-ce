@@ -38,7 +38,6 @@
 
 #include <gctypes.h>
 #include "mem_allocate.h"
-#include "bit_ops.h"
 
 #define MINORBITS       20
 #define MINORMASK       ((1U << MINORBITS) - 1)

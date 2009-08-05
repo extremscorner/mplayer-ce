@@ -153,6 +153,6 @@ int ntfsLocalToUnicode (const char *ins, ntfschar **outs);
 /* Gekko devoptab related routines */
 const INTERFACE_ID* ntfsGetDiscInterfaces (void);
 const devoptab_t *ntfsDeviceOpTab (void);
-const devoptab_t *ntfsGetDeviceOpTab (const char *name);
+const devoptab_t *ntfsGetDeviceOpTab (const char *path);
 
 #endif /* _NTFSINTERNAL_H */

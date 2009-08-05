@@ -105,23 +105,32 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     // If this is the devices master boot record
     if (sector.mbr.signature == cpu_to_le16(MBR_SIGNATURE)) {
         memcpy(&mbr, &sector, sizeof(MASTER_BOOT_RECORD));
+        printf("Valid Master Boot Record found\n");
         
         // Search the partition table for all NTFS partitions (max. 4 primary partitions)
         for (i = 0; i < 4; i++) {
             partition = &mbr.partitions[i];
             part_lba = le32_to_cpu(partition->lba_start);
             
+            printf("Partition %i: %s, type 0x%x\n", i + 1,
+                   partition->status == PARTITION_STATUS_BOOTABLE ? "bootable (active)" : "non-bootable",
+                   partition->type);
+            
             // Figure out what type of partition this is
             switch (partition->type) {
                 
                 // NTFS partition
                 case PARTITION_TYPE_NTFS: {
+                    printf("Partition %i: Claims to be NTFS\n", i + 1);
                     
                     // Read and validate the NTFS partition
                     if (interface->readSectors(part_lba, 1, &sector)) {
                         if (sector.boot.oem_id == ntfs_oem_id) {
+                            printf("Partition %i: Valid NTFS boot sector found\n", i + 1);
                             partition_starts[partition_count] = part_lba;
                             partition_count++;
+                        } else {
+                            printf("Partition %i: Invalid NTFS boot sector, not actually NTFS\n", i + 1);
                         }
                     }
                     break;
@@ -131,35 +140,45 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                 // DOS 3.3+ or Windows 95 extended partition
                 case PARTITION_TYPE_DOS33_EXTENDED:
                 case PARTITION_TYPE_WIN95_EXTENDED: {
+                    printf("Partition %i: Claims to be Extended\n", i + 1);
                     
                     // Walk the extended partition chain, finding all NTFS partitions
                     sec_t ebr_lba = part_lba;
                     sec_t next_erb_lba = ebr_lba;
-                    /*while (next_erb_lba) {
+                    while (next_erb_lba) {
                         
                         // Read and validate the extended boot record
                         if (interface->readSectors(ebr_lba + next_erb_lba, 1, &sector)) {
                             if (sector.ebr.signature == cpu_to_le16(EBR_SIGNATURE)) {
+                                printf("Extended Boot Record found at sector %d\n", ebr_lba + next_erb_lba);
                                 
                                 // Get the start sector of the current partition
                                 // and the next extended boot record in the chain
                                 part_lba = ebr_lba + next_erb_lba + le32_to_cpu(sector.ebr.partition.lba_start);
                                 next_erb_lba = le32_to_cpu(sector.ebr.next_ebr.lba_start);
                                 
-                                // Check if this patition is NTFS
-                                if (interface->readSectors(part_lba, 1, &sector)) {
-                                    if (sector.boot.oem_id == ntfs_oem_id) {
-                                        partition_starts[partition_count] = part_lba;
-                                        partition_count++;
+                                if (sector.ebr.partition.type == PARTITION_TYPE_NTFS) {
+                                    printf("Logical Partition @ %d: Claims to be NTFS\n", part_lba);
+                                    
+                                    // Check if this patition is NTFS
+                                    if (interface->readSectors(part_lba, 1, &sector)) {
+                                        if (sector.boot.oem_id == ntfs_oem_id) {
+                                            printf("Logical Partition @ %d: Valid NTFS boot sector found\n", part_lba);
+                                            partition_starts[partition_count] = part_lba;
+                                            partition_count++;
+                                        } else {
+                                            printf("Logical Partition @ %d: Invalid NTFS boot sector, not actually NTFS\n", part_lba);
+                                        }
                                     }
+
                                 }
-                            
+                                
                             } else {
                                 next_erb_lba = 0;
                             }
                         }
                         
-                    };*/
+                    };
                     
                     break;
                     
@@ -171,20 +190,13 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
             
     // Else it is assumed this device has no master boot record
     } else {
-       
-        // Check the first sector on the device for a NTFS partition
-        if (sector.boot.oem_id == ntfs_oem_id) {
-            partition_starts[partition_count] = 0;
-            partition_count++;
-         
-        // Ugh?, as a last-ditched effort, search the first 8kb of the device for stray NTFS partitions
-        } else {
-            for (i = 0; i < 16; i++) {
-                if (!interface->readSectors(i + 1, 1, &sector)) {
-                    errno = EIO;
-                    return -1;
-                }
+        printf("No Master Boot Record was found!\n");
+
+        // As a last-ditched effort, search the first 64 sectors of the device for stray NTFS partitions
+        for (i = 0; i < 64; i++) {
+            if (interface->readSectors(i, 1, &sector)) {
                 if (sector.boot.oem_id == ntfs_oem_id) {
+                    printf("Valid NTFS boot sector found at sector %d!\n", i);
                     partition_starts[partition_count] = i;
                     partition_count++;
                 }
@@ -200,7 +212,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     if (partition_count > 0) {
         *partitions = (sec_t*)ntfs_alloc(sizeof(sec_t) * partition_count);
         if (*partitions) {
-            memcpy(*partitions, partition_starts, sizeof(sec_t) * partition_count);
+            memcpy(*partitions, &partition_starts, sizeof(sec_t) * partition_count);
             return partition_count;
         }
     }
@@ -237,12 +249,13 @@ int ntfsMountAll (ntfs_md **mounts, u16 flags)
                 } while (ntfsGetDeviceOpTab(name));
 
                 // Mount the partition
-                if (ntfsMount(name, disc->interface, partitions[j], flags)) {
+                printf("not mounting \"%s\" on purpose\n", name);
+                /*if (ntfsMount(name, disc->interface, partitions[j], flags)) {
                     strcpy(mount_points[mount_count].name, name);
                     mount_points[mount_count].interface = disc->interface;
                     mount_points[mount_count].startSector = partitions[j];
                     mount_count++;
-                }
+                }*/
                 
             }
             ntfs_free(partitions);
@@ -253,7 +266,7 @@ int ntfsMountAll (ntfs_md **mounts, u16 flags)
     if (mount_count > 0) {
         *mounts = (ntfs_md*)ntfs_alloc(sizeof(ntfs_md) * mount_count);
         if (*mounts) {
-            memcpy(*mounts, mount_points, sizeof(ntfs_md) * mount_count);
+            memcpy(*mounts, &mount_points, sizeof(ntfs_md) * mount_count);
             return mount_count;
         }
     }
@@ -598,7 +611,7 @@ const devoptab_t *ntfsGetDeviceOpTab (const char *name)
     // TODO: FIX THIS SO THAT IT DOESN'T CODE DUMP!!!
     for (i = 0; devoptab_list[i] != NULL && devoptab_list[i]->name != NULL; i++) {
         devoptab = devoptab_list[i];
-        if (strncmp(name, devoptab->name, strlen(devoptab->name)) == 0) {
+        if (strncmp(name, devoptab->name, strlen(devoptab->name))) {
             return devoptab;
         }
     }
