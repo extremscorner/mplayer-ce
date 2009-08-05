@@ -29,20 +29,20 @@
 #include <gccore.h>
 #include <ogc/disc_io.h>
 
-#define SECTOR_SIZE     512
+#define SECTOR_SIZE                     512 /* Forced by gekko disc i/o */
 
 /**
  * gekko_fd - Gekko device driver descriptor
  */
 typedef struct _gekko_fd {
-    const DISC_INTERFACE* interface;
-    sec_t startSector;
-    sec_t hiddenSectors;
-    u16 sectorSize;
-    u64 sectorCount;
-    u64 pos;
-    u64 len;
-    ino_t ino;
+    const DISC_INTERFACE* interface;    /* Device disc interface */
+    sec_t startSector;                  /* LBA of partition start */
+    sec_t hiddenSectors;                /* LBA offset to true partition start (as described by boot sector) */
+    u16 sectorSize;                     /* Device sector size (in bytes) */
+    u64 sectorCount;                    /* Total number of sectors in partition */
+    u64 pos;                            /* Current position within the partition (in bytes) */
+    u64 len;                            /* Total length of partition (in bytes) */
+    ino_t ino;                          /* Device identifier */
 } gekko_fd;
 
 /* Forward declaration. */

@@ -31,26 +31,26 @@ extern "C" {
 #include <ogc/disc_io.h>
 
 /* NTFS errno values */
-#define ENOPART                     3000 /* No partition was found */
-#define EINVALPART                  3001 /* Specified partition is invalid or not supported */
-#define EDIRTY                      3002 /* Volume is dirty and NTFS_RECOVER was not specified during mount */
-#define EHIBERNATED                 3003 /* Volume is hibernated and NTFS_IGNORE_HIBERFILE was not specified during mount */
+#define ENOPART                         3000 /* No partition was found */
+#define EINVALPART                      3001 /* Specified partition is invalid or not supported */
+#define EDIRTY                          3002 /* Volume is dirty and NTFS_RECOVER was not specified during mount */
+#define EHIBERNATED                     3003 /* Volume is hibernated and NTFS_IGNORE_HIBERFILE was not specified during mount */
 
 /* NTFS mount flags */
-#define NTFS_DEFAULT                0x00000000 /* Standard mount, expects a clean, non-hibernated volume */
-#define NTFS_SHOW_SYSTEM_FILES      0x00000001 /* Display system files when enumerating directories */
-#define NTFS_UPDATE_ACCESS_TIMES    0x00000002 /* Update file and directory access times */
-#define NTFS_RECOVER                0x00000004 /* Reset $LogFile if dirty (i.e. from unclean disconnect) */
-#define NTFS_IGNORE_HIBERFILE       0x00000008 /* Mount even if volume is hibernated */
-#define NTFS_FORCE                  NTFS_RECOVER & NTFS_IGNORE_HIBERFILE
+#define NTFS_DEFAULT                    0x00000000 /* Standard mount, expects a clean, non-hibernated volume */
+#define NTFS_SHOW_SYSTEM_FILES          0x00000001 /* Display system files when enumerating directories */
+#define NTFS_UPDATE_ACCESS_TIMES        0x00000002 /* Update file and directory access times */
+#define NTFS_RECOVER                    0x00000004 /* Reset $LogFile if dirty (i.e. from unclean disconnect) */
+#define NTFS_IGNORE_HIBERFILE           0x00000008 /* Mount even if volume is hibernated */
+#define NTFS_FORCE                      NTFS_RECOVER & NTFS_IGNORE_HIBERFILE
 
 /**
  * ntfs_md - NTFS mount descriptor
  */
 typedef struct _ntfs_md {
-    char name[32];
-    const DISC_INTERFACE *interface;
-    sec_t startSector;
+    char name[32];                      /* Mount name (can be accessed as "name:/") */
+    const DISC_INTERFACE *interface;    /* Block device containing the mounted partition */
+    sec_t startSector;                  /* Local block address to first sector of partition */
 } ntfs_md;
 
 /**
@@ -73,7 +73,7 @@ extern int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitio
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno).
  * @note The caller is responsible for freeing MOUNTS when finished with it.
  */
-extern int ntfsMountAll (ntfs_md **mounts, u32 flags);
+extern int ntfsMountAll (ntfs_md **mounts, u16 flags);
 
 /**
  * Mount all NTFS partitions on a block devices.
@@ -85,7 +85,7 @@ extern int ntfsMountAll (ntfs_md **mounts, u32 flags);
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno).
  * @note The caller is responsible for freeing MOUNTS when finished with it.
  */
-extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u32 flags);
+extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u16 flags);
 
 /**
  * Mount a NTFS partition from a specific sector on a block device.
@@ -98,7 +98,7 @@ extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u
  * @return True if mount was successful, false if no partition was found or an error occurred (see errno).
  * @note @ntfsFindPartitions should be used first to locate the partitions start sector.
  */
-extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 flags);
+extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u16 flags);
 
 /**
  * Unmount a NTFS partition.

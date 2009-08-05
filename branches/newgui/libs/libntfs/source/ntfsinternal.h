@@ -41,42 +41,82 @@
 #include <ogc/disc_io.h>
 #include <sys/iosupport.h>
 
+#define MBR_SIGNATURE                   0xAA55
+#define EBR_SIGNATURE                   0xAA55
+
+#define PARTITION_STATUS_NONBOOTABLE    0x00 /* Non-bootable */
+#define PARTITION_STATUS_BOOTABLE       0x80 /* Bootable (active) */
+
+#define PARTITION_TYPE_EMPTY            0x00 /* Empty */
+#define PARTITION_TYPE_DOS33_EXTENDED   0x06 /* DOS 3.3+ extended partition */
+#define PARTITION_TYPE_NTFS             0x07 /* Windows NT NTFS */
+#define PARTITION_TYPE_WIN95_EXTENDED   0x0F /* Windows 95 extended partition, LBA-mapped*/
+
 /**
-* ntfs_atime_t - File access time state
-*/
+ * PRIMARY_PARTITION - Block device partition record
+ */
+typedef struct _PARTITION_RECORD {
+    u8 status;                          /* Partition status; see above */
+    u8 chs_start[3];                    /* Cylinder-head-sector address to first block of partition */
+    u8 type;                            /* Partition type; see above */
+    u8 chs_end[3];                      /* Cylinder-head-sector address to last block of partition */
+    u32 lba_start;                      /* Local block address to first sector of partition */
+    u32 block_count;                    /* Number of blocks in partition */
+} PARTITION_RECORD;
+
+/**
+ * MASTER_BOOT_RECORD - Block device master boot record
+ */
+typedef struct _MASTER_BOOT_RECORD {
+    u8 code_area[446];                  /* Code area; Normally empty */
+    PARTITION_RECORD partitions[4];     /* 4 primary partitions */
+    u16 signature;                      /* MBR signature; 0xAA55 */
+} MASTER_BOOT_RECORD;
+
+/**
+ * EXTENDED_PARTITION - Block device extended boot record
+ */
+typedef struct _EXTENDED_BOOT_RECORD {
+    u8 code_area[446];                  /* Normally empty */
+    PARTITION_RECORD partition;         /* Primary partition */
+    PARTITION_RECORD next_ebr;          /* Next extended boot record in the chain */
+    u8 reserved[32];                    /* Normally empty */
+    u16 signature;                      /* EBR signature; 0xAA55 */
+} EXTENDED_BOOT_RECORD;
+
+/**
+ * INTERFACE_ID - Disc interface identifier
+ */
+typedef struct _INTERFACE_ID {
+    const char *name;                   /* Interface name */
+    const DISC_INTERFACE *interface;    /* Disc interface */
+} INTERFACE_ID;
+
+/**
+ * ntfs_atime_t - File access time state
+ */
 typedef enum {
-    ATIME_ENABLED,
-    ATIME_DISABLED,
-    ATIME_RELATIVE
+    ATIME_ENABLED,                      /* Update access times */
+    ATIME_DISABLED,                     /* Don't update access times */
+    ATIME_RELATIVE                      /* Only update if older than last modified date */
 } ntfs_atime_t;
 
 /**
  * ntfs_vd - NTFS volume descriptor
  */
 typedef struct _ntfs_vd {
-    ntfs_volume *vol;
-    mutex_t lock;
-    s64 id;
-    u32 flags;
-    u16 uid;
-    u16 gid;
-    u16 fmask;
-    u16 dmask;
-    ntfs_atime_t atime;
-    bool showSystemFiles;
-    ntfs_inode *cwd_ni;
+    ntfs_volume *vol;                   /* NTFS volume handle */
+    mutex_t lock;                       /* Volume lock mutex */
+    s64 id;                             /* Filesystem id */
+    u16 flags;                          /* Mount flags */
+    u16 uid;                            /* User id for entry creation */
+    u16 gid;                            /* Group id for entry creation */
+    u16 fmask;                          /* Unix style permissions mask for file creation */
+    u16 dmask;                          /* Unix style permissions mask for directory creation */
+    ntfs_atime_t atime;                 /* Entry access time update stratagy */
+    bool showSystemFiles;               /* If true, show system file when enumerating directories */
+    ntfs_inode *cwd_ni;                 /* Current directory */
 } ntfs_vd;
-
-/**
- * INTERFACE_ID - Disc interface identifier
- */
-typedef struct _INTERFACE_ID {
-    const char *name; 
-    const DISC_INTERFACE *interface;
-} INTERFACE_ID;
-
-/* All known disc interfaces */
-extern const INTERFACE_ID ntfs_disc_interfaces[];
 
 /* Lock volume */
 static inline void ntfsLock (ntfs_vd *vd)
@@ -105,6 +145,7 @@ int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int
 int ntfsLocalToUnicode (const char *ins, ntfschar **outs);
 
 /* Gekko devoptab related routines */
+const INTERFACE_ID* ntfsGetDiscInterfaces (void);
 const devoptab_t *ntfsDeviceOpTab (void);
 const devoptab_t *ntfsGetDeviceOpTab (const char *name);
 

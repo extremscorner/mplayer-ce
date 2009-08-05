@@ -33,15 +33,15 @@
  * ntfs_file_state - File state
  */
 typedef struct _ntfs_file {
-    ntfs_vd *vd;
-    ntfs_inode *ni;
-    ntfs_attr *data_na;
-    int flags;
-    bool read;
-    bool write;
-    bool append;
-    s64 pos;
-    s64 len;
+    ntfs_vd *vd;                        /* Volume this file belongs to */
+    ntfs_inode *ni;                     /* File descriptor */
+    ntfs_attr *data_na;                 /* File data descriptor */
+    int flags;                          /* Opening flags */
+    bool read;                          /* True if allowed to read from file */
+    bool write;                         /* True if allowed to write to file */
+    bool append;                        /* True if allowed to append to file */
+    s64 pos;                            /* Current position within the file (in bytes) */
+    s64 len;                            /* Total length of the file (in bytes) */
 } ntfs_file_state;
 
 /* Gekko devoptab file routines for NTFS-based devices */

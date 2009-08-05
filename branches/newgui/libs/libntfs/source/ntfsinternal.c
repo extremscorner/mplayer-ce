@@ -59,6 +59,12 @@ const INTERFACE_ID ntfs_disc_interfaces[] = {
 
 #endif
 
+const INTERFACE_ID *ntfsGetDiscInterfaces (void)
+{
+    // Get all know disc interfaces
+    return ntfs_disc_interfaces;
+}
+
 const char *ntfsRealPath (const char *path)
 {    
     // Move the path pointer to the start of the actual path
