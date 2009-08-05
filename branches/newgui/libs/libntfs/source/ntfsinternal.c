@@ -82,7 +82,7 @@ ntfs_vd *ntfsGetVolume (const char *path)
 {
     // Get the volume descriptor from the paths associated devoptab (if possible)
     const devoptab_t *devops_ntfs = ntfsDeviceOpTab();
-    const devoptab_t *devops = ntfsGetDeviceOpTab(path);
+    const devoptab_t *devops = ntfsGetDeviceOpTab(path, true);
     if (devops && devops_ntfs && (devops->open_r == devops_ntfs->open_r))
         return (ntfs_vd*)devops->deviceData;
     
@@ -440,7 +440,7 @@ int ntfsStat (ntfs_vd *vd, ntfs_inode *ni, struct stat *st)
     ntfsLock(vd);
     
     // Zero out the stat buffer
-    //memset(st, 0, sizeof(struct stat));
+    /*memset(st, 0, sizeof(struct stat));*/
 
     // Is this entry a directory
     if (ni->mrec->flags & MFT_RECORD_IS_DIRECTORY) {

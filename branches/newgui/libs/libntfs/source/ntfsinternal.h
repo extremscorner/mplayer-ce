@@ -41,9 +41,13 @@
 #include <ogc/disc_io.h>
 #include <sys/iosupport.h>
 
+#define NTFS_MOUNT_NAME                 "ntfs" /* Device name prefix to use when auto-mounting */
+#define NTFS_MAX_PARTITIONS             32 /* Maximum number of partitions that can be found */
+#define NTFS_MAX_MOUNTS                 10 /* Maximum number of mounts available at one time */
+
+#define NTFS_OEM_ID                     cpu_to_le64(0x202020205346544eULL)
 #define MBR_SIGNATURE                   cpu_to_le16(0xAA55)
 #define EBR_SIGNATURE                   cpu_to_le16(0xAA55)
-#define NTFS_OEM_ID                     cpu_to_le64(0x202020205346544eULL)
 
 #define PARTITION_STATUS_NONBOOTABLE    0x00 /* Non-bootable */
 #define PARTITION_STATUS_BOOTABLE       0x80 /* Bootable (active) */
@@ -154,6 +158,6 @@ int ntfsLocalToUnicode (const char *ins, ntfschar **outs);
 /* Gekko devoptab related routines */
 const INTERFACE_ID* ntfsGetDiscInterfaces (void);
 const devoptab_t *ntfsDeviceOpTab (void);
-const devoptab_t *ntfsGetDeviceOpTab (const char *path);
+const devoptab_t *ntfsGetDeviceOpTab (const char *path, bool useDefaultDevice);
 
 #endif /* _NTFSINTERNAL_H */

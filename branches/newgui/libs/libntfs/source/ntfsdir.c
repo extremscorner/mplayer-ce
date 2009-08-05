@@ -108,7 +108,6 @@ int ntfs_unlink_r (struct _reent *r, const char *name)
 int ntfs_chdir_r (struct _reent *r, const char *name)
 {
     ntfs_log_trace("name %s\n", name);
-    ntfs_log_info("chdir(%s)\n", name);
     
     ntfs_vd *vd = NULL;
     ntfs_inode *ni = NULL;
@@ -141,7 +140,7 @@ int ntfs_chdir_r (struct _reent *r, const char *name)
     
     // Set the current directory
     vd->cwd_ni = ni;
-    
+
     // Unlock
     ntfsUnlock(vd);
     
@@ -253,7 +252,7 @@ int ntfs_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
     ntfsLock(vd);
     
     // Zero out the stat buffer
-    //memset(buf, 0, sizeof(struct statvfs));
+    /*memset(buf, 0, sizeof(struct statvfs));*/
     
     // File system block size
     buf->f_bsize = vd->vol->cluster_size;
@@ -367,7 +366,7 @@ DIR_ITER *ntfs_diropen_r (struct _reent *r, DIR_ITER *dirState, const char *path
         r->_errno = ENOENT;
         return NULL;
     }
-
+    
     // Ensure that this directory is indeed a directory
     if (!(dir->ni->mrec->flags && MFT_RECORD_IS_DIRECTORY)) {
         ntfsCloseEntry(dir->vd, dir->ni);

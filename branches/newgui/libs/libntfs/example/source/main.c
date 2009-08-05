@@ -51,9 +51,8 @@ void list(const char *path)
                 continue;
             
             // Get the entries stats
-            stat(pent->d_name, &st);
-            //if (stat(pent->d_name, &st) == -1)
-            //    continue;
+            if (stat(pent->d_name, &st) == -1)
+                continue;
             
             // List the entry
             if (S_ISBLK(st.st_mode)) {
@@ -65,7 +64,7 @@ void list(const char *path)
             } else if (S_ISFIFO(st.st_mode)) {
                 printf(" P %s\n", pent->d_name);
             } else if (S_ISREG(st.st_mode)) {
-                printf(" F %s\n", pent->d_name);
+                printf(" F %s (%Li)\n", pent->d_name, st.st_size);
             } else if (S_ISLNK(st.st_mode)) {
                 printf(" L %s\n", pent->d_name);
             } else {
@@ -144,7 +143,7 @@ int main(int argc, char **argv) {
     char path[256] = {0};
     int i;
     
-    // Initialise and mount FAT devices
+    // Mount FAT devices
     fatInitDefault();
 
     // Mount all NTFS volumes on all inserted block devices
@@ -152,14 +151,13 @@ int main(int argc, char **argv) {
     if (mountCount == -1)
         printf("Error whilst mounting devices (%i).\n", errno);
     else if (mountCount > 0)
-        printf("%i NTFS volumes(s) found!\n\n", mountCount);
+        printf("%i NTFS volumes(s) mounted!\n\n", mountCount);
     else
-        printf("No NTFS volumes were found.\n");
+        printf("No NTFS volumes were found and/or mounted.\n");
     
     // List all mounted NTFS volumes
-    for (i = 0; i < mountCount; i++) {
+    for (i = 0; i < mountCount; i++)
         printf("%i - %s:/ (%s)\n", i + 1, mounts[i].name, ntfsGetVolumeName(mounts[i].name)); 
-    }
     
     printf("\n");
     while (1) {
@@ -192,45 +190,13 @@ int main(int argc, char **argv) {
                 // Move to the volumes root directory
                 strcpy(path, mounts[mountIndex].name);
                 strcat(path, ":/");
-                //chdir(path);
+                chdir(path);
                 
                 // Enumerate the volumes contents
-                list(path);
-                
-                sprintf(path, "%s:/test", mounts[mountIndex].name);
-                struct stat st;
-                if(stat(path, &st)) {
-                    printf("Creating directory \"%s\"\n", path);
-                    if (mkdir(path, S_IRWXU | S_IROTH | S_IXOTH)) {
-                        printf("mkdir(%s) FAILED!\n", path);
-                    }
-                } else {
-                    printf("Directory \"%s\" already exists, not creating\n", path);
-                }
-
-                printf("\n");
-                strcat(path, "/text.txt");
-                FILE *f = fopen(path, "r");
-                if (f) {
-                    char buf[1024] = {0};
-                    
-                    fseek(f, 0, SEEK_END);
-                    ssize_t size = ftell(f);
-                    printf("File Size: %d\n", size);
-                    
-                    fseek(f, 100, SEEK_SET);
-                    fread(&buf, sizeof(char), 300, f);
-                    printf("File Contents (pos: 100, len: 300):\n\n%s\n", buf);
-                    
-                    fclose(f);
-                    
-                } else {
-                    printf("fopen(%s) FAILED!\n", path);
-                }
+                list("");
+                listed = true;
                 
                 printf("\nPress 'HOME' to quit.\n\n");
-                
-                listed = true;
                 
             }
             
@@ -248,9 +214,8 @@ int main(int argc, char **argv) {
 
     // Unmount all NTFS volumes and clean up
     if (mounts) {
-        for (i = 0; i < mountCount; i++) {
+        for (i = 0; i < mountCount; i++)
             ntfsUnmount(mounts[i].name, true); 
-        }
         free(mounts);
     }
     
