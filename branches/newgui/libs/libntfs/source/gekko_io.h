@@ -26,12 +26,12 @@
 #endif
 
 #include "types.h"
+#include "cache.h"
 #include <gccore.h>
 #include <ogc/disc_io.h>
 
-#define SECTOR_SIZE                         512 /* Forced by gekko disc i/o */
-#include "cache.h"
-
+#define BYTES_PER_SECTOR                    512 /* Forced by gekko disc i/o */
+#define SECTORS_PER_PAGE                    128 /* The number of sectors per cache page */
 
 /**
  * gekko_fd - Gekko device driver descriptor
@@ -46,6 +46,7 @@ typedef struct _gekko_fd {
     u64 len;                                /* Total length of partition (in bytes) */
     ino_t ino;                              /* Device identifier */
     NTFS_CACHE *cache;                      /* Cache */    
+    u32 cacheSize;                          /* The number of pages in the cache */
 } gekko_fd;
 
 /* Forward declarations */

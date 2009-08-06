@@ -96,7 +96,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     int i;
     
     union {
-        u8 buffer[SECTOR_SIZE];
+        u8 buffer[BYTES_PER_SECTOR];
         MASTER_BOOT_RECORD mbr;
         EXTENDED_BOOT_RECORD ebr;
         NTFS_BOOT_SECTOR boot;
@@ -269,7 +269,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
     return 0;
 }
 
-int ntfsMountAll (ntfs_md **mounts, u32 flags)
+int ntfsMountAll (ntfs_md **mounts, u32 cacheSize, u32 flags)
 {
     const INTERFACE_ID *discs = ntfsGetDiscInterfaces();
     const INTERFACE_ID *disc = NULL;
@@ -302,7 +302,7 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
 
                 // Mount the partition
                 if (mount_count < NTFS_MAX_MOUNTS) {
-                    if (ntfsMount(name, disc->interface, partitions[j], flags)) {
+                    if (ntfsMount(name, disc->interface, partitions[j], cacheSize, flags)) {
                         strcpy(mount_points[mount_count].name, name);
                         mount_points[mount_count].interface = disc->interface;
                         mount_points[mount_count].startSector = partitions[j];
@@ -327,7 +327,7 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
     return 0;
 }
 
-int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flags)
+int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 cacheSize, u32 flags)
 {
     const INTERFACE_ID *discs = ntfsGetDiscInterfaces();
     const INTERFACE_ID *disc = NULL;
@@ -361,7 +361,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
                     
                     // Mount the partition
                     if (mount_count < NTFS_MAX_MOUNTS) {
-                        if (ntfsMount(name, disc->interface, partitions[j], flags)) {
+                        if (ntfsMount(name, disc->interface, partitions[j], cacheSize, flags)) {
                             strcpy(mount_points[mount_count].name, name);
                             mount_points[mount_count].interface = disc->interface;
                             mount_points[mount_count].startSector = partitions[j];
@@ -394,7 +394,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
     return 0;
 }
 
-bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 flags)
+bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cacheSize, u32 flags)
 {
     struct ntfs_device *dev = NULL;
     ntfs_vd *vd = NULL;
@@ -427,6 +427,7 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     fd->startSector = startSector;
     fd->sectorSize = 0;
     fd->sectorCount = 0;
+    fd->cacheSize = cacheSize;
     
     // Allocate the device driver
     dev = ntfs_device_alloc(name, 0, &ntfs_device_gekko_io_ops, fd);

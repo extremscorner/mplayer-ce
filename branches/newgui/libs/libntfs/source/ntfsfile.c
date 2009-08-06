@@ -49,10 +49,14 @@ void ntfsCloseFile (ntfs_file_state *file)
     // Sanity check
     if (!file || !file->vd)
         return;
-    
+
     // Close the file data attribute (if open)
     if (file->data_na)
         ntfs_attr_close(file->data_na);
+    
+    // Sync
+    if(file->write)
+        ntfs_inode_sync(file->ni);
     
     // Close the file (if open)
     if (file->ni)
@@ -146,7 +150,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     // Open the files data attribute
     file->data_na = ntfs_attr_open(file->ni, AT_DATA, AT_UNNAMED, 0);
     if(!file->data_na) {
-        printf("failed222!!!");
         ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
         return -1;
@@ -221,10 +224,6 @@ int ntfs_close_r (struct _reent *r, int fd)
     // Lock
     ntfsLock(file->vd);
 
-	// sync to disk    
-    if(file->write)
-	    ntfs_inode_sync(file->ni);
-    
     // Close the file
     ntfsCloseFile(file);
     
@@ -453,7 +452,6 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
     ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_MCTIME);
        
     // sync to disk    
-    printf("call to ntfs_inode_sync(file->ni)\n");
     ntfs_inode_sync(file->ni);
 
     // Unlock
@@ -465,8 +463,7 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
 int ntfs_fsync_r (struct _reent *r, int fd)
 {
     ntfs_log_trace("fd %p\n", fd);
-    printf("ntfs_fsync_r\n");
-   
+
     ntfs_file_state* file = STATE(fd);
     int ret = 0;
     
@@ -483,7 +480,6 @@ int ntfs_fsync_r (struct _reent *r, int fd)
     ret = ntfs_inode_sync(file->ni);
     if (ret)
         r->_errno = errno;
-    
     
     // Unlock
     ntfsUnlock(file->vd);

@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
     fatInitDefault();
 
     // Mount all NTFS volumes on all inserted block devices
-    mountCount = ntfsMountAll(&mounts, NTFS_DEFAULT | NTFS_RECOVER);
+    mountCount = ntfsMountAll(&mounts, 0, NTFS_DEFAULT | NTFS_RECOVER);
     if (mountCount == -1)
         printf("Error whilst mounting devices (%i).\n", errno);
     else if (mountCount > 0)

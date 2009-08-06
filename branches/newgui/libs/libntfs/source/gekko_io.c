@@ -58,9 +58,9 @@
 #include "logging.h"
 #include "device_io.h"
 #include "gekko_io.h"
+#include "cache.h"
 #include "device.h"
 #include "bootsect.h"
-#include "cache.h"
 
 #define DEV_FD(dev) ((gekko_fd *)dev->d_private)
 
@@ -132,8 +132,8 @@ static int ntfs_device_gekko_io_open(struct ntfs_device *dev, int flags)
     // If the device sector size is not 512 bytes then we cannot continue,
     // gekko disc I/O works on the assumption that sectors are always 512 bytes long.
     // TODO: Implement support for non-512 byte sector sizes through some fancy maths!?
-    if (fd->sectorSize != SECTOR_SIZE) {
-        ntfs_log_error("Boot sector claims there is %i bytes per sector; expected %i\n", fd->sectorSize, SECTOR_SIZE);
+    if (fd->sectorSize != BYTES_PER_SECTOR) {
+        ntfs_log_error("Boot sector claims there is %i bytes per sector; expected %i\n", fd->sectorSize, BYTES_PER_SECTOR);
         errno = EIO;
         return -1;
     }
@@ -143,10 +143,9 @@ static int ntfs_device_gekko_io_open(struct ntfs_device *dev, int flags)
         NDevSetReadOnly(dev);
     }
     
-    //Create cache
-	fd->cache=_NTFS_cache_constructor(10,128,interface,fd->startSector + fd->sectorCount);
+    // Create the cache
+    fd->cache = _NTFS_cache_constructor(fd->cacheSize, SECTORS_PER_PAGE, interface, fd->startSector + fd->sectorCount);
 
-    
     // Mark the device as open
     NDevSetBlock(dev);
     NDevSetOpen(dev);
@@ -175,19 +174,23 @@ static int ntfs_device_gekko_io_close(struct ntfs_device *dev)
         return -1;
     }
     
+    // Mark the device as closed
+    NDevClearOpen(dev);
+    NDevClearBlock(dev);
+    
     // Flush the device (if dirty and not read-only)
     if (NDevDirty(dev) && !NDevReadOnly(dev)) {
         ntfs_log_debug("device is dirty, will now sync\n");
 
-        // TODO: This, if/when a cache system is implemented
+        // ...?
         
         // Mark the device as clean
         NDevClearDirty(dev);
         
     }
-    _NTFS_cache_flush(fd->cache);
 
-	// Free cache
+    // Flush and destroy the cache
+    _NTFS_cache_flush(fd->cache);
     _NTFS_cache_destructor(fd->cache);
 
     // Shutdown the device interface
@@ -195,11 +198,7 @@ static int ntfs_device_gekko_io_close(struct ntfs_device *dev)
     if (interface) {
         interface->shutdown();
     }*/
-    
-    // Mark the device as closed
-    NDevClearBlock(dev);
-    NDevClearOpen(dev);
-    
+
     // Free the device driver private data
     ntfs_free(dev->d_private);
     dev->d_private = NULL;
@@ -321,7 +320,6 @@ static s64 ntfs_device_gekko_io_readraw(struct ntfs_device *dev, s64 offset, s64
         
         // Read from the device
         ntfs_log_trace("buffered read from sector %d (%d sector(s) long)\n", sec_start, sec_count);
-        //if (!interface->readSectors(sec_start, sec_count, buffer)) {
         if (!_NTFS_cache_readSectors(fd->cache,sec_start, sec_count, buffer)) {
             ntfs_log_perror("buffered read failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
             ntfs_free(buffer);
@@ -384,7 +382,6 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
         
         // Write to the device
         ntfs_log_trace("direct write to sector %d (%d sector(s) long)\n", sec_start, sec_count);
-        //if (!interface->writeSectors(sec_start, sec_count, buf)) {
         if (!_NTFS_cache_writeSectors(fd->cache, sec_start, sec_count, buf)) {
             ntfs_log_perror("direct write failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
             errno = EIO;
@@ -405,7 +402,6 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
         // NOTE: This is done because the data does not line up with the sector boundaries, 
         //       we just read in the buffer edges where the data overlaps with the rest of the disc
         if((offset % fd->sectorSize == 0)) {
-            //if (!interface->readSectors(sec_start, 1, buffer)) {
             if (!_NTFS_cache_readSectors(fd->cache, sec_start, 1, buffer)) {
                 ntfs_log_perror("read failure @ sector %d\n", sec_start);
                 ntfs_free(buffer);
@@ -414,7 +410,6 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
             }
         }
         if((count % fd->sectorSize == 0)) {
-            //if (!interface->readSectors(sec_start + sec_count, 1, buffer + ((sec_count - 1) * fd->sectorSize))) {
             if (!_NTFS_cache_readSectors(fd->cache, sec_start + sec_count, 1, buffer + ((sec_count - 1) * fd->sectorSize))) {
                 ntfs_log_perror("read failure @ sector %d\n", sec_start + sec_count);
                 ntfs_free(buffer);
@@ -428,7 +423,6 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
         
         // Write to the device
         ntfs_log_trace("buffered write to sector %d (%d sector(s) long)\n", sec_start, sec_count);
-        //if (!interface->writeSectors(sec_start, sec_count, buffer)) {
         if (!_NTFS_cache_writeSectors(fd->cache, sec_start, sec_count, buffer)) {
             ntfs_log_perror("buffered write failure @ sector %d\n", sec_start);
             ntfs_free(buffer);
@@ -441,8 +435,9 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
         
     }
     
-    // Mark the device as dirty
-    NDevSetDirty(dev);
+    // Mark the device as dirty (if we actually wrote anything)
+    if (count)
+        NDevSetDirty(dev);
     
     return count;
 }
@@ -460,14 +455,14 @@ static int ntfs_device_gekko_io_sync(struct ntfs_device *dev)
         errno = EROFS;
         return -1;
     }
-    
-    // TODO: This, if/when a cache system is implemented
-	// Flush any sectors in the disc cache
-	if (!_NTFS_cache_flush(fd->cache)) {
-		return EIO;
-	}
-	
-	printf("sync: cache flushed\n");
+
+    // Flush any sectors in the disc cache
+    if (!_NTFS_cache_flush(fd->cache)) {
+        errno = EIO;
+        return -1;
+    }
+
+    printf("sync: cache flushed\n");
     
     // Mark the device as clean
     NDevClearDirty(dev);
@@ -565,7 +560,7 @@ static int ntfs_device_gekko_io_ioctl(struct ntfs_device *dev, int request, void
         #if defined(BLKBSZSET)
         case BLKBSZSET: {
             int sectorSize = *(int*)argp;
-            if (sectorSize != SECTOR_SIZE) {
+            if (sectorSize != BYTES_PER_SECTOR) {
                 ntfs_log_perror("Attempt to set sector size to an unsupported value (%i)\n", sectorSize);
                 errno = EOPNOTSUPP;
                 return -1;

@@ -101,7 +101,9 @@ int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
     // Close the entry
     ntfsCloseEntry(vd, ni);
     
-    return ret;
+    st->st_mode = S_IFREG;
+    
+    return 0;
 }
 
 int ntfs_link_r (struct _reent *r, const char *existing, const char *newLink)
@@ -120,18 +122,25 @@ int ntfs_unlink_r (struct _reent *r, const char *name)
 {
     ntfs_log_trace("name %s\n", name);
 
-    ntfs_vd *vd = ntfsGetVolume(name);
-	struct ntfs_device *dev = vd->vol->dev;
+    ntfs_vd *vd = NULL;
+    struct ntfs_device *dev = NULL;
+    
+    // Get the volume descriptor for this path
+    vd = ntfsGetVolume(name);
+    if (!vd) {
+        r->_errno = ENODEV;
+        return -1;
+    }
 
     // Unlink the entry
     int ret = ntfsUnlink(vd, name);
     if (ret)
         r->_errno = errno;
-       
-	// Sync
-	printf("ntfs_unlink_r: dev->d_ops->sync(dev)\n");
-	dev->d_ops->sync(dev);        
-        
+
+    // Sync
+    dev = vd->vol->dev;
+    dev->d_ops->sync(dev);
+    
     return ret;
 }
 
@@ -183,7 +192,7 @@ int ntfs_rename_r (struct _reent *r, const char *oldName, const char *newName)
     
     ntfs_vd *vd = NULL;
     ntfs_inode *ni = NULL;
-    struct ntfs_device *dev;
+    struct ntfs_device *dev = NULL;
     
     // Get the volume descriptor for this path
     vd = ntfsGetVolume(oldName);
@@ -191,7 +200,7 @@ int ntfs_rename_r (struct _reent *r, const char *oldName, const char *newName)
         r->_errno = ENODEV;
         return -1;
     }
-    dev = vd->vol->dev;
+
     // You cannot rename between devices
     if(vd != ntfsGetVolume(newName)) {
         r->_errno = EXDEV;
@@ -225,6 +234,7 @@ int ntfs_rename_r (struct _reent *r, const char *oldName, const char *newName)
     }
     
     // Sync
+    dev = vd->vol->dev;
     dev->d_ops->sync(dev);
     
     // Unlock
@@ -247,7 +257,6 @@ int ntfs_mkdir_r (struct _reent *r, const char *path, int mode)
         r->_errno = ENODEV;
         return -1;
     }
-    dev = vd->vol->dev;
     
     // Lock
     ntfsLock(vd);
@@ -262,10 +271,11 @@ int ntfs_mkdir_r (struct _reent *r, const char *path, int mode)
     
     // Close the directory
     ntfsCloseEntry(vd, ni);
-    
-	// Sync
-	dev->d_ops->sync(dev);        
-    
+
+    // Sync
+    dev = vd->vol->dev;
+    dev->d_ops->sync(dev);        
+
     // Unlock
     ntfsUnlock(vd);
     
