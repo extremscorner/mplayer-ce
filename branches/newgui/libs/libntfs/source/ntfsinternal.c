@@ -245,6 +245,10 @@ void ntfsDeinitVolume (ntfs_vd *vd)
     vd->firstOpenDir = NULL;
     vd->firstOpenFile = NULL;
     
+    // Sync
+    struct ntfs_device *dev = vd->vol->dev;
+    dev->d_ops->sync(dev);        
+    
     // Unlock
     ntfsUnlock(vd);
     

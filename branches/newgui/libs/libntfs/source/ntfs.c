@@ -503,23 +503,12 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
 
 void ntfsUnmount (const char *name, bool force)
 {
-    devoptab_t *devops = NULL;
     ntfs_vd *vd = NULL;
 
-    // Get the device for this mount
-    devops = (devoptab_t*)ntfsGetDevice(name, false);
-    if (!devops)
-        return;
-    
     // Get the devices volume descriptor
-    vd = (ntfs_vd*)devops->deviceData;
+    vd = ntfsGetVolume(name);
     if (!vd)
         return;
-    
-    // Perform a quick check to make sure we're dealing with a NTFS-3G controlled device
-    if (devops->open_r != devops_ntfs.open_r)
-        return;
-    
     
     // Remove the device from the devoptab table
     ntfsRemoveDevice(name);
@@ -537,29 +526,15 @@ void ntfsUnmount (const char *name, bool force)
 
 const char *ntfsGetVolumeName (const char *name)
 {
-    devoptab_t *devops = NULL;
     ntfs_vd *vd = NULL;
-
-    // Get the device for this mount
-    devops = (devoptab_t*)ntfsGetDevice(name, false);
-    if (!devops) {
-        errno = ENOENT;
-        return NULL;
-    }
-
-    // Perform a quick check to make sure we're dealing with a NTFS-3G controlled device
-    if (devops->open_r != devops_ntfs.open_r) {
-        errno = EINVALPART;
-        return NULL;
-    }
-
+    
     // Get the devices volume descriptor
-    vd = (ntfs_vd*)devops->deviceData;
+    vd = ntfsGetVolume(name);
     if (!vd) {
         errno = ENODEV;
-        return NULL;
+        return false;
     }
-
+    
     // TODO: Redo this so that it actually reads the AT_VOLUME_NAME attribute
     
     return vd->vol->vol_name;
@@ -567,27 +542,13 @@ const char *ntfsGetVolumeName (const char *name)
 
 bool ntfsSetVolumeName (const char *name, const char *volumeName)
 {
-    devoptab_t *devops = NULL;
     ntfs_vd *vd = NULL;
     ntfs_attr *na = NULL;
     ntfschar *ulabel = NULL;
     int ulabel_len;
-    
-    // Get the device for this mount
-    devops = (devoptab_t*)ntfsGetDevice(name, false);
-    if (!devops) {
-        errno = ENOENT;
-        return false;
-    }
-    
-    // Perform a quick check to make sure we're dealing with a NTFS-3G controlled device
-    if (devops->open_r != devops_ntfs.open_r) {
-        errno = EINVALPART;
-        return false;
-    }
 
     // Get the devices volume descriptor
-    vd = (ntfs_vd*)devops->deviceData;
+    vd = ntfsGetVolume(name);
     if (!vd) {
         errno = ENODEV;
         return false;

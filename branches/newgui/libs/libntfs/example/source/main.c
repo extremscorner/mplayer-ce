@@ -51,8 +51,12 @@ void list(const char *path)
                 continue;
             
             // Get the entries stats
+            memset(&st, 3, sizeof(struct stat));
+            printf("MEMSET STAT TO 3, ADDY = %p, st_mode = %i\n", &st, st.st_mode);
             if (stat(pent->d_name, &st) == -1)
                 continue;
+            
+            printf("STAT ADDY = %p, st_mode = %i\n", &st, st.st_mode);
             
             // List the entry
             if (S_ISBLK(st.st_mode)) {
