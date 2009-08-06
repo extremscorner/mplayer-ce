@@ -36,9 +36,10 @@ extern "C" {
 #define EDIRTY                          3002 /* Volume is dirty and NTFS_RECOVER was not specified during mount */
 #define EHIBERNATED                     3003 /* Volume is hibernated and NTFS_IGNORE_HIBERFILE was not specified during mount */
 
-/* NTFS cache page sizes */
-#define NTFS_CACHE_DISABLED             -1 /* Disable the cache completely */ 
-#define NTFS_CACHE_SIZE_DEFAULT         0 /* Use a cache size that is optimised for the host system */
+/* NTFS cache options */
+#define CACHE_DISABLED                  -1  /* Disable the cache */
+#define CACHE_DEFAULT_PAGE_COUNT        8   /* The default number of pages in the cache */
+#define CACHE_DEFAULT_PAGE_SIZE         128 /* The default number of sectors per cache page */
 
 /* NTFS mount flags */
 #define NTFS_DEFAULT                    0x00000000 /* Standard mount, expects a clean, non-hibernated volume */
@@ -72,26 +73,24 @@ extern int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitio
  * Mount all NTFS partitions on all inserted block devices.
  *
  * @param MOUNTS (out) A pointer to receive the array of mount descriptors
- * @param CACHESIZE The number of cache pages to allocate for each block device (see above)
  * @param FLAGS Additional mounting flags. (see above)
  * 
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno)
  * @note The caller is responsible for freeing MOUNTS when finished with it
  */
-extern int ntfsMountAll (ntfs_md **mounts, u32 cacheSize, u32 flags);
+extern int ntfsMountAll (ntfs_md **mounts, u32 flags);
 
 /**
  * Mount all NTFS partitions on a block devices.
  *
  * @param INTERFACE The block device to mount.
  * @param MOUNTS (out) A pointer to receive the array of mount descriptors
- * @param CACHESIZE The number of cache pages to allocate for the block device (see above)
  * @param FLAGS Additional mounting flags. (see above)
  * 
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno)
  * @note The caller is responsible for freeing MOUNTS when finished with it
  */
-extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u32 cacheSize, u32 flags);
+extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u32 flags);
 
 /**
  * Mount a NTFS partition from a specific sector on a block device.
@@ -99,13 +98,14 @@ extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u
  * @param NAME The name to mount the device under (can then be accessed as "NAME:/")
  * @param INTERFACE The block device to mount
  * @param STARTSECTOR The sector the partition begins at (see @ntfsFindPartitions)
- * @param CACHESIZE The number of cache pages to allocate for the block device (see above)
+ * @param CACHEPAGESIZE The number of sectors per cache page 
+ * @param CACHEPAGECOUNT The total number of pages in the device cache
  * @param FLAGS Additional mounting flags (see above)
  * 
  * @return True if mount was successful, false if no partition was found or an error occurred (see errno).
  * @note @ntfsFindPartitions should be used first to locate the partitions start sector.
  */
-extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cacheSize, u32 flags);
+extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cachePageSize, u32 cachePageCount, u32 flags);
 
 /**
  * Unmount a NTFS partition.

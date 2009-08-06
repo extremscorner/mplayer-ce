@@ -144,7 +144,7 @@ static int ntfs_device_gekko_io_open(struct ntfs_device *dev, int flags)
     }
     
     // Create the cache
-    fd->cache = _NTFS_cache_constructor(fd->cacheSize, SECTORS_PER_PAGE, interface, fd->startSector + fd->sectorCount);
+    fd->cache = _NTFS_cache_constructor(fd->cachePageCount, fd->cachePageSize, interface, fd->startSector + fd->sectorCount);
 
     // Mark the device as open
     NDevSetBlock(dev);

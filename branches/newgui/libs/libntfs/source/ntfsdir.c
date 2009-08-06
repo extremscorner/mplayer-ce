@@ -100,9 +100,7 @@ int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
 
     // Close the entry
     ntfsCloseEntry(vd, ni);
-    
-    st->st_mode = S_IFREG;
-    
+
     return 0;
 }
 
