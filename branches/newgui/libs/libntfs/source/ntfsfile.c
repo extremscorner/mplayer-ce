@@ -236,6 +236,10 @@ int ntfs_close_r (struct _reent *r, int fd)
     else
         file->vd->firstOpenFile = file->nextOpenFile;
     
+	// Sync
+    struct ntfs_device *dev = file->vd->vol->dev;
+	dev->d_ops->sync(dev);        
+    
     // Unlock
     ntfsUnlock(file->vd);
     
@@ -453,6 +457,10 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
        
     // sync to disk    
     ntfs_inode_sync(file->ni);
+
+	// Sync
+    struct ntfs_device *dev = file->vd->vol->dev;
+	dev->d_ops->sync(dev);        
 
     // Unlock
     ntfsUnlock(file->vd);

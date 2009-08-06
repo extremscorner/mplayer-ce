@@ -302,7 +302,14 @@ static s64 ntfs_device_gekko_io_readraw(struct ntfs_device *dev, s64 offset, s64
         
         // Read from the device
         ntfs_log_trace("direct read from sector %d (%d sector(s) long)\n", sec_start, sec_count);
-        if (!_NTFS_cache_readSectors(fd->cache,sec_start, sec_count, buf)) {        
+        if(!fd->cache) {
+	        if (!interface->readSectors(sec_start, sec_count, buf)) {        
+	            ntfs_log_perror("direct read failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
+	            errno = EIO;
+	            return -1;
+	        }
+	    }
+        else if (!_NTFS_cache_readSectors(fd->cache,sec_start, sec_count, buf)) {        
             ntfs_log_perror("direct read failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
             errno = EIO;
             return -1;
@@ -320,7 +327,16 @@ static s64 ntfs_device_gekko_io_readraw(struct ntfs_device *dev, s64 offset, s64
         
         // Read from the device
         ntfs_log_trace("buffered read from sector %d (%d sector(s) long)\n", sec_start, sec_count);
-        if (!_NTFS_cache_readSectors(fd->cache,sec_start, sec_count, buffer)) {
+
+        if(!fd->cache) {
+        	if (!interface->readSectors(sec_start, sec_count, buffer)) {
+	            ntfs_log_perror("buffered read failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
+	            ntfs_free(buffer);
+	            errno = EIO;
+	            return -1;
+	        }        	
+	    }
+        else if (!_NTFS_cache_readSectors(fd->cache,sec_start, sec_count, buffer)) {
             ntfs_log_perror("buffered read failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
             ntfs_free(buffer);
             errno = EIO;
@@ -382,7 +398,14 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
         
         // Write to the device
         ntfs_log_trace("direct write to sector %d (%d sector(s) long)\n", sec_start, sec_count);
-        if (!_NTFS_cache_writeSectors(fd->cache, sec_start, sec_count, buf)) {
+        if(!fd->cache) {
+		   	if (!interface->writeSectors(sec_start, sec_count, buf)) {
+	            ntfs_log_perror("direct write failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
+	            errno = EIO;
+	            return -1;
+	        }
+	    }
+        else if (!_NTFS_cache_writeSectors(fd->cache, sec_start, sec_count, buf)) {
             ntfs_log_perror("direct write failure @ sector %d (%d sector(s) long)\n", sec_start, sec_count);
             errno = EIO;
             return -1;
@@ -402,7 +425,15 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
         // NOTE: This is done because the data does not line up with the sector boundaries, 
         //       we just read in the buffer edges where the data overlaps with the rest of the disc
         if((offset % fd->sectorSize == 0)) {
-            if (!_NTFS_cache_readSectors(fd->cache, sec_start, 1, buffer)) {
+        	if(!fd->cache) {
+            	if (!interface->readSectors(sec_start, 1, buffer)) {
+	                ntfs_log_perror("read failure @ sector %d\n", sec_start);
+	                ntfs_free(buffer);
+	                errno = EIO;
+	                return -1;
+	            }
+	        }
+            else if (!_NTFS_cache_readSectors(fd->cache, sec_start, 1, buffer)) {
                 ntfs_log_perror("read failure @ sector %d\n", sec_start);
                 ntfs_free(buffer);
                 errno = EIO;
@@ -410,12 +441,20 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
             }
         }
         if((count % fd->sectorSize == 0)) {
-            if (!_NTFS_cache_readSectors(fd->cache, sec_start + sec_count, 1, buffer + ((sec_count - 1) * fd->sectorSize))) {
-                ntfs_log_perror("read failure @ sector %d\n", sec_start + sec_count);
-                ntfs_free(buffer);
-                errno = EIO;
-                return -1;
-            }
+			if(!fd->cache) {
+				if (!interface->readSectors(sec_start + sec_count, 1, buffer + ((sec_count - 1) * fd->sectorSize))) {            
+	                ntfs_log_perror("read failure @ sector %d\n", sec_start + sec_count);
+	                ntfs_free(buffer);
+	                errno = EIO;
+	                return -1;
+	            }
+	        }
+            else if (!_NTFS_cache_readSectors(fd->cache, sec_start + sec_count, 1, buffer + ((sec_count - 1) * fd->sectorSize))) {
+	                ntfs_log_perror("read failure @ sector %d\n", sec_start + sec_count);
+	                ntfs_free(buffer);
+	                errno = EIO;
+	                return -1;
+	            }
         }
         
         // Copy the data into the write buffer
@@ -423,12 +462,20 @@ static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s6
         
         // Write to the device
         ntfs_log_trace("buffered write to sector %d (%d sector(s) long)\n", sec_start, sec_count);
-        if (!_NTFS_cache_writeSectors(fd->cache, sec_start, sec_count, buffer)) {
-            ntfs_log_perror("buffered write failure @ sector %d\n", sec_start);
-            ntfs_free(buffer);
-            errno = EIO;
-            return -1;
-        }
+        if(!fd->cache) {
+        	if (!interface->writeSectors(sec_start, sec_count, buffer)) {
+	            ntfs_log_perror("buffered write failure @ sector %d\n", sec_start);
+	            ntfs_free(buffer);
+	            errno = EIO;
+	            return -1;
+	        }
+	    }
+	    else if (!_NTFS_cache_writeSectors(fd->cache, sec_start, sec_count, buffer)) {
+	            ntfs_log_perror("buffered write failure @ sector %d\n", sec_start);
+	            ntfs_free(buffer);
+	            errno = EIO;
+	            return -1;
+	        }
 
         // Free the buffer
         ntfs_free(buffer);

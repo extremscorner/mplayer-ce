@@ -53,12 +53,14 @@ NTFS_CACHE* _NTFS_cache_constructor (unsigned int numberOfPages, unsigned int se
 	unsigned int i;
 	NTFS_CACHE_ENTRY* cacheEntries;
 
-	if (numberOfPages < 2) {
-		numberOfPages = 2;
+	if(numberOfPages==0 || sectorsPerPage==0) return NULL;
+
+	if (numberOfPages < 4) {
+		numberOfPages = 4;
 	}
 
-	if (sectorsPerPage < 8) {
-		sectorsPerPage = 8;
+	if (sectorsPerPage < 32) {
+		sectorsPerPage = 32;
 	}
 
 	cache = (NTFS_CACHE*) ntfs_alloc (sizeof(NTFS_CACHE));
@@ -93,6 +95,9 @@ NTFS_CACHE* _NTFS_cache_constructor (unsigned int numberOfPages, unsigned int se
 
 void _NTFS_cache_destructor (NTFS_CACHE* cache) {
 	unsigned int i;
+	
+	if(cache==NULL) return;
+	
 	// Clear out cache before destroying it
 	_NTFS_cache_flush(cache);
 
@@ -292,7 +297,9 @@ Flushes all dirty pages to disc, clearing the dirty flag.
 */
 bool _NTFS_cache_flush (NTFS_CACHE* cache) {
 	unsigned int i;
+	if(cache==NULL) return;
 
+	printf("_NTFS_cache_flush: cache flushed\n");
 	for (i = 0; i < cache->numberOfPages; i++) {
 		if (cache->cacheEntries[i].dirty) {
 			if (!cache->disc->writeSectors (cache->cacheEntries[i].sector, cache->cacheEntries[i].count, cache->cacheEntries[i].cache)) {
@@ -307,6 +314,7 @@ bool _NTFS_cache_flush (NTFS_CACHE* cache) {
 
 void _NTFS_cache_invalidate (NTFS_CACHE* cache) {
 	unsigned int i;
+	if(cache==NULL) return;
 	_NTFS_cache_flush(cache);
 	for (i = 0; i < cache->numberOfPages; i++) {
 		cache->cacheEntries[i].sector = CACHE_FREE;

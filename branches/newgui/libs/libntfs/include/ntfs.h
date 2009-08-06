@@ -37,7 +37,6 @@ extern "C" {
 #define EHIBERNATED                     3003 /* Volume is hibernated and NTFS_IGNORE_HIBERFILE was not specified during mount */
 
 /* NTFS cache options */
-#define CACHE_DISABLED                  -1  /* Disable the cache */
 #define CACHE_DEFAULT_PAGE_COUNT        8   /* The default number of pages in the cache */
 #define CACHE_DEFAULT_PAGE_SIZE         128 /* The default number of sectors per cache page */
 
