@@ -67,6 +67,25 @@ static const devoptab_t devops_ntfs = {
     NULL /* Device data */
 };
 
+void ntfsInit (void)
+{
+    static bool isInit = false;
+    
+    // Initialise ntfs-3g (if not already done so)
+    if (!isInit) {
+        isInit = true;
+
+        // Set the log handler
+        ntfs_log_set_handler(ntfs_log_handler_stderr);
+        
+        // Set our current local
+        ntfs_set_locale();
+        
+    }
+    
+    return;
+}
+
 int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
 {
     MASTER_BOOT_RECORD mbr;
@@ -83,8 +102,8 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
         NTFS_BOOT_SECTOR boot;
     } sector;
     
-    // Set the log handler
-    ntfs_log_set_handler(ntfs_log_handler_stderr);
+    // Initialise ntfs-3g
+    ntfsInit();
     
     // Start the device and check that it is inserted
     if (!interface->startup()) {
@@ -260,7 +279,10 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
     int partition_count = 0;
     char name[128];
     int i, j, k;
-
+    
+    // Initialise ntfs-3g
+    ntfsInit();
+    
     // Find and mount all NTFS partitions on all known devices
     for (i = 0; discs[i].name != NULL && discs[i].interface != NULL; i++) {
         disc = &discs[i];
@@ -270,13 +292,13 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
 
                 // Find the next unused mount name
                 do {                    
-                    sprintf(name, "%s%i", NTFS_MOUNT_NAME, k++);
+                    sprintf(name, "%s%i", NTFS_MOUNT_PREFIX, k++);
                     if (k >= NTFS_MAX_MOUNTS) {
                         ntfs_free(partitions);
                         errno = EADDRNOTAVAIL;
                         return -1;
                     }
-                } while (ntfsGetDeviceOpTab(name, false));
+                } while (ntfsGetDevice(name, false));
 
                 // Mount the partition
                 if (mount_count < NTFS_MAX_MOUNTS) {
@@ -316,6 +338,9 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
     char name[128];
     int i, j, k;
     
+    // Initialise ntfs-3g
+    ntfsInit();
+    
     // Find the specified device then find and mount all NTFS partitions on it
     for (i = 0; discs[i].name != NULL && discs[i].interface != NULL; i++) {
         if (discs[i].interface == interface) {
@@ -326,13 +351,13 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
                     
                     // Find the next unused mount name
                     do {                    
-                        sprintf(name, "%s%i", NTFS_MOUNT_NAME, k++);
+                        sprintf(name, "%s%i", NTFS_MOUNT_PREFIX, k++);
                         if (k >= NTFS_MAX_MOUNTS) {
                             ntfs_free(partitions);
                             errno = EADDRNOTAVAIL;
                             return -1;
                         }
-                    } while (ntfsGetDeviceOpTab(name, false));
+                    } while (ntfsGetDevice(name, false));
                     
                     // Mount the partition
                     if (mount_count < NTFS_MAX_MOUNTS) {
@@ -361,7 +386,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
     if (mount_count > 0) {
         *mounts = (ntfs_md*)ntfs_alloc(sizeof(ntfs_md) * mount_count);
         if (*mounts) {
-            memcpy(*mounts, mount_points, sizeof(ntfs_md) * mount_count);
+            memcpy(*mounts, &mount_points, sizeof(ntfs_md) * mount_count);
             return mount_count;
         }
     }
@@ -371,18 +396,15 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
 
 bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 flags)
 {
-    devoptab_t *devops = NULL;
-    char *devname = NULL;
     struct ntfs_device *dev = NULL;
     ntfs_vd *vd = NULL;
     gekko_fd *fd = NULL;
-
-    // Set the local environment
-    ntfs_set_locale();
-    ntfs_log_set_handler(ntfs_log_handler_stderr);
+    
+    // Initialise ntfs-3g
+    ntfsInit();
 
     // Check that the request mount name is free
-    if (ntfsGetDeviceOpTab(name, false)) {
+    if (ntfsGetDevice(name, false)) {
         errno = EADDRINUSE;
         return false;
     }
@@ -393,20 +415,9 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         return false;
     }
     
-    // Allocate a devoptab for this device
-    devops = ntfs_alloc(sizeof(devoptab_t) + strlen(name) + 1);
-    if (!devops) {
-        errno = ENOMEM;
-        return false;
-    }
-    
-    // Use the space allocated at the end of the devoptab for storing the device name
-    devname = (char*)(devops + 1);
-    
     // Allocate the device driver descriptor
     fd = (gekko_fd*)ntfs_alloc(sizeof(gekko_fd));
     if (!fd) {
-        ntfs_free(devops);
         errno = ENOMEM;
         return false;
     }
@@ -421,7 +432,6 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     dev = ntfs_device_alloc(name, 0, &ntfs_device_gekko_io_ops, fd);
     if (!dev) {
         ntfs_free(fd);
-        ntfs_free(devops);
         return false;
     }
     
@@ -430,7 +440,6 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     if (!vd) {
         ntfs_device_free(dev);
         ntfs_free(fd);
-        ntfs_free(devops);
         errno = ENOMEM;
         return false;
     }
@@ -444,7 +453,6 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     vd->dmask = 0;
     vd->atime = ((flags & NTFS_UPDATE_ACCESS_TIMES) ? ATIME_ENABLED : ATIME_DISABLED);
     vd->showSystemFiles = (flags & NTFS_SHOW_SYSTEM_FILES);
-    vd->cwd_ni = NULL;
     
     // Build the mount flags
     if (!(interface->features & FEATURE_MEDIUM_CANWRITE))
@@ -471,18 +479,22 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         }
         ntfs_free(vd);
         ntfs_device_free(dev);
-        ntfs_free(devops);
         return false;
     }
-    // Initialise the volume lock
-    LWP_MutexInit(&vd->lock, false);
+    // Initialise volume descriptor
+    if (ntfsInitVolume(vd)) {
+        ntfs_umount(vd->vol, true);
+        ntfs_free(vd);
+        return false;
+    }
     
     // Add the device to the devoptab table
-    memcpy(devops, &devops_ntfs, sizeof(devops_ntfs));
-    strcpy(devname, name);
-    devops->name = devname;
-    devops->deviceData = vd;
-    AddDevice(devops);
+    if (ntfsAddDevice(name, vd)) {
+        ntfsDeinitVolume(vd);
+        ntfs_umount(vd->vol, true);
+        ntfs_free(vd);
+        return false;
+    }
     
     return true;
 }
@@ -491,10 +503,15 @@ void ntfsUnmount (const char *name, bool force)
 {
     devoptab_t *devops = NULL;
     ntfs_vd *vd = NULL;
-    
+
     // Get the device for this mount
-    devops = (devoptab_t*)ntfsGetDeviceOpTab(name, false);
+    devops = (devoptab_t*)ntfsGetDevice(name, false);
     if (!devops)
+        return;
+    
+    // Get the devices volume descriptor
+    vd = (ntfs_vd*)devops->deviceData;
+    if (!vd)
         return;
     
     // Perform a quick check to make sure we're dealing with a NTFS-3G controlled device
@@ -503,26 +520,17 @@ void ntfsUnmount (const char *name, bool force)
     
     
     // Remove the device from the devoptab table
-    RemoveDevice(name);
-    
-    // Get the devices volume descriptor
-    vd = (ntfs_vd*)devops->deviceData;
-    if (vd) {
-        // Deinitialise the volume lock
-        LWP_MutexDestroy(vd->lock);
+    ntfsRemoveDevice(name);
         
-        // Close the volumes current directory (if any)
-        if (vd->cwd_ni) 
-            ntfs_inode_close(vd->cwd_ni);
-        
-        // Unmount and free the volume
-        ntfs_umount(vd->vol, force);
-
-    }
+    // Deinitialise the volume descriptor
+    ntfsDeinitVolume(vd);
     
-    // Free the devoptab for the device
-    ntfs_free(devops);
+    // Unmount the volume
+    ntfs_umount(vd->vol, force);
+    // Free the volume descriptor
+    ntfs_free(vd);
     
+    return;
 }
 
 const char *ntfsGetVolumeName (const char *name)
@@ -531,7 +539,7 @@ const char *ntfsGetVolumeName (const char *name)
     ntfs_vd *vd = NULL;
 
     // Get the device for this mount
-    devops = (devoptab_t*)ntfsGetDeviceOpTab(name, false);
+    devops = (devoptab_t*)ntfsGetDevice(name, false);
     if (!devops) {
         errno = ENOENT;
         return NULL;
@@ -550,6 +558,8 @@ const char *ntfsGetVolumeName (const char *name)
         return NULL;
     }
 
+    // TODO: Redo this so that it actually reads the AT_VOLUME_NAME attribute
+    
     return vd->vol->vol_name;
 }
 
@@ -557,13 +567,12 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
 {
     devoptab_t *devops = NULL;
     ntfs_vd *vd = NULL;
-    ntfs_attr_search_ctx *ctx = NULL;
-    ATTR_RECORD *attr = NULL;
-    ntfschar *label = NULL;
-    int label_len;
+    ntfs_attr *na = NULL;
+    ntfschar *ulabel = NULL;
+    int ulabel_len;
     
     // Get the device for this mount
-    devops = (devoptab_t*)ntfsGetDeviceOpTab(name, false);
+    devops = (devoptab_t*)ntfsGetDevice(name, false);
     if (!devops) {
         errno = ENOENT;
         return false;
@@ -581,87 +590,67 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
         errno = ENODEV;
         return false;
     }
-    
-    // Get the volumes attribute search context
-    ctx = ntfs_attr_get_search_ctx(vd->vol->vol_ni, NULL);
-    if (!ctx) {
-        return false;
-    }
-
-    // Find the volume name attribute (if it exists)
-    if (ntfs_attr_lookup(AT_VOLUME_NAME, AT_UNNAMED, 0, 0, 0, NULL, 0, ctx)) {
-        attr = NULL;
-        if (errno != ENOENT) {
-            return false;
-        }
-    } else {
-        attr = ctx->attr;
-        if (attr->non_resident) {
-            errno = EINVAL;
-            return false;
-        }
-    }
 
     // Convert the new volume name to unicode
-    label_len = ntfsLocalToUnicode(volumeName, &label);
-    if (label_len == -1) {
+    ulabel_len = ntfsLocalToUnicode(volumeName, &ulabel) * sizeof(ntfschar);
+    if (ulabel_len == -1) {
         errno = EINVAL;
         return false;
     }
 
-    // If the volume name attribute exist then update it with the new name
-    if (attr) {
-        // TODO: resize attr to fit label, set attr value to label
+    // Lock
+    ntfsLock(vd);
+    
+    // Check if the volume name attribute exists
+    na = ntfs_attr_open(vd->vol->vol_ni, AT_VOLUME_NAME, NULL, 0);
+    if (na) {
         
-    // Else create a new volume name attribute
+        // It does, resize it to match the length of the new volume name
+        if (ntfs_attr_truncate(na, ulabel_len)) {
+            ntfs_free(ulabel);
+            ntfsUnlock(vd);
+            return false;
+        }
+        
+        // Write the new volume name
+        if (ntfs_attr_pwrite(na, 0, ulabel_len, ulabel) != ulabel_len) {
+            ntfs_free(ulabel);
+            ntfsUnlock(vd);
+            return false;
+        }
+        
     } else {
-        // TODO: create new attr, set attr value to 'label
+        
+        // It doesn't, create it now
+        if (ntfs_attr_add(vd->vol->vol_ni, AT_VOLUME_NAME, NULL, 0, (u8*)ulabel, ulabel_len)) {
+            ntfs_free(ulabel);
+            ntfsUnlock(vd);
+            return false;
+        }
+        
     }
+    
+    // Close the volume name attribute
+    if (na)
+        ntfs_attr_close(na);
     
     // Sync the volume node
     if (ntfs_inode_sync(vd->vol->vol_ni)) {
-        ntfs_free(label);
+        ntfs_free(ulabel);
+        ntfsUnlock(vd);
         return false;
     }
     
     // Clean up
-    ntfs_free(label);
+    ntfs_free(ulabel);
+    
+    // Unlock
+    ntfsUnlock(vd);
     
     return true;
 }
 
-const devoptab_t *ntfsDeviceOpTab (void)
+const devoptab_t *ntfsGetDevOpTab (void)
 {
     return &devops_ntfs;
-}
-
-const devoptab_t *ntfsGetDeviceOpTab (const char *path, bool useDefaultDevice)
-{
-    const devoptab_t *devoptab = NULL;
-    char name[128];
-    int i;
-    
-    // Get the device name from the path
-    strncpy(name, path, 127);
-    strtok(name, ":/");
-    
-    // Search the devoptab table for the specified device name
-    // NOTE: We do this manually due to a 'bug' in newlib which
-    //       causes names like "usb" and "usb1" to be seen as equals
-    for (i = 0; i < STD_MAX; i++) {
-        devoptab = devoptab_list[i];
-        if (devoptab && devoptab->name) {
-            if (strcmp(name, devoptab->name) == 0) {
-                return devoptab;
-            }
-        }
-    }
-
-    // If we reach here then we couldn't find the device name,
-    // chances are that this path has no device name in it.
-    // Call newlib to get our default (chdir) device. (only if allowed)
-    if (useDefaultDevice)
-        return GetDeviceOpTab(path);
-
-    return NULL;
 }

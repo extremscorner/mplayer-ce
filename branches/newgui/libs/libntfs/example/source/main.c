@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
     // List all mounted NTFS volumes
     for (i = 0; i < mountCount; i++)
         printf("%i - %s:/ (%s)\n", i + 1, mounts[i].name, ntfsGetVolumeName(mounts[i].name)); 
-    
+
     printf("\n");
     while (1) {
         
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
                 strcpy(path, mounts[mountIndex].name);
                 strcat(path, ":/");
                 chdir(path);
-                
+
                 // Enumerate the volumes contents
                 list("");
                 listed = true;

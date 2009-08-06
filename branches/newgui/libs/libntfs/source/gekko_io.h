@@ -29,7 +29,7 @@
 #include <gccore.h>
 #include <ogc/disc_io.h>
 
-#define SECTOR_SIZE                     512 /* Forced by gekko disc i/o */
+#define SECTOR_SIZE                         512 /* Forced by gekko disc i/o */
 #include "cache.h"
 
 
@@ -37,20 +37,21 @@
  * gekko_fd - Gekko device driver descriptor
  */
 typedef struct _gekko_fd {
-    const DISC_INTERFACE* interface;    /* Device disc interface */
-    sec_t startSector;                  /* LBA of partition start */
-    sec_t hiddenSectors;                /* LBA offset to true partition start (as described by boot sector) */
-    u16 sectorSize;                     /* Device sector size (in bytes) */
-    u64 sectorCount;                    /* Total number of sectors in partition */
-    u64 pos;                            /* Current position within the partition (in bytes) */
-    u64 len;                            /* Total length of partition (in bytes) */
-    ino_t ino;                          /* Device identifier */
-    NTFS_CACHE *cache;					/* Cache */    
+    const DISC_INTERFACE* interface;        /* Device disc interface */
+    sec_t startSector;                      /* LBA of partition start */
+    sec_t hiddenSectors;                    /* LBA offset to true partition start (as described by boot sector) */
+    u16 sectorSize;                         /* Device sector size (in bytes) */
+    u64 sectorCount;                        /* Total number of sectors in partition */
+    u64 pos;                                /* Current position within the partition (in bytes) */
+    u64 len;                                /* Total length of partition (in bytes) */
+    ino_t ino;                              /* Device identifier */
+    NTFS_CACHE *cache;                      /* Cache */    
 } gekko_fd;
 
-/* Forward declaration. */
+/* Forward declarations */
 struct ntfs_device_operations;
 
+/* Gekko device driver i/o operations */
 extern struct ntfs_device_operations ntfs_device_gekko_io_ops;
 
 #endif /* _GEKKO_IO_H */

@@ -32,17 +32,22 @@
 /**
  * ntfs_file_state - File state
  */
-typedef struct _ntfs_file {
-    ntfs_vd *vd;                        /* Volume this file belongs to */
-    ntfs_inode *ni;                     /* File descriptor */
-    ntfs_attr *data_na;                 /* File data descriptor */
-    int flags;                          /* Opening flags */
-    bool read;                          /* True if allowed to read from file */
-    bool write;                         /* True if allowed to write to file */
-    bool append;                        /* True if allowed to append to file */
-    s64 pos;                            /* Current position within the file (in bytes) */
-    s64 len;                            /* Total length of the file (in bytes) */
+typedef struct _ntfs_file_state {
+    ntfs_vd *vd;                            /* Volume this file belongs to */
+    ntfs_inode *ni;                         /* File descriptor */
+    ntfs_attr *data_na;                     /* File data descriptor */
+    int flags;                              /* Opening flags */
+    bool read;                              /* True if allowed to read from file */
+    bool write;                             /* True if allowed to write to file */
+    bool append;                            /* True if allowed to append to file */
+    s64 pos;                                /* Current position within the file (in bytes) */
+    s64 len;                                /* Total length of the file (in bytes) */
+    struct _ntfs_file_state *prevOpenFile;  /* The previous entry in a double-linked FILO list of open files */
+    struct _ntfs_file_state *nextOpenFile;  /* The next entry in a double-linked FILO list of open files */
 } ntfs_file_state;
+
+/* File state routines */
+void ntfsCloseFile (ntfs_file_state *file);
 
 /* Gekko devoptab file routines for NTFS-based devices */
 extern int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags, int mode);

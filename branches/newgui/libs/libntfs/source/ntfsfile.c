@@ -44,6 +44,33 @@
 
 #define STATE(x)    ((ntfs_file_state*)x)
 
+void ntfsCloseFile (ntfs_file_state *file)
+{
+    // Sanity check
+    if (!file || !file->vd)
+        return;
+    
+    // Close the file data attribute (if open)
+    if (file->data_na)
+        ntfs_attr_close(file->data_na);
+    
+    // Close the file (if open)
+    if (file->ni)
+        ntfsCloseEntry(file->vd, file->ni);
+    
+    // Reset the file state
+    file->ni = NULL;
+    file->data_na = NULL;
+    file->flags = 0;
+    file->read = false;
+    file->write = false;
+    file->append = false;
+    file->pos = 0;
+    file->len = 0;
+
+    return;
+}
+
 int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags, int mode)
 {
     ntfs_log_trace("fileStruct %p, path %s, flags %i, mode %i\n", fileStruct, path, flags, mode);
@@ -59,7 +86,7 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
 
     // Lock
     ntfsLock(file->vd);
-    
+
     // Determine which mode the file is opened for
     file->flags = flags;
     if ((flags & 0x03) == O_RDONLY) {
@@ -92,7 +119,7 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     // Are we creating this file?
     if (flags & O_CREAT) {
         
-        // The file SHOULD NOT exist if we ARE creating it
+        // The file SHOULD NOT already exist
         if (file->ni) {
             ntfsCloseEntry(file->vd, file->ni);
             ntfsUnlock(file->vd);
@@ -106,46 +133,72 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
             ntfsUnlock(file->vd);
             return -1;
         }
-        
-        // Create the files data attribute
-        /*file->data_na = ntfs_attr_add(file->ni, AT_DATA, AT_UNNAMED, 0, NULL, 0);
-        if (!file->data_na) {
-            return -1;
-        }*/
-        
-    // Else we must be opening it
-    } else {
-       
-        // The file SHOULD exist if we ARE NOT creating it
-        if (!file->ni) {
-            ntfsUnlock(file->vd);
-            r->_errno = ENOENT;
-            return -1;
-        }
-        
-        // Check that the file has a data attribute
-        //...
-        
-        // Open the files data attribute
-        file->data_na = ntfs_attr_open(file->ni, AT_DATA, AT_UNNAMED, 0);
-        if(!file->data_na) {
-            ntfsUnlock(file->vd);
-            return -1;
-        }
-        
-        file->pos = 0;
-        file->len = file->data_na->data_size;
-        
+
     }
     
-    // Sanity check
+    // Sanity check, the file should be open by now
     if (!file->ni) {
-        r->_errno = EINVAL;
+        ntfsUnlock(file->vd);
+        r->_errno = ENOENT;
         return -1;
     }
     
+    // Open the files data attribute
+    file->data_na = ntfs_attr_open(file->ni, AT_DATA, AT_UNNAMED, 0);
+    if(!file->data_na) {
+        printf("failed222!!!");
+        ntfsCloseEntry(file->vd, file->ni);
+        ntfsUnlock(file->vd);
+        return -1;
+    }
+    
+    // We cannot read/write encrypted attributes or write to compressed attributes
+    if ((NAttrEncrypted(file->data_na)) ||
+        (NAttrCompressed(file->data_na) && file->write)) {
+        ntfsCloseEntry(file->vd, file->ni);
+        ntfs_attr_close(file->data_na);
+        ntfsUnlock(file->vd);
+        r->_errno = EACCES;
+        return -1;
+    }
+    
+    // Make sure we aren't trying to write to a read-only file
+    if ((file->ni->flags & FILE_ATTR_READONLY) && file->write) {
+        ntfsCloseEntry(file->vd, file->ni);
+        ntfs_attr_close(file->data_na);
+        ntfsUnlock(file->vd);
+        r->_errno = EROFS;
+        return -1;
+    }
+    
+    // Truncate the file if requested
+    if ((flags & O_TRUNC) && file->write) {
+        if (ntfs_attr_truncate(file->data_na, 0)) {
+            ntfsCloseEntry(file->vd, file->ni);
+            ntfs_attr_close(file->data_na);
+            ntfsUnlock(file->vd);
+            r->_errno = errno;
+            return -1;
+        }
+    }
+    
+    // Set the files current position and length
+    file->pos = 0;
+    file->len = file->data_na->data_size;
+    
     // Update file times
     ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_ATIME);
+    
+    // Insert the file into the double-linked FILO list of open files
+    if (file->vd->firstOpenFile) {
+        file->nextOpenFile = file->vd->firstOpenFile;
+        file->vd->firstOpenFile->prevOpenFile = file;
+    } else {
+        file->nextOpenFile = NULL;
+    }
+    file->prevOpenFile = NULL;
+    file->vd->firstOpenFile = file;
+    file->vd->openFileCount++;
     
     // Unlock
     ntfsUnlock(file->vd);
@@ -172,23 +225,17 @@ int ntfs_close_r (struct _reent *r, int fd)
     if(file->write)
 	    ntfs_inode_sync(file->ni);
     
-    // Close the file data attribute (if open)
-    if (file->data_na)
-        ntfs_attr_close(file->data_na);
+    // Close the file
+    ntfsCloseFile(file);
     
-    // Close the file (if open)
-    if (file->ni)
-        ntfsCloseEntry(file->vd, file->ni);
-    
-    // Reset the file state
-    file->ni = NULL;
-    file->data_na = NULL;
-    file->flags = 0;
-    file->read = false;
-    file->write = false;
-    file->append = false;
-    file->pos = 0;
-    file->len = 0;
+    // Remove the file from the double-linked FILO list of open files
+    file->vd->openFileCount--;
+    if (file->nextOpenFile)
+        file->nextOpenFile->prevOpenFile = file->prevOpenFile;
+    if (file->prevOpenFile)
+        file->prevOpenFile->nextOpenFile = file->nextOpenFile;
+    else
+        file->vd->firstOpenFile = file->nextOpenFile;
     
     // Unlock
     ntfsUnlock(file->vd);
@@ -202,17 +249,59 @@ ssize_t ntfs_write_r (struct _reent *r, int fd, const char *ptr, size_t len)
     
     ntfs_file_state* file = STATE(fd);
     ssize_t written = 0;
+    off_t old_pos = 0;
     
     // Sanity check
     if (!file || !file->vd || !file->ni || !file->data_na) {
         r->_errno = EINVAL;
         return -1;
     }
-
+    
+    // Short circuit cases where we don't actually have to do anything
+    if (!ptr || len <= 0) {
+        return 0;
+    }
+    
     // Lock
     ntfsLock(file->vd);
     
-    //...
+    // Check that we are allowed to write to this file
+    if (!file->write) {
+        ntfsUnlock(file->vd);
+        r->_errno = EACCES;
+        return -1;
+    }
+    
+    // If we are in append mode, backup the current position move to the end of the file
+    if (file->append) {
+        old_pos = file->pos;
+        file->pos = file->len;
+    }
+    
+    // Write to the files data atrribute
+    while (len) {
+        ssize_t ret = ntfs_attr_pwrite(file->data_na, file->pos, len, ptr);
+        if (ret <= 0) {
+            ntfsUnlock(file->vd);
+            r->_errno = errno;
+            return -1;
+        }
+        len -= ret;
+        file->pos += ret;
+        written += ret;
+    }
+    
+    // If we are in append mode, restore the current position to were it was prior to this write
+    if (file->append) {
+        file->pos = old_pos;
+    }
+    
+    // Update the files length
+    file->len = file->data_na->data_size;
+    
+    // Update file times (if we actually did something)
+    if (written)
+        ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_MCTIME);
     
     // Unlock 
     ntfsUnlock(file->vd);
@@ -233,14 +322,21 @@ ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
         return -1;
     }
     
-    // Short circuit cases where read length is 0 (or less)
-    if (len <= 0) {
+    // Short circuit cases where we don't actually have to do anything
+    if (!ptr || len <= 0) {
         return 0;
     }
     
     // Lock
     ntfsLock(file->vd);
-
+    
+    // Check that we are allowed to read from this file
+    if (!file->read) {
+        ntfsUnlock(file->vd);
+        r->_errno = EACCES;
+        return -1;
+    }
+    
     // Don't read past the end of file
     if (file->pos + len > file->len) {
         r->_errno = EOVERFLOW;
@@ -248,11 +344,23 @@ ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
     }
 
     // Read from the files data attribute
-    read = ntfs_attr_pread(file->data_na, file->pos, len, ptr);
-    if (read > 0) {
-        file->pos += read;
+    while (len) {
+        ssize_t ret = ntfs_attr_pread(file->data_na, file->pos, len, ptr);
+        if (ret <= 0 || ret > len) {
+            ntfsUnlock(file->vd);
+            r->_errno = errno;
+            return -1;
+        }
+        ptr += ret;
+        len -= ret;
+        file->pos += ret;
+        read += ret;
     }
-
+    
+    // Update file times (if we actually did something)
+    if (read)
+        ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_ATIME);
+    
     // Unlock 
     ntfsUnlock(file->vd);
     
@@ -324,9 +432,17 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
     // Lock
     ntfsLock(file->vd);
     
+    // Check that we are allowed to write to this file
+    if (!file->write) {
+        ntfsUnlock(file->vd);
+        r->_errno = EACCES;
+        return -1;
+    }
+    
     // Resize the files data attribute
     if (ntfs_attr_truncate(file->data_na, len)) {
         ntfsUnlock(file->vd);
+        r->_errno = errno;
         return -1;
     }
 

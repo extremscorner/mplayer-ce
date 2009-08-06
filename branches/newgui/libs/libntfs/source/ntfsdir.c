@@ -46,6 +46,28 @@
 
 #define STATE(x)    ((ntfs_dir_state*)(x)->dirStruct)
 
+void ntfsCloseDir (ntfs_dir_state *dir)
+{
+    // Sanity check
+    if (!dir || !dir->vd)
+        return;
+    
+    // Free the current entry (if any)
+    if (dir->current)
+        ntfs_free(dir->current);
+    
+    // Close the directory (if open)
+    if (dir->ni)
+        ntfsCloseEntry(dir->vd, dir->ni);
+    
+    // Reset the directory state
+    dir->ni = NULL;
+    dir->position = 0;
+    dir->current = NULL;
+    
+    return;
+}
+
 int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
 {
     ntfs_log_trace("path %s, st %p\n", path, st);
@@ -397,8 +419,19 @@ DIR_ITER *ntfs_diropen_r (struct _reent *r, DIR_ITER *dirState, const char *path
     dir->current = NULL;
     ntfs_readdir(dir->ni, &dir->position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
 
-    // Update entry times
+    // Update directory times
     ntfsUpdateTimes(dir->vd, dir->ni, NTFS_UPDATE_ATIME);
+    
+    // Insert the directory into the double-linked FILO list of open directories
+    if (dir->vd->firstOpenDir) {
+        dir->nextOpenDir = dir->vd->firstOpenDir;
+        dir->vd->firstOpenDir->prevOpenDir = dir;
+    } else {
+        dir->nextOpenDir = NULL;
+    }
+    dir->prevOpenDir = NULL;
+    dir->vd->firstOpenDir = dir;
+    dir->vd->openDirCount++;
     
     // Unlock
     ntfsUnlock(dir->vd);
@@ -430,7 +463,7 @@ int ntfs_dirreset_r (struct _reent *r, DIR_ITER *dirState)
     dir->current = NULL;
     ntfs_readdir(dir->ni, &dir->position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
     
-    // Update entry times
+    // Update directory times
     ntfsUpdateTimes(dir->vd, dir->ni, NTFS_UPDATE_ATIME);
     
     // Unlock
@@ -479,7 +512,7 @@ int ntfs_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
     // Move to the next entry in the directory
     ntfs_readdir(dir->ni, &dir->position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
     
-    // Update entry times
+    // Update directory times
     ntfsUpdateTimes(dir->vd, dir->ni, NTFS_UPDATE_ATIME);
     
     // Unlock
@@ -493,7 +526,7 @@ int ntfs_dirclose_r (struct _reent *r, DIR_ITER *dirState)
     ntfs_log_trace("dirState %p\n", dirState);
     
     ntfs_dir_state* dir = STATE(dirState);
-    
+
     // Sanity check
     if (!dir || !dir->vd) {
         r->_errno = EBADF;
@@ -503,18 +536,17 @@ int ntfs_dirclose_r (struct _reent *r, DIR_ITER *dirState)
     // Lock
     ntfsLock(dir->vd);
     
-    // Free the current entry (if any)
-    if (dir->current)
-        ntfs_free(dir->current);
+    // Close the directory
+    ntfsCloseDir(dir);
     
-    // Close the directory (if open)
-    if (dir->ni)
-        ntfsCloseEntry(dir->vd, dir->ni);
-    
-    // Reset the directory state
-    dir->ni = NULL;
-    dir->position = 0;
-    dir->current = NULL;
+    // Remove the directory from the double-linked FILO list of open directories
+    dir->vd->openDirCount--;
+    if (dir->nextOpenDir)
+        dir->nextOpenDir->prevOpenDir = dir->prevOpenDir;
+    if (dir->prevOpenDir)
+        dir->prevOpenDir->nextOpenDir = dir->nextOpenDir;
+    else
+        dir->vd->firstOpenDir = dir->nextOpenDir;
     
     // Unlock
     ntfsUnlock(dir->vd);

@@ -29,11 +29,16 @@
  * ntfs_dir_state - Director state
  */
 typedef struct _ntfs_dir_state {
-    ntfs_vd *vd;
-    ntfs_inode *ni;
-    s64 position;
-    char *current;
+    ntfs_vd *vd;                            /* Volume this directory belongs to */
+    ntfs_inode *ni;                         /* Directory descriptor */
+    s64 position;                           /* The current position within the directory (for enumeration) */
+    char *current;                          /* The name of the current directory entry (for enumeration) */
+    struct _ntfs_dir_state *prevOpenDir;    /* The previous entry in a double-linked FILO list of open directories */
+    struct _ntfs_dir_state *nextOpenDir;    /* The next entry in a double-linked FILO list of open directories */
 } ntfs_dir_state;
+
+/* Directory state routines */
+void ntfsCloseDir (ntfs_dir_state *file);
 
 /* Gekko devoptab directory routines for NTFS-based devices */
 extern int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st);

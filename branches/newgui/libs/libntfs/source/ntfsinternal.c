@@ -34,6 +34,8 @@
 #endif
 
 #include "ntfsinternal.h"
+#include "ntfsdir.h"
+#include "ntfsfile.h"
 
 #if defined(__wii__)
 #include <sdcard/wiisd_io.h>
@@ -59,34 +61,197 @@ const INTERFACE_ID ntfs_disc_interfaces[] = {
 
 #endif
 
+int ntfsAddDevice (const char *name, void *deviceData)
+{
+    const devoptab_t *devoptab_ntfs = ntfsGetDevOpTab();
+    devoptab_t *dev = NULL;
+    char *devname = NULL;
+    int i;
+    
+    // Sanity check
+    if (!name || !deviceData || !devoptab_ntfs) {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    // Allocate a devoptab for this device
+    dev = ntfs_alloc(sizeof(devoptab_t) + strlen(name) + 1);
+    if (!dev) {
+        errno = ENOMEM;
+        return false;
+    }
+    
+    // Use the space allocated at the end of the devoptab for storing the device name
+    devname = (char*)(dev + 1);
+    strcpy(devname, name);
+    
+    // Setup the devoptab
+    memcpy(dev, devoptab_ntfs, sizeof(devoptab_t));
+    dev->name = devname;
+    dev->deviceData = deviceData;
+
+    // Find and remove te specified device from the devoptab table
+    // NOTE: We do this manually due to a 'bug' in AddDevice
+    //       which ignores names with suffixes and causes names
+    //       like "ntfs" and "ntfs1" to be seen as equals
+    for (i = 0; i < STD_MAX; i++) {
+        if (devoptab_list[i] == devoptab_list[0] && i != 0) {
+            devoptab_list[i] = dev;
+            return 0;
+        }
+    }
+
+    // If we reach here then there are no free slots in the devoptab table for this device
+    errno = EADDRNOTAVAIL;
+    return -1;
+}
+
+void ntfsRemoveDevice (const char *path)
+{
+    const devoptab_t *devoptab = NULL;
+    char name[128];
+    int i;
+    
+    // Get the device name from the path
+    strncpy(name, path, 127);
+    strtok(name, ":/");
+    
+    // Find and remove the specified device from the devoptab table
+    // NOTE: We do this manually due to a 'bug' in RemoveDevice
+    //       which ignores names with suffixes and causes names
+    //       like "ntfs" and "ntfs1" to be seen as equals
+    for (i = 0; i < STD_MAX; i++) {
+        devoptab = devoptab_list[i];
+        if (devoptab && devoptab->name) {
+            if (strcmp(name, devoptab->name) == 0) {
+                devoptab_list[i] = devoptab_list[0];
+                ntfs_free((devoptab_t*)devoptab);
+                break;
+            }
+        }
+    }
+    
+    return;
+}
+
+const devoptab_t *ntfsGetDevice (const char *path, bool useDefaultDevice)
+{
+    const devoptab_t *devoptab = NULL;
+    char name[128];
+    int i;
+    
+    // Get the device name from the path
+    strncpy(name, path, 127);
+    strtok(name, ":/");
+    
+    // Search the devoptab table for the specified device name
+    // NOTE: We do this manually due to a 'bug' in GetDeviceOpTab 
+    //       which ignores names with suffixes and causes names
+    //       like "ntfs" and "ntfs1" to be seen as equals
+    for (i = 0; i < STD_MAX; i++) {
+        devoptab = devoptab_list[i];
+        if (devoptab && devoptab->name) {
+            if (strcmp(name, devoptab->name) == 0) {
+                return devoptab;
+            }
+        }
+    }
+    
+    // If we reach here then we couldn't find the device name,
+    // chances are that this path has no device name in it. 
+    // Call GetDeviceOpTab to get our default (chdir) device.
+    if (useDefaultDevice)
+        return GetDeviceOpTab("");
+    
+    return NULL;
+}
+
 const INTERFACE_ID *ntfsGetDiscInterfaces (void)
 {
     // Get all know disc interfaces
     return ntfs_disc_interfaces;
 }
 
-const char *ntfsRealPath (const char *path)
-{    
-    // Move the path pointer to the start of the actual path
-    if (strchr(path, ':') != NULL) {
-        path = strchr(path, ':') + 1;
-    }
-    if (strchr(path, ':') != NULL) {
-        return NULL;
-    }
-    
-    return path;
-}
-
 ntfs_vd *ntfsGetVolume (const char *path)
 {
     // Get the volume descriptor from the paths associated devoptab (if possible)
-    const devoptab_t *devops_ntfs = ntfsDeviceOpTab();
-    const devoptab_t *devops = ntfsGetDeviceOpTab(path, true);
+    const devoptab_t *devops_ntfs = ntfsGetDevOpTab();
+    const devoptab_t *devops = ntfsGetDevice(path, true);
     if (devops && devops_ntfs && (devops->open_r == devops_ntfs->open_r))
         return (ntfs_vd*)devops->deviceData;
     
     return NULL;
+}
+
+int ntfsInitVolume (ntfs_vd *vd)
+{
+    // Sanity check
+    if (!vd) {
+        errno = ENODEV;
+        return -1;
+    }
+    
+    // Initialise the volume lock
+    LWP_MutexInit(&vd->lock, false);
+    
+    // Reset the volumes current directory
+    vd->cwd_ni = NULL;
+    
+    // Reset open directory and file stats
+    vd->openDirCount = 0;
+    vd->openFileCount = 0;
+    vd->firstOpenDir = NULL;
+    vd->firstOpenFile = NULL;
+    
+    return 0;
+}
+
+void ntfsDeinitVolume (ntfs_vd *vd)
+{
+    // Sanity check
+    if (!vd) {
+        errno = ENODEV;
+        return;
+    }
+    
+    // Lock
+    ntfsLock(vd);
+
+    // Close the volumes current directory (if any)
+    if (vd->cwd_ni) {
+        ntfs_inode_close(vd->cwd_ni);
+        vd->cwd_ni = NULL;
+    }
+    
+    // Close any directories which are still open (lazy programmers!)
+    ntfs_dir_state *nextDir = vd->firstOpenDir;
+    while (nextDir) {
+        ntfs_log_warning("Cleaning up orphaned directory @ %p\n", nextDir);
+        ntfsCloseDir(nextDir);
+        nextDir = nextDir->nextOpenDir;
+    }
+    
+    // Close any files which are still open (lazy programmers!)
+    ntfs_file_state *nextFile = vd->firstOpenFile;
+    while (nextFile) {
+        ntfs_log_warning("Cleaning up orphaned file @ %p\n", nextFile);
+        ntfsCloseFile(nextFile);
+        nextFile = nextFile->nextOpenFile;
+    }
+    
+    // Reset open directory and file stats
+    vd->openDirCount = 0;
+    vd->openFileCount = 0;
+    vd->firstOpenDir = NULL;
+    vd->firstOpenFile = NULL;
+    
+    // Unlock
+    ntfsUnlock(vd);
+    
+    // Deinitialise the volume lock
+    LWP_MutexDestroy(vd->lock);
+    
+    return;
 }
 
 ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path)
@@ -157,27 +322,24 @@ ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, co
     // Lock
     ntfsLock(vd);
     
-    // Copy the path
+    // Get the unicode name for the entry and find its parent directory
+    // TODO: This looks horrible
     dir = strdup(path);
     if (!dir) {
         errno = EINVAL;
         goto cleanup;
     }
-    
-    // Get the unicode name for the entry and find its parent directory
     name = strrchr(dir, '/');
-    if (name) {
+    if (name)
         name++;
-        uname_len = ntfsLocalToUnicode(name, &uname);
-        if (uname_len < 0) {
-            errno = EINVAL;
-            goto cleanup;
-        }
-        *name = 0;
-    } else {
+    else
+        name = dir;
+    uname_len = ntfsLocalToUnicode(name, &uname);
+    if (uname_len < 0) {
         errno = EINVAL;
         goto cleanup;
     }
+    *name = 0;
     
     // Open the entries parent directory
     dir_ni = ntfsOpenEntry(vd, dir);
@@ -260,30 +422,24 @@ int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path)
     // Lock
     ntfsLock(vd);
     
-    // Copy the destination path
+    // Get the unicode name for the entry and find its parent directory
+    // TODO: This looks horrible
     dir = strdup(new_path);
     if (!dir) {
         errno = EINVAL;
-        res = -1;
         goto cleanup;
     }
-    
-    // Get the unicode name for the destination entry and find its parent directory
     name = strrchr(dir, '/');
-    if (name) {
+    if (name)
         name++;
-        uname_len = ntfsLocalToUnicode(name, &uname);
-        if (uname_len < 0) {
-            errno = EINVAL;
-            res = -1;
-            goto cleanup;
-        }
-        *name = 0;
-    } else {
+    else
+        name = dir;
+    uname_len = ntfsLocalToUnicode(name, &uname);
+    if (uname_len < 0) {
         errno = EINVAL;
-        res = -1;
         goto cleanup;
     }
+    *name = 0;
     
     // Find the entry
     ni = ntfsOpenEntry(vd, old_path);
@@ -349,30 +505,24 @@ int ntfsUnlink (ntfs_vd *vd, const char *path)
     // Lock
     ntfsLock(vd);
     
-    // Copy the path
+    // Get the unicode name for the entry and find its parent directory
+    // TODO: This looks horrible
     dir = strdup(path);
     if (!dir) {
         errno = EINVAL;
-        res = -1;
         goto cleanup;
     }
-    
-    // Get the unicode name for the entry and find its parent directory
     name = strrchr(dir, '/');
-    if (name) {
+    if (name)
         name++;
-        uname_len = ntfsLocalToUnicode(name, &uname);
-        if (uname_len < 0) {
-            errno = EINVAL;
-            res = -1;
-            goto cleanup;
-        }
-        *name = 0;
-    } else {
+    else
+        name = dir;
+    uname_len = ntfsLocalToUnicode(name, &uname);
+    if (uname_len < 0) {
         errno = EINVAL;
-        res = -1;
         goto cleanup;
     }
+    *name = 0;
     
     // Find the entry
     ni = ntfsOpenEntry(vd, path);
@@ -536,18 +686,28 @@ cleanup:
 
 void ntfsUpdateTimes (ntfs_vd *vd, ntfs_inode *ni, ntfs_time_update_flags mask)
 {
-    // Run access time updates against the device driver settings first
-    if (vd->atime == ATIME_DISABLED)
+    // Run the access time update strategy against the device driver settings first
+    if (vd && vd->atime == ATIME_DISABLED)
         mask &= ~NTFS_UPDATE_ATIME;
-    if (vd->atime == ATIME_RELATIVE && mask == NTFS_UPDATE_ATIME &&
-        ni->last_access_time >= ni->last_data_change_time &&
-        ni->last_access_time >= ni->last_mft_change_time)
-        return;
-    
+
     // Update entry times
-    ntfs_inode_update_times(ni, mask);
+    if (ni && mask)
+        ntfs_inode_update_times(ni, mask);
     
     return;
+}
+
+const char *ntfsRealPath (const char *path)
+{    
+    // Move the path pointer to the start of the actual path
+    if (strchr(path, ':') != NULL) {
+        path = strchr(path, ':') + 1;
+    }
+    if (strchr(path, ':') != NULL) {
+        return NULL;
+    }
+    
+    return path;
 }
 
 int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int outs_len)
