@@ -38,6 +38,7 @@
 #include "ntfsfile.h"
 #include "ntfsdir.h"
 #include "gekko_io.h"
+#include "cache.h"
 
 // NTFS device driver devoptab
 static const devoptab_t devops_ntfs = {
@@ -473,7 +474,6 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         ntfs_free(devops);
         return false;
     }
-    
     // Initialise the volume lock
     LWP_MutexInit(&vd->lock, false);
     
@@ -501,13 +501,13 @@ void ntfsUnmount (const char *name, bool force)
     if (devops->open_r != devops_ntfs.open_r)
         return;
     
+    
     // Remove the device from the devoptab table
     RemoveDevice(name);
     
     // Get the devices volume descriptor
     vd = (ntfs_vd*)devops->deviceData;
     if (vd) {
-
         // Deinitialise the volume lock
         LWP_MutexDestroy(vd->lock);
         

@@ -30,6 +30,8 @@
 #include <ogc/disc_io.h>
 
 #define SECTOR_SIZE                     512 /* Forced by gekko disc i/o */
+#include "cache.h"
+
 
 /**
  * gekko_fd - Gekko device driver descriptor
@@ -43,6 +45,7 @@ typedef struct _gekko_fd {
     u64 pos;                            /* Current position within the partition (in bytes) */
     u64 len;                            /* Total length of partition (in bytes) */
     ino_t ino;                          /* Device identifier */
+    NTFS_CACHE *cache;					/* Cache */    
 } gekko_fd;
 
 /* Forward declaration. */

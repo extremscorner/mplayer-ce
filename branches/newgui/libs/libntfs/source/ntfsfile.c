@@ -167,6 +167,10 @@ int ntfs_close_r (struct _reent *r, int fd)
     
     // Lock
     ntfsLock(file->vd);
+
+	// sync to disk    
+    if(file->write)
+	    ntfs_inode_sync(file->ni);
     
     // Close the file data attribute (if open)
     if (file->data_na)
@@ -331,7 +335,11 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
     
     // Update file times
     ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_MCTIME);
-    
+       
+    // sync to disk    
+    printf("call to ntfs_inode_sync(file->ni)\n");
+    ntfs_inode_sync(file->ni);
+
     // Unlock
     ntfsUnlock(file->vd);
     
@@ -341,6 +349,7 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
 int ntfs_fsync_r (struct _reent *r, int fd)
 {
     ntfs_log_trace("fd %p\n", fd);
+    printf("ntfs_fsync_r\n");
    
     ntfs_file_state* file = STATE(fd);
     int ret = 0;
@@ -358,6 +367,7 @@ int ntfs_fsync_r (struct _reent *r, int fd)
     ret = ntfs_inode_sync(file->ni);
     if (ret)
         r->_errno = errno;
+    
     
     // Unlock
     ntfsUnlock(file->vd);
