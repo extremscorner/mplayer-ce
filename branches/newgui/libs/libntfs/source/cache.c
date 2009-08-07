@@ -271,7 +271,7 @@ bool _NTFS_cache_writeSectors (NTFS_CACHE* cache, sec_t sector, sec_t numSectors
 	sec_t secs_to_write;
 	NTFS_CACHE_ENTRY* entry;
 	const uint8_t *src = buffer;
-
+	
 	while(numSectors>0)
 	{
 		entry = _NTFS_cache_getPage(cache,sector);

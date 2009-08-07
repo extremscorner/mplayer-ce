@@ -503,15 +503,14 @@ static int ntfs_device_gekko_io_sync(struct ntfs_device *dev)
         return -1;
     }
 
+    // Mark the device as clean
+    NDevClearDirty(dev);
+    
     // Flush any sectors in the disc cache
     if (!_NTFS_cache_flush(fd->cache)) {
         errno = EIO;
         return -1;
     }
-
-    // Mark the device as clean
-    NDevClearDirty(dev);
-    
     return 0;
 }
 

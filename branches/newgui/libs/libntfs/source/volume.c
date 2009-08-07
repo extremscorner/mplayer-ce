@@ -1100,6 +1100,7 @@ ntfs_volume *ntfs_device_mount(struct ntfs_device *dev, unsigned long flags)
 		if (!(flags & MS_IGNORE_HIBERFILE) && 
 		    ntfs_volume_check_hiberfile(vol, 1) < 0)
 			goto error_exit;
+		
 		if (ntfs_volume_check_logfile(vol) < 0) {
 			if (!(flags & MS_RECOVER))
 				goto error_exit;

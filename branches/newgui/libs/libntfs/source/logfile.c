@@ -712,7 +712,8 @@ int ntfs_empty_logfile(ntfs_attr *na)
 		ntfs_log_perror("Resident $LogFile $DATA attribute");
 		return -1;
 	}
-
+	// log file not cleared (I think is not needed)
+/*
 	memset(buf, -1, NTFS_BUF_SIZE);
 
 	pos = 0;
@@ -730,7 +731,7 @@ int ntfs_empty_logfile(ntfs_attr *na)
 		}
 		pos += count;
 	}
-
+*/
 	NVolSetLogFileEmpty(na->ni->vol);
 	
 	return 0;

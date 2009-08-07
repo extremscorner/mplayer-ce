@@ -76,7 +76,8 @@ void ntfsInit (void)
         isInit = true;
 
         // Set the log handler
-        ntfs_log_set_handler(ntfs_log_handler_stderr);
+        //ntfs_log_set_handler(ntfs_log_handler_stderr);
+        ntfs_log_set_handler(ntfs_log_handler_null);
         
         // Set our current local
         ntfs_set_locale();
