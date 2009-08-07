@@ -297,9 +297,8 @@ Flushes all dirty pages to disc, clearing the dirty flag.
 */
 bool _NTFS_cache_flush (NTFS_CACHE* cache) {
 	unsigned int i;
-	if(cache==NULL) return;
+	if(cache==NULL) return true;
 
-	printf("_NTFS_cache_flush: cache flushed\n");
 	for (i = 0; i < cache->numberOfPages; i++) {
 		if (cache->cacheEntries[i].dirty) {
 			if (!cache->disc->writeSectors (cache->cacheEntries[i].sector, cache->cacheEntries[i].count, cache->cacheEntries[i].cache)) {

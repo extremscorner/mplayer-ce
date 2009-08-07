@@ -67,7 +67,7 @@ int ntfsAddDevice (const char *name, void *deviceData)
     devoptab_t *dev = NULL;
     char *devname = NULL;
     int i;
-    
+            
     // Sanity check
     if (!name || !deviceData || !devoptab_ntfs) {
         errno = EINVAL;
@@ -100,7 +100,7 @@ int ntfsAddDevice (const char *name, void *deviceData)
             return 0;
         }
     }
-
+	
     // If we reach here then there are no free slots in the devoptab table for this device
     errno = EADDRNOTAVAIL;
     return -1;

@@ -28,9 +28,19 @@ LIBDIR		:=	../lib
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-CFLAGS		=	-g -O2 -Wall $(MACHDEP) $(INCLUDE) -DGEKKO -DBIGENDIAN -D__rtems__ -DHAVE_CONFIG_H
+
+ifeq ($(PLATFORM),wii)
+CFLAGS		=	-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -O3 -pipe -mrvl -mcpu=750 -meabi -mhard-float -Wall $(MACHDEP) $(INCLUDE) -DGEKKO -DHAVE_CONFIG_H
+CXXFLAGS	=	$(CFLAGS)
+#ASFLAGS		:=	-g
+endif
+
+ifeq ($(PLATFORM),cube)
+CFLAGS		=	-g -O2 -Wall $(MACHDEP) $(INCLUDE) -DGEKKO -DHAVE_CONFIG_H
 CXXFLAGS	=	$(CFLAGS)
 ASFLAGS		:=	-g
+endif
+
 
 ifneq ($(BUILD),debug)
 export NTFSBIN	:=	$(LIBDIR)/$(PLATFORM)/libntfs.a

@@ -78,7 +78,7 @@ void ntfsCloseFile (ntfs_file_state *file)
 int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags, int mode)
 {
     ntfs_log_trace("fileStruct %p, path %s, flags %i, mode %i\n", fileStruct, path, flags, mode);
-    
+
     ntfs_file_state* file = STATE(fileStruct);
     
     // Get the volume descriptor for this path
@@ -373,7 +373,7 @@ ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
 off_t ntfs_seek_r (struct _reent *r, int fd, off_t pos, int dir)
 {
     ntfs_log_trace("fd %p, pos %Li, dir %i\n", fd, pos, dir);
-    
+        
     ntfs_file_state* file = STATE(fd);
     off_t position = 0;
     
@@ -398,11 +398,10 @@ off_t ntfs_seek_r (struct _reent *r, int fd, off_t pos, int dir)
     
     return position;
 }
-
 int ntfs_fstat_r (struct _reent *r, int fd, struct stat *st)
 {
     ntfs_log_trace("fd %p\n", fd);
-    
+
     ntfs_file_state* file = STATE(fd);
     int ret = 0;
     

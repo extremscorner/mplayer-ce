@@ -31,6 +31,8 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include "mload.h"
+#include "ehcmodule_elf.h"
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
@@ -49,14 +51,11 @@ void list(const char *path)
         while ((pent = readdir(pdir)) != NULL) {
             if ((strcmp(pent->d_name, ".") == 0) || (strcmp(pent->d_name, "..") == 0))
                 continue;
+
             
             // Get the entries stats
-            memset(&st, 3, sizeof(struct stat));
-            printf("MEMSET STAT TO 3, ADDY = %p, st_mode = %i\n", &st, st.st_mode);
             if (stat(pent->d_name, &st) == -1)
                 continue;
-            
-            printf("STAT ADDY = %p, st_mode = %i\n", &st, st.st_mode);
             
             // List the entry
             if (S_ISBLK(st.st_mode)) {
@@ -68,7 +67,7 @@ void list(const char *path)
             } else if (S_ISFIFO(st.st_mode)) {
                 printf(" P %s\n", pent->d_name);
             } else if (S_ISREG(st.st_mode)) {
-                printf(" F %s (%Li)\n", pent->d_name, st.st_size);
+                printf(" F %s (%lu)\n", pent->d_name, (unsigned long int)st.st_size);
             } else if (S_ISLNK(st.st_mode)) {
                 printf(" L %s\n", pent->d_name);
             } else {
@@ -92,6 +91,14 @@ void list(const char *path)
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv) {
 //---------------------------------------------------------------------------------
+	//try to load usb2 driver
+	IOS_ReloadIOS(202);
+	if(mload_init()>=0)
+	{
+		data_elf my_data_elf;
+		mload_elf((void *) ehcmodule_elf, &my_data_elf);
+		mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x47);
+	}
     
     // Initialise the video system
     VIDEO_Init();

@@ -71,8 +71,7 @@ void ntfsCloseDir (ntfs_dir_state *dir)
 int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
 {
     ntfs_log_trace("path %s, st %p\n", path, st);
-    printf("ntfs_stat_r: hello\n");
-    
+        
     ntfs_vd *vd = NULL;
     ntfs_inode *ni = NULL;
     
@@ -93,17 +92,17 @@ int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
         ntfsUnlock(vd);
         return -1;
     }
-    
+
     // Get the entry stats
     int ret = ntfsStat(vd, ni, st);
     if (ret)
+    {
         r->_errno = errno;
+    }
 
     // Close the entry
     ntfsCloseEntry(vd, ni);
 
-    printf("ntfs_stat_r STAT ADDY = %p, %s is a %s (%i)\n", st, path, S_ISREG(st->st_mode) ? "file" : "dir", st->st_mode);
-    
     return 0;
 }
 
@@ -394,7 +393,8 @@ int ntfs_readdir_filler (DIR_ITER *dirState, const ntfschar *name, const int nam
 DIR_ITER *ntfs_diropen_r (struct _reent *r, DIR_ITER *dirState, const char *path)
 {
     ntfs_log_trace("dirState %p, path %s\n", dirState, path);
-    
+        
+	    
     ntfs_dir_state* dir = STATE(dirState);
     
     // Get the volume descriptor for this path

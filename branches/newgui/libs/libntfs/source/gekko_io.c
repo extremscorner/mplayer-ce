@@ -509,8 +509,6 @@ static int ntfs_device_gekko_io_sync(struct ntfs_device *dev)
         return -1;
     }
 
-    printf("sync: cache flushed\n");
-    
     // Mark the device as clean
     NDevClearDirty(dev);
     
