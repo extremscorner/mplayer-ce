@@ -52,7 +52,6 @@ void list(const char *path)
             if ((strcmp(pent->d_name, ".") == 0) || (strcmp(pent->d_name, "..") == 0))
                 continue;
 
-            
             // Get the entries stats
             if (stat(pent->d_name, &st) == -1)
                 continue;
@@ -91,15 +90,15 @@ void list(const char *path)
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv) {
 //---------------------------------------------------------------------------------
-	//try to load usb2 driver
-	IOS_ReloadIOS(202);
-	if(mload_init()>=0)
-	{
-		data_elf my_data_elf;
-		mload_elf((void *) ehcmodule_elf, &my_data_elf);
-		mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x47);
-	}
     
+    // Try to load usb2 driver
+    IOS_ReloadIOS(202);
+    if (mload_init() >= 0) {
+        data_elf my_data_elf;
+        mload_elf((void *) ehcmodule_elf, &my_data_elf);
+        mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x47);
+    }
+
     // Initialise the video system
     VIDEO_Init();
     
@@ -204,7 +203,7 @@ int main(int argc, char **argv) {
                 chdir(path);
 
                 // Enumerate the volumes contents
-                list("");
+                list(".");
                 listed = true;
                 
                 printf("\nPress 'HOME' to quit.\n\n");

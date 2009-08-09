@@ -90,10 +90,7 @@ int ntfsAddDevice (const char *name, void *deviceData)
     dev->name = devname;
     dev->deviceData = deviceData;
 
-    // Find and remove te specified device from the devoptab table
-    // NOTE: We do this manually due to a 'bug' in AddDevice
-    //       which ignores names with suffixes and causes names
-    //       like "ntfs" and "ntfs1" to be seen as equals
+    // Add the device to the devoptab table (if there is a free slot)
     for (i = 0; i < STD_MAX; i++) {
         if (devoptab_list[i] == devoptab_list[0] && i != 0) {
             devoptab_list[i] = dev;
@@ -109,7 +106,7 @@ int ntfsAddDevice (const char *name, void *deviceData)
 void ntfsRemoveDevice (const char *path)
 {
     const devoptab_t *devoptab = NULL;
-    char name[128];
+    char name[128] = {0};
     int i;
     
     // Get the device name from the path
@@ -137,7 +134,7 @@ void ntfsRemoveDevice (const char *path)
 const devoptab_t *ntfsGetDevice (const char *path, bool useDefaultDevice)
 {
     const devoptab_t *devoptab = NULL;
-    char name[128];
+    char name[128] = {0};
     int i;
     
     // Get the device name from the path
@@ -159,7 +156,7 @@ const devoptab_t *ntfsGetDevice (const char *path, bool useDefaultDevice)
     
     // If we reach here then we couldn't find the device name,
     // chances are that this path has no device name in it. 
-    // Call GetDeviceOpTab to get our default (chdir) device.
+    // Call GetDeviceOpTab to get our default device (chdir).
     if (useDefaultDevice)
         return GetDeviceOpTab("");
     
@@ -168,17 +165,17 @@ const devoptab_t *ntfsGetDevice (const char *path, bool useDefaultDevice)
 
 const INTERFACE_ID *ntfsGetDiscInterfaces (void)
 {
-    // Get all know disc interfaces
+    // Get all know disc interfaces on the host system
     return ntfs_disc_interfaces;
 }
 
 ntfs_vd *ntfsGetVolume (const char *path)
 {
-    // Get the volume descriptor from the paths associated devoptab (if possible)
-    const devoptab_t *devops_ntfs = ntfsGetDevOpTab();
-    const devoptab_t *devops = ntfsGetDevice(path, true);
-    if (devops && devops_ntfs && (devops->open_r == devops_ntfs->open_r))
-        return (ntfs_vd*)devops->deviceData;
+    // Get the volume descriptor from the paths associated devoptab (if found)
+    const devoptab_t *devoptab_ntfs = ntfsGetDevOpTab();
+    const devoptab_t *devoptab = ntfsGetDevice(path, true);
+    if (devoptab && devoptab_ntfs && (devoptab->open_r == devoptab_ntfs->open_r))
+        return (ntfs_vd*)devoptab->deviceData;
     
     return NULL;
 }
@@ -193,6 +190,9 @@ int ntfsInitVolume (ntfs_vd *vd)
     
     // Initialise the volume lock
     LWP_MutexInit(&vd->lock, false);
+    
+    // Reset the volumes name cache
+    vd->name[0] = '\0';
     
     // Reset the volumes current directory
     vd->cwd_ni = NULL;
@@ -219,7 +219,7 @@ void ntfsDeinitVolume (ntfs_vd *vd)
 
     // Close the volumes current directory (if any)
     if (vd->cwd_ni) {
-        ntfs_inode_close(vd->cwd_ni);
+        ntfsCloseEntry(vd, vd->cwd_ni);
         vd->cwd_ni = NULL;
     }
     
@@ -275,12 +275,9 @@ ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path)
         return NULL;
     }
 
-    // Find the entry taking into account our current directory (if any)
-    if (path[0] == PATH_SEP)
-        if (vd->cwd_ni)
-            ni = ntfs_pathname_to_inode(vd->vol, vd->cwd_ni, path++);
-        else
-            ni = ntfs_pathname_to_inode(vd->vol, NULL, path++);
+    // Find the entry, taking into account our current directory (if any)
+    if (path[0] != PATH_SEP)
+        ni = ntfs_pathname_to_inode(vd->vol, vd->cwd_ni, path++);
     else
         ni = ntfs_pathname_to_inode(vd->vol, NULL, path);
     
@@ -327,7 +324,7 @@ ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, co
     ntfsLock(vd);
     
     // Get the unicode name for the entry and find its parent directory
-    // TODO: This looks horrible
+    // TODO: This looks horrible, clean it up
     dir = strdup(path);
     if (!dir) {
         errno = EINVAL;
@@ -427,7 +424,7 @@ int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path)
     ntfsLock(vd);
     
     // Get the unicode name for the entry and find its parent directory
-    // TODO: This looks horrible
+    // TODO: This looks horrible, clean it up
     dir = strdup(new_path);
     if (!dir) {
         errno = EINVAL;
@@ -702,7 +699,11 @@ void ntfsUpdateTimes (ntfs_vd *vd, ntfs_inode *ni, ntfs_time_update_flags mask)
 }
 
 const char *ntfsRealPath (const char *path)
-{    
+{
+    // Sanity check
+    if (!path)
+        return NULL;
+    
     // Move the path pointer to the start of the actual path
     if (strchr(path, ':') != NULL) {
         path = strchr(path, ':') + 1;

@@ -76,6 +76,7 @@ extern int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitio
  * 
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno)
  * @note The caller is responsible for freeing MOUNTS when finished with it
+ * @note All device caches are setup using default values (see above)
  */
 extern int ntfsMountAll (ntfs_md **mounts, u32 flags);
 
@@ -88,6 +89,7 @@ extern int ntfsMountAll (ntfs_md **mounts, u32 flags);
  * 
  * @return The number of entries in MOUNTS or -1 if an error occurred (see errno)
  * @note The caller is responsible for freeing MOUNTS when finished with it
+ * @note The device cache is setup using default values (see above)
  */
 extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u32 flags);
 
@@ -101,8 +103,8 @@ extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u
  * @param CACHEPAGECOUNT The total number of pages in the device cache
  * @param FLAGS Additional mounting flags (see above)
  * 
- * @return True if mount was successful, false if no partition was found or an error occurred (see errno).
- * @note @ntfsFindPartitions should be used first to locate the partitions start sector.
+ * @return True if mount was successful, false if no partition was found or an error occurred (see errno)
+ * @note ntfsFindPartitions should be used first to locate the partitions start sector
  */
 extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cachePageSize, u32 cachePageCount, u32 flags);
 

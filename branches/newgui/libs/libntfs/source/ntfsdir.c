@@ -96,9 +96,7 @@ int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
     // Get the entry stats
     int ret = ntfsStat(vd, ni, st);
     if (ret)
-    {
         r->_errno = errno;
-    }
 
     // Close the entry
     ntfsCloseEntry(vd, ni);
@@ -247,8 +245,7 @@ int ntfs_mkdir_r (struct _reent *r, const char *path, int mode)
     
     ntfs_vd *vd = NULL;
     ntfs_inode *ni = NULL;
-	struct ntfs_device *dev;    
-    
+
     // Get the volume descriptor for this path
     vd = ntfsGetVolume(path);
     if (!vd) {
@@ -271,7 +268,7 @@ int ntfs_mkdir_r (struct _reent *r, const char *path, int mode)
     ntfsCloseEntry(vd, ni);
 
     // Sync
-    dev = vd->vol->dev;
+    struct ntfs_device *dev = vd->vol->dev;
     dev->d_ops->sync(dev);        
 
     // Unlock
@@ -344,7 +341,7 @@ int ntfs_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
 }
 
 /**
- * PRIVATE: Callback for directory enumeration
+ * PRIVATE: Callback for directory walking
  */
 int ntfs_readdir_filler (DIR_ITER *dirState, const ntfschar *name, const int name_len, const int name_type,
                          const s64 pos, const MFT_REF mref, const unsigned dt_type)
@@ -509,7 +506,7 @@ int ntfs_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
     if(filestat != NULL) {
         ni = ntfsOpenEntry(dir->vd, dir->current);
         if (ni) {
-            //ntfsStat(dir->vd, ni, filestat);
+            ntfsStat(dir->vd, ni, filestat);
             ntfsCloseEntry(dir->vd, ni);
         }
     }

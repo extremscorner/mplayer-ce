@@ -76,8 +76,11 @@ void ntfsInit (void)
         isInit = true;
 
         // Set the log handler
-        //ntfs_log_set_handler(ntfs_log_handler_stderr);
+        #ifdef NTFS_ENABLE_LOG
+        ntfs_log_set_handler(ntfs_log_handler_stderr);
+        #else
         ntfs_log_set_handler(ntfs_log_handler_null);
+        #endif
         
         // Set our current local
         ntfs_set_locale();
@@ -102,6 +105,14 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
         EXTENDED_BOOT_RECORD ebr;
         NTFS_BOOT_SECTOR boot;
     } sector;
+    
+    // Sanity check
+    if (!interface) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!partitions)
+        return 0;
     
     // Initialise ntfs-3g
     ntfsInit();
@@ -168,7 +179,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                 case PARTITION_TYPE_WIN95_EXTENDED: {
                     ntfs_log_debug("Partition %i: Claims to be Extended\n", i + 1);
                     
-                    // Walk the extended partition chain, finding all NTFS partitions
+                    // Walk the extended partition chain, finding all NTFS partitions within it
                     sec_t ebr_lba = part_lba;
                     sec_t next_erb_lba = 0;
                     do {
@@ -210,7 +221,7 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                     
                 }
             
-                // Unknown or unsupported partition types
+                // Unknown or unsupported partition type
                 default: {
                     
                     // Check if this partition has a valid NTFS boot record anyway,
@@ -280,7 +291,7 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
     int partition_count = 0;
     char name[128];
     int i, j, k;
-    
+
     // Initialise ntfs-3g
     ntfsInit();
     
@@ -317,7 +328,7 @@ int ntfsMountAll (ntfs_md **mounts, u32 flags)
     }
     
     // Return the mounts (if any)
-    if (mount_count > 0) {
+    if (mount_count > 0 && mounts) {
         *mounts = (ntfs_md*)ntfs_alloc(sizeof(ntfs_md) * mount_count);
         if (*mounts) {
             memcpy(*mounts, &mount_points, sizeof(ntfs_md) * mount_count);
@@ -339,6 +350,12 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
     char name[128];
     int i, j, k;
     
+    // Sanity check
+    if (!interface) {
+        errno = EINVAL;
+        return -1;
+    }
+
     // Initialise ntfs-3g
     ntfsInit();
     
@@ -384,7 +401,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
     }
     
     // Return the mounts (if any)
-    if (mount_count > 0) {
+    if (mount_count > 0 && mounts) {
         *mounts = (ntfs_md*)ntfs_alloc(sizeof(ntfs_md) * mount_count);
         if (*mounts) {
             memcpy(*mounts, &mount_points, sizeof(ntfs_md) * mount_count);
@@ -401,10 +418,16 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     ntfs_vd *vd = NULL;
     gekko_fd *fd = NULL;
     
+    // Sanity check
+    if (!name || !interface) {
+        errno = EINVAL;
+        return -1;
+    }
+    
     // Initialise ntfs-3g
     ntfsInit();
 
-    // Check that the request mount name is free
+    // Check that the requested mount name is free
     if (ntfsGetDevice(name, false)) {
         errno = EADDRINUSE;
         return false;
@@ -484,6 +507,7 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         ntfs_device_free(dev);
         return false;
     }
+    
     // Initialise volume descriptor
     if (ntfsInitVolume(vd)) {
         ntfs_umount(vd->vol, true);
@@ -528,6 +552,15 @@ void ntfsUnmount (const char *name, bool force)
 const char *ntfsGetVolumeName (const char *name)
 {
     ntfs_vd *vd = NULL;
+    ntfs_attr *na = NULL;
+    ntfschar *ulabel = NULL;
+    char *volumeName = NULL;
+    
+    // Sanity check
+    if (!name) {
+        errno = EINVAL;
+        return NULL;
+    }
     
     // Get the devices volume descriptor
     vd = ntfsGetVolume(name);
@@ -536,9 +569,60 @@ const char *ntfsGetVolumeName (const char *name)
         return false;
     }
     
-    // TODO: Redo this so that it actually reads the AT_VOLUME_NAME attribute
+    // If the has been cached already then just use that
+    if (vd->name[0])
+        return vd->name;
     
-    return vd->vol->vol_name;
+    // Lock
+    ntfsLock(vd);
+    
+    // Check if the volume name attribute exists
+    na = ntfs_attr_open(vd->vol->vol_ni, AT_VOLUME_NAME, NULL, 0);
+    if (!na) {
+        ntfsUnlock(vd);
+        errno = ENOENT;
+        return false;
+    }
+
+    ulabel = ntfs_alloc(na->data_size * sizeof(ntfschar));
+    if (!ulabel) {
+        ntfsUnlock(vd);
+        errno = ENOMEM;
+        return false;
+    }
+    
+    // Read the volume name
+    if (ntfs_attr_pread(na, 0, na->data_size, ulabel) != na->data_size) {
+        ntfsUnlock(vd);
+        ntfs_free(ulabel);
+        errno = EIO;
+        return false;
+    }
+    
+    // Convert the volume name to the current local
+    if (ntfsUnicodeToLocal(ulabel, na->data_size, &volumeName, 0) < 0) {
+        errno = EINVAL;
+        ntfsUnlock(vd);
+        ntfs_free(ulabel);
+        return false;
+    }
+
+    // If the volume name was read then cache it (for future fetches)
+    if (volumeName)
+        strcpy(vd->name, volumeName);
+    
+    // Close the volume name attribute
+    if (na)
+        ntfs_attr_close(na);
+
+    // Clean up
+    ntfs_free(volumeName);
+    ntfs_free(ulabel);
+    
+    // Unlock
+    ntfsUnlock(vd);
+    
+    return vd->name;
 }
 
 bool ntfsSetVolumeName (const char *name, const char *volumeName)
@@ -547,7 +631,13 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
     ntfs_attr *na = NULL;
     ntfschar *ulabel = NULL;
     int ulabel_len;
-
+    
+    // Sanity check
+    if (!name) {
+        errno = EINVAL;
+        return false;
+    }
+    
     // Get the devices volume descriptor
     vd = ntfsGetVolume(name);
     if (!vd) {
@@ -593,6 +683,9 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
         }
         
     }
+
+    // Reset the volumes name cache (as it has now been changed)
+    vd->name[0] = '\0';
     
     // Close the volume name attribute
     if (na)

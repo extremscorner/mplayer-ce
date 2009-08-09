@@ -158,8 +158,8 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     // We cannot read/write encrypted attributes or write to compressed attributes
     if ((NAttrEncrypted(file->data_na)) ||
         (NAttrCompressed(file->data_na) && file->write)) {
-        ntfsCloseEntry(file->vd, file->ni);
         ntfs_attr_close(file->data_na);
+        ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
         r->_errno = EACCES;
         return -1;
@@ -167,8 +167,8 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     
     // Make sure we aren't trying to write to a read-only file
     if ((file->ni->flags & FILE_ATTR_READONLY) && file->write) {
-        ntfsCloseEntry(file->vd, file->ni);
         ntfs_attr_close(file->data_na);
+        ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
         r->_errno = EROFS;
         return -1;
@@ -177,8 +177,8 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     // Truncate the file if requested
     if ((flags & O_TRUNC) && file->write) {
         if (ntfs_attr_truncate(file->data_na, 0)) {
-            ntfsCloseEntry(file->vd, file->ni);
             ntfs_attr_close(file->data_na);
+            ntfsCloseEntry(file->vd, file->ni);
             ntfsUnlock(file->vd);
             r->_errno = errno;
             return -1;
@@ -275,7 +275,7 @@ ssize_t ntfs_write_r (struct _reent *r, int fd, const char *ptr, size_t len)
         return -1;
     }
     
-    // If we are in append mode, backup the current position move to the end of the file
+    // If we are in append mode, backup the current position and move to the end of the file
     if (file->append) {
         old_pos = file->pos;
         file->pos = file->len;
@@ -390,7 +390,7 @@ off_t ntfs_seek_r (struct _reent *r, int fd, off_t pos, int dir)
     switch(dir) {
         case SEEK_SET: position = file->pos = MIN(MAX(pos, 0), file->len); break;
         case SEEK_CUR: position = file->pos = MIN(MAX(file->pos + pos, 0), file->len); break;
-        case SEEK_END: position = file->pos = MIN(MAX(file->len - pos, 0), file->len); break;
+        case SEEK_END: position = file->pos = MIN(MAX(file->len + pos, 0), file->len); break;
     }
     
     // Unlock 
@@ -453,8 +453,8 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
     
     // Update file times
     ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_MCTIME);
-       
-    // Sync file to disc    
+    
+    // Sync the file (and its attributes) to disc  
     ntfs_inode_sync(file->ni);
     
     // Sync
@@ -487,6 +487,10 @@ int ntfs_fsync_r (struct _reent *r, int fd)
     ret = ntfs_inode_sync(file->ni);
     if (ret)
         r->_errno = errno;
+    
+    // Sync
+    struct ntfs_device *dev = file->vd->vol->dev;
+    dev->d_ops->sync(dev);        
     
     // Unlock
     ntfsUnlock(file->vd);
