@@ -53,8 +53,12 @@ void ntfsCloseDir (ntfs_dir_state *dir)
         return;
     
     // Free the current entry (if any)
-    if (dir->current)
-        ntfs_free(dir->current);
+    while (dir->first) {
+        ntfs_dir_entry *next = dir->first->next;
+        ntfs_free(dir->first->name);
+        ntfs_free(dir->first);
+        dir->first = next;
+    }
     
     // Close the directory (if open)
     if (dir->ni)
@@ -62,7 +66,7 @@ void ntfsCloseDir (ntfs_dir_state *dir)
     
     // Reset the directory state
     dir->ni = NULL;
-    dir->position = 0;
+    dir->first = NULL;
     dir->current = NULL;
     
     return;
@@ -108,36 +112,45 @@ int ntfs_link_r (struct _reent *r, const char *existing, const char *newLink)
 {
     ntfs_log_trace("existing %s, newLink %s\n", existing, newLink);
     
-    // Relink the entry
-    int ret = ntfsLink(ntfsGetVolume(existing), existing, newLink);
-    if (ret)
-        r->_errno = errno;
+    ntfs_vd *vd = NULL;
+    ntfs_inode *ni = NULL;
     
-    return ret;
+    // Get the volume descriptor for this path
+    vd = ntfsGetVolume(existing);
+    if (!vd) {
+        r->_errno = ENODEV;
+        return -1;
+    }
+    
+    // Lock
+    ntfsLock(vd);
+    
+    // Create a symbolic link between the two paths
+    ni = ntfsCreate(vd, existing, S_IFLNK, newLink);
+    if (!ni) {
+        ntfsUnlock(vd);
+        r->_errno = errno;
+        return -1;
+    }
+    
+    // Close the symbolic link
+    ntfsCloseEntry(vd, ni);
+    
+    // Unlock
+    ntfsUnlock(vd);
+
+    return 0;
 }
 
 int ntfs_unlink_r (struct _reent *r, const char *name)
 {
     ntfs_log_trace("name %s\n", name);
 
-    ntfs_vd *vd = NULL;
-    
-    // Get the volume descriptor for this path
-    vd = ntfsGetVolume(name);
-    if (!vd) {
-        r->_errno = ENODEV;
-        return -1;
-    }
-
     // Unlink the entry
-    int ret = ntfsUnlink(vd, name);
+    int ret = ntfsUnlink(ntfsGetVolume(name), name);
     if (ret)
         r->_errno = errno;
-    
-    // Sync
-    struct ntfs_device *dev = vd->vol->dev;
-    dev->d_ops->sync(dev);        
-    
+
     return ret;
 }
 
@@ -174,9 +187,13 @@ int ntfs_chdir_r (struct _reent *r, const char *name)
         return -1;
     }
     
-    // Set the current directory
+    // Close the old current directory (if any)
+    if (vd->cwd_ni)
+        ntfsCloseEntry(vd, vd->cwd_ni);
+        
+    // Set the new current directory
     vd->cwd_ni = ni;
-
+    
     // Unlock
     ntfsUnlock(vd);
     
@@ -197,14 +214,15 @@ int ntfs_rename_r (struct _reent *r, const char *oldName, const char *newName)
         return -1;
     }
 
+    // Lock
+    ntfsLock(vd);
+    
     // You cannot rename between devices
     if(vd != ntfsGetVolume(newName)) {
+        ntfsUnlock(vd);
         r->_errno = EXDEV;
         return -1;
     }
-
-    // Lock
-    ntfsLock(vd);
     
     // Check that there is no existing entry with the new name
     ni = ntfsOpenEntry(vd, newName);
@@ -227,11 +245,9 @@ int ntfs_rename_r (struct _reent *r, const char *oldName, const char *newName)
             ntfsUnlock(vd);
             return -1;
         }
+        ntfsUnlock(vd);
+        return -1;
     }
-    
-    // Sync
-    struct ntfs_device *dev = vd->vol->dev;
-    dev->d_ops->sync(dev);        
     
     // Unlock
     ntfsUnlock(vd);
@@ -257,7 +273,7 @@ int ntfs_mkdir_r (struct _reent *r, const char *path, int mode)
     ntfsLock(vd);
     
     // Create the directory
-    ni = ntfsCreate(vd, path, S_IFDIR, 0, NULL);
+    ni = ntfsCreate(vd, path, S_IFDIR, NULL);
     if (!ni) {
         ntfsUnlock(vd);
         r->_errno = errno;
@@ -266,10 +282,6 @@ int ntfs_mkdir_r (struct _reent *r, const char *path, int mode)
     
     // Close the directory
     ntfsCloseEntry(vd, ni);
-
-    // Sync
-    struct ntfs_device *dev = vd->vol->dev;
-    dev->d_ops->sync(dev);        
 
     // Unlock
     ntfsUnlock(vd);
@@ -296,7 +308,7 @@ int ntfs_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
     ntfsLock(vd);
     
     // Zero out the stat buffer
-    /*memset(buf, 0, sizeof(struct statvfs));*/
+    memset(buf, 0, sizeof(struct statvfs));
     
     // File system block size
     buf->f_bsize = vd->vol->cluster_size;
@@ -346,53 +358,58 @@ int ntfs_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
 int ntfs_readdir_filler (DIR_ITER *dirState, const ntfschar *name, const int name_len, const int name_type,
                          const s64 pos, const MFT_REF mref, const unsigned dt_type)
 {
-    ntfs_dir_state* dir = STATE(dirState);
+    ntfs_dir_state *dir = STATE(dirState);
+    ntfs_dir_entry *entry = NULL;
     
     // Sanity check
     if (!dir || !dir->vd) {
         errno = EINVAL;
         return -1;
     }
-    
-    // Lock
-    ntfsLock(dir->vd);
-    
-    // If we have a entry waiting to be fetched (dirnext()), then abort
-    if (dir->current) {
-        ntfsUnlock(dir->vd);
-        return -1;
-    }
-    
-    // Computer says no...
+
+    // Ignore DOS file names
     if (name_type == FILE_NAME_DOS) {
-        ntfsUnlock(dir->vd);
         return 0;
     }
-    
+
     // Check that this entry can be enumerated (as described by the volume descriptor)
     if (MREF(mref) == FILE_root || MREF(mref) >= FILE_first_user || dir->vd->showSystemFiles) {
         
+        //...
+        entry = ntfs_alloc(sizeof(ntfs_dir_entry));
+        if (!entry)
+            return -1;
+        
+        //...
+        entry->name = NULL;
+        entry->next = NULL;
+        
         // Convert the entry name to our current local and line it up for fetching
-        if (ntfsUnicodeToLocal(name, name_len, &dir->current, 0) < 0) {
-            ntfsUnlock(dir->vd);
-            dir->current = NULL;
+        if (ntfsUnicodeToLocal(name, name_len, &entry->name, 0) < 0) {
+            ntfs_free(entry);
             return -1;
         }
         
+        //...
+        if (!dir->first) {
+            dir->first = entry;
+        } else {
+            ntfs_dir_entry *last = dir->first;
+            while (last->next) last = last->next;
+            last->next = entry;
+        }
+        
     }
-    
-    // Unlock
-    ntfsUnlock(dir->vd);
-    
+
     return 0;
 }
 
 DIR_ITER *ntfs_diropen_r (struct _reent *r, DIR_ITER *dirState, const char *path)
 {
     ntfs_log_trace("dirState %p, path %s\n", dirState, path);
-        
-	    
+
     ntfs_dir_state* dir = STATE(dirState);
+    s64 position = 0;
     
     // Get the volume descriptor for this path
     dir->vd = ntfsGetVolume(path);
@@ -420,11 +437,14 @@ DIR_ITER *ntfs_diropen_r (struct _reent *r, DIR_ITER *dirState, const char *path
         return NULL;
     }
     
-    // Move to the first entry in the directory
-    dir->position = 0;
+    // Read the directory
+    dir->first = NULL;
     dir->current = NULL;
-    ntfs_readdir(dir->ni, &dir->position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
+    ntfs_readdir(dir->ni, &position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
 
+    // Move to the first entry in the directory
+    dir->current = dir->first;
+    
     // Update directory times
     ntfsUpdateTimes(dir->vd, dir->ni, NTFS_UPDATE_ATIME);
     
@@ -459,15 +479,9 @@ int ntfs_dirreset_r (struct _reent *r, DIR_ITER *dirState)
     
     // Lock
     ntfsLock(dir->vd);
-    
-    // Free the current entry (if any)
-    if (dir->current)
-        ntfs_free(dir->current);
-    
+
     // Move to the first entry in the directory
-    dir->position = 0;
-    dir->current = NULL;
-    ntfs_readdir(dir->ni, &dir->position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
+    dir->current = dir->first;
     
     // Update directory times
     ntfsUpdateTimes(dir->vd, dir->ni, NTFS_UPDATE_ATIME);
@@ -502,21 +516,17 @@ int ntfs_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
     }
 
     // Fetch the current entry
-    strcpy(filename, dir->current);
+    strcpy(filename, dir->current->name);
     if(filestat != NULL) {
-        ni = ntfsOpenEntry(dir->vd, dir->current);
+        ni = ntfsOpenEntry(dir->vd, dir->current->name);
         if (ni) {
             ntfsStat(dir->vd, ni, filestat);
             ntfsCloseEntry(dir->vd, ni);
         }
     }
     
-    // Free the current entry
-    ntfs_free(dir->current);
-    dir->current = NULL;
-    
-    // Move to the next entry in the directory
-    ntfs_readdir(dir->ni, &dir->position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
+    // Move to the first entry in the directory
+    dir->current = dir->current->next;
     
     // Update directory times
     ntfsUpdateTimes(dir->vd, dir->ni, NTFS_UPDATE_ATIME);

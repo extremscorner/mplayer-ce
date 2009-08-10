@@ -31,25 +31,24 @@ with this package.
 COMPILING AND INSTALLATION
 ==========================
 
-Make sure you have DevKitPPC and the latest libogc installed. Then type:  
+Make sure you have devKitPPC and the latest libogc installed. Then type:  
 
-	make
-	make install      # or 'sudo make install' if you aren't root.
+ make
+ make install      # or 'sudo make install' if you aren't root.
 
 
 USAGE
 =====
 
-NTFS-3G related routines can be accessed by adding the following line to your
+NTFS related routines can be accessed by adding the following line to your
 source file(s).
 
-	#include <ntfs.h>
+ #include <ntfs.h>
 
-When compiling you must also link against the NTFS-3G library (libntfs.a). 
-To do this add -lntfs to your LIBS section in your application Makefile.
-For example:
+When compiling you must also link against the libntfs. To do this add -lntfs
+to the LIBS section of your application Makefile. For example:
 
-	LIBS := -lwiiuse -lbte -lntfs -lfat -logc -lm
+ LIBS := -lwiiuse -lbte -lntfs -lfat -logc -lm
 
-For more practical examples on using NTFS-3G, see the 'example' folder included
-with this package.
+For a more practical example of using NTFS in your application,
+see the included 'example' folder.

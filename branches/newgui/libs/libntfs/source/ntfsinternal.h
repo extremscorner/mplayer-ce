@@ -35,6 +35,9 @@
 #include "dir.h"
 #include "inode.h"
 #include "attrib.h"
+#include "reparse.h"
+#include "security.h"
+#include "efs.h"
 #include "unistr.h"
 
 #include <gccore.h>
@@ -44,6 +47,7 @@
 #define NTFS_MOUNT_PREFIX                   "ntfs" /* Device name prefix to use when auto-mounting */
 #define NTFS_MAX_PARTITIONS                 32 /* Maximum number of partitions that can be found */
 #define NTFS_MAX_MOUNTS                     10 /* Maximum number of mounts available at one time */
+#define NTFS_MAX_SYMLINK_DEPTH              10 /* Maximum search depth when resolving symbolic links */
 
 #define NTFS_OEM_ID                         cpu_to_le64(0x202020205346544eULL)
 
@@ -65,40 +69,34 @@ struct _ntfs_dir_state;
 /**
  * PRIMARY_PARTITION - Block device partition record
  */
-struct _PARTITION_RECORD {
+typedef struct _PARTITION_RECORD {
     u8 status;                              /* Partition status; see above */
     u8 chs_start[3];                        /* Cylinder-head-sector address to first block of partition */
     u8 type;                                /* Partition type; see above */
     u8 chs_end[3];                          /* Cylinder-head-sector address to last block of partition */
     u32 lba_start;                          /* Local block address to first sector of partition */
     u32 block_count;                        /* Number of blocks in partition */
-} __attribute__ ((packed));
-
-typedef struct _PARTITION_RECORD PARTITION_RECORD ;
+} __attribute__((__packed__)) PARTITION_RECORD;
 
 /**
  * MASTER_BOOT_RECORD - Block device master boot record
  */
-struct _MASTER_BOOT_RECORD {
+typedef struct _MASTER_BOOT_RECORD {
     u8 code_area[446];                      /* Code area; Normally empty */
     PARTITION_RECORD partitions[4];         /* 4 primary partitions */
     u16 signature;                          /* MBR signature; 0xAA55 */
-} __attribute__ ((packed));
-
-typedef struct _MASTER_BOOT_RECORD MASTER_BOOT_RECORD;
+} __attribute__((__packed__)) MASTER_BOOT_RECORD;
 
 /**
  * EXTENDED_PARTITION - Block device extended boot record
  */
-struct _EXTENDED_BOOT_RECORD {
+typedef struct _EXTENDED_BOOT_RECORD {
     u8 code_area[446];                      /* Normally empty */
     PARTITION_RECORD partition;             /* Primary partition */
     PARTITION_RECORD next_ebr;              /* Next extended boot record in the chain */
     u8 reserved[32];                        /* Normally empty */
     u16 signature;                          /* EBR signature; 0xAA55 */
-} __attribute__ ((packed));
-
-typedef struct _EXTENDED_BOOT_RECORD EXTENDED_BOOT_RECORD;
+} __attribute__((__packed__)) EXTENDED_BOOT_RECORD;
 
 /**
  * INTERFACE_ID - Disc interface identifier
@@ -162,10 +160,12 @@ int ntfsInitVolume (ntfs_vd *vd);
 void ntfsDeinitVolume (ntfs_vd *vd);
 ntfs_vd *ntfsGetVolume (const char *path);
 ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path);
+ntfs_inode *ntfsParseEntry (ntfs_vd *vd, const char *path, int reparseLevel);
 void ntfsCloseEntry (ntfs_vd *vd, ntfs_inode *ni);
-ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target);
+ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, mode_t type, const char *target);
 int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path);
 int ntfsUnlink (ntfs_vd *vd, const char *path);
+int ntfsSync (ntfs_vd *vd, ntfs_inode *ni);
 int ntfsStat (ntfs_vd *vd, ntfs_inode *ni, struct stat *st);
 void ntfsUpdateTimes (ntfs_vd *vd, ntfs_inode *ni, ntfs_time_update_flags mask);
 

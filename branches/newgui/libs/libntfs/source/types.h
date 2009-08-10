@@ -27,7 +27,7 @@
 #include "config.h"
 #endif
 
-#if defined(HAVE_STDINT_H) || !defined(HAVE_CONFIG_H)
+#if HAVE_STDINT_H || !HAVE_CONFIG_H
 #include <stdint.h>
 #endif
 #ifdef HAVE_SYS_TYPES_H
@@ -35,17 +35,8 @@
 #endif
 
 #ifdef GEKKO
-
 #include <gctypes.h>
-#include "mem_allocate.h"
-
-#define MINORBITS       20
-#define MINORMASK       ((1U << MINORBITS) - 1)
-
-#define major(dev)      ((unsigned int) ((dev) >> MINORBITS))
-#define minor(dev)      ((unsigned int) ((dev) & MINORMASK))
-#define mkdev(ma,mi)    (((ma) << MINORBITS) | (mi)) 
-
+#include "compat.h"
 #else /* GEKKO */
 
 typedef uint8_t  u8;			/* Unsigned types of an exact size */
@@ -101,7 +92,6 @@ typedef sle64 leLSN;
 /**
  * enum BOOL - These are just to make the code more readable...
  */
-
 typedef enum {
 #ifndef FALSE
 	FALSE = 0,

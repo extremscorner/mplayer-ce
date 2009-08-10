@@ -50,13 +50,19 @@ void ntfsCloseFile (ntfs_file_state *file)
     if (!file || !file->vd)
         return;
 
+    // Special case fix ups for compressed and/or encrypted files
+    if (file->compressed)
+        ntfs_attr_pclose(file->data_na);        
+    if (file->encrypted)
+        ntfs_efs_fixup_attribute(NULL, file->data_na);
+        
     // Close the file data attribute (if open)
     if (file->data_na)
         ntfs_attr_close(file->data_na);
     
-    // Sync
+    // Sync the file (and its attributes) to disc
     if(file->write)
-        ntfs_inode_sync(file->ni);
+        ntfsSync(file->vd, file->ni);
     
     // Close the file (if open)
     if (file->ni)
@@ -111,7 +117,7 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         return -1;
     }
     
-    // Try and find the file and (if found) ensure that it is not a directory
+    // Try and find the file and (if found) ensure that is not a directory
     file->ni = ntfsOpenEntry(file->vd, path);
     if (file->ni && (file->ni->mrec->flags & MFT_RECORD_IS_DIRECTORY)) {
         ntfsCloseEntry(file->vd, file->ni);
@@ -127,14 +133,18 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         if (file->ni) {
             ntfsCloseEntry(file->vd, file->ni);
             ntfsUnlock(file->vd);
+            printf("c\n");
+            
             r->_errno = EEXIST;
             return -1;
         }
         
         // Create the file
-        file->ni = ntfsCreate(file->vd, path, S_IFREG, 0, NULL);
+        file->ni = ntfsCreate(file->vd, path, S_IFREG, NULL);
         if (!file->ni) {
             ntfsUnlock(file->vd);
+            printf("d\n");
+            
             return -1;
         }
 
@@ -144,6 +154,8 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     if (!file->ni) {
         ntfsUnlock(file->vd);
         r->_errno = ENOENT;
+        printf("e\n");
+        
         return -1;
     }
     
@@ -152,15 +164,22 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     if(!file->data_na) {
         ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
+        printf("f\n");
+        
         return -1;
     }
+
+    // Determine if this files data is compressed and/or encrypted
+    file->compressed = NAttrCompressed(file->data_na) || (file->ni->flags & FILE_ATTR_COMPRESSED);
+    file->encrypted = NAttrEncrypted(file->data_na) || (file->ni->flags & FILE_ATTR_ENCRYPTED);
     
-    // We cannot read/write encrypted attributes or write to compressed attributes
-    if ((NAttrEncrypted(file->data_na)) ||
-        (NAttrCompressed(file->data_na) && file->write)) {
+    // We cannot read/write encrypted files
+    if (file->encrypted) {
         ntfs_attr_close(file->data_na);
         ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
+        printf("g\n");
+        
         r->_errno = EACCES;
         return -1;
     }
@@ -171,6 +190,8 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
         r->_errno = EROFS;
+        printf("h\n");
+        
         return -1;
     }
     
@@ -181,6 +202,8 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
             ntfsCloseEntry(file->vd, file->ni);
             ntfsUnlock(file->vd);
             r->_errno = errno;
+            printf("i\n");
+            
             return -1;
         }
     }
@@ -188,7 +211,7 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     // Set the files current position and length
     file->pos = 0;
     file->len = file->data_na->data_size;
-    
+
     // Update file times
     ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_ATIME);
     
@@ -235,11 +258,7 @@ int ntfs_close_r (struct _reent *r, int fd)
         file->prevOpenFile->nextOpenFile = file->nextOpenFile;
     else
         file->vd->firstOpenFile = file->nextOpenFile;
-    
-    // Sync
-    struct ntfs_device *dev = file->vd->vol->dev;
-    dev->d_ops->sync(dev);        
-    
+
     // Unlock
     ntfsUnlock(file->vd);
     
@@ -299,12 +318,16 @@ ssize_t ntfs_write_r (struct _reent *r, int fd, const char *ptr, size_t len)
         file->pos = old_pos;
     }
     
-    // Update the files length
-    file->len = file->data_na->data_size;
+    // Mark the file for archiving (if we actually wrote something)
+    if (written)
+        file->ni->flags |= FILE_ATTR_ARCHIVE;
     
-    // Update file times (if we actually did something)
+    // Update file times (if we actually wrote something)
     if (written)
         ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_MCTIME);
+    
+    // Update the files data length
+    file->len = file->data_na->data_size;
     
     // Unlock 
     ntfsUnlock(file->vd);
@@ -360,7 +383,7 @@ ssize_t ntfs_read_r (struct _reent *r, int fd, char *ptr, size_t len)
         read += ret;
     }
     
-    // Update file times (if we actually did something)
+    // Update file times (if we actually read something)
     if (read)
         ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_ATIME);
     
@@ -441,26 +464,34 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
         return -1;
     }
     
+    // For compressed files, only deleting contents is implemented
+    if (file->compressed && len > 0) {
+        ntfsUnlock(file->vd);
+        r->_errno = EOPNOTSUPP;
+        return -1;
+    }
+    
     // Resize the files data attribute
     if (ntfs_attr_truncate(file->data_na, len)) {
         ntfsUnlock(file->vd);
         r->_errno = errno;
         return -1;
     }
-
-    // Update the files length
+    
+    // Mark the file for archiving (if we actually changed something)
+    if (file->len != file->data_na->data_size)
+        file->ni->flags |= FILE_ATTR_ARCHIVE;
+    
+    // Update file times (if we actually changed something)
+    if (file->len != file->data_na->data_size)
+        ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_MCTIME);
+    
+    // Update the files data length
     file->len = file->data_na->data_size;
-    
-    // Update file times
-    ntfsUpdateTimes(file->vd, file->ni, NTFS_UPDATE_MCTIME);
-    
+
     // Sync the file (and its attributes) to disc  
-    ntfs_inode_sync(file->ni);
-    
-    // Sync
-    struct ntfs_device *dev = file->vd->vol->dev;
-    dev->d_ops->sync(dev);        
-    
+    ntfsSync(file->vd, file->ni);
+
     // Unlock
     ntfsUnlock(file->vd);
     
@@ -484,13 +515,9 @@ int ntfs_fsync_r (struct _reent *r, int fd)
     ntfsLock(file->vd);
     
     // Sync the file (and its attributes) to disc
-    ret = ntfs_inode_sync(file->ni);
+    ret = ntfsSync(file->vd, file->ni);
     if (ret)
         r->_errno = errno;
-    
-    // Sync
-    struct ntfs_device *dev = file->vd->vol->dev;
-    dev->d_ops->sync(dev);        
     
     // Unlock
     ntfsUnlock(file->vd);

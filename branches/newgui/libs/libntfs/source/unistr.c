@@ -133,7 +133,10 @@ BOOL ntfs_names_are_equal(const ntfschar *s1, size_t s1_len,
  * @err_val if an invalid character is found in @name1 during the comparison.
  *
  * The following characters are considered invalid: '"', '*', '<', '>' and '?'.
+ *
+ * A few optimizations made by JPA
  */
+
 int ntfs_names_collate(const ntfschar *name1, const u32 name1_len,
 		const ntfschar *name2, const u32 name2_len,
 		const int err_val __attribute__((unused)),
@@ -149,21 +152,29 @@ int ntfs_names_collate(const ntfschar *name1, const u32 name1_len,
 		exit(1);
 	}
 #endif
-	for (cnt = 0; cnt < min(name1_len, name2_len); ++cnt) {
-		c1 = le16_to_cpu(*name1);
-		name1++;
-		c2 = le16_to_cpu(*name2);
-		name2++;
-		if (ic) {
-			if (c1 < upcase_len)
-				c1 = le16_to_cpu(upcase[c1]);
-			if (c2 < upcase_len)
-				c2 = le16_to_cpu(upcase[c2]);
-		}
-#if 0
-		if (c1 < 64 && legal_ansi_char_array[c1] & 8)
-			return err_val;
-#endif
+	cnt = min(name1_len, name2_len);
+		/* JPA average loop count is 8 */
+	if (cnt > 0) {
+		if (ic)
+				/* JPA this loop in 76% cases */
+			do {
+				c1 = le16_to_cpu(*name1);
+				name1++;
+				c2 = le16_to_cpu(*name2);
+				name2++;
+				if (c1 < upcase_len)
+					c1 = le16_to_cpu(upcase[c1]);
+				if (c2 < upcase_len)
+					c2 = le16_to_cpu(upcase[c2]);
+			} while ((c1 == c2) && --cnt);
+		else
+			do {
+				/* JPA this loop in 24% cases */
+				c1 = le16_to_cpu(*name1);
+				name1++;
+				c2 = le16_to_cpu(*name2);
+				name2++;
+			} while ((c1 == c2) && --cnt);
 		if (c1 < c2)
 			return -1;
 		if (c1 > c2)
@@ -173,12 +184,6 @@ int ntfs_names_collate(const ntfschar *name1, const u32 name1_len,
 		return -1;
 	if (name1_len == name2_len)
 		return 0;
-	/* name1_len > name2_len */
-#if 0
-	c1 = le16_to_cpu(*name1);
-	if (c1 < 64 && legal_ansi_char_array[c1] & 8)
-		return err_val;
-#endif
 	return 1;
 }
 
@@ -998,21 +1003,26 @@ void ntfs_upcase_table_build(ntfschar *uc, u32 uc_len)
 	{0}
 	};
 	int i, r;
+	int k, off;
 
 	memset((char*)uc, 0, uc_len);
 	uc_len >>= 1;
 	if (uc_len > 65536)
 		uc_len = 65536;
 	for (i = 0; (u32)i < uc_len; i++)
-		uc[i] = i;
-	for (r = 0; uc_run_table[r][0]; r++)
+		uc[i] = cpu_to_le16(i);
+	for (r = 0; uc_run_table[r][0]; r++) {
+		off = uc_run_table[r][2];
 		for (i = uc_run_table[r][0]; i < uc_run_table[r][1]; i++)
-			uc[i] += uc_run_table[r][2];
+			uc[i] = cpu_to_le16(i + off);
+	}
 	for (r = 0; uc_dup_table[r][0]; r++)
 		for (i = uc_dup_table[r][0]; i < uc_dup_table[r][1]; i += 2)
-			uc[i + 1]--;
-	for (r = 0; uc_byte_table[r][0]; r++)
-		uc[uc_byte_table[r][0]] = uc_byte_table[r][1];
+			uc[i + 1] = cpu_to_le16(i);
+	for (r = 0; uc_byte_table[r][0]; r++) {
+		k = uc_byte_table[r][1];
+		uc[uc_byte_table[r][0]] = cpu_to_le16(k);
+	}
 }
 
 /**
@@ -1064,6 +1074,68 @@ void ntfs_ucsfree(ntfschar *ucs)
 {
 	if (ucs && (ucs != AT_UNNAMED))
 		free(ucs);
+}
+
+/*
+ *		Check whether a name contains no chars forbidden
+ *	for DOS or Win32 use
+ *
+ *	If there is a bad char, errno is set to EINVAL
+ */
+
+BOOL ntfs_forbidden_chars(const ntfschar *name, int len)
+{
+	BOOL forbidden = FALSE;
+	int ch;
+	int i;
+	u32 mainset =     (1L << ('\"' - 0x20))
+			| (1L << ('*' - 0x20))
+			| (1L << ('/' - 0x20))
+			| (1L << (':' - 0x20))
+			| (1L << ('<' - 0x20))
+			| (1L << ('>' - 0x20))
+			| (1L << ('?' - 0x20));
+
+	for (i=0; i<len; i++) {
+		ch = le16_to_cpu(name[i]);
+		if ((ch <= 0x20)
+		    || ((ch < 0x40)
+			&& ((1L << (ch - 0x20)) & mainset))
+		    || (ch == '\\')
+		    || (ch == '|'))
+			forbidden = TRUE;
+	}
+	if (forbidden)
+		errno = EINVAL;
+	return (forbidden);
+}
+
+/*
+ *		Check whether the same name can be used as a DOS and
+ *	a Win32 name
+ *
+ *	The names must be the same, or the short name the uppercase
+ *	variant of the long name
+ */
+
+BOOL ntfs_collapsible_chars(ntfs_volume *vol,
+			const ntfschar *shortname, int shortlen,
+			const ntfschar *longname, int longlen)
+{
+	BOOL collapsible;
+	unsigned int ch;
+	int i;
+
+	collapsible = shortlen == longlen;
+	if (collapsible)
+		for (i=0; i<shortlen; i++) {
+			ch = le16_to_cpu(longname[i]);
+			if ((ch >= vol->upcase_len)
+		   	 || ((shortname[i] != longname[i])
+				&& (shortname[i] != vol->upcase[ch])))
+					collapsible = FALSE;
+	}
+	return (collapsible);
 }
 
 /*

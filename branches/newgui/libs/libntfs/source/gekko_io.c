@@ -530,7 +530,7 @@ static int ntfs_device_gekko_io_stat(struct ntfs_device *dev, struct stat *buf)
                   ((!NDevReadOnly(dev)) ? (S_IWUSR | S_IWGRP | S_IWOTH) : 0);
 
     // Zero out the stat buffer
-    /*memset(buf, 0, sizeof(struct stat));*/
+    memset(buf, 0, sizeof(struct stat));
 
     // Build the device stats
     buf->st_dev = fd->interface->ioType;

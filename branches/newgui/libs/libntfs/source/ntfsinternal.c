@@ -208,6 +208,8 @@ int ntfsInitVolume (ntfs_vd *vd)
 
 void ntfsDeinitVolume (ntfs_vd *vd)
 {
+    struct ntfs_device *dev = NULL;
+    
     // Sanity check
     if (!vd) {
         errno = ENODEV;
@@ -217,12 +219,6 @@ void ntfsDeinitVolume (ntfs_vd *vd)
     // Lock
     ntfsLock(vd);
 
-    // Close the volumes current directory (if any)
-    if (vd->cwd_ni) {
-        ntfsCloseEntry(vd, vd->cwd_ni);
-        vd->cwd_ni = NULL;
-    }
-    
     // Close any directories which are still open (lazy programmers!)
     ntfs_dir_state *nextDir = vd->firstOpenDir;
     while (nextDir) {
@@ -245,9 +241,16 @@ void ntfsDeinitVolume (ntfs_vd *vd)
     vd->firstOpenDir = NULL;
     vd->firstOpenFile = NULL;
     
-    // Sync
-    struct ntfs_device *dev = vd->vol->dev;
-    dev->d_ops->sync(dev);        
+    // Close the volumes current directory (if any)
+    if (vd->cwd_ni) {
+        ntfsCloseEntry(vd, vd->cwd_ni);
+        vd->cwd_ni = NULL;
+    }
+    
+    // Force the underlying device to sync
+    dev = vd->vol->dev;
+    if (dev)
+        dev->d_ops->sync(dev);
     
     // Unlock
     ntfsUnlock(vd);
@@ -260,7 +263,14 @@ void ntfsDeinitVolume (ntfs_vd *vd)
 
 ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path)
 {
+    return ntfsParseEntry(vd, path, 0);
+}
+
+ntfs_inode *ntfsParseEntry (ntfs_vd *vd, const char *path, int reparseLevel)
+{
     ntfs_inode *ni = NULL;
+    char *target = NULL;
+    int attr_size;
     
     // Sanity check
     if (!vd) {
@@ -281,6 +291,37 @@ ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path)
     else
         ni = ntfs_pathname_to_inode(vd->vol, NULL, path);
     
+    // If the entry was found and it has reparse data then parse its true path;
+    // this resolves the true location of symbolic links and directory junctions
+    if (ni && (ni->flags & FILE_ATTR_REPARSE_POINT)) {
+        if (ntfs_possible_symlink(ni)) {
+            
+            // Sanity check, give up if we are parsing to deep
+            if (reparseLevel >= NTFS_MAX_SYMLINK_DEPTH) {
+                ntfsCloseEntry(vd, ni);
+                errno = ELOOP;
+                return NULL;
+            }
+            
+            // Get the target path of this entry
+            target = ntfs_make_symlink(path, ni, &attr_size);
+            if (!target) {
+                ntfsCloseEntry(vd, ni);
+                return NULL;
+            }
+            
+            // Close the entry (we are no longer interested in it)
+            ntfsCloseEntry(vd, ni);
+
+            // Parse the entries target
+            ni = ntfsParseEntry(vd, target, reparseLevel++);
+
+            // Clean up
+            ntfs_free(target);
+            
+        }
+    }
+    
     return ni;
 }
 
@@ -292,20 +333,30 @@ void ntfsCloseEntry (ntfs_vd *vd, ntfs_inode *ni)
         return;
     }
     
+    // Lock
+    ntfsLock(vd);
+    
+    // Sync the entry (if it is dirty)
+    if (NInoDirty(ni))
+        ntfsSync(vd, ni);
+        
     // Close the entry
     ntfs_inode_close(ni);
+    
+    // Unlock
+    ntfsUnlock(vd);
     
     return;
 }
 
-ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, const char *target)
+ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, mode_t type, const char *target)
 {
     ntfs_inode *dir_ni = NULL, *ni = NULL;
     char *dir = NULL;
     char *name = NULL;
     ntfschar *uname = NULL, *utarget = NULL;
     int uname_len, utarget_len;
- 
+
     // Sanity check
     if (!vd) {
         errno = ENODEV;
@@ -351,12 +402,6 @@ ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, co
     // Create the entry
     switch (type) {
         
-        // Character/block device
-        case S_IFCHR:
-        case S_IFBLK:
-            ni = ntfs_create_device(dir_ni, uname, uname_len, type, dev);
-            break;
-        
         // Symbolic link
         case S_IFLNK:
             utarget_len = ntfsLocalToUnicode(target, &utarget);
@@ -364,19 +409,32 @@ ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, dev_t type, dev_t dev, co
                 errno = EINVAL;
                 goto cleanup;
             }
-            ni = ntfs_create_symlink(dir_ni, uname, uname_len,  utarget, utarget_len);
+            ni = ntfs_create_symlink(dir_ni, 0, uname, uname_len,  utarget, utarget_len);
             break;
         
-        // Standard file/directory
-        default:
-            ni = ntfs_create(dir_ni, uname, uname_len, type);
+        // Director or file
+        case S_IFDIR:
+        case S_IFREG:
+            ni = ntfs_create(dir_ni, 0, uname, uname_len, type);
             break;
             
     }
 
-    // If the entry was created then update its parent directories times
+    // If the entry was created
     if (ni) {
+        
+        // Mark the entry for archiving
+        ni->flags |= FILE_ATTR_ARCHIVE;
+        
+        // Mark the entry as dirty
+        NInoSetDirty(ni);
+        
+        // Sync the entry to disc
+        ntfsSync(vd, ni);
+        
+        // Update parent directories times
         ntfsUpdateTimes(vd, dir_ni, NTFS_UPDATE_MCTIME);
+    
     }
     
 cleanup:
@@ -468,6 +526,9 @@ int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path)
     ntfsUpdateTimes(vd, ni, NTFS_UPDATE_CTIME);
     ntfsUpdateTimes(vd, dir_ni, NTFS_UPDATE_MCTIME);
     
+    // Sync the entry to disc
+    ntfsSync(vd, ni);
+    
 cleanup:
     
     if(dir_ni)
@@ -490,6 +551,7 @@ cleanup:
 
 int ntfsUnlink (ntfs_vd *vd, const char *path)
 {
+    struct ntfs_device *dev = NULL;
     ntfs_inode *dir_ni = NULL, *ni = NULL;
     char *dir = NULL;
     char *name = NULL;
@@ -542,9 +604,14 @@ int ntfsUnlink (ntfs_vd *vd, const char *path)
     }
     
     // Unlink the entry from its parent
-    if (ntfs_delete(ni, dir_ni, uname, uname_len)) {
+    if (ntfs_delete(vd->vol, path, ni, dir_ni, uname, uname_len)) {
         res = -1;
     }
+    
+    // Force the underlying device to sync
+    dev = vd->vol->dev;
+    if (dev)
+        dev->d_ops->sync(dev);        
     
     // ntfs_delete() ALWAYS closes ni and dir_ni; so no need for us to anymore
     dir_ni = ni = NULL;
@@ -569,10 +636,44 @@ cleanup:
     return 0;
 }
 
+int ntfsSync (ntfs_vd *vd, ntfs_inode *ni)
+{
+    struct ntfs_device *dev = NULL;
+    int res = 0;
+    
+    // Sanity check
+    if (!vd) {
+        errno = ENODEV;
+        return -1;
+    }
+    
+    // Sanity check
+    if (!ni) {
+        errno = ENOENT;
+        return -1;
+    }
+    
+    // Lock
+    ntfsLock(vd);
+    
+    // Sync the entry
+    res = ntfs_inode_sync(ni);
+    
+    // Force the underlying device to sync
+    dev = vd->vol->dev;
+    if (dev)
+        dev->d_ops->sync(dev);        
+    
+    // Unlock
+    ntfsUnlock(vd);
+    
+    return res;
+    
+}
+
 int ntfsStat (ntfs_vd *vd, ntfs_inode *ni, struct stat *st)
 {
     ntfs_attr *na = NULL;
-    INTX_FILE *intx_file = NULL;
     int res = 0;
     
     // Sanity check
@@ -587,76 +688,35 @@ int ntfsStat (ntfs_vd *vd, ntfs_inode *ni, struct stat *st)
         return -1;
     }
     
+    // Short circuit cases were we don't actually have to do anything
+    if (!st)
+        return 0;
+    
     // Lock
     ntfsLock(vd);
     
     // Zero out the stat buffer
-    /*memset(st, 0, sizeof(struct stat));*/
-
+    memset(st, 0, sizeof(struct stat));
+    
     // Is this entry a directory
     if (ni->mrec->flags & MFT_RECORD_IS_DIRECTORY) {
         st->st_mode = S_IFDIR | (0777 & ~vd->dmask);
         st->st_nlink = 1;
+        
+        // Open the directories index allocation table attribute
         na = ntfs_attr_open(ni, AT_INDEX_ALLOCATION, NTFS_INDEX_I30, 4);
         if (na) {
             st->st_size = na->data_size;
             st->st_blocks = na->allocated_size >> 9;
+            ntfs_attr_close(na);
         }
         
-    // Else it must be a file (of some sort)
+    // Else it must be a file
     } else {
-        st->st_mode = S_IFREG;
+        st->st_mode = S_IFREG | (0777 & ~vd->fmask);
         st->st_size = ni->data_size;
         st->st_blocks = (ni->allocated_size + 511) >> 9;
         st->st_nlink = le16_to_cpu(ni->mrec->link_count);
-        if (ni->flags & FILE_ATTR_SYSTEM) {
-            
-            // Open the files data attribute
-            na = ntfs_attr_open(ni, AT_DATA, AT_UNNAMED, 0);
-            if (!na) {
-                res = -1;
-                goto cleanup;
-            }
-
-            // Check if the file is a Interix FIFO or socket
-            if (!(ni->flags & FILE_ATTR_HIDDEN)) {
-                if (na->data_size == 0)
-                    st->st_mode = S_IFIFO;
-                if (na->data_size == 1)
-                    st->st_mode = S_IFSOCK;
-            }
-            
-            // Check if the file is a Interix symbolic link, block or character device
-            if (na->data_size <= sizeof(INTX_FILE_TYPES) + sizeof(ntfschar) * PATH_MAX && 
-                na->data_size > sizeof(INTX_FILE_TYPES)) {
-                
-                intx_file = ntfs_alloc(na->data_size);
-                if (!intx_file) {
-                    res = -1;
-                    goto cleanup;
-                }
-                if (ntfs_attr_pread(na, 0, na->data_size, intx_file) != na->data_size) {
-                    res = -1;
-                    goto cleanup;
-                }
-                if (intx_file->magic == INTX_BLOCK_DEVICE &&
-                    na->data_size == offsetof(INTX_FILE, device_end)) {
-                    st->st_mode = S_IFBLK;
-                    st->st_rdev = mkdev(le64_to_cpu(intx_file->major), le64_to_cpu(intx_file->minor));
-                }
-                if (intx_file->magic == INTX_CHARACTER_DEVICE &&
-                    na->data_size == offsetof(INTX_FILE, device_end)) {
-                    st->st_mode = S_IFCHR;
-                    st->st_rdev = mkdev(le64_to_cpu(intx_file->major), le64_to_cpu(intx_file->minor));
-                }
-                if (intx_file->magic == INTX_SYMBOLIC_LINK) {
-                    st->st_mode = S_IFLNK;
-                }
-                
-            }
-            
-        }
-        st->st_mode |= (0777 & ~vd->fmask);
     }
     
     // Fill in the generic entry stats
@@ -670,14 +730,6 @@ int ntfsStat (ntfs_vd *vd, ntfs_inode *ni, struct stat *st)
     
     // Update entry times
     ntfsUpdateTimes(vd, ni, NTFS_UPDATE_ATIME);
-    
-cleanup:
-
-    if(intx_file)
-        ntfs_free(intx_file);
-    
-    if(na)
-        ntfs_attr_close(na);
     
     // Unlock
     ntfsUnlock(vd);

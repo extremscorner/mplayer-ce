@@ -47,6 +47,9 @@ void list(const char *path)
     pdir = opendir(path);
     if (pdir) {
         
+        // Make this our current directory
+        chdir(path);
+        
         // List the contents of the directory
         while ((pent = readdir(pdir)) != NULL) {
             if ((strcmp(pent->d_name, ".") == 0) || (strcmp(pent->d_name, "..") == 0))
@@ -57,18 +60,10 @@ void list(const char *path)
                 continue;
             
             // List the entry
-            if (S_ISBLK(st.st_mode)) {
-                printf(" B %s\n", pent->d_name);
-            } else if (S_ISCHR(st.st_mode)) {
-                printf(" C %s\n", pent->d_name);
-            } else if (S_ISDIR(st.st_mode)) {
-                printf(" D %s\n", pent->d_name);
-            } else if (S_ISFIFO(st.st_mode)) {
-                printf(" P %s\n", pent->d_name);
+            if (S_ISDIR(st.st_mode)) {
+                printf(" D %s/\n", pent->d_name);
             } else if (S_ISREG(st.st_mode)) {
                 printf(" F %s (%lu)\n", pent->d_name, (unsigned long int)st.st_size);
-            } else if (S_ISLNK(st.st_mode)) {
-                printf(" L %s\n", pent->d_name);
             } else {
                 printf(" ? %s\n", pent->d_name);
             }
@@ -197,16 +192,13 @@ int main(int argc, char **argv) {
             if (pressed & WPAD_BUTTON_A) {
                 printf("\n\n");
                 
-                // Move to the volumes root directory
+                // Enumerate the volumes contents
                 strcpy(path, mounts[mountIndex].name);
                 strcat(path, ":/");
-                chdir(path);
-
-                // Enumerate the volumes contents
-                list(".");
+                list(path);
                 listed = true;
                 
-                printf("\nPress 'HOME' to quit.\n\n");
+                printf("Press 'HOME' to quit.\n\n");
                 
             }
             

@@ -40,6 +40,8 @@ typedef struct _ntfs_file_state {
     bool read;                              /* True if allowed to read from file */
     bool write;                             /* True if allowed to write to file */
     bool append;                            /* True if allowed to append to file */
+    bool compressed;                        /* True if file data is compressed */
+    bool encrypted;                         /* True if file data is encryted */
     s64 pos;                                /* Current position within the file (in bytes) */
     s64 len;                                /* Total length of the file (in bytes) */
     struct _ntfs_file_state *prevOpenFile;  /* The previous entry in a double-linked FILO list of open files */
