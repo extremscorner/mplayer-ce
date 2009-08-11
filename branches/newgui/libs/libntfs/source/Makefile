@@ -30,7 +30,7 @@ LIBDIR		:=	../lib
 #---------------------------------------------------------------------------------
 
 ifeq ($(PLATFORM),wii)
-CFLAGS		=	-ffast-math -O3 -pipe -mrvl -mcpu=750 -meabi -mhard-float -Wall $(MACHDEP) $(INCLUDE) -DGEKKO -DHAVE_CONFIG_H
+CFLAGS		=	-ffast-math -O3 -pipe -mrvl -mcpu=750 -meabi -mhard-float -Wall $(MACHDEP) $(INCLUDE) -DGEKKO -DHAVE_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 CXXFLAGS	=	$(CFLAGS)
 #ASFLAGS		:=	-g
 endif

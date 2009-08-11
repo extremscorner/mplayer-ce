@@ -491,7 +491,7 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         vd->flags |= MS_IGNORE_HIBERFILE;
     
     if (vd->flags & MS_RDONLY)
-        ntfs_log_warning("Mounting \"%s\" read-only\n", name);
+        ntfs_log_debug("Mounting \"%s\" as read-only\n", name);
         
     // Mount the device
     vd->vol = ntfs_device_mount(dev, vd->flags);
@@ -543,6 +543,7 @@ void ntfsUnmount (const char *name, bool force)
     
     // Unmount the volume
     ntfs_umount(vd->vol, force);
+    
     // Free the volume descriptor
     ntfs_free(vd);
     
@@ -569,7 +570,7 @@ const char *ntfsGetVolumeName (const char *name)
         return false;
     }
     
-    // If the has been cached already then just use that
+    // If the volume name has already been cached then just use that
     if (vd->name[0])
         return vd->name;
     
@@ -584,6 +585,7 @@ const char *ntfsGetVolumeName (const char *name)
         return false;
     }
 
+    // Allocate a buffer to store the raw volume name
     ulabel = ntfs_alloc(na->data_size * sizeof(ntfschar));
     if (!ulabel) {
         ntfsUnlock(vd);
@@ -593,8 +595,8 @@ const char *ntfsGetVolumeName (const char *name)
     
     // Read the volume name
     if (ntfs_attr_pread(na, 0, na->data_size, ulabel) != na->data_size) {
-        ntfsUnlock(vd);
         ntfs_free(ulabel);
+        ntfsUnlock(vd);
         errno = EIO;
         return false;
     }
@@ -602,8 +604,8 @@ const char *ntfsGetVolumeName (const char *name)
     // Convert the volume name to the current local
     if (ntfsUnicodeToLocal(ulabel, na->data_size, &volumeName, 0) < 0) {
         errno = EINVAL;
-        ntfsUnlock(vd);
         ntfs_free(ulabel);
+        ntfsUnlock(vd);
         return false;
     }
 
@@ -645,15 +647,16 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
         return false;
     }
 
+    // Lock
+    ntfsLock(vd);
+    
     // Convert the new volume name to unicode
     ulabel_len = ntfsLocalToUnicode(volumeName, &ulabel) * sizeof(ntfschar);
     if (ulabel_len == -1) {
+        ntfsUnlock(vd);
         errno = EINVAL;
         return false;
     }
-
-    // Lock
-    ntfsLock(vd);
     
     // Check if the volume name attribute exists
     na = ntfs_attr_open(vd->vol->vol_ni, AT_VOLUME_NAME, NULL, 0);

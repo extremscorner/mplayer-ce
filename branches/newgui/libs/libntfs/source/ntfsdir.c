@@ -52,7 +52,7 @@ void ntfsCloseDir (ntfs_dir_state *dir)
     if (!dir || !dir->vd)
         return;
     
-    // Free the current entry (if any)
+    // Free the directory entries (if any)
     while (dir->first) {
         ntfs_dir_entry *next = dir->first->next;
         ntfs_free(dir->first->name);
@@ -85,6 +85,10 @@ int ntfs_stat_r (struct _reent *r, const char *path, struct stat *st)
         r->_errno = ENODEV;
         return -1;
     }
+    
+    // Short circuit cases were we don't actually have to do anything
+    if (!st)
+        return 0;
     
     // Lock
     ntfsLock(vd);
@@ -304,6 +308,10 @@ int ntfs_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
         return -1;
     }
     
+    // Short circuit cases were we don't actually have to do anything
+    if (!buf)
+        return 0;
+    
     // Lock
     ntfsLock(vd);
     
@@ -375,22 +383,22 @@ int ntfs_readdir_filler (DIR_ITER *dirState, const ntfschar *name, const int nam
     // Check that this entry can be enumerated (as described by the volume descriptor)
     if (MREF(mref) == FILE_root || MREF(mref) >= FILE_first_user || dir->vd->showSystemFiles) {
         
-        //...
+        // Allocate a new directory entry
         entry = ntfs_alloc(sizeof(ntfs_dir_entry));
         if (!entry)
             return -1;
         
-        //...
+        // Reset the entry
         entry->name = NULL;
         entry->next = NULL;
         
-        // Convert the entry name to our current local and line it up for fetching
+        // Convert the entry name to our current local
         if (ntfsUnicodeToLocal(name, name_len, &entry->name, 0) < 0) {
             ntfs_free(entry);
             return -1;
         }
         
-        //...
+        // Link the entry to the directory
         if (!dir->first) {
             dir->first = entry;
         } else {
@@ -525,7 +533,7 @@ int ntfs_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
         }
     }
     
-    // Move to the first entry in the directory
+    // Move to the next entry in the directory
     dir->current = dir->current->next;
     
     // Update directory times

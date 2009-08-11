@@ -49,7 +49,7 @@
 #define NTFS_MAX_MOUNTS                     10 /* Maximum number of mounts available at one time */
 #define NTFS_MAX_SYMLINK_DEPTH              10 /* Maximum search depth when resolving symbolic links */
 
-#define NTFS_OEM_ID                         cpu_to_le64(0x202020205346544eULL)
+#define NTFS_OEM_ID                         cpu_to_le64(0x202020205346544eULL) /* "NTFS    " */
 
 #define MBR_SIGNATURE                       cpu_to_le16(0xAA55)
 #define EBR_SIGNATURE                       cpu_to_le16(0xAA55)
@@ -82,7 +82,7 @@ typedef struct _PARTITION_RECORD {
  * MASTER_BOOT_RECORD - Block device master boot record
  */
 typedef struct _MASTER_BOOT_RECORD {
-    u8 code_area[446];                      /* Code area; Normally empty */
+    u8 code_area[446];                      /* Code area; normally empty */
     PARTITION_RECORD partitions[4];         /* 4 primary partitions */
     u16 signature;                          /* MBR signature; 0xAA55 */
 } __attribute__((__packed__)) MASTER_BOOT_RECORD;
@@ -91,7 +91,7 @@ typedef struct _MASTER_BOOT_RECORD {
  * EXTENDED_PARTITION - Block device extended boot record
  */
 typedef struct _EXTENDED_BOOT_RECORD {
-    u8 code_area[446];                      /* Normally empty */
+    u8 code_area[446];                      /* Code area; normally empty */
     PARTITION_RECORD partition;             /* Primary partition */
     PARTITION_RECORD next_ebr;              /* Next extended boot record in the chain */
     u8 reserved[32];                        /* Normally empty */

@@ -25,6 +25,9 @@
 #include "ntfsinternal.h"
 #include <sys/reent.h>
 
+/**
+ * ntfs_dir_entry - Directory entry
+ */
 typedef struct _ntfs_dir_entry {
     char *name;
     struct _ntfs_dir_entry *next;
@@ -36,8 +39,8 @@ typedef struct _ntfs_dir_entry {
 typedef struct _ntfs_dir_state {
     ntfs_vd *vd;                            /* Volume this directory belongs to */
     ntfs_inode *ni;                         /* Directory descriptor */
-    ntfs_dir_entry *first;                  /* */
-    ntfs_dir_entry *current;                /* */
+    ntfs_dir_entry *first;                  /* The first entry in the directory */
+    ntfs_dir_entry *current;                /* The current entry in the directory */
     struct _ntfs_dir_state *prevOpenDir;    /* The previous entry in a double-linked FILO list of open directories */
     struct _ntfs_dir_state *nextOpenDir;    /* The next entry in a double-linked FILO list of open directories */
 } ntfs_dir_state;

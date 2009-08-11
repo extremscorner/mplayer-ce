@@ -263,7 +263,7 @@ void ntfsDeinitVolume (ntfs_vd *vd)
 
 ntfs_inode *ntfsOpenEntry (ntfs_vd *vd, const char *path)
 {
-    return ntfsParseEntry(vd, path, 0);
+    return ntfsParseEntry(vd, path, 1);
 }
 
 ntfs_inode *ntfsParseEntry (ntfs_vd *vd, const char *path, int reparseLevel)
@@ -297,7 +297,7 @@ ntfs_inode *ntfsParseEntry (ntfs_vd *vd, const char *path, int reparseLevel)
         if (ntfs_possible_symlink(ni)) {
             
             // Sanity check, give up if we are parsing to deep
-            if (reparseLevel >= NTFS_MAX_SYMLINK_DEPTH) {
+            if (reparseLevel > NTFS_MAX_SYMLINK_DEPTH) {
                 ntfsCloseEntry(vd, ni);
                 errno = ELOOP;
                 return NULL;
@@ -412,7 +412,7 @@ ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, mode_t type, const char *
             ni = ntfs_create_symlink(dir_ni, 0, uname, uname_len,  utarget, utarget_len);
             break;
         
-        // Director or file
+        // Directory or file
         case S_IFDIR:
         case S_IFREG:
             ni = ntfs_create(dir_ni, 0, uname, uname_len, type);
@@ -772,6 +772,10 @@ int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int
     int len = 0;
     int i;
     
+    // Sanity check
+    if (!ins || !ins_len || !*outs)
+        return 0;
+    
     // Convert the unicode string to our current local
     len = ntfs_ucstombs(ins, ins_len, outs, outs_len); 
     if (len == -1 && errno == EILSEQ) {
@@ -803,6 +807,10 @@ int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int
 
 int ntfsLocalToUnicode(const char *ins, ntfschar **outs)
 {
+    // Sanity check
+    if (!ins || !*outs)
+        return 0;
+    
     // Convert the local string to unicode
     return ntfs_mbstoucs(ins, outs);
 }

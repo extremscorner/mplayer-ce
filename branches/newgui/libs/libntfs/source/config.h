@@ -353,11 +353,10 @@
 /* #undef WORDS_LITTLEENDIAN */
 
 /* Number of bits in a file offset, on hosts where this is settable. */
-#define _FILE_OFFSET_BITS 64
+/* #undef _FILE_OFFSET_BITS */
 
 /* Define for large files, on AIX-style hosts. */
 /* #undef _LARGE_FILES */
-#define _LARGEFILE_SOURCE 1
 
 /* Define to 1 if on MINIX. */
 /* #undef _MINIX */

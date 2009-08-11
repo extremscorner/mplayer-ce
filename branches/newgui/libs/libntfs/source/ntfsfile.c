@@ -117,7 +117,7 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         return -1;
     }
     
-    // Try and find the file and (if found) ensure that is not a directory
+    // Try and find the file and (if found) ensure that it is not a directory
     file->ni = ntfsOpenEntry(file->vd, path);
     if (file->ni && (file->ni->mrec->flags & MFT_RECORD_IS_DIRECTORY)) {
         ntfsCloseEntry(file->vd, file->ni);
@@ -133,8 +133,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         if (file->ni) {
             ntfsCloseEntry(file->vd, file->ni);
             ntfsUnlock(file->vd);
-            printf("c\n");
-            
             r->_errno = EEXIST;
             return -1;
         }
@@ -143,8 +141,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         file->ni = ntfsCreate(file->vd, path, S_IFREG, NULL);
         if (!file->ni) {
             ntfsUnlock(file->vd);
-            printf("d\n");
-            
             return -1;
         }
 
@@ -154,8 +150,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     if (!file->ni) {
         ntfsUnlock(file->vd);
         r->_errno = ENOENT;
-        printf("e\n");
-        
         return -1;
     }
     
@@ -164,8 +158,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
     if(!file->data_na) {
         ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
-        printf("f\n");
-        
         return -1;
     }
 
@@ -178,8 +170,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         ntfs_attr_close(file->data_na);
         ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
-        printf("g\n");
-        
         r->_errno = EACCES;
         return -1;
     }
@@ -190,8 +180,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
         ntfsCloseEntry(file->vd, file->ni);
         ntfsUnlock(file->vd);
         r->_errno = EROFS;
-        printf("h\n");
-        
         return -1;
     }
     
@@ -202,8 +190,6 @@ int ntfs_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
             ntfsCloseEntry(file->vd, file->ni);
             ntfsUnlock(file->vd);
             r->_errno = errno;
-            printf("i\n");
-            
             return -1;
         }
     }
@@ -434,6 +420,10 @@ int ntfs_fstat_r (struct _reent *r, int fd, struct stat *st)
         return -1;
     }
     
+    // Short circuit cases were we don't actually have to do anything
+    if (!st)
+        return 0;
+    
     // Get the file stats
     ret = ntfsStat(file->vd, file->ni, st);
     if (ret)
@@ -464,7 +454,7 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
         return -1;
     }
     
-    // For compressed files, only deleting contents is implemented
+    // For compressed files, only deleting contents is supported
     if (file->compressed && len > 0) {
         ntfsUnlock(file->vd);
         r->_errno = EOPNOTSUPP;
