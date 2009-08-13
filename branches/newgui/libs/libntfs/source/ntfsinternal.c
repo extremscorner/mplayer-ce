@@ -788,7 +788,7 @@ int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int
     int i;
     
     // Sanity check
-    if (!ins || !ins_len || !*outs)
+    if (!ins || !ins_len || !outs)
         return 0;
     
     // Convert the unicode string to our current local
@@ -823,7 +823,7 @@ int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int
 int ntfsLocalToUnicode(const char *ins, ntfschar **outs)
 {
     // Sanity check
-    if (!ins || !*outs)
+    if (!ins || !outs)
         return 0;
     
     // Convert the local string to unicode
