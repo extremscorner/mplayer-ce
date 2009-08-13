@@ -414,7 +414,6 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
 
 bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cachePageSize, u32 cachePageCount, u32 flags)
 {
-    struct ntfs_device *dev = NULL;
     ntfs_vd *vd = NULL;
     gekko_fd *fd = NULL;
     
@@ -439,33 +438,9 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         return false;
     }
     
-    // Allocate the device driver descriptor
-    fd = (gekko_fd*)ntfs_alloc(sizeof(gekko_fd));
-    if (!fd) {
-        errno = ENOMEM;
-        return false;
-    }
-    
-    // Setup the device driver descriptor
-    fd->interface = interface;
-    fd->startSector = startSector;
-    fd->sectorSize = 0;
-    fd->sectorCount = 0;
-    fd->cachePageSize = cachePageSize;
-    fd->cachePageCount = cachePageCount;
-    
-    // Allocate the device driver
-    dev = ntfs_device_alloc(name, 0, &ntfs_device_gekko_io_ops, fd);
-    if (!dev) {
-        ntfs_free(fd);
-        return false;
-    }
-    
     // Allocate the volume descriptor
     vd = (ntfs_vd*)ntfs_alloc(sizeof(ntfs_vd));
     if (!vd) {
-        ntfs_device_free(dev);
-        ntfs_free(fd);
         errno = ENOMEM;
         return false;
     }
@@ -479,6 +454,30 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     vd->dmask = 0;
     vd->atime = ((flags & NTFS_UPDATE_ACCESS_TIMES) ? ATIME_ENABLED : ATIME_DISABLED);
     vd->showSystemFiles = (flags & NTFS_SHOW_SYSTEM_FILES);
+    
+    // Allocate the device driver descriptor
+    fd = (gekko_fd*)ntfs_alloc(sizeof(gekko_fd));
+    if (!fd) {
+        ntfs_free(vd);
+        errno = ENOMEM;
+        return false;
+    }
+    
+    // Setup the device driver descriptor
+    fd->interface = interface;
+    fd->startSector = startSector;
+    fd->sectorSize = 0;
+    fd->sectorCount = 0;
+    fd->cachePageSize = cachePageSize;
+    fd->cachePageCount = cachePageCount;
+    
+    // Allocate the device driver
+    vd->dev = ntfs_device_alloc(name, 0, &ntfs_device_gekko_io_ops, fd);
+    if (!vd->dev) {
+        ntfs_free(fd);
+        ntfs_free(vd);
+        return false;
+    }
     
     // Build the mount flags
     if (!(interface->features & FEATURE_MEDIUM_CANWRITE))
@@ -494,7 +493,7 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         ntfs_log_debug("Mounting \"%s\" as read-only\n", name);
         
     // Mount the device
-    vd->vol = ntfs_device_mount(dev, vd->flags);
+    vd->vol = ntfs_device_mount(vd->dev, vd->flags);
     if (!vd->vol) {
         switch(ntfs_volume_error(errno)) {
             case NTFS_VOLUME_NOT_NTFS: errno = EINVALPART; break;
@@ -503,8 +502,8 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
             case NTFS_VOLUME_UNCLEAN_UNMOUNT: errno = EDIRTY; break;
             default: errno = EINVAL; break;
         }
+        ntfs_device_free(vd->dev);
         ntfs_free(vd);
-        ntfs_device_free(dev);
         return false;
     }
     

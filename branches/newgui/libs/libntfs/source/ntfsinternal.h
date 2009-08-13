@@ -118,6 +118,7 @@ typedef enum {
  * ntfs_vd - NTFS volume descriptor
  */
 typedef struct _ntfs_vd {
+    struct ntfs_device *dev;                /* NTFS device handle */
     ntfs_volume *vol;                       /* NTFS volume handle */
     mutex_t lock;                           /* Volume lock mutex */
     s64 id;                                 /* Filesystem id */

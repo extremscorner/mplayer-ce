@@ -208,8 +208,6 @@ int ntfsInitVolume (ntfs_vd *vd)
 
 void ntfsDeinitVolume (ntfs_vd *vd)
 {
-    struct ntfs_device *dev = NULL;
-    
     // Sanity check
     if (!vd) {
         errno = ENODEV;
@@ -248,9 +246,7 @@ void ntfsDeinitVolume (ntfs_vd *vd)
     }
     
     // Force the underlying device to sync
-    dev = vd->vol->dev;
-    if (dev)
-        dev->d_ops->sync(dev);
+    vd->dev->d_ops->sync(vd->dev);
     
     // Unlock
     ntfsUnlock(vd);
@@ -283,6 +279,8 @@ ntfs_inode *ntfsParseEntry (ntfs_vd *vd, const char *path, int reparseLevel)
     if (!path) {
         errno = EINVAL;
         return NULL;
+    } else if (path[0] == '\0') {
+        path = ".";
     }
 
     // Find the entry, taking into account our current directory (if any)
@@ -369,6 +367,14 @@ ntfs_inode *ntfsCreate (ntfs_vd *vd, const char *path, mode_t type, const char *
             errno = EXDEV;
             return NULL;
         }
+    }
+
+    // Get the actual paths of the entry
+    path = ntfsRealPath(path);
+    target = ntfsRealPath(target);
+    if (!path || !target) {
+        errno = EINVAL;
+        return NULL;
     }
 
     // Lock
@@ -478,6 +484,14 @@ int ntfsLink (ntfs_vd *vd, const char *old_path, const char *new_path)
         return -1;
     }
 
+    // Get the actual paths of the entry
+    old_path = ntfsRealPath(old_path);
+    new_path = ntfsRealPath(new_path);
+    if (!old_path || !new_path) {
+        errno = EINVAL;
+        return -1;
+    }
+
     // Lock
     ntfsLock(vd);
     
@@ -551,7 +565,6 @@ cleanup:
 
 int ntfsUnlink (ntfs_vd *vd, const char *path)
 {
-    struct ntfs_device *dev = NULL;
     ntfs_inode *dir_ni = NULL, *ni = NULL;
     char *dir = NULL;
     char *name = NULL;
@@ -562,6 +575,13 @@ int ntfsUnlink (ntfs_vd *vd, const char *path)
     // Sanity check
     if (!vd) {
         errno = ENODEV;
+        return -1;
+    }
+    
+    // Get the actual path of the entry
+    path = ntfsRealPath(path);
+    if (!path) {
+        errno = EINVAL;
         return -1;
     }
     
@@ -609,9 +629,7 @@ int ntfsUnlink (ntfs_vd *vd, const char *path)
     }
     
     // Force the underlying device to sync
-    dev = vd->vol->dev;
-    if (dev)
-        dev->d_ops->sync(dev);        
+    vd->dev->d_ops->sync(vd->dev);
     
     // ntfs_delete() ALWAYS closes ni and dir_ni; so no need for us to anymore
     dir_ni = ni = NULL;
@@ -638,7 +656,6 @@ cleanup:
 
 int ntfsSync (ntfs_vd *vd, ntfs_inode *ni)
 {
-    struct ntfs_device *dev = NULL;
     int res = 0;
     
     // Sanity check
@@ -660,9 +677,7 @@ int ntfsSync (ntfs_vd *vd, ntfs_inode *ni)
     res = ntfs_inode_sync(ni);
     
     // Force the underlying device to sync
-    dev = vd->vol->dev;
-    if (dev)
-        dev->d_ops->sync(dev);        
+    vd->dev->d_ops->sync(vd->dev);       
     
     // Unlock
     ntfsUnlock(vd);

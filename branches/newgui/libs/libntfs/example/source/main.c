@@ -145,7 +145,6 @@ int main(int argc, char **argv) {
     ntfs_md *mounts = NULL;
     int mountCount = 0;
     int mountIndex = 0;
-    char path[256] = {0};
     int i;
     
     // Mount FAT devices
@@ -155,10 +154,10 @@ int main(int argc, char **argv) {
     mountCount = ntfsMountAll(&mounts, NTFS_DEFAULT | NTFS_RECOVER);
     if (mountCount == -1)
         printf("Error whilst mounting devices (%i).\n", errno);
-    else if (mountCount > 0)
-        printf("%i NTFS volumes(s) mounted!\n\n", mountCount);
-    else
+    else if (mountCount == 0)
         printf("No NTFS volumes were found and/or mounted.\n");
+    else
+        printf("%i NTFS volumes(s) mounted!\n\n", mountCount);
     
     // List all mounted NTFS volumes
     for (i = 0; i < mountCount; i++)
@@ -177,7 +176,7 @@ int main(int argc, char **argv) {
         // Break from main loop
         if (pressed & WPAD_BUTTON_HOME) break;
 
-        // If there is a volume to list and we have not yet listed one...
+        // If there is at least one volume mounted and we have not yet listed one...
         if (mountCount > 0 && !listed) {
 
             // Deincrement the selected volumes index
@@ -192,7 +191,8 @@ int main(int argc, char **argv) {
             if (pressed & WPAD_BUTTON_A) {
                 printf("\n\n");
                 
-                // Enumerate the volumes contents
+                // List the volumes root directory
+                char path[PATH_MAX] = {0};
                 strcpy(path, mounts[mountIndex].name);
                 strcat(path, ":/");
                 list(path);
