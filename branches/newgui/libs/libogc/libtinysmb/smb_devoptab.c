@@ -53,13 +53,13 @@ static bool FirstInit=true;
 ///////////////////////////////////////////
 //      CACHE FUNCTION DEFINITIONS       //
 ///////////////////////////////////////////
-#define SMB_READ_BUFFERSIZE		65472 //(64kb - smb header)
+#define SMB_READ_BUFFERSIZE			65472 //(64kb - smb header)
 #define SMB_WRITE_BUFFERSIZE		(1024*62) //(62kb - value by testing)
 
 typedef struct
 {
 	off_t offset;
-	u32 last_used;
+	u64 last_used;
 	SMBFILESTRUCT *file;
 	void *ptr;
 } smb_cache_page;
@@ -140,7 +140,7 @@ static int FlushWriteSMBCache(char *name)
 
 		written = SMB_WriteFile(env->SMBWriteCache.ptr+written, env->SMBWriteCache.len,
 				env->SMBWriteCache.file->offset, env->SMBWriteCache.file->handle);
-	
+
 		if (written <= 0)
 		{
 			_SMB_unlock();
@@ -155,8 +155,7 @@ static int FlushWriteSMBCache(char *name)
 	}
 	env->SMBWriteCache.used = 0;
 	env->SMBWriteCache.file = NULL;
-	
-	
+
 	_SMB_unlock();
 	return 0;
 }
@@ -404,8 +403,7 @@ static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 			//Flush current buffer
 			if (FlushWriteSMBCache(SMBEnv[j].name) < 0)
 			{
-				_SMB_unlock();
-				return -1;
+				goto failed;
 			}
 			SMBEnv[j].SMBWriteCache.file = file;
 			SMBEnv[j].SMBWriteCache.len = 0;
@@ -423,6 +421,7 @@ static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 		if(SMBEnv[j].SMBWriteCache.len+len>=SMB_WRITE_BUFFERSIZE)
 		{			
 			if(aux_send_buf == NULL) aux_send_buf = memalign(32, SMB_WRITE_BUFFERSIZE);
+			if(aux_send_buf == NULL) goto failed;
 			if (SMBEnv[j].SMBWriteCache.len > 0)
 				memcpy(aux_send_buf, SMBEnv[j].SMBWriteCache.ptr, SMBEnv[j].SMBWriteCache.len);
 	
@@ -432,8 +431,7 @@ static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 			written=SMB_WriteFile(aux_send_buf, SMB_WRITE_BUFFERSIZE, file->offset, file->handle);			
 			if(written<0)
 			{
-				_SMB_unlock();
-				return -1;
+				goto failed;
 			}
 			file->offset += written;
 			if (file->offset > file->len)
@@ -455,6 +453,9 @@ static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 	_SMB_unlock();
 	return size;
 
+failed:
+	_SMB_unlock();
+	return -1;
 }
 
 ///////////////////////////////////////////

@@ -49,7 +49,7 @@
 #include <smb.h>
 
 #define IOS_O_NONBLOCK				0x04
-#define RECV_TIMEOUT				3000  // in ms
+#define RECV_TIMEOUT				5000  // in ms
 
 /**
  * Field offsets.
@@ -128,8 +128,8 @@
 #define SMB_PROTO					0x424d53ff
 #define SMB_HANDLE_NULL				0xffffffff
 #define SMB_MAX_BUFFERSIZE			((1024*64)-64)	// cannot be larger than u16 (65536) - samba header (64)
-#define SMB_MAX_NET_READ_SIZE			7300 // see smb_recv
-#define SMB_MAX_NET_WRITE_SIZE			4096 // see smb_sendv
+#define SMB_MAX_NET_READ_SIZE		7300 // see smb_recv
+#define SMB_MAX_NET_WRITE_SIZE		4096 // see smb_sendv
 #define SMB_MAX_TRANSMIT_SIZE		16384
 #define SMB_DEF_READOFFSET			63
 
@@ -388,27 +388,30 @@ static void MakeTRANS2Header(u8 subcommand,SMBHANDLE *handle)
 static inline s32 smb_send(s32 s,const void *data,s32 size)
 {
 	u64 t1,t2;
-	s32 ret, len = size,send;
+	s32 ret, len = size, nextsend;
 
 	t1=ticks_to_millisecs(gettime());
 	while(len>0)
 	{
-		send=len;
-		if(send>SMB_MAX_NET_WRITE_SIZE)send=SMB_MAX_NET_WRITE_SIZE; //optimized value
-		ret=net_send(s,data,send,0);
+		nextsend=len;
+
+		if(nextsend>SMB_MAX_NET_WRITE_SIZE)
+			nextsend=SMB_MAX_NET_WRITE_SIZE; //optimized value
+
+		ret=net_send(s,data,nextsend,0);
 		if(ret==-EAGAIN)
 		{
 			t2=ticks_to_millisecs(gettime());
 			if( (t2 - t1) > RECV_TIMEOUT)
 			{
-				return -1;	/* timeout */
+				return -1; // timeout
 			}
-			usleep(100);	/* allow system to perform work. Stabilizes system */
+			usleep(100); // allow system to perform work. Stabilizes system
 			continue;
 		}
 		else if(ret<0)
 		{
-			return ret;	/* some error happened */
+			return ret;	// an error occurred
 		}
 		else
 		{
@@ -431,30 +434,32 @@ static inline s32 smb_send(s32 s,const void *data,s32 size)
  */
 static s32 smb_recv(s32 s,void *mem,s32 len)
 {
-	s32 ret,read,readed=0;
+	s32 ret,read,readtotal=0;
 	u64 t1,t2;
 
 	t1=ticks_to_millisecs(gettime());
-	while(len>0)
+	while(len > 0)
 	{
 		read=len;
-		if(read>SMB_MAX_NET_READ_SIZE)read=SMB_MAX_NET_READ_SIZE;  //optimized value
-		ret=net_recv(s,mem+readed,read,0);
-		if(ret>=0) 
+		if(read>SMB_MAX_NET_READ_SIZE)
+			read=SMB_MAX_NET_READ_SIZE; // optimized value
+
+		ret=net_recv(s,mem+readtotal,read,0);
+		if(ret>=0)
 		{
-			readed+=ret;
+			readtotal+=ret;
 			len-=ret;
-			if(len==0) return readed;
+			if(len==0) return readtotal;
 		}
 		else
 		{
 			if(ret!=-EAGAIN) return ret;
 			t2=ticks_to_millisecs(gettime());
 			if( (t2 - t1) > RECV_TIMEOUT) return -1;
-			usleep(100);	/* allow system to perform work. Stabilizes system */
+			usleep(100); // allow system to perform work. Stabilizes system
 		}
 	}
-	return readed;
+	return readtotal;
 }
 
 /**
@@ -472,7 +477,7 @@ static s32 SMBCheck(u8 command, s32 readlen,SMBHANDLE *handle)
 	NBTSMB *nbt = &handle->message;
 	u8 *ptr2 = (u8*)nbt;
 	u8 tempLength = (readlen==0);
-	
+
 	if(handle->sck_server == INVALID_SOCKET) return SMB_ERROR;
 
 	/* if length is not specified,*/
@@ -544,7 +549,7 @@ static s32 SMB_SetupAndX(SMBHANDLE *handle)
 	u8 *ptr = handle->message.smb;
 	SMBSESSION *sess = &handle->session;
 	char pwd[200], ntRespData[24];
-	
+
 	if(handle->sck_server == INVALID_SOCKET) return SMB_ERROR;
 
 	MakeSMBHeader(SMB_SETUP_ANDX,0x08,0x01,handle);
@@ -703,7 +708,7 @@ static s32 SMB_NegotiateProtocol(const char *dialects[],int dialectc,SMBHANDLE *
 		return SMB_ERROR;
 
 	if(handle->sck_server == INVALID_SOCKET) return SMB_ERROR;
-	
+
 	/*** Clear session variables ***/
 	sess = &handle->session;
 	memset(sess,0,sizeof(SMBSESSION));
@@ -828,7 +833,7 @@ static s32 do_netconnect(SMBHANDLE *handle)
 	u32 flags=0;
 	u64 t1,t2;
 
-	handle->sck_server = INVALID_SOCKET; 
+	handle->sck_server = INVALID_SOCKET;
 	/*** Create the global net_socket ***/
 	sock = net_socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 	if(sock==INVALID_SOCKET) return -1;
@@ -848,7 +853,7 @@ static s32 do_netconnect(SMBHANDLE *handle)
 		ret = net_connect(sock,(struct sockaddr*)&handle->server_addr,sizeof(handle->server_addr));
 		t2=ticks_to_millisecs(gettime());
 		usleep(1000);
-		if(t2-t1 > 3000) break; // 3 secs to try to connect to handle->server_addr
+		if(t2-t1 > 6000) break; // 6 secs to try to connect to handle->server_addr
 	} while(ret!=-127);
 
 	if(ret!=-127)
@@ -866,7 +871,7 @@ static s32 do_smbconnect(SMBHANDLE *handle)
 	s32 ret;
 
 	if(handle->sck_server == INVALID_SOCKET) return -1;
-	
+
 	ret = SMB_NegotiateProtocol(smb_dialects,smb_dialectcnt,handle);
 	if(ret!=SMB_SUCCESS)
 	{
@@ -985,7 +990,7 @@ static s32 SMB_RequestNBTSession(SMBHANDLE *handle)
 	unsigned char Calling[34];
 	unsigned char bufr[128];
 	int result;
-	
+
 	if(handle->sck_server == INVALID_SOCKET) return -1;
 
 	L2_Encode(Called, (const unsigned char*) "*SMBSERVER", 0x20, 0x20,
@@ -1049,8 +1054,6 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 		return SMB_BAD_LOGINDATA;
 	}
 
-
-
 	if(smb_inited==FALSE)
 	{
 		u32 level;
@@ -1101,7 +1104,11 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 			if(ret==0) ret = do_smbconnect(handle);
 		}
 	}
-	if(ret!=0) return SMB_ERROR;
+	if(ret!=0)
+	{
+		handle->server_addr.sin_port = 0;
+		return SMB_ERROR;
+	}
 
 	return SMB_SUCCESS;
 }
@@ -1146,17 +1153,31 @@ s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn)
 		}
 
 		// reconnect
-		handle->server_addr.sin_port = htons(445);
-		ret = do_netconnect(handle);
-		if(ret==0) ret = do_smbconnect(handle); 
-
-		if(ret!=0)
+		if(handle->server_addr.sin_port > 0)
 		{
-			// try port 139
-			handle->server_addr.sin_port = htons(139);
 			ret = do_netconnect(handle);
-			if(ret==0) ret = SMB_RequestNBTSession(handle);
+			if(ret==0 && handle->server_addr.sin_port == htons(139))
+				ret = SMB_RequestNBTSession(handle);
+			if(ret==0)
+				ret = do_smbconnect(handle);
+		}
+		else // initial connection
+		{
+			handle->server_addr.sin_port = htons(445);
+			ret = do_netconnect(handle);
 			if(ret==0) ret = do_smbconnect(handle);
+
+			if(ret != 0)
+			{
+				// try port 139
+				handle->server_addr.sin_port = htons(139);
+				ret = do_netconnect(handle);
+				if(ret==0) ret = SMB_RequestNBTSession(handle);
+				if(ret==0) ret = do_smbconnect(handle);
+			}
+
+			if(ret != 0)
+				handle->server_addr.sin_port = 0;
 		}
 	}
 	return ret;
@@ -1287,7 +1308,7 @@ s32 SMB_ReadFile(char *buffer, size_t size, off_t offset, SMBFILE sfid)
 	if(!fid) return -1;
 
 	// Check for invalid size
-	if(size == 0 || size > SMB_MAX_BUFFERSIZE) return -1; 
+	if(size == 0 || size > SMB_MAX_BUFFERSIZE) return -1;
 
 	handle = __smb_handle_open(fid->conn);
 	if(!handle) return -1;
@@ -1318,10 +1339,10 @@ s32 SMB_ReadFile(char *buffer, size_t size, off_t offset, SMBFILE sfid)
 	pos += 2;	    /*** Byte count ***/
 
 	handle->message.msg = NBT_SESSISON_MSG;
-	handle->message.length = htons(pos);	
+	handle->message.length = htons(pos);
 
 	pos += 4;
-	
+
 	ret = smb_send(handle->sck_server,(char*)&handle->message, pos);
 	if(ret<0) goto  failed;
 
@@ -1337,7 +1358,7 @@ s32 SMB_ReadFile(char *buffer, size_t size, off_t offset, SMBFILE sfid)
 		while(ofs>SMB_DEF_READOFFSET) {
 			char pad[1024];
 			ret = smb_recv(handle->sck_server,pad,(ofs-SMB_DEF_READOFFSET));
-			if(ret<0) goto  failed;
+			if(ret<0) goto failed;
 			ofs-=ret;
 		}
 
@@ -1345,9 +1366,10 @@ s32 SMB_ReadFile(char *buffer, size_t size, off_t offset, SMBFILE sfid)
 		ofs = 0;
 		dest = (u8*)buffer;
 		if(length>0) {
-			while (1) {
+			while (1)
+			{
 				ret=smb_recv(handle->sck_server,&dest[ofs],length-ofs);
-				if(ret<0) goto  failed;
+				if(ret<0) goto failed;
 				ofs += ret;
 				if (ofs>=length) break;
 			}
@@ -1374,9 +1396,6 @@ s32 SMB_WriteFile(const char *buffer, size_t size, off_t offset, SMBFILE sfid)
 	struct _smbfile *fid = (struct _smbfile*)sfid;
 
 	if(!fid) return -1;
-
-	// Check for invalid size
-	//if(size == 0 || size > SMB_MAX_BUFFERSIZE) return -1; 
 
 	handle = __smb_handle_open(fid->conn);
 	if(!handle) return -1;
