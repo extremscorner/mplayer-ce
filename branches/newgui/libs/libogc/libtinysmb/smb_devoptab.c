@@ -53,8 +53,8 @@ static bool FirstInit=true;
 ///////////////////////////////////////////
 //      CACHE FUNCTION DEFINITIONS       //
 ///////////////////////////////////////////
-#define SMB_READ_BUFFERSIZE		7236
-#define SMB_WRITE_BUFFERSIZE	7236
+#define SMB_READ_BUFFERSIZE		65472 //(64kb - smb header)
+#define SMB_WRITE_BUFFERSIZE		(1024*62) //(62kb - value by testing)
 
 typedef struct
 {
@@ -66,7 +66,7 @@ typedef struct
 
 typedef struct
 {
-	off_t used;
+	u64 used;
 	size_t len;
 	SMBFILESTRUCT *file;
 	void *ptr;
@@ -134,24 +134,29 @@ static int FlushWriteSMBCache(char *name)
 	}
 
 	int written = 0;
-
-	written = SMB_WriteFile(env->SMBWriteCache.ptr, env->SMBWriteCache.len,
-			env->SMBWriteCache.file->offset, env->SMBWriteCache.file->handle);
-
-	if (written <= 0)
+	
+	while(env->SMBWriteCache.len>0)
 	{
-		env->SMBWriteCache.used = 0;
-		env->SMBWriteCache.len = 0;
-		env->SMBWriteCache.file = NULL;
-		_SMB_unlock();
-		return -1;
+
+		written = SMB_WriteFile(env->SMBWriteCache.ptr+written, env->SMBWriteCache.len,
+				env->SMBWriteCache.file->offset, env->SMBWriteCache.file->handle);
+	
+		if (written <= 0)
+		{
+			_SMB_unlock();
+			return -1;
+		}
+		env->SMBWriteCache.file->offset += written;
+		if (env->SMBWriteCache.file->offset > env->SMBWriteCache.file->len)
+			env->SMBWriteCache.file->len = env->SMBWriteCache.file->offset;
+			
+		env->SMBWriteCache.len-=written;
+		if(env->SMBWriteCache.len==0) break;
 	}
-	env->SMBWriteCache.file->offset += written;
-	if (env->SMBWriteCache.file->offset > env->SMBWriteCache.file->len)
-		env->SMBWriteCache.file->len = env->SMBWriteCache.file->offset;
 	env->SMBWriteCache.used = 0;
-	env->SMBWriteCache.len = 0;
 	env->SMBWriteCache.file = NULL;
+	
+	
 	_SMB_unlock();
 	return 0;
 }
@@ -372,7 +377,7 @@ continue_read:
 	{
 		SMBEnv[j].SMBReadAheadCache[leastUsed].file = NULL;
 		_SMB_unlock();
-		return false;
+		return -1;
 	}
 
 	SMBEnv[j].SMBReadAheadCache[leastUsed].last_used = gettime();
@@ -383,12 +388,13 @@ continue_read:
 	goto continue_read;
 }
 
+static char *aux_send_buf = NULL;
 static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 {
+	size_t size=len;
 	if (file == NULL || buf == NULL)
 		return -1;
-
-	int j,ret = len;
+	int j;
 	_SMB_lock();
 	j=file->env;
 	if (SMBEnv[j].SMBWriteCache.file != NULL)
@@ -401,50 +407,54 @@ static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 				_SMB_unlock();
 				return -1;
 			}
-		}
-	}
-	SMBEnv[j].SMBWriteCache.file = file;
-
-	if (SMBEnv[j].SMBWriteCache.len + len >= SMB_WRITE_BUFFERSIZE)
-	{
-		void *send_buf;
-		int rest = 0, written = 0;
-		send_buf = memalign(32, SMB_WRITE_BUFFERSIZE);
-		if (SMBEnv[j].SMBWriteCache.len > 0)
-			memcpy(send_buf, SMBEnv[j].SMBWriteCache.ptr, SMBEnv[j].SMBWriteCache.len);
-loop:
-		rest = SMB_WRITE_BUFFERSIZE - SMBEnv[j].SMBWriteCache.len;
-		memcpy(send_buf + SMBEnv[j].SMBWriteCache.len, buf, rest);
-		written = SMB_WriteFile(send_buf, SMB_WRITE_BUFFERSIZE,
-				SMBEnv[j].SMBWriteCache.file->offset, SMBEnv[j].SMBWriteCache.file->handle);
-		free(send_buf);
-		if (written <= 0)
-		{
-			SMBEnv[j].SMBWriteCache.used = 0;
+			SMBEnv[j].SMBWriteCache.file = file;
 			SMBEnv[j].SMBWriteCache.len = 0;
-			SMBEnv[j].SMBWriteCache.file = NULL;
-			_SMB_unlock();
-			return -1;
 		}
-		file->offset += written;
-		if (file->offset > file->len)
-			file->len = file->offset;
-
-		buf = buf + rest;
-		len = SMBEnv[j].SMBWriteCache.len + len - SMB_WRITE_BUFFERSIZE;
-
-		SMBEnv[j].SMBWriteCache.used = gettime();
-		SMBEnv[j].SMBWriteCache.len = 0;
-
-		if(len>=SMB_WRITE_BUFFERSIZE) goto loop;
 	}
-	if (len > 0)
+	else
 	{
-		memcpy(SMBEnv[j].SMBWriteCache.ptr + SMBEnv[j].SMBWriteCache.len, buf, len);
-		SMBEnv[j].SMBWriteCache.len += len;
+		SMBEnv[j].SMBWriteCache.file = file;
+		SMBEnv[j].SMBWriteCache.len = 0;
+	}
+	int rest;
+	s32 written;
+	while(len>0)
+	{
+		if(SMBEnv[j].SMBWriteCache.len+len>=SMB_WRITE_BUFFERSIZE)
+		{			
+			if(aux_send_buf == NULL) aux_send_buf = memalign(32, SMB_WRITE_BUFFERSIZE);
+			if (SMBEnv[j].SMBWriteCache.len > 0)
+				memcpy(aux_send_buf, SMBEnv[j].SMBWriteCache.ptr, SMBEnv[j].SMBWriteCache.len);
+	
+			rest = SMB_WRITE_BUFFERSIZE - SMBEnv[j].SMBWriteCache.len;
+			memcpy(aux_send_buf + SMBEnv[j].SMBWriteCache.len, buf, rest);
+		
+			written=SMB_WriteFile(aux_send_buf, SMB_WRITE_BUFFERSIZE, file->offset, file->handle);			
+			if(written<0)
+			{
+				_SMB_unlock();
+				return -1;
+			}
+			file->offset += written;
+			if (file->offset > file->len)
+				file->len = file->offset;
+
+			buf = buf + rest;
+			len = len - rest;		
+			SMBEnv[j].SMBWriteCache.used = gettime();
+			SMBEnv[j].SMBWriteCache.len = 0;				
+		}
+		else
+		{		
+			memcpy(SMBEnv[j].SMBWriteCache.ptr + SMBEnv[j].SMBWriteCache.len, buf, len);
+			SMBEnv[j].SMBWriteCache.len += len;
+			SMBEnv[j].SMBWriteCache.used = gettime();
+			break;
+		}
 	}
 	_SMB_unlock();
-	return ret;
+	return size;
+
 }
 
 ///////////////////////////////////////////
@@ -612,6 +622,14 @@ static off_t __smb_seek(struct _reent *r, int fd, off_t pos, int dir)
 		return -1;
 	}
 
+	//have to flush because SMBWriteCache.file->offset holds offset of cached block not yet written
+	_SMB_lock();
+	if (SMBEnv[file->env].SMBWriteCache.file == file)
+	{
+		FlushWriteSMBCache(SMBEnv[file->env].name);
+	}
+	_SMB_unlock();
+
 	switch (dir)
 	{
 	case SEEK_SET:
@@ -657,6 +675,15 @@ static ssize_t __smb_read(struct _reent *r, int fd, char *ptr, size_t len)
 		r->_errno = EBADF;
 		return -1;
 	}
+
+	//have to flush because SMBWriteCache.file->offset holds offset of cached block not yet writeln
+	//and file->len also may not have been updated yet
+	_SMB_lock();
+	if (SMBEnv[file->env].SMBWriteCache.file == file)
+	{
+		FlushWriteSMBCache(SMBEnv[file->env].name);
+	}
+	_SMB_unlock();
 
 	// Don't try to read if the read pointer is past the end of file
 	if (file->offset >= file->len)

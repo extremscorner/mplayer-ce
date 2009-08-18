@@ -319,8 +319,9 @@ clock_t clock(void) {
 int __libogc_gettod_r(struct _reent *ptr, struct timeval *tp, struct timezone *tz) {
 
 	if (tp != NULL) {
-		tp->tv_sec = time(NULL);
-		tp->tv_usec = 0;
+		u64 t=gettime();
+		tp->tv_sec = ticks_to_secs(t);
+		tp->tv_usec = ticks_to_microsecs(t);
 	}
 	if (tz != NULL) {
 		tz->tz_minuteswest = 0;

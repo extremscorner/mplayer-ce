@@ -869,13 +869,18 @@ static bool __usbstorage_ReadSectors(u32 sector, u32 numSectors, void *buffer)
    if(__mounted != 1)
        return false;
 
+	//printf("usb ReadSectors sector: %d  num: %d\n",sector,numSectors);
    retval = USBStorage_Read(&__usbfd, __lun, sector, numSectors, buffer);
    if(retval == USBSTORAGE_ETIMEDOUT)
    {
        __mounted = 0;
    }
    if(retval < 0)
+   {
+  // printf("error usb ReadSectors\n");
        return false;
+    }
+   // printf("ok usb ReadSectors\n");
    return true;
 }
 
