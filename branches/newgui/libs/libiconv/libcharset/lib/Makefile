@@ -31,7 +31,7 @@ LIBTOOL_UNINSTALL = $(LIBTOOL) --mode=uninstall
 RM = rm -f
 
 # Programs used by "make install":
-INSTALL = /bin/install -c
+INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 mkinstalldirs = $(SHELL) ../build-aux/mkinstalldirs
 

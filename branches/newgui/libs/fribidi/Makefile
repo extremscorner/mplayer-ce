@@ -159,7 +159,7 @@ PKG_CONFIG =
 RANLIB = ${DEVKITPPC}/bin/powerpc-gekko-ranlib
 SED = /bin/sed
 SET_MAKE = 
-SHELL = /bin/sh
+SHELL = /bin/bash
 SIZEOF_INT = 4
 STRIP = ${DEVKITPPC}/bin/powerpc-gekko-strip
 VERSION = 0.19.2
@@ -241,15 +241,15 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnits '; \
-	      cd $(srcdir) && $(AUTOMAKE) --gnits  \
-		&& exit 0; \
-	      exit 1;; \
+#	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnits '; \
+#	      cd $(srcdir) && $(AUTOMAKE) --gnits  \
+#		&& exit 0; \
+#	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnits  Makefile'; \
-	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnits  Makefile
+#	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnits  Makefile'; \
+#	cd $(top_srcdir) && \
+#	  $(AUTOMAKE) --gnits  Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -265,7 +265,7 @@ $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENC
 	$(SHELL) ./config.status --recheck
 
 $(top_srcdir)/configure:  $(am__configure_deps)
-	cd $(srcdir) && $(AUTOCONF)
+#	cd $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 

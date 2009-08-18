@@ -1,8 +1,8 @@
-#! /bin/sh
+#! /bin/bash
 
 # libtool - Provide generalized library-building support services.
 # Generated automatically by config.status (fribidi) 0.19.2
-# Libtool was configured on host DESARROLLO:
+# Libtool was configured on host tarzan:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
 #   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2004, 2005,
@@ -107,10 +107,10 @@ exeext=
 lt_unset=unset
 
 # turn spaces into newlines.
-SP2NL="tr \\040 \\012"
+SP2NL="tr \040 \012"
 
 # turn newlines into spaces.
-NL2SP="tr \\015\\012 \\040\\040"
+NL2SP="tr \015\012 \040\040"
 
 # How to create reloadable object files.
 reload_flag=" -r"
@@ -123,19 +123,19 @@ deplibs_check_method="unknown"
 file_magic_cmd="\$MAGIC_CMD"
 
 # The archiver.
-AR="${DEVKITPPC}/bin/powerpc-gekko-ar"
+AR="\${DEVKITPPC}/bin/powerpc-gekko-ar"
 AR_FLAGS="cru"
 
 # A symbol stripping program.
-STRIP="${DEVKITPPC}/bin/powerpc-gekko-strip"
+STRIP="\${DEVKITPPC}/bin/powerpc-gekko-strip"
 
 # Commands used to install an old-style archive.
-RANLIB="${DEVKITPPC}/bin/powerpc-gekko-ranlib"
+RANLIB="\${DEVKITPPC}/bin/powerpc-gekko-ranlib"
 old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
 old_postuninstall_cmds=""
 
 # A C compiler.
-LTCC="${DEVKITPPC}/bin/powerpc-gekko-gcc"
+LTCC="\${DEVKITPPC}/bin/powerpc-gekko-gcc"
 
 # LTCC compiler flags.
 LTCFLAGS="-mcpu=750 -O2 -Wall -ansi "
@@ -147,10 +147,10 @@ global_symbol_pipe=""
 global_symbol_to_cdecl=""
 
 # Transform the output of nm in a C name address pair.
-global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (void *) 0},/p' -e 's/^[BCDEGRST]* \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\\2\", (void *) \\&\\2},/p'"
+global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\\", (void *) 0},/p' -e 's/^[BCDEGRST]* \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\", (void *) \\&},/p'"
 
 # Transform the output of nm in a C name address pair when lib prefix is needed.
-global_symbol_to_c_name_address_lib_prefix="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (void *) 0},/p' -e 's/^[BCDEGRST]* \\([^ ]*\\) \\(lib[^ ]*\\)\$/  {\"\\2\", (void *) \\&\\2},/p' -e 's/^[BCDEGRST]* \\([^ ]*\\) \\([^ ]*\\)\$/  {\"lib\\2\", (void *) \\&\\2},/p'"
+global_symbol_to_c_name_address_lib_prefix="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\\", (void *) 0},/p' -e 's/^[BCDEGRST]* \\([^ ]*\\) \\(lib[^ ]*\\)\$/  {\"\", (void *) \\&},/p' -e 's/^[BCDEGRST]* \\([^ ]*\\) \\([^ ]*\\)\$/  {\"lib\", (void *) \\&},/p'"
 
 # The name of the directory that contains temporary libtool files.
 objdir=.libs
@@ -240,7 +240,7 @@ finish_eval=""
 hardcode_into_libs=no
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="${DEVKITPPC}/lib/gcc ${DEVKITPPC}/powerpc-gekko/lib"
+sys_lib_search_path_spec="\${DEVKITPPC}/lib/gcc \${DEVKITPPC}/powerpc-gekko/lib"
 
 # Run-time system search path for libraries.
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
@@ -255,18 +255,18 @@ dlopen_self=unknown
 dlopen_self_static=unknown
 
 # Commands to strip libraries.
-old_striplib="${DEVKITPPC}/bin/powerpc-gekko-strip --strip-debug"
-striplib="${DEVKITPPC}/bin/powerpc-gekko-strip --strip-unneeded"
+old_striplib="\${DEVKITPPC}/bin/powerpc-gekko-strip --strip-debug"
+striplib="\${DEVKITPPC}/bin/powerpc-gekko-strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="${DEVKITPPC}/bin/powerpc-gekko-ld"
+LD="\${DEVKITPPC}/bin/powerpc-gekko-ld"
 
 # Commands used to build an old-style archive.
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 
 # A language specific compiler.
-CC="${DEVKITPPC}/bin/powerpc-gekko-gcc"
+CC="\${DEVKITPPC}/bin/powerpc-gekko-gcc"
 
 # Is the compiler the GNU compiler?
 with_gcc=yes
