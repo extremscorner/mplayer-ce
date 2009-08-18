@@ -36,6 +36,7 @@
 #include <wiiuse/wpad.h>
 
 #include <fat.h>
+#include <ntfs.h>
 #include <smb.h>
 
 #include <network.h>
@@ -61,7 +62,7 @@
 
 #undef abort
 
-#define MPCE_VERSION "0.72"
+#define MPCE_VERSION "0.75"
 
 extern int stream_cache_size;
   
@@ -103,7 +104,6 @@ static char *default_args[] = {
 	"-really-quiet",
 #endif	
 	"-vo","gekko","-ao","gekko",
-	"-framedrop",
 	"-menu","-menu-startup"
 }; 
 
@@ -129,12 +129,6 @@ void gekko_gettimeofday(struct timeval *tv, void *tz) {
 	tv->tv_usec = ticks_to_microsecs(t);
 } 
 
-/*
-void gettimeofday(struct timeval *tv, void *tz)
-{
-	gekko_gettimeofday(tv, tz);
-} 
- */
 void gekko_abort(void) {
 	//printf("abort() called\n");
 	plat_deinit(-1);
@@ -462,6 +456,18 @@ static bool load_ehci_module()
 	return true;
 }
 
+bool mount_ntfs()
+{
+	//only mount the first ntfs partition
+	int partition_count = 0;
+	sec_t *partitions = NULL;
+	
+	partition_count = ntfsFindPartitions (usb, &partitions);
+	if(partition_count<1) return 0;
+	
+	return ntfsMount("ntfs0", usb, partitions[0], 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
+}
+
 static void * mountthreadfunc (void *arg)
 {
 	int dp, dvd_inserted=0,usb_inserted=0;
@@ -488,10 +494,12 @@ static void * mountthreadfunc (void *arg)
 				{
 					//printf("unmount usb\n");
 					fatUnmount("usb:");
+					ntfsUnmount ("ntfs0", true);
 				}else 
 				{
 					//printf("mount usb\n");
 					fatMount("usb",usb,0,3,256);
+					mount_ntfs();
 				}
 			}
 			mounting_usb=0;
@@ -593,6 +601,7 @@ printf("m1(%.2f) m2(%.2f)\n",
 							 ((float)((char*)SYS_GetArena2Hi()-(char*)SYS_GetArena2Lo()))/0x100000);
 
 }
+
 void plat_init (int *argc, char **argv[]) {	
 	int mload=-1;
 	
@@ -642,6 +651,9 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_Init(NULL);
 	AUDIO_RegisterDMACallback(NULL);
 	AUDIO_StopDMA();
+	//AUDIO_SetStreamVolRight(255);
+	//AUDIO_SetStreamVolLeft(255);
+	
 
 
 	if (!DetectValidPath())
@@ -668,24 +680,6 @@ void plat_init (int *argc, char **argv[]) {
 	GX_SetCamPosZ(gxzoom);
 	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);  
 
-/*
-	GX_InitVideo();
-
-	//log_console_init(vmode, 128);
-	log_console_init(vmode, 0);
-
-  printf("Loading ");
-  
-  char cad[10]={127,130,158,147,171,151,164,117,119,0};
-  __dec(cad);
-  printf ("\x1b[32m");
-	printf("%s",cad);
-	printf(" v.%s ....\n\n",MPCE_VERSION);
-  printf ("\x1b[37m");
-*/
-
-
-//usb->startup(); //init usb before network (testing)
 
 	mainthread=LWP_GetSelf(); 
 	lwp_t clientthread;
@@ -719,6 +713,7 @@ void plat_init (int *argc, char **argv[]) {
 		{		
 			fatUnmount("usb:");
 		 	load_ehci_module();
+		 	usb->isInserted();
 			fatMount("usb",usb,0,3,256);
 		}
 	}
@@ -732,7 +727,6 @@ void plat_init (int *argc, char **argv[]) {
 		{
 			if(!load_ehci_module()) 
 			{
-				//printf("usb2 cios not detected\n");
 				DisableUSB2(true);
 			}
 		}
@@ -777,6 +771,7 @@ else
 		fatMount("usb",usb,0,3,256);
 	}
 }
+	
 	LWP_CreateThread(&clientthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 50); // auto mount fs (usb, dvd)
 	//LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 50); // auto mount fs (usb, dvd)
 
@@ -789,8 +784,11 @@ else
 #endif
 
 void plat_deinit (int rc) {
-
 	exit_automount_thread=true;
+	ntfsUnmount ("ntfs0", true); //I think that we don't need it
+	
+	ExitTimer();
+	
 	if (power_pressed) {
 		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
@@ -889,4 +887,16 @@ void LoadConfig(char * path)
 	sprintf(MPLAYER_CONFDIR,"%s",path);
 	sprintf(MPLAYER_LIBDIR,"%s",path);
 }
+#endif
+#if 0 // change 0 by 1 if you are using devkitppc r17
+int _gettimeofday_r(struct _reent *ptr,	struct timeval *ptimeval ,	void *ptimezone)
+{
+	u64 t;
+	t=gettime();
+	if(ptimeval!=NULL)
+	{
+		ptimeval->tv_sec = ticks_to_secs(t);
+		ptimeval->tv_usec = ticks_to_microsecs(t);
+	}
+} 
 #endif

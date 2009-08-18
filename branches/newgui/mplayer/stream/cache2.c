@@ -282,8 +282,10 @@ retry:
 
 static int cache_execute_control(cache_vars_t *s) {
   int res = 1;
-  static unsigned last;
-  unsigned now;
+  //static unsigned last;
+  //unsigned now;
+  static u64 last;
+  u64 now;
   if (!s->stream->control) {
     s->stream_time_length = 0;
     s->control_new_pos = 0;

@@ -30,26 +30,26 @@ int usec_sleep(int usec_delay) {
 	return usleep(usec_delay);
 }
 
-unsigned int GetTimer(void) {
+u64 GetTimer(void) {
 	return ticks_to_microsecs(gettime());
 }
 
-unsigned int GetTimerMS(void) {
+u64 GetTimerMS(void) {
 	return ticks_to_millisecs(gettime());
 }
 
-static u64 relative = 0;
-static unsigned int RelativeTime=0;
+//static u64 relative = 0;
+static u64 RelativeTime=0;
 
-float GetRelativeTime(void){
-unsigned int t,r;
+double GetRelativeTime(void){
+  u64 t,r;
   t=GetTimer();
-//  t*=16;printf("time=%ud\n",t);
+
   r=t-RelativeTime;
   RelativeTime=t;
   return (float)r * 0.000001F;
 }
-
+/*
 float GetRelativeTime1(void) {
 	u64 t;
 	float res;
@@ -61,9 +61,19 @@ float GetRelativeTime1(void) {
 
 	return res;
 }
-
+*/
+static u64 timeinit;
 void InitTimer(void) {
+	timeinit = gettime();	
+	settime(timeinit); //testing
+	gettime();	
+	usleep(50);
+	gettime();	
 	GetRelativeTime();
 	//relative = gettime();
 }
-
+void ExitTimer(void) {
+//	settime(timeinit); //testing
+	//usleep(500);
+	//GetRelativeTime();
+}

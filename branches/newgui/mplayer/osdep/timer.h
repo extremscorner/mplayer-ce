@@ -22,10 +22,16 @@
 extern const char *timer_name;
 
 void InitTimer(void);
+#ifdef GEKKO
+#include <gctypes.h>
+u64 GetTimer(void);
+u64 GetTimerMS(void);
+#else
 unsigned int GetTimer(void);
 unsigned int GetTimerMS(void);
+#endif
 //int uGetTimer(void);
-float GetRelativeTime(void);
+double GetRelativeTime(void);
 
 int usec_sleep(int usec_delay);
 

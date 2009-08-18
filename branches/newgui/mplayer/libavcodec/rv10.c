@@ -1,5 +1,5 @@
 /*
- * RV10 codec
+ * RV10/RV20 decoder
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file libavcodec/rv10.c
- * RV10 codec.
+ * RV10/RV20 decoder
  */
 
 #include "avcodec.h"
@@ -228,67 +228,6 @@ int rv_decode_dc(MpegEncContext *s, int n)
     }
     return -code;
 }
-
-
-#if CONFIG_RV10_ENCODER || CONFIG_RV20_ENCODER
-/* write RV 1.0 compatible frame header */
-void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
-{
-    int full_frame= 0;
-
-    align_put_bits(&s->pb);
-
-    put_bits(&s->pb, 1, 1);     /* marker */
-
-    put_bits(&s->pb, 1, (s->pict_type == FF_P_TYPE));
-
-    put_bits(&s->pb, 1, 0);     /* not PB frame */
-
-    put_bits(&s->pb, 5, s->qscale);
-
-    if (s->pict_type == FF_I_TYPE) {
-        /* specific MPEG like DC coding not used */
-    }
-    /* if multiple packets per frame are sent, the position at which
-       to display the macroblocks is coded here */
-    if(!full_frame){
-        put_bits(&s->pb, 6, 0); /* mb_x */
-        put_bits(&s->pb, 6, 0); /* mb_y */
-        put_bits(&s->pb, 12, s->mb_width * s->mb_height);
-    }
-
-    put_bits(&s->pb, 3, 0);     /* ignored */
-}
-
-void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
-    put_bits(&s->pb, 2, s->pict_type); //I 0 vs. 1 ?
-    put_bits(&s->pb, 1, 0);     /* unknown bit */
-    put_bits(&s->pb, 5, s->qscale);
-
-    put_sbits(&s->pb, 8, picture_number); //FIXME wrong, but correct is not known
-    s->mb_x= s->mb_y= 0;
-    ff_h263_encode_mba(s);
-
-    put_bits(&s->pb, 1, s->no_rounding);
-
-    assert(s->f_code == 1);
-    assert(s->unrestricted_mv == 1);
-    assert(s->alt_inter_vlc == 0);
-    assert(s->umvplus == 0);
-    assert(s->modified_quant==1);
-    assert(s->loop_filter==1);
-
-    s->h263_aic= s->pict_type == FF_I_TYPE;
-    if(s->h263_aic){
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_aic_dc_scale_table;
-    }else{
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-    }
-}
-
-#endif /* CONFIG_RV10_ENCODER || CONFIG_RV20_ENCODER */
 
 /* read RV 1.0 compatible frame header */
 static int rv10_decode_picture_header(MpegEncContext *s)
@@ -779,28 +718,4 @@ AVCodec rv20_decoder = {
     .flush= ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
     .pix_fmts= ff_pixfmt_list_420,
-};
-
-AVCodec rv10_encoder = {
-    "rv10",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_RV10,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
-};
-
-AVCodec rv20_encoder = {
-    "rv20",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_RV20,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
 };

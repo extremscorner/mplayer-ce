@@ -214,7 +214,7 @@ int fixed_vo=1;
 double video_time_usage=0;
 double vout_time_usage=0;
 static double audio_time_usage=0;
-static int total_time_usage_start=0;
+static u64 total_time_usage_start=0;
 static int total_frame_cnt=0;
 static int drop_frame_cnt=0; // total number of dropped frames
 int benchmark=0;
@@ -235,7 +235,7 @@ static int list_properties = 0;
 
 int osd_level=1;
 // if nonzero, hide current OSD contents when GetTimerMS() reaches this
-unsigned int osd_visible;
+u64 osd_visible;
 int osd_duration = 1000;
 
 int term_osd = 1;
@@ -369,11 +369,11 @@ void save_restore_points_file()
 	if(buff==NULL)buff=malloc(sizeof(char)*MAX_RESTORE_POINTS*1024); //created only once
 	buff[0]='\0';
 	sprintf(aux,"%s/%s",MPLAYER_DATADIR,"restore_points");
-	printf("saving rp: %s\n------------------\n",aux);
+	//printf("saving rp: %s\n------------------\n",aux);
 	f=fopen(aux,"wb+");
 	if(f==NULL)
 	{
-		printf("error save rp: %s\n",aux);
+		//printf("error save rp: %s\n",aux);
 		return;
 	}
 	//setvbuf(f,NULL,_IONBF,0);
@@ -385,13 +385,13 @@ void save_restore_points_file()
 		strcat(buff,aux);
 		//printf("%s\t%i\n",restore_points[i].filename,restore_points[i].position);		
 	}
-	printf("writing\n");
+	//printf("writing\n");
 	
 	i=fwrite( buff, sizeof(char), strlen(buff), f );
-printf("writing ok (%i) (%i)\n",i,strlen(buff));
+//printf("writing ok (%i) (%i)\n",i,strlen(buff));
 	//printf("---------------------\n");
 	fclose(f);
-printf("close ok\n");
+//printf("close ok\n");
 }
 
 
@@ -410,8 +410,8 @@ void delete_restore_point(char *_filename)
 				restore_points[i].position=restore_points[i+1].position;
 
 			}
-			restore_points[MAX_RESTORE_POINTS].filename[0]='\0';
-			restore_points[MAX_RESTORE_POINTS].position=0;
+			restore_points[MAX_RESTORE_POINTS-1].filename[0]='\0';
+			restore_points[MAX_RESTORE_POINTS-1].position=0;
 		}
 	}
 }
@@ -489,7 +489,7 @@ static int softsleep=0;
        double force_fps=0;
 static int force_srate=0;
 static int audio_output_format=-1; // AF_FORMAT_UNKNOWN
-       int frame_dropping=0; // option  0=no drop  1= drop vo  2= drop decode
+       int frame_dropping=1; // option  0=no drop  1= drop vo  2= drop decode
 static int play_n_frames=-1;
 static int play_n_frames_mf=-1;
 
@@ -1549,7 +1549,7 @@ struct mp_osd_msg {
     char msg[128];
     int  id,level,started;
     /// Display duration in ms.
-    unsigned  time;
+    u64  time;
 };
 
 /// OSD message stack.
@@ -1563,7 +1563,7 @@ static mp_osd_msg_t* osd_msg_stack = NULL;
  *
  */
 
-void set_osd_msg(int id, int level, int time, const char* fmt, ...) {
+void set_osd_msg(int id, int level, u64 time, const char* fmt, ...) {
     mp_osd_msg_t *msg,*last=NULL;
     va_list va;
     int r;
@@ -1641,9 +1641,9 @@ static void clear_osd_msgs(void) {
 
 static mp_osd_msg_t* get_osd_msg(void) {
     mp_osd_msg_t *msg,*prev,*last = NULL;
-    static unsigned last_update = 0;
-    unsigned now = GetTimerMS();
-    unsigned diff;
+    static u64 last_update = 0;
+    u64 now = GetTimerMS();
+    u64 diff;
     char hidden_dec_done = 0;
 
     if (osd_visible) {
@@ -2022,7 +2022,7 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
     int rtc_fd = -1;
 #endif
 
-static float timing_sleep(float time_frame)
+static float timing_sleep(double time_frame)
 {
 #ifdef HAVE_RTC
     if (rtc_fd >= 0){
@@ -2265,7 +2265,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
 
 static int fill_audio_out_buffers(void)
 {
-    unsigned int t;
+    u64 t;
     double tt;
     int playsize;
     int playflags=0;
@@ -2346,7 +2346,7 @@ static int fill_audio_out_buffers(void)
     return 1;
 }
 
-static int sleep_until_update(float *time_frame, float *aq_sleep_time)
+static int sleep_until_update(double *time_frame, double *aq_sleep_time)
 {
     int frame_time_remaining = 0;
     current_module="calc_sleep_time";
@@ -2947,14 +2947,15 @@ int i;
 
 int gui_no_filename=0;
 
+  srand(GetTimerMS());
+  InitTimer();
+
 #ifdef GEKKO
   plat_init (&argc, &argv);
   fileplaying=(char*)malloc(sizeof(char)*MAXPATHLEN);
   load_restore_points();
 #endif
 
-  InitTimer();
-  srand(GetTimerMS());
 
   mp_msg_init();
 
@@ -3344,8 +3345,8 @@ play_next_file:
   { int i; for (i = 0; i < SUB_SOURCES; i++) mpctx->global_sub_indices[i] = -1; }
 
 // I don't know why but args are lossed now so I have to add manually
-m_config_set_option(mconfig,"sws","4");
 //m_config_set_option(mconfig,"framedrop",NULL);
+m_config_set_option(mconfig,"sws","4");
 m_config_set_option(mconfig,"lavdopts","lowres=1,900");
 
   if (filename) {
@@ -4125,7 +4126,7 @@ if(verbose) term_osd = 0;
 {
 //int frame_corr_num=0;   //
 //float v_frame=0;    // Video
-float time_frame=0; // Timer
+double time_frame=0; // Timer
 //float num_frames=0;      // number of frames played
 
 int frame_time_remaining=0; // flag
@@ -4327,7 +4328,7 @@ total_time_usage_start=GetTimer();
 GetRelativeTime();
 mpctx->eof=0;
 while(!mpctx->eof){
-    float aq_sleep_time=0;
+    double aq_sleep_time=0;
 //init_while:
 if(dvd_last_chapter>0) {
   int cur_chapter = demuxer_get_current_chapter(mpctx->demuxer);
@@ -4417,8 +4418,8 @@ if(!mpctx->sh_video) {
 #endif
 #ifndef GEKKO
     if (heartbeat_cmd) {
-        static unsigned last_heartbeat;
-        unsigned now = GetTimerMS();
+        static u64 last_heartbeat;
+        u64 now = GetTimerMS();
         if (now - last_heartbeat > 30000) {
             last_heartbeat = now;
             system(heartbeat_cmd);
@@ -4451,7 +4452,7 @@ if(!mpctx->sh_video) {
 
         current_module="flip_page";
         if (!frame_time_remaining && blit_frame) {
-       unsigned int t2=GetTimer();
+       u64 t2=GetTimer();
 
 	   if(vo_config_count && first_frame) mpctx->video_out->flip_page();
 	   mpctx->num_buffered_frames--;
@@ -4678,7 +4679,7 @@ if(benchmark){
     double tot=video_time_usage+vout_time_usage+audio_time_usage;
     double total_time_usage;
     total_time_usage_start=GetTimer()-total_time_usage_start;
-    total_time_usage = (float)total_time_usage_start*0.000001;
+    total_time_usage = total_time_usage_start*0.000001;
     mp_msg(MSGT_CPLAYER,MSGL_INFO,"\nBENCHMARKs: VC:%8.3fs VO:%8.3fs A:%8.3fs Sys:%8.3fs = %8.3fs\n",
            video_time_usage,vout_time_usage,audio_time_usage,
            total_time_usage-tot,total_time_usage);
