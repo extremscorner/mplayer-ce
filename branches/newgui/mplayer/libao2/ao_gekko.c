@@ -42,8 +42,8 @@ static ao_info_t info = {
 
 LIBAO_EXTERN(gekko)
 
-#define SFX_BUFFER_SIZE (2*1024)
-#define SFX_BUFFERS 128
+#define SFX_BUFFER_SIZE (4*1024)
+#define SFX_BUFFERS 64
 
 static u8 buffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
 static u8 buffer_fill = 0;
@@ -69,27 +69,9 @@ static void switch_buffers() {
 
 	playing = true;
 }
-//#define GEKKO_MIX_MAXVOLUME 255
+
 static int control(int cmd, void *arg) {
 	//mp_msg(MSGT_AO, MSGL_ERR, "[AOGEKKO]: control %d\n", cmd);
-/*
-	switch (cmd) {
-		case AOCONTROL_GET_VOLUME:
-		{
-			ao_control_vol_t* vol = (ao_control_vol_t*)arg;
-			vol->left = AUDIO_GetStreamVolLeft() * 110.0 / GEKKO_MIX_MAXVOLUME;
-			vol->right = AUDIO_GetStreamVolRight() * 110.0 / GEKKO_MIX_MAXVOLUME;
-			return CONTROL_OK;
-		}
-		case AOCONTROL_SET_VOLUME:
-		{
-			ao_control_vol_t* vol = (ao_control_vol_t*)arg;
-			AUDIO_SetStreamVolRight(vol->right * GEKKO_MIX_MAXVOLUME / 110.0);
-			AUDIO_SetStreamVolLeft(vol->left * GEKKO_MIX_MAXVOLUME / 110.0);
-			return CONTROL_OK;
-		}
-	}
-*/
 	return CONTROL_UNKNOWN;
 }
 
@@ -111,6 +93,7 @@ static void reset(void) {
 	u8 i;
 
 	AUDIO_StopDMA();
+	AUDIO_ClearDMA();
 
 	for (i = 0; i < SFX_BUFFERS; ++i) {
 		memset(buffer[i], 0, SFX_BUFFER_SIZE);

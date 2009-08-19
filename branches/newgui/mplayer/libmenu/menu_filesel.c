@@ -326,7 +326,29 @@ static int open_dir(menu_t* menu,char* args) {
   p = strstr(mpriv->title,"%p");
 
 #ifdef GEKKO
-  if(!strcmp(mpriv->dir,"usb:/"))
+  if(!strcmp(mpriv->dir,"sd:/"))
+  {
+	if(!DeviceMounted("sd")) 
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT SD device not mounted");
+	  	update_osd_msg();
+		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		return 0;
+	}
+  } 
+  else if(!strcmp(mpriv->dir,"ntfs_sd:/"))
+  {
+	if(!DeviceMounted("ntfs_sd")) 
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS SD device not mounted");
+	  	update_osd_msg();
+		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		return 0;
+	}
+  } 
+  else if(!strcmp(mpriv->dir,"usb:/"))
   {
 	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
   	if(!playing_usb)
@@ -336,7 +358,24 @@ static int open_dir(menu_t* menu,char* args) {
   		if(!DeviceMounted("usb")) 
 		{
 			rm_osd_msg(OSD_MSG_TEXT);
-		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "USB device not mounted");
+		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
+		  	update_osd_msg();
+  			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+			return 0;
+		}
+	}
+  } 
+  else if(!strcmp(mpriv->dir,"ntfs_usb:/"))
+  {
+	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
+  	if(!playing_usb)
+  	{
+  		while(mounting_usb)usleep(500);
+  		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
+  		if(!DeviceMounted("ntfs_usb")) 
+		{
+			rm_osd_msg(OSD_MSG_TEXT);
+		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
 		  	update_osd_msg();
   			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 			return 0;
@@ -362,6 +401,7 @@ static int open_dir(menu_t* menu,char* args) {
 	  {
   		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Network not yet initialized, Please Wait");
   		  update_osd_msg();
+  		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		  return 0;
 	  }
 	  	  
@@ -375,6 +415,25 @@ static int open_dir(menu_t* menu,char* args) {
 	  }	  
 	  
   }
+  else if(mpriv->dir[0]=='f' && mpriv->dir[1]=='t' && mpriv->dir[2]=='p' && mpriv->dir[4]==':')
+  { // reconnect ftp if needed
+	  char device[5]="ftpx";
+	  
+	  if(network_inited==0)
+	  {
+  		  set_osd_msg(124,1,2000,"Network not yet initialized, Please Wait");
+  		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		  return 0;
+	  }
+	  	  
+	  device[3]=mpriv->dir[3];
+		set_osd_msg(124,1,2000,"Connecting to %s ",device);
+	  if(!CheckFTPConnection(device)) 
+	  {
+		  set_osd_msg(124,1,2000,"Error reconnecting to %s ",device);
+		  return 0;
+	  } else rm_osd_msg(124);
+  } 
 #endif
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);
 

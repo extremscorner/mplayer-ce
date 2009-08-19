@@ -1,4 +1,3 @@
-
 /// \file
 /// \ingroup Properties Command2Property OSDMsgStack
 #include <stdio.h>
@@ -2621,8 +2620,8 @@ static void low_cache_loop(void)
         
     
     //this values can be improved
-	if(!strncmp(fileplaying,"usb:",4) || 
-	   !strncmp(fileplaying,"sd:",3)) percent=stream_cache_min_percent/6;
+	if(!strncmp(fileplaying,"usb:",4) || !strncmp(fileplaying,"ntfs_usb:",9) ||
+	   !strncmp(fileplaying,"ntfs_sd:",8) || !strncmp(fileplaying,"sd:",3)) percent=stream_cache_min_percent/6;
 	else if(!strncmp(fileplaying,"smb:",4)) percent=stream_cache_min_percent/2;
 	else percent=stream_cache_min_percent;
 		
@@ -3607,7 +3606,7 @@ int vob_sub_auto = 1; //scip
 	  
 	  playing_dvd=true;
   }
-  if(!strncmp(filename,"usb:",4)) playing_usb=true;
+  if(!strncmp(filename,"usb:",4) || !strncmp(filename,"ntfs_usb:",9)) playing_usb=true;
 
   if(!strncmp(filename,"http:",5))
   {
@@ -3764,6 +3763,7 @@ if(stream_cache_size>0){
   }
 //============ Open DEMUXERS --- DETECT file type =======================
 current_module="demux_open";
+
 mpctx->demuxer=demux_open(mpctx->stream,mpctx->file_format,audio_id,video_id,dvdsub_id,filename);
 //rodries future change
 //if(http && mpctx->sh_audio && !mpctx->sh_video) reconfig cache

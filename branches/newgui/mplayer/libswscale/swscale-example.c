@@ -100,9 +100,9 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
         else
             dstStride[i]= dstW*4;
 
-        src[i]= (uint8_t*) malloc(srcStride[i]*srcH);
-        dst[i]= (uint8_t*) malloc(dstStride[i]*dstH);
-        out[i]= (uint8_t*) malloc(refStride[i]*h);
+        src[i]= malloc(srcStride[i]*srcH);
+        dst[i]= malloc(dstStride[i]*dstH);
+        out[i]= malloc(refStride[i]*h);
         if (!src[i] || !dst[i] || !out[i]) {
             perror("Malloc");
             res = -1;
@@ -235,6 +235,7 @@ int main(int argc, char **argv)
         }
     }
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
+    sws_freeContext(sws);
 
     selfTest(src, stride, W, H);
 

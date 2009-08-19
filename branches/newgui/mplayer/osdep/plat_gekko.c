@@ -38,6 +38,7 @@
 #include <fat.h>
 #include <ntfs.h>
 #include <smb.h>
+#include <ftp.h> 
 
 #include <network.h>
 #include <errno.h>
@@ -139,6 +140,7 @@ void __dec(char *cad){int i;for(i=0;cad[i]!='\0';i++)cad[i]=cad[i]-50;}
 void sp(){sleep(5);}
 
 void trysmb();
+void tryftp();
 
 // Mounting code
 #include <sdcard/wiisd_io.h>
@@ -224,10 +226,14 @@ bool DVDGekkoMount()
 static void * networkthreadfunc (void *arg)
 {	
 	if(wait_for_network_initialisation()) 
+	{
 		trysmb();
+		tryftp();
+	}
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
+
 
 #include <sys/iosupport.h>
 bool DeviceMounted(const char *device)
@@ -314,25 +320,83 @@ bool mount_smb(int number)
 
 void trysmb()
 {
-	int i;
-	
-	for(i=1;i<=5;i++) 
-	{
-		usleep(1000);
-		if(mount_smb(i))
-		{
-/*
-			//to force connection, I don't understand why is needed
-			char cad[20];
-			
-			DIR_ITER *dp;
-			sprintf(cad,"smb%d",i);
-			dp=diropen(cad); 
-			if(dp!=NULL) dirclose(dp);				
-*/			
-		}
-	}	
+	int i;	
+	for(i=1;i<=5;i++) mount_smb(i); 
 }
+
+bool mount_ftp(int number)
+{
+	
+	char* ftp_ip=NULL;
+	char* ftp_share=NULL;
+	char* ftp_user=NULL;
+	char* ftp_pass=NULL;
+	int ftp_passive = false;
+	
+	m_config_t *ftp_conf;
+	m_option_t ftp_opts[] =
+	{
+	    {   NULL, &ftp_ip, CONF_TYPE_STRING, 0, 0, 0, NULL },
+	    {   NULL, &ftp_share, CONF_TYPE_STRING, 0, 0, 0, NULL },    
+	    {   NULL, &ftp_user, CONF_TYPE_STRING, 0, 0, 0, NULL }, 
+	    {   NULL, &ftp_pass, CONF_TYPE_STRING, 0, 0, 0, NULL },
+	    {   NULL, &ftp_passive, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+	    {   NULL, NULL, 0, 0, 0, 0, NULL }
+	};
+	
+	char cad[4][10];
+	sprintf(cad[0],"ip%d",number);ftp_opts[0].name=cad[0];	
+	sprintf(cad[1],"share%d",number);ftp_opts[1].name=cad[1];	
+	sprintf(cad[2],"user%d",number);ftp_opts[2].name=cad[2];	
+	sprintf(cad[3],"pass%d",number);ftp_opts[3].name=cad[3];	
+	sprintf(cad[4],"passive%d",number);ftp_opts[3].name=cad[3];	
+
+	/* read configuration */
+	char file[100];
+	sprintf(file,"%s/ftp.conf",MPLAYER_DATADIR);	
+
+	ftp_conf = m_config_new();
+	m_config_register_options(ftp_conf, ftp_opts);
+	m_config_parse_config_file(ftp_conf, file);
+	m_config_free(ftp_conf);
+
+	
+	if(ftp_ip==NULL || ftp_share==NULL) 
+	{
+		return false;
+	}
+
+	if(ftp_user==NULL) ftp_user=strdup("anonymous");
+	if(ftp_pass==NULL) ftp_pass=strdup("anonymous");
+	
+	sprintf(cad[0],"ftp%d",number);
+	
+	if(dbg_network)
+	{
+	 printf("Mounting FTP : '%s' host:%s  share:'%s, PASV: %d'\n",cad[0],ftp_ip,ftp_share,ftp_passive);
+	 if(!ftpInitDevice(cad[0],ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0)) 
+	 { 
+	 	printf("error mounting '%s'\n",cad[0]);
+	 	return false;
+	 }
+	 else 
+	 {
+	 	printf("ok mounting '%s'\n",cad[0]);
+	 	return true;
+	 }
+	}
+	else
+	  return ftpInitDevice(cad[0],ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0);
+ 
+}
+
+
+void tryftp()
+{
+	int i;
+	for(i=1;i<=5;i++) mount_ftp(i);
+}
+
 
 int LoadParams()
 {
@@ -378,6 +442,37 @@ static bool CheckPath(char *path)
 	
 	return true;
 }
+
+bool mount_sd_ntfs()
+{
+	//only mount the first ntfs partition
+	int partition_count = 0;
+	sec_t *partitions = NULL;
+	sec_t boot;
+	
+	partition_count = ntfsFindPartitions (sd, &partitions);
+	if(partition_count<1) return 0;
+
+	boot=partitions[0];
+	free(partitions);
+	
+	return ntfsMount("ntfs_sd", sd, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
+}
+
+bool mount_usb_ntfs()
+{
+	//only mount the first ntfs partition
+	int partition_count = 0;
+	sec_t *partitions = NULL;
+	sec_t boot;
+	
+	partition_count = ntfsFindPartitions (usb, &partitions);
+	if(partition_count<1) return 0;
+	boot=partitions[0];
+	free(partitions);
+	return ntfsMount("ntfs_usb", usb, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
+}
+
 static bool DetectValidPath()
 {
 	
@@ -388,6 +483,12 @@ static bool DetectValidPath()
 			if(CheckPath("sd:/apps/mplayer_ce")) return true;	
 			if(CheckPath("sd:/mplayer")) return true;
 		}
+		else if(mount_sd_ntfs())
+		{
+			if(CheckPath("ntfs_sd:/apps/mplayer_ce")) return true;	
+			if(CheckPath("ntfs_sd:/mplayer")) return true;
+		}
+
 	}
 	usb->startup();
 	usb_init=true;
@@ -397,6 +498,11 @@ static bool DetectValidPath()
 		{
 			if(CheckPath("usb:/apps/mplayer_ce")) return true;
 			if(CheckPath("usb:/mplayer")) return true;
+		}
+		else if(mount_usb_ntfs())
+		{
+			if(CheckPath("ntfs_usb:/apps/mplayer_ce")) return true;	
+			if(CheckPath("ntfs_usb:/mplayer")) return true;
 		}
 	}
 	return false;	
@@ -456,18 +562,6 @@ static bool load_ehci_module()
 	return true;
 }
 
-bool mount_ntfs()
-{
-	//only mount the first ntfs partition
-	int partition_count = 0;
-	sec_t *partitions = NULL;
-	
-	partition_count = ntfsFindPartitions (usb, &partitions);
-	if(partition_count<1) return 0;
-	
-	return ntfsMount("ntfs0", usb, partitions[0], 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
-}
-
 static void * mountthreadfunc (void *arg)
 {
 	int dp, dvd_inserted=0,usb_inserted=0;
@@ -494,12 +588,12 @@ static void * mountthreadfunc (void *arg)
 				{
 					//printf("unmount usb\n");
 					fatUnmount("usb:");
-					ntfsUnmount ("ntfs0", true);
+					ntfsUnmount ("ntfs_usb", true);
 				}else 
 				{
 					//printf("mount usb\n");
 					fatMount("usb",usb,0,3,256);
-					mount_ntfs();
+					mount_usb_ntfs();
 				}
 			}
 			mounting_usb=0;
@@ -639,7 +733,6 @@ void plat_init (int *argc, char **argv[]) {
 	//usleep(1000);
 	
 
-//	VIDEO_Init();
 
 	PAD_Init();
 	WPAD_Init();
@@ -651,11 +744,7 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_Init(NULL);
 	AUDIO_RegisterDMACallback(NULL);
 	AUDIO_StopDMA();
-	//AUDIO_SetStreamVolRight(255);
-	//AUDIO_SetStreamVolLeft(255);
 	
-
-
 	if (!DetectValidPath())
 	{
 		//GX_InitVideo();
@@ -731,7 +820,6 @@ void plat_init (int *argc, char **argv[]) {
 			}
 		}
 	}
-
 
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
