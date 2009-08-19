@@ -364,6 +364,13 @@ default it is running via Extrems Server.
 |0Oื๘oท                             CHANGELOG                         ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+v0.75
+   * FTP support added
+   * NTFS support added for USB and SD
+   * SMB speed improved
+   * Hopefully finally eradicated the freezing bug
+   * Fixed noise bug when loading another stream
+
 v0.72
    * Fix playlist bug
    * More SMB servers detected (thanks to hax)
@@ -563,7 +570,8 @@ V0.1 Christmas Edition
                       Ludovic Orban - Keepalive issue in samba
                          Extrems - SHOUTcast/Youtube Patches
                             Tantric - SMB Improvements		
-                                hax - FTP devoptab						
+                                hax - FTP devoptab
+                                 Shareese - NTFS						
                               Brakken - Documentation
                                  Blue_K - loop.avi
                               
