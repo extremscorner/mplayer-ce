@@ -45,21 +45,15 @@ void* _DEFUN(__libogc_sbrk_r,(ptr,incr),
 				// trying to sbrk() back below the MEM2 start barrier
 				//ptr->_errno = EINVAL;
 				//prev_heap = (char *)-1;
-				/*
+				
 				heap_end = prev_heap = SYS_GetArenaHi();
 				SYS_SetArena2Lo((void*)mem2_start);	
 				mem2_start = NULL;
 				incr=diff;
 				goto mem1;	
-				*/
-				heap_end = prev_heap = mem2_start;
-				SYS_SetArena2Lo((void*)mem2_start);	
-
-				u32 level;		
-				level = IRQ_Disable();
-				usb_sendbuffer(1, "err mem\n", 8);
-				IRQ_Restore(level);
 				
+				//heap_end = prev_heap = mem2_start;
+				//SYS_SetArena2Lo((void*)mem2_start);	
 				
 			} else {
 				// success case

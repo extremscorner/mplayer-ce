@@ -274,6 +274,11 @@ u32 AUDIO_GetDMABytesLeft()
 	return (_SHIFTL(_dspReg[29],5,15));
 }
 
+void AUDIO_ClearDMA()
+{
+	if(!AUDIO_GetDMAEnableFlag()) _dspReg[29] = 0x0;
+}
+
 u32 AUDIO_GetDMAStartAddr()
 {
 	return (_SHIFTL((_dspReg[24]&0x3ff),16,10)|(_dspReg[25]&0xffe0));
