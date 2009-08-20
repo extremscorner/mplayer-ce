@@ -9,7 +9,6 @@
  * NTFS support added for USB and SD (thanks to Shareese)
  * SMB speed improved
  * Hopefully finally eradicated the freezing bug
- * Fixed noise bug when loading another stream
 
 == 0.72 ==
 
