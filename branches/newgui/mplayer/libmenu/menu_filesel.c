@@ -114,8 +114,8 @@ static char *file_dir=NULL;
 /*****************************************************/
 /*Function prototypes and libraries needed to compile*/
 /*****************************************************/
-
-int levenshtein_distance(char *s,char*t);
+int dir_play=1;
+//int levenshtein_distance(char *s,char*t);
 int minimum(int a,int b,int c);
 
 /****************************************/
@@ -431,6 +431,7 @@ static int open_dir(menu_t* menu,char* args) {
 	  if(!CheckFTPConnection(device)) 
 	  {
 		  set_osd_msg(124,1,2000,"Error reconnecting to %s ",device);
+		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		  return 0;
 	  } else rm_osd_msg(124);
   } 
@@ -455,6 +456,14 @@ static int open_dir(menu_t* menu,char* args) {
 
   namelist = (char **) malloc(sizeof(char *));
   extensions = get_extensions(menu);
+  
+  if(extensions != NULL && *extensions == NULL)
+  {
+    set_osd_msg(124,1,4000,"Your 'file_ext' file is empty, check it");  
+    mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+  	return 0;
+  }
+
 
   n=0;
   while ((dp = readdir(dirp)) != NULL) {
@@ -715,19 +724,20 @@ static int open_fs(menu_t* menu, char* args) {
 
 bool check_play_next_file(char *fileplaying,char *next_filename)
 {
-	if(next_file==NULL) return false;
+	//printf("dir_play: %i\n",dir_play);
+	if(next_file==NULL || dir_play==false) return false;
 	
 	sprintf(next_filename,"%s%s",file_dir,next_file);
-	int dist=levenshtein_distance(fileplaying,next_filename);
-	if(dist>0 && dist<3)
-	{
+//	int dist=levenshtein_distance(fileplaying,next_filename);
+//	if(directory_mode<0 || (dist>0 && dist<directory_mode))
+//	{
 		actual_list=actual_list->p.next;
 		if(!actual_list) next_file=NULL;
 		else next_file=actual_list->p.txt;
-				
+		//printf("next file: %s",	next_filename);	
 		return true;
-	}
-	return false;
+//	}
+//	return false;
 }
 
 const menu_info_t menu_info_filesel = {

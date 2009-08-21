@@ -63,7 +63,7 @@
 
 #undef abort
 
-#define MPCE_VERSION "0.75"
+#define MPCE_VERSION "0.76"
 
 extern int stream_cache_size;
   
@@ -78,7 +78,7 @@ static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static bool dbg_network = false;
 //static int component_fix = false;  //deprecated
-static float gxzoom=358;
+static float gxzoom=348;
 static float hor_pos=3;
 static float vert_pos=0;
 static float stretch=0;
@@ -86,7 +86,6 @@ static float stretch=0;
 static bool usb_init=false;
 static bool exit_automount_thread=false;
 //static bool net_called=false;
-
 
 #define MOUNT_STACKSIZE 32768
 static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
@@ -565,9 +564,10 @@ static bool load_ehci_module()
 static void * mountthreadfunc (void *arg)
 {
 	int dp, dvd_inserted=0,usb_inserted=0;
-
+//todo: add sd automount
 #ifndef CE_DEBUG
 	sleep(1);
+	mount_sd_ntfs(); //only once now
 		
 	usb_inserted=usb_init;
 	
@@ -701,7 +701,8 @@ void plat_init (int *argc, char **argv[]) {
 	
 	VIDEO_Init();
 	GX_InitVideo();
-	log_console_init(vmode, 0);		
+	log_console_init(vmode, 0);
+
   printf("Loading ");
   
   char cad[10]={127,130,158,147,171,151,164,117,119,0};

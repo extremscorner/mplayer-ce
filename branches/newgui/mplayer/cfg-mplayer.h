@@ -37,6 +37,7 @@ extern char *menu_chroot;
 extern char *menu_fribidi_charset;
 extern int menu_flip_hebrew;
 extern int menu_fribidi_flip_commas;
+extern int dir_play;
 
 extern char *unrar_executable;
 
@@ -316,6 +317,9 @@ const m_option_t mplayer_opts[]={
 #endif
 	//geexbox bgvideo patch
 	{"bgvideo", &bg_video, CONF_TYPE_STRING, 0, 0, 0, NULL},
+	{"dir_play", &dir_play, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
+	
+	
   //
   
 	{"noloop", &mpctx_s.loop_times, CONF_TYPE_FLAG, 0, 0, -1, NULL},

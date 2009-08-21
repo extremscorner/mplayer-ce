@@ -1798,11 +1798,11 @@ extern int prev_dxs , prev_dys;
 
 void force_osd()
 {
-	update_osd_msg();
    if (vf_menu)
    {
    		if (mpctx && mpctx->sh_video && mpctx->video_out && vo_config_count)
 	    	mpctx->video_out->check_events();
+	    update_osd_msg();
         vf_menu_pause_update(vf_menu);
    }
 }
@@ -2751,7 +2751,7 @@ static void pause_loop(void)
 
     while ( (cmd = mp_input_get_cmd(20, 1, 1)) == NULL || cmd->pausing == 4) {
 	if (cmd) {
-	  cmd = mp_input_get_cmd(0,1,0);
+	  cmd = mp_input_get_cmd(0,1,0);	  
 	  run_command(mpctx, cmd);
 	  mp_cmd_free(cmd);
 	  continue;
@@ -2781,7 +2781,6 @@ static void pause_loop(void)
 #endif
 	
     }
-
 	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
 	{
 		//DI_StartMotor();
@@ -2797,9 +2796,19 @@ static void pause_loop(void)
 	cmd = mp_input_get_cmd(0,1,0);
 	mp_cmd_free(cmd);
     }
+    
     mpctx->osd_function=OSD_PLAY;
-    if (mpctx->audio_out && mpctx->sh_audio)
-        mpctx->audio_out->resume();	// resume audio
+    cmd = mp_input_get_cmd(0, 0, 1);
+	if(cmd && cmd->id!=MP_CMD_PAUSE)
+	{
+		if (mpctx->audio_out && mpctx->sh_audio)
+        	mpctx->audio_out->reset();	// reset audio
+	}
+	else
+	{    
+	    if (mpctx->audio_out && mpctx->sh_audio)
+    	    mpctx->audio_out->resume();	// resume audio
+    }
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause
@@ -3720,8 +3729,9 @@ if(mpctx->stream->type==STREAMTYPE_DVDNAV){
 goto_enable_cache:
 if(stream_cache_size>0){
   current_module="enable_cache";
+stream_cache_min_percent=1.0;  
   if(!stream_enable_cache(mpctx->stream,stream_cache_size*1024,
-                          stream_cache_size*1024*(1.0 / 100.0),
+                          stream_cache_size*1024*(stream_cache_min_percent / 100.0),
                           stream_cache_size*1024*(stream_cache_seek_min_percent / 100.0)))
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
@@ -4218,7 +4228,8 @@ if(play_n_frames==0){
   mpctx->eof=PT_NEXT_ENTRY; goto goto_next_file;
 }
 
-if (seek_to_sec) {
+//if (seek_to_sec) 
+{
     seek(mpctx, seek_to_sec, SEEK_ABSOLUTE);
     end_at.pos += seek_to_sec;
 }
@@ -4240,6 +4251,7 @@ if (mpctx->stream->type == STREAMTYPE_DVDNAV) {
 static bool first_frame;
 first_frame=false;
 int restore_seek;
+//if (mpctx->sh_audio) mpctx->audio_out->reset();
 restore_seek=get_restore_point(fileplaying)-8;
 if(restore_seek<0)restore_seek=0;
 
@@ -4261,11 +4273,12 @@ if (seek_to_sec) {
 
 #endif
 
-  if(!strncmp(filename,"http:",5))
+  //if(!strncmp(filename,"http:",5))
   {
   	  if (!mpctx->sh_video || (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh))
 	  {
 		 //printf("internet audio\n");
+
 	  }else 
 	  {
 		 stream_cache_min_percent=orig_stream_cache_min_percent;
@@ -4276,7 +4289,8 @@ if (seek_to_sec) {
 {
 int aux=mpctx->set_of_sub_size;
 mpctx->set_of_sub_size=0; // to not load subfonts
-refillcache(mpctx->stream,stream_cache_min_percent);
+if(mpctx->sh_video) // no refill cache on only audio streams  
+	refillcache(mpctx->stream,stream_cache_min_percent);
 mpctx->set_of_sub_size=aux;
 }
 if(!IsLoopAvi(NULL))
@@ -4723,6 +4737,8 @@ if(ass_library)
 #endif
 
 #ifdef GEKKO
+if (mpctx->sh_audio) mpctx->audio_out->reset();
+
 if(mpctx->eof == PT_NEXT_SRC || mpctx->eof == PT_STOP /*|| mpctx->eof == PT_NEXT_ENTRY*/)
 {
 	save_restore_point(fileplaying,demuxer_get_current_time(mpctx->demuxer));
@@ -4738,11 +4754,12 @@ if(mpctx->eof == PT_NEXT_SRC || mpctx->eof == PT_STOP /*|| mpctx->eof == PT_NEXT
 			vo_osd_changed(OSDTYPE_SUBTITLE);
 			vo_osd_changed(OSDTYPE_PROGBAR);
 			vo_osd_changed(OSDTYPE_OSD);
-			
+			/*
 			mpctx->osd_function = OSD_PAUSE;			
 			clear_pause_mpi();
 			vf_menu_pause_update(vf_menu);
 			mpctx->osd_function = OSD_PLAY;
+			*/
 			filename = next_filename;
 		    mpctx->eof = 0;
 		    goto play_next_file;	

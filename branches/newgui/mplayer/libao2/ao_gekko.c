@@ -46,6 +46,7 @@ LIBAO_EXTERN(gekko)
 #define SFX_BUFFERS 64
 
 static u8 buffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
+static int size[SFX_BUFFERS];
 static u8 buffer_fill = 0;
 static u8 buffer_play = 0;
 static u8 buffer_free = SFX_BUFFERS;
@@ -62,9 +63,10 @@ static void switch_buffers() {
 		return;
 	}
 
-	AUDIO_InitDMA((u32) buffer[buffer_play], SFX_BUFFER_SIZE);
+	AUDIO_InitDMA((u32) buffer[buffer_play], size[buffer_play]);
 	AUDIO_StartDMA();
 
+	size[buffer_play]=0;
 	buffer_play = (buffer_play + 1) % SFX_BUFFERS;
 
 	playing = true;
@@ -86,6 +88,9 @@ static int init(int rate, int channels, int format, int flags) {
 	ao_data.format = AF_FORMAT_S16_BE;
 	ao_data.bps = 192000;
 
+	u8 i;
+	for (i = 0; i < SFX_BUFFERS; ++i) size[i]=0;
+
 	return 1;
 }
 
@@ -93,18 +98,25 @@ static void reset(void) {
 	u8 i;
 
 	AUDIO_StopDMA();
-	AUDIO_ClearDMA();
-
 	for (i = 0; i < SFX_BUFFERS; ++i) {
 		memset(buffer[i], 0, SFX_BUFFER_SIZE);
 		DCFlushRange(buffer[i], SFX_BUFFER_SIZE);
+		size[i]=0;
 	}
-
+	
 	buffer_fill = 0;
 	buffer_play = 0;
 	buffer_free = SFX_BUFFERS;
 
 	playing = false;
+	
+	//to be sure dma is clean	
+	AUDIO_InitDMA((u32)buffer[0],0);
+	//AUDIO_StartDMA();
+	//usleep(50);
+	//while(AUDIO_GetDMABytesLeft()>0) usleep(50);
+	//AUDIO_StopDMA();
+	
 }
 
 static void uninit(int immed) {
@@ -141,10 +153,11 @@ static int play(void* data, int len, int flags) {
 		if (bl > SFX_BUFFER_SIZE)
 			bl = SFX_BUFFER_SIZE;
 
+		size[buffer_fill]=bl;
 		memcpy(buffer[buffer_fill], s, bl);
 
-		if (bl < SFX_BUFFER_SIZE)
-			memset(buffer[buffer_fill] + bl, 0, SFX_BUFFER_SIZE - bl);
+//		if (bl < SFX_BUFFER_SIZE)
+//			memset(buffer[buffer_fill] + bl, 0, SFX_BUFFER_SIZE - bl);
 
 		DCFlushRange(buffer[buffer_fill], bl);
 
@@ -163,12 +176,15 @@ static int play(void* data, int len, int flags) {
 }
 
 static float get_delay(void) {
-	float b;
+	float b=0;
+	u8 i;
 
 	if (buffer_free == SFX_BUFFERS)
 		return 0;
 
-	b = (SFX_BUFFERS - buffer_free) * SFX_BUFFER_SIZE;
+	for (i = 0; i < SFX_BUFFERS ; ++i) b+=(float)size[i]; 
+
+//	b = (SFX_BUFFERS - buffer_free) * SFX_BUFFER_SIZE;
 
 	if (playing)
 		b += AUDIO_GetDMABytesLeft();

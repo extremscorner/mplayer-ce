@@ -246,8 +246,8 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   } else {
     height = vmode->viHeight;
     width = (float) height * par + vmode->viWidth - vmode->fbWidth;
-  }
-  
+  }	
+    
   GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
   GX_ConfigTextureYUV(image_width, image_height, pitch);	
   image_height = orig_height;
