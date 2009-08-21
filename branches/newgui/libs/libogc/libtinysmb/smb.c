@@ -49,7 +49,7 @@
 #include <smb.h>
 
 #define IOS_O_NONBLOCK				0x04
-#define RECV_TIMEOUT				5000  // in ms
+#define RECV_TIMEOUT				3000  // in ms
 
 /**
  * Field offsets.
@@ -589,7 +589,7 @@ static s32 SMB_SetupAndX(SMBHANDLE *handle)
 
 	/*** Account ***/
 	strcpy(pwd, handle->user);
-	for(i=0;i<strlen(pwd);i++) pwd[i] = toupper(pwd[i]);
+	for(i=0;i<strlen(pwd);i++) pwd[i] = toupper((int)pwd[i]);
 	memcpy(&ptr[pos],pwd,strlen(pwd));
 	pos += strlen(pwd)+1;
 
@@ -848,13 +848,14 @@ static s32 do_netconnect(SMBHANDLE *handle)
 	ret=net_fcntl(sock, F_SETFL, flags);
 
 	t1=ticks_to_millisecs(gettime());
-	do
+	while(1)
 	{
 		ret = net_connect(sock,(struct sockaddr*)&handle->server_addr,sizeof(handle->server_addr));
+		if(ret==-127) break;
 		t2=ticks_to_millisecs(gettime());
 		usleep(1000);
-		if(t2-t1 > 6000) break; // 6 secs to try to connect to handle->server_addr
-	} while(ret!=-127);
+		if(t2-t1 > 3000) break; // 6 secs to try to connect to handle->server_addr
+	} 
 
 	if(ret!=-127)
 	{
@@ -1062,11 +1063,10 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 		_CPU_ISR_Restore(level);
 	}
 
-	handle = __smb_handle_open(*smbhndl);
-	if(!handle) handle = __smb_allocate_handle();
-	if(!handle) return SMB_ERROR;
-
 	*smbhndl = SMB_HANDLE_NULL;
+
+	handle = __smb_allocate_handle();
+	if(!handle) return SMB_ERROR;
 
 	handle->user = strdup(user);
 	handle->pwd = strdup(password);
