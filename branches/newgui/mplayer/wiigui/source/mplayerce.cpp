@@ -31,10 +31,11 @@ int ExitRequested = 0;
 char appPath[1024];
 char loadedFile[1024];
 
-#define TSTACK (128*1024)
+#define TSTACK (512*1024)
 static lwp_t mthread = LWP_THREAD_NULL;
-static unsigned char mstack[TSTACK];
+static u8 mstack[TSTACK] ATTRIBUTE_ALIGN (32);
 
+static lwp_t mainthread;
 /****************************************************************************
  * Shutdown / Reboot / Exit
  ***************************************************************************/
@@ -102,14 +103,20 @@ static void CreateAppPath(char origpath[])
 
 extern bool controlledbygui;
 
+static bool play_end;
+
 static void *
 mplayerthread (void *arg)
-{
+{	
+	controlledbygui = false;
 	mplayer_loadfile(loadedFile);
-	controlledbygui = true;
+	loadedFile[0] = 0;
+	play_end=true;
+	//controlledbygui = true;
+	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
-
+extern GXRModeObj *vmode;
 int
 main(int argc, char *argv[])
 {
@@ -139,12 +146,15 @@ main(int argc, char *argv[])
 
 	MountAllFAT(); // Initialize libFAT for SD and USB
 
+
+	mainthread=LWP_GetSelf();
+
 	LoadConfig(appPath);
 	loadedFile[0] = 0;
 
 	// Initialize font system
 	InitFreeType((u8*)font_ttf, font_ttf_size);
-
+	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko)
 	while(1)
 	{
 		AUDIO_RegisterDMACallback(NULL);
@@ -164,12 +174,16 @@ main(int argc, char *argv[])
 		// load video
 		VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
 
+		//mplayer_loadfile(loadedFile);
+		play_end=false;
 		if(mthread == LWP_THREAD_NULL)
-			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 100);
-
-		while(!controlledbygui) // wait for MPlayer to pause
-			usleep(100);
-
+			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
+		
+		while(/*!controlledbygui &&*/ !play_end) // wait for MPlayer to pause
+			usleep(9000);
+		usleep(1000);
+		mthread = LWP_THREAD_NULL;
+	
 		//log_console_enable_video(true);
 		//printf("test\n");sleep(5);
 	}

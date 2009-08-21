@@ -946,11 +946,13 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   }
   mp_msg(MSGT_CPLAYER,MSGL_DBG2,"max framesize was %d bytes\n",max_framesize);
 
+#ifndef WIILIB
 #ifdef GEKKO
   save_restore_points_file();
   plat_deinit (rc);
 #endif  
   exit(rc);
+#endif
 }
 
 void exit_player(exit_reason_t how){
@@ -2608,7 +2610,7 @@ bool controlledbygui=false;
 void PauseAndGotoGUI()
 {
 	mp_input_queue_cmd(mp_input_parse_cmd("pause"));
-	controlledbygui==true;
+	controlledbygui=true;
 }
 #endif
 
@@ -3727,6 +3729,7 @@ if(mpctx->stream->type==STREAMTYPE_DVDNAV){
 
 // CACHE2: initial prefill: 20%  later: 5%  (should be set by -cacheopts)
 goto_enable_cache:
+
 if(stream_cache_size>0){
   current_module="enable_cache";
 stream_cache_min_percent=1.0;  
@@ -4014,9 +4017,7 @@ if(mpctx->sh_video) {
   if(vo_vobsub==NULL && sub_auto) { // auto load sub file ...
     //char *psub = get_path( "sub/" );
     //char **tmp = sub_filenames((psub ? psub : ""), filename);
-    //printf("\n\t1\n");
     char **tmp = sub_filenames("", filename);
-    //printf("\n\t2\n");
     int i = 0;
     //free(psub); // release the buffer created by get_path() above
     while (tmp[i]) {
@@ -4071,6 +4072,7 @@ if (mpctx->global_sub_size) {
   mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_FILENAME=%s\n",
 	  filename_recode(filename));
   mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_DEMUXER=%s\n", mpctx->demuxer->desc->name);
+  
   if (mpctx->sh_video) {
     /* Assume FOURCC if all bytes >= 0x20 (' ') */
     if (mpctx->sh_video->format >= 0x20202020)
@@ -4093,14 +4095,20 @@ if (mpctx->global_sub_size) {
     mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_AUDIO_RATE=%d\n", mpctx->sh_audio->samplerate);
     mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_AUDIO_NCH=%d\n", mpctx->sh_audio->channels);
   }
+
   mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_LENGTH=%.2lf\n", demuxer_get_time_length(mpctx->demuxer));
   mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_SEEKABLE=%d\n",
          mpctx->stream->seek && (!mpctx->demuxer || mpctx->demuxer->seekable));
+
   if (mpctx->demuxer) {
       if (mpctx->demuxer->num_chapters == 0)
+      {
           stream_control(mpctx->demuxer->stream, STREAM_CTRL_GET_NUM_CHAPTERS, &mpctx->demuxer->num_chapters);
+    }
       mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_CHAPTERS=%d\n", mpctx->demuxer->num_chapters);
   }
+  
+
 if(!mpctx->sh_video) goto main; // audio-only
 if(!reinit_video_chain()) {
 
@@ -4289,7 +4297,7 @@ if (seek_to_sec) {
 {
 int aux=mpctx->set_of_sub_size;
 mpctx->set_of_sub_size=0; // to not load subfonts
-if(mpctx->sh_video) // no refill cache on only audio streams  
+if(mpctx->sh_video && stream_cache_size>0) // no refill cache on only audio streams  
 	refillcache(mpctx->stream,stream_cache_min_percent);
 mpctx->set_of_sub_size=aux;
 }
