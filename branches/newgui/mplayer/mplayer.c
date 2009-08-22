@@ -2720,19 +2720,7 @@ static void pause_loop(void)
         mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_PAUSED\n");
     }
 */
-#ifdef WIILIB
-	bool external_control=false;
-	if(!controlledbygui)
-	{
-   	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
-    update_osd_msg();
-	}else 
-	{
-		external_control=true;
-		getch2_disable(); //wiimote controlled by gui
-	}
-#else
-
+#ifndef WIILIB
 	if(IsLoopAvi(NULL))
 	{
 		mpctx->osd_function=OSD_PLAY;
@@ -2741,7 +2729,6 @@ static void pause_loop(void)
    	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
     update_osd_msg();
 #endif
-
 #ifdef CONFIG_GUI
     if (use_gui)
 	guiGetEvent(guiCEvent, (char *)guiSetPause);
@@ -2752,7 +2739,31 @@ static void pause_loop(void)
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
 	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
 
+#ifdef WIILIB
+printf("wiimote controlled by gui\n");
+getch2_disable(); //wiimote controlled by gui
+#ifdef CONFIG_MENU
+	if (vf_menu)
+	    vf_menu_pause_update(vf_menu);
+#endif
+printf("send control to gui	\n");
+controlledbygui=true; //send control to gui	
+  while (controlledbygui && ((cmd = mp_input_get_cmd(20, 1, 1)) == NULL || cmd->pausing == 4)) {
+	if (cmd) {
+	  cmd = mp_input_get_cmd(0,1,0);	  
+	  run_command(mpctx, cmd);
+	  mp_cmd_free(cmd);
+	  continue;
+	}
+	usec_sleep(20000);
+  }	
+printf("control return to mplayer\n");
+printf("reinit mplayer video\n");usleep(100);
+reinit_video();
+printf("mplayer video reinit ok\n");usleep(100);
+getch2_enable();
 
+#else
     while ( (cmd = mp_input_get_cmd(20, 1, 1)) == NULL || cmd->pausing == 4) {
 	if (cmd) {
 	  cmd = mp_input_get_cmd(0,1,0);	  
@@ -2774,17 +2785,11 @@ static void pause_loop(void)
 	if (vf_menu)
 	    vf_menu_pause_update(vf_menu);
 #endif
-	usec_sleep(20000);
-	
-#ifdef WIILIB
-	if(external_control==true && controlledbygui==false) 
-	{
-		getch2_enable(); //wiimote controlled by mplayer
-		break;
-	}
-#endif
-	
+	usec_sleep(20000);		
     }
+
+#endif    //WIILIB
+
 	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
 	{
 		//DI_StartMotor();
@@ -2824,6 +2829,7 @@ static void pause_loop(void)
 	    guiGetEvent(guiCEvent, (char *)guiSetPlay);
     }
 #endif
+printf("end pause\n");
 }
 
 
