@@ -119,33 +119,25 @@ int
 main(int argc, char *argv[])
 {
 	int mload=-1;
+	
+	//try to load ios202
 	if(IOS_GetVersion()!=202)
 	{
 		if(FindIOS(202)) 
 		{
 			IOS_ReloadIOS(202);
-			WIIDVD_Init(false);
+			WIIDVD_Init(false);  //dvdx not needed
 		}
 		else WIIDVD_Init(true);
 	} 
 	else WIIDVD_Init(false);
 	
-/*
+	//load usb2 driver
 	mload=mload_init();
-	if(mload<0) 
-	{
-		DisableUSB2(true);
-	}
-	else
-	{
-		if(!load_ehci_module()) 
-		{
-			DisableUSB2(true);
-		}
-	}
-*/	
-
-//	DI_Init();	// first
+	if(mload<0) DisableUSB2(true);
+	else if(!load_ehci_module()) DisableUSB2(true);
+	
+//	DI_Init();	// first (not need is called inside WIIDVD_Init)
 
 	VIDEO_Init();
 	PAD_Init();
@@ -153,8 +145,6 @@ main(int argc, char *argv[])
 	InitVideo(); // Initialise video
 	AUDIO_Init(NULL);
 
-	//extern GXRModeObj *vmode;
-	//log_console_init(vmode, 0);
 	// read wiimote accelerometer and IR data
 	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
 	WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth, screenheight);
@@ -166,22 +156,6 @@ main(int argc, char *argv[])
 
 	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko)
 
-	mload=mload_init();
-	if(mload<0) 
-	{
-		printf("no mload\n");
-		DisableUSB2(true);
-	}
-	else
-	{
-		printf("si mload\n");
-
-		if(!load_ehci_module()) 
-		{
-			printf("no usb2\n");
-			DisableUSB2(true);
-		}else printf("si usb2\n");
-	}
 
 	// store path app was loaded from
 	sprintf(appPath, "sd:/apps/mplayer_ce");

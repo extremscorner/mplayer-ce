@@ -49,10 +49,10 @@ void log_console_init(GXRModeObj *vmode, u16 logsize);
 //void log_console_enable_log(bool enable);
 void log_console_enable_video(bool enable);
 
-bool FindIOS(u32 ios);
-bool load_ehci_module();
-void DisableUSB2(bool);
-
+bool FindIOS(u32 ios);   //in plat_gekko.c
+bool load_ehci_module();  //in plat_gekko.c
+void DisableUSB2(bool);  //in special libogc, in usb2storage.c (need to be added to .h)
+  
 
 #ifdef __cplusplus
 }
