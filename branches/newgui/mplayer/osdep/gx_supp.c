@@ -321,6 +321,22 @@ void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 /****************************************************************************
  * GX_StartYUV - Initialize GX for given width/height.
  ****************************************************************************/
+void reinit_video()
+{
+	Mtx p;
+	GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+	GX_SetCullMode(GX_CULL_NONE);
+	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
+	GX_SetDispCopyGamma(GX_GM_1_0);
+	guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
+	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
+
+	GX_Flush();
+	printf("GX_Flush,  vheight: %i\n",vheight);usleep(100);
+	reset_pitch();	
+	printf("reset_pitch\n");usleep(100);
+}
+
 void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	static bool inited = false;
 	int w,h;

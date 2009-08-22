@@ -173,6 +173,11 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 						pitch[0],x0);						
 }
 
+void reset_pitch() {
+printf("image_width: %i  pitch[0]: %i   1: %i   2:%i\n",image_width,pitch[0],pitch[1],pitch[2]);
+GX_UpdatePitch(image_width,pitch);
+} 
+
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 						int y) {
 	if(y==0) 

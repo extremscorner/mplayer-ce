@@ -114,7 +114,7 @@ mplayerthread (void *arg)
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
-extern GXRModeObj *vmode;
+
 int
 main(int argc, char *argv[])
 {
@@ -154,7 +154,8 @@ main(int argc, char *argv[])
 	SYS_SetPowerCallback(ShutdownCB);
 	SYS_SetResetCallback(ResetCB);
 
-	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko)
+	extern GXRModeObj *vmode;
+	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko, is in libmplayerwii.a)
 
 
 	// store path app was loaded from
@@ -186,24 +187,31 @@ main(int argc, char *argv[])
 			Menu(MENU_MAIN);
 		HaltDeviceThread();
 
+		printf("disable callback in mplayer\n");
 		// load video
 		VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
 
 		
-		controlledbygui = false;
+		printf("return control to mplayer\n");
+		controlledbygui = false; 
 		if(mthread == LWP_THREAD_NULL)
 		{
+			printf("load thread\n");
 			play_end=false;
 			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
 		}
 		
-		while(!controlledbygui && !play_end) // wait for MPlayer to pause
+		printf("wait for MPlayer to pause or finish film\n");
+		while(!controlledbygui && !play_end) // wait for MPlayer to pause or finish film
 			usleep(9000);
 		if(play_end) 
 		{
+			printf("film end\n");
 			usleep(1000); //to be sure mplayerthread is joinned
 			mthread = LWP_THREAD_NULL;
 		}
+		if(controlledbygui)printf("controlledbygui is true - ");
+		printf("control return to gui\n");
 	
 		//log_console_enable_video(true);
 		//printf("test\n");sleep(5);
