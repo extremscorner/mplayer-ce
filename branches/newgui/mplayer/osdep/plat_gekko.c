@@ -517,7 +517,7 @@ static off_t get_filesize(char *FileName)
     return 0;
 }
 
-static bool load_ehci_module()
+bool load_ehci_module()
 {
 	data_elf my_data_elf;
 	off_t fsize;

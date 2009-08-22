@@ -9,6 +9,8 @@
 #define _MPLAYERGUI_H_
 
 #include "FreeTypeGX.h"
+#include "../../osdep/libdvdiso.h"
+#include "../../osdep/mload.h"
 
 enum {
 	DEVICE_SD,
@@ -46,6 +48,11 @@ void log_console_init(GXRModeObj *vmode, u16 logsize);
 //void log_console_deinit(void);
 //void log_console_enable_log(bool enable);
 void log_console_enable_video(bool enable);
+
+bool FindIOS(u32 ios);
+bool load_ehci_module();
+void DisableUSB2(bool);
+
 
 #ifdef __cplusplus
 }

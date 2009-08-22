@@ -108,11 +108,9 @@ static bool play_end;
 static void *
 mplayerthread (void *arg)
 {	
-	controlledbygui = false;
 	mplayer_loadfile(loadedFile);
 	loadedFile[0] = 0;
 	play_end=true;
-	//controlledbygui = true;
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
@@ -120,7 +118,34 @@ extern GXRModeObj *vmode;
 int
 main(int argc, char *argv[])
 {
-	DI_Init();	// first
+	int mload=-1;
+	if(IOS_GetVersion()!=202)
+	{
+		if(FindIOS(202)) 
+		{
+			IOS_ReloadIOS(202);
+			WIIDVD_Init(false);
+		}
+		else WIIDVD_Init(true);
+	} 
+	else WIIDVD_Init(false);
+	
+/*
+	mload=mload_init();
+	if(mload<0) 
+	{
+		DisableUSB2(true);
+	}
+	else
+	{
+		if(!load_ehci_module()) 
+		{
+			DisableUSB2(true);
+		}
+	}
+*/	
+
+//	DI_Init();	// first
 
 	VIDEO_Init();
 	PAD_Init();
@@ -139,6 +164,25 @@ main(int argc, char *argv[])
 	SYS_SetPowerCallback(ShutdownCB);
 	SYS_SetResetCallback(ResetCB);
 
+	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko)
+
+	mload=mload_init();
+	if(mload<0) 
+	{
+		printf("no mload\n");
+		DisableUSB2(true);
+	}
+	else
+	{
+		printf("si mload\n");
+
+		if(!load_ehci_module()) 
+		{
+			printf("no usb2\n");
+			DisableUSB2(true);
+		}else printf("si usb2\n");
+	}
+
 	// store path app was loaded from
 	sprintf(appPath, "sd:/apps/mplayer_ce");
 	//if(argc > 0 && argv[0] != NULL)
@@ -154,7 +198,7 @@ main(int argc, char *argv[])
 
 	// Initialize font system
 	InitFreeType((u8*)font_ttf, font_ttf_size);
-	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko)
+	
 	while(1)
 	{
 		AUDIO_RegisterDMACallback(NULL);
@@ -168,21 +212,24 @@ main(int argc, char *argv[])
 			Menu(MENU_MAIN);
 		HaltDeviceThread();
 
-		controlledbygui = false;
-
-		//log_console_enable_video(true);
 		// load video
 		VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
 
-		//mplayer_loadfile(loadedFile);
-		play_end=false;
-		if(mthread == LWP_THREAD_NULL)
-			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
 		
-		while(/*!controlledbygui &&*/ !play_end) // wait for MPlayer to pause
+		controlledbygui = false;
+		if(mthread == LWP_THREAD_NULL)
+		{
+			play_end=false;
+			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
+		}
+		
+		while(!controlledbygui && !play_end) // wait for MPlayer to pause
 			usleep(9000);
-		usleep(1000);
-		mthread = LWP_THREAD_NULL;
+		if(play_end) 
+		{
+			usleep(1000); //to be sure mplayerthread is joinned
+			mthread = LWP_THREAD_NULL;
+		}
 	
 		//log_console_enable_video(true);
 		//printf("test\n");sleep(5);
