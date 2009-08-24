@@ -1,2 +1,2 @@
-#define VERSION "SVN-r29543-4.4.1"
+#define VERSION "SVN-r358-4.2.4"
 #define MP_TITLE "%s "VERSION" (C) 2000-2009 MPlayer Team\n"
