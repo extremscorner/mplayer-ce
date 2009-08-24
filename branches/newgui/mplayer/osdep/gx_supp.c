@@ -49,7 +49,7 @@ static u32 *xfb[2];
 GXRModeObj *vmode = NULL;
 #endif
 
-static bool component_fix=false;
+//static bool component_fix=false;
 static int hor_pos=0, vert_pos=0, stretch=0;
 
 /*** 3D GX ***/
@@ -58,8 +58,10 @@ static u8 *gp_fifo;
 #endif
 
 /*** Texture memory ***/
-static u8 *texturemem = NULL, *Ytexture = NULL,*Utexture = NULL,*Vtexture = NULL;
-static u32 texturesize,Ytexsize,UVtexsize;
+//static u8 *texturemem = NULL;
+//static u32 texturesize;
+static u8 *Ytexture = NULL,*Utexture = NULL,*Vtexture = NULL;
+static u32 Ytexsize,UVtexsize;
 
 GXTexObj texobj,YtexObj,UtexObj,VtexObj;
 static Mtx view;
@@ -146,7 +148,7 @@ void GX_SetCamPosZ(float f) {
 /****************************************************************************
  * Scaler Support Functions
  ****************************************************************************/
-static void draw_init(void) {
+/*static void draw_init(void) {
 	GX_ClearVtxDesc();
 	GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
@@ -189,14 +191,14 @@ static void draw_square(Mtx v) {
 	draw_vert(3, 0, 0.0, 1.0);
 	GX_End();
 }
-
+*/
 /****************************************************************************
  * StartGX
  ****************************************************************************/
-void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
+/*void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 	static bool inited = false;
 
-	Mtx p;
+	Mtx44 p;
 	GXColor gxbackground = { 0, 0, 0, 0xff };
 
 	// Set new aspect
@@ -250,14 +252,14 @@ void GX_Start(u16 width, u16 height, s16 haspect, s16 vaspect) {
 	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
 
 	GX_Flush();
-}
+}*/
 
 /****************************************************************************
 * GX_Render
 *
 * Pass in a buffer, width and height to update as a tiled RGB565 texture
 ****************************************************************************/
-void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
+/*void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 	u16 h, w;
 	u64 *dst = (u64 *) texturemem;
 	u64 *src1 = (u64 *) buffer;
@@ -317,13 +319,13 @@ void GX_Render(u16 width, u16 height, u8 *buffer, u16 pitch) {
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
 }
-
+*/
 /****************************************************************************
  * GX_StartYUV - Initialize GX for given width/height.
  ****************************************************************************/
 void reinit_video()
 {
-	Mtx p;
+	Mtx44 p;
 	GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 	GX_SetCullMode(GX_CULL_NONE);
 	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
@@ -333,16 +335,13 @@ void reinit_video()
 
 	GX_Flush();
 	printf("GX_Flush,  vheight: %i\n",vheight);usleep(100);
-	reset_pitch();	
+	reset_pitch();
 	printf("reset_pitch\n");usleep(100);
 }
 
 void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
-	static bool inited = false;
 	int w,h;
-
-	Mtx p;
-	GXColor gxbackground = { 0, 0, 0, 0xff };
+	Mtx44 p;
 
 	/*** Set new aspect ***/
 	square[0] = square[9] = -haspect;
@@ -422,13 +421,16 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
 	oldvwidth = oldvheight = oldpitch = -1;
 
 #ifndef WIILIB
+	static bool inited = false;
+	GXColor gxbackground = { 0, 0, 0, 0xff };
+
 	if (inited)
 		return;
 
 	inited = true;
 
 	/*** Clear out FIFO area ***/
-	(gp_fifo, 0, DEFAULT_FIFO_SIZE);
+	memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
 
 	/*** Initialise GX ***/
 	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
@@ -680,7 +682,7 @@ void draw_initYUV(void){
 /****************************************************************************
 * GX_Render - Pass in 3 buffers (Y',U,V planes) and their respective pitches.
 ****************************************************************************/
-void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 *pitch) {
+/*void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 *pitch) {
 	Mtx m, mv;
 	u16 h, w;
 	u64 *Ydst = (u64 *) Ytexture;
@@ -821,6 +823,7 @@ void GX_RenderYUV(u16 width, u16 height, u8 *buffer[3], u16 *pitch) {
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
 }
+*/
 
 //------- rodries change: to avoid image_buffer intermediate ------
 static int w1,w2,h1,h2,df1,df2,old_h1_2=-1;
@@ -828,7 +831,8 @@ static int p01,p02,p03,p11,p12,p13;
 static u16 Yrowpitch;
 static u16 UVrowpitch;
 static u64 *Ydst, *Udst, *Vdst;
-getStrideInfo(int *_w1,int *_df1,int *_Yrowpitch)  // for subtitle info
+
+void getStrideInfo(int *_w1,int *_df1,int *_Yrowpitch)  // for subtitle info
 {
 	*_w1=w1;
 	*_df1=df1;
@@ -837,7 +841,6 @@ getStrideInfo(int *_w1,int *_df1,int *_Yrowpitch)  // for subtitle info
 
 void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 {
-	int diffx;
     Mtx m, mv;
 	Ydst = (u64 *) Ytexture;
 	Udst = (u64 *) Utexture;

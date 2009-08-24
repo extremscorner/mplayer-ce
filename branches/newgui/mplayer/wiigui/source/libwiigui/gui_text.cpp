@@ -216,6 +216,9 @@ void GuiText::Draw()
 
 	int newSize = size*this->GetScale();
 
+	if(newSize > MAX_FONT_SIZE)
+		newSize = MAX_FONT_SIZE;
+
 	if(newSize != currentSize)
 	{
 		ChangeFontSize(newSize);
@@ -223,11 +226,6 @@ void GuiText::Draw()
 			fontSystem[newSize] = new FreeTypeGX(newSize);
 		currentSize = newSize;
 	}
-
-	int voffset = 0;
-
-	if(alignmentVert == ALIGN_MIDDLE)
-		voffset = -newSize/2 + 2;
 
 	if(maxWidth > 0)
 	{
@@ -276,7 +274,7 @@ void GuiText::Draw()
 				}
 			}
 			if(textDyn)
-				fontSystem[currentSize]->drawText(this->GetLeft(), this->GetTop()+voffset, textDyn, c, style);
+				fontSystem[currentSize]->drawText(this->GetLeft(), this->GetTop(), textDyn, c, style);
 		}
 		else if(wrap)
 		{
@@ -325,8 +323,10 @@ void GuiText::Draw()
 				i++;
 			}
 
+			int voffset = 0;
+
 			if(alignmentVert == ALIGN_MIDDLE)
-				voffset = voffset - (lineheight*linenum)/2 + lineheight/2;
+				voffset = -(lineheight*linenum)/2 + lineheight/2;
 
 			for(i=0; i < linenum; i++)
 			{
@@ -336,13 +336,13 @@ void GuiText::Draw()
 		}
 		else
 		{
-			fontSystem[currentSize]->drawText(this->GetLeft(), this->GetTop()+voffset, textDyn, c, style);
+			fontSystem[currentSize]->drawText(this->GetLeft(), this->GetTop(), textDyn, c, style);
 		}
 		free(tmpText);
 	}
 	else
 	{
-		fontSystem[currentSize]->drawText(this->GetLeft(), this->GetTop()+voffset, text, c, style);
+		fontSystem[currentSize]->drawText(this->GetLeft(), this->GetTop(), text, c, style);
 	}
 	this->UpdateEffects();
 }

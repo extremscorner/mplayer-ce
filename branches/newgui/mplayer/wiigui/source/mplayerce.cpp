@@ -107,11 +107,10 @@ static bool play_end;
 
 static void *
 mplayerthread (void *arg)
-{	
+{
 	mplayer_loadfile(loadedFile);
 	loadedFile[0] = 0;
 	play_end=true;
-	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
 
@@ -119,24 +118,24 @@ int
 main(int argc, char *argv[])
 {
 	int mload=-1;
-	
+
 	//try to load ios202
 	if(IOS_GetVersion()!=202)
 	{
-		if(FindIOS(202)) 
+		if(FindIOS(202))
 		{
 			IOS_ReloadIOS(202);
 			WIIDVD_Init(false);  //dvdx not needed
 		}
 		else WIIDVD_Init(true);
-	} 
+	}
 	else WIIDVD_Init(false);
-	
+
 	//load usb2 driver
 	mload=mload_init();
 	if(mload<0) DisableUSB2(true);
 	else if(!load_ehci_module()) DisableUSB2(true);
-	
+
 //	DI_Init();	// first (not need is called inside WIIDVD_Init)
 
 	VIDEO_Init();
@@ -173,7 +172,7 @@ main(int argc, char *argv[])
 
 	// Initialize font system
 	InitFreeType((u8*)font_ttf, font_ttf_size);
-	
+
 	while(1)
 	{
 		AUDIO_RegisterDMACallback(NULL);
@@ -191,28 +190,28 @@ main(int argc, char *argv[])
 		// load video
 		VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
 
-		
+
 		printf("return control to mplayer\n");
-		controlledbygui = false; 
+		controlledbygui = false;
 		if(mthread == LWP_THREAD_NULL)
 		{
 			printf("load thread\n");
 			play_end=false;
 			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
 		}
-		
+
 		printf("wait for MPlayer to pause or finish film\n");
 		while(!controlledbygui && !play_end) // wait for MPlayer to pause or finish film
 			usleep(9000);
-		if(play_end) 
+		if(play_end)
 		{
 			printf("film end\n");
-			usleep(1000); //to be sure mplayerthread is joinned
+			LWP_JoinThread(mthread,NULL); //to be sure mplayerthread is joined
 			mthread = LWP_THREAD_NULL;
 		}
 		if(controlledbygui)printf("controlledbygui is true - ");
 		printf("control return to gui\n");
-	
+
 		//log_console_enable_video(true);
 		//printf("test\n");sleep(5);
 	}
