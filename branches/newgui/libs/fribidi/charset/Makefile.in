@@ -45,7 +45,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-LTLIBRARIES = $(noinst_LTLIBRARIES)
+LTLIBRARIES = $(eabi)
 am__DEPENDENCIES_1 =
 libfribidi_char_sets_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libfribidi_char_sets_la_OBJECTS = fribidi-char-sets.lo \
@@ -216,7 +216,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-noinst_LTLIBRARIES = libfribidi-char-sets.la
+eabi = libfribidi-char-sets.la
 AM_CPPFLAGS = \
 		-I$(top_builddir)/lib \
 		-I$(top_srcdir)/lib \
@@ -284,8 +284,8 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
 clean-noinstLTLIBRARIES:
-	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
-	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	-test -z "$(eabi)" || rm -f $(eabi)
+	@list='$(eabi)'; for p in $$list; do \
 	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
 	  test "$$dir" != "$$p" || dir=.; \
 	  echo "rm -f \"$${dir}/so_locations\""; \

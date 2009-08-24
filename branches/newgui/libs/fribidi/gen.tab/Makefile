@@ -86,17 +86,17 @@ DIST_SOURCES = $(gen_arabic_shaping_tab_SOURCES) \
 	$(gen_mirroring_tab_SOURCES) $(gen_unicode_version_SOURCES)
 ETAGS = etags
 CTAGS = ctags
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(eabi)
 VPATH =  $(builddir)/unidata $(builddir)/unidata/extracted \
 	$(srcdir)/unidata $(srcdir)/unidata/extracted \
 	$(top_builddir)/lib
-ACLOCAL = ${SHELL} /home/libs/fribidi-0.19.2/missing --run aclocal-1.10
-AMTAR = ${SHELL} /home/libs/fribidi-0.19.2/missing --run tar
+ACLOCAL = ${SHELL} ./missing --run aclocal-1.10
+AMTAR = ${SHELL} ./missing --run tar
 AR = ${DEVKITPPC}/bin/powerpc-gekko-ar
 AS = as
-AUTOCONF = ${SHELL} /home/libs/fribidi-0.19.2/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/libs/fribidi-0.19.2/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/libs/fribidi-0.19.2/missing --run automake-1.10
+AUTOCONF = ${SHELL} ./missing --run autoconf
+AUTOHEADER = ${SHELL} ./missing --run autoheader
+AUTOMAKE = ${SHELL} ./missing --run automake-1.10
 AWK = gawk
 CC = ${DEVKITPPC}/bin/powerpc-gekko-gcc
 CCDEPMODE = depmode=gcc3
@@ -143,7 +143,7 @@ LN_S = ln -s
 LTLIBOBJS = 
 LT_CURRENT_MINUS_AGE = 0
 LT_VERSION_INFO = 3:1:3
-MAKEINFO = ${SHELL} /home/libs/fribidi-0.19.2/missing --run makeinfo
+MAKEINFO = ${SHELL} ./missing --run makeinfo
 MISC_CFLAGS = 
 MISC_LIBS = 
 MISC_PACKAGES = 
@@ -169,8 +169,8 @@ SHELL = /bin/bash
 SIZEOF_INT = 4
 STRIP = ${DEVKITPPC}/bin/powerpc-gekko-strip
 VERSION = 0.19.2
-abs_builddir = /home/libs/fribidi-0.19.2/gen.tab
-abs_srcdir = /home/libs/fribidi-0.19.2/gen.tab
+abs_builddir = ./gen.tab
+abs_srcdir = ./gen.tab
 abs_top_builddir = /home/libs/fribidi-0.19.2
 abs_top_srcdir = /home/libs/fribidi-0.19.2
 ac_ct_CC = 
@@ -200,7 +200,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) /home/libs/fribidi-0.19.2/install-sh
+install_sh = $(SHELL) ./install-sh
 libdir = ${DEVKITPRO}/libogc/lib/wii
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -241,7 +241,7 @@ UCD_FILES = \
 		unidata/BidiMirroring.txt \
 		unidata/ArabicShaping.txt
 
-EXTRA_DIST = $(UCD_FILES)
+eabi = $(UCD_FILES)
 COMPRESSION = 2
 
 # generate bidi-type.tab.i

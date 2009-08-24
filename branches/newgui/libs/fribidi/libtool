@@ -123,19 +123,19 @@ deplibs_check_method="unknown"
 file_magic_cmd="\$MAGIC_CMD"
 
 # The archiver.
-AR="\${DEVKITPPC}/bin/powerpc-gekko-ar"
+AR="${DEVKITPPC}/bin/powerpc-gekko-ar"
 AR_FLAGS="cru"
 
 # A symbol stripping program.
-STRIP="\${DEVKITPPC}/bin/powerpc-gekko-strip"
+STRIP="${DEVKITPPC}/bin/powerpc-gekko-strip"
 
 # Commands used to install an old-style archive.
-RANLIB="\${DEVKITPPC}/bin/powerpc-gekko-ranlib"
+RANLIB="${DEVKITPPC}/bin/powerpc-gekko-ranlib"
 old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
 old_postuninstall_cmds=""
 
 # A C compiler.
-LTCC="\${DEVKITPPC}/bin/powerpc-gekko-gcc"
+LTCC="${DEVKITPPC}/bin/powerpc-gekko-gcc"
 
 # LTCC compiler flags.
 LTCFLAGS="-mcpu=750 -O2 -Wall -ansi "
@@ -240,7 +240,7 @@ finish_eval=""
 hardcode_into_libs=no
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="\${DEVKITPPC}/lib/gcc \${DEVKITPPC}/powerpc-gekko/lib"
+sys_lib_search_path_spec="${DEVKITPPC}/lib/gcc ${DEVKITPPC}/powerpc-gekko/lib"
 
 # Run-time system search path for libraries.
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
@@ -255,18 +255,18 @@ dlopen_self=unknown
 dlopen_self_static=unknown
 
 # Commands to strip libraries.
-old_striplib="\${DEVKITPPC}/bin/powerpc-gekko-strip --strip-debug"
-striplib="\${DEVKITPPC}/bin/powerpc-gekko-strip --strip-unneeded"
+old_striplib="${DEVKITPPC}/bin/powerpc-gekko-strip --strip-debug"
+striplib="${DEVKITPPC}/bin/powerpc-gekko-strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="\${DEVKITPPC}/bin/powerpc-gekko-ld"
+LD="${DEVKITPPC}/bin/powerpc-gekko-ld"
 
 # Commands used to build an old-style archive.
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 
 # A language specific compiler.
-CC="\${DEVKITPPC}/bin/powerpc-gekko-gcc"
+CC="${DEVKITPPC}/bin/powerpc-gekko-gcc"
 
 # Is the compiler the GNU compiler?
 with_gcc=yes
