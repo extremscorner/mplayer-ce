@@ -20,23 +20,23 @@ MANDIR = $(DESTDIR)/tmp/mplayerhaxx/share/man
 CONFDIR = $(DESTDIR)/tmp/mplayerhaxx/etc/mplayer
 LIBDIR = $(DESTDIR)/tmp/mplayerhaxx/lib
 
-AR = $(DEVKITPPC)/bin/powerpc-eabi-ar
-CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
-CXX = $(DEVKITPPC)/bin/powerpc-eabi-gcc
+AR = $(DEVKITPPC)/bin/powerpc-gekko-ar
+CC = $(DEVKITPPC)/bin/powerpc-gekko-gcc
+CXX = $(DEVKITPPC)/bin/powerpc-gekko-gcc
 HOST_CC = gcc
 YASM = 
 INSTALL = install
 INSTALLSTRIP = -s
-RANLIB = $(DEVKITPPC)/bin/powerpc-eabi-ranlib
+RANLIB = $(DEVKITPPC)/bin/powerpc-gekko-ranlib
 WINDRES = windres
-OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
+OBJCOPY = $(DEVKITPPC)/bin/powerpc-gekko-objcopy
 
-EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
+EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-gekko/gcc/gcc/include
 #EXTRA_INC =  -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include 
 EXTRAXX_INC = $(EXTRA_INC)
 
-COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O2 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
-#COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O2 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+#COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mgekko -mhard-float
 CFLAGS = $(EXTRA_INC) $(COMMONFLAGS) 
 OPTFLAGS =  $(EXTRA_INC) $(COMMONFLAGS)
 CXXFLAGS = $(COMMONFLAGS) -D__STDC_LIMIT_MACROS $(EXTRAXX_INC)
@@ -465,6 +465,7 @@ CONFIG_SONIC_DECODER=yes
 CONFIG_TRUEHD_DECODER=yes
 CONFIG_TRUESPEECH_DECODER=yes
 CONFIG_TTA_DECODER=yes
+CONFIG_TWINVQ_DECODER=yes
 CONFIG_VMDAUDIO_DECODER=yes
 CONFIG_VORBIS_DECODER=yes
 CONFIG_WAVPACK_DECODER=yes
