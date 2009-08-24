@@ -84,13 +84,13 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} ./missing --run aclocal-1.10
-AMTAR = ${SHELL} ./missing --run tar
+ACLOCAL = ${SHELL} /home/libs/fribidi-0.19.2/missing --run aclocal-1.10
+AMTAR = ${SHELL} /home/libs/fribidi-0.19.2/missing --run tar
 AR = ${DEVKITPPC}/bin/powerpc-gekko-ar
 AS = as
-AUTOCONF = ${SHELL} ./missing --run autoconf
-AUTOHEADER = ${SHELL} ./missing --run autoheader
-AUTOMAKE = ${SHELL} ./missing --run automake-1.10
+AUTOCONF = ${SHELL} /home/libs/fribidi-0.19.2/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/libs/fribidi-0.19.2/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/libs/fribidi-0.19.2/missing --run automake-1.10
 AWK = gawk
 CC = ${DEVKITPPC}/bin/powerpc-gekko-gcc
 CCDEPMODE = depmode=gcc3
@@ -122,7 +122,7 @@ FRIBIDI_VERSION = 0.19.2
 GLIB_CFLAGS = 
 GLIB_LIBS = 
 GREP = /bin/grep
-INSTALL = /usr/bin/install -c
+INSTALL = /bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
@@ -137,7 +137,7 @@ LN_S = ln -s
 LTLIBOBJS = 
 LT_CURRENT_MINUS_AGE = 0
 LT_VERSION_INFO = 3:1:3
-MAKEINFO = ${SHELL} ./missing --run makeinfo
+MAKEINFO = ${SHELL} /home/libs/fribidi-0.19.2/missing --run makeinfo
 MISC_CFLAGS = 
 MISC_LIBS = 
 MISC_PACKAGES = 
@@ -159,7 +159,7 @@ PKG_CONFIG =
 RANLIB = ${DEVKITPPC}/bin/powerpc-gekko-ranlib
 SED = /bin/sed
 SET_MAKE = 
-SHELL = /bin/bash
+SHELL = /bin/sh
 SIZEOF_INT = 4
 STRIP = ${DEVKITPPC}/bin/powerpc-gekko-strip
 VERSION = 0.19.2
@@ -194,7 +194,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) ./install-sh
+install_sh = $(SHELL) /home/libs/fribidi-0.19.2/install-sh
 libdir = ${DEVKITPRO}/libogc/lib/wii
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -215,7 +215,7 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-SUBDIRS = gen.tab charset lib doc test
+SUBDIRS = gen.tab charset lib bin doc test
 EXTRA_DIST = bootstrap ChangeLog.old ChangeLog
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = fribidi.pc
@@ -241,15 +241,15 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-#	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnits '; \
-#	      cd $(srcdir) && $(AUTOMAKE) --gnits  \
-#		&& exit 0; \
-#	      exit 1;; \
+	      echo ' cd $(srcdir) && $(AUTOMAKE) --gnits '; \
+	      cd $(srcdir) && $(AUTOMAKE) --gnits  \
+		&& exit 0; \
+	      exit 1;; \
 	  esac; \
 	done; \
-#	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnits  Makefile'; \
-#	cd $(top_srcdir) && \
-#	  $(AUTOMAKE) --gnits  Makefile
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnits  Makefile'; \
+	cd $(top_srcdir) && \
+	  $(AUTOMAKE) --gnits  Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -265,7 +265,7 @@ $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENC
 	$(SHELL) ./config.status --recheck
 
 $(top_srcdir)/configure:  $(am__configure_deps)
-#	cd $(srcdir) && $(AUTOCONF)
+	cd $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 
