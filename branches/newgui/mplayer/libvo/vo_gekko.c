@@ -54,6 +54,9 @@ const LIBVO_EXTERN (gekko)
 static	u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
 
+static u32 gx_width, gx_height;
+
+
 void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca, 
 	int srcstride, unsigned char* dstbase,int dststride,int x0)
 {
@@ -173,9 +176,9 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 						pitch[0],x0);						
 }
 
-void reset_pitch() {
-printf("image_width: %i  pitch[0]: %i   1: %i   2:%i\n",image_width,pitch[0],pitch[1],pitch[2]);
-GX_UpdatePitch(image_width,pitch);
+void reinit_video() {  // for newgui
+  GX_StartYUV(image_width, image_height, gx_width / 2, gx_height / 2 ); 
+  GX_ConfigTextureYUV(image_width, image_height, pitch);	
 } 
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
@@ -253,6 +256,9 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     width = (float) height * par + vmode->viWidth - vmode->fbWidth;
   }	
     
+gx_width=width;
+gx_height=height;
+
   GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
   GX_ConfigTextureYUV(image_width, image_height, pitch);	
   image_height = orig_height;

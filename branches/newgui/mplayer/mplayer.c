@@ -2706,7 +2706,7 @@ static void low_cache_loop(void)
 
 static void pause_loop(void)
 {
-    mp_cmd_t* cmd;
+    mp_cmd_t* cmd=NULL;
 /*
     if (!quiet) {
         // Small hack to display the pause message on the OSD line.
@@ -2755,13 +2755,17 @@ controlledbygui=true; //send control to gui
 	  mp_cmd_free(cmd);
 	  continue;
 	}
+	if (mpctx->sh_video && mpctx->video_out && vo_config_count)
+	    mpctx->video_out->check_events();
+	
 	usec_sleep(20000);
   }	
 printf("control return to mplayer\n");
-printf("reinit mplayer video\n");usleep(100);
-reinit_video();
-printf("mplayer video reinit ok\n");usleep(100);
 getch2_enable();
+printf("reinit mplayer video/audio\n");usleep(100);
+reinit_video();
+reinit_audio();
+printf("mplayer video reinit ok\n");usleep(100);
 
 #else
     while ( (cmd = mp_input_get_cmd(20, 1, 1)) == NULL || cmd->pausing == 4) {
@@ -2807,6 +2811,10 @@ getch2_enable();
     }
     
     mpctx->osd_function=OSD_PLAY;
+#ifdef WIILIB
+	if (mpctx->audio_out && mpctx->sh_audio)
+		mpctx->audio_out->resume();	// resume audio
+#else    
     cmd = mp_input_get_cmd(0, 0, 1);
 	if(cmd && cmd->id!=MP_CMD_PAUSE)
 	{
@@ -2818,6 +2826,7 @@ getch2_enable();
 	    if (mpctx->audio_out && mpctx->sh_audio)
     	    mpctx->audio_out->resume();	// resume audio
     }
+#endif    
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause

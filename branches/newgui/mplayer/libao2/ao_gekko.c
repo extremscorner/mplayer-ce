@@ -77,6 +77,19 @@ static int control(int cmd, void *arg) {
 	return CONTROL_UNKNOWN;
 }
 
+void reinit_audio()  // for newgui
+{
+	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
+	AUDIO_RegisterDMACallback(switch_buffers);
+
+	ao_data.buffersize = SFX_BUFFER_SIZE * SFX_BUFFERS;
+	ao_data.outburst = SFX_BUFFER_SIZE;
+	ao_data.channels = 2;
+	ao_data.samplerate = 48000;
+	ao_data.format = AF_FORMAT_S16_BE;
+	ao_data.bps = 192000;
+}
+
 static int init(int rate, int channels, int format, int flags) {
 	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
 	AUDIO_RegisterDMACallback(switch_buffers);
