@@ -37,7 +37,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
     )
-#define hasChroma(x)   (!(           \
+#define hasChroma(x)   (!(          \
             isGray(x)               \
         || (x)==PIX_FMT_MONOBLACK   \
         || (x)==PIX_FMT_MONOWHITE   \
@@ -165,7 +165,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
            flags, ssdY, ssdU, ssdV, ssdA);
     fflush(stdout);
 
-    end:
+end:
 
     sws_freeContext(srcContext);
     sws_freeContext(dstContext);
@@ -180,7 +180,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h, int srcFormat
     return res;
 }
 
-static void selfTest(uint8_t *src[4], int stride[4], int w, int h)
+static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h)
 {
     const int flags[] = { SWS_FAST_BILINEAR,
                           SWS_BILINEAR, SWS_BICUBIC,
@@ -204,7 +204,7 @@ static void selfTest(uint8_t *src[4], int stride[4], int w, int h)
             for (i = 0; dstW[i] && !res; i++)
                 for (j = 0; dstH[j] && !res; j++)
                     for (k = 0; flags[k] && !res; k++)
-                        res = doTest(src, stride, w, h, srcFormat, dstFormat,
+                        res = doTest(ref, refStride, w, h, srcFormat, dstFormat,
                                      srcW, srcH, dstW[i], dstH[j], flags[k]);
         }
     }
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
     struct SwsContext *sws;
     AVLFG rand;
 
-    sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P, 2, NULL, NULL, NULL);
+    sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
 
     av_lfg_init(&rand, 1);
 
