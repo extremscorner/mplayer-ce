@@ -24,6 +24,8 @@
 #include "menu.h"
 #include "filebrowser.h"
 
+#define THREAD_SLEEP 100
+
 int currentDevice = -1;
 int currentDeviceNum = -1;
 bool unmountRequired[2] = { false, false };
@@ -37,9 +39,13 @@ bool isMounted[2] = { false, false };
 	const DISC_INTERFACE* cardb = &__io_gcsdb;
 #endif
 
-/****************************************************************************
- * deviceThreading
- ***************************************************************************/
+// folder parsing thread
+static lwp_t parsethread = LWP_THREAD_NULL;
+static DIR_ITER * dirIter = NULL;
+static bool parseHalt = true;
+bool ParseDirEntries();
+
+// device thread
 lwp_t devicethread = LWP_THREAD_NULL;
 static bool deviceHalt = true;
 
@@ -58,8 +64,8 @@ devicecallback (void *arg)
 	{
 		if(deviceHalt)
 			return NULL;
-		usleep(100);
-		devsleep -= 100;
+		usleep(THREAD_SLEEP);
+		devsleep -= THREAD_SLEEP;
 	}
 
 	while (1)
@@ -88,10 +94,17 @@ devicecallback (void *arg)
 		{
 			if(deviceHalt)
 				return NULL;
-			usleep(100);
-			devsleep -= 100;
+			usleep(THREAD_SLEEP);
+			devsleep -= THREAD_SLEEP;
 		}
 	}
+	return NULL;
+}
+
+static void *
+parsecallback (void *arg)
+{
+	while(ParseDirEntries()) usleep(THREAD_SLEEP);
 	return NULL;
 }
 
@@ -104,7 +117,7 @@ void
 ResumeDeviceThread()
 {
 	deviceHalt = false;
-	if(!devicethread)
+	if(devicethread == LWP_THREAD_NULL)
 		LWP_CreateThread (&devicethread, devicecallback, NULL, NULL, 0, 40);
 }
 
@@ -118,9 +131,43 @@ HaltDeviceThread()
 {
 	deviceHalt = true;
 
-	// wait for thread to finish
-	LWP_JoinThread(devicethread, NULL);
-	devicethread = LWP_THREAD_NULL;
+	if(devicethread != LWP_THREAD_NULL)
+	{
+		// wait for thread to finish
+		LWP_JoinThread(devicethread, NULL);
+		devicethread = LWP_THREAD_NULL;
+	}
+}
+
+/****************************************************************************
+ * ResumeParseThread
+ *
+ * Signals the parse thread to start, and resumes the thread.
+ ***************************************************************************/
+void
+ResumeParseThread()
+{
+	parseHalt = false;
+	if(parsethread == LWP_THREAD_NULL)
+		LWP_CreateThread (&parsethread, parsecallback, NULL, NULL, 0, 80);
+}
+
+/****************************************************************************
+ * HaltGui
+ *
+ * Signals the parse thread to stop.
+ ***************************************************************************/
+void
+HaltParseThread()
+{
+	parseHalt = true;
+
+	if(parsethread != LWP_THREAD_NULL)
+	{
+		// wait for thread to finish
+		LWP_JoinThread(parsethread, NULL);
+		parsethread = LWP_THREAD_NULL;
+	}
 }
 
 /****************************************************************************
@@ -216,32 +263,103 @@ bool ChangeInterface(int device, int devnum, bool silent)
 	return mounted;
 }
 
+bool ParseDirEntries()
+{
+	if(!dirIter)
+		return false;
+
+	char filename[MAXPATHLEN];
+	struct stat filestat;
+
+	int i, res;
+
+	for(i=0; i < 20; i++)
+	{
+		res = dirnext(dirIter,filename,&filestat);
+
+		if(res != 0)
+			break;
+
+		if(strcmp(filename,".") == 0)
+		{
+			i--;
+			continue;
+		}
+
+		BROWSERENTRY * newBrowserList = (BROWSERENTRY *)realloc(browserList, (browser.numEntries+i+1) * sizeof(BROWSERENTRY));
+
+		if(!newBrowserList) // failed to allocate required memory
+		{
+			ResetBrowser();
+			ErrorPrompt("Out of memory: too many files!");
+			break;
+		}
+		else
+		{
+			browserList = newBrowserList;
+		}
+
+		memset(&(browserList[browser.numEntries+i]), 0, sizeof(BROWSERENTRY)); // clear the new entry
+
+		strncpy(browserList[browser.numEntries+i].filename, filename, MAXJOLIET);
+		browserList[browser.numEntries+i].length = filestat.st_size;
+		browserList[browser.numEntries+i].mtime = filestat.st_mtime;
+		browserList[browser.numEntries+i].isdir = (filestat.st_mode & _IFDIR) == 0 ? 0 : 1; // flag this as a dir
+
+		if(browserList[browser.numEntries+i].isdir)
+		{
+			if(strcmp(filename, "..") == 0)
+				sprintf(browserList[browser.numEntries+i].displayname, "Up One Level");
+			else
+				strncpy(browserList[browser.numEntries+i].displayname, browserList[browser.numEntries+i].filename, MAXJOLIET);
+		}
+		else
+		{
+			strncpy(browserList[browser.numEntries+i].displayname, browserList[browser.numEntries+i].filename, MAXJOLIET);
+		}
+	}
+
+	// Sort the file list
+	if(i >= 0)
+	{
+		browser.numEntries += i;
+		qsort(browserList, browser.numEntries, sizeof(BROWSERENTRY), FileSortCallback);
+	}
+
+	if(res != 0 || parseHalt)
+	{
+		dirclose(dirIter); // close directory
+		dirIter = NULL;
+		return false; // no more entries
+	}
+	return true; // more entries
+}
+
 /***************************************************************************
  * Browse subdirectories
  **************************************************************************/
 int
-ParseDirectory()
+ParseDirectory(bool waitParse)
 {
-	DIR_ITER *dir = NULL;
 	char fulldir[MAXPATHLEN];
-	char filename[MAXPATHLEN];
-	struct stat filestat;
 	char msg[128];
 	int retry = 1;
 	bool mounted = false;
 
+	// halt parsing
+	HaltParseThread();
+
 	// reset browser
+	dirIter = NULL;
 	ResetBrowser();
 
-	ShowAction("Loading...");
-
 	// open the directory
-	while(dir == NULL && retry == 1)
+	while(dirIter == NULL && retry == 1)
 	{
 		mounted = ChangeInterface(currentDevice, currentDeviceNum, NOTSILENT);
-		sprintf(fulldir, "%s%s", rootdir, browser.dir); // add currentDevice to path
-		if(mounted) dir = diropen(fulldir);
-		if(dir == NULL)
+		sprintf(fulldir, "%s%s", rootdir, browser.dir); // add device to path
+		if(mounted) dirIter = diropen(fulldir);
+		if(dirIter == NULL)
 		{
 			unmountRequired[currentDevice] = true;
 			sprintf(msg, "Error opening %s", fulldir);
@@ -250,13 +368,14 @@ ParseDirectory()
 	}
 
 	// if we can't open the dir, try opening the root dir
-	if (dir == NULL)
+	if (dirIter == NULL)
 	{
 		if(ChangeInterface(currentDevice, currentDeviceNum, SILENT))
 		{
 			sprintf(browser.dir,"/");
-			dir = diropen(rootdir);
-			if (dir == NULL)
+			sprintf(fulldir, "%s%s", rootdir, browser.dir);
+			dirIter = diropen(fulldir);
+			if (dirIter == NULL)
 			{
 				sprintf(msg, "Error opening %s", rootdir);
 				ErrorPrompt(msg);
@@ -265,54 +384,22 @@ ParseDirectory()
 		}
 	}
 
-	// index files/folders
-	int entryNum = 0;
+	parseHalt = false;
+	ParseDirEntries(); // index first 20 entries
+	ResumeParseThread(); // index remaining entries
 
-	while(dirnext(dir,filename,&filestat) == 0)
+	if(waitParse) // wait for complete parsing
 	{
-		if(strcmp(filename,".") != 0)
+		ShowAction("Loading...");
+
+		if(parsethread != LWP_THREAD_NULL)
 		{
-			BROWSERENTRY * newBrowserList = (BROWSERENTRY *)realloc(browserList, (entryNum+1) * sizeof(BROWSERENTRY));
-
-			if(!newBrowserList) // failed to allocate required memory
-			{
-				ResetBrowser();
-				ErrorPrompt("Out of memory: too many files!");
-				entryNum = -1;
-				break;
-			}
-			else
-			{
-				browserList = newBrowserList;
-			}
-			memset(&(browserList[entryNum]), 0, sizeof(BROWSERENTRY)); // clear the new entry
-
-			strncpy(browserList[entryNum].filename, filename, MAXJOLIET);
-
-			if(strcmp(filename,"..") == 0)
-			{
-				sprintf(browserList[entryNum].displayname, "Up One Level");
-			}
-			else
-			{
-				strncpy(browserList[entryNum].displayname, filename, MAXDISPLAY);	// crop name for display
-			}
-
-			browserList[entryNum].length = filestat.st_size;
-			browserList[entryNum].isdir = (filestat.st_mode & _IFDIR) == 0 ? 0 : 1; // flag this as a dir
-
-			entryNum++;
+			LWP_JoinThread(parsethread, NULL);
+			parsethread = LWP_THREAD_NULL;
 		}
+
+		CancelAction();
 	}
 
-	// close directory
-	dirclose(dir);
-
-	// Sort the file list
-	qsort(browserList, entryNum, sizeof(BROWSERENTRY), FileSortCallback);
-
-	CancelAction();
-
-	browser.numEntries = entryNum;
-	return entryNum;
+	return browser.numEntries;
 }

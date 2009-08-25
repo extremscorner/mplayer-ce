@@ -156,10 +156,10 @@ WindowPrompt(const char *title, const char *msg, const char *btn1Label, const ch
 	GuiImageData dialogBox(dialogue_box_png);
 	GuiImage dialogBoxImg(&dialogBox);
 
-	GuiText titleTxt(title, 26, (GXColor){255, 255, 255, 255});
+	GuiText titleTxt(title, 26, (GXColor){0, 0, 0, 255});
 	titleTxt.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 	titleTxt.SetPosition(0,40);
-	GuiText msgTxt(msg, 22, (GXColor){255, 255, 255, 255});
+	GuiText msgTxt(msg, 22, (GXColor){0, 0, 0, 255});
 	msgTxt.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
 	msgTxt.SetPosition(0,-20);
 	msgTxt.SetMaxWidth(430);
@@ -172,12 +172,12 @@ WindowPrompt(const char *title, const char *msg, const char *btn1Label, const ch
 	if(btn2Label)
 	{
 		btn1.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
-		btn1.SetPosition(20, -25);
+		btn1.SetPosition(20, -40);
 	}
 	else
 	{
 		btn1.SetAlignment(ALIGN_CENTRE, ALIGN_BOTTOM);
-		btn1.SetPosition(0, -25);
+		btn1.SetPosition(0, -40);
 	}
 
 	btn1.SetLabel(&btn1Txt);
@@ -192,7 +192,7 @@ WindowPrompt(const char *title, const char *msg, const char *btn1Label, const ch
 	GuiImage btn2ImgOver(&btnOutlineOver);
 	GuiButton btn2(btnOutline.GetWidth(), btnOutline.GetHeight());
 	btn2.SetAlignment(ALIGN_RIGHT, ALIGN_BOTTOM);
-	btn2.SetPosition(-20, -25);
+	btn2.SetPosition(-20, -40);
 	btn2.SetLabel(&btn2Txt);
 	btn2.SetImage(&btn2Img);
 	btn2.SetImageOver(&btn2ImgOver);
@@ -276,10 +276,10 @@ ProgressWindow(char *title, char *msg)
 	throbberImg.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
 	throbberImg.SetPosition(0, 40);
 
-	GuiText titleTxt(title, 26, (GXColor){70, 70, 10, 255});
+	GuiText titleTxt(title, 26, (GXColor){0, 0, 0, 255});
 	titleTxt.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
-	titleTxt.SetPosition(0,14);
-	GuiText msgTxt(msg, 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetPosition(0,40);
+	GuiText msgTxt(msg, 26, (GXColor){0, 0, 0, 255});
 	msgTxt.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 	msgTxt.SetPosition(0,80);
 
@@ -820,7 +820,7 @@ static int MenuBrowseDevice()
 
 		// update file browser based on arrow buttons
 		// set MENU_EXIT if A button pressed on a file
-		for(int i=0; i<FILES_PAGESIZE; i++)
+		for(int i=0; i<FILE_PAGESIZE; i++)
 		{
 			if(fileBrowser.fileList[i]->GetState() == STATE_CLICKED)
 			{
@@ -843,6 +843,7 @@ static int MenuBrowseDevice()
 				else
 				{
 					sprintf(loadedFile, "%s%s%s", rootdir, browser.dir, browserList[browser.selIndex].filename);
+
 					menu = MENU_EXIT;
 				}
 			}

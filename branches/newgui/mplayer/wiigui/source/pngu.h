@@ -6,6 +6,8 @@ Coder : frontier
 
 More info : http://frontier-dev.net
 
+Modified by Tantric, 2009
+
 ********************************************************************************************/
 #ifndef __PNGU__
 #define __PNGU__
@@ -156,6 +158,9 @@ int PNGU_DecodeTo4x4RGBA8 (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *bu
 // Encodes an YCbYCr image in PNG format and stores it in the selected device or memory buffer. You need to 
 // specify context, image dimensions, destination address and stride in pixels (stride = buffer width - image width).
 int PNGU_EncodeFromYCbYCr (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *buffer, PNGU_u32 stride);
+
+int PNGU_EncodeFromRGB (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *buffer, PNGU_u32 stride);
+int PNGU_EncodeFromGXTexture (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *buffer, PNGU_u32 stride);
 
 // Macro for encoding an image stored into an YCbYCr buffer at given coordinates.
 #define PNGU_ENCODE_TO_COORDS_YCbYCr(ctx,coordX,coordY,imgWidth,imgHeight,bufferWidth,bufferHeight,buffer)	\

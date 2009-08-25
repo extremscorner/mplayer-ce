@@ -47,6 +47,28 @@ void ResetBrowser()
 }
 
 /****************************************************************************
+ * CleanupPath()
+ * Cleans up the filepath, removing double // and replacing \ with /
+ ***************************************************************************/
+static void CleanupPath(char * path)
+{
+	int pathlen = strlen(path);
+	int j = 0;
+	for(int i=0; i < pathlen && i < MAXPATHLEN; i++)
+	{
+		if(path[i] == '\\')
+			path[i] = '/';
+
+		if(j == 0 || !(path[j-1] == '/' && path[i] == '/'))
+			path[j++] = path[i];
+	}
+	path[j] = 0;
+
+	if(strlen(path) == 0)
+		sprintf(path, "/");
+}
+
+/****************************************************************************
  * UpdateDirName()
  * Update curent directory name for file browser
  ***************************************************************************/
@@ -134,6 +156,7 @@ int BrowserChangeFolder()
 	if(!UpdateDirName())
 		return -1;
 
+	CleanupPath(browser.dir);
 	ParseDirectory();
 
 	if (!browser.numEntries)

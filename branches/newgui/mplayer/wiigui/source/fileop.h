@@ -22,7 +22,7 @@ void HaltDeviceThread();
 void MountAllFAT();
 void UnmountAllFAT();
 bool ChangeInterface(int device, int devnum, bool silent);
-int ParseDirectory();
+int ParseDirectory(bool waitParse = false);
 
 extern bool unmountRequired[];
 extern bool isMounted[];

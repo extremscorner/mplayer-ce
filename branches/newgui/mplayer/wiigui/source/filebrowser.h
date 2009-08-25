@@ -14,7 +14,6 @@
 #include <gccore.h>
 
 #define MAXJOLIET 255
-#define MAXDISPLAY 45
 
 typedef struct
 {
@@ -28,9 +27,10 @@ typedef struct
 {
 	u64 offset; // DVD offset
 	unsigned int length; // file length
+	time_t mtime; // file modified time
 	char isdir; // 0 - file, 1 - directory
 	char filename[MAXJOLIET + 1]; // full filename
-	char displayname[MAXDISPLAY + 1]; // name for browser display
+	char displayname[MAXJOLIET + 1]; // name for browser display
 } BROWSERENTRY;
 
 extern BROWSERINFO browser;

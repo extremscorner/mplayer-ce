@@ -85,7 +85,7 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 	scrollbarBoxBtn->SetHoldable(true);
 	scrollbarBoxBtn->SetTrigger(trigHeldA);
 
-	for(int i=0; i<FILES_PAGESIZE; i++)
+	for(int i=0; i<FILE_PAGESIZE; i++)
 	{
 		fileListText[i] = new GuiText(NULL, 22, (GXColor){255, 255, 255, 0xff});
 		fileListText[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
@@ -135,7 +135,7 @@ GuiFileBrowser::~GuiFileBrowser()
 	delete trigA;
 	delete trigHeldA;
 
-	for(int i=0; i<FILES_PAGESIZE; i++)
+	for(int i=0; i<FILE_PAGESIZE; i++)
 	{
 		delete fileListText[i];
 		delete fileList[i];
@@ -148,7 +148,7 @@ void GuiFileBrowser::SetFocus(int f)
 {
 	focus = f;
 
-	for(int i=0; i<FILES_PAGESIZE; i++)
+	for(int i=0; i<FILE_PAGESIZE; i++)
 		fileList[i]->ResetState();
 
 	if(f == 1)
@@ -161,7 +161,7 @@ void GuiFileBrowser::ResetState()
 	stateChan = -1;
 	selectedItem = 0;
 
-	for(int i=0; i<FILES_PAGESIZE; i++)
+	for(int i=0; i<FILE_PAGESIZE; i++)
 	{
 		fileList[i]->ResetState();
 	}
@@ -180,7 +180,7 @@ void GuiFileBrowser::Draw()
 	if(!this->IsVisible())
 		return;
 
-	for(int i=0; i<FILES_PAGESIZE; i++)
+	for(int i=0; i<FILE_PAGESIZE; i++)
 	{
 		fileList[i]->Draw();
 	}
@@ -209,7 +209,7 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 	if(scrollbarBoxBtn->GetState() == STATE_HELD &&
 		scrollbarBoxBtn->GetStateChan() == t->chan &&
 		t->wpad.ir.valid &&
-		browser.numEntries > FILES_PAGESIZE
+		browser.numEntries > FILE_PAGESIZE
 		)
 	{
 		scrollbarBoxBtn->SetPosition(0,0);
@@ -226,9 +226,9 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 		{
 			browser.pageIndex = 0;
 		}
-		else if(browser.pageIndex+FILES_PAGESIZE >= browser.numEntries)
+		else if(browser.pageIndex+FILE_PAGESIZE >= browser.numEntries)
 		{
-			browser.pageIndex = browser.numEntries-FILES_PAGESIZE;
+			browser.pageIndex = browser.numEntries-FILE_PAGESIZE;
 		}
 		listChanged = true;
 		focus = false;
@@ -256,11 +256,11 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 
 	if(t->Right())
 	{
-		if(browser.pageIndex < browser.numEntries && browser.numEntries > FILES_PAGESIZE)
+		if(browser.pageIndex < browser.numEntries && browser.numEntries > FILE_PAGESIZE)
 		{
-			browser.pageIndex += FILES_PAGESIZE;
-			if(browser.pageIndex+FILES_PAGESIZE >= browser.numEntries)
-				browser.pageIndex = browser.numEntries-FILES_PAGESIZE;
+			browser.pageIndex += FILE_PAGESIZE;
+			if(browser.pageIndex+FILE_PAGESIZE >= browser.numEntries)
+				browser.pageIndex = browser.numEntries-FILE_PAGESIZE;
 			listChanged = true;
 		}
 	}
@@ -268,7 +268,7 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 	{
 		if(browser.pageIndex > 0)
 		{
-			browser.pageIndex -= FILES_PAGESIZE;
+			browser.pageIndex -= FILE_PAGESIZE;
 			if(browser.pageIndex < 0)
 				browser.pageIndex = 0;
 			listChanged = true;
@@ -278,7 +278,7 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 	{
 		if(browser.pageIndex + selectedItem + 1 < browser.numEntries)
 		{
-			if(selectedItem == FILES_PAGESIZE-1)
+			if(selectedItem == FILE_PAGESIZE-1)
 			{
 				// move list down by 1
 				browser.pageIndex++;
@@ -308,7 +308,7 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 
 	endNavigation:
 
-	for(int i=0; i<FILES_PAGESIZE; i++)
+	for(int i=0; i<FILE_PAGESIZE; i++)
 	{
 		if(listChanged || numEntries != browser.numEntries)
 		{
@@ -371,11 +371,11 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 	}
 	else
 	{
-		position = 190*(browser.pageIndex + FILES_PAGESIZE/2.0) / (browser.numEntries*1.0);
+		position = 190*(browser.pageIndex + FILE_PAGESIZE/2.0) / (browser.numEntries*1.0);
 
-		if(browser.pageIndex/(FILES_PAGESIZE/2.0) < 1)
+		if(browser.pageIndex/(FILE_PAGESIZE/2.0) < 1)
 			position = 0;
-		else if((browser.pageIndex+FILES_PAGESIZE)/(FILES_PAGESIZE*1.0) >= (browser.numEntries)/(FILES_PAGESIZE*1.0))
+		else if((browser.pageIndex+FILE_PAGESIZE)/(FILE_PAGESIZE*1.0) >= (browser.numEntries)/(FILE_PAGESIZE*1.0))
 			position = 190;
 	}
 
