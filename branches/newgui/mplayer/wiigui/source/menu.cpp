@@ -720,6 +720,9 @@ static int MenuHome()
 
 			w.SetEffect(EFFECT_FADE, -15);
 			usleep(350000); // wait for effects to finish
+
+			// signal MPlayer to load
+			loadMPlayer();
 		}
 	}
 
