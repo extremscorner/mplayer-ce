@@ -35,6 +35,8 @@
 #define HASPECT 320
 #define VASPECT 240
 
+void HaltGui();
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -323,7 +325,16 @@ static void draw_square(Mtx v) {
 /****************************************************************************
  * GX_StartYUV - Initialize GX for given width/height.
  ****************************************************************************/
-void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect) {
+void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
+{
+	#ifdef WIILIB
+	// tell GUI to shut down, MPlayer is ready to take over
+	HaltGui();
+
+	printf("disable callback in mplayer\n");
+	VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
+	#endif
+
 	int w,h;
 	Mtx44 p;
 

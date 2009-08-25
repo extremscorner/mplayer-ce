@@ -121,7 +121,11 @@ ResumeGui()
  * This eliminates the possibility that the GUI is in the middle of accessing
  * an element that is being changed.
  ***************************************************************************/
-static void
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void
 HaltGui()
 {
 	guiHalt = true;
@@ -134,6 +138,9 @@ HaltGui()
 	guithread = LWP_THREAD_NULL;
 }
 
+#ifdef __cplusplus
+}
+#endif
 /****************************************************************************
  * WindowPrompt
  *
@@ -844,6 +851,16 @@ static int MenuBrowseDevice()
 				{
 					sprintf(loadedFile, "%s%s%s", rootdir, browser.dir, browserList[browser.selIndex].filename);
 
+					ShowAction("Loading...");
+
+					// signal MPlayer to load
+					loadMPlayer();
+
+					// wait until MPlayer is ready to take control
+					while(!guiHalt)
+						usleep(THREAD_SLEEP);
+
+					CancelAction();
 					menu = MENU_EXIT;
 				}
 			}

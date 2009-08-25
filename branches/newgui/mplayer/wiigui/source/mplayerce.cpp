@@ -35,7 +35,6 @@ char loadedFile[1024];
 static lwp_t mthread = LWP_THREAD_NULL;
 static u8 mstack[TSTACK] ATTRIBUTE_ALIGN (32);
 
-static lwp_t mainthread;
 /****************************************************************************
  * Shutdown / Reboot / Exit
  ***************************************************************************/
@@ -101,17 +100,24 @@ static void CreateAppPath(char origpath[])
 		sprintf(appPath, &(path[pos]));
 }
 
-extern bool controlledbygui;
-
-static bool play_end;
-
 static void *
 mplayerthread (void *arg)
 {
-	mplayer_loadfile(loadedFile);
-	loadedFile[0] = 0;
-	play_end=true;
+	while(1)
+	{
+		LWP_SuspendThread(mthread);
+		mplayer_loadfile(loadedFile);
+		loadedFile[0] = 0;
+	}
 	return NULL;
+}
+
+void loadMPlayer()
+{
+	HaltDeviceThread();
+	printf("return control to mplayer\n");
+	controlledbygui = false;
+	LWP_ResumeThread(mthread);
 }
 
 int
@@ -156,7 +162,6 @@ main(int argc, char *argv[])
 	extern GXRModeObj *vmode;
 	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko, is in libmplayerwii.a)
 
-
 	// store path app was loaded from
 	sprintf(appPath, "sd:/apps/mplayer_ce");
 	//if(argc > 0 && argv[0] != NULL)
@@ -164,14 +169,14 @@ main(int argc, char *argv[])
 
 	MountAllFAT(); // Initialize libFAT for SD and USB
 
-
-	mainthread=LWP_GetSelf();
-
 	LoadConfig(appPath);
 	loadedFile[0] = 0;
 
 	// Initialize font system
 	InitFreeType((u8*)font_ttf, font_ttf_size);
+
+	// create mplayer thread
+	LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
 
 	while(1)
 	{
@@ -184,32 +189,11 @@ main(int argc, char *argv[])
 			Menu(MENU_HOME);
 		else
 			Menu(MENU_MAIN);
-		HaltDeviceThread();
-
-		printf("disable callback in mplayer\n");
-		// load video
-		VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
-
-
-		printf("return control to mplayer\n");
-		controlledbygui = false;
-		if(mthread == LWP_THREAD_NULL)
-		{
-			printf("load thread\n");
-			play_end=false;
-			LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
-		}
 
 		printf("wait for MPlayer to pause or finish film\n");
-		while(!controlledbygui && !play_end) // wait for MPlayer to pause or finish film
+		while(!controlledbygui) // wait for MPlayer to pause or finish film
 			usleep(9000);
-		if(play_end)
-		{
-			printf("film end\n");
-			LWP_JoinThread(mthread,NULL); //to be sure mplayerthread is joined
-			mthread = LWP_THREAD_NULL;
-		}
-		if(controlledbygui)printf("controlledbygui is true - ");
+
 		printf("control return to gui\n");
 
 		//log_console_enable_video(true);

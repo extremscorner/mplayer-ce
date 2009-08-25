@@ -30,6 +30,7 @@ extern struct SCESettings CESettings;
 #define SILENT 1
 
 void ExitApp();
+void loadMPlayer();
 extern struct SGCSettings GCSettings;
 extern int ScreenshotRequested;
 extern int ConfigRequested;
@@ -42,6 +43,8 @@ extern char loadedFile[];
 extern "C" {
 #endif
 
+extern bool controlledbygui;
+
 int mplayer_loadfile(const char* _file);
 void LoadConfig(char * path);
 void log_console_init(GXRModeObj *vmode, u16 logsize);
@@ -52,7 +55,6 @@ void log_console_enable_video(bool enable);
 bool FindIOS(u32 ios);   //in plat_gekko.c
 bool load_ehci_module();  //in plat_gekko.c
 void DisableUSB2(bool);  //in special libogc, in usb2storage.c (need to be added to .h)
-  
 
 #ifdef __cplusplus
 }
