@@ -21,7 +21,7 @@ extern struct SMBSettings smbConf[5];
 static bool inNetworkInit = false;
 static bool networkInit = false;
 static bool autoNetworkInit = true;
-static bool networkShareInit = false;
+static bool networkShareInit[5] = { false, false, false, false, false };
 
 /****************************************************************************
  * InitializeNetwork
@@ -73,11 +73,11 @@ void InitializeNetwork(bool silent)
 void CloseShare(int num)
 {
 	char devName[10];
-	sprintf(devName, "smb%d", num+1);
+	sprintf(devName, "smb%d", num);
 
-	if(networkShareInit)
+	if(networkShareInit[num-1])
 		smbClose(devName);
-	networkShareInit = false;
+	networkShareInit[num-1] = false;
 	networkInit = false; // trigger a network reinit
 }
 
@@ -88,14 +88,13 @@ void CloseShare(int num)
 bool
 ConnectShare (int num, bool silent)
 {
-	sprintf(rootdir, "smb%d:", num+1);
 	char mountpoint[6];
-	sprintf(mountpoint, "smb%d", num+1);
+	sprintf(mountpoint, "smb%d", num);
 
-	int chkU = (strlen(smbConf[num].user) > 0) ? 0:1;
-	int chkP = (strlen(smbConf[num].pwd) > 0) ? 0:1;
-	int chkS = (strlen(smbConf[num].share) > 0) ? 0:1;
-	int chkI = (strlen(smbConf[num].ip) > 0) ? 0:1;
+	int chkU = (strlen(smbConf[num-1].user) > 0) ? 0:1;
+	int chkP = (strlen(smbConf[num-1].pwd) > 0) ? 0:1;
+	int chkS = (strlen(smbConf[num-1].share) > 0) ? 0:1;
+	int chkI = (strlen(smbConf[num-1].ip) > 0) ? 0:1;
 
 	// check that all parameters have been set
 	if(chkU + chkP + chkS + chkI > 0)
@@ -129,23 +128,23 @@ ConnectShare (int num, bool silent)
 
 	if(networkInit)
 	{
-		if(!networkShareInit)
+		if(!networkShareInit[num-1])
 		{
 			if(!silent)
 				ShowAction ("Connecting to network share...");
 
-			if(smbInitDevice(mountpoint, smbConf[num].user, smbConf[num].pwd,
-					smbConf[num].share, smbConf[num].ip))
+			if(smbInitDevice(mountpoint, smbConf[num-1].user, smbConf[num-1].pwd,
+					smbConf[num-1].share, smbConf[num-1].ip))
 			{
-				networkShareInit = true;
+				networkShareInit[num-1] = true;
 			}
 			if(!silent)
 				CancelAction();
 		}
 
-		if(!networkShareInit && !silent)
+		if(!networkShareInit[num-1] && !silent)
 			ErrorPrompt("Failed to connect to network share.");
 	}
 
-	return networkShareInit;
+	return networkShareInit[num-1];
 }

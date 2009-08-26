@@ -169,7 +169,7 @@ WindowPrompt(const char *title, const char *msg, const char *btn1Label, const ch
 	GuiText msgTxt(msg, 22, (GXColor){0, 0, 0, 255});
 	msgTxt.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
 	msgTxt.SetPosition(0,-20);
-	msgTxt.SetMaxWidth(430);
+	msgTxt.SetWrap(true, 430);
 
 	GuiText btn1Txt(btn1Label, 22, (GXColor){255, 255, 255, 255});
 	GuiImage btn1Img(&btnOutline);
@@ -741,10 +741,10 @@ static int MenuHome()
 }
 
 /****************************************************************************
- * MenuBrowseDevice
+ * MenuBrowse
  ***************************************************************************/
 
-static int MenuBrowseDevice()
+static int MenuBrowse()
 {
 	char deviceName[100];
 	char title[100];
@@ -752,7 +752,7 @@ static int MenuBrowseDevice()
 	ShutoffRumble();
 
 	// populate initial directory listing
-	if(BrowseDevice() <= 0)
+	if(BrowserChangeFolder() <= 0)
 	{
 		int choice = WindowPrompt(
 		"Error",
@@ -761,7 +761,7 @@ static int MenuBrowseDevice()
 		"Check Settings");
 
 		if(choice)
-			return MENU_BROWSE_DEVICE;
+			return MENU_BROWSE;
 		else
 			return MENU_OPTIONS;
 	}
@@ -787,7 +787,8 @@ static int MenuBrowseDevice()
 			snprintf(deviceName, 100, "%s (Network)", smbConf[currentDeviceNum].share);
 			break;
 	}
-	sprintf(title, "Browse Files - %s", deviceName);
+
+	sprintf(title, "Browse Files");
 
 	GuiText titleTxt(title, 28, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
@@ -846,13 +847,13 @@ static int MenuBrowseDevice()
 					}
 					else
 					{
-						menu = MENU_BROWSE_DEVICE;
+						menu = MENU_BROWSE;
 						break;
 					}
 				}
 				else
 				{
-					sprintf(loadedFile, "%s%s%s", rootdir, browser.dir, browserList[browser.selIndex].filename);
+					sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
 
 					ShowAction("Loading...");
 
@@ -869,140 +870,13 @@ static int MenuBrowseDevice()
 			}
 		}
 		if(backBtn.GetState() == STATE_CLICKED)
-			menu = MENU_BROWSE;
+			menu = MENU_MAIN;
 	}
 	HaltGui();
 	mainWindow->Remove(&titleTxt);
 	mainWindow->Remove(&browseSmallImg);
 	mainWindow->Remove(&buttonWindow);
 	mainWindow->Remove(&fileBrowser);
-	return menu;
-}
-
-/****************************************************************************
- * MenuBrowse
- ***************************************************************************/
-static int MenuBrowse()
-{
-	int menu = MENU_NONE;
-	int ret;
-	int i = 0;
-	int selected = -1;
-
-	GuiImageData sd(sd_png);
-	GuiImageData usb(usb_png);
-	GuiImageData smb(smb_png);
-	GuiImageData dvd(dvd_png);
-
-	MenuItemList items;
-	sprintf(items.name[i], "SD Card");
-	items.img[i] = &sd; i++;
-	sprintf(items.name[i], "USB Mass Storage");
-	items.img[i] = &usb; i++;
-	sprintf(items.name[i], "Data DVD");
-	items.img[i] = &dvd; i++;
-	items.name[i][0] = 0;
-	items.img[i] = &smb; i++;
-	items.name[i][0] = 0;
-	items.img[i] = &smb; i++;
-	items.name[i][0] = 0;
-	items.img[i] = &smb; i++;
-	items.name[i][0] = 0;
-	items.img[i] = &smb; i++;
-	items.name[i][0] = 0;
-	items.img[i] = &smb; i++;
-	items.length = i;
-
-	for(i=0; i < 5; i++)
-	{
-		if(smbConf[i].share[0] != 0)
-			sprintf(items.name[i+3], "%s (Network)", smbConf[i].share);
-	}
-
-	GuiText titleTxt("Browse Files", 36, (GXColor){255, 255, 255, 255});
-	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	titleTxt.SetPosition(340,50);
-
-	GuiTrigger trigA;
-	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
-
-	GuiImageData btnOutline(button_png);
-	GuiImageData btnOutlineOver(button_over_png);
-	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
-	GuiImage backBtnImg(&btnOutline);
-	GuiImage backBtnImgOver(&btnOutlineOver);
-	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
-	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
-	backBtn.SetPosition(30, -35);
-	backBtn.SetLabel(&backBtnTxt);
-	backBtn.SetImage(&backBtnImg);
-	backBtn.SetImageOver(&backBtnImgOver);
-	backBtn.SetTrigger(&trigA);
-	backBtn.SetEffectGrow();
-
-	GuiMenuBrowser itemBrowser(300, 400, &items);
-	itemBrowser.SetPosition(280, 120);
-	itemBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-
-	HaltGui();
-	mainWindow->Append(&itemBrowser);
-	mainWindow->Append(&backBtn);
-	mainWindow->Append(&titleTxt);
-	ResumeGui();
-
-	while(menu == MENU_NONE)
-	{
-		usleep(THREAD_SLEEP);
-
-		if(selected != itemBrowser.GetSelectedItem())
-		{
-			selected = itemBrowser.GetSelectedItem();
-			bgImg->SetImage(items.img[selected]);
-		}
-
-		ret = itemBrowser.GetClickedItem();
-
-		switch (ret)
-		{
-			case 0:
-				currentDevice = DEVICE_SD;
-				currentDeviceNum = 0;
-				break;
-
-			case 1:
-				currentDevice = DEVICE_USB;
-				currentDeviceNum = 0;
-				break;
-
-			case 2:
-				currentDevice = DEVICE_DVD;
-				currentDeviceNum = 0;
-				break;
-
-			case 3:
-			case 4:
-			case 5:
-			case 6:
-			case 7:
-				currentDevice = DEVICE_SMB;
-				currentDeviceNum = ret-3;
-				break;
-		}
-
-		if(ret >= 0 && ret <= 7)
-		{
-			if(ChangeInterface(currentDevice, currentDeviceNum, NOTSILENT))
-				menu = MENU_BROWSE_DEVICE;
-		}
-
-		if(backBtn.GetState() == STATE_CLICKED)
-			menu = MENU_MAIN;
-	}
-	bgImg->SetImage(NULL);
-	HaltGui();
-	mainWindow->Remove(&itemBrowser);
-	mainWindow->Remove(&backBtn);
-	mainWindow->Remove(&titleTxt);
 	return menu;
 }
 
@@ -1358,9 +1232,6 @@ void Menu(int menu)
 		{
 			case MENU_BROWSE:
 				currentMenu = MenuBrowse();
-				break;
-			case MENU_BROWSE_DEVICE:
-				currentMenu = MenuBrowseDevice();
 				break;
 			case MENU_DVD:
 				currentMenu = MenuDVD();

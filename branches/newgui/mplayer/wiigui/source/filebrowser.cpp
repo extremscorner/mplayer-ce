@@ -19,11 +19,10 @@
 #include "mplayerce.h"
 #include "menu.h"
 #include "fileop.h"
+#include "networkop.h"
 
 BROWSERINFO browser;
 BROWSERENTRY * browserList = NULL; // list of files/folders in browser
-
-char rootdir[10];
 
 /****************************************************************************
  * ResetBrowser()
@@ -44,6 +43,26 @@ void ResetBrowser()
 	// set aside space for 1 entry
 	browserList = (BROWSERENTRY *)malloc(sizeof(BROWSERENTRY));
 	memset(browserList, 0, sizeof(BROWSERENTRY));
+	browser.size = 1;
+}
+
+bool AddBrowserEntry()
+{
+	BROWSERENTRY * newBrowserList = (BROWSERENTRY *)realloc(browserList, (browser.size+1) * sizeof(BROWSERENTRY));
+
+	if(!newBrowserList) // failed to allocate required memory
+	{
+		ResetBrowser();
+		ErrorPrompt("Out of memory: too many files!");
+		return false;
+	}
+	else
+	{
+		browserList = newBrowserList;
+	}
+	memset(&(browserList[browser.size]), 0, sizeof(BROWSERENTRY)); // clear the new entry
+	browser.size++;
+	return true;
 }
 
 /****************************************************************************
@@ -63,9 +82,21 @@ static void CleanupPath(char * path)
 			path[j++] = path[i];
 	}
 	path[j] = 0;
+}
 
-	if(strlen(path) == 0)
-		sprintf(path, "/");
+bool IsDeviceRoot(char * path)
+{
+	if(path == NULL || path[0] == 0)
+		return false;
+
+	if(strcmp(path, "sd:/") == 0 ||
+		strcmp(path, "usb:/") == 0 ||
+		strcmp(path, "dvd:/") == 0 ||
+		(strncmp(path, "smb", 3) == 0 && strlen(path) == 6))
+	{
+		return true;
+	}
+	return false;
 }
 
 /****************************************************************************
@@ -78,6 +109,9 @@ int UpdateDirName()
 	char * test;
 	char temp[1024];
 
+	if(browser.numEntries == 0)
+		return 1;
+
 	/* current directory doesn't change */
 	if (strcmp(browserList[browser.selIndex].filename,".") == 0)
 	{
@@ -86,36 +120,49 @@ int UpdateDirName()
 	/* go up to parent directory */
 	else if (strcmp(browserList[browser.selIndex].filename,"..") == 0)
 	{
-		/* determine last subdirectory namelength */
-		sprintf(temp,"%s",browser.dir);
-		test = strtok(temp,"/");
-		while (test != NULL)
+		// already at the top level
+		if(IsDeviceRoot(browser.dir))
 		{
-			size = strlen(test);
-			test = strtok(NULL,"/");
-		}
-
-		/* remove last subdirectory name */
-		size = strlen(browser.dir) - size - 1;
-		browser.dir[size] = 0;
-
-		return 1;
-	}
-	/* Open a directory */
-	else
-	{
-		/* test new directory namelength */
-		if ((strlen(browser.dir)+1+strlen(browserList[browser.selIndex].filename)) < MAXPATHLEN)
-		{
-			/* update current directory name */
-			sprintf(browser.dir, "%s%s/",browser.dir, browserList[browser.selIndex].filename);
-			return 1;
+			browser.dir[0] = 0; // remove device - we are going to the device listing screen
 		}
 		else
 		{
-			ErrorPrompt("Directory name is too long!");
-			return -1;
+			/* determine last subdirectory namelength */
+			sprintf(temp,"%s",browser.dir);
+			test = strtok(temp,"/");
+			while (test != NULL)
+			{
+				size = strlen(test);
+				test = strtok(NULL,"/");
+			}
+
+			/* remove last subdirectory name */
+			size = strlen(browser.dir) - size - 1;
+			browser.dir[size] = 0;
 		}
+		return 1;
+	}
+
+	if(browser.dir[0] == 0)
+	{
+		// try to switch to device
+		if(!ChangeInterface(browserList[browser.selIndex].filename, NOTSILENT))
+			return -1;
+	}
+
+	/* Open directory */
+
+	/* test new directory namelength */
+	if ((strlen(browser.dir)+1+strlen(browserList[browser.selIndex].filename)) < MAXPATHLEN)
+	{
+		/* update current directory name */
+		sprintf(browser.dir, "%s%s/",browser.dir, browserList[browser.selIndex].filename);
+		return 1;
+	}
+	else
+	{
+		ErrorPrompt("Directory name is too long!");
+		return -1;
 	}
 }
 
@@ -157,23 +204,61 @@ int BrowserChangeFolder()
 		return -1;
 
 	CleanupPath(browser.dir);
-	ParseDirectory();
 
-	if (!browser.numEntries)
+	if(browser.dir[0] != 0)
 	{
-		ErrorPrompt("Error reading directory!");
+		ParseDirectory();
 	}
+	else
+	{
+		// halt parsing
+		HaltParseThread();
 
-	return browser.numEntries;
-}
+		// reset browser
+		ResetBrowser();
 
-/****************************************************************************
- * BrowseDevice
- * Displays a list of files on the selected device
- ***************************************************************************/
-int BrowseDevice()
-{
-	sprintf(browser.dir, "/");
-	ParseDirectory(); // Parse root directory
+		AddBrowserEntry();
+		sprintf(browserList[0].filename, "sd:/");
+		sprintf(browserList[0].displayname, "SD Card");
+		browserList[0].length = 0;
+		browserList[0].mtime = 0;
+		browserList[0].isdir = 1;
+		browserList[0].icon = ICON_SD;
+
+		AddBrowserEntry();
+		sprintf(browserList[1].filename, "usb:/");
+		sprintf(browserList[1].displayname, "USB Mass Storage");
+		browserList[1].length = 0;
+		browserList[1].mtime = 0;
+		browserList[1].isdir = 1;
+		browserList[1].icon = ICON_USB;
+
+		AddBrowserEntry();
+		sprintf(browserList[2].filename, "dvd:/");
+		sprintf(browserList[2].displayname, "Data DVD");
+		browserList[2].length = 0;
+		browserList[2].mtime = 0;
+		browserList[2].isdir = 1;
+		browserList[2].icon = ICON_DVD;
+
+		browser.numEntries = 3;
+
+		for(int i=0; i < 5; i++)
+		{
+			if(smbConf[i].share[0] != 0)
+			{
+				if(!AddBrowserEntry())
+					break;
+
+				sprintf(browserList[browser.numEntries].filename, "smb%d:/", i+1);
+				sprintf(browserList[browser.numEntries].displayname, "%s (Network)", smbConf[i].share);
+				browserList[browser.numEntries].length = 0;
+				browserList[browser.numEntries].mtime = 0;
+				browserList[browser.numEntries].isdir = 1; // flag this as a dir
+				browserList[browser.numEntries].icon = ICON_SMB;
+				browser.numEntries++;
+			}
+		}
+	}
 	return browser.numEntries;
 }

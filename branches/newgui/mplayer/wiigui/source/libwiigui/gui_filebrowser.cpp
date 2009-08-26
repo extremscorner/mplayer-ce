@@ -32,7 +32,11 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 
 	bgBrowseEntry = new GuiImageData(bg_browse_entry_png);
 	bgBrowseEntryOver = new GuiImageData(bg_browse_entry_over_png);
-	fileFolder = new GuiImageData(folder_png);
+	iconFolder = new GuiImageData(icon_folder_png);
+	iconSD = new GuiImageData(icon_sd_png);
+	iconUSB = new GuiImageData(icon_usb_png);
+	iconDVD = new GuiImageData(icon_dvd_png);
+	iconSMB = new GuiImageData(icon_smb_png);
 
 	scrollbar = new GuiImageData(scrollbar_png);
 	scrollbarImg = new GuiImage(scrollbar);
@@ -89,11 +93,11 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 	{
 		fileListText[i] = new GuiText(NULL, 22, (GXColor){255, 255, 255, 0xff});
 		fileListText[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
-		fileListText[i]->SetPosition(8,0);
+		fileListText[i]->SetPosition(30,0);
 		fileListText[i]->SetMaxWidth(540);
 
 		fileListBg[i] = new GuiImage(bgBrowseEntryOver);
-		fileListFolder[i] = new GuiImage(fileFolder);
+		fileListIcon[i] = NULL;
 
 		fileList[i] = new GuiButton(540, 30);
 		fileList[i]->SetParent(this);
@@ -123,7 +127,11 @@ GuiFileBrowser::~GuiFileBrowser()
 
 	delete bgBrowseEntry;
 	delete bgBrowseEntryOver;
-	delete fileFolder;
+	delete iconFolder;
+	delete iconSD;
+	delete iconUSB;
+	delete iconDVD;
+	delete iconSMB;
 	delete scrollbar;
 	delete arrowDown;
 	delete arrowDownOver;
@@ -140,7 +148,9 @@ GuiFileBrowser::~GuiFileBrowser()
 		delete fileListText[i];
 		delete fileList[i];
 		delete fileListBg[i];
-		delete fileListFolder[i];
+
+		if(fileListIcon[i])
+			delete fileListIcon[i];
 	}
 }
 
@@ -321,16 +331,31 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 
 				fileListText[i]->SetText(browserList[browser.pageIndex+i].displayname);
 
-				if(browserList[browser.pageIndex+i].isdir) // directory
+				if(fileListIcon[i])
 				{
-					fileList[i]->SetIcon(fileListFolder[i]);
-					fileListText[i]->SetPosition(30,0);
+					delete(fileListIcon[i]);
+					fileListIcon[i] = NULL;
 				}
-				else
+
+				switch(browserList[browser.pageIndex+i].icon)
 				{
-					fileList[i]->SetIcon(NULL);
-					fileListText[i]->SetPosition(10,0);
+					case ICON_FOLDER:
+						fileListIcon[i] = new GuiImage(iconFolder);
+						break;
+					case ICON_SD:
+						fileListIcon[i] = new GuiImage(iconSD);
+						break;
+					case ICON_USB:
+						fileListIcon[i] = new GuiImage(iconUSB);
+						break;
+					case ICON_DVD:
+						fileListIcon[i] = new GuiImage(iconDVD);
+						break;
+					case ICON_SMB:
+						fileListIcon[i] = new GuiImage(iconSMB);
+						break;
 				}
+				fileList[i]->SetIcon(fileListIcon[i]);
 			}
 			else
 			{

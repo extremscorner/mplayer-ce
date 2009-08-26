@@ -191,29 +191,29 @@ void UnmountAllFAT()
 bool MountFAT(int device)
 {
 	bool mounted = true; // assume our disc is already mounted
-	char name[10];
+	char name[10], name2[10];
 	const DISC_INTERFACE* disc = NULL;
 
 	switch(device)
 	{
 		case DEVICE_SD:
 			sprintf(name, "sd");
+			sprintf(name2, "sd:");
 			disc = sd;
 			break;
 		case DEVICE_USB:
 			sprintf(name, "usb");
+			sprintf(name2, "usb:");
 			disc = usb;
 			break;
 		default:
 			return false; // unknown device
 	}
 
-	sprintf(rootdir, "%s:", name);
-
 	if(unmountRequired[device])
 	{
 		unmountRequired[device] = false;
-		fatUnmount(rootdir);
+		fatUnmount(name2);
 		disc->shutdown();
 		isMounted[device] = false;
 	}
@@ -233,7 +233,6 @@ void MountAllFAT()
 {
 	MountFAT(DEVICE_SD);
 	MountFAT(DEVICE_USB);
-
 }
 
 /****************************************************************************
@@ -263,6 +262,38 @@ bool ChangeInterface(int device, int devnum, bool silent)
 	return mounted;
 }
 
+bool ChangeInterface(char * filepath, bool silent)
+{
+	int device = -1;
+	int devnum = -1;
+
+	if(strncmp(filepath, "sd:", 3) == 0)
+	{
+		device = DEVICE_SD;
+	}
+	else if(strncmp(filepath, "usb:", 4) == 0)
+	{
+		device = DEVICE_USB;
+	}
+	else if(strncmp(filepath, "dvd:", 4) == 0)
+	{
+		device = DEVICE_DVD;
+	}
+	else if(strncmp(filepath, "smb", 3) == 0)
+	{
+		device = DEVICE_SMB;
+		devnum = atoi(&filepath[3]);
+	}
+
+	if(device >= 0 && ChangeInterface(device, devnum, silent))
+	{
+		currentDevice = device;
+		currentDeviceNum = devnum;
+		return true;
+	}
+	return false;
+}
+
 bool ParseDirEntries()
 {
 	if(!dirIter)
@@ -286,36 +317,31 @@ bool ParseDirEntries()
 			continue;
 		}
 
-		BROWSERENTRY * newBrowserList = (BROWSERENTRY *)realloc(browserList, (browser.numEntries+i+1) * sizeof(BROWSERENTRY));
-
-		if(!newBrowserList) // failed to allocate required memory
+		if(AddBrowserEntry())
 		{
-			ResetBrowser();
-			ErrorPrompt("Out of memory: too many files!");
-			break;
-		}
-		else
-		{
-			browserList = newBrowserList;
-		}
+			strncpy(browserList[browser.numEntries+i].filename, filename, MAXJOLIET);
+			browserList[browser.numEntries+i].length = filestat.st_size;
+			browserList[browser.numEntries+i].mtime = filestat.st_mtime;
+			browserList[browser.numEntries+i].isdir = (filestat.st_mode & _IFDIR) == 0 ? 0 : 1; // flag this as a dir
 
-		memset(&(browserList[browser.numEntries+i]), 0, sizeof(BROWSERENTRY)); // clear the new entry
-
-		strncpy(browserList[browser.numEntries+i].filename, filename, MAXJOLIET);
-		browserList[browser.numEntries+i].length = filestat.st_size;
-		browserList[browser.numEntries+i].mtime = filestat.st_mtime;
-		browserList[browser.numEntries+i].isdir = (filestat.st_mode & _IFDIR) == 0 ? 0 : 1; // flag this as a dir
-
-		if(browserList[browser.numEntries+i].isdir)
-		{
-			if(strcmp(filename, "..") == 0)
-				sprintf(browserList[browser.numEntries+i].displayname, "Up One Level");
+			if(browserList[browser.numEntries+i].isdir)
+			{
+				if(strcmp(filename, "..") == 0)
+					sprintf(browserList[browser.numEntries+i].displayname, "Up One Level");
+				else
+					strncpy(browserList[browser.numEntries+i].displayname, browserList[browser.numEntries+i].filename, MAXJOLIET);
+				browserList[browser.numEntries+i].icon = ICON_FOLDER;
+			}
 			else
+			{
 				strncpy(browserList[browser.numEntries+i].displayname, browserList[browser.numEntries+i].filename, MAXJOLIET);
+				browserList[browser.numEntries+i].icon = ICON_NONE;
+			}
 		}
 		else
 		{
-			strncpy(browserList[browser.numEntries+i].displayname, browserList[browser.numEntries+i].filename, MAXJOLIET);
+			i = -1;
+			parseHalt = true;
 		}
 	}
 
@@ -341,7 +367,6 @@ bool ParseDirEntries()
 int
 ParseDirectory(bool waitParse)
 {
-	char fulldir[MAXPATHLEN];
 	char msg[128];
 	int retry = 1;
 	bool mounted = false;
@@ -350,38 +375,47 @@ ParseDirectory(bool waitParse)
 	HaltParseThread();
 
 	// reset browser
-	dirIter = NULL;
 	ResetBrowser();
 
 	// open the directory
 	while(dirIter == NULL && retry == 1)
 	{
 		mounted = ChangeInterface(currentDevice, currentDeviceNum, NOTSILENT);
-		sprintf(fulldir, "%s%s", rootdir, browser.dir); // add device to path
-		if(mounted) dirIter = diropen(fulldir);
+		if(mounted) dirIter = diropen(browser.dir);
+
 		if(dirIter == NULL)
 		{
 			unmountRequired[currentDevice] = true;
-			sprintf(msg, "Error opening %s", fulldir);
+			sprintf(msg, "Error opening %s", browser.dir);
 			retry = ErrorPromptRetry(msg);
 		}
 	}
 
 	// if we can't open the dir, try opening the root dir
-	if (dirIter == NULL)
+	if (dirIter == NULL && !IsDeviceRoot(browser.dir))
 	{
 		if(ChangeInterface(currentDevice, currentDeviceNum, SILENT))
 		{
-			sprintf(browser.dir,"/");
-			sprintf(fulldir, "%s%s", rootdir, browser.dir);
-			dirIter = diropen(fulldir);
+			char * devEnd = strchr(browser.dir, '/');
+			devEnd[1] = 0; // strip remaining file listing
+			dirIter = diropen(browser.dir);
 			if (dirIter == NULL)
 			{
-				sprintf(msg, "Error opening %s", rootdir);
+				sprintf(msg, "Error opening %s", browser.dir);
 				ErrorPrompt(msg);
 				return -1;
 			}
 		}
+	}
+
+	if(IsDeviceRoot(browser.dir))
+	{
+		browser.numEntries = 1;
+		sprintf(browserList[0].filename, "..");
+		sprintf(browserList[0].displayname, "Up One Level");
+		browserList[0].length = 0;
+		browserList[0].mtime = 0;
+		browserList[0].isdir = 1; // flag this as a dir
 	}
 
 	parseHalt = false;

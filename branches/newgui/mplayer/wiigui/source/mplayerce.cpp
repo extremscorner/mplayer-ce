@@ -142,8 +142,6 @@ main(int argc, char *argv[])
 	if(mload<0) DisableUSB2(true);
 	else if(!load_ehci_module()) DisableUSB2(true);
 
-//	DI_Init();	// first (not need is called inside WIIDVD_Init)
-
 	VIDEO_Init();
 	PAD_Init();
 	WPAD_Init();
