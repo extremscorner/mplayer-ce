@@ -17,26 +17,16 @@ extern const u32	font_ttf_size;
 extern const u8		logo_png[];
 extern const u32	logo_png_size;
 
-extern const u8		bg_top_png[];
-extern const u32	bg_top_png_size;
-
-extern const u8		bg_bottom_png[];
-extern const u32	bg_bottom_png_size;
-
 extern const u8		button_png[];
 extern const u32	button_png_size;
 extern const u8		button_over_png[];
 extern const u32	button_over_png_size;
 
-extern const u8		button_small_png[];
-extern const u32	button_small_png_size;
-extern const u8		button_small_over_png[];
-extern const u32	button_small_over_png_size;
+extern const u8		nav_button_png[];
+extern const u32	nav_button_png_size;
 
-extern const u8		button_large_png[];
-extern const u32	button_large_png_size;
-extern const u8		button_large_over_png[];
-extern const u32	button_large_over_png_size;
+extern const u8		credits_box_png[];
+extern const u32	credits_box_png_size;
 
 extern const u8		bg_menuitem_png[];
 extern const u32	bg_menuitem_png_size;
@@ -47,21 +37,6 @@ extern const u8		bg_browse_entry_png[];
 extern const u32	bg_browse_entry_png_size;
 extern const u8		bg_browse_entry_over_png[];
 extern const u32	bg_browse_entry_over_png_size;
-
-extern const u8		browse_png[];
-extern const u32	browse_png_size;
-extern const u8		dvd_png[];
-extern const u32	dvd_png_size;
-extern const u8		radio_png[];
-extern const u32	radio_png_size;
-extern const u8		options_png[];
-extern const u32	options_png_size;
-extern const u8		sd_png[];
-extern const u32	sd_png_size;
-extern const u8		usb_png[];
-extern const u32	usb_png_size;
-extern const u8		smb_png[];
-extern const u32	smb_png_size;
 
 extern const u8		browse_small_png[];
 extern const u32	browse_small_png_size;
@@ -155,15 +130,6 @@ extern const u32	icon_dvd_png_size;
 
 extern const u8		icon_smb_png[];
 extern const u32	icon_smb_png_size;
-
-extern const u8		battery_png[];
-extern const u32	battery_png_size;
-
-extern const u8		battery_red_png[];
-extern const u32	battery_red_png_size;
-
-extern const u8		battery_bar_png[];
-extern const u32	battery_bar_png_size;
 
 extern const u8		player1_point_png[];
 extern const u32	player1_point_png_size;

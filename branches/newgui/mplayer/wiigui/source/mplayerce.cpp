@@ -183,10 +183,7 @@ main(int argc, char *argv[])
 		ResetVideo_Menu();
 
 		ResumeDeviceThread();
-		if(strlen(loadedFile) > 0)
-			Menu(MENU_HOME);
-		else
-			Menu(MENU_MAIN);
+		WiiMenu();
 
 		printf("wait for MPlayer to pause or finish film\n");
 		while(!controlledbygui) // wait for MPlayer to pause or finish film

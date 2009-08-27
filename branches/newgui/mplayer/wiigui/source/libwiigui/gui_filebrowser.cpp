@@ -91,15 +91,15 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 
 	for(int i=0; i<FILE_PAGESIZE; i++)
 	{
-		fileListText[i] = new GuiText(NULL, 22, (GXColor){255, 255, 255, 0xff});
+		fileListText[i] = new GuiText(NULL, 18, (GXColor){255, 255, 255, 0xff});
 		fileListText[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
 		fileListText[i]->SetPosition(30,0);
-		fileListText[i]->SetMaxWidth(540);
+		fileListText[i]->SetMaxWidth(410);
 
 		fileListBg[i] = new GuiImage(bgBrowseEntryOver);
 		fileListIcon[i] = NULL;
 
-		fileList[i] = new GuiButton(540, 30);
+		fileList[i] = new GuiButton(480, 30);
 		fileList[i]->SetParent(this);
 		fileList[i]->SetLabel(fileListText[i]);
 		fileList[i]->SetImageOver(fileListBg[i]);

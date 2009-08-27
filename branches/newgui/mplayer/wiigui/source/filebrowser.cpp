@@ -198,9 +198,9 @@ int FileSortCallback(const void *f1, const void *f2)
  *
  * Update current directory and set new entry list if directory has changed
  ***************************************************************************/
-int BrowserChangeFolder()
+int BrowserChangeFolder(bool updateDir)
 {
-	if(!UpdateDirName())
+	if(updateDir && !UpdateDirName())
 		return -1;
 
 	CleanupPath(browser.dir);

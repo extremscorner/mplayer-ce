@@ -11,7 +11,7 @@
 
 #include <ogcsys.h>
 
-void Menu (int menuitem);
+void WiiMenu ();
 void ErrorPrompt(const char * msg);
 int ErrorPromptRetry(const char * msg);
 void InfoPrompt(const char * msg);
@@ -21,18 +21,14 @@ void ShowProgress (const char *msg, int done, int total);
 
 enum
 {
-	MENU_EXIT = -1,
-	MENU_NONE,
-	MENU_MAIN,
 	MENU_BROWSE,
 	MENU_DVD,
-	MENU_RADIO,
+	MENU_ONLINEMEDIA,
 	MENU_OPTIONS,
 	MENU_OPTIONS_VIDEO,
 	MENU_OPTIONS_AUDIO,
 	MENU_OPTIONS_SUBTITLES,
-	MENU_OPTIONS_MENU,
-	MENU_HOME
+	MENU_OPTIONS_MENU
 };
 
 #endif

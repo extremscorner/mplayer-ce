@@ -27,17 +27,19 @@
 
 static GuiImageData * pointer[4];
 static GuiImage * videoImg = NULL;
-static GuiImage * bgImg = NULL;
-static GuiImage * bgImgTop = NULL;
-static GuiImage * bgImgBottom = NULL;
-static GuiButton * btnLogo = NULL;
+static GuiButton * videoBtn = NULL;
+static GuiButton * musicBtn = NULL;
+static GuiButton * dvdBtn = NULL;
+static GuiButton * onlineBtn = NULL;
+static GuiButton * logoBtn = NULL;
 static GuiWindow * mainWindow = NULL;
 
-static int lastMenu = MENU_NONE;
+static int currentMenu = MENU_BROWSE;
 
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
 static bool guiHalt = true;
+static bool shutdownGui = true;
 static int showProgress = 0;
 
 static char progressTitle[100];
@@ -519,240 +521,158 @@ static void OnScreenKeyboard(char * var, u16 maxlen)
 }
 
 /****************************************************************************
- * MenuHome
+ * WindowCredits
+ * Display credits, legal copyright and licence
  *
- * Menu displayed when returning to the menu from in-video.
+ * THIS MUST NOT BE REMOVED OR DISABLED IN ANY DERIVATIVE WORK
  ***************************************************************************/
-static int MenuHome()
+static void WindowCredits(void * ptr)
 {
-	int menu = MENU_NONE;
+	if(logoBtn->GetState() != STATE_CLICKED)
+		return;
 
-	GuiText titleTxt("MPlayer CE", 24, (GXColor){255, 255, 255, 255});
-	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	titleTxt.SetPosition(50,50);
+	logoBtn->ResetState();
 
-	GuiImageData btnCloseOutline(button_small_png);
-	GuiImageData btnCloseOutlineOver(button_small_over_png);
-	GuiImageData btnLargeOutline(button_large_png);
-	GuiImageData btnLargeOutlineOver(button_large_over_png);
+	bool exit = false;
+	int i = 0;
+	int y = 20;
 
-	GuiImageData battery(battery_png);
-	GuiImageData batteryRed(battery_red_png);
-	GuiImageData batteryBar(battery_bar_png);
+	GuiWindow creditsWindow(screenwidth,screenheight);
+	GuiWindow creditsWindowBox(580,448);
+	creditsWindowBox.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
 
-	GuiTrigger trigA;
-	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+	GuiImageData creditsBox(credits_box_png);
+	GuiImage creditsBoxImg(&creditsBox);
+	creditsBoxImg.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	creditsWindowBox.Append(&creditsBoxImg);
 
-	GuiTrigger trigHome;
-	trigHome.SetButtonOnlyTrigger(-1, WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME, 0);
+	int numEntries = 23;
+	GuiText * txt[numEntries];
 
-	GuiText mainmenuBtnTxt("Main Menu", 24, (GXColor){0, 0, 0, 255});
-	GuiImage mainmenuBtnImg(&btnLargeOutline);
-	GuiImage mainmenuBtnImgOver(&btnLargeOutlineOver);
-	GuiButton mainmenuBtn(btnLargeOutline.GetWidth(), btnLargeOutline.GetHeight());
-	mainmenuBtn.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
-	mainmenuBtn.SetPosition(-125, 120);
-	mainmenuBtn.SetLabel(&mainmenuBtnTxt);
-	mainmenuBtn.SetImage(&mainmenuBtnImg);
-	mainmenuBtn.SetImageOver(&mainmenuBtnImgOver);
-	mainmenuBtn.SetTrigger(&trigA);
-	mainmenuBtn.SetEffectGrow();
+	txt[i] = new GuiText("Credits", 30, (GXColor){0, 0, 0, 255});
+	txt[i]->SetAlignment(ALIGN_CENTRE, ALIGN_TOP); txt[i]->SetPosition(0,y); i++; y+=32;
 
-	GuiText exitBtnTxt("Exit", 24, (GXColor){0, 0, 0, 255});
-	GuiImage exitBtnImg(&btnLargeOutline);
-	GuiImage exitBtnImgOver(&btnLargeOutlineOver);
-	GuiButton exitBtn(btnLargeOutline.GetWidth(), btnLargeOutline.GetHeight());
-	exitBtn.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
-	exitBtn.SetPosition(125, 120);
-	exitBtn.SetLabel(&exitBtnTxt);
-	exitBtn.SetImage(&exitBtnImg);
-	exitBtn.SetImageOver(&exitBtnImgOver);
-	exitBtn.SetTrigger(&trigA);
-	exitBtn.SetEffectGrow();
+	txt[i] = new GuiText("Official Site: http://code.google.com/p/mplayer-ce/", 20, (GXColor){0, 0, 0, 255});
+	txt[i]->SetAlignment(ALIGN_CENTRE, ALIGN_TOP); txt[i]->SetPosition(0,y); i++; y+=40;
 
-	GuiText closeBtnTxt("Close", 22, (GXColor){0, 0, 0, 255});
-	GuiImage closeBtnImg(&btnCloseOutline);
-	GuiImage closeBtnImgOver(&btnCloseOutlineOver);
-	GuiButton closeBtn(btnCloseOutline.GetWidth(), btnCloseOutline.GetHeight());
-	closeBtn.SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
-	closeBtn.SetPosition(-50, 35);
-	closeBtn.SetLabel(&closeBtnTxt);
-	closeBtn.SetImage(&closeBtnImg);
-	closeBtn.SetImageOver(&closeBtnImgOver);
-	closeBtn.SetTrigger(&trigA);
-	closeBtn.SetTrigger(&trigHome);
-	closeBtn.SetEffectGrow();
+	txt[i]->SetPresets(20, (GXColor){0, 0, 0, 255}, 0,
+			FTGX_JUSTIFY_LEFT | FTGX_ALIGN_TOP, ALIGN_LEFT, ALIGN_TOP);
 
-	int i, level;
-	char txt[3];
-	GuiText * batteryTxt[4];
-	GuiImage * batteryImg[4];
-	GuiImage * batteryBarImg[4];
-	GuiButton * batteryBtn[4];
+	txt[i] = new GuiText("rodries");
+	txt[i]->SetPosition(50,y); i++;
+	txt[i] = new GuiText("Coding");
+	txt[i]->SetPosition(320,y); i++; y+=22;
+	txt[i] = new GuiText("Tantric");
+	txt[i]->SetPosition(50,y); i++;
+	txt[i] = new GuiText("Coding & menu design");
+	txt[i]->SetPosition(320,y); i++; y+=22;
+	txt[i] = new GuiText("drmr");
+	txt[i]->SetPosition(50,y); i++;
+	txt[i] = new GuiText("Menu artwork");
+	txt[i]->SetPosition(320,y); i++; y+=22;
+	txt[i] = new GuiText("scip");
+	txt[i]->SetPosition(50,y); i++;
+	txt[i] = new GuiText("Original project author");
+	txt[i]->SetPosition(320,y); i++; y+=22;
+	txt[i] = new GuiText("AgentX");
+	txt[i]->SetPosition(50,y); i++;
+	txt[i] = new GuiText("Coding & testing");
+	txt[i]->SetPosition(320,y); i++; y+=22;
+	txt[i] = new GuiText("DJDynamite123");
+	txt[i]->SetPosition(50,y); i++;
+	txt[i] = new GuiText("Testing");
+	txt[i]->SetPosition(320,y); i++; y+=44;
 
-	for(i=0; i < 4; i++)
+	txt[i] = new GuiText("Thanks also to:");
+	txt[i]->SetPosition(50,y); i++; y+=36;
+
+	txt[i] = new GuiText("MPlayer Team");
+	txt[i]->SetPosition(50,y); i++; y+=22;
+
+	txt[i] = new GuiText("libogc / devkitPPC");
+	txt[i]->SetPosition(50,y); i++;
+	txt[i] = new GuiText("shagkur & wintermute");
+	txt[i]->SetPosition(320,y); i++; y+=36;
+
+	txt[i] = new GuiText("Team Twiizers, Armin Tamzarian, Daca, dargllun,");
+	txt[i]->SetPosition(50,y); i++; y+=22;
+	txt[i] = new GuiText("Extrems, GeeXboX Authors, hax, Shareese, tipolosko");
+	txt[i]->SetPosition(50,y); i++; y+=22;
+
+	txt[i]->SetPresets(18, (GXColor){0, 0, 0, 255}, 0,
+		FTGX_JUSTIFY_CENTER | FTGX_ALIGN_TOP, ALIGN_CENTRE, ALIGN_TOP);
+
+	txt[i] = new GuiText("This software is open source and may be copied,");
+	txt[i]->SetPosition(0,y); i++; y+=20;
+	txt[i] = new GuiText("distributed, or modified under the terms of the");
+	txt[i]->SetPosition(0,y); i++; y+=20;
+	txt[i] = new GuiText("GNU General Public License (GPL) Version 2.");
+	txt[i]->SetPosition(0,y); i++; y+=20;
+
+	for(i=0; i < numEntries; i++)
+		creditsWindowBox.Append(txt[i]);
+
+	creditsWindow.Append(&creditsWindowBox);
+
+	while(!exit)
 	{
-		if(i == 0)
-			sprintf(txt, "P %d", i+1);
-		else
-			sprintf(txt, "P%d", i+1);
+		creditsWindow.Draw();
 
-		batteryTxt[i] = new GuiText(txt, 22, (GXColor){255, 255, 255, 255});
-		batteryTxt[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
-		batteryImg[i] = new GuiImage(&battery);
-		batteryImg[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
-		batteryImg[i]->SetPosition(30, 0);
-		batteryBarImg[i] = new GuiImage(&batteryBar);
-		batteryBarImg[i]->SetTile(0);
-		batteryBarImg[i]->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
-		batteryBarImg[i]->SetPosition(34, 0);
+		for(i=3; i >= 0; i--)
+		{
+			#ifdef HW_RVL
+			if(userInput[i].wpad.ir.valid)
+				Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
+					96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
+			DoRumble(i);
+			#endif
+		}
 
-		batteryBtn[i] = new GuiButton(70, 20);
-		batteryBtn[i]->SetLabel(batteryTxt[i]);
-		batteryBtn[i]->SetImage(batteryImg[i]);
-		batteryBtn[i]->SetIcon(batteryBarImg[i]);
-		batteryBtn[i]->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
-		batteryBtn[i]->SetRumble(false);
-		batteryBtn[i]->SetAlpha(150);
-	}
-
-	batteryBtn[0]->SetPosition(45, -65);
-	batteryBtn[1]->SetPosition(135, -65);
-	batteryBtn[2]->SetPosition(45, -40);
-	batteryBtn[3]->SetPosition(135, -40);
-
-	HaltGui();
-	GuiWindow w(screenwidth, screenheight);
-	w.Append(&titleTxt);
-	w.Append(&mainmenuBtn);
-	w.Append(&exitBtn);
-	w.Append(batteryBtn[0]);
-	w.Append(batteryBtn[1]);
-	w.Append(batteryBtn[2]);
-	w.Append(batteryBtn[3]);
-
-	w.Append(&closeBtn);
-
-	mainWindow->Append(&w);
-
-	if(lastMenu == MENU_NONE)
-	{
-		bgImgTop->SetVisible(true);
-		bgImgBottom->SetVisible(true);
-
-		bgImgTop->SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_IN, 35);
-		closeBtn.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_IN, 35);
-		titleTxt.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_IN, 35);
-		mainmenuBtn.SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-		bgImgBottom->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-
-		batteryBtn[0]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-		batteryBtn[1]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-		batteryBtn[2]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-		batteryBtn[3]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-
-		w.SetEffect(EFFECT_FADE, 15);
-	}
-
-	ResumeGui();
-
-	while(menu == MENU_NONE)
-	{
-		usleep(THREAD_SLEEP);
+		Menu_Render();
 
 		for(i=0; i < 4; i++)
 		{
-			if(WPAD_Probe(i, NULL) == WPAD_ERR_NONE) // controller connected
-			{
-				level = (userInput[i].wpad.battery_level / 100.0) * 4;
-				if(level > 4) level = 4;
-				batteryBarImg[i]->SetTile(level);
-
-				if(level == 0)
-					batteryImg[i]->SetImage(&batteryRed);
-				else
-					batteryImg[i]->SetImage(&battery);
-
-				batteryBtn[i]->SetAlpha(255);
-			}
-			else // controller not connected
-			{
-				batteryBarImg[i]->SetTile(0);
-				batteryImg[i]->SetImage(&battery);
-				batteryBtn[i]->SetAlpha(150);
-			}
+			if(userInput[i].wpad.btns_d || userInput[i].pad.btns_d)
+				exit = true;
 		}
-
-		if(exitBtn.GetState() == STATE_CLICKED)
-		{
-			ExitRequested = 1;
-		}
-		else if(mainmenuBtn.GetState() == STATE_CLICKED)
-		{
-			if(videoImg)
-			{
-				mainWindow->Remove(videoImg);
-				delete videoImg;
-				videoImg = NULL;
-			}
-			if(videoScreenshot)
-			{
-				free(videoScreenshot);
-				videoScreenshot = NULL;
-			}
-			menu = MENU_MAIN;
-			loadedFile[0] = 0;
-		}
-		else if(closeBtn.GetState() == STATE_CLICKED)
-		{
-			menu = MENU_EXIT;
-
-			bgImgTop->SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_OUT, 15);
-			closeBtn.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_OUT, 15);
-			titleTxt.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_OUT, 15);
-			mainmenuBtn.SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-			bgImgBottom->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-
-			batteryBtn[0]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-			batteryBtn[1]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-			batteryBtn[2]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-			batteryBtn[3]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-
-			w.SetEffect(EFFECT_FADE, -15);
-			usleep(350000); // wait for effects to finish
-
-			// signal MPlayer to load
-			loadMPlayer();
-		}
+		usleep(THREAD_SLEEP);
 	}
 
-	HaltGui();
-
+	// clear buttons pressed
 	for(i=0; i < 4; i++)
 	{
-		delete batteryTxt[i];
-		delete batteryImg[i];
-		delete batteryBarImg[i];
-		delete batteryBtn[i];
+		userInput[i].wpad.btns_d = 0;
+		userInput[i].pad.btns_d = 0;
 	}
 
-	mainWindow->Remove(&w);
-	return menu;
+	for(i=0; i < numEntries; i++)
+		delete txt[i];
 }
+
+static void ChangeMenu(void * ptr, int menu)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		currentMenu = menu;
+		b->ResetState();
+	}
+}
+static void ChangeMenuVideos(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
+static void ChangeMenuMusic(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
+static void ChangeMenuDVD(void * ptr) {	ChangeMenu(ptr, MENU_DVD); }
+static void ChangeMenuOnline(void * ptr) { ChangeMenu(ptr, MENU_ONLINEMEDIA); }
 
 /****************************************************************************
  * MenuBrowse
  ***************************************************************************/
 
-static int MenuBrowse()
+static void MenuBrowse()
 {
-	char deviceName[100];
-	char title[100];
-
 	ShutoffRumble();
 
 	// populate initial directory listing
-	if(BrowserChangeFolder() <= 0)
+	while(BrowserChangeFolder(false) <= 0)
 	{
 		int choice = WindowPrompt(
 		"Error",
@@ -760,77 +680,30 @@ static int MenuBrowse()
 		"Retry",
 		"Check Settings");
 
-		if(choice)
-			return MENU_BROWSE;
-		else
-			return MENU_OPTIONS;
+		if(choice == 0)
+		{
+			currentMenu = MENU_OPTIONS;
+			return;
+		}
 	}
-
-	int menu = MENU_NONE;
-
-	GuiImageData browseSmall(browse_small_png);
-	GuiImage browseSmallImg(&browseSmall);
-	browseSmallImg.SetPosition(30,30);
-
-	switch(currentDevice)
-	{
-		case DEVICE_SD:
-			sprintf(deviceName, "SD Card");
-			break;
-		case DEVICE_USB:
-			sprintf(deviceName, "USB Mass Storage");
-			break;
-		case DEVICE_DVD:
-			sprintf(deviceName, "Data DVD");
-			break;
-		case DEVICE_SMB:
-			snprintf(deviceName, 100, "%s (Network)", smbConf[currentDeviceNum].share);
-			break;
-	}
-
-	sprintf(title, "Browse Files");
-
-	GuiText titleTxt(title, 28, (GXColor){255, 255, 255, 255});
-	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	titleTxt.SetPosition(100,50);
 
 	GuiTrigger trigA;
 	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
 
-	GuiFileBrowser fileBrowser(580, 300);
-	fileBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
-	fileBrowser.SetPosition(0, 100);
-
-	GuiImageData btnOutline(button_png);
-	GuiImageData btnOutlineOver(button_over_png);
-	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
-	GuiImage backBtnImg(&btnOutline);
-	GuiImage backBtnImgOver(&btnOutlineOver);
-	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
-	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
-	backBtn.SetPosition(30, -35);
-	backBtn.SetLabel(&backBtnTxt);
-	backBtn.SetImage(&backBtnImg);
-	backBtn.SetImageOver(&backBtnImgOver);
-	backBtn.SetTrigger(&trigA);
-	backBtn.SetEffectGrow();
-
-	GuiWindow buttonWindow(screenwidth, screenheight);
-	buttonWindow.Append(&backBtn);
+	GuiFileBrowser fileBrowser(480, 300);
+	fileBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	fileBrowser.SetPosition(10, 100);
 
 	HaltGui();
-	mainWindow->Append(&titleTxt);
-	mainWindow->Append(&browseSmallImg);
 	mainWindow->Append(&fileBrowser);
-	mainWindow->Append(&buttonWindow);
 	ResumeGui();
 
-	while(menu == MENU_NONE)
+	while(currentMenu == MENU_BROWSE)
 	{
 		usleep(THREAD_SLEEP);
 
 		// update file browser based on arrow buttons
-		// set MENU_EXIT if A button pressed on a file
+		// request shutdownGui if A button pressed on a file
 		for(int i=0; i<FILE_PAGESIZE; i++)
 		{
 			if(fileBrowser.fileList[i]->GetState() == STATE_CLICKED)
@@ -847,8 +720,7 @@ static int MenuBrowse()
 					}
 					else
 					{
-						menu = MENU_BROWSE;
-						break;
+						goto done;
 					}
 				}
 				else
@@ -865,34 +737,29 @@ static int MenuBrowse()
 						usleep(THREAD_SLEEP);
 
 					CancelAction();
-					menu = MENU_EXIT;
+					shutdownGui = true;
+					goto done;
 				}
 			}
 		}
-		if(backBtn.GetState() == STATE_CLICKED)
-			menu = MENU_MAIN;
 	}
+done:
 	HaltGui();
-	mainWindow->Remove(&titleTxt);
-	mainWindow->Remove(&browseSmallImg);
-	mainWindow->Remove(&buttonWindow);
 	mainWindow->Remove(&fileBrowser);
-	return menu;
 }
 
-static int MenuRadio()
+static void MenuOnlineMedia()
 {
-	return MENU_NONE;
+	currentMenu = MENU_BROWSE;
 }
 
-static int MenuDVD()
+static void MenuDVD()
 {
-	return MENU_NONE;
+	currentMenu = MENU_BROWSE;
 }
 
-static int MenuOptionsVideo()
+static void MenuOptionsVideo()
 {
-	int menu = MENU_NONE;
 	int ret;
 	int i = 0;
 	OptionList options;
@@ -936,7 +803,7 @@ static int MenuOptionsVideo()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(menu == MENU_NONE)
+	while(currentMenu == MENU_OPTIONS_VIDEO)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -978,40 +845,37 @@ static int MenuOptionsVideo()
 					CESettings.aspectRatio = 0;
 				break;
 		}
-
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			menu = MENU_OPTIONS;
+			currentMenu = MENU_OPTIONS;
 		}
 	}
 	HaltGui();
 	mainWindow->Remove(&optionBrowser);
 	mainWindow->Remove(&w);
 	mainWindow->Remove(&titleTxt);
-	return menu;
 }
 
-static int MenuOptionsAudio()
+static void MenuOptionsAudio()
 {
-	return MENU_NONE;
+	currentMenu = MENU_OPTIONS;
 }
 
-static int MenuOptionsSubtitles()
+static void MenuOptionsSubtitles()
 {
-	return MENU_NONE;
+	currentMenu = MENU_OPTIONS;
 }
 
-static int MenuOptionsMenu()
+static void MenuOptionsMenu()
 {
-	return MENU_NONE;
+	currentMenu = MENU_OPTIONS;
 }
 
 /****************************************************************************
  * MenuOptions
  ***************************************************************************/
-static int MenuOptions()
+static void MenuOptions()
 {
-	int menu = MENU_NONE;
 	int ret;
 	int i = 0;
 	int selected = -1;
@@ -1058,14 +922,13 @@ static int MenuOptions()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(menu == MENU_NONE)
+	while(currentMenu == MENU_OPTIONS)
 	{
 		usleep(THREAD_SLEEP);
 
 		if(selected != itemBrowser.GetSelectedItem())
 		{
 			selected = itemBrowser.GetSelectedItem();
-			bgImg->SetImage(items.img[selected]);
 		}
 
 		ret = itemBrowser.GetClickedItem();
@@ -1073,195 +936,162 @@ static int MenuOptions()
 		switch (ret)
 		{
 			case 0:
-				menu = MENU_OPTIONS_VIDEO;
+				currentMenu = MENU_OPTIONS_VIDEO;
 				break;
 
 			case 1:
-				menu = MENU_OPTIONS_AUDIO;
+				currentMenu = MENU_OPTIONS_AUDIO;
 				break;
 
 			case 2:
-				menu = MENU_OPTIONS_SUBTITLES;
+				currentMenu = MENU_OPTIONS_SUBTITLES;
 				break;
 
 			case 3:
-				menu = MENU_OPTIONS_MENU;
+				currentMenu = MENU_OPTIONS_MENU;
 				break;
 		}
 
 		if(backBtn.GetState() == STATE_CLICKED)
-			menu = MENU_MAIN;
+			currentMenu = MENU_BROWSE;
 	}
-	bgImg->SetImage(NULL);
-	HaltGui();
-	mainWindow->Remove(&itemBrowser);
-	mainWindow->Remove(&backBtn);
-	mainWindow->Remove(&titleTxt);
-	return menu;
-}
 
-/****************************************************************************
- * MenuMain
- ***************************************************************************/
-static int MenuMain()
-{
-	int menu = MENU_NONE;
-	int ret;
-	int i = 0;
-	int selected = -1;
-
-	GuiImageData browse(browse_png);
-	GuiImageData dvd(dvd_png);
-	GuiImageData radio(radio_png);
-	GuiImageData options(options_png);
-
-	MenuItemList items;
-	sprintf(items.name[i], "Browse Files");
-	items.img[i] = &browse; i++;
-	sprintf(items.name[i], "Play DVD");
-	items.img[i] = &dvd; i++;
-	sprintf(items.name[i], "Play Radio");
-	items.img[i] = &radio; i++;
-	sprintf(items.name[i], "Options");
-	items.img[i] = &options; i++;
-	sprintf(items.name[i], "Exit");
-	items.img[i] = NULL; i++;
-	items.length = i;
-
-	GuiText titleTxt("Main Menu", 36, (GXColor){255, 255, 255, 255});
-	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	titleTxt.SetPosition(340,50);
-
-	GuiMenuBrowser itemBrowser(300, 400, &items);
-	itemBrowser.SetPosition(280, 120);
-	itemBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-
-	HaltGui();
-	mainWindow->Append(&itemBrowser);
-	mainWindow->Append(&titleTxt);
-	ResumeGui();
-
-	while(menu == MENU_NONE)
-	{
-		usleep(THREAD_SLEEP);
-
-		if(selected != itemBrowser.GetSelectedItem())
-		{
-			selected = itemBrowser.GetSelectedItem();
-			bgImg->SetImage(items.img[selected]);
-		}
-
-		ret = itemBrowser.GetClickedItem();
-
-		switch (ret)
-		{
-			case 0: // Browse Files
-				menu = MENU_BROWSE;
-				break;
-
-			case 1: // Play DVD
-				menu = MENU_DVD;
-				break;
-
-			case 2: // Play Radio
-				menu = MENU_RADIO;
-				break;
-
-			case 3: // Options
-				menu = MENU_OPTIONS;
-				break;
-
-			case 4: // Exit
-				ExitRequested = 1;
-				break;
-		}
-	}
-	bgImg->SetImage(NULL);
 	HaltGui();
 	mainWindow->Remove(&itemBrowser);
 	mainWindow->Remove(&titleTxt);
-	return menu;
 }
 
 /****************************************************************************
  * Menu
  ***************************************************************************/
-void Menu(int menu)
+void WiiMenu()
 {
-	int currentMenu = menu;
-	lastMenu = MENU_NONE;
+	shutdownGui = false;
 
 	pointer[0] = new GuiImageData(player1_point_png);
 	pointer[1] = new GuiImageData(player2_point_png);
 	pointer[2] = new GuiImageData(player3_point_png);
 	pointer[3] = new GuiImageData(player4_point_png);
 
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
 	mainWindow = new GuiWindow(screenwidth, screenheight);
 
-	bgImg = new GuiImage();
-	bgImg->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
-	bgImg->SetPosition(0, 0);
-	GuiImageData bgTop(bg_top_png);
-	bgImgTop = new GuiImage(&bgTop);
-	bgImgTop->SetVisible(false);
-	GuiImageData bgBottom(bg_bottom_png);
-	bgImgBottom = new GuiImage(&bgBottom);
-	bgImgBottom->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
-	bgImgBottom->SetVisible(false);
+	GuiImageData btnNav(nav_button_png);
+	GuiImageData btnNavOver(nav_button_png);
+
+	GuiText videoBtnTxt("Videos & Pictures", 18, (GXColor){255, 255, 255, 255});
+	GuiImage videoBtnImg(&btnNav);
+	GuiImage videoBtnImgOver(&btnNavOver);
+	videoBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	videoBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	videoBtn->SetPosition(30, 30);
+	videoBtn->SetLabel(&videoBtnTxt);
+	//videoBtn->SetImage(&videoBtnImg);
+	//videoBtn->SetImageOver(&videoBtnImgOver);
+	videoBtn->SetTrigger(&trigA);
+	videoBtn->SetEffectGrow();
+	videoBtn->SetUpdateCallback(ChangeMenuVideos);
+
+	GuiText musicBtnTxt("Music", 18, (GXColor){255, 255, 255, 255});
+	GuiImage musicBtnImg(&btnNav);
+	GuiImage musicBtnImgOver(&btnNavOver);
+	musicBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	musicBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	musicBtn->SetPosition(160, 30);
+	musicBtn->SetLabel(&musicBtnTxt);
+	//musicBtn->SetImage(&musicBtnImg);
+	//musicBtn->SetImageOver(&musicBtnImgOver);
+	musicBtn->SetTrigger(&trigA);
+	musicBtn->SetEffectGrow();
+	musicBtn->SetUpdateCallback(ChangeMenuMusic);
+
+	GuiText dvdBtnTxt("DVD", 18, (GXColor){255, 255, 255, 255});
+	GuiImage dvdBtnImg(&btnNav);
+	GuiImage dvdBtnImgOver(&btnNavOver);
+	dvdBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	dvdBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	dvdBtn->SetPosition(240, 30);
+	dvdBtn->SetLabel(&dvdBtnTxt);
+	//dvdBtn->SetImage(&dvdBtnImg);
+	//dvdBtn->SetImageOver(&dvdBtnImgOver);
+	dvdBtn->SetTrigger(&trigA);
+	dvdBtn->SetEffectGrow();
+	dvdBtn->SetUpdateCallback(ChangeMenuDVD);
+
+	GuiText onlineBtnTxt("Online Media", 18, (GXColor){255, 255, 255, 255});
+	GuiImage onlineBtnImg(&btnNav);
+	GuiImage onlineBtnImgOver(&btnNavOver);
+	onlineBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	onlineBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	onlineBtn->SetPosition(340, 30);
+	onlineBtn->SetLabel(&onlineBtnTxt);
+	//onlineBtn->SetImage(&onlineBtnImg);
+	//onlineBtn->SetImageOver(&onlineBtnImgOver);
+	onlineBtn->SetTrigger(&trigA);
+	onlineBtn->SetEffectGrow();
+	onlineBtn->SetUpdateCallback(ChangeMenuOnline);
+
+	mainWindow->Append(videoBtn);
+	mainWindow->Append(musicBtn);
+	mainWindow->Append(dvdBtn);
+	mainWindow->Append(onlineBtn);
+
+	GuiImage bg(140, screenheight, (GXColor){155, 155, 155, 255});
+	bg.SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
+	mainWindow->Append(&bg);
 
 	if(videoScreenshot)
 	{
 		videoImg = new GuiImage(videoScreenshot, screenwidth, screenheight);
-		videoImg->SetAlpha(192);
-		videoImg->ColorStripe(30);
 		mainWindow->Append(videoImg);
 	}
 
-	mainWindow->Append(bgImg);
-	mainWindow->Append(bgImgTop);
-	mainWindow->Append(bgImgBottom);
-
-	GuiTrigger trigA;
-	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+	GuiImageData logo(logo_png);
+	GuiImage logoBtnImg(&logo);
+	logoBtn = new GuiButton(logo.GetWidth(), logo.GetHeight());
+	logoBtn->SetAlignment(ALIGN_RIGHT, ALIGN_BOTTOM);
+	logoBtn->SetPosition(-10, -20);
+	logoBtn->SetImage(&logoBtnImg);
+	logoBtn->SetTrigger(&trigA);
+	logoBtn->SetUpdateCallback(WindowCredits);
+	mainWindow->Append(logoBtn);
 
 	ResumeGui();
 
-	while(currentMenu != MENU_EXIT)
+	while(!shutdownGui)
 	{
 		switch (currentMenu)
 		{
 			case MENU_BROWSE:
-				currentMenu = MenuBrowse();
+				MenuBrowse();
 				break;
 			case MENU_DVD:
-				currentMenu = MenuDVD();
+				MenuDVD();
 				break;
-			case MENU_RADIO:
-				currentMenu = MenuRadio();
+			case MENU_ONLINEMEDIA:
+				MenuOnlineMedia();
 				break;
 			case MENU_OPTIONS:
-				currentMenu = MenuOptions();
+				MenuOptions();
 				break;
 			case MENU_OPTIONS_VIDEO:
-				currentMenu = MenuOptionsVideo();
+				MenuOptionsVideo();
 				break;
 			case MENU_OPTIONS_AUDIO:
-				currentMenu = MenuOptionsAudio();
+				MenuOptionsAudio();
 				break;
 			case MENU_OPTIONS_SUBTITLES:
-				currentMenu = MenuOptionsSubtitles();
+				MenuOptionsSubtitles();
 				break;
 			case MENU_OPTIONS_MENU:
-				currentMenu = MenuOptionsMenu();
-				break;
-			case MENU_HOME:
-				currentMenu = MenuHome();
+				MenuOptionsMenu();
 				break;
 			default: // unrecognized menu
-				currentMenu = MenuMain();
+				MenuBrowse();
 				break;
 		}
-		lastMenu = currentMenu;
 		usleep(THREAD_SLEEP);
 	}
 
@@ -1269,23 +1099,31 @@ void Menu(int menu)
 	CancelAction();
 	HaltGui();
 
-	delete bgImg;
-	delete bgImgTop;
-	delete bgImgBottom;
-	delete mainWindow;
-
 	delete pointer[0];
 	delete pointer[1];
 	delete pointer[2];
 	delete pointer[3];
 
+	delete mainWindow;
 	mainWindow = NULL;
+
+	delete videoBtn;
+	videoBtn = NULL;
+	delete musicBtn;
+	musicBtn = NULL;
+	delete dvdBtn;
+	dvdBtn = NULL;
+	delete onlineBtn;
+	onlineBtn = NULL;
+	delete logoBtn;
+	logoBtn = NULL;
 
 	if(videoImg)
 	{
 		delete videoImg;
 		videoImg = NULL;
 	}
+
 	if(videoScreenshot)
 	{
 		free(videoScreenshot);

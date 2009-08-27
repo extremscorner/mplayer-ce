@@ -36,6 +36,8 @@
 #define VASPECT 240
 
 void HaltGui();
+void TakeScreenshot();
+extern bool controlledbygui;
 
 #ifdef __cplusplus
 extern "C" {
@@ -1016,6 +1018,10 @@ void GX_RenderTexture()
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
 
+	#ifdef WIILIB
+	if(controlledbygui)
+		TakeScreenshot();
+	#endif
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();

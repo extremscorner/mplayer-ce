@@ -53,7 +53,7 @@ int UpdateDirName(int method);
 int FileSortCallback(const void *f1, const void *f2);
 void ResetBrowser();
 bool AddBrowserEntry();
-int BrowserChangeFolder();
+int BrowserChangeFolder(bool updateDir = true);
 int BrowseDevice();
 
 #endif

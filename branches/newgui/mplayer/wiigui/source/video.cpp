@@ -103,6 +103,11 @@ StartGX ()
  *
  * Copies the current screen into a GX texture
  ***************************************************************************/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void TakeScreenshot()
 {
 	if(videoScreenshot != NULL) free(videoScreenshot);
@@ -115,6 +120,10 @@ void TakeScreenshot()
 	GX_PixModeSync();
 	DCFlushRange(videoScreenshot, texSize);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 /****************************************************************************
  * ResetVideo_Menu
