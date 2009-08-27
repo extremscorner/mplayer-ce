@@ -255,6 +255,12 @@ bool ChangeInterface(int device, int devnum, bool silent)
 		if(!mounted && !silent)
 			ErrorPrompt("USB drive not found!");
 	}
+	else if(device == DEVICE_DVD)
+	{
+		mounted = DVDGekkoMount();
+		if(!mounted && !silent)
+			ErrorPrompt("DVD not found!");
+	}
 	else if(device == DEVICE_SMB)
 	{
 		mounted = ConnectShare(devnum, silent);

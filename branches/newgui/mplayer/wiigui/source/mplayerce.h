@@ -47,6 +47,7 @@ extern bool controlledbygui;
 
 int mplayer_loadfile(const char* _file);
 void LoadConfig(char * path);
+bool DVDGekkoMount();
 void log_console_init(GXRModeObj *vmode, u16 logsize);
 //void log_console_deinit(void);
 //void log_console_enable_log(bool enable);
