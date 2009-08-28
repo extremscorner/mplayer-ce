@@ -25,6 +25,9 @@ extern const u32	button_over_png_size;
 extern const u8		nav_button_png[];
 extern const u32	nav_button_png_size;
 
+extern const u8		config_button_png[];
+extern const u32	config_button_png_size;
+
 extern const u8		credits_box_png[];
 extern const u32	credits_box_png_size;
 

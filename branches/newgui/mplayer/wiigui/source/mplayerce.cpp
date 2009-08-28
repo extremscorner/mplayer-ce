@@ -162,8 +162,8 @@ main(int argc, char *argv[])
 
 	// store path app was loaded from
 	sprintf(appPath, "sd:/apps/mplayer_ce");
-	//if(argc > 0 && argv[0] != NULL)
-	//	CreateAppPath(argv[0]);
+	if(argc > 0 && argv[0] != NULL)
+		CreateAppPath(argv[0]);
 
 	MountAllFAT(); // Initialize libFAT for SD and USB
 

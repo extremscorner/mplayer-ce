@@ -31,6 +31,7 @@ static GuiButton * videoBtn = NULL;
 static GuiButton * musicBtn = NULL;
 static GuiButton * dvdBtn = NULL;
 static GuiButton * onlineBtn = NULL;
+static GuiButton * configBtn = NULL;
 static GuiButton * logoBtn = NULL;
 static GuiWindow * mainWindow = NULL;
 
@@ -662,6 +663,7 @@ static void ChangeMenuVideos(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
 static void ChangeMenuMusic(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
 static void ChangeMenuDVD(void * ptr) {	ChangeMenu(ptr, MENU_DVD); }
 static void ChangeMenuOnline(void * ptr) { ChangeMenu(ptr, MENU_ONLINEMEDIA); }
+static void ChangeMenuOptions(void * ptr) { ChangeMenu(ptr, MENU_OPTIONS); }
 
 /****************************************************************************
  * MenuBrowse
@@ -768,9 +770,9 @@ static void MenuOptionsVideo()
 	sprintf(options.name[i++], "Aspect Ratio");
 	options.length = i;
 
-	GuiText titleTxt("Options - Video", 36, (GXColor){255, 255, 255, 255});
+	GuiText titleTxt("Options - Video", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	titleTxt.SetPosition(340,50);
+	titleTxt.SetPosition(30, 80);
 
 	GuiImageData btnOutline(button_png);
 	GuiImageData btnOutlineOver(button_over_png);
@@ -790,10 +792,10 @@ static void MenuOptionsVideo()
 	backBtn.SetTrigger(&trigA);
 	backBtn.SetEffectGrow();
 
-	GuiOptionBrowser optionBrowser(552, 248, &options);
-	optionBrowser.SetPosition(0, 108);
-	optionBrowser.SetCol2Position(200);
-	optionBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
 
 	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
@@ -891,9 +893,9 @@ static void MenuOptions()
 	items.img[i] = NULL; i++;
 	items.length = i;
 
-	GuiText titleTxt("Options", 36, (GXColor){255, 255, 255, 255});
+	GuiText titleTxt("Options", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	titleTxt.SetPosition(340,50);
+	titleTxt.SetPosition(30, 80);
 
 	GuiTrigger trigA;
 	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
@@ -913,7 +915,7 @@ static void MenuOptions()
 	backBtn.SetEffectGrow();
 
 	GuiMenuBrowser itemBrowser(300, 400, &items);
-	itemBrowser.SetPosition(280, 120);
+	itemBrowser.SetPosition(30, 120);
 	itemBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
 
 	HaltGui();
@@ -980,6 +982,7 @@ void WiiMenu()
 
 	GuiImageData btnNav(nav_button_png);
 	GuiImageData btnNavOver(nav_button_png);
+	GuiImageData btnConfig(config_button_png);
 
 	GuiText videoBtnTxt("Videos & Pictures", 18, (GXColor){255, 255, 255, 255});
 	GuiImage videoBtnImg(&btnNav);
@@ -1033,10 +1036,20 @@ void WiiMenu()
 	onlineBtn->SetEffectGrow();
 	onlineBtn->SetUpdateCallback(ChangeMenuOnline);
 
+	GuiImage configBtnImg(&btnConfig);
+	configBtn = new GuiButton(btnConfig.GetWidth(), btnConfig.GetHeight());
+	configBtn->SetAlignment(ALIGN_RIGHT, ALIGN_BOTTOM);
+	configBtn->SetPosition(-150, -20);
+	configBtn->SetImage(&configBtnImg);
+	configBtn->SetTrigger(&trigA);
+	configBtn->SetEffectGrow();
+	configBtn->SetUpdateCallback(ChangeMenuOptions);
+
 	mainWindow->Append(videoBtn);
 	mainWindow->Append(musicBtn);
 	mainWindow->Append(dvdBtn);
 	mainWindow->Append(onlineBtn);
+	mainWindow->Append(configBtn);
 
 	GuiImage bg(140, screenheight, (GXColor){155, 155, 155, 255});
 	bg.SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
@@ -1115,6 +1128,8 @@ void WiiMenu()
 	dvdBtn = NULL;
 	delete onlineBtn;
 	onlineBtn = NULL;
+	delete configBtn;
+	configBtn = NULL;
 	delete logoBtn;
 	logoBtn = NULL;
 
