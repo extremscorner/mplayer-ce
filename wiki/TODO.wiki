@@ -6,15 +6,15 @@ This is our current TODO list.  If you have any other feature requests please ad
 
 == To-do for New GUI ==
 
-* OSD not working
-* TakeScreenshot needs to be called when HOME pressed. Needs to render an additional frame to call TakeScreenshot after GX_Done, THEN return to GUI
-* Loading a file from a SMB share has a delay. GUI appears to "freeze" rather than showing a progress bar. Need to return control to MPlayer AFTER caching is done (move caching before MPlayer GX init)
-* Loading a second file does not work (resumes first file instead)
-* Need to mount and list ALL found NTFS/FAT partitions on all devices in the GUI's device menu
-* DVD Video playing code needs work. Should jump directly into movie's menu and/or main movie (if there is no menu). Should be using libdvdnav ONLY. 
+ * OSD not working
+ * TakeScreenshot needs to be called when HOME pressed. Needs to render an additional frame to call TakeScreenshot after GX_Done, THEN return to GUI
+ * Loading a file from a SMB share has a delay. GUI appears to "freeze" rather than showing a progress bar. Need to return control to MPlayer AFTER caching is done (move caching before MPlayer GX init)
+ * Loading a second file does not work (resumes first file instead)
+ * Need to mount and list ALL found NTFS/FAT partitions on all devices in the GUI's device menu
+ * DVD Video playing code needs work. Should jump directly into movie's menu and/or main movie (if there is no menu). Should be using libdvdnav ONLY. 
 
 == Features ==
 
-* Image support
-* Audio visualisation
-* Play whole directory: choose shuffle/continuous etc
+ * Image support
+ * Audio visualisation
+ * Play whole directory: choose shuffle/continuous etc
