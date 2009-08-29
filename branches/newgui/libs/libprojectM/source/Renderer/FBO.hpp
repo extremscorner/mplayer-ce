@@ -29,37 +29,11 @@
 #define _RENDERTARGET_H
 
 #ifdef USE_FBO
-#ifndef GEKKO
-#ifdef USE_NATIVE_GLEW
 #include "glew.h"
-#else
-#include <GL/glew.h>
-#endif
-#endif /* GEKKO */
 #endif
 
-#ifdef MACOS
-#include <OpenGL/gl.h>
-#include <AGL/agl.h>
-#endif /** MACOS */
-
-#ifdef WIN32
-#include <windows.h>
-#endif /** WIN32 */
-
-#ifdef LINUX
-#ifdef USE_GLES1
-#include <GLES/gl.h>
-#else
-#include <GL/gl.h>
-#include <GL/glx.h>
-#endif
-#endif
-
-#ifdef GEKKO
 #include "GL/gl.h"
 #include "GL/glext.h"
-#endif
 
 typedef enum { SCALE_NEAREST, SCALE_MAGNIFY, SCALE_MINIFY } TextureScale;
 

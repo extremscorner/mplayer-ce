@@ -16,26 +16,10 @@
 #include <sstream>
 #include <set>
 
-#ifdef LINUX
 extern "C"
 {
 #include <errno.h>
 }
-#endif
-
-#ifdef MACOS
-extern "C"
-{
-#include <errno.h>
-}
-#endif
-
-#ifdef GEKKO
-extern "C"
-{
-#include <errno.h>
-}
-#endif
 
 #include <cassert>
 #include "fatal.h"
@@ -165,10 +149,6 @@ std::auto_ptr<Preset> PresetLoader::loadPreset ( const std::string & url )  cons
 void PresetLoader::handleDirectoryError()
 {
 
-#ifdef WIN32
-	std::cerr << "[PresetLoader] warning: errno unsupported on win32 platforms. fix me" << std::endl;
-#else
-
 	switch ( errno )
 	{
 		case ENOENT:
@@ -192,7 +172,6 @@ void PresetLoader::handleDirectoryError()
 		default:
 			break;
 	}
-#endif
 }
 
 void PresetLoader::setRating ( unsigned int index, int rating )

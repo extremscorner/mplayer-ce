@@ -1,37 +1,8 @@
-#ifdef LINUX
-#include <GL/gl.h>
-#endif
-#ifdef WIN32
-#include "glew.h"
-#endif
-#ifdef __APPLE__
-#include <GL/gl.h>
-#endif
-#ifdef GEKKO
+
 #include "GL/gl.h"
-#endif
-
-#ifdef USE_DEVIL
-#include <IL/ilut.h>
-#else
 #include "SOIL/SOIL.h"
-#endif
 
-#ifdef WIN32
-#include "win32-dirent.h"
-#endif
-
-#ifdef LINUX
 #include <dirent.h>
-#endif
-
-#ifdef MACOS
-#include <dirent.h>
-#endif
-
-#ifdef GEKKO
-#include <dirent.h>
-#endif
 
 #include "TextureManager.hpp"
 #include "Common.hpp"
@@ -41,12 +12,6 @@
 
 TextureManager::TextureManager(const std::string _presetURL): presetURL(_presetURL)
 {
-#ifdef USE_DEVIL
-ilInit();
-iluInit();
-ilutInit();
-ilutRenderer(ILUT_OPENGL);
-#endif
 
  Preload();
  loadTextureDir();
@@ -60,13 +25,6 @@ TextureManager::~TextureManager()
 void TextureManager::Preload()
 {
 
-#ifdef USE_DEVIL
-	ILuint image;
-	ilGenImages(1, &image);
-	ilBindImage(image);
-	ilLoadL(IL_TYPE_UNKNOWN,(ILvoid*) M_data, M_bytes);
-	GLuint tex = ilutGLBindTexImage();
-#else
 	 uint tex = SOIL_load_OGL_texture_from_memory(
 					  M_data,
 					  M_bytes,
@@ -77,14 +35,9 @@ void TextureManager::Preload()
 					  |  SOIL_FLAG_MULTIPLY_ALPHA
 					 // |  SOIL_FLAG_COMPRESS_TO_DXT
 					  );
-#endif
 
   textures["M.tga"]=tex;
 
-#ifdef USE_DEVIL
-  ilLoadL(IL_TYPE_UNKNOWN,(ILvoid*) project_data,project_bytes);
-  tex = ilutGLBindTexImage();
-#else
   tex = SOIL_load_OGL_texture_from_memory(
 					  project_data,
 					  project_bytes,
@@ -95,14 +48,9 @@ void TextureManager::Preload()
 					  |  SOIL_FLAG_MULTIPLY_ALPHA
 					  //|  SOIL_FLAG_COMPRESS_TO_DXT
 					  );
-#endif
 
   textures["project.tga"]=tex;
 
-#ifdef USE_DEVIL
-  ilLoadL(IL_TYPE_UNKNOWN,(ILvoid*) headphones_data, headphones_bytes);
-  tex = ilutGLBindTexImage();
-#else
   tex = SOIL_load_OGL_texture_from_memory(
 					  headphones_data,
 					  headphones_bytes,
@@ -113,7 +61,6 @@ void TextureManager::Preload()
 					  |  SOIL_FLAG_MULTIPLY_ALPHA
 					 // |  SOIL_FLAG_COMPRESS_TO_DXT
 					  );
-#endif
 
   textures["headphones.tga"]=tex;
 }
@@ -176,9 +123,6 @@ GLuint TextureManager::getTextureFullpath(const std::string filename, const std:
    else
      {
 
-#ifdef USE_DEVIL
-       GLuint tex = ilutGLLoadImage((char *)imageURL.c_str());
-#else
        int width, height;
 
        uint tex = SOIL_load_OGL_texture_size(
@@ -193,7 +137,6 @@ GLuint TextureManager::getTextureFullpath(const std::string filename, const std:
 					  //| SOIL_FLAG_DDS_LOAD_DIRECT
 					  ,&width,&height);
 
-#endif
        textures[filename]=tex;
        widths[filename]=width;
        heights[filename]=height;

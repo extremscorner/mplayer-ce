@@ -1,20 +1,5 @@
 
-
-#ifdef USE_GLES1
-#include <GLES/gl.h>
-#else
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
-#ifndef GEKKO
-#include <GL/gl.h>
-#include <GL/glu.h>
-#else
 #include "GL/gl.h"
-#endif /* GEKKO */
-#endif
-#endif
 
 #include "Renderable.hpp"
 #include <math.h>

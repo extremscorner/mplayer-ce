@@ -22,6 +22,10 @@
 #ifndef _GEKKO_H_
 #define _GEKKO_H_
 
-//...
+// Wii disc slot light routines
+void wiiLightOn ();
+void wiiLightOff ();
+void wiiLightSetLevel (int level);
+int wiiLightGetLevel ();
 
 #endif /* _GEKKO_H_ */

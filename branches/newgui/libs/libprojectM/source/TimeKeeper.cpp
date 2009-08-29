@@ -1,18 +1,5 @@
-#ifndef WIN32
-#include <sys/time.h>
-#else
-#endif /** !WIN32 */
-#include <stdlib.h>
-#ifdef LINUX
-#include <GL/gl.h>
-#endif
-#ifdef WIN32
-#include "glew.h"
-#endif
 
-#ifdef __APPLE__
-#include <GL/gl.h>
-#endif
+#include <sys/time.h>
 
 #include "TimeKeeper.hpp"
 #include "RandomNumberGenerators.hpp"
@@ -23,22 +10,14 @@ TimeKeeper::TimeKeeper(double presetDuration, double smoothDuration, double east
     _presetDuration = presetDuration;
     _easterEgg = easterEgg;
 
-#ifndef WIN32
 	gettimeofday ( &this->startTime, NULL );
-#else
-	startTime = GetTickCount();
-#endif /** !WIN32 */
 
 	UpdateTimers();
   }
 
   void TimeKeeper::UpdateTimers()
   {
-#ifndef WIN32
 	_currentTime = getTicks ( &startTime ) * 0.001;
-#else
-	_currentTime = getTicks ( startTime ) * 0.001;
-#endif /** !WIN32 */
 
 	_presetFrameA++;
 	_presetFrameB++;
@@ -107,10 +86,6 @@ int TimeKeeper::PresetFrameA()
   }
 
 double TimeKeeper::sampledPresetDuration() {
-#ifdef WIN32
-	return  _presetDuration;
-#else
 		return fmax(1, fmin(60, RandomNumberGenerators::gaussian
 			(_presetDuration, _easterEgg)));
-#endif
 }

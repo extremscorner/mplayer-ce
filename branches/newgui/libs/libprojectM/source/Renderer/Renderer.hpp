@@ -9,19 +9,6 @@
 #include "GL/gl.h"
 #include "Gekko.h"
 
-#ifdef USE_FTGL
-#ifdef WIN32
-#include <ftgl.h>
-#include <FTGLPixmapFont.h>
-#include <FTGLExtrdFont.h>
-#else
-#include <FTGL/ftgl.h>
-#include <FTGL/FTGLPixmapFont.h>
-#include <FTGL/FTGLExtrdFont.h>
-#endif
-#endif /** USE_FTGL */
-
-
 #include "Pipeline.hpp"
 #include "PerPixelMesh.hpp"
 #include "Transformation.hpp"
@@ -36,12 +23,6 @@ class Renderer
 
 public:
 
-  bool showfps;
-  bool showtitle;
-  bool showpreset;
-  bool showhelp;
-  bool showstats;
-
   bool studio;
   bool correction;
 
@@ -50,12 +31,10 @@ public:
   int totalframes;
   float realfps;
 
-  std::string title;
-  int drawtitle;
   int texsize;
 
 
-  Renderer( int width, int height, int gx, int gy, int texsize,  BeatDetect *beatDetect, std::string presetURL, std::string title_fontURL, std::string menu_fontURL);
+  Renderer( int width, int height, int gx, int gy, int texsize, BeatDetect *beatDetect, std::string presetURL, bool _useWiiLight);
   ~Renderer();
 
   void RenderFrame(const Pipeline &pipeline, const PipelineContext &pipelineContext);
@@ -89,7 +68,7 @@ private:
   ShaderEngine shaderEngine;
 #endif
   std::string m_presetName;
-
+  
   float* p;
 
 
@@ -98,16 +77,9 @@ private:
 
   float aspect;
 
-  std::string title_fontURL;
-  std::string menu_fontURL;
   std::string presetURL;
-
-#ifdef USE_FTGL
-  FTGLPixmapFont *title_font;
-  FTGLPixmapFont *other_font;
-  FTGLExtrdFont *poly_font;
-#endif /** USE_FTGL */
-
+  bool useWiiLight;
+  
   void SetupPass1(const Pipeline &pipeline, const PipelineContext &pipelineContext);
   void Interpolation(const Pipeline &pipeline);
   void RenderItems(const Pipeline &pipeline, const PipelineContext &pipelineContext);
@@ -121,14 +93,6 @@ private:
   }
 
   void rescale_per_pixel_matrices();
-
-  void draw_fps( float realfps );
-  void draw_stats();
-  void draw_help();
-  void draw_preset();
-  void draw_title();
-  void draw_title_to_screen(bool flip);
-  void draw_title_to_texture();
 
 };
 

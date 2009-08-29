@@ -3,14 +3,7 @@
 const std::string PresetFactory::IDLE_PRESET_PROTOCOL("idle");
 
 std::string PresetFactory::protocol(const std::string & url, std::string & path) {
-
-#ifdef __APPLE__
-	// NOTE: Brian changed this from url.find_first_of to url.find, since presumably we want to find the first occurence of
-	// :// and not the first occurence of any colon or forward slash.  At least that fixed a bug in the Mac OS X build.
-	std::size_t pos = url.find("://");
-#else
 	std::size_t pos = url.find_first_of("://");
-#endif
 	if (pos == std::string::npos)
 		return std::string();
 	else {

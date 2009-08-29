@@ -42,6 +42,7 @@
 
 #include "Renderer.hpp"
 #include "PresetChooser.hpp"
+#include "IdlePreset.hpp"
 #include "ConfigFile.h"
 #include "TextureManager.hpp"
 #include "TimeKeeper.hpp"
@@ -124,8 +125,6 @@ bool projectM::writeConfig(const std::string & configFile, const Settings & sett
     config.add("Smooth Preset Duration", settings.smoothPresetDuration);
     config.add("Preset Duration", settings.presetDuration);
     config.add("Preset Path", settings.presetURL);
-    config.add("Title Font", settings.titleFontURL);
-    config.add("Menu Font", settings.menuFontURL);
     config.add("Hard Cut Sensitivity", settings.beatSensitivity);
     config.add("Aspect Correction", settings.aspectCorrection);
     config.add("Easter Egg Parameter", settings.easterEgg);
@@ -155,13 +154,11 @@ void projectM::readConfig (const std::string & configFile )
     _settings.smoothPresetDuration =  config.read<int>
     ( "Smooth Preset Duration", config.read<int>("Smooth Transition Duration", 10));
     _settings.presetDuration = config.read<int> ( "Preset Duration", 15 );
+    _settings.defaultPresetName = config.read<string> ( "Default Preset Name", "" );
     _settings.presetURL = config.read<string> ( "Preset Path", "presets" );
-    _settings.titleFontURL = config.read<string>
-    ( "Title Font", "fonts/Vera.ttf" );
-    _settings.menuFontURL = config.read<string>
-    ( "Menu Font", "fonts/VeraMono.ttf" );
     _settings.shuffleEnabled = config.read<bool> ( "Shuffle Enabled", true);
-
+    _settings.wiiLightEnabled = config.read<bool> ( "Wii Disc Slot Light Enabled", true);
+    
     _settings.easterEgg = config.read<float> ( "Easter Egg Parameter", 0.0);
 
 
@@ -169,12 +166,12 @@ void projectM::readConfig (const std::string & configFile )
                     _settings.textureSize, _settings.windowWidth,_settings.windowHeight);
 
 
-                    _settings.beatSensitivity = beatDetect->beat_sensitivity = config.read<float> ( "Hard Cut Sensitivity", 10.0 );
+    _settings.beatSensitivity = beatDetect->beat_sensitivity = config.read<float> ( "Hard Cut Sensitivity", 10.0 );
 
-                    if ( config.read ( "Aspect Correction", true ) )
-                    _settings.aspectCorrection = renderer->correction = true;
-                    else
-                        _settings.aspectCorrection = renderer->correction = false;
+    if ( config.read ( "Aspect Correction", true ) )
+    _settings.aspectCorrection = renderer->correction = true;
+    else
+        _settings.aspectCorrection = renderer->correction = false;
 
 
 }
@@ -192,11 +189,11 @@ void projectM::readSettings (const Settings & settings )
     _settings.presetDuration = settings.presetDuration;
     
     
+    _settings.defaultPresetName = settings.defaultPresetName;
     _settings.presetURL = settings.presetURL;
-    _settings.titleFontURL = settings.titleFontURL;
-    _settings.menuFontURL =  settings.menuFontURL;
     _settings.shuffleEnabled = settings.shuffleEnabled;
-
+    _settings.wiiLightEnabled = settings.wiiLightEnabled;
+    
     _settings.easterEgg = settings.easterEgg;
 
     projectM_init ( _settings.meshX, _settings.meshY, _settings.fps,
@@ -417,7 +414,7 @@ static void *thread_callback(void *prjm) {
             mspf= ( int ) ( 1000.0/ ( float ) _settings.fps );
         else mspf = 0;
 
-        this->renderer = new Renderer ( width, height, gx, gy, texsize,  beatDetect, settings().presetURL, settings().titleFontURL, settings().menuFontURL );
+        this->renderer = new Renderer ( width, height, gx, gy, texsize,  beatDetect, settings().presetURL, settings().wiiLightEnabled );
 
         running = true;
 
@@ -467,17 +464,7 @@ static void *thread_callback(void *prjm) {
 
         renderer->reset ( w,h );
     }
-
-    /** Sets the title to display */
-    void projectM::projectM_setTitle ( std::string title ) {
-
-        if ( title != renderer->title )
-        {
-            renderer->title=title;
-            renderer->drawtitle=1;
-        }
-    }
-
+    
 
     int projectM::initPresetTools(int gx, int gy)
     {
@@ -487,7 +474,6 @@ static void *thread_callback(void *prjm) {
 
         std::string url = (m_flags & FLAG_DISABLE_PLAYLIST_LOAD) ? std::string() : settings().presetURL;
 
-        // TODO: Re-enable this
         /*if ( ( m_presetLoader = new PresetLoader ( gx, gy, url) ) == 0 )
         {
             m_presetLoader = 0;
@@ -518,9 +504,13 @@ static void *thread_callback(void *prjm) {
 
         // Load idle preset
         std::cerr << "[projectM] Allocating idle preset..." << std::endl;
-        m_activePreset = m_presetLoader->loadPreset
-        ("idle://Geiss & Sperl - Feedback (projectM idle HDR mix).milk");
-
+        if (settings().defaultPreset.empty())
+            m_activePreset = m_presetLoader->loadPreset
+            ("idle://" IdlePresets::IDLE_PRESET_NAME);
+        else
+            m_activePreset = m_presetLoader->loadPreset
+            (settings().defaultPreset);
+        
         renderer->SetPipeline(m_activePreset->pipeline());
 
         // Case where no valid presets exist in directory. Could also mean
@@ -539,11 +529,11 @@ static void *thread_callback(void *prjm) {
         //_merger->add(new BorderMergeFunction());
 
         /// @bug These should be requested by the preset factories.
-        _matcher->distanceFunction().addMetric(new ShapeXYDistance());
+        _matcher->distanceFunction().addMetric(new ShapeXYDistance());*/
 
         //std::cerr << "[projectM] Idle preset allocated." << std::endl;
 
-        projectM_resetengine();*/
+        projectM_resetengine();
 
         //std::cerr << "[projectM] engine has been reset." << std::endl;
         return PROJECTM_SUCCESS;

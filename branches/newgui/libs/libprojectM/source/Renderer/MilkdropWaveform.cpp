@@ -6,18 +6,7 @@
  */
 #include <iostream>
 
-#ifdef LINUX
-#include <GL/gl.h>
-#endif
-#ifdef WIN32
-#include "glew.h"
-#endif
-#ifdef __APPLE__
-#include <GL/gl.h>
-#endif
-#ifdef GEKKO
 #include "GL/gl.h"
-#endif
 
 #include "MilkdropWaveform.hpp"
 #include "math.h"
@@ -38,9 +27,7 @@ void MilkdropWaveform::Draw(RenderContext &context)
 		else temp_a = a;
 		MaximizeColors(context);
 
-	#ifndef USE_GLES1
 		if(dots==1) glEnable(GL_LINE_STIPPLE);
-	#endif
 
 		//Thick wave drawing
 		if (thick==1)  glLineWidth( (context.texsize < 512 ) ? 2 : 2*context.texsize/512);
@@ -78,9 +65,7 @@ void MilkdropWaveform::Draw(RenderContext &context)
 		  }
 
 
-	#ifndef USE_GLES1
 		if(dots==1) glDisable(GL_LINE_STIPPLE);
-	#endif
 
 		glPopMatrix();
 }

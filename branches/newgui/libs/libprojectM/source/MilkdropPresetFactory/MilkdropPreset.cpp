@@ -22,11 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef WIN32
-#include "win32-dirent.h"
-#else
 #include <dirent.h>
-#endif /** WIN32 */
 #include <time.h>
 
 #include "MilkdropPreset.hpp"

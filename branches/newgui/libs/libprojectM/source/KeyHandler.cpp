@@ -120,40 +120,11 @@ void projectM::default_key_handler( projectMEvent event, projectMKeycode keycode
             beatDetect->beat_sensitivity -= 0.25;
 			if (beatDetect->beat_sensitivity < 0) beatDetect->beat_sensitivity = 0;
 	      break;
-		case PROJECTM_K_h:
- 		  renderer->showhelp = !renderer->showhelp;
-	      renderer->showstats= false;
-	      renderer->showfps=false;
-	    case PROJECTM_K_F1:
-	      renderer->showhelp = !renderer->showhelp;
-	      renderer->showstats=false;
-	      renderer->showfps=false;
-	      break;
 	    case PROJECTM_K_y:
 		this->setShuffleEnabled(!this->isShuffleEnabled());
 		 break;
 
-	    case PROJECTM_K_F5:
-	      if (!renderer->showhelp)
-		      renderer->showfps = !renderer->showfps;
-	      break;
-	    case PROJECTM_K_F4:
-		if (!renderer->showhelp)
-	       		renderer->showstats = !renderer->showstats;
-	      break;
-	    case PROJECTM_K_F3: {
-	      renderer->showpreset = !renderer->showpreset;
-	      break;
-	     }
-	    case PROJECTM_K_F2:
-	      renderer->showtitle = !renderer->showtitle;
-	      break;
-#ifndef MACOS
-	    case PROJECTM_K_F9:
-#else
         case PROJECTM_K_F8:
-#endif
-
 	      renderer->studio = !renderer->studio;
 	      break;
 

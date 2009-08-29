@@ -37,68 +37,16 @@
 //extern FILE *debugFile;
 #endif
 
-#ifdef MACOS
-#include <cstdio>
-extern FILE *fmemopen(void *buf, size_t len, const char *pMode);
-#endif /** MACOS */
-
-#define DEFAULT_FONT_PATH "/home/carm/fonts/courier1.glf"
+//#define DEFAULT_FONT_PATH "/home/carm/fonts/courier1.glf"
 #define MAX_TOKEN_SIZE 512
 #define MAX_PATH_SIZE 4096
 
 #define STRING_BUFFER_SIZE 1024*150
 #define STRING_LINE_SIZE 1024
 
-
-#ifdef LINUX
-#include <cstdlib>
-#define projectM_isnan isnan
-
-#endif
-
-#ifdef WIN32
 #define projectM_isnan(x) ((x) != (x))
-#endif
-
-#ifdef MACOS
-#define projectM_isnan(x) ((x) != (x))
-#endif
-
-#ifdef GEKKO
-#define projectM_isnan(x) ((x) != (x))
-#endif
-
-#ifdef LINUX
-#define projectM_fmax fmax
-#endif
-
-#ifdef WIN32
 #define projectM_fmax(x,y) ((x) >= (y) ? (x): (y))
-#endif
-
-#ifdef MACOS
-#define projectM_fmax(x,y) ((x) >= (y) ? (x): (y))
-#endif
-
-#ifdef GEKKO
-#define projectM_fmax(x,y) ((x) >= (y) ? (x): (y))
-#endif
-
-#ifdef LINUX
-#define projectM_fmin fmin
-#endif
-
-#ifdef WIN32
 #define projectM_fmin(x,y) ((x) <= (y) ? (x): (y))
-#endif
-
-#ifdef MACOS
-#define projectM_fmin(x,y) ((x) <= (y) ? (x): (y))
-#endif
-
-#ifdef GEKKO
-#define projectM_fmin(x,y) ((x) <= (y) ? (x): (y))
-#endif
 
 #ifndef TRUE
 #define TRUE true
@@ -123,19 +71,9 @@ extern FILE *fmemopen(void *buf, size_t len, const char *pMode);
 /* default float upper bound */
 #define DEFAULT_DOUBLE_UB MAX_DOUBLE_SIZE
 
-#ifdef WIN32
-#include <float.h>
-#define isnan _isnan
-#endif /** WIN32 */
+/* path separators */
+#define PATH_SEPARATOR '/'
 
-/** Per-platform path separators */
-#define WIN32_PATH_SEPARATOR '\\'
-#define UNIX_PATH_SEPARATOR '/'
-#ifdef WIN32
-#define PATH_SEPARATOR WIN32_PATH_SEPARATOR
-#else
-#define PATH_SEPARATOR UNIX_PATH_SEPARATOR
-#endif /** WIN32 */
 #include <string>
 
 const unsigned int NUM_Q_VARIABLES(32);
@@ -220,5 +158,3 @@ inline double meanSquaredError(const double & x, const double & y) {
 
 
 #endif
-
-

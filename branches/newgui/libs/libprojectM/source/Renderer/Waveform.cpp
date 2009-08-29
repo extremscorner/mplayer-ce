@@ -5,18 +5,7 @@
  *      Author: pete
  */
 
-#ifdef LINUX
-#include <GL/gl.h>
-#endif
-#ifdef WIN32
-#include "glew.h"
-#endif
-#ifdef __APPLE__
-#include <GL/gl.h>
-#endif
-#ifdef GEKKO
 #include "GL/gl.h"
-#endif
 
 #include "Waveform.hpp"
 #include <algorithm>
@@ -106,9 +95,7 @@ void Waveform::Draw(RenderContext &context)
 
 			glPointSize(context.texsize < 512 ? 1 : context.texsize/512);
 			glLineWidth(context.texsize < 512 ? 1 : context.texsize/512);
-#ifndef USE_GLES1
 			glDisable(GL_LINE_STIPPLE);
-#endif
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			//  glPopMatrix();
 

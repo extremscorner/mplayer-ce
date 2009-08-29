@@ -142,10 +142,10 @@ void doTexturedRender (void)
 
 int main(int argc, char **argv)
 {
-    // NOTE: Once instantiated, projectM expects that the video system 
-    //       is has already been setup (including GX)
+    // NOTE: projectM expects that the video system (including GX) has been
+    //       configured and setup prior to its instantiation.
     
-    // Initalise the display
+    // Initalise the display (and setup GX)
     displayInit();
     
     // Initialise the attached controllers
@@ -156,19 +156,21 @@ int main(int argc, char **argv)
 
     // Build our projectM settings
     struct projectM::Settings config;
-    config.meshX = 32;                      // Width of PerPixel equation mesh
-    config.meshY = 24;                      // Height of PerPixel equation mesh
-    config.textureSize = 512;               // Size of internal rendering texture
-    config.fps = 35;                        // Target frames per second
-    config.windowWidth = rmode->fbWidth;    // Display width (in pixels)
-    config.windowHeight = rmode->efbHeight; // Display height (in pixels)
-    config.smoothPresetDuration = 10;       // Preset transition time (in seconds)
-    config.presetDuration = 15;             // Preset durtation (in seconds)
-    config.beatSensitivity = 10.0f;         // Lower to make hard cuts more frequent
-    config.aspectCorrection = true;         // Custom shape aspect correction
-    config.shuffleEnabled = true;           // Preset shuffling
-    config.easterEgg = 0.0f;                // ...
-    config.presetURL = "sd:/presets";       // Location of preset directory
+    config.meshX = 32;                          // Width of PerPixel equation mesh
+    config.meshY = 24;                          // Height of PerPixel equation mesh
+    config.textureSize = 512;                   // Size of internal rendering texture
+    config.fps = 35;                            // Target frames per second
+    config.windowWidth = rmode->fbWidth;        // Display width (in pixels)
+    config.windowHeight = rmode->efbHeight;     // Display height (in pixels)
+    config.smoothPresetDuration = 10;           // Preset transition time (in seconds)
+    config.presetDuration = 15;                 // Preset durtation (in seconds)
+    config.beatSensitivity = 10.0f;             // Lower to make hard cuts more frequent
+    config.aspectCorrection = true;             // Custom shape aspect correction
+    config.shuffleEnabled = true;               // Preset shuffling
+    config.wiiLightEnabled = true;              // Pulse the disc slot light in time with the beat
+    config.easterEgg = 0.0f;                    // ...
+    config.defaultPresetName = "";              // Default preset name
+    config.presetURL = "sd:/presets";           // Location of preset directory
     
     // Allocate and initialise projectM
     projM = new projectM(config);
@@ -203,7 +205,7 @@ int main(int argc, char **argv)
             projM->pcm()->addPCMfloat(fakePCM, MAX_AUDIO_SAMPLES);
             
             // Render the next frame in the visualisation/preset
-            //projM->renderFrame();
+            projM->renderFrame();
             
             // If we are rendering to a texture then do that now
             if (texturedRender)

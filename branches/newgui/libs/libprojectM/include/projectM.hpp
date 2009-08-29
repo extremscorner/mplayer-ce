@@ -62,8 +62,6 @@ class PipelineContext;
 class RenderItemMatcher;
 class MasterRenderItemMerge;
 
-#include <memory>
-
 /** Interface types */
 typedef enum {
     MENU_INTERFACE,
@@ -98,15 +96,15 @@ public:
         int textureSize;
         int windowWidth;
         int windowHeight;
+        std::string defaultPresetName;
         std::string presetURL;
-        std::string titleFontURL;
-        std::string menuFontURL;
         int smoothPresetDuration;
         int presetDuration;
         float beatSensitivity;
         bool aspectCorrection;
         float easterEgg;
         bool shuffleEnabled;
+        bool wiiLightEnabled;
     };
 
   projectM(std::string config_file, int flags = FLAG_NONE);
@@ -114,7 +112,6 @@ public:
 
   void projectM_resetGL( int width, int height );
   void projectM_resetTextures();
-  void projectM_setTitle( std::string title );
   void renderFrame();
   unsigned initRenderToTexture();
   void key_handler( projectMEvent event,

@@ -5,17 +5,8 @@
  *      Author: pete
  */
 
-#ifdef USE_GLES1
-#include <GLES/gl.h>
-#else
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
-#include <GL/gl.h>
-#include <GL/glu.h>
-#endif
-#endif
+#include "GL/gl.h"
+#include "GL/glu.h"
 
 #include "Filters.hpp"
 
