@@ -132,7 +132,6 @@ void swapBuffers (void)
 
 void doTexturedRender (void)
 {
-    static int textureHandle = projM->initRenderToTexture();
     static int frame = 0;
     frame++;
     

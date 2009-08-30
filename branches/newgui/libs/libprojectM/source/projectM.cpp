@@ -26,6 +26,7 @@
 #include "timer.h"
 #include <iostream>
 #include "time.h"
+#include <unistd.h>
 
 #include "PipelineContext.hpp"
 //#include <xmms/plugin.h>
@@ -463,7 +464,7 @@ static void *thread_callback(void *prjm) {
         /* Set the seed to the current time in seconds */
         srand ( time ( NULL ) );
 
-        std::string url = (m_flags & FLAG_DISABLE_PLAYLIST_LOAD) ? std::string() : settings().presetURL;
+        std::string url = (m_flags & PM_FLAG_DISABLE_PLAYLIST_LOAD) ? std::string() : settings().presetURL;
 
         if ( ( m_presetLoader = new PresetLoader ( gx, gy, url) ) == 0 )
         {

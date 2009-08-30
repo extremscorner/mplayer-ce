@@ -60,7 +60,7 @@ void glClear (GLbitfield _mask)
     }
     
     // Clear the specified buffer
-    // TODO: Only clear the specified buffer, not all of them
+    // TODO: Only clear the specified buffer
     GX_SetCopyClear(clearColour, clearDepth);
 }
 
@@ -184,12 +184,52 @@ void glLineStipple (GLint _factor, GLushort _pattern)
 
 void glDrawBuffer (GLenum _mode)
 {
-    
+    switch (_mode) {
+        
+        case GL_NONE:
+            /* ??? */
+            break;
+            
+        case GL_FRONT_AND_BACK:
+            /* ??? */
+            break;
+            
+        case GL_FRONT:
+        case GL_FRONT_LEFT:
+        case GL_FRONT_RIGHT:
+            drawTEVRegister = GX_TEVREG0;
+            break;
+        case GL_BACK:
+        case GL_BACK_LEFT:
+        case GL_BACK_RIGHT:
+            drawTEVRegister = GX_TEVREG2;
+            break;
+            
+        case GL_LEFT: break; /* ??? */
+        case GL_RIGHT: break; /* ??? */
+            
+    }
 }
 
 void glReadBuffer (GLenum _mode)
 {
-    
+    switch (_mode) {
+
+        case GL_FRONT:
+        case GL_FRONT_LEFT:
+        case GL_FRONT_RIGHT:
+            readTEVRegister = GX_TEVREG0;
+            break;
+        case GL_BACK:
+        case GL_BACK_LEFT:
+        case GL_BACK_RIGHT:
+            readTEVRegister = GX_TEVREG2;
+            break;
+            
+        case GL_LEFT: break; /* ??? */
+        case GL_RIGHT: break; /* ??? */
+            
+    }
 }
 
 void glEnable(GLenum _type)
@@ -495,8 +535,13 @@ void glGenTextures (GLsizei _n, GLuint *_textures)
         if (!tex)
             continue;
         
-        // Find a unique name for this texture
+        // Setup the texture
         tex->name = glNextFreeTextureName();
+        tex->wrap_s = GX_REPEAT;
+        tex->wrap_t = GX_REPEAT;
+        tex->minfilt = GX_NEAR_MIP_LIN;
+        tex->magfilt = GX_LINEAR;
+        tex->priority = 0.0f;
         
         // Insert the texture into the double-linked FILO list of allocated textures
         if (textures) {
@@ -602,14 +647,18 @@ void glTexImage2D (GLenum _target, GLint _level,
     
     // TODO: Borders!?
     
-    // TODO: level-of-detail / minimap support!?
-    
     // Initialise the texture
-    if (_target == GL_TEXTURE_2D)
-        GX_InitTexObj(&texture2D->obj, (void*) _pixels, _width, _height, format, 1, 1, GX_FALSE);
-    else if (_target == GL_PROXY_TEXTURE_2D)
-        GX_InitTexObj(&texture2D->obj, NULL, _width, _height, format, 1, 1, GX_FALSE); /* ??? */
-
+    if (_target == GL_TEXTURE_2D) {
+        GX_InitTexObj(&texture2D->obj, (void *) _pixels, _width, _height,
+                      format, texture2D->wrap_s, texture2D->wrap_t, _level);
+    } else if (_target == GL_PROXY_TEXTURE_2D) {
+        GX_InitTexObj(&texture2D->obj, NULL, _width, _height,
+                      format, texture2D->wrap_s, texture2D->wrap_t, _level); /* ??? */
+    }
+    
+    // Set the textures filter mode
+    GX_InitTexObjFilterMode(&texture2D->obj, texture2D->minfilt, texture2D->magfilt);
+    
 }
 
 void glCopyTexSubImage2D (GLenum _target, GLint _level,
@@ -641,15 +690,95 @@ void glCompressedTexImage2DARB (GLenum param1, GLint param2, GLenum param3,
 
 void glTexEnvf (GLenum _target, GLenum _pname, GLfloat _param)
 {
+    // Sanity check
+    if (_target != GL_TEXTURE_ENV)
+        return;
     
+    // Determine which texture environment parameter we are setting
+    switch (_pname) {
+        
+        // Texture environment operation mode
+        case GL_TEXTURE_ENV_MODE:
+            switch ((GLint) _param) {
+                case GL_MODULATE: GX_SetTevOp(textureEnvironment, GX_MODULATE); break;
+                case GL_DECAL: GX_SetTevOp(textureEnvironment, GX_DECAL); break;
+                case GL_BLEND: GX_SetTevOp(textureEnvironment, GX_BLEND); break;
+                case GL_REPLACE: GX_SetTevOp(textureEnvironment, GX_REPLACE); break;
+            }
+            break;
+            
+    }
 }
 
 void glTexParameterf (GLenum _target, GLenum _pname, GLfloat _param)
 {
+    GLtexture *tex = NULL;
     
+    // Determine which texture this operation will be applied to
+    switch (_target) {
+        case GL_TEXTURE_1D: tex = texture1D; break;
+        case GL_TEXTURE_2D: tex = texture2D; break;
+    }
+    
+    // Sanity check
+    if (tex) {
+            
+        // Determine which texture parameter we are setting
+        switch (_pname) {
+            
+            // Minifying filter mode
+            case GL_TEXTURE_MIN_FILTER:
+                switch ((GLint) _param) {
+                    case GL_NEAREST: tex->minfilt = GX_NEAR; break;
+                    case GL_LINEAR: tex->minfilt = GX_LINEAR; break;
+                    case GL_NEAREST_MIPMAP_NEAREST: tex->minfilt = GX_NEAR_MIP_NEAR; break;
+                    case GL_LINEAR_MIPMAP_NEAREST: tex->minfilt = GX_LIN_MIP_NEAR; break;
+                    case GL_NEAREST_MIPMAP_LINEAR: tex->minfilt = GX_NEAR_MIP_LIN; break;
+                    case GL_LINEAR_MIPMAP_LINEAR: tex->minfilt = GX_LIN_MIP_LIN; break;
+                }
+                GX_InitTexObjFilterMode(&tex->obj, tex->minfilt, tex->magfilt);
+                break;
+                
+            // Magnification filter mode
+            case GL_TEXTURE_MAG_FILTER:
+                switch ((GLint) _param) {
+                    case GL_NEAREST: tex->magfilt = GX_NEAR; break;
+                    case GL_LINEAR: tex->magfilt = GX_LINEAR; break;
+                }
+                GX_InitTexObjFilterMode(&tex->obj, tex->minfilt, tex->magfilt);
+                break;
+                
+            // 's' coordinate wrap mode
+            case GL_TEXTURE_WRAP_S:
+                switch ((GLint) _param) {
+                    case GL_CLAMP: tex->wrap_s = GX_CLAMP; break;
+                    case GL_REPEAT: tex->wrap_s = GX_REPEAT; break;
+                }
+                GX_InitTexObjWrapMode(&tex->obj, tex->wrap_s, tex->wrap_t);
+                break;
+                
+            // 't' coordinate wrap mode
+            case GL_TEXTURE_WRAP_T:
+                switch ((GLint) _param) {
+                    case GL_CLAMP: tex->wrap_t = GX_CLAMP; break;
+                    case GL_REPEAT: tex->wrap_t = GX_REPEAT; break;
+                }
+                GX_InitTexObjWrapMode(&tex->obj, tex->wrap_s, tex->wrap_t);
+                break;
+                
+            // Resident priority
+            // NOTE: We don't really need this?
+            case GL_TEXTURE_PRIORITY:
+                tex->priority = _param;
+                break;
+
+        }
+
+    }
 }
 
 void glTexParameteri (GLenum _target, GLenum _pname, GLint _param)
 {
-    
+    // Muhahahahaha...
+    glTexParameterf(_target, _pname, (GLfloat) _param);
 }

@@ -51,6 +51,9 @@ u16 lineStipplePattern = 0;
 
 f32 pointsize = 1;
 
+u8 drawTEVRegister = GX_TEVREG0;
+u8 readTEVRegister = GX_TEVREG0;
+
 /**
  * Transformation
  */
@@ -83,10 +86,16 @@ GXColor colour = { 0, 0, 0, 0xFF };
 typedef struct _GLtexture {
     GLuint name;
     GXTexObj obj;
+    u8 minfilt;
+    u8 magfilt;
+    u8 wrap_s;
+    u8 wrap_t;
+    f32 priority;
     struct _GLtexture *prevTexture;
     struct _GLtexture *nextTexture;
 } GLtexture;
 
+u8 textureEnvironment = GX_TEVSTAGE0;
 GLtexture *textures = NULL;
 GLtexture *texture1D = NULL;
 GLtexture *texture2D = NULL;

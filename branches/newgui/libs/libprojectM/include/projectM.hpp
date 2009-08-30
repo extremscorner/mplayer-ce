@@ -1,8 +1,8 @@
-/*
+/**
  * projectM -- Milkdrop-esque visualisation SDK
  *
- * Copyright (C) 2003-2007 projectM Team
- * Copyright (C) 2009 Rhys "Shareese" Koedijk
+ * Copyright (C)2003-2007 projectM Team
+ * Copyright (C)2009 Rhys "Shareese" Koedijk
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,13 +20,6 @@
  * See 'LICENSE.txt' included within this release
  *
  */
-/**
- * $Id: projectM.hpp,v 1.1.1.1 2005/12/23 18:05:11 psperl Exp $
- *
- * Encapsulation of ProjectM engine
- *
- * $Log$
- */
 
 #ifndef _PROJECTM_HPP
 #define _PROJECTM_HPP
@@ -37,16 +30,18 @@
 #include <ogc/mutex.h>
 #include <ogc/cond.h>
 
-#include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <string>
-#include <cstdlib>
-#include <unistd.h>
-#include <memory>
 
 #include <projectM/PCM.hpp>
 #include <projectM/BeatDetect.hpp>
 
+/* projectM initialisation flags */
+#define PM_FLAG_NONE                    0x0
+#define PM_FLAG_DISABLE_PLAYLIST_LOAD   0x1
+
+/* Forward declarations */
 class Func;
 class Renderer;
 class Preset;
@@ -59,218 +54,224 @@ class PipelineContext;
 class RenderItemMatcher;
 class MasterRenderItemMerge;
 
-/// A functor class that allows users of this library to specify random preset behavior
-class RandomizerFunctor {
+/**
+ * A functor class that allows users of this library to specify random preset behavior.
+ */
+class RandomizerFunctor
+{
+    public:
+        RandomizerFunctor(PresetChooser & chooser) ;
+        virtual ~RandomizerFunctor();
+        virtual double operator() (int index);
+        
+    private:
+        const PresetChooser & m_chooser;
 
-   public:
-	RandomizerFunctor(PresetChooser & chooser) ;
-	virtual ~RandomizerFunctor();
-   	virtual double operator() (int index);
-   private:
-	const PresetChooser & m_chooser;
 };
 
+/**
+ * Audio visualisation manager.
+ * Encapsulation of the ProjectM engine
+ */
 class projectM
 {
-public:
-	static const int FLAG_NONE = 0;
-	static const int FLAG_DISABLE_PLAYLIST_LOAD = 1 << 0;
+    public:
 
-    struct Settings {
-        int meshX;
-        int meshY;
-        int fps;
-        int textureSize;
-        int windowWidth;
-        int windowHeight;
-        std::string defaultPresetName;
-        std::string presetURL;
-        int smoothPresetDuration;
-        int presetDuration;
-        float beatSensitivity;
-        bool aspectCorrection;
-        float easterEgg;
-        bool shuffleEnabled;
-        bool wiiLightEnabled;
-    };
+        struct Settings {
+            int meshX;
+            int meshY;
+            int fps;
+            int textureSize;
+            int windowWidth;
+            int windowHeight;
+            std::string defaultPresetName;
+            std::string presetURL;
+            int smoothPresetDuration;
+            int presetDuration;
+            float beatSensitivity;
+            bool aspectCorrection;
+            float easterEgg;
+            bool shuffleEnabled;
+            bool wiiLightEnabled;
+        };
 
-  projectM(std::string config_file, int flags = FLAG_NONE);
-  projectM(Settings settings, int flags = FLAG_NONE);
+        projectM (std::string config_file, int flags = PM_FLAG_NONE);
+        projectM (Settings settings, int flags = PM_FLAG_NONE);
 
-  void projectM_resetGL( int width, int height );
-  void projectM_resetTextures();
-  void renderFrame();
-  unsigned initRenderToTexture();
+        void projectM_resetGL(int width, int height);
+        void projectM_resetTextures();
+        void renderFrame();
+        unsigned initRenderToTexture();
 
-  virtual ~projectM();
+        virtual ~projectM();
+        
+        /// Occurs when active preset has switched. Switched to index is returned
+        virtual void presetSwitchedEvent(bool isHardCut, unsigned int index) const {};
+        
+        
+        /// Writes a settings configuration to the specified file
+        static bool writeConfig(const std::string &filepath, const Settings &settings);
 
+        /// Sets preset iterator position to the passed in index
+        void selectPresetPosition(unsigned int index);
 
+        /// Plays a preset immediately
+        void selectPreset(unsigned int index, bool hardCut = true);
 
+        /// Removes a preset from the play list. If it is playing then it will continue as normal until next switch
+        void removePreset(unsigned int index);
 
+        /// Sets the randomization functor. If set to null, the traversal will move in order according to the playlist
+        void setRandomizer(RandomizerFunctor * functor);
 
-  const Settings & settings() const {
-		return _settings;
-  }
+        /// Tell projectM to play a particular preset when it chooses to switch
+        /// If the preset is locked the queued item will be not switched to until the lock is released
+        /// Subsequent calls to this function effectively nullifies previous calls.
+        void queuePreset(unsigned int index);
 
-  /// Writes a settings configuration to the specified file
-  static bool writeConfig(const std::string & configFile, const Settings & settings);
+        /// Returns true if a preset is queued up to play next
+        bool isPresetQueued() const;
 
+        /// Removes entire playlist, The currently loaded preset will end up sticking until new presets are added
+        void clearPlaylist();
 
-  /// Sets preset iterator position to the passed in index
-  void selectPresetPosition(unsigned int index);
+        /// Turn on or off a lock that prevents projectM from switching to another preset
+        void setPresetLock(bool isLocked);
 
-  /// Plays a preset immediately
-  void selectPreset(unsigned int index, bool hardCut = true);
+        /// Returns true if the active preset is locked
+        bool isPresetLocked() const;
 
-  /// Removes a preset from the play list. If it is playing then it will continue as normal until next switch
-  void removePreset(unsigned int index);
+        /// Returns index of currently active preset. In the case where the active
+        /// preset was removed from the playlist, this function will return the element
+        /// before active preset (thus the next in order preset is invariant with respect
+        /// to the removal)
+        bool selectedPresetIndex(unsigned int & index) const;
 
-  /// Sets the randomization functor. If set to null, the traversal will move in order according to the playlist
-  void setRandomizer(RandomizerFunctor * functor);
+        /// Add a preset url to the play list. Appended to bottom. Returns index of preset
+        unsigned int addPresetURL(const std::string & presetURL, const std::string & presetName, int rating);
 
-  /// Tell projectM to play a particular preset when it chooses to switch
-  /// If the preset is locked the queued item will be not switched to until the lock is released
-  /// Subsequent calls to this function effectively nullifies previous calls.
-  void queuePreset(unsigned int index);
+        /// Insert a preset url to the play list at the suggested index.
+        void insertPresetURL(unsigned int index,
+                        const std::string & presetURL, const std::string & presetName, int rating);
 
-  /// Returns true if a preset is queued up to play next
-  bool isPresetQueued() const;
+        /// Returns true if the selected preset position points to an actual preset in the
+        /// currently loaded playlist
+        bool presetPositionValid() const;
 
-  /// Removes entire playlist, The currently loaded preset will end up sticking until new presets are added
-  void clearPlaylist();
+        /// Returns the url associated with a preset index
+        std::string getPresetURL(unsigned int index) const;
 
-  /// Turn on or off a lock that prevents projectM from switching to another preset
-  void setPresetLock(bool isLocked);
+        /// Returns the preset name associated with a preset index
+        std::string getPresetName ( unsigned int index ) const;
 
-  /// Returns true if the active preset is locked
-  bool isPresetLocked() const;
+        /// Returns the rating associated with a preset index
+        int getPresetRating (unsigned int index) const;
 
-  /// Returns index of currently active preset. In the case where the active
-  /// preset was removed from the playlist, this function will return the element
-  /// before active preset (thus the next in order preset is invariant with respect
-  /// to the removal)
-  bool selectedPresetIndex(unsigned int & index) const;
+        void changePresetRating (unsigned int index, int rating);
 
-  /// Add a preset url to the play list. Appended to bottom. Returns index of preset
-  unsigned int addPresetURL(const std::string & presetURL, const std::string & presetName, int rating);
+        /// Returns the size of the play list
+        unsigned int getPlaylistSize() const;
 
-  /// Insert a preset url to the play list at the suggested index.
-  void insertPresetURL(unsigned int index,
-			       const std::string & presetURL, const std::string & presetName, int rating);
+        void evaluateSecondPreset();
 
-  /// Returns true if the selected preset position points to an actual preset in the
-  /// currently loaded playlist
-  bool presetPositionValid() const;
-
-  /// Returns the url associated with a preset index
-  std::string getPresetURL(unsigned int index) const;
-
-  /// Returns the preset name associated with a preset index
-  std::string getPresetName ( unsigned int index ) const;
-
-  /// Returns the rating associated with a preset index
-  int getPresetRating (unsigned int index) const;
-
-  void changePresetRating (unsigned int index, int rating);
-
-  /// Returns the size of the play list
-  unsigned int getPlaylistSize() const;
-
-  void evaluateSecondPreset();
-
-  inline void setShuffleEnabled(bool value)
-  {
-	  _settings.shuffleEnabled = value;
-  }
+        inline void setShuffleEnabled(bool value)
+        {
+            _settings.shuffleEnabled = value;
+        }
 
 
-  inline bool isShuffleEnabled() const
-  {
-	return _settings.shuffleEnabled;
-  }
+        inline bool isShuffleEnabled() const
+        {
+            return _settings.shuffleEnabled;
+        }
 
-  /// Occurs when active preset has switched. Switched to index is returned
-  virtual void presetSwitchedEvent(bool isHardCut, unsigned int index) const {};
+        inline const Settings & settings() const {
+            return _settings;
+        }
+        
+        inline PCM * pcm() {
+            return _pcm;
+        }
+        
+        inline BeatDetect * beatDetect() {
+            return _beatDetect;
+        }
 
-  inline PCM * pcm() {
-    return _pcm;
-  }
-  
-  inline BeatDetect * beatDetect() {
-    return _beatDetect;
-  }
-  
-  void *thread_func(void *vptr_args);
-  PipelineContext & pipelineContext() { return *_pipelineContext; }
-  PipelineContext & pipelineContext2() { return *_pipelineContext2; }
+        void *thread_func(void *vptr_args);
 
-private:
-  PCM * _pcm;
-  double sampledPresetDuration();
-  BeatDetect * _beatDetect;
-  Renderer *_renderer;
-  PipelineContext * _pipelineContext;
-  PipelineContext * _pipelineContext2;
-  Settings _settings;
+    private:
+    
+        /** !!! LEAVE ME ALONE !!! **/
+        
+        PCM *_pcm;
+        BeatDetect *_beatDetect;
+        Renderer *_renderer;
+        PipelineContext *_pipelineContext;
+        PipelineContext *_pipelineContext2;
+        Settings _settings;
+       
+        /* Windowed dimensions */
+        int wvw;
+        int wvh;
 
+        /* Timing information */
+        int mspf;
+        int timed;
+        int timestart;
+        int count;
+        float fpsstart;
+        
+        PipelineContext & pipelineContext() { return *_pipelineContext; }
+        PipelineContext & pipelineContext2() { return *_pipelineContext2; }
+        
+        double sampledPresetDuration();
+        
+        void readConfig(const std::string &configFile);
+        void readSettings(const Settings &settings);
+        void projectM_init(int gx, int gy, int fps, int texsize, int width, int height);
+        void projectM_reset();
+        void selectPrevious(const bool);
+        void selectNext(const bool);
+        void selectRandom(const bool);
+        
+        void projectM_initengine();
+        void projectM_resetengine();
 
-  int wvw;      //windowed dimensions
-  int wvh;
+        /// Initializes preset loading / management libraries
+        int initPresetTools(int gx, int gy);
 
-  /** Timing information */
-  int mspf;
-  int timed;
-  int timestart;
-  int count;
-  float fpsstart;
+        /// Deinitialize all preset related tools. Usually done before projectM cleanup
+        void destroyPresetTools();
 
-  void readConfig(const std::string &configFile);
-  void readSettings(const Settings &settings);
-  void projectM_init(int gx, int gy, int fps, int texsize, int width, int height);
-  void projectM_reset();
-  void selectPrevious(const bool);
-  void selectNext(const bool);
-  void selectRandom(const bool);
+        void switchPreset(std::auto_ptr<Preset> & targetPreset);
+        
+        /// The current position of the directory iterator
+        PresetIterator * m_presetPos;
 
-  void projectM_initengine();
-  void projectM_resetengine();
+        /// Required by the preset chooser. Manages a loaded preset directory
+        PresetLoader * m_presetLoader;
 
-  /// Initializes preset loading / management libraries
-  int initPresetTools(int gx, int gy);
+        /// Provides accessor functions to choose presets
+        PresetChooser * m_presetChooser;
 
-  /// Deinitialize all preset related tools. Usually done before projectM cleanup
-  void destroyPresetTools();
+        /// Currently loaded preset
+        std::auto_ptr<Preset> m_activePreset;
 
-  /// The current position of the directory iterator
-  PresetIterator * m_presetPos;
+        /// Destination preset when smooth preset switching
+        std::auto_ptr<Preset> m_activePreset2;
 
-  /// Required by the preset chooser. Manages a loaded preset directory
-  PresetLoader * m_presetLoader;
+        TimeKeeper *timeKeeper;
 
-  /// Provides accessor functions to choose presets
-  PresetChooser * m_presetChooser;
+        int m_flags;
 
-  /// Currently loaded preset
-  std::auto_ptr<Preset> m_activePreset;
+        RenderItemMatcher * _matcher;
+        MasterRenderItemMerge * _merger;
+        mutex_t mutex;
+        cond_t condition;
+        lwp_t thread;
+        bool running;
 
-  /// Destination preset when smooth preset switching
-  std::auto_ptr<Preset> m_activePreset2;
-
-  TimeKeeper *timeKeeper;
-
-  int m_flags;
-
-  RenderItemMatcher * _matcher;
-  MasterRenderItemMerge * _merger;
-  mutex_t mutex;
-  cond_t condition;
-  lwp_t thread;
-  bool running;
-
-  Pipeline* currentPipe;
-
-void switchPreset(std::auto_ptr<Preset> & targetPreset);
-
+        Pipeline* currentPipe;
 
 };
 
