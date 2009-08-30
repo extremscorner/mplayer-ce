@@ -134,7 +134,7 @@ float ValExpr::eval_val_expr ( int mesh_i, int mesh_j )
 		}
 	}
 	/* Unknown type, return failure */
-	return PROJECTM_FAILURE;
+	return -1;
 }
 
 /* Evaluates an expression tree */
@@ -173,7 +173,7 @@ float TreeExpr::eval_tree_expr ( int mesh_i, int mesh_j )
 		case INFIX_MOD:
 			if ( ( int ) right_arg == 0 )
 			{
-				return PROJECTM_DIV_BY_ZERO;
+				return -1;
 			}
 			return ( ( int ) left_arg % ( int ) right_arg );
 		case INFIX_OR:

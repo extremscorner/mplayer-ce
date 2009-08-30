@@ -1,5 +1,4 @@
 
-#include "fatal.h"
 #include "BuiltinParams.hpp"
 #include <cassert>
 #include <iostream>
@@ -17,7 +16,7 @@ BuiltinParams::BuiltinParams(PresetInputs & presetInputs, PresetOutputs & preset
   presetInputs.Initialize(presetOutputs.gx, presetOutputs.gy);
 
   int ret;
-  if ((ret = init_builtin_param_db(presetInputs, presetOutputs)) != PROJECTM_SUCCESS)
+  if ((ret = init_builtin_param_db(presetInputs, presetOutputs)) != 0)
   {
 	std::cout << "failed to allocate builtin parameter database with error " << ret << std::endl;;
         throw ret;
@@ -54,7 +53,7 @@ std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
 
   if ((param = new Param(lowerName, P_TYPE_DOUBLE, flags, engine_val, matrix, iv, ub, lb)) == NULL)
   {
-    return PROJECTM_OUTOFMEM_ERROR;
+    return -1;
   }
 
   if (BUILTIN_PARAMS_DEBUG == 2)
@@ -68,7 +67,7 @@ std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
   if (insert_builtin_param( param ) < 0)
   {
     delete param;
-    return PROJECTM_ERROR;
+    return -1;
   }
 
   if (BUILTIN_PARAMS_DEBUG == 2)
@@ -97,7 +96,7 @@ std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
   if (BUILTIN_PARAMS_DEBUG == 2) printf("finished\n");
 
   /* Finished, return success */
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 
@@ -108,7 +107,7 @@ int BuiltinParams::destroy_builtin_param_db()
 {
 
   traverse<TraverseFunctors::Delete<Param> >(builtin_param_tree);
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 
@@ -120,7 +119,7 @@ int BuiltinParams::insert_param_alt_name(Param * param, const std::string & alt_
 
   aliasMap.insert(std::make_pair(alt_name, param->name));
 
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 Param * BuiltinParams::find_builtin_param(const std::string & name)
@@ -175,13 +174,13 @@ int BuiltinParams::load_builtin_param_int(const std::string & name, void * engin
 
   if (param == NULL)
   {
-    return PROJECTM_OUTOFMEM_ERROR;
+    return -1;
   }
 
   if (insert_builtin_param( param ) < 0)
   {
     delete param;
-    return PROJECTM_ERROR;
+    return -1;
   }
 
   if (alt_name != "")
@@ -192,7 +191,7 @@ int BuiltinParams::load_builtin_param_int(const std::string & name, void * engin
 
   }
 
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 
@@ -204,9 +203,9 @@ int BuiltinParams::load_builtin_param_string( const std::string & name, std::str
 	if (insert_builtin_param( param ) < 0)
 	{
 		delete param;
-		return PROJECTM_ERROR;
+		return -1;
 	}
-	return PROJECTM_SUCCESS;
+	return 0;
 }
 
 /* Loads a boolean parameter */
@@ -228,13 +227,13 @@ std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
 
   if (param == NULL)
   {
-    return PROJECTM_OUTOFMEM_ERROR;
+    return -1;
   }
 
   if (insert_builtin_param(param) < 0)
   {
     delete param;
-    return PROJECTM_ERROR;
+    return -1;
   }
 
   if (alt_name != "")
@@ -244,7 +243,7 @@ std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), tolower);
     insert_param_alt_name(param,alt_lower_name);
   }
 
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 
@@ -273,13 +272,13 @@ int BuiltinParams::init_builtin_param_db(const PresetInputs & presetInputs, Pres
   if (load_all_builtin_param(presetInputs, presetOutputs) < 0)
   {
     if (BUILTIN_PARAMS_DEBUG) printf("failed loading builtin parameters (FATAL)\n");
-    return PROJECTM_ERROR;
+    return -1;
   }
 
   if (BUILTIN_PARAMS_DEBUG) printf("success!\n");
 
   /* Finished, no errors */
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 
@@ -405,7 +404,7 @@ int BuiltinParams::load_all_builtin_param(const PresetInputs & presetInputs, Pre
   load_builtin_param_int("meshx", (void*)&presetInputs.gx, P_FLAG_READONLY, 32, 96, 8, "");
   load_builtin_param_int("meshy", (void*)&presetInputs.gy, P_FLAG_READONLY, 24, 72, 6, "");
 
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 

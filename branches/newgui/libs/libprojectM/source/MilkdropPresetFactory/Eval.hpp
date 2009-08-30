@@ -31,7 +31,6 @@
 #ifndef __EVAL_H
 #define __EVAL_H
 
-#include "fatal.h"
 //#include "projectM.hpp"
 #include "Func.hpp"
 #include "Param.hpp"

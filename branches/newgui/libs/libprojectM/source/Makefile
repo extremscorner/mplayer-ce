@@ -108,9 +108,8 @@ all: $(PROJMBIN)
 
 install:
 	@[ -d $(DEVKITPRO)/libogc/include/projectM ] || mkdir -p $(DEVKITPRO)/libogc/include/projectM
-	cp ../include/projectM/*.h $(DEVKITPRO)/libogc/include/projectM
 	cp ../include/projectM/*.hpp $(DEVKITPRO)/libogc/include/projectM
-	cp ../include/projectM.hpp $(DEVKITPRO)/libogc/include
+	cp ../include/*.hpp $(DEVKITPRO)/libogc/include
 	cp ../lib/wii/libprojectM.a $(DEVKITPRO)/libogc/lib/wii
 	cp ../lib/cube/libprojectM.a $(DEVKITPRO)/libogc/lib/cube
 

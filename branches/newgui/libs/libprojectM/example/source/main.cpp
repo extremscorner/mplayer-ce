@@ -141,10 +141,7 @@ void doTexturedRender (void)
 }
 
 int main(int argc, char **argv)
-{
-    // NOTE: projectM expects that the video system (including GX) has been
-    //       configured and setup prior to its instantiation.
-    
+{    
     // Initalise the display (and setup GX)
     displayInit();
     
@@ -164,13 +161,16 @@ int main(int argc, char **argv)
     config.windowHeight = rmode->efbHeight;     // Display height (in pixels)
     config.smoothPresetDuration = 10;           // Preset transition time (in seconds)
     config.presetDuration = 15;                 // Preset durtation (in seconds)
-    config.beatSensitivity = 10.0f;             // Lower to make hard cuts more frequent
+    config.beatSensitivity = 5.0f;              // Lower to make hard cuts more frequent
     config.aspectCorrection = true;             // Custom shape aspect correction
     config.shuffleEnabled = true;               // Preset shuffling
     config.wiiLightEnabled = true;              // Pulse the disc slot light in time with the beat
     config.easterEgg = 0.0f;                    // ...
     config.defaultPresetName = "";              // Default preset name
     config.presetURL = "sd:/presets";           // Location of preset directory
+
+    // NOTE: projectM expects that the video system (including GX) has been
+    //       configured and setup prior to its instantiation.
     
     // Allocate and initialise projectM
     projM = new projectM(config);
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
             
             // Queue our fake audio input for beat analysis
             projM->pcm()->addPCMfloat(fakePCM, MAX_AUDIO_SAMPLES);
-            
+
             // Render the next frame in the visualisation/preset
             projM->renderFrame();
             

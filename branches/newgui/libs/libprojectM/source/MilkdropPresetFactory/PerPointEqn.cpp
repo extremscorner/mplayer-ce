@@ -24,7 +24,6 @@
 #include <stdlib.h>
 
 #include <cassert>
-#include "fatal.h"
 #include "Common.hpp"
 
 #include "CustomWave.hpp"

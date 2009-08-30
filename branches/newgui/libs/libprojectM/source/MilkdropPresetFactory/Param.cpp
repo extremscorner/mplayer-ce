@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "fatal.h"
 #include "Common.hpp"
 
 #include "CustomShape.hpp"

@@ -372,6 +372,7 @@ void glInterleavedArrays (GLenum format, GLsizei stride,
 /**
  * Lighting
  */
+
 void glShadeModel (GLenum mode)
 {
     

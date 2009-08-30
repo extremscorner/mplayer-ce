@@ -26,7 +26,6 @@
 #include <sstream>
 
 #include "Common.hpp"
-#include "fatal.h"
 
 #include "CustomWave.hpp"
 #include "Eval.hpp"
@@ -459,9 +458,9 @@ int CustomWave::add_per_point_eqn(char * name, GenExpr * gen_expr)
 
   /* Argument checks */
   if (gen_expr == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (name == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   if (CUSTOM_WAVE_DEBUG) printf("add_per_point_eqn: per pixel equation (name = \"%s\")\n", name);
 
@@ -470,7 +469,7 @@ int CustomWave::add_per_point_eqn(char * name, GenExpr * gen_expr)
   if ((param = ParamUtils::find<ParamUtils::AUTO_CREATE>(name,&param_tree)) == NULL)
   {
     if (CUSTOM_WAVE_DEBUG) printf("add_per_point_eqn: failed to allocate a new parameter!\n");
-    return PROJECTM_FAILURE;
+    return -1;
 
   }
 
@@ -479,7 +478,7 @@ int CustomWave::add_per_point_eqn(char * name, GenExpr * gen_expr)
 
   /* Create the per point equation given the index, parameter, and general expression */
   if ((per_point_eqn = new PerPointEqn(index, param, gen_expr, samples)) == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (CUSTOM_WAVE_DEBUG)
     printf("add_per_point_eqn: created new equation (index = %d) (name = \"%s\")\n", per_point_eqn->index, per_point_eqn->param->name.c_str());
 
@@ -488,7 +487,7 @@ int CustomWave::add_per_point_eqn(char * name, GenExpr * gen_expr)
   per_point_eqn_tree.push_back(per_point_eqn);
 
   /* Done */
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 

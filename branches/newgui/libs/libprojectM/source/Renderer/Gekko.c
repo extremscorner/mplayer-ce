@@ -1,5 +1,5 @@
 /**
-* Gekko.h - Rendering routines for the Gekko platform via GX.
+ * Gekko.h - Additional rendering routines for the Gekko platform.
  *
  * Copyright (c) 2009 Rhys "Shareese" Koedijk
  *
@@ -47,7 +47,7 @@ void wiiLightOn ()
     light_on = (light_level > 0);
     
     // Spawn the light intensity loop
-    if (light_on && !light_thread)
+    if (light_on)
         LWP_CreateThread(&light_thread, light_loop, NULL, NULL, 0, 80);
 }
 
@@ -106,28 +106,8 @@ void *light_loop (void *arg)
     
     // Turn off the light
     *light_reg &= ~DISC_SLOT_LED;
-    light_thread = 0;
-    
+
     return NULL;
 }
 
-#elif defined(__gamecube__)
-
-void wiiLightOn ()
-{    
-}
-
-void wiiLightOff ()
-{
-}
-
-void wiiLightSetLevel (int level)
-{
-}
-
-int wiiLightGetLevel ()
-{
-    return 0;
-}
-
-#endif
+#endif /* __wii__ */

@@ -22,10 +22,22 @@
 #ifndef _GEKKO_H_
 #define _GEKKO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(__wii__)
+
 // Wii disc slot light routines
 void wiiLightOn ();
 void wiiLightOff ();
 void wiiLightSetLevel (int level);
 int wiiLightGetLevel ();
+
+#endif /* __wii__ */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _GEKKO_H_ */

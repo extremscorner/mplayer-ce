@@ -27,7 +27,6 @@
 #include <stdlib.h>
 
 #include "Common.hpp"
-#include "fatal.h"
 
 #include "CustomWave.hpp"
 #include "CustomShape.hpp"
@@ -293,11 +292,11 @@ int Parser::parse_top_comment(std::istream &  fs)
   while ((token = parseToken(fs, string)) != tLBr)
   {
     if (token == tEOF)
-      return PROJECTM_PARSE_ERROR;
+      return -1;
   }
 
   /* Done, return success */
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 /* Right Bracket is parsed by this function.
@@ -308,12 +307,12 @@ int Parser::parse_preset_name(std::istream &  fs, char * name)
   token_t token;
 
   if (name == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   if ((token = parseToken(fs, name)) != tRBr)
-    return PROJECTM_PARSE_ERROR;
+    return -1;
 
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 
@@ -335,14 +334,14 @@ int Parser::parse_per_pixel_eqn(std::istream &  fs, MilkdropPreset * preset, cha
 
     if (parseToken(fs, string) != tEq)
     { /* parse per pixel operator name */
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
   }
 
   /* Parse right side of equation as an expression */
   if ((gen_expr = parse_gen_expr(fs, NULL, preset)) == NULL)
   {
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Add the per pixel equation */
@@ -353,10 +352,10 @@ int Parser::parse_per_pixel_eqn(std::istream &  fs, MilkdropPreset * preset, cha
 
     }
     delete gen_expr;
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 /* Parses an equation line, this function is way too big, should add some helper functions */
@@ -396,12 +395,12 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       << line_count << ")" << std::endl;
 
     /* Invalid token found, return a parse error */
-    return PROJECTM_PARSE_ERROR;
+    return -1;
 
 
   case tEOL:  /* Empty line */
     line_mode = UNSET_LINE_MODE;
-    return PROJECTM_SUCCESS;
+    return 0;
 
   case tEOF: /* End of File */
     line_mode = UNSET_LINE_MODE;
@@ -411,7 +410,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 
   case tSemiColon: /* Indicates end of expression */
     tokenWrapAroundEnabled = false;
-    return PROJECTM_SUCCESS;
+    return 0;
 
     /* Valid Case, either an initial condition or equation should follow */
   case tEq:
@@ -419,16 +418,16 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
     if (PARSE_DEBUG) std::cout << "last line prefix = \"" << eqn_string << "\"" << std::endl;
     // std::cerr << "parse_line: tEQ case, fs.peek()=\'" << fs.peek() << "\'" << std::endl;
     if (!fs)
-      return PROJECTM_PARSE_ERROR;
+      return -1;
 
 //	char z = fs.get();
 	char tmpChar;
 	if ((tmpChar = fs.get()) == '\n') {
 		tokenWrapAroundEnabled = false;
-		return PROJECTM_PARSE_ERROR;
+		return -1;
 	} else if (tmpChar == '\r') {
 		tokenWrapAroundEnabled = false;
-		return PROJECTM_PARSE_ERROR;
+		return -1;
 	} else
 		fs.unget();
 
@@ -439,7 +438,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 	{
 		//std::cout << "parsing warp string block\n" << std::endl;
 		parse_string_block(fs, &preset->presetOutputs().warpShader.programSource);
-		return PROJECTM_SUCCESS;
+		return 0;
 	}
 
 
@@ -448,7 +447,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 	{
 		//std::cout << "parsing composite string block\n" << std::endl;
 		parse_string_block(fs, &preset->presetOutputs().compositeShader.programSource);
-		return PROJECTM_SUCCESS;
+		return 0;
 	}
 
     /* CASE: PER FRAME INIT EQUATION */
@@ -462,14 +461,14 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       {
         //if (PARSE_DEBUG) printf("parse_line: per frame init equation parsing failed (LINE %d)\n", line_count);
         tokenWrapAroundEnabled = false;
-        return PROJECTM_PARSE_ERROR;
+        return -1;
       }
 
       /* Insert the equation in the per frame equation tree */
       preset->per_frame_init_eqn_tree.insert(std::make_pair(init_cond->param->name, init_cond));
 
       line_mode = PER_FRAME_INIT_LINE_MODE;
-      return PROJECTM_SUCCESS;
+      return 0;
     }
 
     /* Per frame equation case */
@@ -487,13 +486,13 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       {
         if (PARSE_DEBUG) printf("parse_line: per frame equation parsing failed (LINE %d)\n", line_count);
         tokenWrapAroundEnabled = false;
-        return PROJECTM_PARSE_ERROR;
+        return -1;
       }
 
       /* Insert the equation in the per frame equation tree */
       preset->per_frame_eqn_tree.push_back(per_frame_eqn);
 
-      return PROJECTM_SUCCESS;
+      return 0;
 
     }
 
@@ -549,12 +548,12 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       if (parse_per_pixel_eqn(fs, preset, 0) < 0)
       {
         tokenWrapAroundEnabled = false;
-        return PROJECTM_PARSE_ERROR;
+        return -1;
       }
 
 
       if (PARSE_DEBUG) printf("parse_line: finished parsing per pixel equation (LINE %d)\n", line_count);
-      return PROJECTM_SUCCESS;
+      return 0;
     }
 
     /* Sometimes equations are written implicitly in milkdrop files, in the form
@@ -582,14 +581,14 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       if ((per_frame_eqn = parse_implicit_per_frame_eqn(fs, eqn_string, ++per_frame_eqn_count, preset)) == NULL)
       {
         tokenWrapAroundEnabled = false;
-        return PROJECTM_PARSE_ERROR;
+        return -1;
       }
 
       /* Insert the equation in the per frame equation tree */
       preset->per_frame_eqn_tree.push_back(per_frame_eqn);
 
 
-      return PROJECTM_SUCCESS;
+      return 0;
 
     }
     else if (line_mode == PER_FRAME_INIT_LINE_MODE)
@@ -599,7 +598,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       if ((init_cond = parse_per_frame_init_eqn(fs, preset, NULL)) == NULL)
       {
         tokenWrapAroundEnabled = false;
-        return PROJECTM_PARSE_ERROR;
+        return -1;
       }
 
       ++per_frame_init_eqn_count;
@@ -607,7 +606,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       /* Insert the equation in the per frame equation tree */
       preset->per_frame_init_eqn_tree.insert(std::make_pair(init_cond->param->name, init_cond));
 
-      return PROJECTM_SUCCESS;
+      return 0;
     }
     else if (line_mode == PER_PIXEL_LINE_MODE)
     {
@@ -626,9 +625,9 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
       if (parse_wave_helper(fs, preset, last_custom_wave_id, last_eqn_type, eqn_string) < 0)
       {
         if (PARSE_DEBUG) printf("parse_line: failed to parse an implicit custom wave per point eqn\n");
-        return PROJECTM_FAILURE;
+        return -1;
       }
-      return PROJECTM_SUCCESS;
+      return 0;
     }
     else if (line_mode == CUSTOM_WAVE_PER_FRAME_LINE_MODE)
     {
@@ -638,19 +637,19 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 
       /* Retrieve custom shape associated with this id */
       if ((custom_wave = MilkdropPreset::find_custom_object(last_custom_wave_id, preset->customWaves)) == NULL)
-        return PROJECTM_FAILURE;
+        return -1;
       return parse_wave_per_frame_eqn(fs, custom_wave, preset);
 
     }
     else if (line_mode == CUSTOM_WAVE_WAVECODE_LINE_MODE)
     {
       if (PARSE_DEBUG) printf("unsupported line mode: CUSTOM_WAVE_WAVECODE_LINE_MODE\n");
-      return PROJECTM_FAILURE;
+      return -1;
     }
     else if (line_mode == CUSTOM_SHAPE_SHAPECODE_LINE_MODE)
     {
       if (PARSE_DEBUG) printf("unsupported line mode: CUSTOM_SHAPE_SHAPECODE_LINE_MODE\n");
-      return PROJECTM_FAILURE;
+      return -1;
     }
     else if (line_mode == CUSTOM_SHAPE_PER_FRAME_LINE_MODE)
     {
@@ -660,7 +659,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 
       /* Retrieve custom shape associated with this id */
       if ((custom_shape = MilkdropPreset::find_custom_object(last_custom_shape_id, preset->customShapes)) == NULL)
-        return PROJECTM_FAILURE;
+        return -1;
 
       return parse_shape_per_frame_eqn(fs, custom_shape, preset);
 
@@ -672,7 +671,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
 
       /* Retrieve custom shape associated with this id */
       if ((custom_shape = preset->find_custom_object(last_custom_shape_id, preset->customShapes)) == NULL)
-        return PROJECTM_FAILURE;
+        return -1;
 
       return parse_shape_per_frame_init_eqn(fs, custom_shape, preset);
 
@@ -683,7 +682,7 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
     if ((init_cond = parse_init_cond(fs, eqn_string, preset)) == NULL)
     {
       if (PARSE_DEBUG) printf("parse_line: failed to parse initial condition (LINE %d)\n", line_count);
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
 
     /* Add equation to initial condition tree */
@@ -692,18 +691,18 @@ int Parser::parse_line(std::istream &  fs, MilkdropPreset * preset)
     /* Finished with initial condition line */
     //    if (PARSE_DEBUG) printf("parse_line: initial condition parsed successfully\n");
 
-    return PROJECTM_SUCCESS;
+    return 0;
 
     /* END INITIAL CONDITIONING PARSING */
 
   default: /* an uncaught type or an error has occurred */
     if (PARSE_DEBUG) printf("parse_line: uncaught case, token val = %d\n", token);
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Because of the default in the case statement,
      control flow should never actually reach here */
-  return PROJECTM_PARSE_ERROR;
+  return -1;
 }
 
 
@@ -853,7 +852,7 @@ GenExpr * Parser::parse_gen_expr ( std::istream &  fs, TreeExpr * tree_expr, Mil
     }
 
     /* CASE 1: Check if string is a just a floating point number */
-    if (string_to_float(string, &val) != PROJECTM_PARSE_ERROR)
+    if (string_to_float(string, &val) != -1)
     {
       if ((gen_expr = GenExpr::const_to_expr(val)) == NULL)
       {
@@ -1067,7 +1066,7 @@ int Parser::insert_gen_rec(GenExpr * gen_expr, TreeExpr * root)
   if (root == NULL)
   {
     //if (PARSE_DEBUG) printf("insert_gen_rec: root is null, returning failure\n");
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
 
@@ -1078,7 +1077,7 @@ int Parser::insert_gen_rec(GenExpr * gen_expr, TreeExpr * root)
   if ((root->left == NULL) && (root->infix_op != NULL))
   {
     root->left = new TreeExpr(NULL, gen_expr, NULL, NULL);
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   /* The current node's right pointer is null, and this
@@ -1088,20 +1087,20 @@ int Parser::insert_gen_rec(GenExpr * gen_expr, TreeExpr * root)
   if ((root->right == NULL) && (root->infix_op != NULL))
   {
     root->right = new TreeExpr(NULL, gen_expr, NULL, NULL);
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   /* Otherwise recurse down to the left. If
      this succeeds then return. If it fails, try
      recursing down to the right */
 
-  if (insert_gen_rec(gen_expr, root->left) == PROJECTM_FAILURE)
+  if (insert_gen_rec(gen_expr, root->left) == -1)
     return insert_gen_rec(gen_expr, root->right);
 
   /* Impossible for control flow to reach here, but in
      the world of C programming, who knows... */
   if (PARSE_DEBUG) printf("insert_gen_rec: should never reach here!\n");
-  return PROJECTM_FAILURE;
+  return -1;
 }
 
 
@@ -1112,26 +1111,26 @@ int Parser::insert_infix_rec(InfixOp * infix_op, TreeExpr * root)
   /* Shouldn't happen, implies a parse error */
 
   if (root == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* Also shouldn't happen, also implies a (different) parse error */
 
   if (root->infix_op == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* Left tree is empty, attach this operator to it.
      I don't think this will ever happen */
   if (root->left == NULL)
   {
     root->left = new TreeExpr(infix_op, NULL, root->left, NULL);
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   /* Right tree is empty, attach this operator to it */
   if (root->right == NULL)
   {
     root->right = new TreeExpr(infix_op, NULL, root->right, NULL);
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   /* The left element can now be ignored, since there is no way for this
@@ -1144,7 +1143,7 @@ int Parser::insert_infix_rec(InfixOp * infix_op, TreeExpr * root)
   if (root->right->infix_op == NULL)
   {
     root->right = new TreeExpr(infix_op, NULL, root->right, NULL);
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   /* Traverse deeper if the inserting operator precedence is less than the
@@ -1155,7 +1154,7 @@ int Parser::insert_infix_rec(InfixOp * infix_op, TreeExpr * root)
   /* Otherwise, insert the operator here */
 
   root->right = new TreeExpr(infix_op, NULL, root->right, NULL);
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 
@@ -1247,7 +1246,7 @@ int Parser::parse_int(std::istream &  fs, int * int_ptr)
 
 
   if (string[0] == 0)
-    return PROJECTM_PARSE_ERROR;
+    return -1;
 
   /* Convert the string to an integer. *end_ptr
      should end up pointing to null terminator of 'string'
@@ -1258,9 +1257,9 @@ int Parser::parse_int(std::istream &  fs, int * int_ptr)
 
   /* If end pointer is a return character or null terminator, all is well */
   if ((*end_ptr == '\r') || (*end_ptr == '\0'))
-    return PROJECTM_SUCCESS;
+    return 0;
 
-  return PROJECTM_PARSE_ERROR;
+  return -1;
 
 }
 /* Parses a floating point number */
@@ -1270,7 +1269,7 @@ int Parser::string_to_float(char * string, float * float_ptr)
   char ** error_ptr;
 
   if (*string == 0)
-    return PROJECTM_PARSE_ERROR;
+    return -1;
 
   error_ptr = (char**)wipemalloc(sizeof(char**));
 
@@ -1281,13 +1280,13 @@ int Parser::string_to_float(char * string, float * float_ptr)
   {
     free(error_ptr);
     error_ptr = NULL;
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   (*float_ptr) = 0;
   free(error_ptr);
   error_ptr = NULL;
-  return PROJECTM_PARSE_ERROR;
+  return -1;
 }
 
 /* Parses a floating point number */
@@ -1321,7 +1320,7 @@ int Parser::parse_float(std::istream &  fs, float * float_ptr)
   {
     free(error_ptr);
     error_ptr = NULL;
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   (*float_ptr) = sign*strtod(string, error_ptr);
@@ -1331,7 +1330,7 @@ int Parser::parse_float(std::istream &  fs, float * float_ptr)
   {
     free(error_ptr);
     error_ptr = NULL;
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   if (PARSE_DEBUG) printf("parse_float: float conversion failed for string \"%s\"\n", string);
@@ -1339,7 +1338,7 @@ int Parser::parse_float(std::istream &  fs, float * float_ptr)
   (*float_ptr) = 0;
   free(error_ptr);
   error_ptr = NULL;
-  return PROJECTM_PARSE_ERROR;
+  return -1;
 
 }
 
@@ -1483,7 +1482,7 @@ InitCond * Parser::parse_init_cond(std::istream &  fs, char * name, MilkdropPres
   if ( (param->type == P_TYPE_BOOL))
   {
     int bool_test;
-    if ((parse_int(fs, &bool_test)) == PROJECTM_PARSE_ERROR)
+    if ((parse_int(fs, &bool_test)) == -1)
     {
       if (PARSE_DEBUG) printf("parse_init_cond: error parsing integer!\n");
       return NULL;
@@ -1493,7 +1492,7 @@ InitCond * Parser::parse_init_cond(std::istream &  fs, char * name, MilkdropPres
 
   else if ((param->type == P_TYPE_INT))
   {
-    if ((parse_int(fs, (int*)&init_val.int_val)) == PROJECTM_PARSE_ERROR)
+    if ((parse_int(fs, (int*)&init_val.int_val)) == -1)
     {
       if (PARSE_DEBUG) printf("parse_init_cond: error parsing integer!\n");
       return NULL;
@@ -1503,7 +1502,7 @@ InitCond * Parser::parse_init_cond(std::istream &  fs, char * name, MilkdropPres
   /* float value */
   else if (param->type == P_TYPE_DOUBLE)
   {
-    if ((parse_float(fs, (float*)&init_val.float_val)) == PROJECTM_PARSE_ERROR)
+    if ((parse_float(fs, (float*)&init_val.float_val)) == -1)
     {
       if (PARSE_DEBUG) printf("parse_init_cond: error parsing float!\n");
       return NULL;
@@ -1773,7 +1772,7 @@ int Parser::parse_wavecode(char * token, std::istream &  fs, MilkdropPreset * pr
 
   /* Get id and variable name from token string */
   if (parse_wavecode_prefix(token, &id, &var_string) < 0)
-    return PROJECTM_PARSE_ERROR;
+    return -1;
 
   last_custom_wave_id = id;
 
@@ -1785,14 +1784,14 @@ int Parser::parse_wavecode(char * token, std::istream &  fs, MilkdropPreset * pr
     std::cerr << "parse_wavecode: failed to load (or create) custom wave (id = "
     << id << ")!\n" << std::endl;
 
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   if (PARSE_DEBUG) printf("parse_wavecode: custom wave found (id = %d)\n", custom_wave->id);
 
   /* Retrieve parameter from this custom waves parameter db */
   if ((param = ParamUtils::find<ParamUtils::AUTO_CREATE>(var_string,&custom_wave->param_tree)) == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   if (PARSE_DEBUG) printf("parse_wavecode: custom wave parameter found (name = %s)\n", param->name.c_str());
 
@@ -1801,31 +1800,31 @@ int Parser::parse_wavecode(char * token, std::istream &  fs, MilkdropPreset * pr
   if ((param->type == P_TYPE_BOOL))
   {
     int bool_test;
-    if ((parse_int(fs, &bool_test)) == PROJECTM_PARSE_ERROR)
+    if ((parse_int(fs, &bool_test)) == -1)
     {
 
       if (PARSE_DEBUG) printf("parse_wavecode: error parsing integer!\n");
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
     init_val.bool_val = bool_test;
   }
   else if ((param->type == P_TYPE_INT))
   {
-    if ((parse_int(fs, (int*)&init_val.int_val)) == PROJECTM_PARSE_ERROR)
+    if ((parse_int(fs, (int*)&init_val.int_val)) == -1)
     {
 
       if (PARSE_DEBUG) printf("parse_wavecode: error parsing integer!\n");
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
   }
 
   /* float value */
   else if (param->type == P_TYPE_DOUBLE)
   {
-    if ((parse_float(fs, (float*)&init_val.float_val)) == PROJECTM_PARSE_ERROR)
+    if ((parse_float(fs, (float*)&init_val.float_val)) == -1)
     {
       if (PARSE_DEBUG) printf("parse_wavecode: error parsing float!\n");
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
   }
 
@@ -1833,7 +1832,7 @@ int Parser::parse_wavecode(char * token, std::istream &  fs, MilkdropPreset * pr
   else
   {
     if (PARSE_DEBUG) printf("parse_wavecode: unknown parameter type!\n");
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Create new initial condition */
@@ -1842,7 +1841,7 @@ int Parser::parse_wavecode(char * token, std::istream &  fs, MilkdropPreset * pr
   if (init_cond == NULL)
   {
     if (PARSE_DEBUG) printf("parse_wavecode: new_init_cond failed!\n");
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   std::pair<std::map<std::string, InitCond*>::iterator, bool> inserteePair =
@@ -1853,7 +1852,7 @@ int Parser::parse_wavecode(char * token, std::istream &  fs, MilkdropPreset * pr
   line_mode = CUSTOM_WAVE_WAVECODE_LINE_MODE;
 
   if (PARSE_DEBUG) printf("parse_wavecode: [success]\n");
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * preset)
@@ -1868,17 +1867,17 @@ int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * p
 
   /* Null argument checks */
   if (preset == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (fs == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (token == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* token should be in the form shapecode_N_var, such as shapecode_1_samples */
 
   /* Get id and variable name from token string */
   if (parse_shapecode_prefix(token, &id, &var_string) < 0)
-    return PROJECTM_PARSE_ERROR;
+    return -1;
 
   last_custom_shape_id = id;
 
@@ -1891,7 +1890,7 @@ int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * p
   if ((custom_shape = MilkdropPreset::find_custom_object(id,  preset->customShapes)) == NULL)
   {
     if (PARSE_DEBUG) printf("parse_shapecode: failed to load (or create) custom shape (id = %d)!\n", id);
-    return PROJECTM_FAILURE;
+    return -1;
   }
   if (PARSE_DEBUG) printf("parse_shapecode: custom shape found (id = %d)\n", custom_shape->id);
 
@@ -1908,7 +1907,7 @@ int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * p
       std::cerr << "parse_shapecode: found image url, text is \""
       << text << "\"" << std::endl;
 
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
   /* Retrieve parameter from this custom shapes parameter db */
@@ -1917,7 +1916,7 @@ int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * p
   if ((param = ParamUtils::find<ParamUtils::AUTO_CREATE>(var_string, &custom_shape->param_tree)) == NULL)
   {
     if (PARSE_DEBUG) printf("parse_shapecode: failed to create parameter.\n");
-    return PROJECTM_FAILURE;
+    return -1;
   }
   if (PARSE_DEBUG) printf("parse_shapecode: custom shape parameter found (name = %s)\n", param->name.c_str());
 
@@ -1927,29 +1926,29 @@ int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * p
   if ((param->type == P_TYPE_BOOL))
   {
     int bool_test;
-    if ((parse_int(fs, &bool_test)) == PROJECTM_PARSE_ERROR)
+    if ((parse_int(fs, &bool_test)) == -1)
     {
       if (PARSE_DEBUG) printf("parse_shapecode: error parsing integer!\n");
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
     init_val.bool_val = bool_test;
   }
   else if ((param->type == P_TYPE_INT))
   {
-    if ((parse_int(fs, (int*)&init_val.int_val)) == PROJECTM_PARSE_ERROR)
+    if ((parse_int(fs, (int*)&init_val.int_val)) == -1)
     {
       if (PARSE_DEBUG) printf("parse_shapecode: error parsing integer!\n");
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
   }
 
   /* float value */
   else if (param->type == P_TYPE_DOUBLE)
   {
-    if ((parse_float(fs, (float*)&init_val.float_val)) == PROJECTM_PARSE_ERROR)
+    if ((parse_float(fs, (float*)&init_val.float_val)) == -1)
     {
       if (PARSE_DEBUG) printf("parse_shapecode: error parsing float!\n");
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
   }
 
@@ -1957,21 +1956,21 @@ int Parser::parse_shapecode(char * token, std::istream &  fs, MilkdropPreset * p
   else
   {
     if (PARSE_DEBUG) printf("parse_shapecode: unknown parameter type!\n");
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Create new initial condition */
   if ((init_cond = new InitCond(param, init_val)) == NULL)
   {
     if (PARSE_DEBUG) printf("parse_shapecode: new_init_cond failed!\n");
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   custom_shape->init_cond_tree.insert(std::make_pair(param->name,init_cond));
   line_mode = CUSTOM_SHAPE_SHAPECODE_LINE_MODE;
 
   if (PARSE_DEBUG) printf("parse_shapecode: [success]\n");
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 
@@ -1981,19 +1980,19 @@ int Parser::parse_wavecode_prefix(char * token, int * id, char ** var_string)
   int len, i, j;
 
   if (token == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   /*
   if (*var_string == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   */
   if (id == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   len = strlen(token);
 
   /* Move pointer passed "wavecode_" prefix */
   if (len <= WAVECODE_STRING_LENGTH)
-    return PROJECTM_FAILURE;
+    return -1;
   i = WAVECODE_STRING_LENGTH;
   j = 0;
   (*id) = 0;
@@ -2002,7 +2001,7 @@ int Parser::parse_wavecode_prefix(char * token, int * id, char ** var_string)
   while ((i < len) && (token[i] >=  48) && (token[i] <= 57))
   {
     if (j >= MAX_TOKEN_SIZE)
-      return PROJECTM_FAILURE;
+      return -1;
 
     (*id) = 10*(*id) + (token[i]-48);
     j++;
@@ -2011,11 +2010,11 @@ int Parser::parse_wavecode_prefix(char * token, int * id, char ** var_string)
 
 
   if (i > (len - 2))
-    return PROJECTM_FAILURE;
+    return -1;
 
   *var_string = token + i + 1;
 
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 
@@ -2026,19 +2025,19 @@ int Parser::parse_shapecode_prefix(char * token, int * id, char ** var_string)
   int len, i, j;
 
   if (token == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   /*
   if (*var_string == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   */
   if (id == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   len = strlen(token);
 
   /* Move pointer passed "shapecode_" prefix */
   if (len <= SHAPECODE_STRING_LENGTH)
-    return PROJECTM_FAILURE;
+    return -1;
   i = SHAPECODE_STRING_LENGTH;
   j = 0;
   (*id) = 0;
@@ -2047,7 +2046,7 @@ int Parser::parse_shapecode_prefix(char * token, int * id, char ** var_string)
   while ((i < len) && (token[i] >=  48) && (token[i] <= 57))
   {
     if (j >= MAX_TOKEN_SIZE)
-      return PROJECTM_FAILURE;
+      return -1;
 
     (*id) = 10*(*id) + (token[i]-48);
     j++;
@@ -2056,11 +2055,11 @@ int Parser::parse_shapecode_prefix(char * token, int * id, char ** var_string)
 
 
   if (i > (len - 2))
-    return PROJECTM_FAILURE;
+    return -1;
 
   *var_string = token + i + 1;
 
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 
@@ -2070,16 +2069,16 @@ int Parser::parse_wave_prefix(char * token, int * id, char ** eqn_string)
   int len, i, j;
 
   if (token == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (eqn_string == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (id == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   len = strlen(token);
 
   if (len <= WAVE_STRING_LENGTH)
-    return PROJECTM_FAILURE;
+    return -1;
 
 
   i = WAVE_STRING_LENGTH;
@@ -2090,7 +2089,7 @@ int Parser::parse_wave_prefix(char * token, int * id, char ** eqn_string)
   while ((i < len) && (token[i] >=  48) && (token[i] <= 57))
   {
     if (j >= MAX_TOKEN_SIZE)
-      return PROJECTM_FAILURE;
+      return -1;
 
     (*id) = 10*(*id) + (token[i]-48);
     j++;
@@ -2098,12 +2097,12 @@ int Parser::parse_wave_prefix(char * token, int * id, char ** eqn_string)
   }
 
   if (i > (len - 2))
-    return PROJECTM_FAILURE;
+    return -1;
 
   *eqn_string = token + i + 1;
 
   if (PARSE_DEBUG) printf("parse_wave_prefix: prefix = %s\n (LINE %d)", *eqn_string, line_count);
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 
@@ -2113,16 +2112,16 @@ int Parser::parse_shape_prefix(char * token, int * id, char ** eqn_string)
   int len, i, j;
 
   if (token == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (eqn_string == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (id == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   len = strlen(token);
 
   if (len <= SHAPE_STRING_LENGTH)
-    return PROJECTM_FAILURE;
+    return -1;
 
 
   i = SHAPE_STRING_LENGTH;
@@ -2133,7 +2132,7 @@ int Parser::parse_shape_prefix(char * token, int * id, char ** eqn_string)
   while ((i < len) && (token[i] >=  48) && (token[i] <= 57))
   {
     if (j >= MAX_TOKEN_SIZE)
-      return PROJECTM_FAILURE;
+      return -1;
 
     (*id) = 10*(*id) + (token[i]-48);
     j++;
@@ -2141,11 +2140,11 @@ int Parser::parse_shape_prefix(char * token, int * id, char ** eqn_string)
   }
 
   if (i > (len - 2))
-    return PROJECTM_FAILURE;
+    return -1;
 
   *eqn_string = token + i + 1;
 
-  return PROJECTM_SUCCESS;
+  return 0;
 
 }
 
@@ -2159,17 +2158,17 @@ int Parser::parse_wave(char * token, std::istream &  fs, MilkdropPreset * preset
   if (PARSE_DEBUG) printf("parse_wave:begin\n");
 
   if (token == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (fs == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (preset == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* Grab custom wave id and equation type (per frame or per point) from string token */
   if (parse_wave_prefix(token, &id, &eqn_type) < 0)
   {
     if (PARSE_DEBUG) printf("parse_wave: syntax error in custom wave prefix!\n");
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   strncpy(last_eqn_type, eqn_type, MAX_TOKEN_SIZE);
@@ -2192,7 +2191,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
   if ((custom_wave = MilkdropPreset::find_custom_object(id,  preset->customWaves)) == NULL)
   {
     if (PARSE_DEBUG) printf("parse_wave_helper: custom wave id %d not found!\n", id);
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   /* per frame init equation case */
@@ -2205,7 +2204,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
     if ((init_cond = parse_per_frame_init_eqn(fs, preset, &custom_wave->param_tree)) == NULL)
     {
       if (PARSE_DEBUG) printf("parse_wave_helper (per frame init): equation parsing failed (LINE %d)\n", line_count);
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
 
     /* Insert the equation in the per frame equation tree */
@@ -2213,7 +2212,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
 
     line_mode = CUSTOM_WAVE_PER_FRAME_INIT_LINE_MODE;
     init_cond->evaluate(true);
-    return PROJECTM_SUCCESS;
+    return 0;
 
   }
 
@@ -2226,14 +2225,14 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
     if (parseToken(fs, string) != tEq)
     {
       if (PARSE_DEBUG) printf("parse_wave (per_frame): no equal sign after string \"%s\" (LINE %d)\n", string, line_count);
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
 
     /* Find the parameter associated with the string in the custom wave database */
     if ((param =  ParamUtils::find<ParamUtils::AUTO_CREATE>(string, &custom_wave->param_tree)) == NULL)
     {
       if (PARSE_DEBUG) printf("parse_wave (per_frame): parameter \"%s\" not found or cannot be wipemalloc'ed!!\n", string);
-      return PROJECTM_FAILURE;
+      return -1;
     }
 
 
@@ -2241,7 +2240,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
     if (param->flags & P_FLAG_READONLY)
     {
       if (PARSE_DEBUG) printf("parse_wave (per_frame): parameter %s is marked as read only (LINE %d)\n", param->name.c_str(), line_count);
-      return PROJECTM_FAILURE;
+      return -1;
     }
 
     /* Parse right side of equation as an expression */
@@ -2251,7 +2250,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
     {
       if (PARSE_DEBUG) printf("parse_wave (per_frame): equation evaluated to null (LINE %d)\n", line_count);
       current_wave = NULL;
-      return PROJECTM_PARSE_ERROR;
+      return -1;
 
     }
 
@@ -2264,7 +2263,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
     {
       if (PARSE_DEBUG) printf("parse_wave (per_frame): failed to create a new per frame eqn, out of memory?\n");
       delete gen_expr;
-      return PROJECTM_FAILURE;
+      return -1;
     }
 
     custom_wave->per_frame_eqn_tree.push_back(per_frame_eqn);
@@ -2276,7 +2275,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
        Why not make a nice little helper function for this? - here it is: */
 
     line_mode = CUSTOM_WAVE_PER_FRAME_LINE_MODE;
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
 
@@ -2296,7 +2295,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
       { /* parse per pixel operator  name */
         if (PARSE_DEBUG) printf("parse_wave_helper (per_point): equal operator missing after per pixel operator. Last token = \"%s\"  (LINE %d)\n", string, line_count);
 
-        return PROJECTM_PARSE_ERROR;
+        return -1;
       }
     }
 
@@ -2306,7 +2305,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
     {
       if (PARSE_DEBUG) printf("parse_wave_helper (per_point): equation evaluated to null? (LINE %d)\n", line_count);
 
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
 
 
@@ -2315,7 +2314,7 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
     {
       delete gen_expr;
 
-      return PROJECTM_PARSE_ERROR;
+      return -1;
     }
     // This tells the parser we are no longer parsing a custom wave
     current_wave = NULL;
@@ -2324,10 +2323,10 @@ int Parser::parse_wave_helper(std::istream &  fs, MilkdropPreset  * preset, int 
 
     line_mode = CUSTOM_WAVE_PER_POINT_LINE_MODE;
     if (PARSE_DEBUG) printf("parse_wave_helper (per_point): [finished] (custom wave id = %d)\n", custom_wave->id);
-    return PROJECTM_SUCCESS;
+    return 0;
   }
 
-  return PROJECTM_FAILURE;
+  return -1;
 }
 
 /* Parses custom shape equations */
@@ -2341,22 +2340,22 @@ int Parser::parse_shape(char * token, std::istream &  fs, MilkdropPreset * prese
 
   if (token == NULL)
 
-    return PROJECTM_FAILURE;
+    return -1;
   if (fs == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
   if (preset == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* Grab custom shape id and equation type (per frame or per point) from string token */
   if (parse_shape_prefix(token, &id, &eqn_type) < 0)
   {
     if (PARSE_DEBUG) printf("parse_shape: syntax error in custom shape prefix!\n");
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Retrieve custom shape associated with this id */
   if ((custom_shape = MilkdropPreset::find_custom_object(id,preset->customShapes)) == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
 
   /* per frame init equation case */
@@ -2373,7 +2372,7 @@ int Parser::parse_shape(char * token, std::istream &  fs, MilkdropPreset * prese
 
 
   /* Syntax error, return parse error */
-  return PROJECTM_PARSE_ERROR;
+  return -1;
 }
 
 /* Helper function to update the string buffers used by the editor */
@@ -2393,19 +2392,19 @@ int Parser::get_string_prefix_len(char * string)
 
   /* Null argument check */
   if (string == NULL)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* First find the equal sign */
   while (string[i] != '=')
   {
     if (string[i] == 0)
-      return PROJECTM_FAILURE;
+      return -1;
     i++;
   }
 
   /* If the string already ends at the next char then give up */
   if (string[i+1] == 0)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* Move past the equal sign */
   i++;
@@ -2418,7 +2417,7 @@ int Parser::get_string_prefix_len(char * string)
 
   /* If this is the end of the string then its a syntax error */
   if (string[i] == 0)
-    return PROJECTM_FAILURE;
+    return -1;
 
   /* Finished succesfully, return the length */
   return i;
@@ -2434,14 +2433,14 @@ int Parser::parse_shape_per_frame_init_eqn(std::istream &  fs, CustomShape * cus
   if ((init_cond = parse_per_frame_init_eqn(fs, preset, &custom_shape->param_tree)) == NULL)
   {
     if (PARSE_DEBUG) printf("parse_shape (per frame init): equation parsing failed (LINE %d)\n", line_count);
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /// \idea possibly a good place to update a string buffer;
 
   line_mode = CUSTOM_SHAPE_PER_FRAME_INIT_LINE_MODE;
   init_cond->evaluate(true);
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_shape, MilkdropPreset * preset)
@@ -2458,14 +2457,14 @@ int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_sh
   if (parseToken(fs, string) != tEq)
   {
     if (PARSE_DEBUG) printf("parse_shape (per_frame): no equal sign after string \"%s\" (LINE %d)\n", string, line_count);
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Find the parameter associated with the string in the custom shape database */
   if ((param = ParamUtils::find<ParamUtils::AUTO_CREATE>(string, &custom_shape->param_tree)) == NULL)
   {
     if (PARSE_DEBUG) printf("parse_shape (per_frame): parameter \"%s\" not found or cannot be wipemalloc'ed!!\n", string);
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
 
@@ -2473,7 +2472,7 @@ int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_sh
   if (param->flags & P_FLAG_READONLY)
   {
     if (PARSE_DEBUG) printf("parse_shape (per_frame): parameter %s is marked as read only (LINE %d)\n", param->name.c_str(), line_count);
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Parse right side of equation as an expression */
@@ -2483,7 +2482,7 @@ int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_sh
   {
     if (PARSE_DEBUG) printf("parse_shape (per_frame): equation evaluated to null (LINE %d)\n", line_count);
     current_shape = NULL;
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   current_shape = NULL;
@@ -2495,7 +2494,7 @@ int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_sh
   {
     if (PARSE_DEBUG) printf("parse_shape (per_frame): failed to create a new per frame eqn, out of memory?\n");
     delete gen_expr;
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   custom_shape->per_frame_eqn_tree.push_back(per_frame_eqn);
@@ -2503,7 +2502,7 @@ int Parser::parse_shape_per_frame_eqn(std::istream & fs, CustomShape * custom_sh
   /// \idea add string buffer update for easy >> and <<
 
   line_mode = CUSTOM_SHAPE_PER_FRAME_LINE_MODE;
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 int Parser::parse_wave_per_frame_eqn(std::istream &  fs, CustomWave * custom_wave, MilkdropPreset * preset)
@@ -2520,14 +2519,14 @@ int Parser::parse_wave_per_frame_eqn(std::istream &  fs, CustomWave * custom_wav
   if (parseToken(fs, string) != tEq)
   {
     if (PARSE_DEBUG) printf("parse_wave (per_frame): no equal sign after string \"%s\" (LINE %d)\n", string, line_count);
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   /* Find the parameter associated with the string in the custom shape database */
   if ((param = ParamUtils::find<ParamUtils::AUTO_CREATE>(string, &custom_wave->param_tree)) == NULL)
   {
     if (PARSE_DEBUG) printf("parse_wave (per_frame): parameter \"%s\" not found or cannot be wipemalloc'ed!!\n", string);
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
 
@@ -2535,7 +2534,7 @@ int Parser::parse_wave_per_frame_eqn(std::istream &  fs, CustomWave * custom_wav
   if (param->flags & P_FLAG_READONLY)
   {
     if (PARSE_DEBUG) printf("parse_wave (per_frame): parameter %s is marked as read only (LINE %d)\n", param->name.c_str(), line_count);
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   /* Parse right side of equation as an expression */
@@ -2545,7 +2544,7 @@ int Parser::parse_wave_per_frame_eqn(std::istream &  fs, CustomWave * custom_wav
   {
     if (PARSE_DEBUG) printf("parse_wave (per_frame): equation evaluated to null (LINE %d)\n", line_count);
     current_wave = NULL;
-    return PROJECTM_PARSE_ERROR;
+    return -1;
   }
 
   current_wave = NULL;
@@ -2557,7 +2556,7 @@ int Parser::parse_wave_per_frame_eqn(std::istream &  fs, CustomWave * custom_wav
   {
     if (PARSE_DEBUG) printf("parse_wave (per_frame): failed to create a new per frame eqn, out of memory?\n");
     delete gen_expr;
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   custom_wave->per_frame_eqn_tree.push_back(per_frame_eqn);
@@ -2569,7 +2568,7 @@ int Parser::parse_wave_per_frame_eqn(std::istream &  fs, CustomWave * custom_wav
      Why not make a nice little helper function for this? - here it is: */
 
   line_mode = CUSTOM_WAVE_PER_FRAME_LINE_MODE;
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 

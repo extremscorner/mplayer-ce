@@ -22,7 +22,6 @@ extern "C"
 }
 
 #include <cassert>
-#include "fatal.h"
 
 #include "Common.hpp"
 

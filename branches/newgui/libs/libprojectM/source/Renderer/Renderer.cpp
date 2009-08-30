@@ -2,7 +2,6 @@
 #include "wipemalloc.h"
 #include "math.h"
 #include "Common.hpp"
-#include "KeyHandler.hpp"
 #include "TextureManager.hpp"
 #include <iostream>
 #include <algorithm>
@@ -21,7 +20,6 @@ texsize(texsize), mesh(gx, gy), m_presetName("None"), vw(width), vh(height), pre
 
 	this->totalframes = 1;
 	this->noSwitch = false;
-	this->studio = false;
 	this->realfps = 0;
 
 	/** Other stuff... */
@@ -183,9 +181,6 @@ void Renderer::Pass2(const Pipeline &pipeline, const PipelineContext &pipelineCo
 	glLoadIdentity();
 	glTranslatef(-0.5, -0.5, 0);
 
-	// When console refreshes, there is a chance the preset has been changed by the user
-	refreshConsole();
-
 	glTranslatef(0.5, 0.5, 0);
 
 #ifdef USE_FBO
@@ -196,12 +191,13 @@ void Renderer::Pass2(const Pipeline &pipeline, const PipelineContext &pipelineCo
 
 void Renderer::RenderFrame(const Pipeline &pipeline, const PipelineContext &pipelineContext)
 {
-
+#if defined(__wii__)
     if (useWiiLight) {
         wiiLightSetLevel(beatDetect->bass);
         wiiLightOn();
     }
-    
+#endif
+
 	SetupPass1(pipeline, pipelineContext);
 
 #ifdef USE_CG
@@ -314,9 +310,11 @@ Pipeline* Renderer::currentPipe;
 
 Renderer::~Renderer()
 {
+#if defined(__wii__)
     if (useWiiLight)
         wiiLightOff();
-    
+#endif
+
 	//int x;
 
 	if (renderTarget)
@@ -337,9 +335,11 @@ void Renderer::reset(int w, int h)
 	this -> vw = w;
 	this -> vh = h;
     
+#if defined(__wii__)
     if (useWiiLight)
         wiiLightOff();
-    
+#endif
+
 #if USE_CG
 	shaderEngine.setAspect(aspect);
 #endif

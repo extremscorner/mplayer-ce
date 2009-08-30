@@ -24,7 +24,6 @@
 #include <cstdlib>
 
 #include "Common.hpp"
-#include "fatal.h"
 
 #include "Eval.hpp"
 #include "Expr.hpp"
@@ -59,7 +58,7 @@ int Eval::init_infix_ops() {
 	Eval::infix_positive = new InfixOp(INFIX_ADD, 0);
 	Eval::infix_negative = new InfixOp(INFIX_MINUS, 0);
 
-	return PROJECTM_SUCCESS;
+	return 0;
 }
 
 /* Destroys the infix operator list. This should
@@ -87,5 +86,5 @@ int Eval::destroy_infix_ops()
   Eval::infix_positive = NULL;
   Eval::infix_negative = NULL;
 
-  return PROJECTM_SUCCESS;
+  return 0;
 }

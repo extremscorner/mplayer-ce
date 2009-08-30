@@ -29,7 +29,6 @@
 #include "Parser.hpp"
 #include "ParamUtils.hpp"
 #include "InitCondUtils.hpp"
-#include "fatal.h"
 #include <iostream>
 #include <fstream>
 
@@ -99,7 +98,7 @@ int MilkdropPreset::add_per_pixel_eqn(char * name, GenExpr * gen_expr)
   if ( !param )
   {
     if (PER_PIXEL_EQN_DEBUG) printf("add_per_pixel_eqn: failed to allocate a new parameter!\n");
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   index = per_pixel_eqn_tree.size();
@@ -108,7 +107,7 @@ int MilkdropPreset::add_per_pixel_eqn(char * name, GenExpr * gen_expr)
   if ((per_pixel_eqn = new PerPixelEqn(index, param, gen_expr)) == NULL)
   {
     if (PER_PIXEL_EQN_DEBUG) printf("add_per_pixel_eqn: failed to create new per pixel equation!\n");
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
 
@@ -121,11 +120,11 @@ int MilkdropPreset::add_per_pixel_eqn(char * name, GenExpr * gen_expr)
   {
     printf("failed to add per pixel eqn!\n");
     delete(per_pixel_eqn);
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   /* Done */
-  return PROJECTM_SUCCESS;
+  return 0;
 }
 
 void MilkdropPreset::evalCustomShapeInitConditions()
@@ -468,7 +467,7 @@ int MilkdropPreset::readIn(std::istream & fs) {
   {
 	if (MILKDROP_PRESET_DEBUG)
     		std::cerr << "[Preset::readIn] no left bracket found..." << std::endl;
-    return PROJECTM_FAILURE;
+    return -1;
   }
 
   /* Parse the preset name and a left bracket */
@@ -477,7 +476,7 @@ int MilkdropPreset::readIn(std::istream & fs) {
   if (Parser::parse_preset_name(fs, tmp_name) < 0)
   {
     std::cerr <<  "[Preset::readIn] loading of preset name failed" << std::endl;
-    return PROJECTM_ERROR;
+    return -1;
   }
 
   /// @note  We ignore the preset name because [preset00] is just not so useful
@@ -487,7 +486,7 @@ int MilkdropPreset::readIn(std::istream & fs) {
   int retval;
   while ((retval = Parser::parse_line(fs, this)) != EOF)
   {
-    if (retval == PROJECTM_PARSE_ERROR)
+    if (retval == -1)
     {
       line_mode = UNSET_LINE_MODE;
       // std::cerr << "[Preset::readIn()] parse error in file \"" << this->absoluteFilePath() << "\"" << std::endl;
@@ -500,7 +499,7 @@ int MilkdropPreset::readIn(std::istream & fs) {
      Evaluation calls can be made at appropiate
      times in the frame loop */
 
-return PROJECTM_SUCCESS;
+return 0;
 }
 
 /* loadPresetFile: private function that loads a specific preset denoted
@@ -514,7 +513,7 @@ int MilkdropPreset::loadPresetFile(const std::string & pathname)
   if (!fs || fs.eof()) {
     if (MILKDROP_PRESET_DEBUG)
     	std::cerr << "loadPresetFile: loading of file \"" << pathname << "\" failed!\n";
-    return PROJECTM_ERROR;
+    return -1;
   }
 
  return readIn(fs);

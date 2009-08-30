@@ -25,7 +25,6 @@
 #include <stdlib.h>
 
 #include "Common.hpp"
-#include "fatal.h"
 
 #include "Func.hpp"
 #include <map>

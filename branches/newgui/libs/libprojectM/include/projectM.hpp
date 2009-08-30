@@ -44,12 +44,9 @@
 #include <unistd.h>
 #include <memory>
 
-#include <projectM/event.h>
-#include <projectM/fatal.h>
 #include <projectM/PCM.hpp>
+#include <projectM/BeatDetect.hpp>
 
-class BeatDetect;
-class PCM;
 class Func;
 class Renderer;
 class Preset;
@@ -62,15 +59,6 @@ class PipelineContext;
 class RenderItemMatcher;
 class MasterRenderItemMerge;
 
-/** Interface types */
-typedef enum {
-    MENU_INTERFACE,
-    SHELL_INTERFACE,
-    EDITOR_INTERFACE,
-    DEFAULT_INTERFACE,
-    BROWSER_INTERFACE
-  } interface_t;
-
 /// A functor class that allows users of this library to specify random preset behavior
 class RandomizerFunctor {
 
@@ -81,7 +69,6 @@ class RandomizerFunctor {
    private:
 	const PresetChooser & m_chooser;
 };
-
 
 class projectM
 {
@@ -114,8 +101,6 @@ public:
   void projectM_resetTextures();
   void renderFrame();
   unsigned initRenderToTexture();
-  void key_handler( projectMEvent event,
-		    projectMKeycode keycode, projectMModifier modifier );
 
   virtual ~projectM();
 
@@ -196,8 +181,6 @@ public:
   inline void setShuffleEnabled(bool value)
   {
 	  _settings.shuffleEnabled = value;
-
-	/// idea@ call a virtualfunction shuffleChanged()
   }
 
 
@@ -208,12 +191,15 @@ public:
 
   /// Occurs when active preset has switched. Switched to index is returned
   virtual void presetSwitchedEvent(bool isHardCut, unsigned int index) const {};
-  virtual void shuffleEnabledValueChanged(bool isEnabled) const {};
-
 
   inline PCM * pcm() {
-	  return _pcm;
+    return _pcm;
   }
+  
+  inline BeatDetect * beatDetect() {
+    return _beatDetect;
+  }
+  
   void *thread_func(void *vptr_args);
   PipelineContext & pipelineContext() { return *_pipelineContext; }
   PipelineContext & pipelineContext2() { return *_pipelineContext2; }
@@ -221,8 +207,8 @@ public:
 private:
   PCM * _pcm;
   double sampledPresetDuration();
-  BeatDetect * beatDetect;
-  Renderer *renderer;
+  BeatDetect * _beatDetect;
+  Renderer *_renderer;
   PipelineContext * _pipelineContext;
   PipelineContext * _pipelineContext2;
   Settings _settings;
@@ -255,7 +241,6 @@ private:
   /// Deinitialize all preset related tools. Usually done before projectM cleanup
   void destroyPresetTools();
 
-  void default_key_handler( projectMEvent event, projectMKeycode keycode );
   /// The current position of the directory iterator
   PresetIterator * m_presetPos;
 

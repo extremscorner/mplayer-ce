@@ -25,7 +25,6 @@
 #include <string.h>
 
 #include "Common.hpp"
-#include "fatal.h"
 
 #include "Expr.hpp"
 #include "InitCond.hpp"

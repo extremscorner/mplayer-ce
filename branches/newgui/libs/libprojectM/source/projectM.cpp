@@ -21,7 +21,6 @@
 
 #include "RenderItemMatcher.hpp"
 #include "RenderItemMergeFunction.hpp"
-#include "fatal.h"
 #include "Common.hpp"
 
 #include "timer.h"
@@ -70,10 +69,10 @@ projectM::~projectM()
     #endif
     destroyPresetTools();
 
-    if ( renderer )
-        delete ( renderer );
-    if ( beatDetect )
-        delete ( beatDetect );
+    if ( _renderer )
+        delete ( _renderer );
+    if ( _beatDetect )
+        delete ( _beatDetect );
     if ( _pcm ) {
         delete ( _pcm );
         _pcm = 0;
@@ -85,17 +84,17 @@ projectM::~projectM()
 
 unsigned projectM::initRenderToTexture()
 {
-    return renderer->initRenderToTexture();
+    return _renderer->initRenderToTexture();
 }
 
 void projectM::projectM_resetTextures()
 {
-    renderer->ResetTextures();
+    _renderer->ResetTextures();
 }
 
 
 projectM::projectM ( std::string config_file, int flags) : 
-_pcm(0), beatDetect ( 0 ), renderer ( 0 ), _pipelineContext(new PipelineContext()), _pipelineContext2(new PipelineContext()), m_presetPos(0), m_flags(flags)
+_pcm(0), _beatDetect ( 0 ), _renderer ( 0 ), _pipelineContext(new PipelineContext()), _pipelineContext2(new PipelineContext()), m_presetPos(0), m_flags(flags)
 {
     readConfig(config_file);
     projectM_reset();
@@ -104,7 +103,7 @@ _pcm(0), beatDetect ( 0 ), renderer ( 0 ), _pipelineContext(new PipelineContext(
 }
 
 projectM::projectM(Settings settings, int flags) : 
-_pcm(0), beatDetect ( 0 ), renderer ( 0 ), _pipelineContext(new PipelineContext()), _pipelineContext2(new PipelineContext()), m_presetPos(0), m_flags(flags)
+_pcm(0), _beatDetect ( 0 ), _renderer ( 0 ), _pipelineContext(new PipelineContext()), _pipelineContext2(new PipelineContext()), m_presetPos(0), m_flags(flags)
 {
     readSettings(settings);
     projectM_reset();
@@ -161,19 +160,12 @@ void projectM::readConfig (const std::string & configFile )
     
     _settings.easterEgg = config.read<float> ( "Easter Egg Parameter", 0.0);
 
-
     projectM_init ( _settings.meshX, _settings.meshY, _settings.fps,
                     _settings.textureSize, _settings.windowWidth,_settings.windowHeight);
 
-
-    _settings.beatSensitivity = beatDetect->beat_sensitivity = config.read<float> ( "Hard Cut Sensitivity", 10.0 );
-
-    if ( config.read ( "Aspect Correction", true ) )
-    _settings.aspectCorrection = renderer->correction = true;
-    else
-        _settings.aspectCorrection = renderer->correction = false;
-
-
+    _settings.beatSensitivity = _beatDetect->beat_sensitivity = config.read<float> ( "Hard Cut Sensitivity", 10.0 );
+    _settings.aspectCorrection = _renderer->correction = config.read<bool> ( "Aspect Correction", true );
+    
 }
 
 
@@ -199,9 +191,8 @@ void projectM::readSettings (const Settings & settings )
     projectM_init ( _settings.meshX, _settings.meshY, _settings.fps,
                     _settings.textureSize, _settings.windowWidth,_settings.windowHeight);
 
-
-                    _settings.beatSensitivity = settings.beatSensitivity;
-                    _settings.aspectCorrection = settings.aspectCorrection;
+    _settings.beatSensitivity = _beatDetect->beat_sensitivity = settings.beatSensitivity;
+    _settings.aspectCorrection = _renderer->correction = settings.aspectCorrection;
 
 }
 
@@ -236,7 +227,7 @@ static void *thread_callback(void *prjm) {
         pipelineContext2().frame = timeKeeper->PresetFrameB();
         pipelineContext2().progress = timeKeeper->PresetProgressB();
 
-        m_activePreset2->Render(*beatDetect, pipelineContext2());
+        m_activePreset2->Render(*_beatDetect, pipelineContext2());
     }
 
     void projectM::renderFrame()
@@ -267,14 +258,14 @@ static void *thread_callback(void *prjm) {
         pipelineContext().frame = timeKeeper->PresetFrameA();
         pipelineContext().progress = timeKeeper->PresetProgressA();
 
-        //m_activePreset->Render(*beatDetect, pipelineContext());
+        //m_activePreset->Render(*_beatDetect, pipelineContext());
 
-        beatDetect->detectFromSamples();
+        _beatDetect->detectFromSamples();
 
         //m_activePreset->evaluateFrame();
 
         //if the preset isn't locked and there are more presets
-        if ( renderer->noSwitch==false && !m_presetChooser->empty() )
+        if ( _renderer->noSwitch==false && !m_presetChooser->empty() )
         {
             //if preset is done and we're not already switching
             if ( timeKeeper->PresetProgressA()>=1.0 && !timeKeeper->IsSmoothing())
@@ -287,7 +278,7 @@ static void *thread_callback(void *prjm) {
 
            }
 
-            else if ((beatDetect->vol-beatDetect->vol_old>beatDetect->beat_sensitivity ) &&
+            else if ((_beatDetect->vol-_beatDetect->vol_old>_beatDetect->beat_sensitivity ) &&
                 timeKeeper->CanHardCut())
             {
                 // printf("Hard Cut\n");
@@ -309,7 +300,7 @@ static void *thread_callback(void *prjm) {
             LWP_CondSignal(condition);
             LWP_MutexUnlock(mutex);
             #endif
-            m_activePreset->Render(*beatDetect, pipelineContext());
+            m_activePreset->Render(*_beatDetect, pipelineContext());
             
             #ifdef USE_THREADS
             LWP_MutexLock(mutex);
@@ -329,7 +320,7 @@ static void *thread_callback(void *prjm) {
                                             m_activePreset2->pipeline(), pipeline, _matcher->matchResults(),
                                             *_merger, timeKeeper->SmoothRatio());
 
-            renderer->RenderFrame(pipeline, pipelineContext());
+            _renderer->RenderFrame(pipeline, pipelineContext());
 
             //for (int i = 0; i < _matcher->matchResults().matches.size(); i++) {
                 //delete(pipeline.drawables[i]);
@@ -346,12 +337,12 @@ static void *thread_callback(void *prjm) {
             }
             //printf("Normal\n");
 
-            m_activePreset->Render(*beatDetect, pipelineContext());
-            renderer->RenderFrame (m_activePreset->pipeline(), pipelineContext());
+            m_activePreset->Render(*_beatDetect, pipelineContext());
+            _renderer->RenderFrame (m_activePreset->pipeline(), pipelineContext());
         }
 
         //	std::cout<< m_activePreset->absoluteFilePath()<<std::endl;
-        //	renderer->presetName = m_activePreset->absoluteFilePath();
+        //	_renderer->presetName = m_activePreset->absoluteFilePath();
 
 
 
@@ -361,7 +352,7 @@ static void *thread_callback(void *prjm) {
         /** Compute once per preset */
         if ( this->count%100==0 )
         {
-            this->renderer->realfps=100.0/ ( ( getTicks ( &timeKeeper->startTime )-this->fpsstart ) /1000 );
+            this->_renderer->realfps=100.0/ ( ( getTicks ( &timeKeeper->startTime )-this->fpsstart ) /1000 );
             this->fpsstart=getTicks ( &timeKeeper->startTime );
         }
 
@@ -403,18 +394,18 @@ static void *thread_callback(void *prjm) {
 
         /** Initialise per-pixel matrix calculations */
         /** We need to initialise this before the builtin param db otherwise bass/mid etc won't bind correctly */
-        assert ( !beatDetect );
+        assert ( !_beatDetect );
 
         if (!_pcm)
             _pcm = new PCM();
         assert(pcm());
-        beatDetect = new BeatDetect ( _pcm );
+        _beatDetect = new BeatDetect ( _pcm );
 
         if ( _settings.fps > 0 )
             mspf= ( int ) ( 1000.0/ ( float ) _settings.fps );
         else mspf = 0;
 
-        this->renderer = new Renderer ( width, height, gx, gy, texsize,  beatDetect, settings().presetURL, settings().wiiLightEnabled );
+        this->_renderer = new Renderer ( width, height, gx, gy, texsize,  _beatDetect, settings().presetURL, settings().wiiLightEnabled );
 
         running = true;
 
@@ -434,7 +425,7 @@ static void *thread_callback(void *prjm) {
         #endif
 
         /// @bug order of operatoins here is busted
-        //renderer->setPresetName ( m_activePreset->name() );
+        //_renderer->setPresetName ( m_activePreset->name() );
         timeKeeper->StartPreset();
         assert(pcm());
 
@@ -444,9 +435,9 @@ static void *thread_callback(void *prjm) {
     void projectM::projectM_resetengine()
     {
 
-        if ( beatDetect != NULL )
+        if ( _beatDetect != NULL )
         {
-            beatDetect->reset();
+            _beatDetect->reset();
         }
 
         /// @bug call factory clear here?
@@ -462,7 +453,7 @@ static void *thread_callback(void *prjm) {
 
         /** Stash the new dimensions */
 
-        renderer->reset ( w,h );
+        _renderer->reset ( w,h );
     }
     
 
@@ -474,11 +465,11 @@ static void *thread_callback(void *prjm) {
 
         std::string url = (m_flags & FLAG_DISABLE_PLAYLIST_LOAD) ? std::string() : settings().presetURL;
 
-        /*if ( ( m_presetLoader = new PresetLoader ( gx, gy, url) ) == 0 )
+        if ( ( m_presetLoader = new PresetLoader ( gx, gy, url) ) == 0 )
         {
             m_presetLoader = 0;
             std::cerr << "[projectM] error allocating preset loader" << std::endl;
-            return PROJECTM_FAILURE;
+            return -1;
         }
 
         if ( ( m_presetChooser = new PresetChooser ( *m_presetLoader ) ) == 0 )
@@ -489,7 +480,7 @@ static void *thread_callback(void *prjm) {
             m_presetLoader = 0;
 
             std::cerr << "[projectM] error allocating preset chooser" << std::endl;
-            return PROJECTM_FAILURE;
+            return -1;
         }
 
         // Start the iterator
@@ -504,14 +495,15 @@ static void *thread_callback(void *prjm) {
 
         // Load idle preset
         std::cerr << "[projectM] Allocating idle preset..." << std::endl;
-        if (settings().defaultPreset.empty())
-            m_activePreset = m_presetLoader->loadPreset
-            ("idle://" IdlePresets::IDLE_PRESET_NAME);
-        else
-            m_activePreset = m_presetLoader->loadPreset
-            (settings().defaultPreset);
+        std::string presetName;
+        if (settings().defaultPresetName.empty()) {
+            presetName = std::string("idle://") + IdlePresets::IDLE_PRESET_NAME;
+        } else {
+            presetName = settings().defaultPresetName;
+        }
+        m_activePreset = m_presetLoader->loadPreset(presetName);
         
-        renderer->SetPipeline(m_activePreset->pipeline());
+        _renderer->SetPipeline(m_activePreset->pipeline());
 
         // Case where no valid presets exist in directory. Could also mean
         // playlist initialization was deferred
@@ -529,14 +521,14 @@ static void *thread_callback(void *prjm) {
         //_merger->add(new BorderMergeFunction());
 
         /// @bug These should be requested by the preset factories.
-        _matcher->distanceFunction().addMetric(new ShapeXYDistance());*/
+        _matcher->distanceFunction().addMetric(new ShapeXYDistance());
 
         //std::cerr << "[projectM] Idle preset allocated." << std::endl;
 
         projectM_resetengine();
 
         //std::cerr << "[projectM] engine has been reset." << std::endl;
-        return PROJECTM_SUCCESS;
+        return 0;
     }
 
     void projectM::destroyPresetTools()
@@ -672,8 +664,8 @@ void projectM::selectPrevious(const bool hardCut) {
 		presetSwitchedEvent(hardCut, **m_presetPos);
 
 //		m_activePreset =  m_presetPos->allocate();
-//		renderer->SetPipeline(m_activePreset->pipeline());
-//		renderer->setPresetName(m_activePreset->name());
+//		_renderer->SetPipeline(m_activePreset->pipeline());
+//		_renderer->setPresetName(m_activePreset->name());
 
 	       	//timeKeeper->StartPreset();
 
@@ -707,19 +699,19 @@ void projectM::selectNext(const bool hardCut) {
         targetPreset = m_presetPos->allocate();
 
         // Set preset name here- event is not done because at the moment this function is oblivious to smooth/hard switches
-        renderer->setPresetName(targetPreset->name());
-        renderer->SetPipeline(targetPreset->pipeline());
+        _renderer->setPresetName(targetPreset->name());
+        _renderer->SetPipeline(targetPreset->pipeline());
 
     }
 
     void projectM::setPresetLock ( bool isLocked )
     {
-        renderer->noSwitch = isLocked;
+        _renderer->noSwitch = isLocked;
     }
 
     bool projectM::isPresetLocked() const
     {
-        return renderer->noSwitch;
+        return _renderer->noSwitch;
     }
 
     std::string projectM::getPresetURL ( unsigned int index ) const

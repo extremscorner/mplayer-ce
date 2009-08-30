@@ -23,7 +23,6 @@ class Renderer
 
 public:
 
-  bool studio;
   bool correction;
 
   bool noSwitch;
