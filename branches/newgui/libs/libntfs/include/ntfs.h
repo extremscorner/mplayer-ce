@@ -42,10 +42,11 @@ extern "C" {
 
 /* NTFS mount flags */
 #define NTFS_DEFAULT                    0x00000000 /* Standard mount, expects a clean, non-hibernated volume */
-#define NTFS_SHOW_SYSTEM_FILES          0x00000001 /* Display system files when enumerating directories */
-#define NTFS_UPDATE_ACCESS_TIMES        0x00000002 /* Update file and directory access times */
-#define NTFS_RECOVER                    0x00000004 /* Reset $LogFile if dirty (i.e. from unclean disconnect) */
-#define NTFS_IGNORE_HIBERFILE           0x00000008 /* Mount even if volume is hibernated */
+#define NTFS_SHOW_HIDDEN_FILES          0x00000001 /* Display hidden files when enumerating directories */
+#define NTFS_SHOW_SYSTEM_FILES          0x00000002 /* Display system files when enumerating directories */
+#define NTFS_UPDATE_ACCESS_TIMES        0x00000004 /* Update file and directory access times */
+#define NTFS_RECOVER                    0x00000008 /* Reset $LogFile if dirty (i.e. from unclean disconnect) */
+#define NTFS_IGNORE_HIBERFILE           0x00000010 /* Mount even if volume is hibernated */
 #define NTFS_FORCE                      NTFS_RECOVER & NTFS_IGNORE_HIBERFILE
 
 /**
@@ -99,14 +100,14 @@ extern int ntfsMountDevice (const DISC_INTERFACE* interface, ntfs_md **mounts, u
  * @param NAME The name to mount the device under (can then be accessed as "NAME:/")
  * @param INTERFACE The block device to mount
  * @param STARTSECTOR The sector the partition begins at (see @ntfsFindPartitions)
- * @param CACHEPAGESIZE The number of sectors per cache page 
  * @param CACHEPAGECOUNT The total number of pages in the device cache
+ * @param CACHEPAGESIZE The number of sectors per cache page 
  * @param FLAGS Additional mounting flags (see above)
  * 
  * @return True if mount was successful, false if no partition was found or an error occurred (see errno)
  * @note ntfsFindPartitions should be used first to locate the partitions start sector
  */
-extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cachePageSize, u32 cachePageCount, u32 flags);
+extern bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cachePageCount, u32 cachePageSize, u32 flags);
 
 /**
  * Unmount a NTFS partition.

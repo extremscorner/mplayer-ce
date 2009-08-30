@@ -146,12 +146,12 @@ int ntfsFindPartitions (const DISC_INTERFACE *interface, sec_t **partitions)
                            partition->status == PARTITION_STATUS_BOOTABLE ? "bootable (active)" : "non-bootable",
                            part_lba, partition->type);
 
-            // Ignore empty partitions
-            if (partition->type == PARTITION_TYPE_EMPTY)
-                continue;
-
             // Figure out what type of partition this is
             switch (partition->type) {
+
+                // Ignore empty partitions
+                case PARTITION_TYPE_EMPTY:
+                    continue;
                 
                 // NTFS partition
                 case PARTITION_TYPE_NTFS: {
@@ -412,7 +412,7 @@ int ntfsMountDevice (const DISC_INTERFACE *interface, ntfs_md **mounts, u32 flag
     return 0;
 }
 
-bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cachePageSize, u32 cachePageCount, u32 flags)
+bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSector, u32 cachePageCount, u32 cachePageSize, u32 flags)
 {
     ntfs_vd *vd = NULL;
     gekko_fd *fd = NULL;
@@ -453,6 +453,7 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     vd->fmask = 0;
     vd->dmask = 0;
     vd->atime = ((flags & NTFS_UPDATE_ACCESS_TIMES) ? ATIME_ENABLED : ATIME_DISABLED);
+    vd->showHiddenFiles = (flags & NTFS_SHOW_HIDDEN_FILES);
     vd->showSystemFiles = (flags & NTFS_SHOW_SYSTEM_FILES);
     
     // Allocate the device driver descriptor
@@ -468,8 +469,8 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
     fd->startSector = startSector;
     fd->sectorSize = 0;
     fd->sectorCount = 0;
-    fd->cachePageSize = cachePageSize;
     fd->cachePageCount = cachePageCount;
+    fd->cachePageSize = cachePageSize;
     
     // Allocate the device driver
     vd->dev = ntfs_device_alloc(name, 0, &ntfs_device_gekko_io_ops, fd);
@@ -507,7 +508,7 @@ bool ntfsMount (const char *name, const DISC_INTERFACE *interface, sec_t startSe
         return false;
     }
     
-    // Initialise volume descriptor
+    // Initialise the volume descriptor
     if (ntfsInitVolume(vd)) {
         ntfs_umount(vd->vol, true);
         ntfs_free(vd);
@@ -536,7 +537,7 @@ void ntfsUnmount (const char *name, bool force)
     
     // Remove the device from the devoptab table
     ntfsRemoveDevice(name);
-        
+    
     // Deinitialise the volume descriptor
     ntfsDeinitVolume(vd);
     
@@ -651,7 +652,7 @@ bool ntfsSetVolumeName (const char *name, const char *volumeName)
     
     // Convert the new volume name to unicode
     ulabel_len = ntfsLocalToUnicode(volumeName, &ulabel) * sizeof(ntfschar);
-    if (ulabel_len == -1) {
+    if (ulabel_len < 0) {
         ntfsUnlock(vd);
         errno = EINVAL;
         return false;

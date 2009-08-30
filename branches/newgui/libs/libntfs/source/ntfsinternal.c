@@ -820,7 +820,7 @@ int ntfsUnicodeToLocal (const ntfschar *ins, const int ins_len, char **outs, int
     return len;
 }
 
-int ntfsLocalToUnicode(const char *ins, ntfschar **outs)
+int ntfsLocalToUnicode (const char *ins, ntfschar **outs)
 {
     // Sanity check
     if (!ins || !outs)

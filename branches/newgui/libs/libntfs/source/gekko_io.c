@@ -65,9 +65,9 @@
 #define DEV_FD(dev) ((gekko_fd *)dev->d_private)
 
 /* Prototypes */
-static s64 ntfs_device_gekko_io_readraw(struct ntfs_device *dev, s64 offset, s64 count, void *buf);
+static s64 ntfs_device_gekko_io_readbytes(struct ntfs_device *dev, s64 offset, s64 count, void *buf);
 static bool ntfs_device_gekko_io_readsectors(struct ntfs_device *dev, sec_t sector, sec_t numSectors, void* buffer);
-static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s64 count, const void *buf);
+static s64 ntfs_device_gekko_io_writebytes(struct ntfs_device *dev, s64 offset, s64 count, const void *buf);
 static bool ntfs_device_gekko_io_writesectors(struct ntfs_device *dev, sec_t sector, sec_t numSectors, const void* buffer);
 
 /**
@@ -239,7 +239,7 @@ static s64 ntfs_device_gekko_io_seek(struct ntfs_device *dev, s64 offset, int wh
  */
 static s64 ntfs_device_gekko_io_read(struct ntfs_device *dev, void *buf, s64 count)
 {
-    return ntfs_device_gekko_io_readraw(dev, DEV_FD(dev)->pos, count, buf);
+    return ntfs_device_gekko_io_readbytes(dev, DEV_FD(dev)->pos, count, buf);
 }
 
 /**
@@ -247,7 +247,7 @@ static s64 ntfs_device_gekko_io_read(struct ntfs_device *dev, void *buf, s64 cou
  */
 static s64 ntfs_device_gekko_io_write(struct ntfs_device *dev, const void *buf, s64 count)
 {
-    return ntfs_device_gekko_io_writeraw(dev, DEV_FD(dev)->pos, count, buf);
+    return ntfs_device_gekko_io_writebytes(dev, DEV_FD(dev)->pos, count, buf);
 }
 
 /**
@@ -255,7 +255,7 @@ static s64 ntfs_device_gekko_io_write(struct ntfs_device *dev, const void *buf, 
  */
 static s64 ntfs_device_gekko_io_pread(struct ntfs_device *dev, void *buf, s64 count, s64 offset)
 {
-    return ntfs_device_gekko_io_readraw(dev, offset, count, buf);
+    return ntfs_device_gekko_io_readbytes(dev, offset, count, buf);
 }
 
 /**
@@ -263,13 +263,13 @@ static s64 ntfs_device_gekko_io_pread(struct ntfs_device *dev, void *buf, s64 co
  */
 static s64 ntfs_device_gekko_io_pwrite(struct ntfs_device *dev, const void *buf, s64 count, s64 offset)
 {
-    return ntfs_device_gekko_io_writeraw(dev, offset, count, buf);
+    return ntfs_device_gekko_io_writebytes(dev, offset, count, buf);
 }
 
 /**
  *
  */
-static s64 ntfs_device_gekko_io_readraw(struct ntfs_device *dev, s64 offset, s64 count, void *buf)
+static s64 ntfs_device_gekko_io_readbytes(struct ntfs_device *dev, s64 offset, s64 count, void *buf)
 {
     ntfs_log_trace("dev %p, offset %Li, count %Li\n", dev, offset, count);
     
@@ -343,7 +343,7 @@ static s64 ntfs_device_gekko_io_readraw(struct ntfs_device *dev, s64 offset, s64
 /**
  * 
  */
-static s64 ntfs_device_gekko_io_writeraw(struct ntfs_device *dev, s64 offset, s64 count, const void *buf)
+static s64 ntfs_device_gekko_io_writebytes(struct ntfs_device *dev, s64 offset, s64 count, const void *buf)
 {
     ntfs_log_trace("dev %p, offset %Li, count %Li\n", dev, offset, count);
     
@@ -455,7 +455,7 @@ static bool ntfs_device_gekko_io_readsectors(struct ntfs_device *dev, sec_t sect
         return false;
     }
     
-    // Read the sectors from disc
+    // Read the sectors from disc (or cache, if enabled)
     if (fd->cache)
         return _NTFS_cache_readSectors(fd->cache, sector, numSectors, buffer);
     else
@@ -473,7 +473,7 @@ static bool ntfs_device_gekko_io_writesectors(struct ntfs_device *dev, sec_t sec
         return -1;
     }
     
-    // Write the sectors to disc
+    // Write the sectors to disc (or cache, if enabled)
     if (fd->cache)
         return _NTFS_cache_writeSectors(fd->cache, sector, numSectors, buffer);
     else
@@ -523,6 +523,10 @@ static int ntfs_device_gekko_io_stat(struct ntfs_device *dev, struct stat *buf)
         errno = EBADF;
         return -1;
     }
+    
+    // Short circuit cases were we don't actually have to do anything
+    if (!buf)
+        return 0;
     
     // Build the device mode
     mode_t mode = (S_IFBLK) |
@@ -601,7 +605,7 @@ static int ntfs_device_gekko_io_ioctl(struct ntfs_device *dev, int request, void
         case BLKBSZSET: {
             int sectorSize = *(int*)argp;
             if (sectorSize != BYTES_PER_SECTOR) {
-                ntfs_log_perror("Attempt to set sector size to an unsupported value (%i)\n", sectorSize);
+                ntfs_log_perror("Attempt to set sector size to an unsupported value (%i), ignored\n", sectorSize);
                 errno = EOPNOTSUPP;
                 return -1;
             }

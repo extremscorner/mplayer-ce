@@ -129,7 +129,8 @@ typedef struct _ntfs_vd {
     u16 fmask;                              /* Unix style permission mask for file creation */
     u16 dmask;                              /* Unix style permission mask for directory creation */
     ntfs_atime_t atime;                     /* Entry access time update strategy */
-    bool showSystemFiles;                   /* If true, show system file when enumerating directories */
+    bool showHiddenFiles;                   /* If true, show hidden files when enumerating directories */
+    bool showSystemFiles;                   /* If true, show system files when enumerating directories */
     ntfs_inode *cwd_ni;                     /* Current directory */
     struct _ntfs_dir_state *firstOpenDir;   /* The start of a FILO linked list of currently opened directories */
     struct _ntfs_file_state *firstOpenFile; /* The start of a FILO linked list of currently opened files */

@@ -368,6 +368,7 @@ int ntfs_readdir_filler (DIR_ITER *dirState, const ntfschar *name, const int nam
 {
     ntfs_dir_state *dir = STATE(dirState);
     ntfs_dir_entry *entry = NULL;
+    char *entry_name = NULL;
     
     // Sanity check
     if (!dir || !dir->vd) {
@@ -380,23 +381,45 @@ int ntfs_readdir_filler (DIR_ITER *dirState, const ntfschar *name, const int nam
         return 0;
     }
 
-    // Check that this entry can be enumerated (as described by the volume descriptor)
+    // Preliminary check that this entry can be enumerated (as described by the volume descriptor)
     if (MREF(mref) == FILE_root || MREF(mref) >= FILE_first_user || dir->vd->showSystemFiles) {
+        
+        // Convert the entry name to our current local
+        if (ntfsUnicodeToLocal(name, name_len, &entry_name, 0) < 0) {
+            ntfs_free(entry);
+            return -1;
+        }
+
+        // If this is not the parent or self directory reference
+        if ((strcmp(entry_name, ".") != 0) && (strcmp(entry_name, "..") != 0)) {
+        
+            // Open the entry
+            ntfs_inode *ni = ntfs_pathname_to_inode(dir->vd->vol, dir->ni, entry_name);
+            if (!ni) {
+                ntfs_free(entry);
+                return -1;
+            }
+
+            // Double check that this entry can be emuerated (as described by the volume descriptor)
+            if (((ni->flags & FILE_ATTR_HIDDEN) && !dir->vd->showHiddenFiles) ||
+                ((ni->flags & FILE_ATTR_SYSTEM) && !dir->vd->showSystemFiles)) {
+                ntfs_inode_close(ni);
+                return 0;
+            }
+            
+            // Close the entry
+            ntfs_inode_close(ni);
+
+        }
         
         // Allocate a new directory entry
         entry = ntfs_alloc(sizeof(ntfs_dir_entry));
         if (!entry)
             return -1;
         
-        // Reset the entry
-        entry->name = NULL;
+        // Setup the entry
+        entry->name = entry_name;
         entry->next = NULL;
-        
-        // Convert the entry name to our current local
-        if (ntfsUnicodeToLocal(name, name_len, &entry->name, 0) < 0) {
-            ntfs_free(entry);
-            return -1;
-        }
         
         // Link the entry to the directory
         if (!dir->first) {
@@ -446,9 +469,13 @@ DIR_ITER *ntfs_diropen_r (struct _reent *r, DIR_ITER *dirState, const char *path
     }
     
     // Read the directory
-    dir->first = NULL;
-    dir->current = NULL;
-    ntfs_readdir(dir->ni, &position, dirState, (ntfs_filldir_t)ntfs_readdir_filler);
+    dir->first = dir->current = NULL;
+    if (ntfs_readdir(dir->ni, &position, dirState, (ntfs_filldir_t)ntfs_readdir_filler)) {
+        ntfsCloseDir(dir);
+        ntfsUnlock(dir->vd);
+        r->_errno = errno;
+        return NULL;
+    }
 
     // Move to the first entry in the directory
     dir->current = dir->first;

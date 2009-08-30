@@ -37,11 +37,13 @@
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
 
-void list(const char *path)
+void list(const char *path, int depth)
 {
     DIR *pdir;
     struct dirent *pent;
     struct stat st;
+    char indent[PATH_MAX] = {0};
+    char new_path[PATH_MAX] = {0};
     
     // Open the directory
     pdir = opendir(path);
@@ -49,6 +51,9 @@ void list(const char *path)
         
         // Make this our current directory
         chdir(path);
+
+        // Build a directory indent (for better readability)
+        memset(indent, ' ', depth * 2);
         
         // List the contents of the directory
         while ((pent = readdir(pdir)) != NULL) {
@@ -61,11 +66,17 @@ void list(const char *path)
             
             // List the entry
             if (S_ISDIR(st.st_mode)) {
-                printf(" D %s/\n", pent->d_name);
+                printf(" D %s%s/\n", indent, pent->d_name);
+                
+                // List the directories contents
+                sprintf(new_path, "%s/%s", path, pent->d_name);
+                list(new_path, depth + 1);
+                chdir(path);
+                
             } else if (S_ISREG(st.st_mode)) {
-                printf(" F %s (%lu)\n", pent->d_name, (unsigned long int)st.st_size);
+                printf(" F %s%s (%lu)\n", indent, pent->d_name, (unsigned long int)st.st_size);
             } else {
-                printf(" ? %s\n", pent->d_name);
+                printf(" ? %s%s\n", indent, pent->d_name);
             }
             
         }
@@ -76,9 +87,7 @@ void list(const char *path)
     } else {
         printf("opendir(%s) failure.\n", path);
     }
-    
-    printf("\n");
-    
+
     return;
 }
 
@@ -195,9 +204,10 @@ int main(int argc, char **argv) {
                 char path[PATH_MAX] = {0};
                 strcpy(path, mounts[mountIndex].name);
                 strcat(path, ":/");
-                list(path);
+                list(path, 0);
                 listed = true;
                 
+                printf("\n");
                 printf("Press 'HOME' to quit.\n\n");
                 
             }
@@ -226,3 +236,4 @@ int main(int argc, char **argv) {
     
     return 0;
 }
+
