@@ -1,5 +1,5 @@
 /**
- * gl.c - openGL wrapper for GX.
+ * glGX.c - openGL wrapper for GX.
  *
  * Copyright (c) 2009 Rhys "Shareese" Koedijk
  *
@@ -30,33 +30,7 @@
 #include <gccore.h>
 
 #include "GL/gl.h"
-
-static const char *extensions = ""; /*"GL_ARB_texture_rectangle "
-                                "GL_EXT_texture_rectangle "
-                                "GL_ARB_texture_cube_map "
-                                "GL_EXT_texture_cube_map";*/
-                                
-bool texture2d_enabled = false;
-bool linestipple_enabled = false;
-bool blend_enabled = false;
-bool linesmooth_enabled = false;
-bool pointsmooth_enabled = false;
-bool polygonsmooth_enabled = false;
-bool depthtest_enabled = false;
-bool cullmode_enabled = true;
-
-u8 begintype = 0;
-u8 elements = 0;
-
-GXColor clearcolour = { 0, 0, 0, 0xFF };
-f32 cleardepth = 0 * 0x00FFFFFF;
-
-u8 cullmode = GX_CULL_ALL;
-
-u32 linestipple_factor = 0;
-u16 linestipple_pattern = 0;
-
-f32 pointsize = 1;
+#include "GL/glGX.h"
 
 /**
  * Miscellaneous
@@ -304,7 +278,6 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z)
 
 void glBegin (GLenum type)
 {
-    elements = 0;
     switch (type) {
         case GL_POINTS: begintype = GX_POINTS; break;
         case GL_LINES: begintype = GX_LINES; break;
@@ -320,8 +293,8 @@ void glBegin (GLenum type)
 }
 
 void glEnd (void)
-{    
-    elements = 0;
+{
+
 }
 
 
@@ -382,19 +355,34 @@ void glShadeModel (GLenum mode)
  * Textures
  */
 
-void glGenTextures  (GLsizei n, GLuint *textures)
+void glGenTextures (GLsizei n, GLuint *textures)
 {
+    int i;
     
+    // Sanity check
+    if (n < 0)
+        return;
+    
+    //...
+    for(i = 0; i < n; i++)
+        textures[i] = i;
 }
 
 void glDeleteTextures (GLsizei n, const GLuint *textures)
 {
+    int i;
     
+    // Sanity check
+    if (n < 0)
+        return;
+    
+    //...
 }
 
 void glBindTexture (GLenum target, GLuint texture)
 {
-    
+    current_texture = texture;
+    current_texture_target = target;
 }
 
 void glTexImage2D (GLenum target, GLint level,
@@ -403,7 +391,6 @@ void glTexImage2D (GLenum target, GLint level,
                    GLint border, GLenum format, GLenum type,
                    const GLvoid *pixels)
 {
-    
     
 }
 
