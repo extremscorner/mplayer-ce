@@ -35,8 +35,16 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** Safe memory allocator */
- void *wipemalloc( size_t count );
- void wipefree( void *ptr );
+void *wipemalloc( size_t count );
+void wipefree( void *ptr );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /** !_WIPEMALLOC_H */

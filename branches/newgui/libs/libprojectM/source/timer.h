@@ -40,11 +40,19 @@
 
 #include <sys/time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 unsigned int getTicks( struct timeval *start );
 struct timeval GetCurrentTime();
 
 void gekko_gettimeofday(struct timeval *tv, void *tz);
 
 #define gettimeofday(TV, TZ) gekko_gettimeofday((TV), (TZ))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /** _TIMER_H */

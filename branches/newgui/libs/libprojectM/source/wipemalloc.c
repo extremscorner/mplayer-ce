@@ -19,29 +19,26 @@
  *
  */
 /**
- * $Id: timer.c,v 1.1.1.1 2005/12/23 18:05:05 psperl Exp $
+ * $Id: wipemalloc.c,v 1.1.1.1 2005/12/23 18:05:05 psperl Exp $
  *
- * Platform-independent timer
+ * Clean memory allocator
  */
 
-#include "timer.h"
-#include <stdlib.h>
-#include <gctypes.h>
-#include <ogc/lwp_watchdog.h>
+#include "wipemalloc.h"
 
-/** Get number of ticks since the given timestamp */
-unsigned int getTicks( struct timeval *start ) {
-    struct timeval now;
-    unsigned int ticks;
-
-    gettimeofday(&now, NULL);
-    ticks=(now.tv_sec-start->tv_sec)*1000+(now.tv_usec-start->tv_usec)/1000;
-    return(ticks);
+void *wipemalloc( size_t count ) {
+    void *mem = malloc( count );
+    if ( mem != NULL ) {
+        memset( mem, 0, count );
+    } else {
+        printf( "wipemalloc() failed to allocate %d bytes\n", (int)count );
+    }
+    return mem;
 }
 
-void gekko_gettimeofday (struct timeval *tv, void *tz) {
-    u64 t;
-    t=gettime();
-    tv->tv_sec = ticks_to_secs(t);
-    tv->tv_usec = ticks_to_microsecs(t);
+/** Safe memory deallocator */
+void wipefree( void *ptr ) {
+    if ( ptr != NULL ) {
+        free( ptr );
+    }
 }

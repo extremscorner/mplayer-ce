@@ -31,152 +31,238 @@
 
 #include "GL/gl.h"
 #include "GL/glGX.h"
+#include "wipemalloc.h"
 
 /**
  * Miscellaneous
  */
 
-void glClearColor (GLclampf red,
-                   GLclampf green,
-                   GLclampf blue,
-                   GLclampf alpha)
+void glClearColor (GLclampf _red,
+                   GLclampf _green,
+                   GLclampf _blue,
+                   GLclampf _alpha)
 {
-    clearcolour.r = red * 0xFF;
-    clearcolour.g = green * 0xFF;
-    clearcolour.b = blue * 0xFF;
-    clearcolour.a = alpha * 0xFF;
+    // Set the clear colour
+    clearColour.r = _red * 0xFF;
+    clearColour.g = _green * 0xFF;
+    clearColour.b = _blue * 0xFF;
+    clearColour.a = _alpha * 0xFF;
 }
 
-void glClear (GLbitfield mask)
+void glClear (GLbitfield _mask)
 {
-    switch (mask) {
+    // Figure out which buffer we are to clear
+    switch (_mask) {
         case GL_COLOR_BUFFER_BIT: /* ??? */ break;
         case GL_DEPTH_BUFFER_BIT: /* ??? */ break;
         case GL_STENCIL_BUFFER_BIT: /* ??? */ break;
         default: break;
     }
     
-    GX_SetCopyClear(clearcolour, cleardepth);
+    // Clear the specified buffer
+    // TODO: Only clear the specified buffer, not all of them
+    GX_SetCopyClear(clearColour, clearDepth);
 }
 
-void glBlendFunc (GLenum sfactor, GLenum dfactor)
+void glBlendFunc (GLenum _sfactor, GLenum _dfactor)
 {
+    u8 mode = GX_BM_LOGIC; /* ??? */
+    u8 sfactor = GX_BL_ONE;
+    u8 dfactor = GX_BL_ZERO;
+    u8 op = GX_LO_SET; /* ??? */
     
-}
-
-void glCullFace (GLenum mode)
-{
-    switch (mode) {
-        case GL_FRONT: cullmode = GX_CULL_FRONT;
-        case GL_BACK: cullmode = GX_CULL_BACK;
-        case GL_FRONT_AND_BACK: cullmode = GX_CULL_ALL;
+    // Determine the source blending factor
+    switch (_sfactor) {
+        case GL_ZERO:
+            sfactor = GX_BL_ZERO;
+            break;
+        case GL_ONE:
+            sfactor = GX_BL_ONE;
+            break;
+        case GL_SRC_COLOR:
+            sfactor = GX_BL_SRCCLR;
+            break;
+        case GL_ONE_MINUS_SRC_COLOR:
+            sfactor = GX_BL_SRCCLR;
+            break;
+        case GL_DST_COLOR:
+            sfactor = GX_BL_DSTCLR;
+            break;
+        case GL_ONE_MINUS_DST_COLOR:
+            sfactor = GX_BL_DSTCLR;
+            break;
+        case GL_SRC_ALPHA:
+            sfactor = GX_BL_SRCALPHA;
+            break;
+        case GL_ONE_MINUS_SRC_ALPHA:
+            sfactor = GX_BL_SRCALPHA;
+            break;
+        case GL_DST_ALPHA:
+            sfactor = GX_BL_DSTALPHA;
+            break;
+        case GL_ONE_MINUS_DST_ALPHA:
+            sfactor = GX_BL_DSTALPHA;
+            break;
+        default: return;
     }
     
-    if (cullmode_enabled)
-        GX_SetCullMode(cullmode);
-}
-
-void glPointSize (GLfloat size)
-{
-    GX_SetPointSize(size, GX_TO_ZERO);
-}
-
-void glLineWidth (GLfloat width)
-{
-    GX_SetLineWidth(width, GX_TO_ZERO);
-}
-
-void glLineStipple (GLint factor, GLushort pattern)
-{
-    linestipple_factor = factor;
-    linestipple_pattern = pattern;
+    // Determine the destination blending factor
+    switch (_dfactor) {
+        case GL_ZERO:
+            sfactor = GX_BL_ZERO;
+            break;
+        case GL_ONE:
+            sfactor = GX_BL_ONE;
+            break;
+        case GL_SRC_COLOR:
+            sfactor = GX_BL_SRCCLR;
+            break;
+        case GL_ONE_MINUS_SRC_COLOR:
+            sfactor = GX_BL_SRCCLR;
+            break;
+        case GL_DST_COLOR:
+            sfactor = GX_BL_DSTCLR;
+            break;
+        case GL_ONE_MINUS_DST_COLOR:
+            sfactor = GX_BL_DSTCLR;
+            break;
+        case GL_SRC_ALPHA:
+            sfactor = GX_BL_SRCALPHA;
+            break;
+        case GL_ONE_MINUS_SRC_ALPHA:
+            sfactor = GX_BL_SRCALPHA;
+            break;
+        case GL_DST_ALPHA:
+            sfactor = GX_BL_DSTALPHA;
+            break;
+        case GL_ONE_MINUS_DST_ALPHA:
+            sfactor = GX_BL_DSTALPHA;
+            break;
+        default: return;
+    }
     
-    if (linestipple_enabled) {
+    // Set the blend mode
+    GX_SetBlendMode(mode, sfactor, dfactor, op);
+}
+
+void glCullFace (GLenum _mode)
+{
+    // Determine the culling mode
+    switch (_mode) {
+        case GL_FRONT: cullMode = GX_CULL_FRONT;
+        case GL_BACK: cullMode = GX_CULL_BACK;
+        case GL_FRONT_AND_BACK: cullMode = GX_CULL_ALL;
+    }
+    
+    // Set the culling mode (if enabled)
+    if (cullModeEnabled)
+        GX_SetCullMode(cullMode);
+}
+
+void glPointSize (GLfloat _size)
+{
+    // Set the point size
+    GX_SetPointSize(_size, GX_TO_ZERO);
+}
+
+void glLineWidth (GLfloat _width)
+{
+    // Set the line width
+    GX_SetLineWidth(_width, GX_TO_ZERO);
+}
+
+void glLineStipple (GLint _factor, GLushort _pattern)
+{
+    // Set the line stipple mode
+    lineStippleFactor = _factor;
+    lineStipplePattern = _pattern;
+    
+    if (lineStippleEnabled) {
         //...
     }
 }
 
-void glDrawBuffer (GLenum mode)
+void glDrawBuffer (GLenum _mode)
 {
     
 }
 
-void glReadBuffer (GLenum mode)
+void glReadBuffer (GLenum _mode)
 {
     
 }
 
-void glEnable(GLenum type)
+void glEnable(GLenum _type)
 {
-    switch (type) {
+    switch (_type) {
         case GL_TEXTURE_2D:
-            texture2d_enabled = true;
+            texture2DEnabled = true;
             GX_SetNumTexGens(1);
             GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
             GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
             break;
         case GL_LINE_STIPPLE:
-            linestipple_enabled = true;
+            lineStippleEnabled = true;
             break;
         case GL_BLEND:
-            blend_enabled = true;
+            blendEnabled = true;
             break;
         case GL_LINE_SMOOTH:
-            linesmooth_enabled = true;
+            lineSmoothEnabled = true;
             break;
         case GL_POINT_SMOOTH:
-            pointsmooth_enabled = true;
+            pointSmoothEnabled = true;
             break;
         case GL_POLYGON_SMOOTH:
-            polygonsmooth_enabled = true;
+            polygonSmoothEnabled = true;
             break;
         case GL_CULL_FACE:
-            cullmode_enabled = true;
-            GX_SetCullMode(cullmode);
+            cullModeEnabled = true;
+            GX_SetCullMode(cullMode);
             break;
         case GL_DEPTH_TEST:
-            depthtest_enabled = true;
+            depthTestEnabled = true;
             break;
     };
 }
 
-void glDisable (GLenum type)
+void glDisable (GLenum _type)
 {
-    switch (type) {
+    switch (_type) {
         case GL_TEXTURE_2D:
-            texture2d_enabled = false;
+            texture2DEnabled = false;
             GX_SetNumTexGens(0);
             GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);         
             GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
             break;
         case GL_LINE_STIPPLE:
-            linestipple_enabled = false;
+            lineStippleEnabled = false;
             break;
         case GL_BLEND:
-            blend_enabled = false;
+            blendEnabled = false;
             break;
         case GL_LINE_SMOOTH:
-            linesmooth_enabled = false;
+            lineSmoothEnabled = false;
             break;
         case GL_POINT_SMOOTH:
-            pointsmooth_enabled = false;
+            pointSmoothEnabled = false;
             break;
         case GL_POLYGON_SMOOTH:
-            polygonsmooth_enabled = false;
+            polygonSmoothEnabled = false;
             break;
         case GL_CULL_FACE:
-            cullmode_enabled = false;
+            cullModeEnabled = false;
             GX_SetCullMode(GX_CULL_NONE);
             break;
         case GL_DEPTH_TEST:
-            depthtest_enabled = false;
+            depthTestEnabled = false;
             break;
     };
 }
 
-void glEnableClientState (GLenum cap)
+void glEnableClientState (GLenum _cap)
 {
-    switch (cap) {
+    switch (_cap) {
         case GL_COLOR_ARRAY: break;
         case GL_EDGE_FLAG_ARRAY: break;
         case GL_FOG_COORD_ARRAY: break;
@@ -189,9 +275,9 @@ void glEnableClientState (GLenum cap)
     }
 }
 
-void glDisableClientState (GLenum cap)
+void glDisableClientState (GLenum _cap)
 {
-    switch (cap) {
+    switch (_cap) {
         case GL_COLOR_ARRAY: break;
         case GL_EDGE_FLAG_ARRAY: break;
         case GL_FOG_COORD_ARRAY: break;
@@ -204,17 +290,19 @@ void glDisableClientState (GLenum cap)
     }
 }
 
-void glGetIntegerv (GLenum pname, GLint *params)
+void glGetIntegerv (GLenum _pname, GLint *_params)
 {
-    switch (pname) {
-        case GL_MAX_TEXTURE_SIZE: *params = 1024; break;
+    // Get the specified system integer constant
+    switch (_pname) {
+        case GL_MAX_TEXTURE_SIZE: *_params = 1024; break;
         default: break;
     }
 }
 
-const GLubyte *glGetString (GLenum name)
+const GLubyte *glGetString (GLenum _name)
 {
-    switch (name) {
+    // Get the specified system string constant
+    switch (_name) {
         case GL_EXTENSIONS: return (const GLubyte *) extensions;
         default: return NULL;
     }
@@ -224,22 +312,22 @@ const GLubyte *glGetString (GLenum name)
  * Transformation
  */
 
-void glMatrixMode(GLenum mode)
+void glMatrixMode(GLenum _mode)
 {
     
 }
 
-void glOrtho (GLdouble left, GLdouble right,
-              GLdouble bottom, GLdouble top,
-              GLdouble near_val, GLdouble far_val)
+void glOrtho (GLdouble _left, GLdouble _right,
+              GLdouble _bottom, GLdouble _top,
+              GLdouble _near_val, GLdouble _far_val)
 {
     
 }
 
-void glViewport (GLint x, GLint y,
-                 GLsizei width, GLsizei height)
+void glViewport (GLint _x, GLint _y,
+                 GLsizei _width, GLsizei _height)
 {
-    GX_SetViewport(x, y, width, height, 0, 1);
+    GX_SetViewport(_x, _y, _width, _height, 0, 1);
 }
 
 void glPopMatrix (void)
@@ -257,17 +345,17 @@ void glLoadIdentity (void)
     
 }
 
-void glTranslatef (GLfloat x, GLfloat y, GLfloat z)
+void glTranslatef (GLfloat _x, GLfloat _y, GLfloat _z)
 {
     
 }
 
-void glRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+void glRotatef (GLfloat _angle, GLfloat _x, GLfloat _y, GLfloat _z)
 {
     
 }
 
-void glScalef(GLfloat x, GLfloat y, GLfloat z)
+void glScalef(GLfloat _x, GLfloat _y, GLfloat _z)
 {
     
 }
@@ -276,19 +364,19 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z)
  * Drawing
  */
 
-void glBegin (GLenum type)
+void glBegin (GLenum _type)
 {
-    switch (type) {
-        case GL_POINTS: begintype = GX_POINTS; break;
-        case GL_LINES: begintype = GX_LINES; break;
-        case GL_LINE_STRIP: begintype = GX_LINESTRIP; break;
-        case GL_LINE_LOOP: begintype = 0; break; /* ??? */
-        case GL_TRIANGLES: begintype = GX_TRIANGLES; break;
-        case GL_TRIANGLE_STRIP: begintype = GX_TRIANGLESTRIP; break;
-        case GL_TRIANGLE_FAN: begintype = GX_TRIANGLEFAN; break;
-        case GL_QUADS: begintype = GX_QUADS; break; 
-        case GL_QUAD_STRIP: begintype = 0; break; /* ??? */
-        case GL_POLYGON: begintype = 0; break; /* ??? */
+    switch (_type) {
+        case GL_POINTS: beginType = GX_POINTS; break;
+        case GL_LINES: beginType = GX_LINES; break;
+        case GL_LINE_STRIP: beginType = GX_LINESTRIP; break;
+        case GL_LINE_LOOP: beginType = 0; break; /* ??? */
+        case GL_TRIANGLES: beginType = GX_TRIANGLES; break;
+        case GL_TRIANGLE_STRIP: beginType = GX_TRIANGLESTRIP; break;
+        case GL_TRIANGLE_FAN: beginType = GX_TRIANGLEFAN; break;
+        case GL_QUADS: beginType = GX_QUADS; break; 
+        case GL_QUAD_STRIP: beginType = 0; break; /* ??? */
+        case GL_POLYGON: beginType = 0; break; /* ??? */
     };
 }
 
@@ -298,13 +386,17 @@ void glEnd (void)
 }
 
 
-void glColor4f (GLfloat red, GLfloat green,
-                GLfloat blue, GLfloat alpha)
+void glColor4f (GLfloat _red, GLfloat _green,
+                GLfloat _blue, GLfloat _alpha)
 {
-    
+    // Set the current colour
+    colour.r = _red * 0xFF;
+    colour.g = _green * 0xFF;
+    colour.b = _blue * 0xFF;
+    colour.a = _alpha * 0xFF;
 }
 
-void glRectd (GLdouble x1, GLdouble y1, GLdouble x2, GLdouble y2)
+void glRectd (GLdouble _x1, GLdouble _y1, GLdouble _x2, GLdouble _y2)
 {
     
 }
@@ -313,31 +405,31 @@ void glRectd (GLdouble x1, GLdouble y1, GLdouble x2, GLdouble y2)
  * Vertex arrays
  */
 
-void glVertexPointer (GLint size, GLenum type,
-                      GLsizei stride, const GLvoid *ptr)
+void glVertexPointer (GLint _size, GLenum _type,
+                      GLsizei _stride, const GLvoid *_ptr)
 {
     
 }
 
-void glColorPointer (GLint size, GLenum type,
-                     GLsizei stride, const GLvoid *ptr)
+void glColorPointer (GLint _size, GLenum _type,
+                     GLsizei _stride, const GLvoid *_ptr)
 {
     
 }
 
-void glTexCoordPointer (GLint size, GLenum type,
-                        GLsizei stride, const GLvoid *ptr)
+void glTexCoordPointer (GLint _size, GLenum _type,
+                        GLsizei _stride, const GLvoid *_ptr)
 {
     
 }
 
-void glDrawArrays (GLenum mode, GLint first, GLsizei count)
+void glDrawArrays (GLenum _mode, GLint _first, GLsizei _count)
 {
     
 }
 
-void glInterleavedArrays (GLenum format, GLsizei stride,
-                          const GLvoid *pointer)
+void glInterleavedArrays (GLenum _format, GLsizei _stride,
+                          const GLvoid *_pointer)
 {
     
 }
@@ -346,7 +438,7 @@ void glInterleavedArrays (GLenum format, GLsizei stride,
  * Lighting
  */
 
-void glShadeModel (GLenum mode)
+void glShadeModel (GLenum _mode)
 {
     
 }
@@ -355,75 +447,209 @@ void glShadeModel (GLenum mode)
  * Textures
  */
 
-void glGenTextures (GLsizei n, GLuint *textures)
+GLuint glNextFreeTextureName ()
+{
+    int name = 0;
+    GLtexture *tex = textures;
+    
+    // Iterate through all textures till an unused name is found
+    while (tex) {
+        if (tex->name == name) {
+            tex = textures;
+            name++;
+        } else {
+            tex = tex->nextTexture;
+        }
+    }
+    
+    return name;
+}
+
+GLtexture *glGetTexture (GLuint _name)
+{
+    GLtexture *tex = textures;
+
+    // Find the texture with the specified name (if possible)
+    while (tex) {
+        if (tex->name == _name)
+            return tex;
+        tex = tex->nextTexture;
+    }
+
+    return NULL;
+}
+
+void glGenTextures (GLsizei _n, GLuint *_textures)
 {
     int i;
     
     // Sanity check
-    if (n < 0)
+    if (_n < 0 || !_textures)
         return;
     
-    //...
-    for(i = 0; i < n; i++)
-        textures[i] = i;
+    // Allocate the specified number of textures
+    for(i = 0; i < _n; i++) {
+        
+        // Allocate the next texture
+        GLtexture *tex = wipemalloc(sizeof(GLtexture));
+        if (!tex)
+            continue;
+        
+        // Find a unique name for this texture
+        tex->name = glNextFreeTextureName();
+        
+        // Insert the texture into the double-linked FILO list of allocated textures
+        if (textures) {
+            tex->nextTexture = textures;
+            textures->prevTexture = tex;
+        }
+        textures = tex;
+        textureCount++;
+        
+        // Pass the textures name back to our caller
+        _textures[i] = tex->name;
+        
+    }
+    
 }
 
-void glDeleteTextures (GLsizei n, const GLuint *textures)
+void glDeleteTextures (GLsizei _n, const GLuint *_textures)
 {
     int i;
     
     // Sanity check
-    if (n < 0)
+    if (_n < 0 || !_textures)
+        return;
+    
+    // Free the specified textures
+    for(i = 0; i < _n; i++) {
+        GLtexture *tex = glGetTexture(_textures[i]);
+        if (tex) {
+            
+            // TODO: Free tex->obj?
+            
+            // Remove the texture from the double-linked FILO list of allocated textures
+            textureCount--;
+            if (tex->nextTexture)
+                tex->nextTexture->prevTexture = tex->prevTexture;
+            if (tex->prevTexture)
+                tex->prevTexture->nextTexture = tex->nextTexture;
+            else
+                textures = tex->nextTexture;
+            
+            // Free the texture
+            wipefree(tex);
+            
+        }
+    }
+    
+}
+
+void glBindTexture (GLenum _target, GLuint _texture)
+{
+    // Bind the texture to the specified target
+    switch (_target) {
+        case GL_TEXTURE_1D: texture1D = glGetTexture(_texture); break;
+        case GL_TEXTURE_2D: texture2D = glGetTexture(_texture); break;
+    }
+}
+
+void glTexImage2D (GLenum _target, GLint _level,
+                   GLint _internalFormat,
+                   GLsizei _width, GLsizei _height,
+                   GLint _border, GLenum _format, GLenum _type,
+                   const GLvoid *_pixels)
+{
+    u8 format;
+    
+    // Sanity check
+    if (!texture2D ||
+        _width < 64 ||
+        _height < 64)
+        return;
+    
+    // Determine the textures format
+    switch (_internalFormat) {
+        case 4:
+        case GL_RGBA:
+        case GL_RGBA8: format = GX_TF_RGBA8; break;
+        
+        // Everything else, unsupported...
+        // TODO: Support more formats!?
+        default: return;
+        
+    }
+
+    // Determine the format of the pixel data
+    switch (_format) {
+        case GL_RGBA: break;
+        
+        // Everything else, unsupported...
+        // TODO: Support more formats!?
+        default: return;
+        
+    }
+    
+    // Determine the data type of the pixel data
+    switch (_type) {
+        case GL_UNSIGNED_BYTE: break;
+        
+        // Everything else, unsupported...
+        // TODO: Support more formats!?
+        default: return;
+        
+    }
+    
+    // TODO: Borders!?
+    
+    // TODO: level-of-detail / minimap support!?
+    
+    // Initialise the texture
+    if (_target == GL_TEXTURE_2D)
+        GX_InitTexObj(&texture2D->obj, (void*) _pixels, _width, _height, format, 1, 1, GX_FALSE);
+    else if (_target == GL_PROXY_TEXTURE_2D)
+        GX_InitTexObj(&texture2D->obj, NULL, _width, _height, format, 1, 1, GX_FALSE); /* ??? */
+
+}
+
+void glCopyTexSubImage2D (GLenum _target, GLint _level,
+                          GLint _xoffset, GLint _yoffset,
+                          GLint _x, GLint _y,
+                          GLsizei _width, GLsizei _height)
+{
+    // Sanity check
+    if (!texture2D)
         return;
     
     //...
-}
-
-void glBindTexture (GLenum target, GLuint texture)
-{
-    current_texture = texture;
-    current_texture_target = target;
-}
-
-void glTexImage2D (GLenum target, GLint level,
-                   GLint internalFormat,
-                   GLsizei width, GLsizei height,
-                   GLint border, GLenum format, GLenum type,
-                   const GLvoid *pixels)
-{
-    
-}
-
-void glCopyTexSubImage2D (GLenum target, GLint level,
-                          GLint xoffset, GLint yoffset,
-                          GLint x, GLint y,
-                          GLsizei width, GLsizei height)
-{
-    
 }
 
 void glCompressedTexImage2DARB (GLenum param1, GLint param2, GLenum param3, 
                                 GLsizei param4, GLsizei param5, GLint param6, 
                                 GLsizei param7, const GLvoid *param8)
 {
-
+    // Sanity check
+    if (!texture2D)
+        return;
+    
+    //...
 }
 
 /**
  * Texture mapping
  */
 
-void glTexEnvf (GLenum target, GLenum pname, GLfloat param)
+void glTexEnvf (GLenum _target, GLenum _pname, GLfloat _param)
 {
     
 }
 
-void glTexParameterf (GLenum target, GLenum pname, GLfloat param)
+void glTexParameterf (GLenum _target, GLenum _pname, GLfloat _param)
 {
     
 }
 
-void glTexParameteri (GLenum target, GLenum pname, GLint param)
+void glTexParameteri (GLenum _target, GLenum _pname, GLint _param)
 {
     
 }

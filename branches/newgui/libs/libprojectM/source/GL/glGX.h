@@ -32,22 +32,22 @@ extern "C" {
 
 const char *extensions = "";
 
-bool texture2d_enabled = false;
-bool linestipple_enabled = false;
-bool blend_enabled = false;
-bool linesmooth_enabled = false;
-bool pointsmooth_enabled = false;
-bool polygonsmooth_enabled = false;
-bool depthtest_enabled = false;
-bool cullmode_enabled = true;
+bool texture2DEnabled = false;
+bool lineStippleEnabled = false;
+bool blendEnabled = false;
+bool lineSmoothEnabled = false;
+bool pointSmoothEnabled = false;
+bool polygonSmoothEnabled = false;
+bool depthTestEnabled = false;
+bool cullModeEnabled = true;
 
-GXColor clearcolour = { 0, 0, 0, 0xFF };
-f32 cleardepth = 0 * 0x00FFFFFF;
+GXColor clearColour = { 0, 0, 0, 0xFF };
+f32 clearDepth = 0 * 0x00FFFFFF;
 
-u8 cullmode = GX_CULL_ALL;
+u8 cullMode = GX_CULL_ALL;
 
-u32 linestipple_factor = 0;
-u16 linestipple_pattern = 0;
+u32 lineStippleFactor = 0;
+u16 lineStipplePattern = 0;
 
 f32 pointsize = 1;
 
@@ -61,7 +61,8 @@ f32 pointsize = 1;
  * Drawing
  */
 
-u8 begintype = 0;
+u8 beginType = 0;
+GXColor colour = { 0, 0, 0, 0xFF };
 
 /**
  * Vertex arrays
@@ -79,8 +80,17 @@ u8 begintype = 0;
  * Textures
  */
 
-GLint current_texture;
-GLenum current_texture_target;
+typedef struct _GLtexture {
+    GLuint name;
+    GXTexObj obj;
+    struct _GLtexture *prevTexture;
+    struct _GLtexture *nextTexture;
+} GLtexture;
+
+GLtexture *textures = NULL;
+GLtexture *texture1D = NULL;
+GLtexture *texture2D = NULL;
+u32 textureCount = 0;
 
 /**
  * Texture mapping
