@@ -8,19 +8,20 @@
 #ifndef PERLINNOISE_HPP_
 #define PERLINNOISE_HPP_
 
+#include <ogcsys.h>
 #include <math.h>
 
 class PerlinNoise
 {
 public:
 
-	float noise_lq[256][256];
-	float noise_lq_lite[32][32];
-	float noise_mq[256][256];
-	float noise_hq[256][256];
-	float noise_perlin[512][512];
-	float noise_lq_vol[32][32][32];
-	float noise_hq_vol[32][32][32];
+    float noise_lq[256][256]; ATTRIBUTE_ALIGN(32);
+    float noise_lq_lite[32][32]; ATTRIBUTE_ALIGN(32);
+    float noise_mq[256][256]; ATTRIBUTE_ALIGN(32);
+    float noise_hq[256][256]; ATTRIBUTE_ALIGN(32);
+    float noise_perlin[512][512]; ATTRIBUTE_ALIGN(32);
+    float noise_lq_vol[32][32][32]; ATTRIBUTE_ALIGN(32);
+    float noise_hq_vol[32][32][32]; ATTRIBUTE_ALIGN(32);
 
 
 	PerlinNoise();

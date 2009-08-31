@@ -15,28 +15,15 @@
 
 #define SOIL_CHECK_FOR_GL_ERRORS 0
 
-#ifdef WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-	#include <wingdi.h>
-	#include <GL/gl.h>
-#elif defined(__APPLE__) || defined(__APPLE_CC__)
-	/*	I can't test this Apple stuff!	*/
-	#include <OpenGL/gl.h>
-	#include <Carbon/Carbon.h>
-	#define APIENTRY
-#elif !defined(GEKKO)
-	#include <GL/gl.h>
-	#include <GL/glx.h>
-#else
-    #include "GL/gl.h"
-    #include "GL/glext.h"
-#endif
+#include <ogcsys.h>
+#include "GL/gl.h"
+#include "GL/glext.h"
 
 #include "SOIL.h"
 #include "stb_image_aug.h"
 #include "image_helper.h"
 #include "image_DXT.h"
+#include "wipemalloc.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -908,7 +895,7 @@ unsigned int
 		dh = width;
 	}
 	sz = dw+dh;
-	sub_img = (unsigned char *)malloc( sz*sz*channels );
+    sub_img = (unsigned char *)wipememalign( 32, sz*sz*channels );
 	/*	do the splitting and uploading	*/
 	tex_id = reuse_texture_ID;
 	for( i = 0; i < 6; ++i )
@@ -1010,6 +997,7 @@ unsigned int
 {
 	/*	variables	*/
 	unsigned char* img;
+    unsigned long img_size;
 	unsigned int tex_id;
 	unsigned int internal_texture_format = 0, original_texture_format = 0;
 	int DXT_mode = SOIL_CAPABILITY_UNKNOWN;
@@ -1045,8 +1033,9 @@ unsigned int
 		}
 	}
 	/*	create a copy the image data	*/
-	img = (unsigned char*)malloc( width*height*channels );
-	memcpy( img, data, width*height*channels );
+    img_size = width*height*channels;
+    img = (unsigned char*)wipememalign( 32, img_size );
+	memcpy( img, data, img_size );
 	/*	does the user want me to invert the image?	*/
 	if( flags & SOIL_FLAG_INVERT_Y )
 	{
@@ -1127,7 +1116,8 @@ unsigned int
 		if( (new_width != width) || (new_height != height) )
 		{
 			/*	yep, resize	*/
-			unsigned char *resampled = (unsigned char*)malloc( channels*new_width*new_height );
+            unsigned long resampled_size = channels*new_width*new_height;
+            unsigned char *resampled = (unsigned char*)wipememalign( 32, resampled_size );
 			up_scale_image(
 					img, width, height, channels,
 					resampled, new_width, new_height );
@@ -1140,6 +1130,7 @@ unsigned int
 			/*	nuke the old guy, then point it at the new guy	*/
 			SOIL_free_image_data( img );
 			img = resampled;
+            img_size = resampled_size;
 			width = new_width;
 			height = new_height;
 		}
@@ -1149,6 +1140,7 @@ unsigned int
 	{
 		/*	I've already made it a power of two, so simply use the MIPmapping
 			code to reduce its size to the allowable maximum.	*/
+        unsigned long resampled_size;
 		unsigned char *resampled;
 		int reduce_block_x = 1, reduce_block_y = 1;
 		int new_width, new_height;
@@ -1162,13 +1154,15 @@ unsigned int
 		}
 		new_width = width / reduce_block_x;
 		new_height = height / reduce_block_y;
-		resampled = (unsigned char*)malloc( channels*new_width*new_height );
+        resampled_size = channels*new_width*new_height;
+        resampled = (unsigned char*)wipememalign( 32, resampled_size );
 		/*	perform the actual reduction	*/
 		mipmap_image(	img, width, height, channels,
 						resampled, reduce_block_x, reduce_block_y );
 		/*	nuke the old guy, then point it at the new guy	*/
 		SOIL_free_image_data( img );
 		img = resampled;
+        img_size = resampled_size;
 		width = new_width;
 		height = new_height;
 	}
@@ -1247,6 +1241,7 @@ unsigned int
 			}
 			if( DDS_data )
 			{
+                DCFlushRange(DDS_data, DDS_size);
 				soilGlCompressedTexImage2D(
 					opengl_texture_target, 0,
 					internal_texture_format, width, height, 0,
@@ -1257,6 +1252,7 @@ unsigned int
 			} else
 			{
 				/*	my compression failed, try the OpenGL driver's version	*/
+                DCFlushRange(img, img_size);
 				glTexImage2D(
 					opengl_texture_target, 0,
 					internal_texture_format, width, height, 0,
@@ -1267,6 +1263,7 @@ unsigned int
 		} else
 		{
 			/*	user want OpenGL to do all the work!	*/
+            DCFlushRange(img, img_size);
 			glTexImage2D(
 				opengl_texture_target, 0,
 				internal_texture_format, width, height, 0,
@@ -1280,7 +1277,8 @@ unsigned int
 			int MIPlevel = 1;
 			int MIPwidth = (width+1) / 2;
 			int MIPheight = (height+1) / 2;
-			unsigned char *resampled = (unsigned char*)malloc( channels*MIPwidth*MIPheight );
+            unsigned long resampled_size = channels*MIPwidth*MIPheight;
+            unsigned char *resampled = (unsigned char*)wipememalign( 32, resampled_size );
 			while( ((1<<MIPlevel) <= width) || ((1<<MIPlevel) <= height) )
 			{
 				/*	do this MIPmap level	*/
@@ -1307,6 +1305,7 @@ unsigned int
 					}
 					if( DDS_data )
 					{
+                        DCFlushRange(DDS_data, DDS_size);
 						soilGlCompressedTexImage2D(
 							opengl_texture_target, MIPlevel,
 							internal_texture_format, MIPwidth, MIPheight, 0,
@@ -1316,6 +1315,7 @@ unsigned int
 					} else
 					{
 						/*	my compression failed, try the OpenGL driver's version	*/
+                        DCFlushRange(resampled, resampled_size);
 						glTexImage2D(
 							opengl_texture_target, MIPlevel,
 							internal_texture_format, MIPwidth, MIPheight, 0,
@@ -1325,6 +1325,7 @@ unsigned int
 				} else
 				{
 					/*	user want OpenGL to do all the work!	*/
+                    DCFlushRange(resampled, resampled_size);
 					glTexImage2D(
 						opengl_texture_target, MIPlevel,
 						internal_texture_format, MIPwidth, MIPheight, 0,
@@ -1414,7 +1415,7 @@ int
 	}
 
     /*  Get the data from OpenGL	*/
-    pixel_data = (unsigned char*)malloc( 3*width*height );
+    pixel_data = (unsigned char*)wipememalign( 32, 3*width*height );
     glReadPixels (x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixel_data);
 
     /*	invert the image	*/
@@ -1723,7 +1724,7 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 		mipmaps = 0;
 		DDS_full_size = DDS_main_size;
 	}
-	DDS_data = (unsigned char*)malloc( DDS_full_size );
+    DDS_data = (unsigned char*)wipememalign( 32, DDS_full_size );
 	/*	got the image data RAM, create or use an existing OpenGL texture handle	*/
 	tex_ID = reuse_texture_ID;
 	if( tex_ID == 0 )
@@ -1751,12 +1752,14 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 					DDS_data[i] = DDS_data[i+2];
 					DDS_data[i+2] = temp;
 				}
+                DCFlushRange(DDS_data, DDS_full_size);
 				glTexImage2D(
 					cf_target, 0,
 					S3TC_type, width, height, 0,
 					S3TC_type, GL_UNSIGNED_BYTE, DDS_data );
 			} else
 			{
+                DCFlushRange(DDS_data, DDS_main_size);
 				soilGlCompressedTexImage2D(
 					cf_target, 0,
 					S3TC_type, width, height, 0,
@@ -1780,6 +1783,7 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 				if( uncompressed )
 				{
 					mip_size = w*h*block_size;
+                    DCFlushRange(&DDS_data[byte_offset], mip_size);
 					glTexImage2D(
 						cf_target, i,
 						S3TC_type, w, h, 0,
@@ -1787,6 +1791,7 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 				} else
 				{
 					mip_size = ((w+3)/4)*((h+3)/4)*block_size;
+                    DCFlushRange(&DDS_data[byte_offset], mip_size);
 					soilGlCompressedTexImage2D(
 						cf_target, i,
 						S3TC_type, w, h, 0,
@@ -1867,10 +1872,10 @@ unsigned int SOIL_direct_load_DDS(
 	fseek( f, 0, SEEK_END );
 	buffer_length = ftell( f );
 	fseek( f, 0, SEEK_SET );
-	buffer = (unsigned char *) malloc( buffer_length );
+    buffer = (unsigned char *) wipememalign( 32, buffer_length );
 	if( NULL == buffer )
 	{
-		result_string_pointer = "malloc failed";
+        result_string_pointer = "wipememalign failed";
 		fclose( f );
 		return 0;
 	}
@@ -1983,39 +1988,7 @@ int query_DXT_capability( void )
 		{
 			/*	and find the address of the extension function	*/
 			P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC ext_addr = NULL;
-			#ifdef WIN32
-				ext_addr = (P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC)
-						wglGetProcAddress
-						(
-							"glCompressedTexImage2DARB"
-						);
-			#elif defined(__APPLE__) || defined(__APPLE_CC__)
-				/*	I can't test this Apple stuff!	*/
-				CFBundleRef bundle;
-				CFURLRef bundleURL =
-					CFURLCreateWithFileSystemPath(
-						kCFAllocatorDefault,
-						CFSTR("/System/Library/Frameworks/OpenGL.framework"),
-						kCFURLPOSIXPathStyle,
-						true );
-				CFStringRef extensionName =
-					CFStringCreateWithCString(
-						kCFAllocatorDefault,
-						"glCompressedTexImage2DARB",
-						kCFStringEncodingASCII );
-				bundle = CFBundleCreate( kCFAllocatorDefault, bundleURL );
-				assert( bundle != NULL );
-				ext_addr = (P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC)
-						CFBundleGetFunctionPointerForName
-						(
-							bundle, extensionName
-						);
-				CFRelease( bundleURL );
-				CFRelease( extensionName );
-				CFRelease( bundle );
-			#else
-				ext_addr = (P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC)glCompressedTexImage2DARB;
-			#endif
+			ext_addr = (P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC)glCompressedTexImage2DARB;
 			/*	Flag it so no checks needed later	*/
 			if( NULL == ext_addr )
 			{

@@ -128,6 +128,7 @@ void gxSwapBuffers ()
 {
     // Flip the framebuffer and flush the display
     fb ^= 1;
+    GX_DrawDone();
     GX_SetZMode(depthTestEnabled, depthMode, depthTestEnabled);
     GX_SetColorUpdate(GX_TRUE);
     GX_CopyDisp(xfb[fb], GX_TRUE);
@@ -531,6 +532,16 @@ const GLubyte *glGetString (GLenum _name)
     }
 }
 
+void glFlush ()
+{
+    // Sanity check
+    if (insideBeginEndPair)
+        return; /* GL_INVALID_OPERATION */
+    
+    // Finished drawing
+    GX_DrawDone();
+}
+
 /**
  * Transformation
  */
@@ -713,7 +724,7 @@ void glEnd (void)
     // ===========================================================================
     GX_End();
     // ===========================================================================
-    
+
     // Destory all verticies
     glVerticiesInvalidateAll();
     
@@ -740,7 +751,8 @@ void glVerticiesInvalidateAll ()
 }
 
 void glVertexUpload (GLvertex *_vert)
-{    
+{
+    DCFlushRange(_vert, sizeof(GLvertex));
     GX_Position3f32(_vert->x, _vert->y, _vert->z); 
     GX_Normal3f32(_vert->normal.x, _vert->normal.y, _vert->normal.z);
     GX_Color3f32(_vert->colour.r, _vert->colour.g, _vert->colour.b);
@@ -1214,6 +1226,9 @@ void glTexImage2D (GLenum _target, GLint _level,
     
     // Determine the textures format
     switch (_internalFormat) {
+        
+        case 0: /* ??? */ break;
+        
         case 4:
         case GL_RGBA:
         case GL_RGBA8: format = GX_TF_RGBA8; break;
@@ -1226,6 +1241,7 @@ void glTexImage2D (GLenum _target, GLint _level,
 
     // Determine the format of the pixel data
     switch (_format) {
+        case GL_LUMINANCE: /* ??? */ break;
         case GL_RGBA: break;
         
         // Everything else, unsupported...
@@ -1237,6 +1253,7 @@ void glTexImage2D (GLenum _target, GLint _level,
     // Determine the data type of the pixel data
     switch (_type) {
         case GL_UNSIGNED_BYTE: break;
+        case GL_FLOAT: /* ??? */ break;
         
         // Everything else, unsupported...
         // TODO: Support more formats!?

@@ -8,6 +8,8 @@
 */
 
 #include "image_DXT.h"
+#include "wipemalloc.h"
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -125,7 +127,7 @@ unsigned char* convert_image_to_DXT1(
 	/*	get the RAM for the compressed image
 		(8 bytes per 4x4 pixel block)	*/
 	*out_size = ((width+3) >> 2) * ((height+3) >> 2) * 8;
-	compressed = (unsigned char*)malloc( *out_size );
+    compressed = (unsigned char*)wipememalign( 32, *out_size );
 	/*	go through each block	*/
 	for( j = 0; j < height; j += 4 )
 	{
@@ -208,7 +210,7 @@ unsigned char* convert_image_to_DXT5(
 	/*	get the RAM for the compressed image
 		(16 bytes per 4x4 pixel block)	*/
 	*out_size = ((width+3) >> 2) * ((height+3) >> 2) * 16;
-	compressed = (unsigned char*)malloc( *out_size );
+    compressed = (unsigned char*)wipememalign( 32, *out_size );
 	/*	go through each block	*/
 	for( j = 0; j < height; j += 4 )
 	{

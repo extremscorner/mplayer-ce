@@ -25,6 +25,7 @@
  */
 
 #include "wipemalloc.h"
+#include <malloc.h>
 
 void *wipemalloc( size_t count ) {
     void *mem = malloc( count );
@@ -32,6 +33,17 @@ void *wipemalloc( size_t count ) {
         memset( mem, 0, count );
     } else {
         printf( "wipemalloc() failed to allocate %d bytes\n", (int)count );
+    }
+    return mem;
+}
+
+void *wipememalign( size_t blocksize, size_t count )
+{
+    void *mem = memalign( blocksize, count );
+    if ( mem != NULL ) {
+        memset( mem, 0, count );
+    } else {
+        printf( "wipememalign() failed to allocate %d bytes\n", (int)count );
     }
     return mem;
 }

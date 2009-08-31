@@ -214,6 +214,8 @@ void Renderer::RenderFrame(const Pipeline &pipeline, const PipelineContext &pipe
 	FinishPass1();
 	Pass2(pipeline, pipelineContext);
     
+    glFlush();
+    
     gxSwapBuffers();
     
 }

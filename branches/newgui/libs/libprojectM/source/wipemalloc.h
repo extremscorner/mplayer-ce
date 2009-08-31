@@ -41,6 +41,7 @@ extern "C" {
 
 /** Safe memory allocator */
 void *wipemalloc( size_t count );
+void *wipememalign( size_t blocksize, size_t count );
 void wipefree( void *ptr );
 
 #ifdef __cplusplus

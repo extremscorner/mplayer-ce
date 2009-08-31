@@ -4,6 +4,7 @@
  *  Created on: Jul 18, 2008
  *      Author: pete
  */
+#include <ogcsys.h>
 #include <fstream>
 #include "PerlinNoise.hpp"
 #include "ShaderEngine.hpp"
@@ -66,6 +67,7 @@ void ShaderEngine::setParams(const int texsize, const unsigned int texId, const 
 
 	PerlinNoise noise;
 
+    DCFlushRange(&noise.noise_lq_lite, 32*32);
 	glGenTextures(1, &noise_texture_lq_lite);
 	glBindTexture(GL_TEXTURE_2D, noise_texture_lq_lite);
 	glTexImage2D(GL_TEXTURE_2D, 0, 4, 32, 32, 0, GL_LUMINANCE, GL_FLOAT, noise.noise_lq_lite);
@@ -75,6 +77,7 @@ void ShaderEngine::setParams(const int texsize, const unsigned int texId, const 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	textureManager->setTexture("noise_lq_lite", noise_texture_lq_lite, 32, 32);
 
+    DCFlushRange(&noise.noise_lq, 256*256);
 	glGenTextures(1, &noise_texture_lq);
 	glBindTexture(GL_TEXTURE_2D, noise_texture_lq);
 	glTexImage2D(GL_TEXTURE_2D, 0, 4, 256, 256, 0, GL_LUMINANCE, GL_FLOAT, noise.noise_lq);
@@ -84,6 +87,7 @@ void ShaderEngine::setParams(const int texsize, const unsigned int texId, const 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	textureManager->setTexture("noise_lq", noise_texture_lq, 256, 256);
 
+    DCFlushRange(&noise.noise_mq, 256*256);
 	glGenTextures(1, &noise_texture_mq);
 	glBindTexture(GL_TEXTURE_2D, noise_texture_mq);
 	glTexImage2D(GL_TEXTURE_2D, 0, 4, 256, 256, 0, GL_LUMINANCE, GL_FLOAT, noise.noise_mq);
@@ -93,6 +97,7 @@ void ShaderEngine::setParams(const int texsize, const unsigned int texId, const 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	textureManager->setTexture("noise_mq", noise_texture_mq, 256, 256);
 
+    DCFlushRange(&noise.noise_hq, 256*256);
 	glGenTextures(1, &noise_texture_hq);
 	glBindTexture(GL_TEXTURE_2D, noise_texture_hq);
 	glTexImage2D(GL_TEXTURE_2D, 0, 4, 256, 256, 0, GL_LUMINANCE, GL_FLOAT, noise.noise_hq);
@@ -102,6 +107,7 @@ void ShaderEngine::setParams(const int texsize, const unsigned int texId, const 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	textureManager->setTexture("noise_hq", noise_texture_hq, 256, 256);
 
+    DCFlushRange(&noise.noise_perlin, 512*512);
 	glGenTextures(1, &noise_texture_perlin);
 	glBindTexture(GL_TEXTURE_2D, noise_texture_perlin);
 	glTexImage2D(GL_TEXTURE_2D, 0, 4, 512, 512, 0, GL_LUMINANCE, GL_FLOAT, noise.noise_perlin);
