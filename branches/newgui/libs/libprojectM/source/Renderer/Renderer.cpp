@@ -26,6 +26,8 @@ texsize(texsize), mesh(gx, gy), m_presetName("None"), vw(width), vh(height), pre
 	this->correction = true;
 	this->aspect = (float) height / (float) width;;
 
+    gxInit();
+    
 	/// @bug put these on member init list
 	this->renderTarget = new RenderTarget(texsize, width, height);
 	this->textureManager = new TextureManager(presetURL);
@@ -211,6 +213,9 @@ void Renderer::RenderFrame(const Pipeline &pipeline, const PipelineContext &pipe
 	RenderItems(pipeline, pipelineContext);
 	FinishPass1();
 	Pass2(pipeline, pipelineContext);
+    
+    gxSwapBuffers();
+    
 }
 
 void Renderer::Interpolation(const Pipeline &pipeline)
@@ -322,6 +327,8 @@ Renderer::~Renderer()
 	if (textureManager)
 		delete (textureManager);
 
+    gxDestroy();
+    
 	//std::cerr << "grid assign end" << std::endl;
 
 	free(p);

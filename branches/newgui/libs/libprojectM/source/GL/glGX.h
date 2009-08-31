@@ -26,11 +26,22 @@
 extern "C" {
 #endif
 
+#define GX_MAX_TEXTURE_SIZE     1024
+#define DEFAULT_FIFO_SIZE       256 * 1024
+
+/**
+ * GX
+ */
+
+GXRModeObj *rmode = NULL;
+void *xfb[2] = { NULL, NULL };
+u32 fb = 0;
+
+unsigned char gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN(32);
+
 /**
  * Miscellaneous
  */
-
-const char *extensions = "";
 
 bool texture2DEnabled = false;
 bool lineStippleEnabled = false;
@@ -39,12 +50,23 @@ bool lineSmoothEnabled = false;
 bool pointSmoothEnabled = false;
 bool polygonSmoothEnabled = false;
 bool depthTestEnabled = false;
-bool cullModeEnabled = true;
+bool cullFaceEnabled = true;
 
-GXColor clearColour = { 0, 0, 0, 0xFF };
+bool colourArrayEnabled = false;
+bool edgeFlagArrayEnabled = false;
+bool indexArrayEnabled = false;
+bool normalArrayEnabled = false;
+bool texCoordArrayEnabled = false;
+bool vertexArrayEnabled = false;
+
+u32 insideBeginEndPair = 0;
+
+GXColor clearColour = { 0, 0, 0, 0 };
 f32 clearDepth = 0 * 0x00FFFFFF;
 
-u8 cullMode = GX_CULL_ALL;
+u32 depthMode = GX_LESS;
+u32 cullMode = GX_CULL_ALL;
+u32 windingMode = GL_CCW;
 
 u32 lineStippleFactor = 0;
 u16 lineStipplePattern = 0;
@@ -54,24 +76,72 @@ f32 pointsize = 1;
 u8 drawTEVRegister = GX_TEVREG0;
 u8 readTEVRegister = GX_TEVREG0;
 
+const char *extensions = "";
+
 /**
  * Transformation
  */
 
-//...
+Mtx view;
+Mtx perspective;
 
 /**
  * Drawing
  */
 
-u8 beginType = 0;
-GXColor colour = { 0, 0, 0, 0xFF };
+typedef struct _GLtexcoord {
+    f32 s;
+    f32 t;
+} GLtexcoord;
+
+typedef struct _GLnormal {
+    f32 x;
+    f32 y;
+    f32 z;
+} GLnormal;
+
+typedef struct _GLvertex {
+    f32 x;
+    f32 y;
+    f32 z;
+    GXColor colour;
+    GLnormal normal;
+    GLtexcoord texCoord;
+    struct _GLvertex *prevVertex;
+    struct _GLvertex *nextVertex;
+} GLvertex;
+
+u8 primitiveType = GX_POINTS;
+
+GXColor colour = { 0xFF, 0xFF, 0xFF, 0xFF };
+GLnormal normal = { 0.0f, 0.0f, 0.0f };
+GLtexcoord texCoord = { 0.0f, 0.0f };
+
+GLvertex *verticies = NULL;
+GLvertex *vertex = NULL;
+u32 vertexCount = 0;
+
+void glVerticiesInvalidateAll ();
+void glVertexUpload (GLvertex *_vert);
 
 /**
  * Vertex arrays
  */
 
-//...
+typedef struct _GLvertexarray {
+    GLint size;
+    GLenum type;
+    GLsizei stride;
+    const GLvoid *ptr;
+} GLvertexarray;
+
+GLvertexarray colourArray = { 0 };
+GLvertexarray normalArray = { 0 };
+GLvertexarray texCoordArray = { 0 };
+GLvertexarray vertexArray = { 0 };
+
+f32 glVertexArrayGetCoord (GLvertexarray *vertexArray, int index);
+void glVertexArrayNext (GLvertexarray *vertexArray);
 
 /**
  * Lighting
@@ -95,11 +165,15 @@ typedef struct _GLtexture {
     struct _GLtexture *nextTexture;
 } GLtexture;
 
-u8 textureEnvironment = GX_TEVSTAGE0;
 GLtexture *textures = NULL;
 GLtexture *texture1D = NULL;
 GLtexture *texture2D = NULL;
+u8 texture1DMap = GX_TEXMAP0;
+u8 texture2DMap = GX_TEXMAP1;
 u32 textureCount = 0;
+
+GLuint glTextureNextFreeName ();
+GLtexture *glTextureGet (GLuint _name);
 
 /**
  * Texture mapping

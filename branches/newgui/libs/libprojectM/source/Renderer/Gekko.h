@@ -26,6 +26,10 @@
 extern "C" {
 #endif
 
+void gxInit ();
+void gxDestroy ();
+void gxSwapBuffers ();
+
 #if defined(__wii__)
 
 // Wii disc slot light routines
