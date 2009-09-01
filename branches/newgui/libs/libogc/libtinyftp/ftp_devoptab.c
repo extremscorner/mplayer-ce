@@ -2135,7 +2135,7 @@ static ssize_t __ftp_read(struct _reent *r, int fd, char *ptr, size_t len)
 
 	if (ReadFTPFromCache(ptr, len, file) == false)
 	{
-		r->_errno = EOVERFLOW;
+		r->_errno = EIO;
 		return -1;
 	}
 	

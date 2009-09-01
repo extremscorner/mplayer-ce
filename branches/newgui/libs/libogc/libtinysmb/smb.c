@@ -548,7 +548,7 @@ static s32 SMB_SetupAndX(SMBHANDLE *handle)
 	s32 i, ret;
 	u8 *ptr = handle->message.smb;
 	SMBSESSION *sess = &handle->session;
-	char pwd[200], ntRespData[24];
+	char pwd[15], ntRespData[24];
 
 	if(handle->sck_server == INVALID_SOCKET) return SMB_ERROR;
 
@@ -1062,7 +1062,6 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 		__smb_init();
 		_CPU_ISR_Restore(level);
 	}
-
 	*smbhndl = SMB_HANDLE_NULL;
 
 	handle = __smb_allocate_handle();
@@ -1088,7 +1087,7 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 			memcpy((char *)&handle->server_addr.sin_addr.s_addr, hp->h_addr_list[0], hp->h_length);
 	}
 
-	*smbhndl =(SMBCONN)(LWP_OBJMASKTYPE(SMB_OBJTYPE_HANDLE)|LWP_OBJMASKID(handle->object.id));
+	*smbhndl =(SMBCONN)(LWP_OBJMASKTYPE(SMB_OBJTYPE_HANDLE)|LWP_OBJMASKID(handle->object.id));	
 
 	if(ret==0)
 	{
@@ -1100,10 +1099,12 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 			// try port 139
 			handle->server_addr.sin_port = htons(139);
 			ret = do_netconnect(handle);
+
 			if(ret==0) ret = SMB_RequestNBTSession(handle);
 			if(ret==0) ret = do_smbconnect(handle);
 		}
 	}
+
 	if(ret!=0)
 	{
 		handle->server_addr.sin_port = 0;

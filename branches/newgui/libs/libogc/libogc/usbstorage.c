@@ -733,6 +733,7 @@ as used by libfat
 */
 static bool __usbstorage_IsInserted(void);
 extern const DISC_INTERFACE __io_usb2storage;
+static bool __usbstorage_ReadSectors(u32 , u32 , void *);
 bool USB2Available();
 static bool usb_initied=false;
 
@@ -764,14 +765,6 @@ static bool __usbstorage_IsInserted(void)
 
    __mounted = 0;		//reset it here and check if device is still attached
 
-	if(USB2Available())
-	{
-		if(__io_usb2storage.isInserted())
-		{
-			__io_usbstorage = __io_usb2storage;
-			return true;
-		}
-	}
 
    buffer = __lwp_heap_allocate(&__heap, DEVLIST_MAXSIZE << 3);
    if(buffer == NULL)
@@ -798,6 +791,13 @@ static bool __usbstorage_IsInserted(void)
 		}       
        return false;
    }
+   j=0;
+   for(i = 0; i < DEVLIST_MAXSIZE; i++)
+   {
+       memcpy(&vid, (buffer + (i << 3) + 4), 2);
+       memcpy(&pid, (buffer + (i << 3) + 6), 2);
+       if(vid != 0 && pid != 0) j++;
+	}   
    
    if(__vid!=0 || __pid!=0)
    {
@@ -810,20 +810,40 @@ static bool __usbstorage_IsInserted(void)
 
                if( (vid == __vid) && (pid == __pid))
                {
-                   __mounted = 1;
-				   __lwp_heap_free(&__heap,buffer);
-                   usleep(50); // I don't know why I have to wait but it's needed
-                   return true;
+                   void *buf;
+                   bool read;
+                   buf=__lwp_heap_allocate(&__heap, 1024);
+                   read=__usbstorage_ReadSectors(1, 1, buf); //to be sure device is available
+                   __lwp_heap_free(&__heap,buf);
+                   if(read)
+                   {
+                     __mounted = 1;
+                     __lwp_heap_free(&__heap,buffer);
+                   	 return true;
+                   }
+                   else break;
                }
            }
        }
        USBStorage_Close(&__usbfd);
    }
+   
+   if(USB2Available())
+   {
+      if(__io_usb2storage.isInserted())
+      {
+         __io_usbstorage = __io_usb2storage;
+         return true;
+      }
+   }
+
+   if(j==0) USB_GetDeviceList("/dev/usb/oh0", buffer, DEVLIST_MAXSIZE, 0, &dummy);
 
    memset(&__usbfd, 0, sizeof(__usbfd));
    __lun = 0;
    __vid = 0;
    __pid = 0;
+   __mounted = 0;
 
    for(i = 0; i < DEVLIST_MAXSIZE; i++)
    {
@@ -837,13 +857,13 @@ static bool __usbstorage_IsInserted(void)
            continue;
 
        maxLun = USBStorage_GetMaxLUN(&__usbfd);
+
        for(j = 0; j < maxLun; j++)
        {
            retval = USBStorage_MountLUN(&__usbfd, j);
+
            if(retval == USBSTORAGE_ETIMEDOUT)
-           {
                break;
-           }
 
            if(retval < 0)
                continue;

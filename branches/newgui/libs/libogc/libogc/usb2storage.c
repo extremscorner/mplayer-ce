@@ -39,6 +39,7 @@ distribution.
 #include <ogc/mutex.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h> 
 
 
 //#define DEBUG_USB2
@@ -87,7 +88,7 @@ static s32 usb2_init_value=-1;
 static heap_cntrl usb2_heap;
 static u8 __usb2_heap_created = 0;
 
-s32 USB2CreateHeap() {
+static s32 USB2CreateHeap() {
 	u32 level;
 	void *usb2_heap_ptr;	
 	
@@ -110,7 +111,7 @@ s32 USB2CreateHeap() {
 	return IPC_OK;
 }
 
-void* usb2_malloc(u32 size)
+static void* usb2_malloc(u32 size)
 {
 	return __lwp_heap_allocate(&usb2_heap, size);
 }
@@ -159,6 +160,7 @@ static s32 USBStorage_Init(int verbose)
 	}
 	ret=fd;
 	debug_printf("usb2 fd: %d\n",fd);
+	usleep(500);
 	if(fd>0)
 	{
 		if(verbose)
@@ -167,7 +169,9 @@ static s32 USBStorage_Init(int verbose)
 		usb2_init_value=ret;		
 		//printf("usb2 init value: %i\n", ret);
 		if(ret<0) 
+		{
 			debug_printf("usb2 error init\n");
+		}
 		else
 			size = IOS_IoctlvFormat(hId,fd,USB_IOCTL_UMS_GET_CAPACITY,":i",&sector_size);
 		debug_printf("usb2 GET_CAPACITY: %d\n",	size);	
@@ -284,7 +288,6 @@ static bool __usb2storage_Startup(void)
 		__io_usbstorage = __io_usb1storage;
 		return __io_usbstorage.startup();		
 	}
-	
 	usb2 = USBStorage_Init(0);
 				
 	if(usb2 < 0 && !usb1disabled) 
@@ -292,7 +295,7 @@ static bool __usb2storage_Startup(void)
 		__io_usbstorage = __io_usb1storage;
 		return __io_usbstorage.startup();
 	}
-	
+	__io_usbstorage = __io_usb2storage;
 	return usb2>=0;
 }
 
@@ -302,7 +305,7 @@ static bool __usb2storage_IsInserted(void)
 	{
 		bool ret;
 		ret=__usb2storage_Startup();
-		if(usb2==-1) return false;
+		//if(usb2==-1) return false;
 		return ret;
 	}
 	if(fd>0)

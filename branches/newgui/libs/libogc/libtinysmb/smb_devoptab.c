@@ -18,18 +18,11 @@
 
 #include "smb.h"
 
-static mutex_t _SMB_mutex=LWP_MUTEX_NULL;
+#define MAX_SMB_MOUNTED 5
+
+//static mutex_t _SMB_mutex=LWP_MUTEX_NULL;
 static lwp_t cache_thread = LWP_THREAD_NULL;
 
-static inline void _SMB_lock()
-{
-	if(_SMB_mutex!=LWP_MUTEX_NULL) LWP_MutexLock(_SMB_mutex);
-}
-
-static inline void _SMB_unlock()
-{
-	if(_SMB_mutex!=LWP_MUTEX_NULL) LWP_MutexUnlock(_SMB_mutex);
-}
 
 typedef struct
 {
@@ -48,7 +41,6 @@ typedef struct
 } SMBDIRSTATESTRUCT;
 
 static bool FirstInit=true;
-#define MAX_SMB_MOUNTED 5
 
 ///////////////////////////////////////////
 //      CACHE FUNCTION DEFINITIONS       //
@@ -97,10 +89,22 @@ typedef struct
 	smb_write_cache SMBWriteCache;
 	smb_cache_page *SMBReadAheadCache;
 	u32 SMB_RA_pages;
-
+	
+	mutex_t _SMB_mutex;
+	
 } smb_env;
 
 static smb_env SMBEnv[MAX_SMB_MOUNTED];
+
+static inline void _SMB_lock(int i)
+{
+	if(SMBEnv[i]._SMB_mutex!=LWP_MUTEX_NULL) LWP_MutexLock(SMBEnv[i]._SMB_mutex);
+}
+
+static inline void _SMB_unlock(int i)
+{
+	if(SMBEnv[i]._SMB_mutex!=LWP_MUTEX_NULL) LWP_MutexUnlock(SMBEnv[i]._SMB_mutex);
+}
 
 
 ///////////////////////////////////////////
@@ -126,10 +130,9 @@ static int FlushWriteSMBCache(char *name)
 	smb_env *env;
 	env=FindSMBEnv(name);
 	if(env==NULL) return -1;
-	_SMB_lock();
+	
 	if (env->SMBWriteCache.file == NULL || env->SMBWriteCache.len == 0)
 	{
-		_SMB_unlock();
 		return 0;
 	}
 
@@ -143,7 +146,6 @@ static int FlushWriteSMBCache(char *name)
 
 		if (written <= 0)
 		{
-			_SMB_unlock();
 			return -1;
 		}
 		env->SMBWriteCache.file->offset += written;
@@ -156,7 +158,6 @@ static int FlushWriteSMBCache(char *name)
 	env->SMBWriteCache.used = 0;
 	env->SMBWriteCache.file = NULL;
 
-	_SMB_unlock();
 	return 0;
 }
 
@@ -202,7 +203,9 @@ static void *process_cache_thread(void *ptr)
 				{
 					if (ticks_to_millisecs(gettime())-ticks_to_millisecs(SMBEnv[i].SMBWriteCache.used) > 500)
 					{
+						_SMB_lock(i);
 						FlushWriteSMBCache(SMBEnv[i].name);
+						_SMB_unlock(i);
 					}
 				}
 			}
@@ -283,16 +286,12 @@ static int ReadSMBFromCache(void *buf, size_t len, SMBFILESTRUCT *file)
 
 	if ( len == 0 ) return 0;
 
-	_SMB_lock();
-
 	if (SMBEnv[j].SMBReadAheadCache == NULL)
 	{
 		if (SMB_ReadFile(buf, len, file->offset, file->handle) <= 0)
 		{
-			_SMB_unlock();
 			return -1;
 		}
-		_SMB_unlock();
 		return 0;
 	}
 
@@ -321,7 +320,6 @@ continue_read:
 
 				if (rest == 0)
 				{
-					_SMB_unlock();
 					return 0;
 				}
 				goto continue_read;
@@ -375,7 +373,6 @@ continue_read:
 	if ( SMB_ReadFile(SMBEnv[j].SMBReadAheadCache[leastUsed].ptr, cache_to_read, cache_offset, file->handle) <0 )
 	{
 		SMBEnv[j].SMBReadAheadCache[leastUsed].file = NULL;
-		_SMB_unlock();
 		return -1;
 	}
 
@@ -394,7 +391,6 @@ static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 	if (file == NULL || buf == NULL)
 		return -1;
 	int j;
-	_SMB_lock();
 	j=file->env;
 	if (SMBEnv[j].SMBWriteCache.file != NULL)
 	{
@@ -450,11 +446,9 @@ static int WriteSMBUsingCache(const char *buf, size_t len, SMBFILESTRUCT *file)
 			break;
 		}
 	}
-	_SMB_unlock();
 	return size;
 
 failed:
-	_SMB_unlock();
 	return -1;
 }
 
@@ -544,11 +538,10 @@ static int __smb_open(struct _reent *r, void *fileStruct, const char *path, int 
 
 	SMBDIRENTRY dentry;
 	bool fileExists = true;
-	_SMB_lock();
+	_SMB_lock(env->pos);
 	if (SMB_PathInfo(fixedpath, &dentry, env->smbconn) != SMB_SUCCESS)
 		fileExists = false;
 
-	_SMB_unlock();
 
 	// Determine which mode the file is open for
 	u8 smb_mode;
@@ -580,6 +573,7 @@ static int __smb_open(struct _reent *r, void *fileStruct, const char *path, int 
 	else
 	{
 		r->_errno = EACCES;
+		_SMB_unlock(env->pos);
 		return -1;
 	}
 
@@ -588,12 +582,11 @@ static int __smb_open(struct _reent *r, void *fileStruct, const char *path, int 
 	if (!(flags & O_APPEND) && fileExists && ((flags & 0x03) != O_RDONLY))
 		smb_mode = SMB_OF_TRUNCATE;
 
-	_SMB_lock();
 	file->handle = SMB_OpenFile(fixedpath, access, smb_mode, env->smbconn);
-	_SMB_unlock();
 	if (!file->handle)
 	{
 		r->_errno = ENOENT;
+		_SMB_unlock(env->pos);
 		return -1;
 	}
 
@@ -609,6 +602,7 @@ static int __smb_open(struct _reent *r, void *fileStruct, const char *path, int 
 	file->access=access;
 
 	strcpy(file->filename, fixedpath);
+	_SMB_unlock(env->pos);	
 	return 0;
 }
 
@@ -624,12 +618,12 @@ static off_t __smb_seek(struct _reent *r, int fd, off_t pos, int dir)
 	}
 
 	//have to flush because SMBWriteCache.file->offset holds offset of cached block not yet written
-	_SMB_lock();
+	_SMB_lock(file->env);
 	if (SMBEnv[file->env].SMBWriteCache.file == file)
 	{
 		FlushWriteSMBCache(SMBEnv[file->env].name);
 	}
-	_SMB_unlock();
+	
 
 	switch (dir)
 	{
@@ -644,22 +638,26 @@ static off_t __smb_seek(struct _reent *r, int fd, off_t pos, int dir)
 		break;
 	default:
 		r->_errno = EINVAL;
+		_SMB_unlock(file->env);
 		return -1;
 	}
 
 	if (((pos > 0) && (position < 0)) || (position > file->len))
 	{
 		r->_errno = EOVERFLOW;
+		_SMB_unlock(file->env);
 		return -1;
 	}
 	if (position < 0)
 	{
 		r->_errno = EINVAL;
+		_SMB_unlock(file->env);
 		return -1;
 	}
 
 	// Save position
 	file->offset = position;
+	_SMB_unlock(file->env);
 	return position;
 }
 
@@ -679,17 +677,18 @@ static ssize_t __smb_read(struct _reent *r, int fd, char *ptr, size_t len)
 
 	//have to flush because SMBWriteCache.file->offset holds offset of cached block not yet writeln
 	//and file->len also may not have been updated yet
-	_SMB_lock();
+	_SMB_lock(file->env);
 	if (SMBEnv[file->env].SMBWriteCache.file == file)
 	{
 		FlushWriteSMBCache(SMBEnv[file->env].name);
 	}
-	_SMB_unlock();
+	
 
 	// Don't try to read if the read pointer is past the end of file
 	if (file->offset >= file->len)
 	{
 		r->_errno = EOVERFLOW;
+		_SMB_unlock(file->env);
 		return -1;
 	}
 
@@ -703,6 +702,7 @@ static ssize_t __smb_read(struct _reent *r, int fd, char *ptr, size_t len)
 	if (len <= 0)
 	{
 		r->_errno = EOVERFLOW;
+		_SMB_unlock(file->env);
 		return -1;
 	}
 
@@ -723,7 +723,6 @@ retry_read:
 		cnt_retry--;
 		if(cnt_retry>=0)
 		{
-			_SMB_lock();
 			if(smbCheckConnection(SMBEnv[file->env].name))
 			{
 				ClearSMBFileCache(file);
@@ -731,20 +730,19 @@ retry_read:
 				if (!file->handle)
 				{
 					r->_errno = ENOENT;
-					_SMB_unlock();
+					_SMB_unlock(file->env);
 					return -1;
 				}
-				_SMB_unlock();
 				goto retry_read;
 			}
-			_SMB_unlock();
 			usleep(10000);
 			goto retry_reconnect;
 		}
-		r->_errno = EOVERFLOW;
+		r->_errno = EIO;
+		_SMB_unlock(file->env);
 		return -1;
 	}
-
+	_SMB_unlock(file->env);
 	return len;
 }
 
@@ -771,15 +769,16 @@ static ssize_t __smb_write(struct _reent *r, int fd, const char *ptr, size_t len
 		r->_errno = EOVERFLOW;
 		return -1;
 	}
-
+	_SMB_lock(file->env);
 	ClearSMBFileCache(file);
 	written = WriteSMBUsingCache(ptr, len, file);
 	if (written <= 0)
 	{
 		r->_errno = EIO;
+		_SMB_unlock(file->env);
 		return -1;
 	}
-
+	_SMB_unlock(file->env);
 	return written;
 }
 
@@ -788,17 +787,17 @@ static int __smb_close(struct _reent *r, int fd)
 	SMBFILESTRUCT *file = (SMBFILESTRUCT*) fd;
 	int j;
 	j=file->env;
-	_SMB_lock();
+	_SMB_lock(j);
 	if (SMBEnv[j].SMBWriteCache.file == file)
 	{
 		FlushWriteSMBCache(SMBEnv[j].name);
 	}
 	ClearSMBFileCache(file);
 	SMB_CloseFile(file->handle);
-	_SMB_unlock();
 	file->len = 0;
 	file->offset = 0;
 	file->filename[0] = '\0';
+	_SMB_unlock(j);
 
 	return 0;
 }
@@ -846,19 +845,21 @@ static int __smb_chdir(struct _reent *r, const char *path)
 
 	memset(&dentry, 0, sizeof(SMBDIRENTRY));
 
-	_SMB_lock();
+	_SMB_lock(env->pos);
 	found = SMB_PathInfo(path_absolute, &dentry, env->smbconn);
-	_SMB_unlock();
+	
 
 	if (found != SMB_SUCCESS)
 	{
 		r->_errno = ENOENT;
+		_SMB_unlock(env->pos);
 		return -1;
 	}
 
 	if (!(dentry.attributes & SMB_SRCH_DIRECTORY))
 	{
 		r->_errno = ENOTDIR;
+		_SMB_unlock(env->pos);
 		return -1;
 	}
 
@@ -868,7 +869,7 @@ static int __smb_chdir(struct _reent *r, const char *path)
 		if (env->currentpath[strlen(env->currentpath) - 1] != '\\')
 			strcat(env->currentpath, "\\");
 	}
-
+	_SMB_unlock(env->pos);
 	return 0;
 }
 
@@ -880,23 +881,25 @@ static int __smb_dirreset(struct _reent *r, DIR_ITER *dirState)
 
 	memset(&dentry, 0, sizeof(SMBDIRENTRY));
 
-	_SMB_lock();
+	_SMB_lock(state->env);
 	SMB_FindClose(SMBEnv[state->env].smbconn);
 
 	strcpy(path_abs,SMBEnv[state->env].currentpath);
 	strcat(path_abs,"*");
 	int found = SMB_FindFirst(path_abs, SMB_SRCH_DIRECTORY | SMB_SRCH_SYSTEM | SMB_SRCH_HIDDEN | SMB_SRCH_READONLY | SMB_SRCH_ARCHIVE, &dentry, SMBEnv[state->env].smbconn);
-	_SMB_unlock();
+	
 
 	if (found != SMB_SUCCESS)
 	{
 		r->_errno = ENOENT;
+		_SMB_unlock(state->env);
 		return -1;
 	}
 
 	if (!(dentry.attributes & SMB_SRCH_DIRECTORY))
 	{
 		r->_errno = ENOTDIR;
+		_SMB_unlock(state->env);
 		return -1;
 	}
 
@@ -908,6 +911,7 @@ static int __smb_dirreset(struct _reent *r, DIR_ITER *dirState)
 	strcpy(state->smbdir.name, dentry.name);
 
 	SMBEnv[state->env].first_item_dir = true;
+	_SMB_unlock(state->env);
 	return 0;
 }
 
@@ -950,19 +954,21 @@ static DIR_ITER* __smb_diropen(struct _reent *r, DIR_ITER *dirState, const char 
 	strcat(path_absolute, "*");
 
 	memset(&dentry, 0, sizeof(SMBDIRENTRY));
-	_SMB_lock();
+	_SMB_lock(env->pos);
 	found = SMB_FindFirst(path_absolute, SMB_SRCH_DIRECTORY | SMB_SRCH_SYSTEM | SMB_SRCH_HIDDEN | SMB_SRCH_READONLY | SMB_SRCH_ARCHIVE, &dentry, env->smbconn);
-	_SMB_unlock();
+	
 
 	if (found != SMB_SUCCESS)
 	{
 		r->_errno = ENOENT;
+		_SMB_unlock(env->pos);
 		return NULL;
 	}
 
 	if (!(dentry.attributes & SMB_SRCH_DIRECTORY))
 	{
 		r->_errno = ENOTDIR;
+		_SMB_unlock(env->pos);
 		return NULL;
 	}
 
@@ -974,6 +980,7 @@ static DIR_ITER* __smb_diropen(struct _reent *r, DIR_ITER *dirState, const char 
 	state->smbdir.attributes = dentry.attributes;
 	strcpy(state->smbdir.name, dentry.name);
 	env->first_item_dir = true;
+	_SMB_unlock(env->pos);
 	return dirState;
 }
 
@@ -1022,6 +1029,7 @@ static int __smb_dirnext(struct _reent *r, DIR_ITER *dirState, char *filename,
 	}
 
 	memset(&dentry, 0, sizeof(SMBDIRENTRY));
+	_SMB_lock(state->env);
 	if (SMBEnv[state->env].first_item_dir)
 	{
 		SMBEnv[state->env].first_item_dir = false;
@@ -1037,15 +1045,15 @@ static int __smb_dirnext(struct _reent *r, DIR_ITER *dirState, char *filename,
 		strcpy(state->smbdir.name, dentry.name);
 		strcpy(filename, dentry.name);
 		dentry_to_stat(&dentry, filestat);
-
+		_SMB_unlock(state->env);
 		return 0;
 	}
 
-	_SMB_lock();
+	
 	ret = SMB_FindNext(&dentry, SMBEnv[state->env].smbconn);
 	if(ret==SMB_SUCCESS && SMBEnv[state->env].diropen_root && !strcmp(dentry.name,".."))
 		ret = SMB_FindNext(&dentry, SMBEnv[state->env].smbconn);
-	_SMB_unlock();
+	
 
 	if (ret == SMB_SUCCESS)
 	{
@@ -1059,13 +1067,14 @@ static int __smb_dirnext(struct _reent *r, DIR_ITER *dirState, char *filename,
 	else
 	{
 		r->_errno = ENOENT;
+		_SMB_unlock(state->env);
 		return -1;
 	}
 
 	strcpy(filename, dentry.name);
 
 	dentry_to_stat(&dentry, filestat);
-
+	_SMB_unlock(state->env);
 	return 0;
 }
 
@@ -1073,11 +1082,10 @@ static int __smb_dirclose(struct _reent *r, DIR_ITER *dirState)
 {
 	SMBDIRSTATESTRUCT* state = (SMBDIRSTATESTRUCT*) (dirState->dirStruct);
 
-	_SMB_lock();
+	_SMB_lock(state->env);
 	SMB_FindClose(SMBEnv[state->env].smbconn);
-	_SMB_unlock();
-
 	memset(state, 0, sizeof(SMBDIRSTATESTRUCT));
+	_SMB_unlock(state->env);
 	return 0;
 }
 
@@ -1107,22 +1115,23 @@ static int __smb_stat(struct _reent *r, const char *path, struct stat *st)
 		r->_errno = EINVAL;
 		return -1;
 	}
-	_SMB_lock();
+	_SMB_lock(env->pos);
 	if (SMB_PathInfo(path_absolute, &dentry, env->smbconn) != SMB_SUCCESS)
 	{
-		_SMB_unlock();
 		r->_errno = ENOENT;
+		_SMB_unlock(env->pos);
 		return -1;
 	}
-	_SMB_unlock();
 
 	if (dentry.name[0] == '\0')
 	{
 		r->_errno = ENOENT;
+		_SMB_unlock(env->pos);
 		return -1;
 	}
 
 	dentry_to_stat(&dentry, st);
+	_SMB_unlock(env->pos);
 
 	return 0;
 }
@@ -1202,29 +1211,37 @@ bool smbInitDevice(const char* name, const char *user, const char *password, con
 			SMBEnv[i].first_item_dir=false;
 			SMBEnv[i].pos=i;
 			SMBEnv[i].SMBReadAheadCache=NULL;
+			if(LWP_MutexInit(&SMBEnv[i]._SMB_mutex, false) != 0)
+				return false;			
 		}
 	}
 
 	if(cache_thread == LWP_THREAD_NULL)
-		if(LWP_CreateThread(&cache_thread, process_cache_thread, NULL, NULL, 0, 80) != 0)
+		if(LWP_CreateThread(&cache_thread, process_cache_thread, NULL, NULL, 0, 64) != 0)
+		{
 			return false;
-	if(_SMB_mutex == LWP_MUTEX_NULL)
-		if(LWP_MutexInit(&_SMB_mutex, false) != 0)
-			return false;
+		}
 
 	for(i=0;i<MAX_SMB_MOUNTED && SMBEnv[i].SMBCONNECTED;i++);
-	if(i==MAX_SMB_MOUNTED) return false; //all allowed samba connections reached
+	if(i==MAX_SMB_MOUNTED) 
+	{
+		return false; //all allowed samba connections reached
+	}
 
 	if (if_config(myIP, NULL, NULL, true) < 0)
+	{
 		return false;
+	}
 
 	//root connect
 	bool ret = true;
 	SMBCONN smbconn;
-	_SMB_lock();
 	if(SMB_Connect(&smbconn, user, password, share, ip) != SMB_SUCCESS)
 		ret = false;
-	_SMB_unlock();
+		
+	//I don't want problems in multhread systems, maybe we can use a global mutex to be sure i is unique
+	for(i=0;i<MAX_SMB_MOUNTED && SMBEnv[i].SMBCONNECTED;i++);
+	SMBEnv[i].SMBCONNECTED=true;
 	MountDevice(name,smbconn,i);
 	return ret;
 }
@@ -1240,14 +1257,14 @@ void smbClose(const char* name)
 	env=FindSMBEnv(name);
 	if(env==NULL) return;
 
+	_SMB_lock(env->pos);
 	if(env->SMBCONNECTED)
 	{
-		_SMB_lock();
 		SMB_Close(env->smbconn);
-		_SMB_unlock();
 	}
 	env->SMBCONNECTED=false;
 	RemoveDevice(env->name);
+	_SMB_unlock(env->pos);
 }
 
 bool smbCheckConnection(const char* name)
@@ -1262,8 +1279,8 @@ bool smbCheckConnection(const char* name)
 
 	env=FindSMBEnv(device);
 	if(env==NULL) return false;
-	_SMB_lock();
+	_SMB_lock(env->pos);
 	ret=(SMB_Reconnect(&env->smbconn,true)==SMB_SUCCESS);
-	_SMB_unlock();
+	_SMB_unlock(env->pos);
 	return ret;
 }
