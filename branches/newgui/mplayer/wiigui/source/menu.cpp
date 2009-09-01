@@ -17,6 +17,7 @@
 #include "libwiigui/gui.h"
 #include "menu.h"
 #include "mplayerce.h"
+#include "settings.h"
 #include "fileop.h"
 #include "input.h"
 #include "networkop.h"
@@ -1072,6 +1073,10 @@ void WiiMenu()
 	mainWindow->Append(logoBtn);
 
 	ResumeGui();
+
+	// Load settings
+	if(!LoadSettings())
+		SaveSettings(SILENT);
 
 	while(!shutdownGui)
 	{

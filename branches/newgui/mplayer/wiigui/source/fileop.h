@@ -24,7 +24,10 @@ void MountAllFAT();
 void UnmountAllFAT();
 bool ChangeInterface(int device, int devnum, bool silent);
 bool ChangeInterface(char * filepath, bool silent);
+void CreateAppPath(char * origpath);
 int ParseDirectory(bool waitParse = false);
+u32 LoadFile (char * buffer, char *filepath, bool silent);
+u32 SaveFile (char * buffer, char *filepath, u32 datasize, bool silent);
 
 extern bool unmountRequired[];
 extern bool isMounted[];

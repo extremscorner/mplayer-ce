@@ -20,6 +20,7 @@
 #include "menu.h"
 #include "fileop.h"
 #include "networkop.h"
+#include "settings.h"
 
 BROWSERINFO browser;
 BROWSERENTRY * browserList = NULL; // list of files/folders in browser
@@ -245,13 +246,13 @@ int BrowserChangeFolder(bool updateDir)
 
 		for(int i=0; i < 5; i++)
 		{
-			if(smbConf[i].share[0] != 0)
+			if(CESettings.smbConf[i].share[0] != 0)
 			{
 				if(!AddBrowserEntry())
 					break;
 
 				sprintf(browserList[browser.numEntries].filename, "smb%d:/", i+1);
-				sprintf(browserList[browser.numEntries].displayname, "%s (Network)", smbConf[i].share);
+				sprintf(browserList[browser.numEntries].displayname, "%s (Network)", CESettings.smbConf[i].share);
 				browserList[browser.numEntries].length = 0;
 				browserList[browser.numEntries].mtime = 0;
 				browserList[browser.numEntries].isdir = 1; // flag this as a dir

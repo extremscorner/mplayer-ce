@@ -3,7 +3,6 @@
  * Tantric 2009
  *
  * fileop.cpp
- *
  * File operations
  ***************************************************************************/
 
@@ -235,6 +234,48 @@ void MountAllFAT()
 	MountFAT(DEVICE_USB);
 }
 
+static bool FindDevice(char * filepath, int * device, int * devnum)
+{
+	int tmp = -1;
+
+	if(strncmp(filepath, "sd:", 3) == 0)
+	{
+		*device = DEVICE_SD;
+		return true;
+	}
+	else if(strncmp(filepath, "usb:", 4) == 0)
+	{
+		*device = DEVICE_USB;
+		return true;
+	}
+	else if(strncmp(filepath, "dvd:", 4) == 0)
+	{
+		*device = DEVICE_DVD;
+		return true;
+	}
+	else if(strncmp(filepath, "smb", 3) == 0)
+	{
+		tmp = atoi(&filepath[3]);
+		if(tmp > 0 && tmp < 6)
+		{
+			*device = DEVICE_SMB;
+			*devnum = tmp;
+			return true;
+		}
+	}
+	else if(strncmp(filepath, "ftp", 3) == 0)
+	{
+		tmp = atoi(&filepath[3]);
+		if(tmp > 0 && tmp < 6)
+		{
+			*device = DEVICE_FTP;
+			*devnum = tmp;
+			return true;
+		}
+	}
+	return false;
+}
+
 /****************************************************************************
  * ChangeInterface
  * Attempts to mount/configure the device specified
@@ -265,6 +306,13 @@ bool ChangeInterface(int device, int devnum, bool silent)
 	{
 		mounted = ConnectShare(devnum, silent);
 	}
+
+	if(mounted)
+	{
+		currentDevice = device;
+		currentDeviceNum = devnum;
+	}
+
 	return mounted;
 }
 
@@ -273,31 +321,28 @@ bool ChangeInterface(char * filepath, bool silent)
 	int device = -1;
 	int devnum = -1;
 
-	if(strncmp(filepath, "sd:", 3) == 0)
-	{
-		device = DEVICE_SD;
-	}
-	else if(strncmp(filepath, "usb:", 4) == 0)
-	{
-		device = DEVICE_USB;
-	}
-	else if(strncmp(filepath, "dvd:", 4) == 0)
-	{
-		device = DEVICE_DVD;
-	}
-	else if(strncmp(filepath, "smb", 3) == 0)
-	{
-		device = DEVICE_SMB;
-		devnum = atoi(&filepath[3]);
-	}
+	if(!FindDevice(filepath, &device, &devnum))
+		return false;
 
-	if(device >= 0 && ChangeInterface(device, devnum, silent))
+	return ChangeInterface(device, devnum, silent);
+}
+
+void CreateAppPath(char * origpath)
+{
+	appPath[0] = 0;
+
+	char * path = strdup(origpath); // make a copy so we don't mess up original
+
+	// replace fat:/ with sd:/
+	if(strncmp(path, "fat:/", 5) == 0)
 	{
-		currentDevice = device;
-		currentDeviceNum = devnum;
-		return true;
+		path = path + 1;
+		path[0] = 's';
+		path[1] = 'd';
 	}
-	return false;
+	if(ChangeInterface(path, SILENT))
+		strncpy(appPath, path, 1024);
+	free(path);
 }
 
 bool ParseDirEntries()
@@ -386,12 +431,11 @@ ParseDirectory(bool waitParse)
 	// open the directory
 	while(dirIter == NULL && retry == 1)
 	{
-		mounted = ChangeInterface(currentDevice, currentDeviceNum, NOTSILENT);
+		mounted = ChangeInterface(browser.dir, NOTSILENT);
 		if(mounted) dirIter = diropen(browser.dir);
 
 		if(dirIter == NULL)
 		{
-			unmountRequired[currentDevice] = true;
 			sprintf(msg, "Error opening %s", browser.dir);
 			retry = ErrorPromptRetry(msg);
 		}
@@ -400,7 +444,7 @@ ParseDirectory(bool waitParse)
 	// if we can't open the dir, try opening the root dir
 	if (dirIter == NULL && !IsDeviceRoot(browser.dir))
 	{
-		if(ChangeInterface(currentDevice, currentDeviceNum, SILENT))
+		if(ChangeInterface(browser.dir, SILENT))
 		{
 			char * devEnd = strchr(browser.dir, '/');
 			devEnd[1] = 0; // strip remaining file listing
@@ -442,4 +486,134 @@ ParseDirectory(bool waitParse)
 	}
 
 	return browser.numEntries;
+}
+
+/****************************************************************************
+ * LoadFile
+ ***************************************************************************/
+u32 LoadFile (char * buffer, char *filepath, bool silent)
+{
+	u32 size = 0;
+	u32 readsize = 0;
+	int retry = 1;
+	FILE * file;
+
+	// stop checking if devices were removed/inserted
+	// since we're loading a file
+	HaltDeviceThread();
+
+	// halt parsing
+	parseHalt = true;
+
+	// open the file
+	while(!size && retry == 1)
+	{
+		if(ChangeInterface(filepath, silent))
+		{
+			file = fopen (filepath, "rb");
+
+			if(file > 0)
+			{
+				struct stat fileinfo;
+				if(fstat(file->_file, &fileinfo) == 0)
+				{
+					size = fileinfo.st_size;
+
+					u32 offset = 0;
+					u32 nextread = 0;
+					while(offset < size)
+					{
+						if(size - offset > 4*1024) nextread = 4*1024;
+						else nextread = size-offset;
+						ShowProgress ("Loading...", offset, size);
+						readsize = fread (buffer + offset, 1, nextread, file); // read in next chunk
+
+						if(readsize <= 0 || readsize > nextread)
+							break; // read failure
+
+						if(readsize > 0)
+							offset += readsize;
+					}
+					CancelAction();
+
+					if(offset != size) // # bytes read doesn't match # expected
+						size = 0;
+				}
+				fclose (file);
+			}
+		}
+		if(!size)
+		{
+			if(!silent)
+			{
+				retry = ErrorPromptRetry("Error loading file!");
+			}
+			else
+			{
+				retry = 0;
+			}
+		}
+	}
+
+	// go back to checking if devices were inserted/removed
+	ResumeDeviceThread();
+	CancelAction();
+	return size;
+}
+
+/****************************************************************************
+ * SaveFile
+ * Write buffer to file
+ ***************************************************************************/
+u32 SaveFile (char * buffer, char *filepath, u32 datasize, bool silent)
+{
+	u32 written = 0;
+	int retry = 1;
+	FILE * file;
+
+	if(datasize == 0)
+		return 0;
+
+	ShowAction("Saving...");
+
+	// stop checking if devices were removed/inserted
+	// since we're saving a file
+	HaltDeviceThread();
+
+	while(!written && retry == 1)
+	{
+		if(ChangeInterface(filepath, silent))
+		{
+			file = fopen (filepath, "wb");
+
+			if (file > 0)
+			{
+				u32 writesize, nextwrite;
+				while(written < datasize)
+				{
+					if(datasize - written > 4*1024) nextwrite=4*1024;
+					else nextwrite = datasize-written;
+					writesize = fwrite (buffer+written, 1, nextwrite, file);
+					if(writesize != nextwrite) break; // write failure
+					written += writesize;
+				}
+
+				if(written != datasize) written = 0;
+				fclose (file);
+			}
+		}
+		if(!written)
+		{
+			if(!silent)
+				retry = ErrorPromptRetry("Error saving file!");
+			else
+				retry = 0;
+		}
+	}
+
+	// go back to checking if devices were inserted/removed
+	ResumeDeviceThread();
+
+	CancelAction();
+    return written;
 }

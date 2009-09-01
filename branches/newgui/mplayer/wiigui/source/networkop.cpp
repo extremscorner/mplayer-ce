@@ -15,8 +15,7 @@
 #include "filebrowser.h"
 #include "menu.h"
 #include "networkop.h"
-
-extern struct SMBSettings smbConf[5];
+#include "settings.h"
 
 static bool inNetworkInit = false;
 static bool networkInit = false;
@@ -91,24 +90,18 @@ ConnectShare (int num, bool silent)
 	char mountpoint[6];
 	sprintf(mountpoint, "smb%d", num);
 
-	int chkU = (strlen(smbConf[num-1].user) > 0) ? 0:1;
-	int chkP = (strlen(smbConf[num-1].pwd) > 0) ? 0:1;
-	int chkS = (strlen(smbConf[num-1].share) > 0) ? 0:1;
-	int chkI = (strlen(smbConf[num-1].ip) > 0) ? 0:1;
+	int chkS = (strlen(CESettings.smbConf[num-1].share) > 0) ? 0:1;
+	int chkI = (strlen(CESettings.smbConf[num-1].ip) > 0) ? 0:1;
 
 	// check that all parameters have been set
-	if(chkU + chkP + chkS + chkI > 0)
+	if(chkS + chkI > 0)
 	{
 		if(!silent)
 		{
 			char msg[50];
 			char msg2[100];
-			if(chkU + chkP + chkS + chkI > 1) // more than one thing is wrong
+			if(chkS + chkI > 1) // more than one thing is wrong
 				sprintf(msg, "Check settings file.");
-			else if(chkU)
-				sprintf(msg, "Username is blank.");
-			else if(chkP)
-				sprintf(msg, "Password is blank.");
 			else if(chkS)
 				sprintf(msg, "Share name is blank.");
 			else if(chkI)
@@ -120,9 +113,6 @@ ConnectShare (int num, bool silent)
 		return false;
 	}
 
-	if(unmountRequired[DEVICE_SMB])
-		CloseShare(num);
-
 	if(!networkInit)
 		InitializeNetwork(silent);
 
@@ -133,8 +123,8 @@ ConnectShare (int num, bool silent)
 			if(!silent)
 				ShowAction ("Connecting to network share...");
 
-			if(smbInitDevice(mountpoint, smbConf[num-1].user, smbConf[num-1].pwd,
-					smbConf[num-1].share, smbConf[num-1].ip))
+			if(smbInitDevice(mountpoint, CESettings.smbConf[num-1].user, CESettings.smbConf[num-1].pwd,
+					CESettings.smbConf[num-1].share, CESettings.smbConf[num-1].ip))
 			{
 				networkShareInit[num-1] = true;
 			}

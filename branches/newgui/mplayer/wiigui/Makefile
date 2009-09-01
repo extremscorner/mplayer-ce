@@ -25,7 +25,7 @@ INCLUDES	:=	source
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS		=	-g -O2 -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS		=	-g -O3 -Wall $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	-save-temps -Xassembler -aln=$@.lst $(CFLAGS)
 LDFLAGS		=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map			
 				
@@ -33,8 +33,8 @@ LDFLAGS		=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
 MPLIBS	:=	-lmplayerwii -lavcodec -lavformat -lavutil -lpostproc -lswscale
-#LIBS := $(MPLIBS) -lfribidi -ljpeg -ldi -liconv -lpngu -lpng -lmetaphrasis -lz -lntfs -lfat -lwiiuse -lbte -logc -lfreetype -ltinyftp -ltinysmb
-LIBS := $(MPLIBS) -lfribidi -ljpeg -ldi -liconv -lpng -lz -lntfs -lfat -lwiiuse -lbte -logc -lfreetype -ltinyftp -ltinysmb
+LIBS 	:= 	$(MPLIBS) -lfribidi -ljpeg -ldi -liconv -lpng -lz -lntfs -lfat \
+			-lwiiuse -lbte -logc -lfreetype -lmxml -ltinyftp -ltinysmb
 
 
 #---------------------------------------------------------------------------------

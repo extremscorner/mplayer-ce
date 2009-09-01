@@ -21,8 +21,8 @@
 #include "filelist.h"
 #include "fileop.h"
 #include "mplayerce.h"
+#include "settings.h"
 
-struct SCESettings CESettings;
 int ScreenshotRequested = 0;
 int ConfigRequested = 0;
 int ShutdownRequested = 0;
@@ -78,26 +78,6 @@ void ShutdownCB()
 void ResetCB()
 {
 	ResetRequested = 1;
-}
-
-static void CreateAppPath(char origpath[])
-{
-	char path[1024];
-	strcpy(path, origpath); // make a copy so we don't mess up original
-
-	char * loc;
-	int pos = -1;
-
-	loc = strrchr(path,'/');
-	if (loc != NULL)
-		*loc = 0; // strip file name
-
-	loc = strchr(path,'/'); // looking for / from fat:/ or sd:/
-	if (loc != NULL)
-		pos = loc - path + 1;
-
-	if(pos >= 0 && pos < 1024)
-		sprintf(appPath, &(path[pos]));
 }
 
 static void *
@@ -165,9 +145,11 @@ main(int argc, char *argv[])
 	if(argc > 0 && argv[0] != NULL)
 		CreateAppPath(argv[0]);
 
+	// Set defaults
+	DefaultSettings();
+
 	MountAllFAT(); // Initialize libFAT for SD and USB
 
-	LoadConfig(appPath);
 	loadedFile[0] = 0;
 
 	// Initialize font system

@@ -38,7 +38,7 @@
 #include <fat.h>
 #include <ntfs.h>
 #include <smb.h>
-#include <ftp.h> 
+#include <ftp.h>
 
 #include <network.h>
 #include <errno.h>
@@ -66,7 +66,7 @@
 #define MPCE_VERSION "0.76"
 
 extern int stream_cache_size;
-  
+
 bool reset_pressed = false;
 bool power_pressed = false;
 bool playing_usb = false;
@@ -98,14 +98,14 @@ static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
 
 static char *default_args[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
-	"-bgvideo", NULL, 
+	"-bgvideo", NULL,
 	"-idle", NULL,
-#ifndef CE_DEBUG 	
+#ifndef CE_DEBUG
 	"-really-quiet",
-#endif	
+#endif
 	"-vo","gekko","-ao","gekko",
 	"-menu","-menu-startup"
-}; 
+};
 
 static void reset_cb (void) {
 	reset_pressed = true;
@@ -127,7 +127,7 @@ void gekko_gettimeofday(struct timeval *tv, void *tz) {
 	t=gettime();
 	tv->tv_sec = ticks_to_secs(t);
 	tv->tv_usec = ticks_to_microsecs(t);
-} 
+}
 
 void gekko_abort(void) {
 	//printf("abort() called\n");
@@ -151,28 +151,28 @@ const static DISC_INTERFACE* usb = &__io_usbstorage;
 
 static lwp_t mainthread;
 
-static s32 initialise_network() 
+static s32 initialise_network()
 {
     s32 result;
     int cnt=0;
-    while ((result = net_init()) == -EAGAIN) 
+    while ((result = net_init()) == -EAGAIN)
 	{
 		usleep(1000);
 	}
     return result;
 }
 
-int wait_for_network_initialisation() 
+int wait_for_network_initialisation()
 {
 	if(network_inited) return 1;
-	
+
 	while(1)
-	{	
+	{
 	    if (initialise_network() >= 0) {
 	        char myIP[16];
 	        if (if_config(myIP, NULL, NULL, true) < 0)
 			{
-			  if(dbg_network) 
+			  if(dbg_network)
 			  {
 			  	printf("Error getting ip\n");
 			  	return 0;
@@ -187,14 +187,14 @@ int wait_for_network_initialisation()
 			  return 1;
 			}
 	    }
-	    if(dbg_network) 
+	    if(dbg_network)
 		{
 			printf("Error initializing network\n");
 			return 0;
 		}
 		sleep(5);
     }
-	
+
 	return 0;
 }
 
@@ -215,7 +215,7 @@ bool DVDGekkoMount()
 		dvd_mounted=true;
 		dvd_mounting=false;
 		if(ret==-1) return false;
-		return true;		
+		return true;
 	}
 	dvd_mounting=false;
 	dvd_mounted=false;
@@ -223,8 +223,8 @@ bool DVDGekkoMount()
 }
 
 static void * networkthreadfunc (void *arg)
-{	
-	if(wait_for_network_initialisation()) 
+{
+	if(wait_for_network_initialisation())
 	{
 		trysmb();
 		tryftp();
@@ -240,18 +240,18 @@ bool DeviceMounted(const char *device)
   devoptab_t *devops;
   int i,len;
   char *buf;
-  
+
   len = strlen(device);
   buf=(char*)malloc(sizeof(char)*len+2);
   strcpy(buf,device);
   if ( buf[len-1] != ':')
   {
-    buf[len]=':';  
+    buf[len]=':';
     buf[len+1]='\0';
-  }   
+  }
   devops = (devoptab_t*)GetDeviceOpTab(buf);
   if (!devops) return false;
-  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
+  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);
   if (!devops || strncasecmp(buf,devops->name,i)) return false;
   return true;
 }
@@ -259,38 +259,38 @@ bool DeviceMounted(const char *device)
 
 bool mount_smb(int number)
 {
-	
+
 	char* smb_ip=NULL;
 	char* smb_share=NULL;
 	char* smb_user=NULL;
 	char* smb_pass=NULL;
-	
+
 	m_config_t *smb_conf;
 	m_option_t smb_opts[] =
 	{
 	    {   NULL, &smb_ip, CONF_TYPE_STRING, 0, 0, 0, NULL },
-	    {   NULL, &smb_share, CONF_TYPE_STRING, 0, 0, 0, NULL },    
-	    {   NULL, &smb_user, CONF_TYPE_STRING, 0, 0, 0, NULL }, 
+	    {   NULL, &smb_share, CONF_TYPE_STRING, 0, 0, 0, NULL },
+	    {   NULL, &smb_user, CONF_TYPE_STRING, 0, 0, 0, NULL },
 	    {   NULL, &smb_pass, CONF_TYPE_STRING, 0, 0, 0, NULL },
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};
 	char cad[4][10];
-	sprintf(cad[0],"ip%d",number);smb_opts[0].name=cad[0];	
-	sprintf(cad[1],"share%d",number);smb_opts[1].name=cad[1];	
-	sprintf(cad[2],"user%d",number);smb_opts[2].name=cad[2];	
-	sprintf(cad[3],"pass%d",number);smb_opts[3].name=cad[3];	
+	sprintf(cad[0],"ip%d",number);smb_opts[0].name=cad[0];
+	sprintf(cad[1],"share%d",number);smb_opts[1].name=cad[1];
+	sprintf(cad[2],"user%d",number);smb_opts[2].name=cad[2];
+	sprintf(cad[3],"pass%d",number);smb_opts[3].name=cad[3];
 
 	/* read configuration */
 	char file[100];
-	sprintf(file,"%s/smb.conf",MPLAYER_DATADIR);	
+	sprintf(file,"%s/smb.conf",MPLAYER_DATADIR);
 
 	smb_conf = m_config_new();
 	m_config_register_options(smb_conf, smb_opts);
 	m_config_parse_config_file(smb_conf, file);
 	m_config_free(smb_conf);
 
-	
-	if(smb_ip==NULL || smb_share==NULL) 
+
+	if(smb_ip==NULL || smb_share==NULL)
 	{
 		return false;
 	}
@@ -301,12 +301,12 @@ bool mount_smb(int number)
 	if(dbg_network)
 	{
 	 printf("Mounting SMB : '%s' ip:%s  share:'%s'\n",cad[0],smb_ip,smb_share);
-	 if(!smbInitDevice(cad[0],smb_user,smb_pass,smb_share,smb_ip)) 
+	 if(!smbInitDevice(cad[0],smb_user,smb_pass,smb_share,smb_ip))
 	 {
 	 	printf("error mounting '%s'\n",cad[0]);
 	 	return false;
 	 }
-	 else 
+	 else
 	 {
 	 	printf("ok mounting '%s'\n",cad[0]);
 	 	return true;
@@ -314,71 +314,71 @@ bool mount_smb(int number)
 	}
 	else
 	  return smbInitDevice(cad[0],smb_user,smb_pass,smb_share,smb_ip);
- 
+
 }
 
 void trysmb()
 {
-	int i;	
-	for(i=1;i<=5;i++) mount_smb(i); 
+	int i;
+	for(i=1;i<=5;i++) mount_smb(i);
 }
 
 bool mount_ftp(int number)
 {
-	
+
 	char* ftp_ip=NULL;
 	char* ftp_share=NULL;
 	char* ftp_user=NULL;
 	char* ftp_pass=NULL;
 	int ftp_passive = false;
-	
+
 	m_config_t *ftp_conf;
 	m_option_t ftp_opts[] =
 	{
 	    {   NULL, &ftp_ip, CONF_TYPE_STRING, 0, 0, 0, NULL },
-	    {   NULL, &ftp_share, CONF_TYPE_STRING, 0, 0, 0, NULL },    
-	    {   NULL, &ftp_user, CONF_TYPE_STRING, 0, 0, 0, NULL }, 
+	    {   NULL, &ftp_share, CONF_TYPE_STRING, 0, 0, 0, NULL },
+	    {   NULL, &ftp_user, CONF_TYPE_STRING, 0, 0, 0, NULL },
 	    {   NULL, &ftp_pass, CONF_TYPE_STRING, 0, 0, 0, NULL },
 	    {   NULL, &ftp_passive, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};
-	
+
 	char cad[4][10];
-	sprintf(cad[0],"ip%d",number);ftp_opts[0].name=cad[0];	
-	sprintf(cad[1],"share%d",number);ftp_opts[1].name=cad[1];	
-	sprintf(cad[2],"user%d",number);ftp_opts[2].name=cad[2];	
-	sprintf(cad[3],"pass%d",number);ftp_opts[3].name=cad[3];	
-	sprintf(cad[4],"passive%d",number);ftp_opts[3].name=cad[3];	
+	sprintf(cad[0],"ip%d",number);ftp_opts[0].name=cad[0];
+	sprintf(cad[1],"share%d",number);ftp_opts[1].name=cad[1];
+	sprintf(cad[2],"user%d",number);ftp_opts[2].name=cad[2];
+	sprintf(cad[3],"pass%d",number);ftp_opts[3].name=cad[3];
+	sprintf(cad[4],"passive%d",number);ftp_opts[3].name=cad[3];
 
 	/* read configuration */
 	char file[100];
-	sprintf(file,"%s/ftp.conf",MPLAYER_DATADIR);	
+	sprintf(file,"%s/ftp.conf",MPLAYER_DATADIR);
 
 	ftp_conf = m_config_new();
 	m_config_register_options(ftp_conf, ftp_opts);
 	m_config_parse_config_file(ftp_conf, file);
 	m_config_free(ftp_conf);
 
-	
-	if(ftp_ip==NULL || ftp_share==NULL) 
+
+	if(ftp_ip==NULL || ftp_share==NULL)
 	{
 		return false;
 	}
 
 	if(ftp_user==NULL) ftp_user=strdup("anonymous");
 	if(ftp_pass==NULL) ftp_pass=strdup("anonymous");
-	
+
 	sprintf(cad[0],"ftp%d",number);
-	
+
 	if(dbg_network)
 	{
 	 printf("Mounting FTP : '%s' host:%s  share:'%s, PASV: %d'\n",cad[0],ftp_ip,ftp_share,ftp_passive);
-	 if(!ftpInitDevice(cad[0],ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0)) 
-	 { 
+	 if(!ftpInitDevice(cad[0],ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0))
+	 {
 	 	printf("error mounting '%s'\n",cad[0]);
 	 	return false;
 	 }
-	 else 
+	 else
 	 {
 	 	printf("ok mounting '%s'\n",cad[0]);
 	 	return true;
@@ -386,7 +386,7 @@ bool mount_ftp(int number)
 	}
 	else
 	  return ftpInitDevice(cad[0],ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0);
- 
+
 }
 
 
@@ -405,31 +405,31 @@ int LoadParams()
 	    //{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},  //deprecated
 	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
-	    {   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
-	    {   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
+	    {   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
+	    {   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
 	    {   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-		{	"cache", &stream_cache_size, CONF_TYPE_INT, CONF_RANGE, 32, 1048576, NULL},	 
+		{	"cache", &stream_cache_size, CONF_TYPE_INT, CONF_RANGE, 32, 1048576, NULL},
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
-	};		
-	
+	};
+
 	/* read configuration */
 	comp_conf = m_config_new();
 	m_config_register_options(comp_conf, comp_opts);
 	int ret;
 	char cad[100];
 	sprintf(cad,"%s/mplayer.conf",MPLAYER_DATADIR);
-	return m_config_parse_config_file(comp_conf, cad); 
+	return m_config_parse_config_file(comp_conf, cad);
 }
 
 static bool CheckPath(char *path)
 {
 	char *filename;
 	FILE *f;
-	
+
 	filename=malloc(sizeof(char)*(strlen(path)+15));
 	strcpy(filename,path);
 	strcat(filename,"/mplayer.conf");
-	
+
 	f=fopen(filename,"r");
 	free(filename);
 	if(f==NULL) return false;
@@ -438,7 +438,7 @@ static bool CheckPath(char *path)
 	sprintf(MPLAYER_DATADIR,"%s",path);
 	sprintf(MPLAYER_CONFDIR,"%s",path);
 	sprintf(MPLAYER_LIBDIR,"%s",path);
-	
+
 	return true;
 }
 
@@ -448,13 +448,13 @@ bool mount_sd_ntfs()
 	int partition_count = 0;
 	sec_t *partitions = NULL;
 	sec_t boot;
-	
+
 	partition_count = ntfsFindPartitions (sd, &partitions);
 	if(partition_count<1) return 0;
 
 	boot=partitions[0];
 	free(partitions);
-	
+
 	return ntfsMount("ntfs_sd", sd, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
 }
 
@@ -464,7 +464,7 @@ bool mount_usb_ntfs()
 	int partition_count = 0;
 	sec_t *partitions = NULL;
 	sec_t boot;
-	
+
 	partition_count = ntfsFindPartitions (usb, &partitions);
 	if(partition_count<1) return 0;
 	boot=partitions[0];
@@ -474,17 +474,17 @@ bool mount_usb_ntfs()
 
 static bool DetectValidPath()
 {
-	
-	if(sd->startup()) 
+
+	if(sd->startup())
 	{
 		if(fatMount("sd",sd,0,3,256))
-		{	
-			if(CheckPath("sd:/apps/mplayer_ce")) return true;	
+		{
+			if(CheckPath("sd:/apps/mplayer_ce")) return true;
 			if(CheckPath("sd:/mplayer")) return true;
 		}
 		else if(mount_sd_ntfs())
 		{
-			if(CheckPath("ntfs_sd:/apps/mplayer_ce")) return true;	
+			if(CheckPath("ntfs_sd:/apps/mplayer_ce")) return true;
 			if(CheckPath("ntfs_sd:/mplayer")) return true;
 		}
 
@@ -500,11 +500,11 @@ static bool DetectValidPath()
 		}
 		else if(mount_usb_ntfs())
 		{
-			if(CheckPath("ntfs_usb:/apps/mplayer_ce")) return true;	
+			if(CheckPath("ntfs_usb:/apps/mplayer_ce")) return true;
 			if(CheckPath("ntfs_usb:/mplayer")) return true;
 		}
 	}
-	return false;	
+	return false;
 }
 
 static off_t get_filesize(char *FileName)
@@ -524,31 +524,31 @@ bool load_ehci_module()
 	void *external_ehcmodule = NULL;
 	FILE *fp;
 	char file[100];
-	
-	sprintf(file,"%s/ehcmodule.elf",MPLAYER_DATADIR);	
-	
+
+	sprintf(file,"%s/ehcmodule.elf",MPLAYER_DATADIR);
+
 	fp=fopen(file,"rb");
 	if(fp!=NULL)
 	{
 		fsize=get_filesize(file);
 		external_ehcmodule= memalign(32, fsize);
-		if(!external_ehcmodule) 
+		if(!external_ehcmodule)
 		{
 			fclose(fp);
-			free(external_ehcmodule); 
+			free(external_ehcmodule);
 			external_ehcmodule=NULL;
 		}
 		else
 		{
 			if(fread(external_ehcmodule,1, fsize ,fp)!=fsize)
 			{
-				free(external_ehcmodule); 
+				free(external_ehcmodule);
 				external_ehcmodule=NULL;
 			}
 			else mload_elf((void *) external_ehcmodule, &my_data_elf);
 			fclose(fp);
 		}
-		
+
 	}
 	else
 		mload_elf((void *) ehcmodule_elf, &my_data_elf);
@@ -568,15 +568,15 @@ static void * mountthreadfunc (void *arg)
 #ifndef CE_DEBUG
 	sleep(1);
 	mount_sd_ntfs(); //only once now
-		
+
 	usb_inserted=usb_init;
-	
+
 	while(!exit_automount_thread)
-	{	
+	{
 		if(!playing_usb)
 		{
 			mounting_usb=1;
-			
+
 			dp=usb->isInserted();
 			usleep(500); // needed, I don't know why, but hang if it's deleted
 			//printf(".");fflush(stdout);
@@ -589,7 +589,7 @@ static void * mountthreadfunc (void *arg)
 					//printf("unmount usb\n");
 					fatUnmount("usb:");
 					ntfsUnmount ("ntfs_usb", true);
-				}else 
+				}else
 				{
 					//printf("mount usb\n");
 					fatMount("usb",usb,0,3,256);
@@ -597,7 +597,7 @@ static void * mountthreadfunc (void *arg)
 				}
 			}
 			mounting_usb=0;
-		}	
+		}
 		if(dvd_mounting==false)
 		{
 			dp=WIIDVD_DiscPresent();
@@ -607,12 +607,12 @@ static void * mountthreadfunc (void *arg)
 				if(!dp)dvd_mounted=false; // eject
 			}
 		}
-		usleep(400000);		
-		usleep(400000);		
-		//usleep(300000);		
+		usleep(400000);
+		usleep(400000);
+		//usleep(300000);
 		//sleep(1);
 	}
-#endif	
+#endif
 	LWP_JoinThread(mainthread,NULL);
 	return NULL;
 }
@@ -633,7 +633,7 @@ bool FindIOS(u32 ios)
 		return false;
 	}
 
-	if(num_titles<1) 
+	if(num_titles<1)
 	{
 		printf("error num_titles<1\n");
 		return false;
@@ -651,19 +651,19 @@ bool FindIOS(u32 ios)
 	{
 		free(titles);
 		printf("error ES_GetTitles\n");
-		return false;	
+		return false;
 	}
-		
+
 	for(n=0; n<num_titles; n++) {
 		u32 tidl = (titles[n] &  0xFFFFFFFF);
-		if((titles[n] &  0xFFFFFFFF)==ios) 
+		if((titles[n] &  0xFFFFFFFF)==ios)
 		{
-			free(titles); 
+			free(titles);
 			return true;
 		}
 	}
-	
-    free(titles); 
+
+    free(titles);
 	return false;
 
 }
@@ -674,7 +674,6 @@ void plat_init (int *argc, char **argv[])
 	//log_console_init(vmode, 0);
 	GX_SetCamPosZ(gxzoom);
 	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
-	DetectValidPath();
 
 	//chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
@@ -696,43 +695,43 @@ printf("m1(%.2f) m2(%.2f)\n",
 
 }
 
-void plat_init (int *argc, char **argv[]) {	
+void plat_init (int *argc, char **argv[]) {
 	int mload=-1;
-	
+
 	VIDEO_Init();
 	GX_InitVideo();
 	log_console_init(vmode, 0);
 
   printf("Loading ");
-  
+
   char cad[10]={127,130,158,147,171,151,164,117,119,0};
   __dec(cad);
 	printf("\x1b[32m%s v.%s ....\x1b[37m\n\n",cad,MPCE_VERSION);
-	
-	
+
+
 	VIDEO_WaitVSync();
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
 
-	
+
 	if(IOS_GetVersion()!=202)
 	{
-		if(FindIOS(202)) 
+		if(FindIOS(202))
 		{
 			IOS_ReloadIOS(202);
 			WIIDVD_Init(false);
 		}
 		else WIIDVD_Init(true);
-	} 
+	}
 	else WIIDVD_Init(false);
-	
+
 //	IOS_ReloadIOS(202);
 //	if(IOS_GetVersion()<200) IOS_ReloadIOS(202);
 
 	mload=mload_init();
 	//usleep(1000);
-	
+
 
 
 	PAD_Init();
@@ -741,21 +740,21 @@ void plat_init (int *argc, char **argv[]) {
 	WPAD_SetIdleTimeout(60);
 
 	WPAD_SetPowerButtonCallback(wpad_power_cb);
-	
+
 	AUDIO_Init(NULL);
 	AUDIO_RegisterDMACallback(NULL);
 	AUDIO_StopDMA();
-	
+
 	if (!DetectValidPath())
 	{
 		//GX_InitVideo();
-		//log_console_init(vmode, 0);		
+		//log_console_init(vmode, 0);
 		//printf("MPlayerCE v.%s\n\n",MPCE_VERSION);
 		printf("SD/USB access failed\n");
 		printf("Please check that you have installed MPlayerCE in the right folder\n");
 		printf("Valid folders:\n");
 		printf(" sd:/apps/mplayer_ce\n sd:/mplayer\n usb:/apps/mplayer_ce\n usb:/mplayer\n");
-				
+
 		VIDEO_WaitVSync();
 		sleep(6);
 		if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
@@ -768,17 +767,17 @@ void plat_init (int *argc, char **argv[]) {
 	LoadParams();
 	//GX_SetComponentFix(component_fix); //deprecated
 	GX_SetCamPosZ(gxzoom);
-	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);  
+	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
 
 
-	mainthread=LWP_GetSelf(); 
+	mainthread=LWP_GetSelf();
 	lwp_t clientthread;
-	 
+
 #ifndef CE_DEBUG  //no network on debug
 	if(dbg_network)
 	{
 		printf("\nDebugging Network\n");
-		if(wait_for_network_initialisation()) 
+		if(wait_for_network_initialisation())
 		{
 			trysmb();
 		}
@@ -786,36 +785,36 @@ void plat_init (int *argc, char **argv[]) {
 		VIDEO_WaitVSync();
 		sleep(10);
 	}
-	else 
+	else
 	{
 		LWP_CreateThread(&clientthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 50); // network initialization
 		//LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 50); // network initialization
 	}
 #endif
-	
+
 	if(usb_init)
-	{		
-		if(mload<0) 
+	{
+		if(mload<0)
 		{
 			DisableUSB2(true);
 		}
 		else
-		{		
+		{
 			fatUnmount("usb:");
 		 	load_ehci_module();
 		 	usb->isInserted();
 			fatMount("usb",usb,0,3,256);
 		}
 	}
-	else 
+	else
 	{
-		if(mload<0) 
+		if(mload<0)
 		{
 			DisableUSB2(true);
 		}
 		else
 		{
-			if(!load_ehci_module()) 
+			if(!load_ehci_module())
 			{
 				DisableUSB2(true);
 			}
@@ -837,30 +836,30 @@ if(*argc<3)
 	default_args[4]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
 	strcpy(default_args[4],MPLAYER_DATADIR);
 
-	if (CONF_GetAspectRatio()) 
+	if (CONF_GetAspectRatio())
 	{ //16:9
 		strcat(default_args[2],"/loop-wide.avi");
 		strcat(default_args[4],"/loop-wide.avi");
-	}		
+	}
 	else
 	{  // 4:3
 		strcat(default_args[2],"/loop.avi");
 		strcat(default_args[4],"/loop.avi");
 	}
-	
+
 	*argv = default_args;
 	*argc = sizeof(default_args) / sizeof(char *);
 
 }
 else
-{	
-	if(usb->isInserted()) 
+{
+	if(usb->isInserted())
 	{
 		usb_init=true;
 		fatMount("usb",usb,0,3,256);
 	}
 }
-	
+
 	LWP_CreateThread(&clientthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 50); // auto mount fs (usb, dvd)
 	//LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 50); // auto mount fs (usb, dvd)
 
@@ -875,9 +874,9 @@ else
 void plat_deinit (int rc) {
 	exit_automount_thread=true;
 	ntfsUnmount ("ntfs0", true); //I think that we don't need it
-	
+
 	ExitTimer();
-	
+
 	if (power_pressed) {
 		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
@@ -888,95 +887,6 @@ void plat_deinit (int rc) {
 	//log_console_deinit();
 }
 
-#ifdef WIILIB
-struct SMBSettings {
-	char	ip[16];
-	char	share[20];
-	char	user[20];
-	char	pwd[20];
-};
-struct SMBSettings smbConf[5];
-
-/****************************************************************************
- * LoadConfig
- *
- * Loads all MPlayer .conf files
- ***************************************************************************/
-void LoadConfig(char * path)
-{
-	int i;
-	char filepath[1024];
-	char tmp[20];
-	char* smb_ip;
-	char* smb_share;
-	char* smb_user;
-	char* smb_pass;
-
-	// mplayer.conf
-	m_config_t *comp_conf;
-	m_option_t comp_opts[] =
-	{
-	//{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},  //deprecated
-	{   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	{   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
-	{   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	{   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	{   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	{   NULL, NULL, 0, 0, 0, 0, NULL }
-	};
-
-	comp_conf = m_config_new();
-	m_config_register_options(comp_conf, comp_opts);
-	sprintf(filepath,"%s/mplayer.conf", path);
-	m_config_parse_config_file(comp_conf, filepath);
-
-	// smb.conf
-	memset(&smbConf, 0, sizeof(smbConf));
-
-	m_config_t *smb_conf;
-	m_option_t smb_opts[] =
-	{
-		{   NULL, &smb_ip, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, &smb_share, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, &smb_user, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, &smb_pass, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, NULL, 0, 0, 0, 0, NULL }
-	};
-
-	for(i=1; i<=5; i++)
-	{
-		smb_ip = NULL;
-		smb_share = NULL;
-		smb_user = NULL;
-		smb_pass = NULL;
-
-		sprintf(tmp,"ip%d",i); smb_opts[0].name=strdup(tmp);
-		sprintf(tmp,"share%d",i); smb_opts[1].name=strdup(tmp);
-		sprintf(tmp,"user%d",i); smb_opts[2].name=strdup(tmp);
-		sprintf(tmp,"pass%d",i); smb_opts[3].name=strdup(tmp);
-
-		smb_conf = m_config_new();
-		m_config_register_options(smb_conf, smb_opts);
-		sprintf(filepath,"%s/smb.conf", path);
-		m_config_parse_config_file(smb_conf, filepath);
-
-		if(smb_ip!=NULL && smb_share!=NULL)
-		{
-			if(smb_user==NULL) smb_user=strdup("");
-			if(smb_pass==NULL) smb_pass=strdup("");
-
-			snprintf(smbConf[i-1].ip, 16, "%s", smb_ip);
-			snprintf(smbConf[i-1].share, 20, "%s", smb_share);
-			snprintf(smbConf[i-1].user, 20, "%s", smb_user);
-			snprintf(smbConf[i-1].pwd, 20, "%s", smb_pass);
-		}
-	}
-
-	sprintf(MPLAYER_DATADIR,"%s",path);
-	sprintf(MPLAYER_CONFDIR,"%s",path);
-	sprintf(MPLAYER_LIBDIR,"%s",path);
-}
-#endif
 #if 0 // change 0 by 1 if you are using devkitppc r17
 int _gettimeofday_r(struct _reent *ptr,	struct timeval *ptimeval ,	void *ptimezone)
 {
@@ -987,5 +897,5 @@ int _gettimeofday_r(struct _reent *ptr,	struct timeval *ptimeval ,	void *ptimezo
 		ptimeval->tv_sec = ticks_to_secs(t);
 		ptimeval->tv_usec = ticks_to_microsecs(t);
 	}
-} 
+}
 #endif

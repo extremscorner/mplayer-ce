@@ -9,35 +9,34 @@
 #define _MPLAYERGUI_H_
 
 #include "FreeTypeGX.h"
+#include "network.h"
 #include "../../osdep/libdvdiso.h"
 #include "../../osdep/mload.h"
+
+#define APPNAME			"MPlayer CE"
+#define APPVERSION		"1.0.0"
+#define APPFOLDER		"apps/mplayer_ce"
 
 enum {
 	DEVICE_SD,
 	DEVICE_USB,
 	DEVICE_DVD,
-	DEVICE_SMB
+	DEVICE_SMB,
+	DEVICE_FTP
 };
-
-struct SCESettings {
-    int		frameDropping;
-    int		aspectRatio;
-};
-
-extern struct SCESettings CESettings;
 
 #define NOTSILENT 0
 #define SILENT 1
 
 void ExitApp();
 void loadMPlayer();
-extern struct SGCSettings GCSettings;
 extern int ScreenshotRequested;
 extern int ConfigRequested;
 extern int ShutdownRequested;
 extern int ExitRequested;
 extern FreeTypeGX *fontSystem[];
 extern char loadedFile[];
+extern char appPath[];
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +45,6 @@ extern "C" {
 extern bool controlledbygui;
 
 int mplayer_loadfile(const char* _file);
-void LoadConfig(char * path);
 bool DVDGekkoMount();
 void log_console_init(GXRModeObj *vmode, u16 logsize);
 //void log_console_deinit(void);
