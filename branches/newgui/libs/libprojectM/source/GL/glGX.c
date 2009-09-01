@@ -74,8 +74,10 @@ void gxInit ()
     if (rmode->viTVMode & VI_NON_INTERLACE)
         VIDEO_WaitVSync();
     
-    memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
-    GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
+    memset(gp_fifo, 0, GX_DEFAULT_FIFO_SIZE);
+    GX_Init(gp_fifo, GX_DEFAULT_FIFO_SIZE);
+    
+    // ===========================================================================
     
     GX_SetViewport(0, 0, rmode->fbWidth, rmode->efbHeight, 0, 1);
     f32 yscale = GX_GetYScaleFactor(rmode->efbHeight, rmode->xfbHeight);
@@ -117,6 +119,10 @@ void gxInit ()
 
     guLookAt(view, &cam, &up, &look);
     
+    // ===========================================================================
+    
+    // Initialise openGL
+    glInit();
 }
 
 void gxDestroy ()
@@ -129,12 +135,25 @@ void gxSwapBuffers ()
     // Flip the framebuffer and flush the display
     fb ^= 1;
     GX_DrawDone();
-    GX_SetZMode(depthTestEnabled, depthMode, depthTestEnabled);
     GX_SetColorUpdate(GX_TRUE);
     GX_CopyDisp(xfb[fb], GX_TRUE);
     VIDEO_SetNextFramebuffer(xfb[fb]);
     VIDEO_Flush();
     VIDEO_WaitVSync();
+}
+
+void glInit ()
+{
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+
+    glMatrixMode(GL_MODELVIEW);
+    
+    //...
 }
 
 /**
@@ -151,10 +170,11 @@ void glClearColor (GLclampf _red,
         return; /* GL_INVALID_OPERATION */
     
     // Set the clear colour
-    clearColour.r = _red * 0xFF;
-    clearColour.g = _green * 0xFF;
-    clearColour.b = _blue * 0xFF;
-    clearColour.a = _alpha * 0xFF;
+    clearColour.r = _red * 255;
+    clearColour.g = _green * 255;
+    clearColour.b = _blue * 255;
+    clearColour.a = _alpha * 255;
+    GX_SetCopyClear(clearColour, clearDepth);
 }
 
 void glClear (GLbitfield _mask)
@@ -173,93 +193,49 @@ void glClear (GLbitfield _mask)
     }
     
     // Clear the specified buffer
-    // TODO: Only clear the specified buffer
+    // TODO: This correctly...
     GX_SetCopyClear(clearColour, clearDepth);
 }
 
 void glBlendFunc (GLenum _sfactor, GLenum _dfactor)
-{
-    u8 mode = GX_BM_LOGIC; /* ??? */
-    u8 sfactor = GX_BL_ONE;
-    u8 dfactor = GX_BL_ZERO;
-    u8 op = GX_LO_SET; /* ??? */
-    
+{    
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
     
-    // Determine the source blending factor
+    // Determine the source blending mode
     switch (_sfactor) {
-        case GL_ZERO:
-            sfactor = GX_BL_ZERO;
-            break;
-        case GL_ONE:
-            sfactor = GX_BL_ONE;
-            break;
-        case GL_SRC_COLOR:
-            sfactor = GX_BL_SRCCLR;
-            break;
-        case GL_ONE_MINUS_SRC_COLOR:
-            sfactor = GX_BL_SRCCLR;
-            break;
-        case GL_DST_COLOR:
-            sfactor = GX_BL_DSTCLR;
-            break;
-        case GL_ONE_MINUS_DST_COLOR:
-            sfactor = GX_BL_DSTCLR;
-            break;
-        case GL_SRC_ALPHA:
-            sfactor = GX_BL_SRCALPHA;
-            break;
-        case GL_ONE_MINUS_SRC_ALPHA:
-            sfactor = GX_BL_SRCALPHA;
-            break;
-        case GL_DST_ALPHA:
-            sfactor = GX_BL_DSTALPHA;
-            break;
-        case GL_ONE_MINUS_DST_ALPHA:
-            sfactor = GX_BL_DSTALPHA;
-            break;
+        case GL_ZERO: blendModeSrc = GX_BL_ZERO; break;
+        case GL_ONE: blendModeSrc = GX_BL_ONE; break;
+        case GL_SRC_COLOR: blendModeSrc = GX_BL_SRCCLR; break;
+        case GL_ONE_MINUS_SRC_COLOR: blendModeSrc = GX_BL_SRCCLR; break; /* ??? */
+        case GL_DST_COLOR: blendModeSrc = GX_BL_DSTCLR; break;
+        case GL_ONE_MINUS_DST_COLOR: blendModeSrc = GX_BL_DSTCLR; break; /* ??? */
+        case GL_SRC_ALPHA: blendModeSrc = GX_BL_SRCALPHA; break;
+        case GL_ONE_MINUS_SRC_ALPHA: blendModeSrc = GX_BL_SRCALPHA; break; /* ??? */
+        case GL_DST_ALPHA: blendModeSrc = GX_BL_DSTALPHA; break;
+        case GL_ONE_MINUS_DST_ALPHA: blendModeSrc = GX_BL_DSTALPHA; break; /* ??? */
         default: return; /* GL_INVALID_ENUM */
     }
     
-    // Determine the destination blending factor
+    // Determine the destination blending mode
     switch (_dfactor) {
-        case GL_ZERO:
-            sfactor = GX_BL_ZERO;
-            break;
-        case GL_ONE:
-            sfactor = GX_BL_ONE;
-            break;
-        case GL_SRC_COLOR:
-            sfactor = GX_BL_SRCCLR;
-            break;
-        case GL_ONE_MINUS_SRC_COLOR:
-            sfactor = GX_BL_SRCCLR;
-            break;
-        case GL_DST_COLOR:
-            sfactor = GX_BL_DSTCLR;
-            break;
-        case GL_ONE_MINUS_DST_COLOR:
-            sfactor = GX_BL_DSTCLR;
-            break;
-        case GL_SRC_ALPHA:
-            sfactor = GX_BL_SRCALPHA;
-            break;
-        case GL_ONE_MINUS_SRC_ALPHA:
-            sfactor = GX_BL_SRCALPHA;
-            break;
-        case GL_DST_ALPHA:
-            sfactor = GX_BL_DSTALPHA;
-            break;
-        case GL_ONE_MINUS_DST_ALPHA:
-            sfactor = GX_BL_DSTALPHA;
-            break;
+        case GL_ZERO: blendModeDst = GX_BL_ZERO; break;
+        case GL_ONE: blendModeDst = GX_BL_ONE; break;
+        case GL_SRC_COLOR: blendModeDst = GX_BL_SRCCLR; break;
+        case GL_ONE_MINUS_SRC_COLOR: blendModeDst = GX_BL_SRCCLR; break; /* ??? */
+        case GL_DST_COLOR: blendModeDst = GX_BL_DSTCLR; break;
+        case GL_ONE_MINUS_DST_COLOR: blendModeDst = GX_BL_DSTCLR; break; /* ??? */
+        case GL_SRC_ALPHA: blendModeDst = GX_BL_SRCALPHA; break;
+        case GL_ONE_MINUS_SRC_ALPHA: blendModeDst = GX_BL_SRCALPHA; break; /* ??? */
+        case GL_DST_ALPHA: blendModeDst = GX_BL_DSTALPHA; break;
+        case GL_ONE_MINUS_DST_ALPHA: blendModeDst = GX_BL_DSTALPHA; break; /* ??? */
         default: return; /* GL_INVALID_ENUM */
     }
     
-    // Set the blend mode
-    GX_SetBlendMode(mode, sfactor, dfactor, op);
+    // Set the blend mode (if enabled)
+    if (blendEnabled)
+        GX_SetBlendMode(GX_BM_BLEND, blendModeSrc, blendModeDst, GX_LO_CLEAR);
 }
 
 void glCullFace (GLenum _mode)
@@ -397,14 +373,15 @@ void glEnable(GLenum _type)
         case GL_TEXTURE_2D:
             texture2DEnabled = true;
             GX_SetNumTexGens(1);
-            GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-            GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+            GX_SetTevOp(GX_TEVSTAGE0 + tevStage, tevMode);
             break;
         case GL_LINE_STIPPLE:
             lineStippleEnabled = true;
             break;
         case GL_BLEND:
             blendEnabled = true;
+            GX_SetBlendMode(GX_BM_NONE, blendModeSrc, blendModeDst, GX_LO_CLEAR);
+            GX_SetAlphaUpdate(GX_TRUE);
             break;
         case GL_LINE_SMOOTH:
             lineSmoothEnabled = true;
@@ -421,6 +398,7 @@ void glEnable(GLenum _type)
             break;
         case GL_DEPTH_TEST:
             depthTestEnabled = true;
+            GX_SetZMode(GX_TRUE, depthMode, GX_TRUE /* ??? */);
             break;
         default: return; /* GL_INVALID_ENUM */
     };
@@ -438,13 +416,14 @@ void glDisable (GLenum _type)
             texture2DEnabled = false;
             GX_SetNumTexGens(0);
             GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);         
-            GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
             break;
         case GL_LINE_STIPPLE:
             lineStippleEnabled = false;
             break;
         case GL_BLEND:
             blendEnabled = false;
+            GX_SetBlendMode(GX_BM_NONE, GX_BL_ZERO, GX_BL_ZERO, GX_LO_CLEAR);
+            GX_SetAlphaUpdate(GX_FALSE);
             break;
         case GL_LINE_SMOOTH:
             lineSmoothEnabled = false;
@@ -461,6 +440,7 @@ void glDisable (GLenum _type)
             break;
         case GL_DEPTH_TEST:
             depthTestEnabled = false;
+            GX_SetZMode(GX_FALSE, GX_NEVER, GX_FALSE);
             break;
         default: return; /* GL_INVALID_ENUM */
     };
@@ -546,24 +526,75 @@ void glFlush ()
  * Transformation
  */
 
+void glMatrixIdentity (Mtx44 mtx)
+{
+    int i, j;
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < 4; j++)
+            if (i == j)
+                mtx[i][j] = 1.0f;
+            else
+                mtx[i][j] = 0.0f;
+}
+
+void glMatrixCopy (Mtx44 src, Mtx44 dst)
+{
+    int i, j;
+    for (i = 0; i < 4; i++)
+        for (j = 0; j < 4; j++)
+            dst[i][j] = src[i][j];
+}
+
 void glMatrixMode(GLenum _mode)
 {
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
-        
-    //...
+    
+    // Determine the current matrix stack
+    switch (_mode) {
+        case GL_MODELVIEW:
+            matrixStack = modelViewMatrixStack;
+            matrixStackDepth = &modelViewMatrixStackDepth;
+            break;
+        case GL_PROJECTION:
+            matrixStack = projectionMatrixStack;
+            matrixStackDepth = &projectionMatrixStackDepth;
+            break;
+        case GL_TEXTURE:
+            matrixStack = textureMatrixStack;
+            matrixStackDepth = &textureMatrixStackDepth;
+            break;
+        default: return; /* GL_INVALID_ENUM */
+    }
+    
+    // Grab the current matrix
+    matrix = &matrixStack[*matrixStackDepth];
 }
 
 void glOrtho (GLdouble _left, GLdouble _right,
               GLdouble _bottom, GLdouble _top,
               GLdouble _near_val, GLdouble _far_val)
 {
+    Mtx44 temp;
+    
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
-        
-    //...
+    
+    // Sanity check
+    if (!matrix ||
+        _left == _right ||
+        _bottom == _top ||
+        _near_val == _far_val)
+        return;
+    
+    // Multiply the current matrix with an orthographic matrix
+    guOrtho(temp, _top, _bottom, _left, _right, _near_val, _far_val);
+    guMtxConcat(*matrix, temp, *matrix); /* ??? */
+    
+    // Set the orthographic matrix
+    GX_LoadProjectionMtx(*matrix, GX_ORTHOGRAPHIC);
 }
 
 void glViewport (GLint _x, GLint _y,
@@ -579,23 +610,47 @@ void glViewport (GLint _x, GLint _y,
     
     // Set the viewport
     GX_SetViewport(_x, _y, _width, _height, 0, 1);
+    GX_SetScissor(_x, _y, _width, _height);
 }
 
 void glPopMatrix (void)
-{
-    // Sanity check
-    if (insideBeginEndPair)
-        return; /* GL_INVALID_OPERATION */
-
-}
-
-void glPushMatrix (void)
-{
+{    
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
         
-    //...
+    // Sanity check
+    if (!matrix || !matrixStack || !matrixStackDepth)
+        return; /* GL_INVALID_VALUE */
+
+    // Sanity check
+    if (*matrixStackDepth <= 0)
+        return; /* GL_UNDERFLOW */
+
+    // Pop the current matrix from the current stack
+    matrix = &matrixStack[*matrixStackDepth--];
+}
+
+void glPushMatrix (void)
+{
+    Mtx44 *new_matrix = NULL;
+    
+    // Sanity check
+    if (insideBeginEndPair)
+        return; /* GL_INVALID_OPERATION */
+        
+    // Sanity check
+    if (!matrix || !matrixStack || !matrixStackDepth)
+        return; /* GL_INVALID_VALUE */
+
+    // Sanity check
+    if (*matrixStackDepth >= (GL_MAX_STACK_SIZE - 1))
+        return; /* GL_OVERFLOW */
+
+    // Push a new matrix onto the current stack
+    new_matrix = &matrixStack[*matrixStackDepth++];
+    glMatrixCopy(*matrix, *new_matrix);
+    matrix = new_matrix;
 }
 
 void glLoadIdentity (void)
@@ -604,34 +659,60 @@ void glLoadIdentity (void)
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
         
-    //...
+    // Sanity check
+    if (!matrix)
+        return /* GL_INVALID_VALUE */
+        
+    // Replace the current matrix with the identity matrix
+    glMatrixIdentity(*matrix);
 }
 
 void glTranslatef (GLfloat _x, GLfloat _y, GLfloat _z)
 {
+    Mtx temp;
+    
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
         
-    //...
+    // Multiply the current matrix by the translation matrix
+    guMtxIdentity(temp);
+    guMtxTrans(temp, _x, _y, _z);
+    guMtxConcat(*matrix, temp, *matrix);
 }
 
 void glRotatef (GLfloat _angle, GLfloat _x, GLfloat _y, GLfloat _z)
 {
+    Mtx temp;
+    guVector axis;
+    
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
-        
-    //...
+    
+    // Build the axis of rotation
+    axis.x = _x;
+    axis.y = _y;
+    axis.z = _z;
+    
+    // Multiply the current matrix by the rotation matrix
+    guMtxIdentity(temp);
+    guMtxRotAxisDeg(temp, &axis, _angle);
+    guMtxConcat(*matrix, temp, *matrix);
 }
 
 void glScalef(GLfloat _x, GLfloat _y, GLfloat _z)
 {
+    Mtx temp;
+    
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
         
-    //...
+    // Multiply the current matrix by the general scaling matrix
+    guMtxIdentity(temp);
+    guMtxScale(temp, _x, _y, _z);
+    guMtxConcat(*matrix, temp, *matrix);
 }
 
 /**
@@ -692,7 +773,7 @@ void glEnd (void)
     // ===========================================================================
     GX_Begin(primitiveType, GX_VTXFMT0, count);
     // ===========================================================================
-    
+
     bool cw = true;
     bool ccw = true;
     GLvertex *vert = verticies;
@@ -708,15 +789,15 @@ void glEnd (void)
     
     // CW
     if (cw) {
-        for (; vert; vert = vert->nextVertex) {
+        for (; vert; vert = vert->next) {
             glVertexUpload(vert);        
         }
     }
     
     // CCW
     if (ccw) {
-        for (; vert && vert->nextVertex; vert = vert->nextVertex);
-        for (; vert; vert = vert->prevVertex) {
+        for (; vert && vert->next; vert = vert->next);
+        for (; vert; vert = vert->prev) {
             glVertexUpload(vert);        
         }
     }
@@ -739,7 +820,7 @@ void glVerticiesInvalidateAll ()
     
     // Destroy all verticies
     while (vert) {
-        nextVert = vert->nextVertex;
+        nextVert = vert->next;
         wipefree(vert);
         vert = nextVert;
     }
@@ -787,8 +868,8 @@ void glVertex3f (GLfloat _x, GLfloat _y, GLfloat _z)
     
     // Insert the vertex into the double-linked FILO list of allocated verticies
     if (verticies) {
-        vert->nextVertex = verticies;
-        verticies->prevVertex = vert;
+        vert->next = verticies;
+        verticies->prev = vert;
     }
     verticies = vert;
     vertexCount++;
@@ -805,9 +886,9 @@ void glNormal3f (GLfloat _x, GLfloat _y, GLfloat _z)
 void glColor3f (GLfloat _red, GLfloat _green, GLfloat _blue)
 {
     // Set the current colour
-    colour.r = _red * 0xFF;
-    colour.g = _green * 0xFF;
-    colour.b = _blue * 0xFF;
+    colour.r = _red * 255;
+    colour.g = _green * 255;
+    colour.b = _blue * 255;
     colour.a = 0.0f;
 }
 
@@ -815,10 +896,10 @@ void glColor4f (GLfloat _red, GLfloat _green,
                 GLfloat _blue, GLfloat _alpha)
 {
     // Set the current colour
-    colour.r = _red * 0xFF;
-    colour.g = _green * 0xFF;
-    colour.b = _blue * 0xFF;
-    colour.a = _alpha * 0xFF;
+    colour.r = _red * 255;
+    colour.g = _green * 255;
+    colour.b = _blue * 255;
+    colour.a = _alpha * 255;
 }
 
 void glTexCoord2f (GLfloat _s, GLfloat _t)
@@ -834,22 +915,23 @@ void glRectd (GLdouble _x1, GLdouble _y1, GLdouble _x2, GLdouble _y2)
         return; /* GL_INVALID_OPERATION */
     
     // TODO: Disable depth buffer?, rectangle z should be 0
+    //glDisable(GL_DEPTH_TEST);
     
     // If the second vertex is above and to the right of the first
     // then build the rectangle with counterclockwise winding
     if (_x2 > _x1 && _y2 > _y1) {
         glBegin(GX_QUADS);
-        glVertex3f(_x1, _y2, 0);
-        glVertex3f(_x2, _y2, 0);
-        glVertex3f(_x2, _y1, 0);
-        glVertex3f(_x1, _y1, 0);
+        glVertex2f(_x1, _y2);
+        glVertex2f(_x2, _y2);
+        glVertex2f(_x2, _y1);
+        glVertex2f(_x1, _y1);
         glEnd();
     } else {
         glBegin(GX_QUADS);
-        glVertex3f(_x1, _y1, 0);
-        glVertex3f(_x2, _y1, 0);
-        glVertex3f(_x2, _y2, 0);
-        glVertex3f(_x1, _y2, 0);
+        glVertex2f(_x1, _y1);
+        glVertex2f(_x2, _y1);
+        glVertex2f(_x2, _y2);
+        glVertex2f(_x1, _y2);
         glEnd();
     }
 }
@@ -1089,7 +1171,7 @@ GLuint glTextureNextFreeName ()
             tex = textures;
             name++;
         } else {
-            tex = tex->nextTexture;
+            tex = tex->next;
         }
     }
     
@@ -1128,8 +1210,8 @@ void glGenTextures (GLsizei _n, GLuint *_textures)
         
         // Insert the texture into the double-linked FILO list of allocated textures
         if (textures) {
-            tex->nextTexture = textures;
-            textures->prevTexture = tex;
+            tex->next = textures;
+            textures->prev = tex;
         }
         textures = tex;
         textureCount++;
@@ -1162,12 +1244,12 @@ void glDeleteTextures (GLsizei _n, const GLuint *_textures)
             
             // Remove the texture from the double-linked FILO list of allocated textures
             textureCount--;
-            if (tex->nextTexture)
-                tex->nextTexture->prevTexture = tex->prevTexture;
-            if (tex->prevTexture)
-                tex->prevTexture->nextTexture = tex->nextTexture;
+            if (tex->next)
+                tex->next->prev = tex->prev;
+            if (tex->prev)
+                tex->prev->next = tex->next;
             else
-                textures = tex->nextTexture;
+                textures = tex->next;
             
             // Free the texture
             wipefree(tex);
@@ -1185,7 +1267,7 @@ GLtexture *glTextureGet (GLuint _name)
     while (tex) {
         if (tex->name == _name)
             return tex;
-        tex = tex->nextTexture;
+        tex = tex->next;
     }
     
     return NULL;
@@ -1329,12 +1411,14 @@ void glTexEnvf (GLenum _target, GLenum _pname, GLfloat _param)
         // Texture environment operation mode
         case GL_TEXTURE_ENV_MODE:
             switch ((GLint) _param) {
-                case GL_MODULATE: GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE); break;
-                case GL_DECAL: GX_SetTevOp(GX_TEVSTAGE0, GX_DECAL); break;
-                case GL_BLEND: GX_SetTevOp(GX_TEVSTAGE0, GX_BLEND); break;
-                case GL_REPLACE: GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE); break;
+                case GL_MODULATE: tevMode = GX_MODULATE; break;
+                case GL_DECAL: tevMode = GX_DECAL; break;
+                case GL_BLEND: tevMode = GX_BLEND; break;
+                case GL_REPLACE: tevMode = GX_REPLACE; break;
                 default: return; /* GL_INVALID_ENUM */
             }
+            if (texture2DEnabled)
+                GX_SetTevOp(GX_TEVSTAGE0 + tevStage, tevMode);
             break;
 
         default: return; /* GL_INVALID_ENUM */

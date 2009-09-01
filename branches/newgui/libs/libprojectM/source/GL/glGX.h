@@ -26,8 +26,10 @@
 extern "C" {
 #endif
 
-#define GX_MAX_TEXTURE_SIZE     1024
-#define DEFAULT_FIFO_SIZE       256 * 1024
+#define GL_MAX_STACK_SIZE           32
+
+#define GX_MAX_TEXTURE_SIZE         1024
+#define GX_DEFAULT_FIFO_SIZE        256 * 1024
 
 /**
  * GX
@@ -37,7 +39,9 @@ GXRModeObj *rmode = NULL;
 void *xfb[2] = { NULL, NULL };
 u32 fb = 0;
 
-unsigned char gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN(32);
+unsigned char gp_fifo[GX_DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN(32);
+
+void glInit ();
 
 /**
  * Miscellaneous
@@ -59,13 +63,15 @@ bool normalArrayEnabled = false;
 bool texCoordArrayEnabled = false;
 bool vertexArrayEnabled = false;
 
-u32 insideBeginEndPair = 0;
+bool insideBeginEndPair = false;
 
 GXColor clearColour = { 0, 0, 0, 0 };
 f32 clearDepth = 0 * 0x00FFFFFF;
 
-u32 depthMode = GX_LESS;
+u32 blendModeSrc = GX_BL_ONE;
+u32 blendModeDst = GX_BL_ZERO;
 u32 cullMode = GX_CULL_ALL;
+u32 depthMode = GX_LESS;
 u32 windingMode = GL_CCW;
 
 u32 lineStippleFactor = 0;
@@ -82,8 +88,22 @@ const char *extensions = "";
  * Transformation
  */
 
+Mtx44 modelViewMatrixStack[GL_MAX_STACK_SIZE] = { { { 0 }, { 0 } } };   /* 0_o */
+Mtx44 projectionMatrixStack[GL_MAX_STACK_SIZE] = { { { 0 }, { 0 } } };  /* o_0 */
+Mtx44 textureMatrixStack[GL_MAX_STACK_SIZE] = { { { 0 }, { 0 } } };     /* o_o */
+u8 modelViewMatrixStackDepth = 0;
+u8 projectionMatrixStackDepth = 0;
+u8 textureMatrixStackDepth = 0;
+
+Mtx44 *matrixStack = modelViewMatrixStack;
+u8 *matrixStackDepth = &modelViewMatrixStackDepth;
+Mtx44 *matrix = &modelViewMatrixStack[0];
+
 Mtx view;
 Mtx perspective;
+
+void glMatrixIdentity (Mtx44 mtx);
+void glMatrixCopy (Mtx44 src, Mtx44 dst);
 
 /**
  * Drawing
@@ -107,13 +127,13 @@ typedef struct _GLvertex {
     GXColor colour;
     GLnormal normal;
     GLtexcoord texCoord;
-    struct _GLvertex *prevVertex;
-    struct _GLvertex *nextVertex;
+    struct _GLvertex *prev;
+    struct _GLvertex *next;
 } GLvertex;
 
 u8 primitiveType = GX_POINTS;
 
-GXColor colour = { 0xFF, 0xFF, 0xFF, 0xFF };
+GXColor colour = { 255, 255, 255, 255 };
 GLnormal normal = { 0.0f, 0.0f, 0.0f };
 GLtexcoord texCoord = { 0.0f, 0.0f };
 
@@ -161,9 +181,12 @@ typedef struct _GLtexture {
     u8 wrap_s;
     u8 wrap_t;
     f32 priority;
-    struct _GLtexture *prevTexture;
-    struct _GLtexture *nextTexture;
+    struct _GLtexture *prev;
+    struct _GLtexture *next;
 } GLtexture;
+
+u8 tevStage = 0;
+u8 tevMode = GX_REPLACE;
 
 GLtexture *textures = NULL;
 GLtexture *texture1D = NULL;
