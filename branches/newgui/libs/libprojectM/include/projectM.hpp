@@ -30,8 +30,6 @@
 #include <ogc/mutex.h>
 #include <ogc/cond.h>
 
-#include <cstdlib>
-#include <cstdio>
 #include <string>
 
 #include <projectM/PCM.hpp>
@@ -42,7 +40,6 @@
 #define PM_FLAG_DISABLE_PLAYLIST_LOAD   0x1
 
 /* Forward declarations */
-class Func;
 class Renderer;
 class Preset;
 class PresetIterator;
@@ -53,6 +50,38 @@ class Pipeline;
 class PipelineContext;
 class RenderItemMatcher;
 class MasterRenderItemMerge;
+
+/**
+ * pm_audchar - Audio characteristics.
+ */
+typedef enum _pm_audchar {
+    PM_AC_NONE = 0,                     /* None/disabled */
+    PM_AC_BASS,                         /* Bass frequency (low) */
+    PM_AC_MIDDLE,                       /* Middle frequency (mid) */
+    PM_AC_TREBLE,                       /* Treble frequency (high) */
+    PM_AC_VOLUME,                       /* Overall volume */
+} pm_audchar;
+
+/**
+ * pm_config - projectM configuration.
+ */
+typedef struct _pm_config {
+    int maxFPS;
+    int meshX;
+    int meshY;
+    int textureSize;
+    int windowWidth;
+    int windowHeight;
+    int smoothPresetDuration;
+    int presetDuration;
+    float beatSensitivity;
+    bool aspectCorrection;
+    bool shufflePresets;
+    bool pulseWiiLight;
+    pm_audchar pulseSource;
+    std::string presetDirectory;
+    std::string initialPresetName;      /* ... */
+} pm_config;
 
 /**
  * A functor class that allows users of this library to specify random preset behavior.
@@ -77,40 +106,32 @@ class projectM
 {
     public:
 
-        struct Settings {
-            int meshX;
-            int meshY;
-            int fps;
-            int textureSize;
-            int windowWidth;
-            int windowHeight;
-            std::string defaultPresetName;
-            std::string presetURL;
-            int smoothPresetDuration;
-            int presetDuration;
-            float beatSensitivity;
-            bool aspectCorrection;
-            float easterEgg;
-            bool shuffleEnabled;
-            bool wiiLightEnabled;
-        };
-
-        projectM (std::string config_file, int flags = PM_FLAG_NONE);
-        projectM (Settings settings, int flags = PM_FLAG_NONE);
-
-        void projectM_resetGL(int width, int height);
-        void projectM_resetTextures();
+        /**
+         * projectM constructor.
+         *
+         * @param CONFIGFILE The location of the configuration file to load from
+         * @param FLAGS Additional flags
+         */
+        projectM (std::string configFile, int flags = PM_FLAG_NONE);
+        
+        /**
+         * projectM constructor.
+         *
+         * @param SETTINGS The configuration to use
+         * @param FLAGS Additional flags
+         */
+        projectM (pm_config settings, int flags = PM_FLAG_NONE);
+        
+        virtual ~projectM ();
+        
         void renderFrame();
-        unsigned initRenderToTexture();
-
-        virtual ~projectM();
         
         /// Occurs when active preset has switched. Switched to index is returned
         virtual void presetSwitchedEvent(bool isHardCut, unsigned int index) const {};
         
         
         /// Writes a settings configuration to the specified file
-        static bool writeConfig(const std::string &filepath, const Settings &settings);
+        static bool writeConfig(const std::string &filepath, const pm_config &settings);
 
         /// Sets preset iterator position to the passed in index
         void selectPresetPosition(unsigned int index);
@@ -174,18 +195,7 @@ class projectM
 
         void evaluateSecondPreset();
 
-        inline void setShuffleEnabled(bool value)
-        {
-            _settings.shuffleEnabled = value;
-        }
-
-
-        inline bool isShuffleEnabled() const
-        {
-            return _settings.shuffleEnabled;
-        }
-
-        inline const Settings & settings() const {
+        inline pm_config & settings() {
             return _settings;
         }
         
@@ -208,7 +218,7 @@ class projectM
         Renderer *_renderer;
         PipelineContext *_pipelineContext;
         PipelineContext *_pipelineContext2;
-        Settings _settings;
+        pm_config _settings;
        
         /* Windowed dimensions */
         int wvw;
@@ -224,12 +234,16 @@ class projectM
         PipelineContext & pipelineContext() { return *_pipelineContext; }
         PipelineContext & pipelineContext2() { return *_pipelineContext2; }
         
+        unsigned initRenderToTexture();
+        
         double sampledPresetDuration();
         
         void readConfig(const std::string &configFile);
-        void readSettings(const Settings &settings);
-        void projectM_init(int gx, int gy, int fps, int texsize, int width, int height);
+        void readSettings(const pm_config &settings);
+        void projectM_init();
         void projectM_reset();
+        void projectM_resetGL();
+        void projectM_resetTextures();
         void selectPrevious(const bool);
         void selectNext(const bool);
         void selectRandom(const bool);

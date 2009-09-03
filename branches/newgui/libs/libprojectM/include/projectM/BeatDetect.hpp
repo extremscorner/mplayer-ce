@@ -24,6 +24,9 @@
 
 #include <projectM/PCM.hpp>
 
+/* Forward declarations */
+typedef struct _pm_config pm_config;
+
 /**
  * Audio beat detection class.
  * Parses various characteristics from decompressed sound buffers 
@@ -36,7 +39,6 @@ class BeatDetect
         float mid ;
         float bass ;
         float vol_old ;
-        float beat_sensitivity;
         float treb_att ;
         float mid_att ;
         float bass_att ;
@@ -45,16 +47,17 @@ class BeatDetect
         PCM *pcm;
         
         /** Methods */
-        BeatDetect(PCM *pcm);
+        BeatDetect(const pm_config &settings, PCM *pcm);
         ~BeatDetect();
         void initBeatDetect();
         void reset();
         void detectFromSamples();
-        void getBeatVals ( float *vdataL, float *vdataR );
+        void getBeatVals ( const float *vdataL, const float *vdataR );
         
     private:
         
         /** Vars */
+        const pm_config &settings;
         float beat_buffer[32][80],
         beat_instant[32],
         beat_history[32];

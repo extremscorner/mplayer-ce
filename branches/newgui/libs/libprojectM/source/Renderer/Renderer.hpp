@@ -14,6 +14,8 @@
 #include "Transformation.hpp"
 #include "ShaderEngine.hpp"
 
+/* Forward declarations */
+typedef struct _pm_config pm_config;
 class UserTexture;
 class BeatDetect;
 class TextureManager;
@@ -23,40 +25,27 @@ class Renderer
 
 public:
 
-  bool correction;
-
   bool noSwitch;
 
   int totalframes;
   float realfps;
 
-  int texsize;
 
-
-  Renderer( int width, int height, int gx, int gy, int texsize, BeatDetect *beatDetect, std::string presetURL, bool _useWiiLight);
+  Renderer( const pm_config &settings, BeatDetect *beatDetect );
   ~Renderer();
 
   void RenderFrame(const Pipeline &pipeline, const PipelineContext &pipelineContext);
   void ResetTextures();
-  void reset(int w, int h);
+  void reset();
   GLuint initRenderToTexture();
 
 
   void SetPipeline(Pipeline &pipeline);
 
-  void setPresetName(const std::string& theValue)
-  {
-    m_presetName = theValue;
-  }
-
-  std::string presetName() const
-  {
-    return m_presetName;
-  }
-
 private:
 
-	PerPixelMesh mesh;
+  const pm_config &settings;
+  PerPixelMesh mesh;
   RenderTarget *renderTarget;
   BeatDetect *beatDetect;
   TextureManager *textureManager;
@@ -66,18 +55,10 @@ private:
 #ifdef USE_CG
   ShaderEngine shaderEngine;
 #endif
-  std::string m_presetName;
   
   float* p;
 
-
-  int vw;
-  int vh;
-
   float aspect;
-
-  std::string presetURL;
-  bool useWiiLight;
   
   void SetupPass1(const Pipeline &pipeline, const PipelineContext &pipelineContext);
   void Interpolation(const Pipeline &pipeline);

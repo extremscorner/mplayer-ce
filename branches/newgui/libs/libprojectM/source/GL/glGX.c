@@ -74,55 +74,83 @@ void gxInit ()
     if (rmode->viTVMode & VI_NON_INTERLACE)
         VIDEO_WaitVSync();
     
-    memset(gp_fifo, 0, GX_DEFAULT_FIFO_SIZE);
-    GX_Init(gp_fifo, GX_DEFAULT_FIFO_SIZE);
-    
-    // ===========================================================================
-    
-    GX_SetViewport(0, 0, rmode->fbWidth, rmode->efbHeight, 0, 1);
-    f32 yscale = GX_GetYScaleFactor(rmode->efbHeight, rmode->xfbHeight);
-    u32 xfbHeight = GX_SetDispCopyYScale(yscale);
-    GX_SetScissor(0, 0, rmode->fbWidth, rmode->efbHeight);
-    GX_SetDispCopySrc(0, 0, rmode->fbWidth, rmode->efbHeight);
-    GX_SetDispCopyDst(rmode->fbWidth, xfbHeight);
-    GX_SetCopyFilter(rmode->aa, rmode->sample_pattern, GX_TRUE, rmode->vfilter);
-    GX_SetFieldMode(rmode->field_rendering, ((rmode->viHeight == 2 * rmode->xfbHeight) ? GX_ENABLE:GX_DISABLE));
-    
-    GX_SetCullMode(GX_CULL_ALL);
-    GX_CopyDisp(xfb[fb], GX_TRUE);
-    GX_SetDispCopyGamma(GX_GM_1_0);
-    
-    GX_ClearVtxDesc();
-    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GX_SetVtxDesc(GX_VA_NRM, GX_DIRECT);
-    GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
-    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0); // vertex
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0); // normals
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGB8, 0); // color
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0); // texture
-    
-    GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
-    
-    GX_SetNumTexGens(1);
-    GX_InvalidateTexAll();
-    
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-    
-    GX_SetViewport(0, 0, rmode->fbWidth, rmode->efbHeight, 0, 1);
-    
-    guVector cam = { 0.0F, 0.0F, 0.0F },
-              up = { 0.0F, 1.0F, 0.0F },
-            look = { 0.0F, 0.0F, -1.0F };
+    //...
+    gp_fifo = wipememalign(32, GX_DEFAULT_FIFO_SIZE);
+    if (gp_fifo) {
+        GX_Init(gp_fifo, GX_DEFAULT_FIFO_SIZE);
+        
+        // ===========================================================================
+        
+        // Set clear colour (black)
+        GX_SetCopyClear(clearColour, clearDepth);
+        
+        // Setup the viewport and scissors (culling)
+        GX_SetViewport(0, 0, rmode->fbWidth, rmode->efbHeight, 0, 1);
+        f32 yscale = GX_GetYScaleFactor(rmode->efbHeight, rmode->xfbHeight);
+        u32 xfbHeight = GX_SetDispCopyYScale(yscale);
+        GX_SetScissor(0, 0, rmode->fbWidth, rmode->efbHeight);
+        GX_SetDispCopySrc(0, 0, rmode->fbWidth, rmode->efbHeight);
+        GX_SetDispCopyDst(rmode->fbWidth, xfbHeight);
+        GX_SetCopyFilter(rmode->aa, rmode->sample_pattern, GX_TRUE, rmode->vfilter);
+        if (rmode->viHeight == (2 * rmode->xfbHeight))
+            GX_SetFieldMode(rmode->field_rendering, GX_ENABLE);
+        else
+            GX_SetFieldMode(rmode->field_rendering, GX_DISABLE);
+        
+        // Set the pixel format
+        if (rmode->aa)
+            GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
+        else
+            GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 
-    guLookAt(view, &cam, &up, &look);
+        //...
+        GX_CopyDisp(xfb[fb], GX_TRUE);
+        GX_SetDispCopyGamma(GX_GM_1_0);
+        
+        // Reset verticies and textures
+        GX_InvVtxCache();
+        GX_InvalidateTexAll();
+        
+        // Setup vertex descriptions
+        GX_ClearVtxDesc();
+        GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GX_SetVtxDesc(GX_VA_NRM, GX_DIRECT);
+        GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+        GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+        
+        // Setup vertex formats
+        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
+        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGB8, 0);
+        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+        
+        //...
+        GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+        
+        //...
+        GX_SetTevOrder(GX_TEVSTAGE0 + tevStage, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+        GX_SetTevOp(GX_TEVSTAGE0 + tevStage, GX_PASSCLR);
+        
+        // ===========================================================================
     
-    // ===========================================================================
+        // Initialise openGL
+        glInit();
+        
+        //...        
+        guVector cam = { 0.0F, 0.0F, 0.0F },
+                  up = { 0.0F, 1.0F, 0.0F },
+                look = { 0.0F, 0.0F, -1.0F };
+        
+        guMtxIdentity(view);
+        guLookAt(view, &cam, &up, &look);
+        
+        //...
+        glMatrixIdentity(perspective);
+        guPerspective(perspective, 90.0f, 1.33f, 0.1f, 1000.0f);
+        GX_LoadProjectionMtx(perspective, GX_PERSPECTIVE);
+        
+    }
     
-    // Initialise openGL
-    glInit();
 }
 
 void gxDestroy ()
@@ -132,9 +160,11 @@ void gxDestroy ()
 
 void gxSwapBuffers ()
 {
+    // We are finished drawing...
+    GX_DrawDone();
+    
     // Flip the framebuffer and flush the display
     fb ^= 1;
-    GX_DrawDone();
     GX_SetColorUpdate(GX_TRUE);
     GX_CopyDisp(xfb[fb], GX_TRUE);
     VIDEO_SetNextFramebuffer(xfb[fb]);
@@ -144,6 +174,13 @@ void gxSwapBuffers ()
 
 void glInit ()
 {
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glNormal3f(0.0f, 0.0f, 0.0f);
+    glTexCoord2f(0.0f, 0.0f);
+    
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
@@ -380,7 +417,7 @@ void glEnable(GLenum _type)
             break;
         case GL_BLEND:
             blendEnabled = true;
-            GX_SetBlendMode(GX_BM_NONE, blendModeSrc, blendModeDst, GX_LO_CLEAR);
+            GX_SetBlendMode(GX_BM_BLEND, blendModeSrc, blendModeDst, GX_LO_CLEAR);
             GX_SetAlphaUpdate(GX_TRUE);
             break;
         case GL_LINE_SMOOTH:
@@ -543,6 +580,20 @@ void glMatrixCopy (Mtx44 src, Mtx44 dst)
     for (i = 0; i < 4; i++)
         for (j = 0; j < 4; j++)
             dst[i][j] = src[i][j];
+}
+
+void glMatrixLoadModelView ()
+{
+    Mtx modelView;
+    Mtx inverseModelView;
+    
+    // Load the current model view matrix into memory
+    guMtxCopy(modelViewMatrixStack[modelViewMatrixStackDepth], modelView);    
+    GX_LoadPosMtxImm(modelView, GX_PNMTX0);
+    guMtxInverse(modelView, inverseModelView); 
+    guMtxTranspose(inverseModelView, modelView); 
+    GX_LoadNrmMtxImm(modelView, GX_PNMTX0);
+    GX_SetCurrentMtx(GX_PNMTX0);
 }
 
 void glMatrixMode(GLenum _mode)
@@ -749,8 +800,6 @@ void glBegin (GLenum _type)
 
 void glEnd (void)
 {
-    u16 count = 0;
-    
     // Sanity check
     if (!insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
@@ -759,16 +808,15 @@ void glEnd (void)
     if (vertexCount == 0)
         return;
 
-    // Map the currently bound 2D texture (if enabled)
-    if (texture2DEnabled) {
-        GX_LoadTexObj(&texture2D->obj, texture2DMap);
-    }
-
     // Determine the number of verticies we are to upload (depends on culling mode)
+    u16 count = 0;
     if (cullFaceEnabled)
         count = vertexCount;
     else
         count = vertexCount * 2;
+
+    // Load the current model view matrix into memory
+    glMatrixLoadModelView();
     
     // ===========================================================================
     GX_Begin(primitiveType, GX_VTXFMT0, count);
@@ -833,7 +881,6 @@ void glVerticiesInvalidateAll ()
 
 void glVertexUpload (GLvertex *_vert)
 {
-    DCFlushRange(_vert, sizeof(GLvertex));
     GX_Position3f32(_vert->x, _vert->y, _vert->z); 
     GX_Normal3f32(_vert->normal.x, _vert->normal.y, _vert->normal.z);
     GX_Color3f32(_vert->colour.r, _vert->colour.g, _vert->colour.b);
@@ -960,6 +1007,26 @@ void glVertexPointer (GLint _size, GLenum _type,
     vertexArray.ptr = _ptr;    
 }
 
+
+void glNormalPointer (GLenum _type, GLsizei _stride,
+                      const GLvoid *_ptr)
+{
+    // Sanity check
+    if (insideBeginEndPair)
+        return; /* GL_INVALID_OPERATION */
+        
+    // Sanity check
+    if (_stride < 0 ||
+        !_ptr)
+        return; /* GL_INVALID_VALUE */
+    
+    // Set the normal array
+    normalArray.size = vertexArray.size;
+    normalArray.type = _type;
+    normalArray.stride = _stride;
+    normalArray.ptr = _ptr;    
+}
+
 void glColorPointer (GLint _size, GLenum _type,
                      GLsizei _stride, const GLvoid *_ptr)
 {
@@ -1000,44 +1067,66 @@ void glTexCoordPointer (GLint _size, GLenum _type,
     texCoordArray.ptr = _ptr;
 }
 
-f32 glVertexArrayGetCoord (GLvertexarray *vertexArray, int index)
+void glVertexArrayBuild (GLvertexarray *_array, u32 _start, u32 _count, f32 **array, u32 *size)
 {
-    switch (vertexArray->type) {
-        case GL_SHORT: {
-            GLshort *val = (GLshort *) (vertexArray->ptr + (index * (vertexArray->stride + sizeof(GLshort))));
-            return (f32) *val;
-        }
-        case GL_INT: {
-            GLint *val = (GLint *) (vertexArray->ptr + (index * (vertexArray->stride + sizeof(GLint))));
-            return (f32) *val;
-        }
-        case GL_FLOAT: {
-            GLfloat *val = (GLfloat *) (vertexArray->ptr + (index * (vertexArray->stride + sizeof(GLfloat))));
-            return (f32) *val;
-        }
-        case GL_DOUBLE: {
-            GLdouble *val = (GLdouble *) (vertexArray->ptr + (index * (vertexArray->stride + sizeof(GLdouble))));
-            return (f32) *val;
-        }
-    }
+    void *ptr = NULL;
+    int i;
     
-    return 0;
-}
+    // Sanity check
+    if (!array || !*array || !size ||
+        !_array || _array->size <= 0)
+        return;
+    
+    // Allocate the destination array
+    *size = (_array->size * sizeof(f32));
+    *array = wipememalign(32, *size);
+    if (!array)
+        return;
+    
+    // Build a continuous array of coordinates from the specified vertex array
+    ptr = _array->ptr;
+    /*for (i = _start; i < _count; i++) {
+        switch (_array->type) {
+            case GL_SHORT:
+                GLshort *val = (GLshort *) (_array->ptr + (i * (_array->stride + sizeof(GLshort))));
+                ptr += (_array->stride + sizeof(GLshort));
+                *array[i] = (f32)val;
+                break;
+            case GL_INT:
+                GLint *val = (GLint *) (_array->ptr + (i * (_array->stride + sizeof(GLint))));
+                ptr += (_array->stride + sizeof(GLint));
+                *array[i] = (f32)val;
+                break;
+            case GL_FLOAT:
+                GLfloat *val = (GLfloat *) (_array->ptr + (i * (_array->stride + sizeof(GLfloat))));
+                ptr += (_array->stride + sizeof(GLfloat));
+                *array[i] = (f32)val;
+                break;
+            case GL_DOUBLE:
+                GLdouble *val = (GLdouble *) (_array->ptr + (i * (_array->stride + sizeof(GLdouble))));
+                ptr += (_array->stride + sizeof(GLdouble));
+                *array[i] = (f32)val;
+                break;
+        }
+    }*/
 
-void glVertexArrayNext (GLvertexarray *vertexArray)
-{
-    switch (vertexArray->type) {
-        case GL_SHORT: vertexArray->ptr += (vertexArray->stride + sizeof(GLshort));
-        case GL_INT: vertexArray->ptr += (vertexArray->stride + sizeof(GLint));
-        case GL_FLOAT: vertexArray->ptr += (vertexArray->stride + sizeof(GLfloat));
-        case GL_DOUBLE: vertexArray->ptr += (vertexArray->stride + sizeof(GLdouble));
-    }
+    // Flush the destination array
+    DCFlushRange(*array, *size);
+    
+    return array;
 }
 
 void glDrawArrays (GLenum _mode, GLint _first, GLsizei _count)
 {
-    const void *ptr = NULL;
-    int i;
+    f32 *vtxVerticies = NULL;
+    u32 vtxVerticiesCount = 0;
+    f32 *vtxNormals = NULL;
+    u32 vtxNormalsCount = 0;
+    f32 *vtxColours = NULL;
+    u32 vtxColoursCount = 0;
+    f32 *vtxTexCoords = NULL;
+    u32 vtxTexCoordsCount = 0;
+    u8 type = GX_POINTS;
     
     // Sanity check
     if (insideBeginEndPair)
@@ -1051,77 +1140,56 @@ void glDrawArrays (GLenum _mode, GLint _first, GLsizei _count)
     if (!vertexArrayEnabled)
         return;
     
-    // Let us begin...
-    glBegin(_mode);
+    /*
+    // Build the vertex arrays
+    glVertexArrayBuild(&vertexArray, &vtxVerticies, &vtxVerticiesCount);
+    glVertexArrayBuild(&normalArray, &vtxNormals, &vtxNormalsCount);
+    glVertexArrayBuild(&colourArray, &vtxColours, &vtxColoursCount);
+    glVertexArrayBuild(&texCoordArray, &vtxTexCoords, &vtxTexCoordsCount);
     
-    if (colourArrayEnabled) {
-        ptr = colourArray.ptr;
-        for (i = _first; i < _count; i++) {
-            switch (colourArray.size) {
-                case 3:
-                    glColor3f(glVertexArrayGetCoord(&colourArray, 0),
-                              glVertexArrayGetCoord(&colourArray, 1),
-                              glVertexArrayGetCoord(&colourArray, 2)); 
-                    break;
-                case 4:
-                    glColor4f(glVertexArrayGetCoord(&colourArray, 0),
-                              glVertexArrayGetCoord(&colourArray, 1),
-                              glVertexArrayGetCoord(&colourArray, 2),
-                              glVertexArrayGetCoord(&colourArray, 3)); 
-                    break;
-            }
-            glVertexArrayNext(&colourArray);
-        }
-    }
+    GX_ClearVtxDesc();
+    GX_SetVtxDesc(GX_VA_POS, GX_INDEX16);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GX_SetArray(GX_VA_POS, vtxVerticies, 0);
     
     if (normalArrayEnabled) {
-        ptr = normalArray.ptr;
-        for (i = _first; i < _count; i++) {
-            switch (normalArray.size) {
-                case 3:
-                    glNormal3f(glVertexArrayGetCoord(&normalArray, 0),
-                               glVertexArrayGetCoord(&normalArray, 1),
-                               glVertexArrayGetCoord(&normalArray, 2)); 
-                    break;
-            }
-            glVertexArrayNext(&normalArray);
-        }
+        GX_SetVtxDesc(GX_VA_NRM, GX_INDEX16);
+        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
+        GX_SetArray(GX_VA_NRM, vtxNormals, 0);
     }
     
-    if (texCoordArrayEnabled) {
-        ptr = texCoordArray.ptr;
-        for (i = _first; i < _count; i++) {
-            switch (normalArray.size) {
-                case 2:
-                    glTexCoord2f(glVertexArrayGetCoord(&texCoordArray, 0),
-                                 glVertexArrayGetCoord(&texCoordArray, 1)); 
-                    break;
-            }
-            glVertexArrayNext(&texCoordArray);
-        }
+    if (colourArrayEnabled) {
+        GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+        GX_SetArray(GX_VA_CLR0, vtxColours, 0);
     }
     
-    if (vertexArrayEnabled) {
-        ptr = vertexArray.ptr;
-        for (i = _first; i < _count; i++) {
-            switch (vertexArray.size) {
-                case 2:
-                    glVertex2f(glVertexArrayGetCoord(&vertexArray, 0),
-                               glVertexArrayGetCoord(&vertexArray, 1)); 
-                    break;
-                case 3:
-                    glVertex3f(glVertexArrayGetCoord(&vertexArray, 0),
-                               glVertexArrayGetCoord(&vertexArray, 1),
-                               glVertexArrayGetCoord(&vertexArray, 2)); 
-                    break;
-            }
-            glVertexArrayNext(&vertexArray);
-        }
+    // TODO: This correctly...
+    if (texture2DEnabled && texCoordArrayEnabled) {
+        GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+        GX_SetVtxDesc(GX_VA_TEX0MTXIDX, GX_TEXMTX0);
+        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+        GX_SetArray(GX_VA_TEX0, vtxTexCoords, 0);
+        GX_SetTevOrder(GX_TEVSTAGE0 + tevStage, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+        GX_LoadTexObj(&texture2D, GX_TEXMAP0);
+    } else {
+        GX_SetVtxDesc(GX_VA_TEX0, GX_NONE);
+        GX_SetVtxDesc(GX_VA_TEX0MTXIDX, GX_NONE);
     }
     
-    // All done
-    glEnd();
+    // Load the current model view matrix into memory
+    glMatrixLoadModelView();
     
+    // ===========================================================================
+    GX_Begin(type, GX_VTXFMT0, _count);
+    // ===========================================================================
+    
+    //...
+    
+    // ===========================================================================
+    GX_End();
+    // ===========================================================================
+    */
 }
 
 void glInterleavedArrays (GLenum _format, GLsizei _stride,

@@ -31,15 +31,16 @@
 
 #include "wipemalloc.h"
 
+#include "projectM.hpp"
 #include "Common.hpp"
 #include "PCM.hpp"
 #include <cmath>
 #include "BeatDetect.hpp"
 
-BeatDetect::BeatDetect(PCM *pcm) {
+BeatDetect::BeatDetect(const pm_config &settings, PCM *pcm):
+pcm(pcm), settings(settings)
+{
   int x,y; 
-
-  this->pcm=pcm;
 
   this->vol_instant=0;
   this->vol_history=0;
@@ -58,15 +59,14 @@ BeatDetect::BeatDetect(PCM *pcm) {
       this->beat_att[x]=1.0;
       this->beat_variance[x]=0;
       for (y=0;y<80;y++) {
-	    this->beat_buffer[x][y]=0;
-	    }
+          this->beat_buffer[x][y]=0;
+      }
     }
 
     this->treb = 0;
     this->mid = 0;
     this->bass = 0;
     this->vol_old = 0;
-    this->beat_sensitivity = 10.00;
     this->treb_att = 0;
     this->mid_att = 0;
     this->bass_att = 0;
@@ -96,7 +96,7 @@ void BeatDetect::detectFromSamples() {
     getBeatVals(pcm->pcmdataL,pcm->pcmdataR);
   }
 
-void BeatDetect::getBeatVals( float *vdataL,float *vdataR ) {
+void BeatDetect::getBeatVals( const float *vdataL, const float *vdataR ) {
 
   int linear=0;
   int x,y;

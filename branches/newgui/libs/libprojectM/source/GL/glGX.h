@@ -36,10 +36,9 @@ extern "C" {
  */
 
 GXRModeObj *rmode = NULL;
+void *gp_fifo = NULL;
 void *xfb[2] = { NULL, NULL };
 u32 fb = 0;
-
-unsigned char gp_fifo[GX_DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN(32);
 
 void glInit ();
 
@@ -53,7 +52,7 @@ bool blendEnabled = false;
 bool lineSmoothEnabled = false;
 bool pointSmoothEnabled = false;
 bool polygonSmoothEnabled = false;
-bool depthTestEnabled = false;
+bool depthTestEnabled = true;
 bool cullFaceEnabled = true;
 
 bool colourArrayEnabled = false;
@@ -66,7 +65,7 @@ bool vertexArrayEnabled = false;
 bool insideBeginEndPair = false;
 
 GXColor clearColour = { 0, 0, 0, 0 };
-f32 clearDepth = 0 * 0x00FFFFFF;
+f32 clearDepth = 0x00FFFFFF;
 
 u32 blendModeSrc = GX_BL_ONE;
 u32 blendModeDst = GX_BL_ZERO;
@@ -100,10 +99,11 @@ u8 *matrixStackDepth = &modelViewMatrixStackDepth;
 Mtx44 *matrix = &modelViewMatrixStack[0];
 
 Mtx view;
-Mtx perspective;
+Mtx44 perspective;
 
 void glMatrixIdentity (Mtx44 mtx);
 void glMatrixCopy (Mtx44 src, Mtx44 dst);
+void glMatrixLoadModelView ();
 
 /**
  * Drawing
@@ -130,6 +130,9 @@ typedef struct _GLvertex {
     struct _GLvertex *prev;
     struct _GLvertex *next;
 } GLvertex;
+
+u8 tevStage = 0;
+u8 tevMode = GX_REPLACE;
 
 u8 primitiveType = GX_POINTS;
 
@@ -160,8 +163,7 @@ GLvertexarray normalArray = { 0 };
 GLvertexarray texCoordArray = { 0 };
 GLvertexarray vertexArray = { 0 };
 
-f32 glVertexArrayGetCoord (GLvertexarray *vertexArray, int index);
-void glVertexArrayNext (GLvertexarray *vertexArray);
+void glVertexArrayBuild (GLvertexarray *_array, u32 _start, u32 _count, f32 **array, u32 *size);
 
 /**
  * Lighting
@@ -185,14 +187,9 @@ typedef struct _GLtexture {
     struct _GLtexture *next;
 } GLtexture;
 
-u8 tevStage = 0;
-u8 tevMode = GX_REPLACE;
-
 GLtexture *textures = NULL;
 GLtexture *texture1D = NULL;
 GLtexture *texture2D = NULL;
-u8 texture1DMap = GX_TEXMAP0;
-u8 texture2DMap = GX_TEXMAP1;
 u32 textureCount = 0;
 
 GLuint glTextureNextFreeName ();

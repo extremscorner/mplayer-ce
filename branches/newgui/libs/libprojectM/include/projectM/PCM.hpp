@@ -22,6 +22,9 @@
 #ifndef _PCM_H
 #define _PCM_H
 
+/* Forward declarations */
+typedef struct _pm_config pm_config;
+
 /**
  * Pulse-code modulation manager.
  * Decompressed sound buffer, holds audio input used for beat analysis
@@ -49,7 +52,7 @@ class PCM
         float vdataR[512];
         
         static int maxsamples;
-        PCM();
+        PCM(const pm_config &settings);
         ~PCM();
         void initPCM(int maxsamples);
         void addPCMfloat(const float *PCMdata, int samples);
@@ -61,6 +64,10 @@ class PCM
         void freePCM();
         int getPCMnew(float *PCMdata, int channel, int freq, float smoothing, int derive,int reset);
 
+    private:
+        
+        const pm_config &settings;
+        
 };
 
 #endif /** !_PCM_H */

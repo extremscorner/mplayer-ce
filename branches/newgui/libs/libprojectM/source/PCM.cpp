@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "projectM.hpp"
 #include "Common.hpp"
 #include "wipemalloc.h"
 #include "fftsg.h"
@@ -41,7 +42,9 @@ int PCM::maxsamples = 2048;
 //Initializes the PCM buffer to
 // number of samples specified.
 #include <iostream>
-PCM::PCM() {
+PCM::PCM(const pm_config &settings) :
+settings(settings)
+{
     initPCM( 2048 );
 
     #ifdef DEBUG

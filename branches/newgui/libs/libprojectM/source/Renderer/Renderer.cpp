@@ -1,3 +1,4 @@
+#include "projectM.hpp"
 #include "Renderer.hpp"
 #include "wipemalloc.h"
 #include "math.h"
@@ -12,8 +13,8 @@
 
 class Preset;
 
-Renderer::Renderer(int width, int height, int gx, int gy, int texsize, BeatDetect *beatDetect, std::string _presetURL, bool _useWiiLight) : 
-texsize(texsize), mesh(gx, gy), m_presetName("None"), vw(width), vh(height), presetURL(_presetURL), useWiiLight(_useWiiLight)
+Renderer::Renderer(const pm_config &settings, BeatDetect *beatDetect) : 
+settings(settings), mesh(settings.meshX, settings.meshY), beatDetect(beatDetect)
 {
 	//int x;
 	//int y;
@@ -23,14 +24,13 @@ texsize(texsize), mesh(gx, gy), m_presetName("None"), vw(width), vh(height), pre
 	this->realfps = 0;
 
 	/** Other stuff... */
-	this->correction = true;
-	this->aspect = (float) height / (float) width;;
+	this->aspect = (float) settings.windowHeight / (float) settings.windowWidth;
 
     gxInit();
     
 	/// @bug put these on member init list
-	this->renderTarget = new RenderTarget(texsize, width, height);
-	this->textureManager = new TextureManager(presetURL);
+    this->renderTarget = new RenderTarget(settings.textureSize, settings.windowWidth, settings.windowHeight);
+    this->textureManager = new TextureManager(settings.presetDirectory);
 	this->beatDetect = beatDetect;
 
 
@@ -81,8 +81,8 @@ void Renderer::ResetTextures()
 	textureManager->Clear();
 
 	delete (renderTarget);
-	renderTarget = new RenderTarget(texsize, vw, vh);
-	reset(vw, vh);
+    renderTarget = new RenderTarget(settings.textureSize, settings.windowWidth, settings.windowHeight);
+    reset();
 
 	textureManager->Preload();
 }
@@ -121,8 +121,8 @@ void Renderer::SetupPass1(const Pipeline &pipeline, const PipelineContext &pipel
 void Renderer::RenderItems(const Pipeline &pipeline, const PipelineContext &pipelineContext)
 {
 	renderContext.time = pipelineContext.time;
-	renderContext.texsize = texsize;
-	renderContext.aspectCorrect = correction;
+    renderContext.texsize = settings.textureSize;
+    renderContext.aspectCorrect = settings.aspectCorrection;
 	renderContext.aspectRatio = aspect;
 	renderContext.textureManager = textureManager;
 	renderContext.beatDetect = beatDetect;
@@ -166,7 +166,7 @@ void Renderer::Pass2(const Pipeline &pipeline, const PipelineContext &pipelineCo
 	}
 	else
 #endif
-		glViewport(0, 0, this->vw, this->vh);
+		glViewport(0, 0, settings.windowWidth, settings.windowHeight);
 
 	glBindTexture(GL_TEXTURE_2D, this->renderTarget->textureID[0]);
 
@@ -194,9 +194,20 @@ void Renderer::Pass2(const Pipeline &pipeline, const PipelineContext &pipelineCo
 void Renderer::RenderFrame(const Pipeline &pipeline, const PipelineContext &pipelineContext)
 {
 #if defined(__wii__)
-    if (useWiiLight) {
-        wiiLightSetLevel(beatDetect->bass);
-        wiiLightOn();
+    if (settings.pulseWiiLight) {
+        switch (settings.pulseSource) {
+            case PM_AC_NONE: wiiLightSetLevel(0); break;
+            case PM_AC_BASS: wiiLightSetLevel(beatDetect->bass); break;
+            case PM_AC_MIDDLE: wiiLightSetLevel(beatDetect->mid); break;
+            case PM_AC_TREBLE: wiiLightSetLevel(beatDetect->treb); break;
+            case PM_AC_VOLUME: wiiLightSetLevel(beatDetect->vol); break;
+            default: wiiLightSetLevel(0); break;
+        }
+        if (wiiLightGetLevel() > 0) {
+            wiiLightOn();
+        } else {
+            wiiLightOff();
+        }
     }
 #endif
 
@@ -318,7 +329,7 @@ Pipeline* Renderer::currentPipe;
 Renderer::~Renderer()
 {
 #if defined(__wii__)
-    if (useWiiLight)
+    if (settings.pulseWiiLight)
         wiiLightOff();
 #endif
 
@@ -338,14 +349,10 @@ Renderer::~Renderer()
 	//	std::cerr << "exiting destructor" << std::endl;
 }
 
-void Renderer::reset(int w, int h)
-{
-	aspect = (float) h / (float) w;
-	this -> vw = w;
-	this -> vh = h;
-    
+void Renderer::reset()
+{    
 #if defined(__wii__)
-    if (useWiiLight)
+    if (settings.pulseWiiLight)
         wiiLightOff();
 #endif
 
@@ -360,7 +367,7 @@ void Renderer::reset(int w, int h)
 
 	glClearColor(0, 0, 0, 0);
 
-	glViewport(0, 0, w, h);
+	glViewport(0, 0, settings.windowWidth, settings.windowHeight);
 
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
@@ -396,7 +403,7 @@ void Renderer::reset(int w, int h)
 
 	if (!this->renderTarget->useFBO)
 	{
-		this->renderTarget->fallbackRescale(w, h);
+        this->renderTarget->fallbackRescale(settings.windowWidth, settings.windowHeight);
 	}
 }
 
