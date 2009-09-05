@@ -35,6 +35,7 @@ static GuiButton * onlineBtn = NULL;
 static GuiButton * configBtn = NULL;
 static GuiButton * logoBtn = NULL;
 static GuiWindow * mainWindow = NULL;
+static GuiText * settingText = NULL;
 
 static int currentMenu = MENU_BROWSE;
 
@@ -523,6 +524,86 @@ static void OnScreenKeyboard(char * var, u16 maxlen)
 }
 
 /****************************************************************************
+ * SettingWindow
+ *
+ * Opens a new window, with the specified window element appended. Allows
+ * for a customizable prompted setting.
+ ***************************************************************************/
+static int
+SettingWindow(const char * title, GuiWindow * w)
+{
+	int save = -1;
+
+	GuiWindow promptWindow(448,288);
+	promptWindow.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiImageData dialogBox(dialogue_box_png);
+	GuiImage dialogBoxImg(&dialogBox);
+
+	GuiText titleTxt(title, 26, (GXColor){70, 70, 10, 255});
+	titleTxt.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
+	titleTxt.SetPosition(0,40);
+
+	GuiText okBtnTxt("OK", 24, (GXColor){255, 255, 255, 255});
+	GuiImage okBtnImg(&btnOutline);
+	GuiImage okBtnImgOver(&btnOutlineOver);
+	GuiButton okBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+
+	okBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	okBtn.SetPosition(20, -25);
+
+	okBtn.SetLabel(&okBtnTxt);
+	okBtn.SetImage(&okBtnImg);
+	okBtn.SetImageOver(&okBtnImgOver);
+	okBtn.SetTrigger(&trigA);
+	okBtn.SetEffectGrow();
+
+	GuiText cancelBtnTxt("Cancel", 24, (GXColor){255, 255, 255, 255});
+	GuiImage cancelBtnImg(&btnOutline);
+	GuiImage cancelBtnImgOver(&btnOutlineOver);
+	GuiButton cancelBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	cancelBtn.SetAlignment(ALIGN_RIGHT, ALIGN_BOTTOM);
+	cancelBtn.SetPosition(-20, -25);
+	cancelBtn.SetLabel(&cancelBtnTxt);
+	cancelBtn.SetImage(&cancelBtnImg);
+	cancelBtn.SetImageOver(&cancelBtnImgOver);
+	cancelBtn.SetTrigger(&trigA);
+	cancelBtn.SetEffectGrow();
+
+	promptWindow.Append(&dialogBoxImg);
+	promptWindow.Append(&titleTxt);
+	promptWindow.Append(&okBtn);
+	promptWindow.Append(&cancelBtn);
+
+	HaltGui();
+	mainWindow->SetState(STATE_DISABLED);
+	mainWindow->Append(&promptWindow);
+	mainWindow->Append(w);
+	mainWindow->ChangeFocus(w);
+	ResumeGui();
+
+	while(save == -1)
+	{
+		usleep(THREAD_SLEEP);
+
+		if(okBtn.GetState() == STATE_CLICKED)
+			save = 1;
+		else if(cancelBtn.GetState() == STATE_CLICKED)
+			save = 0;
+	}
+	HaltGui();
+	mainWindow->Remove(&promptWindow);
+	mainWindow->Remove(w);
+	mainWindow->SetState(STATE_DEFAULT);
+	ResumeGui();
+	return save;
+}
+
+/****************************************************************************
  * WindowCredits
  * Display credits, legal copyright and licence
  *
@@ -664,7 +745,7 @@ static void ChangeMenuVideos(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
 static void ChangeMenuMusic(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
 static void ChangeMenuDVD(void * ptr) {	ChangeMenu(ptr, MENU_DVD); }
 static void ChangeMenuOnline(void * ptr) { ChangeMenu(ptr, MENU_ONLINEMEDIA); }
-static void ChangeMenuOptions(void * ptr) { ChangeMenu(ptr, MENU_OPTIONS); }
+static void ChangeMenuSettings(void * ptr) { ChangeMenu(ptr, MENU_SETTINGS); }
 
 /****************************************************************************
  * MenuBrowse
@@ -685,7 +766,7 @@ static void MenuBrowse()
 
 		if(choice == 0)
 		{
-			currentMenu = MENU_OPTIONS;
+			currentMenu = MENU_SETTINGS;
 			return;
 		}
 	}
@@ -761,17 +842,27 @@ static void MenuDVD()
 	currentMenu = MENU_BROWSE;
 }
 
-static void MenuOptionsVideo()
+static void MenuSettingsGeneral()
 {
 	int ret;
 	int i = 0;
+	bool firstRun = true;
 	OptionList options;
 
-	sprintf(options.name[i++], "Frame Dropping");
-	sprintf(options.name[i++], "Aspect Ratio");
+	sprintf(options.name[i++], "Auto-Resume");
+	sprintf(options.name[i++], "Play Order");
+	sprintf(options.name[i++], "Clean Filenames");
+	sprintf(options.name[i++], "Hide Filename Extensions");
+	sprintf(options.name[i++], "Hide Invalid File Types");
+	sprintf(options.name[i++], "Language");
+	sprintf(options.name[i++], "Video Files Folder");
+	sprintf(options.name[i++], "Music Files Folder");
+	sprintf(options.name[i++], "Exit Action");
+	sprintf(options.name[i++], "Wiimote Rumble");
+
 	options.length = i;
 
-	GuiText titleTxt("Options - Video", 26, (GXColor){255, 255, 255, 255});
+	GuiText titleTxt("Settings - General", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
 	titleTxt.SetPosition(30, 80);
 
@@ -806,31 +897,462 @@ static void MenuOptionsVideo()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_OPTIONS_VIDEO)
+	while(currentMenu == MENU_SETTINGS_GENERAL)
 	{
 		usleep(THREAD_SLEEP);
 
-		switch(CESettings.frameDropping)
+		ret = optionBrowser.GetClickedOption();
+
+		switch (ret)
 		{
 			case 0:
-				sprintf (options.value[0], "Enabled"); break;
+				CESettings.autoResume ^= 1;
+				break;
 			case 1:
-				sprintf (options.value[0], "Hard"); break;
+				CESettings.playOrder++;
+				if(CESettings.playOrder > PLAY_LOOP)
+					CESettings.playOrder = 0;
+				break;
 			case 2:
-				sprintf (options.value[0], "Disabled"); break;
+				CESettings.cleanFilenames ^= 1;
+				break;
+			case 3:
+				CESettings.hideExtensions ^= 1;
+				break;
+			case 4:
+				CESettings.filterFiles ^= 1;
+				break;
+			case 5:
+				CESettings.language++;
+				if(CESettings.language > LANG_KOREAN)
+					CESettings.language = 0;
+				break;
+			case 6:
+				OnScreenKeyboard(CESettings.videoFolder, MAXPATHLEN);
+				break;
+			case 7:
+				OnScreenKeyboard(CESettings.musicFolder, MAXPATHLEN);
+				break;
+			case 8:
+				CESettings.exitAction++;
+				if(CESettings.exitAction > EXIT_LOADER)
+					CESettings.exitAction = 0;
+				break;
+			case 9:
+				CESettings.rumble ^= 1;
+				break;
 		}
 
-		switch(CESettings.aspectRatio)
+		if(ret >= 0 || firstRun)
+		{
+			firstRun = false;
+
+			sprintf(options.value[0], "%s", CESettings.autoResume ? "On" : "Off");
+
+			switch(CESettings.playOrder)
+			{
+				case PLAY_SINGLE:		sprintf(options.value[1], "Single"); break;
+				case PLAY_CONTINUOUS:	sprintf(options.value[1], "Continuous"); break;
+				case PLAY_SHUFFLE:		sprintf(options.value[1], "Shuffle"); break;
+				case PLAY_LOOP:			sprintf(options.value[1], "Loop"); break;
+			}
+
+			sprintf(options.value[2], "%s", CESettings.cleanFilenames ? "On" : "Off");
+			sprintf(options.value[3], "%s", CESettings.hideExtensions ? "On" : "Off");
+			sprintf(options.value[4], "%s", CESettings.filterFiles ? "On" : "Off");
+
+			switch(CESettings.language)
+			{
+				case LANG_JAPANESE:		sprintf(options.value[5], "Japanese"); break;
+				case LANG_ENGLISH:		sprintf(options.value[5], "English"); break;
+				case LANG_GERMAN:		sprintf(options.value[5], "German"); break;
+				case LANG_FRENCH:		sprintf(options.value[5], "French"); break;
+				case LANG_SPANISH:		sprintf(options.value[5], "Spanish"); break;
+				case LANG_ITALIAN:		sprintf(options.value[5], "Italian"); break;
+				case LANG_DUTCH:		sprintf(options.value[5], "Dutch"); break;
+				case LANG_SIMP_CHINESE:	sprintf(options.value[5], "Chinese (Simplified)"); break;
+				case LANG_TRAD_CHINESE:	sprintf(options.value[5], "Chinese (Traditional)"); break;
+				case LANG_KOREAN:		sprintf(options.value[5], "Korean"); break;
+			}
+
+			snprintf(options.value[6], 30, "%s", CESettings.videoFolder);
+			snprintf(options.value[7], 30, "%s", CESettings.musicFolder);
+
+			switch(CESettings.exitAction)
+			{
+				case EXIT_AUTO:		sprintf(options.value[8], "Auto"); break;
+				case EXIT_WIIMENU:	sprintf(options.value[8], "Return to Wii Menu"); break;
+				case EXIT_POWEROFF:	sprintf(options.value[8], "Power Off Wii"); break;
+				case EXIT_LOADER:	sprintf(options.value[8], "Return to Loader"); break;
+			}
+
+			sprintf(options.value[9], "%s", CESettings.rumble ? "On" : "Off");
+
+			optionBrowser.TriggerUpdate();
+		}
+
+		if(backBtn.GetState() == STATE_CLICKED)
+		{
+			currentMenu = MENU_SETTINGS;
+		}
+	}
+	HaltGui();
+	mainWindow->Remove(&optionBrowser);
+	mainWindow->Remove(&w);
+	mainWindow->Remove(&titleTxt);
+}
+
+static void MenuSettingsCache()
+{
+	int ret;
+	int i = 0;
+	bool firstRun = true;
+	OptionList options;
+
+	sprintf(options.name[i++], "Size");
+	sprintf(options.name[i++], "Prefill");
+	sprintf(options.name[i++], "Refill");
+
+	options.length = i;
+
+	GuiText titleTxt("Settings - Cache", 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
+	GuiImage backBtnImg(&btnOutline);
+	GuiImage backBtnImgOver(&btnOutlineOver);
+	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	backBtn.SetPosition(30, -35);
+	backBtn.SetLabel(&backBtnTxt);
+	backBtn.SetImage(&backBtnImg);
+	backBtn.SetImageOver(&backBtnImgOver);
+	backBtn.SetTrigger(&trigA);
+	backBtn.SetEffectGrow();
+
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&backBtn);
+	mainWindow->Append(&optionBrowser);
+	mainWindow->Append(&w);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	while(currentMenu == MENU_SETTINGS_CACHE)
+	{
+		usleep(THREAD_SLEEP);
+
+		ret = optionBrowser.GetClickedOption();
+
+		switch (ret)
 		{
 			case 0:
-				sprintf (options.value[1], "Original"); break;
+				CESettings.cacheSize += 2048;
+				if(CESettings.cacheSize > 16384)
+					CESettings.cacheSize = 0;
+				break;
+
 			case 1:
-				sprintf (options.value[1], "16:9"); break;
+				CESettings.cacheFillStart += 10;
+				if (CESettings.cacheFillStart > 100)
+					CESettings.cacheFillStart = 0;
+				break;
+
 			case 2:
-				sprintf (options.value[1], "4:3"); break;
-			case 3:
-				sprintf (options.value[1], "2.35:1"); break;
+				CESettings.cacheFillRestart += 10;
+				if (CESettings.cacheFillRestart > 100)
+					CESettings.cacheFillRestart = 0;
+				break;
 		}
+
+		if(ret >= 0 || firstRun)
+		{
+			firstRun = false;
+			sprintf (options.value[0], "%d", CESettings.cacheSize);
+			sprintf (options.value[1], "%d%%", CESettings.cacheFillStart);
+			sprintf (options.value[2], "%d%%", CESettings.cacheFillRestart);
+
+			optionBrowser.TriggerUpdate();
+		}
+
+		if(backBtn.GetState() == STATE_CLICKED)
+		{
+			currentMenu = MENU_SETTINGS;
+		}
+	}
+	HaltGui();
+	mainWindow->Remove(&optionBrowser);
+	mainWindow->Remove(&w);
+	mainWindow->Remove(&titleTxt);
+}
+
+static void MenuSettingsNetwork()
+{
+	currentMenu = MENU_SETTINGS;
+}
+
+
+static void ScreenZoomWindowUpdate(void * ptr, float amount)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		CESettings.videoZoom += amount;
+
+		char zoom[10];
+		sprintf(zoom, "%.2f%%", CESettings.videoZoom*100);
+		settingText->SetText(zoom);
+		b->ResetState();
+	}
+}
+
+static void ScreenZoomWindowLeftClick(void * ptr) { ScreenZoomWindowUpdate(ptr, -0.01); }
+static void ScreenZoomWindowRightClick(void * ptr) { ScreenZoomWindowUpdate(ptr, +0.01); }
+
+static void ScreenZoomWindow()
+{
+	GuiWindow * w = new GuiWindow(250,250);
+	w->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiTrigger trigLeft;
+	trigLeft.SetButtonOnlyInFocusTrigger(-1, WPAD_BUTTON_LEFT | WPAD_CLASSIC_BUTTON_LEFT, PAD_BUTTON_LEFT);
+
+	GuiTrigger trigRight;
+	trigRight.SetButtonOnlyInFocusTrigger(-1, WPAD_BUTTON_RIGHT | WPAD_CLASSIC_BUTTON_RIGHT, PAD_BUTTON_RIGHT);
+
+	GuiImageData arrowLeft(button_arrow_left_png);
+	GuiImage arrowLeftImg(&arrowLeft);
+	GuiImageData arrowLeftOver(button_arrow_left_over_png);
+	GuiImage arrowLeftOverImg(&arrowLeftOver);
+	GuiButton arrowLeftBtn(arrowLeft.GetWidth(), arrowLeft.GetHeight());
+	arrowLeftBtn.SetImage(&arrowLeftImg);
+	arrowLeftBtn.SetImageOver(&arrowLeftOverImg);
+	arrowLeftBtn.SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
+	arrowLeftBtn.SetTrigger(0, &trigA);
+	arrowLeftBtn.SetTrigger(1, &trigLeft);
+	arrowLeftBtn.SetSelectable(false);
+	arrowLeftBtn.SetUpdateCallback(ScreenZoomWindowLeftClick);
+
+	GuiImageData arrowRight(button_arrow_right_png);
+	GuiImage arrowRightImg(&arrowRight);
+	GuiImageData arrowRightOver(button_arrow_right_over_png);
+	GuiImage arrowRightOverImg(&arrowRightOver);
+	GuiButton arrowRightBtn(arrowRight.GetWidth(), arrowRight.GetHeight());
+	arrowRightBtn.SetImage(&arrowRightImg);
+	arrowRightBtn.SetImageOver(&arrowRightOverImg);
+	arrowRightBtn.SetAlignment(ALIGN_RIGHT, ALIGN_MIDDLE);
+	arrowRightBtn.SetTrigger(0, &trigA);
+	arrowRightBtn.SetTrigger(1, &trigRight);
+	arrowRightBtn.SetSelectable(false);
+	arrowRightBtn.SetUpdateCallback(ScreenZoomWindowRightClick);
+
+	settingText = new GuiText(NULL, 22, (GXColor){0, 0, 0, 255});
+	char zoom[10];
+	sprintf(zoom, "%.2f%%", CESettings.videoZoom*100);
+	settingText->SetText(zoom);
+
+	float currentZoom = CESettings.videoZoom;
+
+	w->Append(&arrowLeftBtn);
+	w->Append(&arrowRightBtn);
+	w->Append(settingText);
+
+	if(!SettingWindow("Screen Zoom",w))
+		CESettings.videoZoom = currentZoom; // undo changes
+
+	delete(w);
+	delete(settingText);
+}
+
+static void ScreenPositionWindowUpdate(void * ptr, int x, int y)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		CESettings.videoXshift += x;
+		CESettings.videoYshift += y;
+
+		char shift[10];
+		sprintf(shift, "%i, %i", CESettings.videoXshift, CESettings.videoYshift);
+		settingText->SetText(shift);
+		b->ResetState();
+	}
+}
+
+static void ScreenPositionWindowLeftClick(void * ptr) { ScreenPositionWindowUpdate(ptr, -1, 0); }
+static void ScreenPositionWindowRightClick(void * ptr) { ScreenPositionWindowUpdate(ptr, +1, 0); }
+static void ScreenPositionWindowUpClick(void * ptr) { ScreenPositionWindowUpdate(ptr, 0, -1); }
+static void ScreenPositionWindowDownClick(void * ptr) { ScreenPositionWindowUpdate(ptr, 0, +1); }
+
+static void ScreenPositionWindow()
+{
+	GuiWindow * w = new GuiWindow(150,150);
+	w->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	w->SetPosition(0, -10);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiTrigger trigLeft;
+	trigLeft.SetButtonOnlyInFocusTrigger(-1, WPAD_BUTTON_LEFT | WPAD_CLASSIC_BUTTON_LEFT, PAD_BUTTON_LEFT);
+
+	GuiTrigger trigRight;
+	trigRight.SetButtonOnlyInFocusTrigger(-1, WPAD_BUTTON_RIGHT | WPAD_CLASSIC_BUTTON_RIGHT, PAD_BUTTON_RIGHT);
+
+	GuiTrigger trigUp;
+	trigUp.SetButtonOnlyInFocusTrigger(-1, WPAD_BUTTON_UP | WPAD_CLASSIC_BUTTON_UP, PAD_BUTTON_UP);
+
+	GuiTrigger trigDown;
+	trigDown.SetButtonOnlyInFocusTrigger(-1, WPAD_BUTTON_DOWN | WPAD_CLASSIC_BUTTON_DOWN, PAD_BUTTON_DOWN);
+
+	GuiImageData arrowLeft(button_arrow_left_png);
+	GuiImage arrowLeftImg(&arrowLeft);
+	GuiImageData arrowLeftOver(button_arrow_left_over_png);
+	GuiImage arrowLeftOverImg(&arrowLeftOver);
+	GuiButton arrowLeftBtn(arrowLeft.GetWidth(), arrowLeft.GetHeight());
+	arrowLeftBtn.SetImage(&arrowLeftImg);
+	arrowLeftBtn.SetImageOver(&arrowLeftOverImg);
+	arrowLeftBtn.SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
+	arrowLeftBtn.SetTrigger(0, &trigA);
+	arrowLeftBtn.SetTrigger(1, &trigLeft);
+	arrowLeftBtn.SetSelectable(false);
+	arrowLeftBtn.SetUpdateCallback(ScreenPositionWindowLeftClick);
+
+	GuiImageData arrowRight(button_arrow_right_png);
+	GuiImage arrowRightImg(&arrowRight);
+	GuiImageData arrowRightOver(button_arrow_right_over_png);
+	GuiImage arrowRightOverImg(&arrowRightOver);
+	GuiButton arrowRightBtn(arrowRight.GetWidth(), arrowRight.GetHeight());
+	arrowRightBtn.SetImage(&arrowRightImg);
+	arrowRightBtn.SetImageOver(&arrowRightOverImg);
+	arrowRightBtn.SetAlignment(ALIGN_RIGHT, ALIGN_MIDDLE);
+	arrowRightBtn.SetTrigger(0, &trigA);
+	arrowRightBtn.SetTrigger(1, &trigRight);
+	arrowRightBtn.SetSelectable(false);
+	arrowRightBtn.SetUpdateCallback(ScreenPositionWindowRightClick);
+
+	GuiImageData arrowUp(button_arrow_up_png);
+	GuiImage arrowUpImg(&arrowUp);
+	GuiImageData arrowUpOver(button_arrow_up_over_png);
+	GuiImage arrowUpOverImg(&arrowUpOver);
+	GuiButton arrowUpBtn(arrowUp.GetWidth(), arrowUp.GetHeight());
+	arrowUpBtn.SetImage(&arrowUpImg);
+	arrowUpBtn.SetImageOver(&arrowUpOverImg);
+	arrowUpBtn.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
+	arrowUpBtn.SetTrigger(0, &trigA);
+	arrowUpBtn.SetTrigger(1, &trigUp);
+	arrowUpBtn.SetSelectable(false);
+	arrowUpBtn.SetUpdateCallback(ScreenPositionWindowUpClick);
+
+	GuiImageData arrowDown(button_arrow_down_png);
+	GuiImage arrowDownImg(&arrowDown);
+	GuiImageData arrowDownOver(button_arrow_down_over_png);
+	GuiImage arrowDownOverImg(&arrowDownOver);
+	GuiButton arrowDownBtn(arrowDown.GetWidth(), arrowDown.GetHeight());
+	arrowDownBtn.SetImage(&arrowDownImg);
+	arrowDownBtn.SetImageOver(&arrowDownOverImg);
+	arrowDownBtn.SetAlignment(ALIGN_CENTRE, ALIGN_BOTTOM);
+	arrowDownBtn.SetTrigger(0, &trigA);
+	arrowDownBtn.SetTrigger(1, &trigDown);
+	arrowDownBtn.SetSelectable(false);
+	arrowDownBtn.SetUpdateCallback(ScreenPositionWindowDownClick);
+
+	GuiImageData screenPosition(screen_position_png);
+	GuiImage screenPositionImg(&screenPosition);
+	screenPositionImg.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+
+	settingText = new GuiText(NULL, 22, (GXColor){0, 0, 0, 255});
+	char shift[10];
+	sprintf(shift, "%i, %i", CESettings.videoXshift, CESettings.videoYshift);
+	settingText->SetText(shift);
+
+	int currentX = CESettings.videoXshift;
+	int currentY = CESettings.videoYshift;
+
+	w->Append(&arrowLeftBtn);
+	w->Append(&arrowRightBtn);
+	w->Append(&arrowUpBtn);
+	w->Append(&arrowDownBtn);
+	w->Append(&screenPositionImg);
+	w->Append(settingText);
+
+	if(!SettingWindow("Screen Position",w))
+	{
+		CESettings.videoXshift = currentX; // undo changes
+		CESettings.videoYshift = currentY;
+	}
+
+	delete(w);
+	delete(settingText);
+}
+
+static void MenuSettingsVideo()
+{
+	int ret;
+	int i = 0;
+	bool firstRun = true;
+	OptionList options;
+
+	sprintf(options.name[i++], "Frame Dropping");
+	sprintf(options.name[i++], "Aspect Ratio");
+	sprintf(options.name[i++], "Zoom");
+	sprintf(options.name[i++], "Position");
+
+	options.length = i;
+
+	GuiText titleTxt("Settings - Video", 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
+	GuiImage backBtnImg(&btnOutline);
+	GuiImage backBtnImgOver(&btnOutlineOver);
+	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	backBtn.SetPosition(30, -35);
+	backBtn.SetLabel(&backBtnTxt);
+	backBtn.SetImage(&backBtnImg);
+	backBtn.SetImageOver(&backBtnImgOver);
+	backBtn.SetTrigger(&trigA);
+	backBtn.SetEffectGrow();
+
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&backBtn);
+	mainWindow->Append(&optionBrowser);
+	mainWindow->Append(&w);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	while(currentMenu == MENU_SETTINGS_VIDEO)
+	{
+		usleep(THREAD_SLEEP);
 
 		ret = optionBrowser.GetClickedOption();
 
@@ -847,10 +1369,50 @@ static void MenuOptionsVideo()
 				if (CESettings.aspectRatio > 3)
 					CESettings.aspectRatio = 0;
 				break;
+
+			case 2:
+				ScreenZoomWindow();
+				break;
+
+			case 3:
+				ScreenPositionWindow();
+				break;
 		}
+
+		if(ret >= 0 || firstRun)
+		{
+			firstRun = false;
+			switch(CESettings.frameDropping)
+			{
+				case FRAMEDROPPING_AUTO:
+					sprintf (options.value[0], "Auto"); break;
+				case FRAMEDROPPING_ALWAYS:
+					sprintf (options.value[0], "Always"); break;
+				case FRAMEDROPPING_DISABLED:
+					sprintf (options.value[0], "Disabled"); break;
+			}
+
+			switch(CESettings.aspectRatio)
+			{
+				case ASPECT_AUTO:
+					sprintf (options.value[1], "Auto"); break;
+				case ASPECT_16_9:
+					sprintf (options.value[1], "16:9"); break;
+				case ASPECT_4_3:
+					sprintf (options.value[1], "4:3"); break;
+				case ASPECT_235_1:
+					sprintf (options.value[1], "2.35:1"); break;
+			}
+
+			sprintf (options.value[2], "%.2f%%", CESettings.videoZoom*100);
+			sprintf (options.value[3], "%d, %d", CESettings.videoXshift, CESettings.videoYshift);
+
+			optionBrowser.TriggerUpdate();
+		}
+
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			currentMenu = MENU_OPTIONS;
+			currentMenu = MENU_SETTINGS;
 		}
 	}
 	HaltGui();
@@ -859,42 +1421,231 @@ static void MenuOptionsVideo()
 	mainWindow->Remove(&titleTxt);
 }
 
-static void MenuOptionsAudio()
+static void MenuSettingsAudio()
 {
-	currentMenu = MENU_OPTIONS;
+	int ret;
+	int i = 0;
+	bool firstRun = true;
+	OptionList options;
+
+	sprintf(options.name[i++], "Volume");
+	sprintf(options.name[i++], "Delay (ms)");
+
+	options.length = i;
+
+	GuiText titleTxt("Settings - Audio", 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
+	GuiImage backBtnImg(&btnOutline);
+	GuiImage backBtnImgOver(&btnOutlineOver);
+	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	backBtn.SetPosition(30, -35);
+	backBtn.SetLabel(&backBtnTxt);
+	backBtn.SetImage(&backBtnImg);
+	backBtn.SetImageOver(&backBtnImgOver);
+	backBtn.SetTrigger(&trigA);
+	backBtn.SetEffectGrow();
+
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&backBtn);
+	mainWindow->Append(&optionBrowser);
+	mainWindow->Append(&w);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	while(currentMenu == MENU_SETTINGS_AUDIO)
+	{
+		usleep(THREAD_SLEEP);
+
+		ret = optionBrowser.GetClickedOption();
+
+		switch (ret)
+		{
+			case 0:
+				CESettings.volume += 10;
+				if(CESettings.volume > 100)
+					CESettings.volume = 0;
+				break;
+
+			case 1:
+				CESettings.audioDelay += 100;
+				if (CESettings.audioDelay > 1000)
+					CESettings.audioDelay = 0;
+				break;
+		}
+
+		if(ret >= 0 || firstRun)
+		{
+			firstRun = false;
+			sprintf (options.value[0], "%d%%", CESettings.volume);
+			sprintf (options.value[1], "%d ms", CESettings.audioDelay);
+
+			optionBrowser.TriggerUpdate();
+		}
+
+		if(backBtn.GetState() == STATE_CLICKED)
+		{
+			currentMenu = MENU_SETTINGS;
+		}
+	}
+	HaltGui();
+	mainWindow->Remove(&optionBrowser);
+	mainWindow->Remove(&w);
+	mainWindow->Remove(&titleTxt);
 }
 
-static void MenuOptionsSubtitles()
+static void MenuSettingsSubtitles()
 {
-	currentMenu = MENU_OPTIONS;
-}
+	int ret;
+	int i = 0;
+	bool firstRun = true;
+	OptionList options;
 
-static void MenuOptionsMenu()
-{
-	currentMenu = MENU_OPTIONS;
+	sprintf(options.name[i++], "Delay");
+	sprintf(options.name[i++], "Position");
+	sprintf(options.name[i++], "Size");
+	sprintf(options.name[i++], "Transparency");
+	sprintf(options.name[i++], "Color");
+
+	options.length = i;
+
+	GuiText titleTxt("Settings - Subtitles", 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
+	GuiImage backBtnImg(&btnOutline);
+	GuiImage backBtnImgOver(&btnOutlineOver);
+	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	backBtn.SetPosition(30, -35);
+	backBtn.SetLabel(&backBtnTxt);
+	backBtn.SetImage(&backBtnImg);
+	backBtn.SetImageOver(&backBtnImgOver);
+	backBtn.SetTrigger(&trigA);
+	backBtn.SetEffectGrow();
+
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&backBtn);
+	mainWindow->Append(&optionBrowser);
+	mainWindow->Append(&w);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	while(currentMenu == MENU_SETTINGS_SUBTITLES)
+	{
+		usleep(THREAD_SLEEP);
+
+		ret = optionBrowser.GetClickedOption();
+
+		switch (ret)
+		{
+			case 0:
+				CESettings.subtitleDelay += 100;
+				if (CESettings.subtitleDelay > 1000)
+					CESettings.subtitleDelay = 0;
+				break;
+
+			case 1:
+				CESettings.subtitlePosition += 10;
+				if (CESettings.subtitlePosition > 100)
+					CESettings.subtitlePosition = 100;
+				break;
+
+			case 2:
+				CESettings.subtitleSize += 4;
+				if (CESettings.subtitleSize > 80)
+					CESettings.subtitleSize = 10;
+				break;
+
+			case 3:
+				CESettings.subtitleAlpha += 20;
+				if(CESettings.subtitleAlpha > 255)
+					CESettings.subtitleAlpha = 0;
+				break;
+
+			case 4:
+				CESettings.subtitleColor++;
+				if(CESettings.subtitleColor > FONTCOLOR_GRAY)
+					CESettings.subtitleColor = 0;
+				break;
+		}
+
+		if(ret >= 0 || firstRun)
+		{
+			firstRun = false;
+			sprintf(options.value[0], "%d ms", CESettings.subtitleDelay);
+			sprintf(options.value[1], "%d", CESettings.subtitlePosition);
+			sprintf(options.value[2], "%d", CESettings.subtitleSize);
+			sprintf(options.value[3], "%.2f%%", CESettings.subtitleAlpha/255.0*100);
+			sprintf(options.value[4], "%d", CESettings.subtitleColor);
+
+			optionBrowser.TriggerUpdate();
+		}
+
+		if(backBtn.GetState() == STATE_CLICKED)
+		{
+			currentMenu = MENU_SETTINGS;
+		}
+	}
+	HaltGui();
+	mainWindow->Remove(&optionBrowser);
+	mainWindow->Remove(&w);
+	mainWindow->Remove(&titleTxt);
 }
 
 /****************************************************************************
- * MenuOptions
+ * MenuSettings
  ***************************************************************************/
-static void MenuOptions()
+static void MenuSettings()
 {
 	int ret;
 	int i = 0;
 	int selected = -1;
 
 	MenuItemList items;
+	sprintf(items.name[i], "General");
+	items.img[i] = NULL; i++;
+	sprintf(items.name[i], "Cache");
+	items.img[i] = NULL; i++;
+	sprintf(items.name[i], "Network");
+	items.img[i] = NULL; i++;
 	sprintf(items.name[i], "Video");
 	items.img[i] = NULL; i++;
 	sprintf(items.name[i], "Audio");
 	items.img[i] = NULL; i++;
 	sprintf(items.name[i], "Subtitles");
 	items.img[i] = NULL; i++;
-	sprintf(items.name[i], "Menu");
-	items.img[i] = NULL; i++;
 	items.length = i;
 
-	GuiText titleTxt("Options", 26, (GXColor){255, 255, 255, 255});
+	GuiText titleTxt("Settings", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
 	titleTxt.SetPosition(30, 80);
 
@@ -925,7 +1676,7 @@ static void MenuOptions()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_OPTIONS)
+	while(currentMenu == MENU_SETTINGS)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -939,19 +1690,27 @@ static void MenuOptions()
 		switch (ret)
 		{
 			case 0:
-				currentMenu = MENU_OPTIONS_VIDEO;
+				currentMenu = MENU_SETTINGS_GENERAL;
 				break;
 
 			case 1:
-				currentMenu = MENU_OPTIONS_AUDIO;
+				currentMenu = MENU_SETTINGS_CACHE;
 				break;
 
 			case 2:
-				currentMenu = MENU_OPTIONS_SUBTITLES;
+				currentMenu = MENU_SETTINGS_NETWORK;
 				break;
 
 			case 3:
-				currentMenu = MENU_OPTIONS_MENU;
+				currentMenu = MENU_SETTINGS_VIDEO;
+				break;
+
+			case 4:
+				currentMenu = MENU_SETTINGS_AUDIO;
+				break;
+
+			case 5:
+				currentMenu = MENU_SETTINGS_SUBTITLES;
 				break;
 		}
 
@@ -1044,7 +1803,7 @@ void WiiMenu()
 	configBtn->SetImage(&configBtnImg);
 	configBtn->SetTrigger(&trigA);
 	configBtn->SetEffectGrow();
-	configBtn->SetUpdateCallback(ChangeMenuOptions);
+	configBtn->SetUpdateCallback(ChangeMenuSettings);
 
 	mainWindow->Append(videoBtn);
 	mainWindow->Append(musicBtn);
@@ -1091,20 +1850,26 @@ void WiiMenu()
 			case MENU_ONLINEMEDIA:
 				MenuOnlineMedia();
 				break;
-			case MENU_OPTIONS:
-				MenuOptions();
+			case MENU_SETTINGS:
+				MenuSettings();
 				break;
-			case MENU_OPTIONS_VIDEO:
-				MenuOptionsVideo();
+			case MENU_SETTINGS_GENERAL:
+				MenuSettingsGeneral();
 				break;
-			case MENU_OPTIONS_AUDIO:
-				MenuOptionsAudio();
+			case MENU_SETTINGS_CACHE:
+				MenuSettingsCache();
 				break;
-			case MENU_OPTIONS_SUBTITLES:
-				MenuOptionsSubtitles();
+			case MENU_SETTINGS_NETWORK:
+				MenuSettingsNetwork();
 				break;
-			case MENU_OPTIONS_MENU:
-				MenuOptionsMenu();
+			case MENU_SETTINGS_VIDEO:
+				MenuSettingsVideo();
+				break;
+			case MENU_SETTINGS_AUDIO:
+				MenuSettingsAudio();
+				break;
+			case MENU_SETTINGS_SUBTITLES:
+				MenuSettingsSubtitles();
 				break;
 			default: // unrecognized menu
 				MenuBrowse();

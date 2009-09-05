@@ -167,7 +167,7 @@ prepareSettingsData ()
 	createXMLSection("Video", "Video Settings");
 	createXMLSetting("frameDropping", "Frame dropping compensation", toStr(CESettings.frameDropping));
 	createXMLSetting("aspectRatio", "Aspect ratio", toStr(CESettings.aspectRatio));
-	createXMLSetting("videoZoom", "Video zoom", toStr(CESettings.videoZoom));
+	createXMLSetting("videoZoom", "Video zoom", FtoStr(CESettings.videoZoom));
 	createXMLSetting("videoXshift", "Video X offset", toStr(CESettings.videoXshift));
 	createXMLSetting("videoYshift", "Video Y offset", toStr(CESettings.videoYshift));
 
