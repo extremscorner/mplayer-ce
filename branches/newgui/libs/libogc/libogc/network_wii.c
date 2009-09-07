@@ -55,7 +55,6 @@ distribution.
 #include "ogcsys.h"
 #include "lwp_heap.h"
 
-//#define NET_HEAP_SIZE				8192
 #define NET_HEAP_SIZE				64*1024
 
 #define IOS_O_NONBLOCK				0x04			//(O_NONBLOCK >> 16) - it's in octal representation, so this shift leads to 0 and hence nonblocking sockets didn't work. changed it to the right value.
@@ -137,10 +136,10 @@ struct setsockopt_params {
 // I sense a pattern here...
 static u8 _net_error_code_map[] = {
 	0, // 0
- 	E2BIG, 
- 	EACCES, 
+ 	E2BIG,
+ 	EACCES,
  	EADDRINUSE,
- 	EADDRNOTAVAIL, 
+ 	EADDRNOTAVAIL,
  	EAFNOSUPPORT, // 5
 	EAGAIN,
 	EALREADY,
@@ -216,7 +215,7 @@ static u8 _net_error_code_map[] = {
 };
 
 static s32 net_ip_top_fd = -1;
-static u8 __net_heap_initied = 0;
+static u8 __net_heap_inited = 0;
 static s32 __net_hid=-1;
 static heap_cntrl __net_heap;
 
@@ -224,27 +223,30 @@ static char __manage_fs[] ATTRIBUTE_ALIGN(32) = "/dev/net/ncd/manage";
 static char __iptop_fs[] ATTRIBUTE_ALIGN(32) = "/dev/net/ip/top";
 static char __kd_fs[] ATTRIBUTE_ALIGN(32) = "/dev/net/kd/request";
 
-
 #define ROUNDDOWN32(v)				(((u32)(v)-0x1f)&~0x1f)
-static s32 NetCreateHeap() {
+
+static s32 NetCreateHeap()
+{
 	u32 level;
-	void *net_heap_ptr;	
-	
+	void *net_heap_ptr;
+
 	_CPU_ISR_Disable(level);
 
-	if(__net_heap_initied) {
+	if(__net_heap_inited)
+	{
 		_CPU_ISR_Restore(level);
 		return IPC_OK;
 	}
-	
+
 	net_heap_ptr = (void *)ROUNDDOWN32(((u32)SYS_GetArena2Hi() - NET_HEAP_SIZE));
-	if((u32)net_heap_ptr < (u32)SYS_GetArena2Lo()) {
+	if((u32)net_heap_ptr < (u32)SYS_GetArena2Lo())
+	{
 		_CPU_ISR_Restore(level);
 		return IPC_ENOMEM;
 	}
 	SYS_SetArena2Hi(net_heap_ptr);
 	__lwp_heap_init(&__net_heap, net_heap_ptr, NET_HEAP_SIZE, 32);
-	__net_heap_initied=1;
+	__net_heap_inited=1;
 	_CPU_ISR_Restore(level);
 	return IPC_OK;
 }
@@ -258,7 +260,6 @@ static BOOL net_free(void *ptr)
 {
 	return __lwp_heap_free(&__net_heap, ptr);
 }
-
 
 static s32 _net_convert_error(s32 ios_retval)
 {
@@ -337,7 +338,7 @@ s32 net_init(void)
 
 	if (net_ip_top_fd >= 0) return 0;
 
-	ret=NetCreateHeap(); 
+	ret=NetCreateHeap();
 	if (ret != IPC_OK) return ret;
 	if (__net_hid == -1) __net_hid = iosCreateHeap(1024); //only needed for ios calls
 	if (__net_hid < 0) return __net_hid;
@@ -389,6 +390,10 @@ error:
 	return ret;
 }
 
+void net_deinit() {
+	if (net_ip_top_fd >= 0) IOS_Close(net_ip_top_fd);
+	net_ip_top_fd = -1;
+}
 
 /* Returned value is a static buffer -- this function is not threadsafe! */
 struct hostent * net_gethostbyname(const char *addrString)
@@ -812,9 +817,10 @@ s32 if_config(char *local_ip, char *netmask, char *gateway,boolean use_dhcp)
 	hostip.s_addr = net_gethostip();
 	if ( local_ip!=NULL && hostip.s_addr ) {
 		strcpy(local_ip, inet_ntoa(hostip));
+		return 0;
 	}
 
-	return 0;
+	return -1;
 }
 
 s32 if_configex(struct in_addr *local_ip, struct in_addr *netmask, struct in_addr *gateway,boolean use_dhcp)
@@ -828,9 +834,13 @@ s32 if_configex(struct in_addr *local_ip, struct in_addr *netmask, struct in_add
 	if(ret<0) return ret;
 
 	hostip.s_addr = net_gethostip();
-	if ( local_ip!=NULL && hostip.s_addr ) *local_ip = hostip;
+	if ( local_ip!=NULL && hostip.s_addr )
+	{
+		*local_ip = hostip;
+		return 0;
+	}
 
-	return 0;
+	return -1;
 }
 
 #endif /* defined(HW_RVL) */

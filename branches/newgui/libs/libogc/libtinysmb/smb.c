@@ -851,13 +851,13 @@ static s32 do_netconnect(SMBHANDLE *handle)
 	while(1)
 	{
 		ret = net_connect(sock,(struct sockaddr*)&handle->server_addr,sizeof(handle->server_addr));
-		if(ret==-127) break;
+		if(ret==-EISCONN) break;
 		t2=ticks_to_millisecs(gettime());
-		usleep(1000);
-		if(t2-t1 > 3000) break; // 6 secs to try to connect to handle->server_addr
+		usleep(3000);
+		if(t2-t1 > 2000) break; // 2 secs to try to connect to handle->server_addr (usually not more than 90ms)
 	} 
 
-	if(ret!=-127)
+	if(ret!=-EISCONN)
 	{
 		net_close(sock);
 		return -1;
@@ -1144,8 +1144,10 @@ s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn)
 		if(SMB_PathInfo("\\", &dentry, smbhndl)==SMB_SUCCESS) return SMB_SUCCESS; // no need to reconnect
 		handle->conn_valid = FALSE; // else connection is invalid
 	}
+	
 	if(!handle->conn_valid)
 	{
+	
 		// shut down connection
 		if(handle->sck_server!=INVALID_SOCKET)
 		{
@@ -1156,29 +1158,36 @@ s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn)
 		// reconnect
 		if(handle->server_addr.sin_port > 0)
 		{
+		
 			ret = do_netconnect(handle);
 			if(ret==0 && handle->server_addr.sin_port == htons(139))
 				ret = SMB_RequestNBTSession(handle);
 			if(ret==0)
 				ret = do_smbconnect(handle);
+				
 		}
 		else // initial connection
 		{
+		
 			handle->server_addr.sin_port = htons(445);
 			ret = do_netconnect(handle);
 			if(ret==0) ret = do_smbconnect(handle);
 
 			if(ret != 0)
 			{
+			
 				// try port 139
 				handle->server_addr.sin_port = htons(139);
 				ret = do_netconnect(handle);
 				if(ret==0) ret = SMB_RequestNBTSession(handle);
 				if(ret==0) ret = do_smbconnect(handle);
+				
 			}
 
 			if(ret != 0)
+			{
 				handle->server_addr.sin_port = 0;
+			}
 		}
 	}
 	return ret;

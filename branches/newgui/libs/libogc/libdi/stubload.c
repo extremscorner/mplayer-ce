@@ -18,13 +18,13 @@
 
 #include <ogc/lwp_threads.h>
 #include <ogc/machine/processor.h>
+#include <ipc.h>
 
 context_storage di_ctx;
 
 #define DVD_TITLEID 0x0001000844564458LL
 //#define DVD_TITLEID 0x1000148415858LL
 
-void __IPC_Reinitialize(void);
 extern void __exi_init();
 
 static vu16* const _viReg = (u16*)0xCC002000;

@@ -193,14 +193,12 @@ static inline u64 bswap64(u64 val)
 	return outv.ull;
 }
 
-// Basic I/O.
+// Basic I/O
 
 static inline u32 read32(u32 addr)
 {
 	u32 x;
-
 	asm volatile("lwz %0,0(%1) ; sync" : "=r"(x) : "b"(0xc0000000 | addr));
-
 	return x;
 }
 
@@ -217,9 +215,7 @@ static inline void mask32(u32 addr, u32 clear, u32 set)
 static inline u16 read16(u32 addr)
 {
 	u16 x;
-
 	asm volatile("lhz %0,0(%1) ; sync" : "=r"(x) : "b"(0xc0000000 | addr));
-
 	return x;
 }
 
@@ -231,9 +227,7 @@ static inline void write16(u32 addr, u16 x)
 static inline u8 read8(u32 addr)
 {
 	u8 x;
-
 	asm volatile("lbz %0,0(%1) ; sync" : "=r"(x) : "b"(0xc0000000 | addr));
-
 	return x;
 }
 
@@ -252,3 +246,4 @@ static inline void writef32(u32 addr, f32 x)
 #endif /* __cplusplus */
 
 #endif
+
