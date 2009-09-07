@@ -2,7 +2,7 @@
 #define __LWP_HEAP_H__
 
 #include <gctypes.h>
-#include <ogc/machine/asm.h>
+#include "machine/asm.h"
 
 #define HEAP_BLOCK_USED					1
 #define HEAP_BLOCK_FREE					0

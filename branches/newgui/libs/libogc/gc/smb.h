@@ -50,7 +50,6 @@
 #define SMB_BAD_KEYLEN			   -6
 #define SMB_BAD_DATALEN			   -7
 #define SMB_BAD_LOGINDATA		   -8
-#define SMB_NOT_FOUND			   -9
 
 /**
 * SMB File Open Function

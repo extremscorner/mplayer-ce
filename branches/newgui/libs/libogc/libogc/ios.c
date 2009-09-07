@@ -35,10 +35,10 @@ distribution.
 #include "processor.h"
 #include "cache.h"
 #include "ipc.h"
-#include "irq.h"
 #include "stm.h"
 #include "es.h"
 #include "ios.h"
+#include "irq.h"
 
 #define IOS_HEAP_SIZE 0x1000
 #define MAX_IOS_RETRIES 2000
@@ -116,10 +116,10 @@ s32 IOS_GetPreferredVersion()
 	u64 *titles;
 	u32 i;
 	u32 a,b;
-	
+
 	res = __IOS_InitHeap();
 	if(res<0) return res;
-	
+
 	res = ES_GetNumTitles(&count);
 	if(res < 0) {
 #ifdef DEBUG_IOS
@@ -143,7 +143,7 @@ s32 IOS_GetPreferredVersion()
 		iosFree(__ios_hid, titles);
 		return res;
 	}
-	
+
 	for(i=0; i<count; i++) {
 		a = titles[i]>>32;
 		b = titles[i]&0xFFFFFFFF;
@@ -204,27 +204,27 @@ s32 __IOS_LaunchNewIOS(int version)
 	s32 res, retries;
 	u64 titleID = 0x100000000LL;
 	raw_irq_handler_t irq_handler;
-	
+
 	STACK_ALIGN(tikview,views,4,32);
-#ifdef DEBUG_IOS	
+#ifdef DEBUG_IOS
 	s32 oldversion;
 #endif
 	s32 newversion;
-	
+
 	if(version < 3 || version > 0xFF) {
 		return IOS_EBADVERSION;
 	}
-	
+
 #ifdef DEBUG_IOS
 	oldversion = IOS_GetVersion();
 	if(oldversion>0) printf("Current IOS Version: IOS%d\n",oldversion);
 #endif
-	
+
 	titleID |= version;
 #ifdef DEBUG_IOS
 	printf("Launching IOS TitleID: %016llx\n",titleID);
 #endif
-	
+
 	res = ES_GetNumTicketViews(titleID, &numviews);
 	if(res < 0) {
 #ifdef DEBUG_IOS
@@ -243,45 +243,50 @@ s32 __IOS_LaunchNewIOS(int version)
 #endif
 		return res;
 	}
+
 	res = ES_LaunchTitleBackground(titleID, &views[0]);
 	if(res < 0) {
 #ifdef DEBUG_IOS
-		printf(" LaunchTitle failed: %d\n",res);
+		printf(" LaunchTitleBackground failed: %d\n",res);
 #endif
 		return res;
 	}
 		__ES_Reset();
 
-/*  Mask IPC IRQ while we're busy reloading */	
+	// Mask IPC IRQ while we're busy reloading
 	__MaskIrq(IRQ_PI_ACR);
 	irq_handler = IRQ_Free(IRQ_PI_ACR);
 
-/*  Wait for old IOS to change version number before reloading */	
-	for (retries = 0; retries < MAX_IOS_RETRIES; retries++) {
+	// Wait for old IOS to change version number before reloading
+	for (retries = 0; retries < MAX_IOS_RETRIES; retries++)
+	{
 		newversion = IOS_GetVersion();
 #ifdef DEBUG_IOS
 		printf(" IOS Version: IOS%d %d.%d\n",newversion,IOS_GetRevisionMajor(),IOS_GetRevisionMinor());
 #endif
 		if (newversion != version) udelay(1000);
 	}
-	
-	if(newversion != version) {
+
+	if(newversion != version)
+	{
 #ifdef DEBUG_IOS
 		printf(" Version mismatch!\n");
 #endif
 		return IOS_EMISMATCH;
 	}
-	
-/*  Wait for new IOS to signal IPC is ready */
-	for (retries = 0; retries < MAX_IPC_RETRIES; retries++) {
-		if (IPC_ReadReg(1) & 2) break;
+
+	// Wait for new IOS to signal IPC is ready
+	for (retries = 0; retries < MAX_IPC_RETRIES; retries++)
+	{
+		if(IPC_ReadReg(1) & 2) break;
 		udelay(1000);
 	}
+
 	IRQ_Request(IRQ_PI_ACR, irq_handler, NULL);
     __UnmaskIrq(IRQ_PI_ACR);
-    
-    __IPC_Reinitialize(); 
-    
+
+	__IPC_Reinitialize();
+
 	return version;
 }
 
@@ -289,7 +294,7 @@ s32 __attribute__((weak)) __IOS_LoadStartupIOS()
 {
 	int version;
 	int res;
-	
+
 	res = __ES_Init();
 	if(res < 0) return res;
 	version = IOS_GetPreferredVersion();

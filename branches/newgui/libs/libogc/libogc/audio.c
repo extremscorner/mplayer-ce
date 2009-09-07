@@ -270,25 +270,6 @@ u32 AUDIO_GetDMABytesLeft()
 {
 	return (_SHIFTL(_dspReg[29],5,15));
 }
-#include<stdio.h>
-void AUDIO_ClearDMA()
-{
-	//if(!AUDIO_GetDMAEnableFlag()) _dspReg[29] = 0x0;
-	u32 level;
-
-	_CPU_ISR_Disable(level);
-	unsigned x;
-	x=AUDIO_GetDMABytesLeft();
-	if(AUDIO_GetDMABytesLeft()>0)printf("quedan bytes en el dma\n");
-	printf("left1: %u\n",x);
-	_dspReg[29] = 0x0;
-	printf("left2: %d\n",(int)AUDIO_GetDMABytesLeft());
-	_dspReg[27] = (_dspReg[27]&~0x7fff)|(_SHIFTR(0,5,15));
-	_dspReg[29] = 0x0;
-	
-	_CPU_ISR_Restore(level);
-	
-}
 
 u32 AUDIO_GetDMAStartAddr()
 {

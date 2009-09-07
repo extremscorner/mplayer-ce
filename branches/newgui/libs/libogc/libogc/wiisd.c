@@ -513,8 +513,7 @@ bool sdio_Startup()
 		if(hId<0) return false;
 	}
  
- 	//if(__sd0_fd<0)
-		__sd0_fd = IOS_Open(_sd0_fs,1);
+	__sd0_fd = IOS_Open(_sd0_fs,1);
 
 	if(__sd0_fd<0) {
 		sdio_Deinitialize();

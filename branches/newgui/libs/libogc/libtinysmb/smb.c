@@ -78,8 +78,8 @@
 #define SMB_TREEC_ANDX				0x75
 
 
-#define NBT_KEEPALIVE_MSG		  0x85
-#define KEEPALIVE_SIZE        4
+#define NBT_KEEPALIVE_MSG			0x85
+#define KEEPALIVE_SIZE				4
 
 /**
  * SMBTrans2
@@ -855,7 +855,7 @@ static s32 do_netconnect(SMBHANDLE *handle)
 		t2=ticks_to_millisecs(gettime());
 		usleep(3000);
 		if(t2-t1 > 2000) break; // 2 secs to try to connect to handle->server_addr (usually not more than 90ms)
-	} 
+	}
 
 	if(ret!=-EISCONN)
 	{
@@ -1048,6 +1048,8 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 	struct hostent *hp;
 	struct in_addr val;
 
+	*smbhndl = SMB_HANDLE_NULL;
+
 	if(!user || !password || !share || !server ||
 		strlen(user) > 20 || strlen(password) > 14 ||
 		strlen(share) > 80 || strlen(server) > 80)
@@ -1062,7 +1064,6 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 		__smb_init();
 		_CPU_ISR_Restore(level);
 	}
-	*smbhndl = SMB_HANDLE_NULL;
 
 	handle = __smb_allocate_handle();
 	if(!handle) return SMB_ERROR;
@@ -1087,7 +1088,7 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 			memcpy((char *)&handle->server_addr.sin_addr.s_addr, hp->h_addr_list[0], hp->h_length);
 	}
 
-	*smbhndl =(SMBCONN)(LWP_OBJMASKTYPE(SMB_OBJTYPE_HANDLE)|LWP_OBJMASKID(handle->object.id));	
+	*smbhndl =(SMBCONN)(LWP_OBJMASKTYPE(SMB_OBJTYPE_HANDLE)|LWP_OBJMASKID(handle->object.id));
 
 	if(ret==0)
 	{
@@ -1099,12 +1100,10 @@ s32 SMB_Connect(SMBCONN *smbhndl, const char *user, const char *password, const 
 			// try port 139
 			handle->server_addr.sin_port = htons(139);
 			ret = do_netconnect(handle);
-
 			if(ret==0) ret = SMB_RequestNBTSession(handle);
 			if(ret==0) ret = do_smbconnect(handle);
 		}
 	}
-
 	if(ret!=0)
 	{
 		handle->server_addr.sin_port = 0;
@@ -1144,10 +1143,8 @@ s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn)
 		if(SMB_PathInfo("\\", &dentry, smbhndl)==SMB_SUCCESS) return SMB_SUCCESS; // no need to reconnect
 		handle->conn_valid = FALSE; // else connection is invalid
 	}
-	
 	if(!handle->conn_valid)
 	{
-	
 		// shut down connection
 		if(handle->sck_server!=INVALID_SOCKET)
 		{
@@ -1158,36 +1155,29 @@ s32 SMB_Reconnect(SMBCONN *_smbhndl, BOOL test_conn)
 		// reconnect
 		if(handle->server_addr.sin_port > 0)
 		{
-		
 			ret = do_netconnect(handle);
 			if(ret==0 && handle->server_addr.sin_port == htons(139))
 				ret = SMB_RequestNBTSession(handle);
 			if(ret==0)
 				ret = do_smbconnect(handle);
-				
 		}
 		else // initial connection
 		{
-		
 			handle->server_addr.sin_port = htons(445);
 			ret = do_netconnect(handle);
 			if(ret==0) ret = do_smbconnect(handle);
 
 			if(ret != 0)
 			{
-			
 				// try port 139
 				handle->server_addr.sin_port = htons(139);
 				ret = do_netconnect(handle);
 				if(ret==0) ret = SMB_RequestNBTSession(handle);
 				if(ret==0) ret = do_smbconnect(handle);
-				
 			}
 
 			if(ret != 0)
-			{
 				handle->server_addr.sin_port = 0;
-			}
 		}
 	}
 	return ret;
