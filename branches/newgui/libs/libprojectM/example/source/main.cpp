@@ -24,75 +24,24 @@
 
 #include <fat.h>
 
-#include <vorbis/codec.h>
-#include <vorbis/vorbisfile.h>
 #include <projectM.hpp>
+#include "oggplayer.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <string>
 
-#define SFX_BUFFER_SIZE         (8 * 1024)
-#define SFX_BUFFERS             2
-
-static lwp_t sfxThread;
-static u8 sfxBuffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32) = { { 0 } };
-static u8 sfxSize[SFX_BUFFERS] = { 0 };
-static u8 sfxWhichBuffer = 0;
-
-static OggVorbis_File vf;
-static char *audioFile = "sd:/audio/Karsten Koch - Leaving All Behind.ogg";
-static bool playing = true;
+#define AUDIO_FILE          "sd:/audio/Karsten Koch - Leaving All Behind.ogg"
+#define PRESET_DIRECTORY    "sd:/presets"
+#define PRESET_NAME         "Geiss - Cosmic Dust 2.milk"
 
 static pm_config config;
 static projectM *pm = NULL;
-static char *presetDirectory = "sd:/presets";
-static char *presetName = "Geiss - Cosmic Dust 2.milk";
 
-void sfxSwitchBuffers()
+void pcmDecode(s16 *pcm, u32 samples)
 {
-    AUDIO_StopDMA();
-    DCFlushRange(sfxBuffer[sfxWhichBuffer], sfxSize[sfxWhichBuffer]);
-    AUDIO_InitDMA((u32) sfxBuffer[sfxWhichBuffer], sfxSize[sfxWhichBuffer]);
-    AUDIO_StartDMA();
-    
-    sfxSize[sfxWhichBuffer] = 0;
-    sfxWhichBuffer ^= 1;
-}
-
-void *sfxAudioThread(void *argv)
-{
-    int bitstream = 0;
-    int samples = 0;
-    
-    // Open our audio file
-    if (ov_fopen(audioFile, &vf) == 0)
-        playing = true;
-    
-    // Audio loop
-    while (playing) {
-        
-        //...
-        samples = ov_read(&vf, (char *) sfxBuffer[sfxWhichBuffer], SFX_BUFFER_SIZE, 1, 1, 0, &bitstream);
-        if (samples == 0) {
-            playing = false;
-        } else {
-            sfxSize[sfxWhichBuffer] = samples;
-        }
-        
-        // Queue our audio input for beat analysis
-        //pm->pcm()->addPCM8(sfxBuffer);
-
-        //...
-        if(samples) {
-            sfxSwitchBuffers();
-        }
-        
-    };
-    
-    // Close our audio file
-    ov_clear(&vf);
-    
-    return NULL;
+    // Queue the PCM data for beat analysis
+    pm->pcm()->addPCM16Data(pcm, samples);
 }
 
 int main(int argc, char **argv)
@@ -102,8 +51,6 @@ int main(int argc, char **argv)
     
     // Initialise the audio sytem
     AUDIO_Init(NULL);
-    AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
-    AUDIO_RegisterDMACallback(sfxSwitchBuffers);
     
     // Initialise the attached controllers
     WPAD_Init();
@@ -124,20 +71,20 @@ int main(int argc, char **argv)
     config.aspectCorrection = true;             // Custom shape aspect correction
     config.shufflePresets = true;               // Preset shuffling
     config.pulseWiiLight = true;                // Pulse the wii disc slot light in time with the beat
-    config.pulseSource = PM_AC_BASS;            // The audio characteristic to use for pulsing
-    config.presetDirectory = presetDirectory;   // Location of preset directory
-    config.initialPresetName = presetName;      // Initial preset name
+    config.pulseSource = PM_AC_VOLUME;            // The audio characteristic to use for pulsing
+    config.presetDirectory = PRESET_DIRECTORY;  // Location of preset directory
+    config.initialPresetName = PRESET_NAME;     // Initial preset name
     
     // Initialise projectM
     pm = new projectM(config);
     if (!pm)
         exit(0);
-
-    //...
-    //LWP_CreateThread(&sfxThread, sfxAudioThread, NULL, NULL, 0, LWP_PRIO_HIGHEST);
     
-    // Video loop
-    while (pm) {
+    // Play our audio file
+    if (!oggPlay(AUDIO_FILE, pcmDecode))
+        exit(0);
+        
+    while (1) {
         
         // Read the latest controller states
         WPAD_ScanPads();
@@ -147,19 +94,23 @@ int main(int argc, char **argv)
         
         // Quit if 'HOME' was pressed
         if (pressed & WPAD_BUTTON_HOME)
-            break;
+            return false;
         
         // Toggle the wii disc slot light pulsing if '1' was pressed
         if ((pressed & WPAD_BUTTON_1))
             pm->settings().pulseWiiLight = !pm->settings().pulseWiiLight;
         
+        // Update the audio buffers
+        if (!oggUpdate())
+            break;
+        
         // Render the next frame in the visualisation/preset
         pm->renderFrame();
         
     }
-
-    //...
-    playing = false;
+    
+    // Stop our audio file
+    oggStop();
     
     // Destroy projectM
     if (pm)

@@ -194,20 +194,18 @@ void Renderer::Pass2(const Pipeline &pipeline, const PipelineContext &pipelineCo
 void Renderer::RenderFrame(const Pipeline &pipeline, const PipelineContext &pipelineContext)
 {
 #if defined(__wii__)
+    switch (settings.pulseSource) {
+        case PM_AC_NONE: wiiLightSetLevel(0); break;
+        case PM_AC_BASS: wiiLightSetLevel(beatDetect->bass); break;
+        case PM_AC_MIDDLE: wiiLightSetLevel(beatDetect->mid); break;
+        case PM_AC_TREBLE: wiiLightSetLevel(beatDetect->treb); break;
+        case PM_AC_VOLUME: wiiLightSetLevel(beatDetect->vol); break;
+        default: wiiLightSetLevel(0); break;
+    }
     if (settings.pulseWiiLight) {
-        switch (settings.pulseSource) {
-            case PM_AC_NONE: wiiLightSetLevel(0); break;
-            case PM_AC_BASS: wiiLightSetLevel(beatDetect->bass); break;
-            case PM_AC_MIDDLE: wiiLightSetLevel(beatDetect->mid); break;
-            case PM_AC_TREBLE: wiiLightSetLevel(beatDetect->treb); break;
-            case PM_AC_VOLUME: wiiLightSetLevel(beatDetect->vol); break;
-            default: wiiLightSetLevel(0); break;
-        }
-        if (wiiLightGetLevel() > 0) {
-            wiiLightOn();
-        } else {
-            wiiLightOff();
-        }
+        wiiLightOn();
+    } else {
+        wiiLightOff();
     }
 #endif
 
@@ -329,8 +327,7 @@ Pipeline* Renderer::currentPipe;
 Renderer::~Renderer()
 {
 #if defined(__wii__)
-    if (settings.pulseWiiLight)
-        wiiLightOff();
+    wiiLightOff();
 #endif
 
 	//int x;
@@ -352,8 +349,7 @@ Renderer::~Renderer()
 void Renderer::reset()
 {    
 #if defined(__wii__)
-    if (settings.pulseWiiLight)
-        wiiLightOff();
+    wiiLightOff();
 #endif
 
 #if USE_CG

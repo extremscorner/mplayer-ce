@@ -110,20 +110,7 @@ void gxInit ()
         // Reset verticies and textures
         GX_InvVtxCache();
         GX_InvalidateTexAll();
-        
-        // Setup vertex descriptions
-        GX_ClearVtxDesc();
-        GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-        GX_SetVtxDesc(GX_VA_NRM, GX_DIRECT);
-        GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
-        GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-        
-        // Setup vertex formats
-        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
-        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGB8, 0);
-        GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-        
+
         //...
         GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
         
@@ -356,12 +343,12 @@ void glDrawBuffer (GLenum _mode)
         case GL_FRONT:
         case GL_FRONT_LEFT:
         case GL_FRONT_RIGHT:
-            drawTEVRegister = GX_TEVREG0;
+            /* ??? */
             break;
         case GL_BACK:
         case GL_BACK_LEFT:
         case GL_BACK_RIGHT:
-            drawTEVRegister = GX_TEVREG2;
+            /* ??? */
             break;
             
         case GL_LEFT: break; /* ??? */
@@ -383,12 +370,12 @@ void glReadBuffer (GLenum _mode)
         case GL_FRONT:
         case GL_FRONT_LEFT:
         case GL_FRONT_RIGHT:
-            readTEVRegister = GX_TEVREG0;
+            /* ??? */
             break;
         case GL_BACK:
         case GL_BACK_LEFT:
         case GL_BACK_RIGHT:
-            readTEVRegister = GX_TEVREG2;
+            /* ??? */
             break;
             
         case GL_LEFT: break; /* ??? */
@@ -807,47 +794,39 @@ void glEnd (void)
     // Short circuit case were we don't actually have to do anything
     if (vertexCount == 0)
         return;
-
-    // Determine the number of verticies we are to upload (depends on culling mode)
-    u16 count = 0;
-    if (cullFaceEnabled)
-        count = vertexCount;
-    else
-        count = vertexCount * 2;
-
+    
     // Load the current model view matrix into memory
     glMatrixLoadModelView();
+
+    // Load the currently bound texture(s) (if enabled)
+    if (texture2DEnabled) {
+    
+    }
+    
+    // Setup vertex descriptions
+    GX_ClearVtxDesc();
+    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GX_SetVtxDesc(GX_VA_NRM, GX_DIRECT);
+    GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    
+    // Setup vertex formats
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGB8, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     
     // ===========================================================================
-    GX_Begin(primitiveType, GX_VTXFMT0, count);
+    GX_Begin(primitiveType, GX_VTXFMT0, vertexCount);
     // ===========================================================================
 
-    bool cw = true;
-    bool ccw = true;
+    // Upload all verticies to memory
     GLvertex *vert = verticies;
-    
-    if (cullFaceEnabled) {
-        cw = false;
-        ccw = false;                            
-        switch (windingMode) {
-            case GL_CW: cw = true; break;
-            case GL_CCW: ccw = true; break;
-        }                         
-    }
-    
-    // CW
-    if (cw) {
-        for (; vert; vert = vert->next) {
-            glVertexUpload(vert);        
-        }
-    }
-    
-    // CCW
-    if (ccw) {
-        for (; vert && vert->next; vert = vert->next);
-        for (; vert; vert = vert->prev) {
-            glVertexUpload(vert);        
-        }
+    for (; vert; vert = vert->next) {
+        GX_Position3f32(vert->x, vert->y, vert->z); 
+        GX_Normal3f32(vert->normal.x, vert->normal.y, vert->normal.z);
+        GX_Color3f32(vert->colour.r, vert->colour.g, vert->colour.b);
+        GX_TexCoord2f32(vert->texCoord.s, vert->texCoord.t);      
     }
     
     // ===========================================================================
@@ -877,14 +856,6 @@ void glVerticiesInvalidateAll ()
     verticies = NULL;
     vertex = NULL;
     vertexCount = 0;
-}
-
-void glVertexUpload (GLvertex *_vert)
-{
-    GX_Position3f32(_vert->x, _vert->y, _vert->z); 
-    GX_Normal3f32(_vert->normal.x, _vert->normal.y, _vert->normal.z);
-    GX_Color3f32(_vert->colour.r, _vert->colour.g, _vert->colour.b);
-    GX_TexCoord2f32(_vert->texCoord.s, _vert->texCoord.t);
 }
 
 void glVertex2f (GLfloat _x, GLfloat _y)
@@ -960,9 +931,6 @@ void glRectd (GLdouble _x1, GLdouble _y1, GLdouble _x2, GLdouble _y2)
     // Sanity check
     if (insideBeginEndPair)
         return; /* GL_INVALID_OPERATION */
-    
-    // TODO: Disable depth buffer?, rectangle z should be 0
-    //glDisable(GL_DEPTH_TEST);
     
     // If the second vertex is above and to the right of the first
     // then build the rectangle with counterclockwise winding
@@ -1069,7 +1037,7 @@ void glTexCoordPointer (GLint _size, GLenum _type,
 
 void glVertexArrayBuild (GLvertexarray *_array, u32 _start, u32 _count, f32 **array, u32 *size)
 {
-    void *ptr = NULL;
+    const void *ptr = NULL;
     int i;
     
     // Sanity check
@@ -1112,8 +1080,6 @@ void glVertexArrayBuild (GLvertexarray *_array, u32 _start, u32 _count, f32 **ar
 
     // Flush the destination array
     DCFlushRange(*array, *size);
-    
-    return array;
 }
 
 void glDrawArrays (GLenum _mode, GLint _first, GLsizei _count)
@@ -1175,7 +1141,7 @@ void glDrawArrays (GLenum _mode, GLint _first, GLsizei _count)
     } else {
         GX_SetVtxDesc(GX_VA_TEX0, GX_NONE);
         GX_SetVtxDesc(GX_VA_TEX0MTXIDX, GX_NONE);
-    }
+    }*/
     
     // Load the current model view matrix into memory
     glMatrixLoadModelView();
@@ -1184,12 +1150,13 @@ void glDrawArrays (GLenum _mode, GLint _first, GLsizei _count)
     GX_Begin(type, GX_VTXFMT0, _count);
     // ===========================================================================
     
+    // Upload all verticies to memory
     //...
     
     // ===========================================================================
     GX_End();
     // ===========================================================================
-    */
+
 }
 
 void glInterleavedArrays (GLenum _format, GLsizei _stride,
@@ -1422,9 +1389,11 @@ void glTexImage2D (GLenum _target, GLint _level,
                       format, texture2D->wrap_s, texture2D->wrap_t, _level); /* ??? */
     }
     
-    // Set the textures filter mode
-    GX_InitTexObjFilterMode(&texture2D->obj, texture2D->minfilt, texture2D->magfilt);
+    // Setup the textures properties
+    GX_InitTexObjLOD(&texture2D->obj, texture2D->minfilt, texture2D->magfilt, 0.0f, 0.0f, 0.0f, 0, 0, GX_ANISO_1);
     
+    // Synchronize
+    GX_InvalidateTexAll();
 }
 
 void glCopyTexSubImage2D (GLenum _target, GLint _level,

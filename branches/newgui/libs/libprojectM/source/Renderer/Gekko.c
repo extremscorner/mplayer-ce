@@ -43,17 +43,24 @@ struct timespec light_timeon = { 0 };
 struct timespec light_timeoff = { 0 };
 
 void wiiLightOn ()
-{    
-    light_on = (light_level > 0);
+{
+    // Turn the light on
+    light_on = true;
     
-    // Spawn the light intensity loop
-    if (light_on)
-        LWP_CreateThread(&light_thread, light_loop, NULL, NULL, 0, 80);
+    // Spawn the lighting thread
+    if (!light_thread)
+        LWP_CreateThread(&light_thread, light_loop, NULL, NULL, 0, 64);
 }
 
 void wiiLightOff ()
 {
+    // Turn the light off
     light_on = false;
+}
+
+bool wiiLightIsOn ()
+{
+    return light_on;
 }
 
 void wiiLightSetLevel (int level)
@@ -107,6 +114,9 @@ void *light_loop (void *arg)
     // Turn off the light
     *light_reg &= ~DISC_SLOT_LED;
 
+    //...
+    light_thread = 0;
+    
     return NULL;
 }
 

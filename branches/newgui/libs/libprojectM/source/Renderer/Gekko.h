@@ -35,6 +35,7 @@ void gxSwapBuffers ();
 // Wii disc slot light routines
 void wiiLightOn ();
 void wiiLightOff ();
+bool wiiLightIsOn ();
 void wiiLightSetLevel (int level);
 int wiiLightGetLevel ();
 

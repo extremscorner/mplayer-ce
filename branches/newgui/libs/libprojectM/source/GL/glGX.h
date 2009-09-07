@@ -71,15 +71,11 @@ u32 blendModeSrc = GX_BL_ONE;
 u32 blendModeDst = GX_BL_ZERO;
 u32 cullMode = GX_CULL_ALL;
 u32 depthMode = GX_LESS;
-u32 windingMode = GL_CCW;
 
 u32 lineStippleFactor = 0;
 u16 lineStipplePattern = 0;
 
 f32 pointsize = 1;
-
-u8 drawTEVRegister = GX_TEVREG0;
-u8 readTEVRegister = GX_TEVREG0;
 
 const char *extensions = "";
 
@@ -145,7 +141,6 @@ GLvertex *vertex = NULL;
 u32 vertexCount = 0;
 
 void glVerticiesInvalidateAll ();
-void glVertexUpload (GLvertex *_vert);
 
 /**
  * Vertex arrays

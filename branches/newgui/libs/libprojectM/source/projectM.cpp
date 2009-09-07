@@ -319,10 +319,27 @@ void projectM::renderFrame()
         m_activePreset->Render(*_beatDetect, pipelineContext());
         _renderer->RenderFrame (m_activePreset->pipeline(), pipelineContext());
     }
-
+    
     //	std::cout<< m_activePreset->absoluteFilePath()<<std::endl;
     //	_renderer->presetName = m_activePreset->absoluteFilePath();
 
+    /*glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    glClearColor(.3, .3, .3, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    glBegin(GL_QUADS);
+    glVertex2f(10, 10);
+    glVertex2f(100, 10);
+    glVertex2f(100, 100);
+    glVertex2f(10, 100);
+    glEnd();
+    
+    glFlush();
+    
+    gxSwapBuffers();*/
+    
     count++;
     
     /** Frame-rate limiter */
@@ -440,10 +457,9 @@ int projectM::initPresetTools(int gx, int gy)
     srand ( time ( NULL ) );
 
     // Ensure there is no trailing slash on the end of the preset directory
-    if (!_settings.presetDirectory.empty()) {
-        
-    }
-    
+    if (_settings.presetDirectory.rfind('/') == _settings.presetDirectory.size() - 1)
+        _settings.presetDirectory.erase(_settings.presetDirectory.rfind('/'));
+
     std::string url = (m_flags & PM_FLAG_DISABLE_PLAYLIST_LOAD) ? std::string() : _settings.presetDirectory;
 
     if ( ( m_presetLoader = new PresetLoader ( gx, gy, url) ) == 0 )
