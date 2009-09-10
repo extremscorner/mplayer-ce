@@ -909,9 +909,7 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   sub_font = NULL;
   if (vo_font) free_font_desc(vo_font);
   vo_font = NULL;
-#ifndef WIILIB
   done_freetype();
-#endif
 #endif
   free_osd_list();
 
