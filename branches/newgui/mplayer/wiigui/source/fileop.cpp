@@ -27,16 +27,11 @@
 
 int currentDevice = -1;
 int currentDeviceNum = -1;
-bool unmountRequired[2] = { false, false };
-bool isMounted[2] = { false, false };
+bool unmountRequired[3] = { false, false, false };
+bool isMounted[3] = { false, false, false };
 
-#ifdef HW_RVL
-	const DISC_INTERFACE* sd = &__io_wiisd;
-	const DISC_INTERFACE* usb = &__io_usbstorage;
-#else
-	const DISC_INTERFACE* carda = &__io_gcsda;
-	const DISC_INTERFACE* cardb = &__io_gcsdb;
-#endif
+const DISC_INTERFACE* sd = &__io_wiisd;
+const DISC_INTERFACE* usb = &__io_usbstorage;
 
 // folder parsing thread
 static lwp_t parsethread = LWP_THREAD_NULL;
@@ -86,6 +81,16 @@ devicecallback (void *arg)
 				isMounted[DEVICE_USB] = false;
 			}
 		}
+
+		if(isMounted[DEVICE_DVD])
+		{
+			if(!WIIDVD_DiscPresent())
+			{
+				unmountRequired[DEVICE_DVD] = true;
+				isMounted[DEVICE_DVD] = false;
+			}
+		}
+
 		InitializeNetwork(SILENT);
 		devsleep = 1000*1000; // 1 sec
 
@@ -234,6 +239,39 @@ void MountAllFAT()
 	MountFAT(DEVICE_USB);
 }
 
+static bool MountDVD(int silent)
+{
+	if(isMounted[DEVICE_DVD])
+		return true;
+
+	if(unmountRequired[DEVICE_DVD])
+	{
+		unmountRequired[DEVICE_DVD] = false;
+		WIIDVD_Unmount();
+	}
+
+	bool res = false;
+
+	ShowAction("Loading DVD...");
+
+	if(WIIDVD_DiscPresent())
+	{
+		if(WIIDVD_Mount() >= 0)
+			res = true;
+		else if(!silent)
+			ErrorPrompt("Invalid DVD!");
+	}
+	else
+	{
+		if(!silent)
+			ErrorPrompt("No disc inserted!");
+	}
+
+	CancelAction();
+	isMounted[DEVICE_DVD] = res;
+	return res;
+}
+
 static bool FindDevice(char * filepath, int * device, int * devnum)
 {
 	int tmp = -1;
@@ -298,9 +336,7 @@ bool ChangeInterface(int device, int devnum, bool silent)
 	}
 	else if(device == DEVICE_DVD)
 	{
-		mounted = DVDGekkoMount();
-		if(!mounted && !silent)
-			ErrorPrompt("DVD not found!");
+		mounted = MountDVD(silent);
 	}
 	else if(device == DEVICE_SMB)
 	{

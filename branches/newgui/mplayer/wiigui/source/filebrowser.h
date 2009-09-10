@@ -17,7 +17,7 @@
 
 typedef struct
 {
-	char dir[MAXPATHLEN]; // directory path of browserList
+	char * dir; // directory path of browserList
 	int numEntries; // # of entries in browserList
 	int selIndex; // currently selected index of browserList
 	int pageIndex; // starting index of browserList page display

@@ -37,7 +37,8 @@ static GuiButton * logoBtn = NULL;
 static GuiWindow * mainWindow = NULL;
 static GuiText * settingText = NULL;
 
-static int currentMenu = MENU_BROWSE;
+static int currentMenu = MENU_BROWSE_VIDEOS;
+static int lastMenu = MENU_BROWSE_VIDEOS;
 
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
@@ -95,6 +96,7 @@ UpdateGUI (void *arg)
 					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
 					Menu_Render();
 				}
+				SaveSettings(SILENT);
 				ExitApp();
 			}
 		}
@@ -732,18 +734,23 @@ static void WindowCredits(void * ptr)
 		delete txt[i];
 }
 
+static void ChangeMenu(int menu)
+{
+	lastMenu = currentMenu;
+	currentMenu = menu;
+}
 static void ChangeMenu(void * ptr, int menu)
 {
 	GuiButton * b = (GuiButton *)ptr;
 	if(b->GetState() == STATE_CLICKED)
 	{
-		currentMenu = menu;
+		ChangeMenu(menu);
 		b->ResetState();
 	}
 }
-static void ChangeMenuVideos(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
-static void ChangeMenuMusic(void * ptr) { ChangeMenu(ptr, MENU_BROWSE); }
-static void ChangeMenuDVD(void * ptr) {	ChangeMenu(ptr, MENU_DVD); }
+static void ChangeMenuVideos(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_VIDEOS); }
+static void ChangeMenuMusic(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_MUSIC); }
+static void ChangeMenuDVD(void * ptr) { ChangeMenu(ptr, MENU_DVD); }
 static void ChangeMenuOnline(void * ptr) { ChangeMenu(ptr, MENU_ONLINEMEDIA); }
 static void ChangeMenuSettings(void * ptr) { ChangeMenu(ptr, MENU_SETTINGS); }
 
@@ -751,9 +758,16 @@ static void ChangeMenuSettings(void * ptr) { ChangeMenu(ptr, MENU_SETTINGS); }
  * MenuBrowse
  ***************************************************************************/
 
-static void MenuBrowse()
+static void MenuBrowse(int menu)
 {
 	ShutoffRumble();
+
+	if(menu == MENU_BROWSE_VIDEOS)
+		browser.dir = &CESettings.videoFolder[0];
+	else if(menu == MENU_BROWSE_MUSIC)
+		browser.dir = &CESettings.musicFolder[0];
+	else
+		return;
 
 	// populate initial directory listing
 	while(BrowserChangeFolder(false) <= 0)
@@ -766,7 +780,7 @@ static void MenuBrowse()
 
 		if(choice == 0)
 		{
-			currentMenu = MENU_SETTINGS;
+			ChangeMenu(MENU_SETTINGS);
 			return;
 		}
 	}
@@ -782,7 +796,7 @@ static void MenuBrowse()
 	mainWindow->Append(&fileBrowser);
 	ResumeGui();
 
-	while(currentMenu == MENU_BROWSE)
+	while(currentMenu == menu)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -834,12 +848,80 @@ done:
 
 static void MenuOnlineMedia()
 {
-	currentMenu = MENU_BROWSE;
+	currentMenu = MENU_BROWSE_VIDEOS;
 }
 
 static void MenuDVD()
 {
-	currentMenu = MENU_BROWSE;
+	int ret;
+	int i = 0;
+	int selected = -1;
+
+	MenuItemList items;
+	sprintf(items.name[i], "Play Title #1");
+	items.img[i] = NULL; i++;
+	sprintf(items.name[i], "Play Title #2");
+	items.img[i] = NULL; i++;
+	sprintf(items.name[i], "Play Title #3");
+	items.img[i] = NULL; i++;
+	sprintf(items.name[i], "Play Title #4");
+	items.img[i] = NULL; i++;
+	sprintf(items.name[i], "Play Title #5");
+	items.img[i] = NULL; i++;
+	items.length = i;
+
+	GuiText titleTxt("DVD", 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiMenuBrowser itemBrowser(300, 400, &items);
+	itemBrowser.SetPosition(30, 120);
+	itemBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	mainWindow->Append(&itemBrowser);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	if(!ChangeInterface(DEVICE_DVD, -1, NOTSILENT))
+		ChangeMenu(lastMenu); // go back to last menu
+
+	while(currentMenu == MENU_DVD)
+	{
+		usleep(THREAD_SLEEP);
+
+		if(selected != itemBrowser.GetSelectedItem())
+		{
+			selected = itemBrowser.GetSelectedItem();
+		}
+
+		ret = itemBrowser.GetClickedItem();
+
+		if(ret >= 0)
+		{
+			sprintf(loadedFile, "dvd://%d", ret+1);
+
+			ShowAction("Loading...");
+
+			// signal MPlayer to load
+			loadMPlayer();
+
+			// wait until MPlayer is ready to take control
+			while(!guiHalt)
+				usleep(THREAD_SLEEP);
+
+			CancelAction();
+			shutdownGui = true;
+			break;
+		}
+	}
+
+	HaltGui();
+	mainWindow->Remove(&itemBrowser);
+	mainWindow->Remove(&titleTxt);
 }
 
 static void MenuSettingsGeneral()
@@ -993,7 +1075,7 @@ static void MenuSettingsGeneral()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			currentMenu = MENU_SETTINGS;
+			ChangeMenu(lastMenu);
 		}
 	}
 	HaltGui();
@@ -1089,7 +1171,7 @@ static void MenuSettingsCache()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			currentMenu = MENU_SETTINGS;
+			ChangeMenu(lastMenu);
 		}
 	}
 	HaltGui();
@@ -1100,7 +1182,7 @@ static void MenuSettingsCache()
 
 static void MenuSettingsNetwork()
 {
-	currentMenu = MENU_SETTINGS;
+	ChangeMenu(lastMenu);
 }
 
 
@@ -1412,7 +1494,7 @@ static void MenuSettingsVideo()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			currentMenu = MENU_SETTINGS;
+			ChangeMenu(lastMenu);
 		}
 	}
 	HaltGui();
@@ -1500,7 +1582,7 @@ static void MenuSettingsAudio()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			currentMenu = MENU_SETTINGS;
+			ChangeMenu(lastMenu);
 		}
 	}
 	HaltGui();
@@ -1612,7 +1694,7 @@ static void MenuSettingsSubtitles()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			currentMenu = MENU_SETTINGS;
+			ChangeMenu(lastMenu);
 		}
 	}
 	HaltGui();
@@ -1690,32 +1772,32 @@ static void MenuSettings()
 		switch (ret)
 		{
 			case 0:
-				currentMenu = MENU_SETTINGS_GENERAL;
+				ChangeMenu(MENU_SETTINGS_GENERAL);
 				break;
 
 			case 1:
-				currentMenu = MENU_SETTINGS_CACHE;
+				ChangeMenu(MENU_SETTINGS_CACHE);
 				break;
 
 			case 2:
-				currentMenu = MENU_SETTINGS_NETWORK;
+				ChangeMenu(MENU_SETTINGS_NETWORK);
 				break;
 
 			case 3:
-				currentMenu = MENU_SETTINGS_VIDEO;
+				ChangeMenu(MENU_SETTINGS_VIDEO);
 				break;
 
 			case 4:
-				currentMenu = MENU_SETTINGS_AUDIO;
+				ChangeMenu(MENU_SETTINGS_AUDIO);
 				break;
 
 			case 5:
-				currentMenu = MENU_SETTINGS_SUBTITLES;
+				ChangeMenu(MENU_SETTINGS_SUBTITLES);
 				break;
 		}
 
 		if(backBtn.GetState() == STATE_CLICKED)
-			currentMenu = MENU_BROWSE;
+			ChangeMenu(lastMenu);
 	}
 
 	HaltGui();
@@ -1841,8 +1923,9 @@ void WiiMenu()
 	{
 		switch (currentMenu)
 		{
-			case MENU_BROWSE:
-				MenuBrowse();
+			case MENU_BROWSE_VIDEOS:
+			case MENU_BROWSE_MUSIC:
+				MenuBrowse(currentMenu);
 				break;
 			case MENU_DVD:
 				MenuDVD();
@@ -1872,7 +1955,7 @@ void WiiMenu()
 				MenuSettingsSubtitles();
 				break;
 			default: // unrecognized menu
-				MenuBrowse();
+				MenuBrowse(MENU_BROWSE_VIDEOS);
 				break;
 		}
 		usleep(THREAD_SLEEP);
@@ -1880,6 +1963,7 @@ void WiiMenu()
 
 	ShutoffRumble();
 	CancelAction();
+	SaveSettings(SILENT);
 	HaltGui();
 
 	delete pointer[0];

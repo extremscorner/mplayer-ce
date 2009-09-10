@@ -21,7 +21,8 @@ void ShowProgress (const char *msg, int done, int total);
 
 enum
 {
-	MENU_BROWSE,
+	MENU_BROWSE_VIDEOS,
+	MENU_BROWSE_MUSIC,
 	MENU_DVD,
 	MENU_ONLINEMEDIA,
 	MENU_SETTINGS,

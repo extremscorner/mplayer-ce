@@ -198,9 +198,11 @@ int wait_for_network_initialisation()
 	return 0;
 }
 
-
 bool DVDGekkoMount()
 {
+#ifdef WIILIB
+	return true;
+#else
 	if(playing_dvd || dvd_mounted) return true;
 	set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Mounting DVD, please wait");
 	force_osd();
@@ -220,6 +222,7 @@ bool DVDGekkoMount()
 	dvd_mounting=false;
 	dvd_mounted=false;
 	return false;
+#endif
 }
 
 static void * networkthreadfunc (void *arg)
