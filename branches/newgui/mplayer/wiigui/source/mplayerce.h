@@ -55,7 +55,7 @@ bool FindIOS(u32 ios);   //in plat_gekko.c
 bool load_ehci_module();  //in plat_gekko.c
 void DisableUSB2(bool);  //in special libogc, in usb2storage.c (need to be added to .h)
 
-void WaitSuspendMPlayerThread();
+void ShutdownMPlayer();
 
 #ifdef __cplusplus
 }

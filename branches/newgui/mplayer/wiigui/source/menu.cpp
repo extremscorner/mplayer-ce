@@ -824,7 +824,7 @@ static void MenuBrowse(int menu)
 				else
 				{
 					
-					WaitSuspendMPlayerThread();
+					ShutdownMPlayer();
 
 					sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
 

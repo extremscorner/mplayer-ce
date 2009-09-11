@@ -91,7 +91,7 @@ void ResetCB()
 	ResetRequested = 1;
 }
 
-void WaitSuspendMPlayerThread()
+void ShutdownMPlayer()
 {
 	controlledbygui=2;
 	while(!LWP_ThreadIsSuspended(mthread)) usleep(500);
