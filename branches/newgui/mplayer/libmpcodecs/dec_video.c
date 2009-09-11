@@ -151,6 +151,7 @@ int get_current_video_decoder_lag(sh_video_t *sh_video)
 void uninit_video(sh_video_t *sh_video){
     if(!sh_video || !sh_video->initialized) return;
     mp_msg(MSGT_DECVIDEO,MSGL_V,MSGTR_UninitVideoStr,sh_video->codec->drv);
+    //printf(MSGL_V,MSGTR_UninitVideoStr,sh_video->codec->drv);
     mpvdec->uninit(sh_video);
 #ifdef CONFIG_DYNAMIC_PLUGINS
     if (sh_video->dec_handle)

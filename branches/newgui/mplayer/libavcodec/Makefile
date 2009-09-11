@@ -48,7 +48,7 @@ OBJS-$(CONFIG_ASV1_DECODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV1_ENCODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV2_DECODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV2_ENCODER)            += asv1.o mpeg12data.o
-OBJS-$(CONFIG_ATRAC3_DECODER)          += atrac3.o
+OBJS-$(CONFIG_ATRAC3_DECODER)          += atrac3.o atrac.o
 OBJS-$(CONFIG_AVS_DECODER)             += avs.o
 OBJS-$(CONFIG_BETHSOFTVID_DECODER)     += bethsoftvideo.o
 OBJS-$(CONFIG_BFI_DECODER)             += bfi.o
@@ -169,6 +169,7 @@ OBJS-$(CONFIG_PGM_DECODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PGM_ENCODER)             += pnmenc.o
 OBJS-$(CONFIG_PGMYUV_DECODER)          += pnmenc.o pnm.o
 OBJS-$(CONFIG_PGMYUV_ENCODER)          += pnmenc.o
+OBJS-$(CONFIG_PGSSUB_DECODER)          += pgssubdec.o
 OBJS-$(CONFIG_PNG_DECODER)             += png.o pngdec.o
 OBJS-$(CONFIG_PNG_ENCODER)             += png.o pngenc.o
 OBJS-$(CONFIG_PPM_DECODER)             += pnmenc.o pnm.o
@@ -248,6 +249,7 @@ OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vp3dsp.o
 OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o vp3dsp.o vp6dsp.o huffman.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
 OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o
+OBJS-$(CONFIG_WMAPRO_DECODER)          += wmaprodec.o wma.o
 OBJS-$(CONFIG_WMAV1_DECODER)           += wmadec.o wma.o
 OBJS-$(CONFIG_WMAV1_ENCODER)           += wmaenc.o wma.o
 OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o wma.o
@@ -271,6 +273,7 @@ OBJS-$(CONFIG_ZMBV_ENCODER)            += zmbvenc.o
 # (AD)PCM decoders/encoders
 OBJS-$(CONFIG_PCM_ALAW_DECODER)           += pcm.o
 OBJS-$(CONFIG_PCM_ALAW_ENCODER)           += pcm.o
+OBJS-$(CONFIG_PCM_BLURAY_DECODER)         += pcm-mpeg.o
 OBJS-$(CONFIG_PCM_DVD_DECODER)            += pcm.o
 OBJS-$(CONFIG_PCM_DVD_ENCODER)            += pcm.o
 OBJS-$(CONFIG_PCM_F32BE_DECODER)          += pcm.o
@@ -493,6 +496,10 @@ OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
 
 OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
                                           arm/mpegvideo_iwmmxt.o        \
+
+NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
+
+NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
 
 NEON-OBJS-$(CONFIG_H264_DECODER)       += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o           \

@@ -1,7 +1,8 @@
-del mplayer.dol
-rem del mplayerz3.dol
+@echo off
 del mplayer.elf
 make
-rem dollz3 mplayer.dol mplayerz3.dol
-rem wiiload mplayerz3.dol
+if not %errorlevel% == 0 goto end
+
 wiiload mplayer.dol
+
+:end

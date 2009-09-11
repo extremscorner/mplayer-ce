@@ -1175,10 +1175,8 @@ void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_n
 #ifdef CONFIG_FONTCONFIG
     if (font_fontconfig > 0)
     {
-	if (!font_name)
-	    font_name = strdup("sans-serif");
 	FcInit();
-	fc_pattern = FcNameParse(font_name);
+	fc_pattern = FcNameParse(font_name ? font_name : "sans-serif");
 	FcConfigSubstitute(0, fc_pattern, FcMatchPattern);
 	FcDefaultSubstitute(fc_pattern);
 	fc_pattern2 = fc_pattern;
@@ -1204,6 +1202,8 @@ void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_n
     }
     else
 #endif
+	{
     *fontp=read_font_desc_ft(font_name, 0, width, height, font_scale_factor);
+    }    
 //  printf("load_font_ft end\n");  
 }

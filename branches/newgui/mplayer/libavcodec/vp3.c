@@ -258,25 +258,25 @@ static int init_block_mapping(Vp3DecodeContext *s)
     int current_macroblock;
     int c_fragment;
 
-    signed char travel_width[16] = {
+    static const signed char travel_width[16] = {
          1,  1,  0, -1,
          0,  0,  1,  0,
          1,  0,  1,  0,
          0, -1,  0,  1
     };
 
-    signed char travel_height[16] = {
+    static const signed char travel_height[16] = {
          0,  0,  1,  0,
          1,  1,  0, -1,
          0,  1,  0, -1,
         -1,  0, -1,  0
     };
 
-    signed char travel_width_mb[4] = {
+    static const signed char travel_width_mb[4] = {
          1,  0,  1,  0
     };
 
-    signed char travel_height_mb[4] = {
+    static const signed char travel_height_mb[4] = {
          0,  1,  0, -1
     };
 
@@ -1200,7 +1200,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
      *   2: up-right multiplier
      *   3: left multiplier
      */
-    int predictor_transform[16][4] = {
+    static const int predictor_transform[16][4] = {
         {  0,  0,  0,  0},
         {  0,  0,  0,128},        // PL
         {  0,  0,128,  0},        // PUR
@@ -1225,7 +1225,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
      * from other INTRA blocks. There are 2 golden frame coding types;
      * blocks encoding in these modes can only predict from other blocks
      * that were encoded with these 1 of these 2 modes. */
-    unsigned char compatible_frame[8] = {
+    static const unsigned char compatible_frame[8] = {
         1,    /* MODE_INTER_NO_MV */
         0,    /* MODE_INTRA */
         1,    /* MODE_INTER_PLUS_MV */

@@ -42,7 +42,7 @@ DECLARE_ALIGNED_16(FFTSample, ff_cos_8192[4096]);
 DECLARE_ALIGNED_16(FFTSample, ff_cos_16384[8192]);
 DECLARE_ALIGNED_16(FFTSample, ff_cos_32768[16384]);
 DECLARE_ALIGNED_16(FFTSample, ff_cos_65536[32768]);
-FFTSample *ff_cos_tabs[] = {
+FFTSample * const ff_cos_tabs[] = {
     ff_cos_16, ff_cos_32, ff_cos_64, ff_cos_128, ff_cos_256, ff_cos_512, ff_cos_1024,
     ff_cos_2048, ff_cos_4096, ff_cos_8192, ff_cos_16384, ff_cos_32768, ff_cos_65536,
 };
@@ -64,6 +64,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     float alpha, c1, s1, s2;
     int split_radix = 1;
     int av_unused has_vectors;
+    int revtab_shift = 0;
 
     if (nbits < 2 || nbits > 16)
         goto fail;
@@ -85,6 +86,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->fft_calc    = ff_fft_calc_c;
     s->imdct_calc  = ff_imdct_calc_c;
     s->imdct_half  = ff_imdct_half_c;
+    s->mdct_calc   = ff_mdct_calc_c;
     s->exptab1     = NULL;
 
 #if HAVE_MMX && HAVE_YASM
@@ -112,6 +114,13 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
         s->fft_calc = ff_fft_calc_altivec;
         split_radix = 0;
     }
+#elif HAVE_NEON
+    s->fft_permute = ff_fft_permute_neon;
+    s->fft_calc    = ff_fft_calc_neon;
+    s->imdct_calc  = ff_imdct_calc_neon;
+    s->imdct_half  = ff_imdct_half_neon;
+    s->mdct_calc   = ff_mdct_calc_neon;
+    revtab_shift = 3;
 #endif
 
     if (split_radix) {
@@ -125,7 +134,8 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
                 tab[m/2-i] = tab[i];
         }
         for(i=0; i<n; i++)
-            s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
+            s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] =
+                i << revtab_shift;
         s->tmp_buf = av_malloc(n * sizeof(FFTComplex));
     } else {
         int np, nblocks, np2, l;

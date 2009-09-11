@@ -225,6 +225,9 @@ int main(int argc, char **argv)
     struct SwsContext *sws;
     AVLFG rand;
 
+    if (!rgb_data || !data)
+        return -1;
+
     sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
 
     av_lfg_init(&rand, 1);
@@ -236,8 +239,10 @@ int main(int argc, char **argv)
     }
     sws_scale(sws, rgb_src, rgb_stride, 0, H, src, stride);
     sws_freeContext(sws);
+    free(rgb_data);
 
     selfTest(src, stride, W, H);
+    free(data);
 
     return 0;
 }

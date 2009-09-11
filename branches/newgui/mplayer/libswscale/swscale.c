@@ -76,6 +76,7 @@ untested special converters
 #include "rgb2rgb.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
 
 unsigned swscale_version(void)
@@ -135,12 +136,12 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_YUV440P     \
         || (x)==PIX_FMT_MONOWHITE   \
         || (x)==PIX_FMT_MONOBLACK   \
-        || (x)==PIX_FMT_YUV420PLE   \
-        || (x)==PIX_FMT_YUV422PLE   \
-        || (x)==PIX_FMT_YUV444PLE   \
-        || (x)==PIX_FMT_YUV420PBE   \
-        || (x)==PIX_FMT_YUV422PBE   \
-        || (x)==PIX_FMT_YUV444PBE   \
+        || (x)==PIX_FMT_YUV420P16LE   \
+        || (x)==PIX_FMT_YUV422P16LE   \
+        || (x)==PIX_FMT_YUV444P16LE   \
+        || (x)==PIX_FMT_YUV420P16BE   \
+        || (x)==PIX_FMT_YUV422P16BE   \
+        || (x)==PIX_FMT_YUV444P16BE   \
     )
 #define isSupportedOut(x)   (       \
            (x)==PIX_FMT_YUV420P     \
@@ -159,12 +160,12 @@ unsigned swscale_version(void)
         || (x)==PIX_FMT_GRAY8       \
         || (x)==PIX_FMT_YUV410P     \
         || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_YUV420PLE   \
-        || (x)==PIX_FMT_YUV422PLE   \
-        || (x)==PIX_FMT_YUV444PLE   \
-        || (x)==PIX_FMT_YUV420PBE   \
-        || (x)==PIX_FMT_YUV422PBE   \
-        || (x)==PIX_FMT_YUV444PBE   \
+        || (x)==PIX_FMT_YUV420P16LE   \
+        || (x)==PIX_FMT_YUV422P16LE   \
+        || (x)==PIX_FMT_YUV444P16LE   \
+        || (x)==PIX_FMT_YUV420P16BE   \
+        || (x)==PIX_FMT_YUV422P16BE   \
+        || (x)==PIX_FMT_YUV444P16BE   \
     )
 #define isPacked(x)         (       \
            (x)==PIX_FMT_PAL8        \
@@ -458,18 +459,18 @@ const char *sws_format_name(enum PixelFormat format)
         return "vdpau_wmv3";
     case PIX_FMT_VDPAU_VC1:
         return "vdpau_vc1";
-    case PIX_FMT_YUV420PLE:
-        return "yuv420ple";
-    case PIX_FMT_YUV422PLE:
-        return "yuv422ple";
-    case PIX_FMT_YUV444PLE:
-        return "yuv444ple";
-    case PIX_FMT_YUV420PBE:
-        return "yuv420pbe";
-    case PIX_FMT_YUV422PBE:
-        return "yuv422pbe";
-    case PIX_FMT_YUV444PBE:
-        return "yuv444pbe";
+    case PIX_FMT_YUV420P16LE:
+        return "yuv420p16le";
+    case PIX_FMT_YUV422P16LE:
+        return "yuv422p16le";
+    case PIX_FMT_YUV444P16LE:
+        return "yuv444p16le";
+    case PIX_FMT_YUV420P16BE:
+        return "yuv420p16be";
+    case PIX_FMT_YUV422P16BE:
+        return "yuv422p16be";
+    case PIX_FMT_YUV444P16BE:
+        return "yuv444p16be";
     default:
         return "Unknown format";
     }
@@ -1450,12 +1451,12 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 #endif
 
     // NOTE: the +1 is for the MMX scaler which reads over the end
-    *filterPos = av_malloc((dstW+1)*sizeof(int16_t));
+    FF_ALLOC_OR_GOTO(NULL, *filterPos, (dstW+1)*sizeof(int16_t), fail);
 
     if (FFABS(xInc - 0x10000) <10) { // unscaled
         int i;
         filterSize= 1;
-        filter= av_mallocz(dstW*sizeof(*filter)*filterSize);
+        FF_ALLOCZ_OR_GOTO(NULL, filter, dstW*sizeof(*filter)*filterSize, fail);
 
         for (i=0; i<dstW; i++) {
             filter[i*filterSize]= fone;
@@ -1466,7 +1467,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         int i;
         int xDstInSrc;
         filterSize= 1;
-        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
+        FF_ALLOC_OR_GOTO(NULL, filter, dstW*sizeof(*filter)*filterSize, fail);
 
         xDstInSrc= xInc/2 - 0x8000;
         for (i=0; i<dstW; i++) {
@@ -1480,7 +1481,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         int i;
         int xDstInSrc;
         filterSize= 2;
-        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
+        FF_ALLOC_OR_GOTO(NULL, filter, dstW*sizeof(*filter)*filterSize, fail);
 
         xDstInSrc= xInc/2 - 0x8000;
         for (i=0; i<dstW; i++) {
@@ -1519,7 +1520,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
         if (filterSize > srcW-2) filterSize=srcW-2;
 
-        filter= av_malloc(dstW*sizeof(*filter)*filterSize);
+        FF_ALLOC_OR_GOTO(NULL, filter, dstW*sizeof(*filter)*filterSize, fail);
 
         xDstInSrc= xInc - 0x10000;
         for (i=0; i<dstW; i++) {
@@ -1607,7 +1608,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     if (srcFilter) filter2Size+= srcFilter->length - 1;
     if (dstFilter) filter2Size+= dstFilter->length - 1;
     assert(filter2Size>0);
-    filter2= av_mallocz(filter2Size*dstW*sizeof(*filter2));
+    FF_ALLOCZ_OR_GOTO(NULL, filter2, filter2Size*dstW*sizeof(*filter2), fail);
 
     for (i=0; i<dstW; i++) {
         int j, k;
@@ -1690,7 +1691,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     assert(filterSize > 0);
     filter= av_malloc(filterSize*dstW*sizeof(*filter));
     if (filterSize >= MAX_FILTER_SIZE*16/((flags&SWS_ACCURATE_RND) ? APCK_SIZE : 16) || !filter)
-        goto error;
+        goto fail;
     *outFilterSize= filterSize;
 
     if (flags&SWS_PRINT_INFO)
@@ -1737,7 +1738,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
     // Note the +1 is for the MMX scaler which reads over the end
     /* align at 16 for AltiVec (needed by hScale_altivec_real) */
-    *outFilter= av_mallocz(*outFilterSize*(dstW+1)*sizeof(int16_t));
+    FF_ALLOCZ_OR_GOTO(NULL, *outFilter, *outFilterSize*(dstW+1)*sizeof(int16_t), fail);
 
     /* normalize & store in outFilter */
     for (i=0; i<dstW; i++) {
@@ -1764,7 +1765,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
     }
 
     ret=0;
-error:
+fail:
     av_free(filter);
     av_free(filter2);
     return ret;
@@ -2370,8 +2371,8 @@ static void getSubSampleFactors(int *h, int *v, int format)
         *v=0;
         break;
     case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV420PLE:
-    case PIX_FMT_YUV420PBE:
+    case PIX_FMT_YUV420P16LE:
+    case PIX_FMT_YUV420P16BE:
     case PIX_FMT_YUVA420P:
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
@@ -2390,14 +2391,14 @@ static void getSubSampleFactors(int *h, int *v, int format)
         *v=2;
         break;
     case PIX_FMT_YUV444P:
-    case PIX_FMT_YUV444PLE:
-    case PIX_FMT_YUV444PBE:
+    case PIX_FMT_YUV444P16LE:
+    case PIX_FMT_YUV444P16BE:
         *h=0;
         *v=0;
         break;
     case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV422PLE:
-    case PIX_FMT_YUV422PBE:
+    case PIX_FMT_YUV422P16LE:
+    case PIX_FMT_YUV422P16BE:
         *h=1;
         *v=0;
         break;
@@ -2598,7 +2599,7 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     if (!dstFilter) dstFilter= &dummyFilter;
     if (!srcFilter) srcFilter= &dummyFilter;
 
-    c= av_mallocz(sizeof(SwsContext));
+    FF_ALLOCZ_OR_GOTO(NULL, c, sizeof(SwsContext), fail);
 
     c->av_class = &sws_context_class;
     c->srcW= srcW;
@@ -2811,14 +2812,16 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
             1;
 
-        initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
-                   srcW      ,       dstW, filterAlign, 1<<14,
-                   (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-                   srcFilter->lumH, dstFilter->lumH, c->param);
-        initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
-                   c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
-                   (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-                   srcFilter->chrH, dstFilter->chrH, c->param);
+        if (initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
+                       srcW      ,       dstW, filterAlign, 1<<14,
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
+                       srcFilter->lumH, dstFilter->lumH, c->param) < 0)
+            goto fail;
+        if (initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
+                       c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+                       srcFilter->chrH, dstFilter->chrH, c->param) < 0)
+            goto fail;
 
 #if defined(COMPILE_MMX2)
 // can't downscale !!!
@@ -2837,10 +2840,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             c->chrMmx2FilterCode = av_malloc(c->chrMmx2FilterCodeSize);
 #endif
 
-            c->lumMmx2Filter   = av_malloc((dstW        /8+8)*sizeof(int16_t));
-            c->chrMmx2Filter   = av_malloc((c->chrDstW  /4+8)*sizeof(int16_t));
-            c->lumMmx2FilterPos= av_malloc((dstW      /2/8+8)*sizeof(int32_t));
-            c->chrMmx2FilterPos= av_malloc((c->chrDstW/2/4+8)*sizeof(int32_t));
+            FF_ALLOCZ_OR_GOTO(c, c->lumMmx2Filter   , (dstW        /8+8)*sizeof(int16_t), fail);
+            FF_ALLOCZ_OR_GOTO(c, c->chrMmx2Filter   , (c->chrDstW  /4+8)*sizeof(int16_t), fail);
+            FF_ALLOCZ_OR_GOTO(c, c->lumMmx2FilterPos, (dstW      /2/8+8)*sizeof(int32_t), fail);
+            FF_ALLOCZ_OR_GOTO(c, c->chrMmx2FilterPos, (c->chrDstW/2/4+8)*sizeof(int32_t), fail);
 
             initMMX2HScaler(      dstW, c->lumXInc, c->lumMmx2FilterCode, c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
             initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
@@ -2862,18 +2865,20 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
             (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
             1;
 
-        initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
+        if (initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
                    srcH      ,        dstH, filterAlign, (1<<12),
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-                   srcFilter->lumV, dstFilter->lumV, c->param);
-        initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
+                   srcFilter->lumV, dstFilter->lumV, c->param) < 0)
+            goto fail;
+        if (initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
                    c->chrSrcH, c->chrDstH, filterAlign, (1<<12),
                    (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-                   srcFilter->chrV, dstFilter->chrV, c->param);
+                   srcFilter->chrV, dstFilter->chrV, c->param) < 0)
+            goto fail;
 
 #ifdef COMPILE_ALTIVEC
-        c->vYCoeffsBank = av_malloc(sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
-        c->vCCoeffsBank = av_malloc(sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
+        FF_ALLOC_OR_GOTO(c, c->vYCoeffsBank, sizeof (vector signed short)*c->vLumFilterSize*c->dstH, fail);
+        FF_ALLOC_OR_GOTO(c, c->vCCoeffsBank, sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH, fail);
 
         for (i=0;i<c->vLumFilterSize*c->dstH;i++) {
             int j;
@@ -2908,19 +2913,26 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
     }
 
     // allocate pixbufs (we use dynamic allocation because otherwise we would need to
-    c->lumPixBuf= av_malloc(c->vLumBufSize*2*sizeof(int16_t*));
-    c->chrPixBuf= av_malloc(c->vChrBufSize*2*sizeof(int16_t*));
+    // allocate several megabytes to handle all possible cases)
+    FF_ALLOC_OR_GOTO(c, c->lumPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->chrPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
     if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat))
-        c->alpPixBuf= av_malloc(c->vLumBufSize*2*sizeof(int16_t*));
+        FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
     //Note we need at least one pixel more at the end because of the MMX code (just in case someone wanna replace the 4000/8000)
     /* align at 16 bytes for AltiVec */
-    for (i=0; i<c->vLumBufSize; i++)
-        c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= av_mallocz(VOF+1);
-    for (i=0; i<c->vChrBufSize; i++)
-        c->chrPixBuf[i]= c->chrPixBuf[i+c->vChrBufSize]= av_malloc((VOF+1)*2);
+    for (i=0; i<c->vLumBufSize; i++) {
+        FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i+c->vLumBufSize], VOF+1, fail);
+        c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
+    }
+    for (i=0; i<c->vChrBufSize; i++) {
+        FF_ALLOC_OR_GOTO(c, c->chrPixBuf[i+c->vChrBufSize], (VOF+1)*2, fail);
+        c->chrPixBuf[i] = c->chrPixBuf[i+c->vChrBufSize];
+    }
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
-        for (i=0; i<c->vLumBufSize; i++)
-            c->alpPixBuf[i]= c->alpPixBuf[i+c->vLumBufSize]= av_mallocz(VOF+1);
+        for (i=0; i<c->vLumBufSize; i++) {
+            FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf[i+c->vLumBufSize], VOF+1, fail);
+            c->alpPixBuf[i] = c->alpPixBuf[i+c->vLumBufSize];
+        }
 
     //try to avoid drawing green stuff between the right end and the stride end
     for (i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, (VOF+1)*2);
@@ -3044,6 +3056,10 @@ SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat, int d
 
     c->swScale= getSwsFunc(c);
     return c;
+
+fail:
+    sws_freeContext(c);
+    return NULL;
 }
 
 static void reset_ptr(uint8_t* src[], int format)
@@ -3188,6 +3204,8 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
                                 int verbose)
 {
     SwsFilter *filter= av_malloc(sizeof(SwsFilter));
+    if (!filter)
+        return NULL;
 
     if (lumaGBlur!=0.0) {
         filter->lumH= sws_getGaussianVec(lumaGBlur, 3.0);

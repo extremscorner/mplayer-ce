@@ -1909,6 +1909,11 @@ mp_input_check_interrupt(int time) {
   case MP_CMD_PLAY_ALT_SRC_STEP:
     // The cmd will be executed when we are back in the main loop
     return 1;
+  case MP_CMD_PAUSE:
+	  // remove the cmd from the queue
+	  cmd = mp_input_get_cmd(time,0,0);
+	  mp_cmd_free(cmd);
+    return 1;
   }
   // remove the cmd from the queue
   cmd = mp_input_get_cmd(time,0,0);

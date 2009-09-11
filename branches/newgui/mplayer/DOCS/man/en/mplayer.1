@@ -1,4 +1,4 @@
-.\" $Revision: 29461 $
+.\" $Revision: 29661 $
 .\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .
@@ -527,6 +527,11 @@ named 'movie.avi.conf' with the file-specific options in it and put it in
 You can also put the configuration file in the same directory as the file to
 be played, as long as you give the \-use\-filedir\-conf option (either on the
 command line or in your global config file).
+If a file-specific configuration file is found in the same directory, no file-specific
+configuration is loaded from ~/.mplayer.
+In addition, the \-use\-filedir\-conf option enables directory-specific configuration files.
+For this, MPlayer first tries to load a mplayer.conf from the same directory as the file played
+and then tries to load any file-specific configuration.
 .PP
 .I EXAMPLE MPLAYER CONFIGURATION FILE:
 .sp 1
@@ -3281,6 +3286,9 @@ Enables VBI for the vesa, dfbmga and svga video output drivers.
 .B \-wid <window ID> (also see \-guiwid) (X11, OpenGL and DirectX only)
 This tells MPlayer to attach to an existing window.
 Useful to embed MPlayer in a browser (e.g.\& the plugger extension).
+This option fills the given window completely, thus aspect scaling,
+panscan etc. are no longer handled by MPlayer but must be managed by the
+application that created the window.
 .
 .TP
 .B \-xineramascreen <\-2\-...>
@@ -3612,7 +3620,7 @@ Force WarpOverlay! mode.
 .IPs dive
 Force DIVE mode.
 .IPs (no)t23
-Enable/disable workaround for T23 laptop (default: \-not23).
+Enable/disable workaround for T23 laptop (default: disabled).
 Try to enable this option if your video card supports upscaling only.
 .RE
 .PD 1

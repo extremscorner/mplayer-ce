@@ -396,6 +396,7 @@ typedef struct DSPContext {
     void (*vector_fmul_window)(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len);
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
     void (*int32_to_float_fmul_scalar)(float *dst, const int *src, float mul, int len);
+    void (*vector_clipf)(float *dst /* align 16 */, const float *src /* align 16 */, float min, float max, int len /* align 16 */);
 
     /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
      * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
@@ -597,6 +598,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 /* should be defined by architectures supporting
    one or more MultiMedia extension */
 int mm_support(void);
+extern int mm_flags;
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
@@ -609,16 +611,11 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 #define DECLARE_ALIGNED_16(t, v) DECLARE_ALIGNED(16, t, v)
+#define DECLARE_ALIGNED_8(t, v)  DECLARE_ALIGNED(8, t, v)
 
 #if HAVE_MMX
 
 #undef emms_c
-
-extern int mm_flags;
-
-void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
-void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
-void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
 
 static inline void emms(void)
 {
@@ -632,27 +629,18 @@ static inline void emms(void)
         emms();\
 }
 
-void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
-
 #elif ARCH_ARM
 
-extern int mm_flags;
-
 #if HAVE_NEON
-#   define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #   define STRIDE_ALIGN 16
 #endif
 
 #elif ARCH_PPC
 
-extern int mm_flags;
-
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #define STRIDE_ALIGN 16
 
 #elif HAVE_MMI
 
-#define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(16, t, v)
 #define STRIDE_ALIGN 16
 
 #else
@@ -660,10 +648,6 @@ extern int mm_flags;
 #define mm_flags 0
 #define mm_support() 0
 
-#endif
-
-#ifndef DECLARE_ALIGNED_8
-#   define DECLARE_ALIGNED_8(t, v) DECLARE_ALIGNED(8, t, v)
 #endif
 
 #ifndef STRIDE_ALIGN
@@ -698,9 +682,10 @@ typedef struct FFTContext {
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
     void (*imdct_calc)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
+    void (*mdct_calc)(struct MDCTContext *s, FFTSample *output, const FFTSample *input);
 } FFTContext;
 
-extern FFTSample* ff_cos_tabs[13];
+extern FFTSample* const ff_cos_tabs[13];
 
 /**
  * Sets up a complex FFT.
@@ -710,11 +695,13 @@ extern FFTSample* ff_cos_tabs[13];
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
 void ff_fft_permute_c(FFTContext *s, FFTComplex *z);
 void ff_fft_permute_sse(FFTContext *s, FFTComplex *z);
+void ff_fft_permute_neon(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_c(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_sse(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_3dn(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_neon(FFTContext *s, FFTComplex *z);
 
 /**
  * Do the permutation needed BEFORE calling ff_fft_calc().
@@ -753,6 +740,12 @@ static inline void ff_imdct_half(MDCTContext *s, FFTSample *output, const FFTSam
     s->fft.imdct_half(s, output, input);
 }
 
+static inline void ff_mdct_calc(MDCTContext *s, FFTSample *output,
+                                const FFTSample *input)
+{
+    s->fft.mdct_calc(s, output, input);
+}
+
 /**
  * Generate a Kaiser-Bessel Derived Window.
  * @param   window  pointer to half window
@@ -773,18 +766,21 @@ extern float ff_sine_512 [ 512];
 extern float ff_sine_1024[1024];
 extern float ff_sine_2048[2048];
 extern float ff_sine_4096[4096];
-extern float *ff_sine_windows[6];
+extern float * const ff_sine_windows[6];
 
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse, double scale);
 void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
+void ff_mdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_calc_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_3dn(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_3dn2(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_calc_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_imdct_half_sse(MDCTContext *s, FFTSample *output, const FFTSample *input);
-void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input);
+void ff_imdct_calc_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
+void ff_mdct_calc_neon(MDCTContext *s, FFTSample *output, const FFTSample *input);
 void ff_mdct_end(MDCTContext *s);
 
 /* Real Discrete Fourier Transform */

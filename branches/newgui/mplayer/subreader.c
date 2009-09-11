@@ -1368,7 +1368,6 @@ sub_data* sub_read_file (char *filename, float fps) {
 
     stream_reset(fd);
     stream_seek(fd,0);
-
 #ifdef CONFIG_ICONV
     sub_utf8_prev=sub_utf8;
     {
@@ -1382,6 +1381,7 @@ sub_data* sub_read_file (char *filename, float fps) {
 			    break;
 			}
 	    }
+
 	    if (k<0) subcp_open(fd);
     }
 #endif

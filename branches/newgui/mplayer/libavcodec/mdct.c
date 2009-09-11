@@ -54,7 +54,7 @@ DECLARE_ALIGNED(16, float, ff_sine_512 [ 512]);
 DECLARE_ALIGNED(16, float, ff_sine_1024[1024]);
 DECLARE_ALIGNED(16, float, ff_sine_2048[2048]);
 DECLARE_ALIGNED(16, float, ff_sine_4096[4096]);
-float *ff_sine_windows[6] = {
+float * const ff_sine_windows[6] = {
     ff_sine_128, ff_sine_256, ff_sine_512, ff_sine_1024, ff_sine_2048, ff_sine_4096
 };
 
@@ -180,7 +180,7 @@ void ff_imdct_calc_c(MDCTContext *s, FFTSample *output, const FFTSample *input)
  * @param input N samples
  * @param out N/2 samples
  */
-void ff_mdct_calc(MDCTContext *s, FFTSample *out, const FFTSample *input)
+void ff_mdct_calc_c(MDCTContext *s, FFTSample *out, const FFTSample *input)
 {
     int i, j, n, n8, n4, n2, n3;
     FFTSample re, im;

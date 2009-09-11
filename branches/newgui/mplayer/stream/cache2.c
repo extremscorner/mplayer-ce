@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "input/input.h"
 #include "osdep/shmem.h"
 #include "osdep/timer.h"
 #if defined(__MINGW32__)
@@ -51,7 +52,8 @@ int stream_fill_buffer(stream_t *s);
 int stream_seek_long(stream_t *s,off_t pos);
 
 #ifdef GEKKO
-#define GEKKO_THREAD_STACKSIZE (32 * 1024)
+//#define GEKKO_THREAD_STACKSIZE (32 * 1024)
+#define GEKKO_THREAD_STACKSIZE (512 * 1024)
 #define GEKKO_THREAD_PRIO 70
 static u8 gekko_stack[GEKKO_THREAD_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #include <ogc/mutex.h>
@@ -247,22 +249,37 @@ retry:
   len=stream_read(s->stream,&s->buffer[pos],space);
   if(len==0) 
   {
-  	if(s->stream->error)
+  	if(s->stream->error>0)
 	{
-		s->stream->error=0; //reset read error
-	  //printf("Error reading stream\n");
-	  //retry if we have cache
-	  cache_fill_status=(s->max_filepos-s->read_filepos)*100.0/s->buffer_size;
-	  if(cache_fill_status<5)
-  		s->eof=1;
-  	  else 
+		s->stream->error++; //count read error
+		
+		if(s->stream->error>1000) //num retries
 		{
-		s->stream->eof=0;
-		//printf("retry read\n");
+			//s->stream->error=0;
+			s->eof=1;
+			//printf("eof\n");
 		}
+		else		
+		{
+		  //printf("Error reading stream\n");
+		  //retry if we have cache
+		  cache_fill_status=(s->max_filepos-s->read_filepos)*100.0/s->buffer_size;
+		  if(cache_fill_status<5)
+		  {	  
+	  		s->eof=1;
+	  		cache_fill_status=-1;  		
+	  		//printf("error: %i\n",s->stream->error);
+	  	  }
+	  	  else 
+			{
+			s->stream->eof=0;
+			//printf("retry read (%f)\n",cache_fill_status);
+			}
+  	    }
 	}
   	else
   	{
+  		cache_fill_status=-1;  	
   		s->eof=1;
   	}
   }
@@ -381,7 +398,6 @@ void cache_uninit(stream_t *s) {
   cache_do_control(s, -2, NULL);
   c->thread_active = 0;
   while(!c->exited) usleep(1000);
-  usleep(1000);
   LWP_JoinThread(s->cache_pid, NULL);  
 #else  
 #if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__)
@@ -439,6 +455,7 @@ if(size>CACHE_LIMIT)
   stream->cache_data=s;
   s->stream=stream; // callback
   s->seek_limit=seek_limit;
+  s->stream->error=0;
 
 
   //make sure that we won't wait from cache_fill
@@ -523,7 +540,6 @@ static void ThreadProc( void *s ){
 #else
   } while (cache_execute_control(s) && ((cache_vars_t*)s)->thread_active);
   ((cache_vars_t*)s)->exited=1;
-
 #endif  
 #if defined(__MINGW32__) || defined(__OS2__)
   _endthread();
@@ -626,8 +642,10 @@ int cache_do_control(stream_t *stream, int cmd, void *arg) {
     default:
       return STREAM_UNSUPPORTED;
   }
-  while (s->control != -1)
-    usec_sleep(CONTROL_SLEEP_TIME);
+  
+while (s->control != -1)
+	usec_sleep(CONTROL_SLEEP_TIME); 
+
   switch (cmd) {
     case STREAM_CTRL_GET_TIME_LENGTH:
     case STREAM_CTRL_GET_CURRENT_TIME:
@@ -699,7 +717,11 @@ int stream_read(stream_t *s,char* mem,int total){
 void refillcache(stream_t *stream,float min)
 {
 	cache_vars_t* s;
+	int out=0;
 	s=stream->cache_data;
+	u64 t1;
+	float old=0;
+	t1 = GetTimerMS();
     while(cache_fill_status<min)
     {
 
@@ -710,11 +732,41 @@ void refillcache(stream_t *stream,float min)
 		//printf("Cache fill: %5.2f%%  \n",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
 		}
 		if(s->eof) break; // file is smaller than prefill size
-		if(stream_check_interrupt(PREFILL_SLEEP_TIME))
-			return 0;
+			
+		if(out==0)out=stream_check_interrupt(PREFILL_SLEEP_TIME);
+		else
+		{ //remove others pause commands if you press pause several times
+		  mp_cmd_t* cmd;
+		  if((cmd = mp_input_get_cmd(PREFILL_SLEEP_TIME,0,1)) != NULL)
+		  {
+			  if(cmd->id==MP_CMD_PAUSE)
+			  {
+				  cmd = mp_input_get_cmd(time,0,0);
+				  mp_cmd_free(cmd);
+			  }
+		  }
+
+		}
+		//printf("Cache fill: %5.2f%%  \n",cache_fill_status);
+		if(cache_fill_status > 5 && out)
+		{
+			//printf("break Cache fill: %5.2f%%  \n",cache_fill_status);
+			return ;
+		}	
 		
-	  
+		//not needed, for security	
+		if(old<cache_fill_status)t1 = GetTimerMS();
+	    if(GetTimerMS()-t1>1500) return ;
+		old=cache_fill_status;
+		usleep(50);
     }
     //printf("end Cache fill: %5.2f%%  \n",cache_fill_status);
     
+}
+int stream_error(stream_t *stream)
+{
+	//cache_vars_t* s;
+
+	//s=stream->cache_data;
+  	return ((cache_vars_t*)stream->cache_data)->stream->error;
 }

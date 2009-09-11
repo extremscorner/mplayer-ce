@@ -60,6 +60,8 @@ int menu_keepdir = 0;
 char *menu_chroot = NULL;
 extern char *filename;
 
+
+
 struct list_entry_s {
   struct list_entry p;
   int d;
@@ -107,7 +109,8 @@ static m_option_t cfg_fields[] = {
 
 static list_entry_t* actual_list;
 static char *next_file=NULL;
-static char *file_dir=NULL;
+static char file_dir[1024];
+static char menu_dir[1024];
 
 
 
@@ -316,6 +319,8 @@ static int open_dir(menu_t* menu,char* args) {
   extern int file_filter;
   char **extensions, **elem, *ext;
 
+fast_pause();	  	  
+
   menu_list_init(menu);
 
   if(mpriv->dir)
@@ -324,7 +329,7 @@ static int open_dir(menu_t* menu,char* args) {
   if(mpriv->p.title && mpriv->p.title != mpriv->title && mpriv->p.title != cfg_dflt.p.title)
     free(mpriv->p.title);
   p = strstr(mpriv->title,"%p");
-
+strcpy(menu_dir,mpriv->dir);
 #ifdef GEKKO
   if(!strcmp(mpriv->dir,"sd:/"))
   {
@@ -334,7 +339,7 @@ static int open_dir(menu_t* menu,char* args) {
 	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT SD device not mounted");
 	  	update_osd_msg();
 		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		return 0;
+		goto error_exit;
 	}
   } 
   else if(!strcmp(mpriv->dir,"ntfs_sd:/"))
@@ -345,7 +350,7 @@ static int open_dir(menu_t* menu,char* args) {
 	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS SD device not mounted");
 	  	update_osd_msg();
 		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		return 0;
+		goto error_exit;
 	}
   } 
   else if(!strcmp(mpriv->dir,"usb:/"))
@@ -361,7 +366,7 @@ static int open_dir(menu_t* menu,char* args) {
 		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
 		  	update_osd_msg();
   			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-			return 0;
+			goto error_exit;
 		}
 	}
   } 
@@ -378,7 +383,7 @@ static int open_dir(menu_t* menu,char* args) {
 		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
 		  	update_osd_msg();
   			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-			return 0;
+			goto error_exit;
 		}
 	}
   } 
@@ -390,7 +395,7 @@ static int open_dir(menu_t* menu,char* args) {
   		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
   		update_osd_msg();
   		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		  return 0;
+		  goto error_exit;
 	  }
   }
   else if(mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')
@@ -402,7 +407,7 @@ static int open_dir(menu_t* menu,char* args) {
   		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Network not yet initialized, Please Wait");
   		  update_osd_msg();
   		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		  return 0;
+		  goto error_exit;
 	  }
 	  	  
 	  device[3]=mpriv->dir[3];
@@ -411,7 +416,7 @@ static int open_dir(menu_t* menu,char* args) {
 		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Error reconnecting to %s ",device);
 		  update_osd_msg();
 		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		  return 0;
+		  goto error_exit;	  
 	  }	  
 	  
   }
@@ -423,7 +428,7 @@ static int open_dir(menu_t* menu,char* args) {
 	  {
   		  set_osd_msg(124,1,2000,"Network not yet initialized, Please Wait");
   		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		  return 0;
+		  goto error_exit;
 	  }
 	  	  
 	  device[3]=mpriv->dir[3];
@@ -432,7 +437,7 @@ static int open_dir(menu_t* menu,char* args) {
 	  {
 		  set_osd_msg(124,1,2000,"Error reconnecting to %s ",device);
 		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		  return 0;
+		  goto error_exit;
 	  } else rm_osd_msg(124);
   } 
 #endif
@@ -440,7 +445,7 @@ static int open_dir(menu_t* menu,char* args) {
 
   if ((dirp = opendir (mpriv->dir)) == NULL){
     mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_LIBMENU_OpendirError, strerror(errno));
-    return 0;
+    goto error_exit;
   }
 
   if (menu_keepdir) {
@@ -461,7 +466,7 @@ static int open_dir(menu_t* menu,char* args) {
   {
     set_osd_msg(124,1,4000,"Your 'file_ext' file is empty, check it");  
     mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-  	return 0;
+  	goto error_exit;
   }
 
 
@@ -521,7 +526,7 @@ bailout:
 
   if (n < 0) {
     mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_LIBMENU_ReaddirError,strerror(errno));
-    return 0;
+    goto error_exit;
   }
   while(n--) {
     if((e = calloc(1,sizeof(list_entry_t))) != NULL){
@@ -537,7 +542,12 @@ bailout:
   }
   free(namelist);
 
+fast_continue();
   return 1;
+  
+error_exit:
+fast_continue();
+return 0;  
 }
 
 static char *action;
@@ -585,7 +595,7 @@ static void read_cmd(menu_t* menu,int cmd) {
       //rodries
       if(strstr(action,"loadfile")!=NULL)
 	  {	  	
-	  	file_dir=mpriv->dir;
+	  	strcpy(file_dir,mpriv->dir);
 	  	if(mpriv->p.current->p.next!=NULL)
 	  	{
 		  	actual_list=mpriv->p.current->p.next;
@@ -614,6 +624,7 @@ static void read_cmd(menu_t* menu,int cmd) {
   default:
     menu_list_read_cmd(menu,cmd);
   }
+  strcpy(menu_dir,mpriv->dir);
 }
 
 static int read_key(menu_t* menu,int c){
@@ -632,6 +643,8 @@ static int read_key(menu_t* menu,int c){
 static void clos(menu_t* menu) {
   menu_list_uninit(menu,free_entry);
   free(mpriv->dir);
+  mpriv->dir=NULL;
+  menu_dir[0]='\0';
 }
 
 static int open_fs(menu_t* menu, char* args) {
@@ -726,6 +739,9 @@ bool check_play_next_file(char *fileplaying,char *next_filename)
 {
 	//printf("dir_play: %i\n",dir_play);
 	if(next_file==NULL || dir_play==false) return false;
+	
+	if(menu_dir[0]=='\0') return false;
+	if(strcmp(file_dir,menu_dir)!=0) return false;
 	
 	sprintf(next_filename,"%s%s",file_dir,next_file);
 //	int dist=levenshtein_distance(fileplaying,next_filename);

@@ -533,7 +533,7 @@ SRCS_MPLAYER-$(ARTS)         += libao2/ao_arts.c
 SRCS_MPLAYER-$(BL)           += libvo/vo_bl.c
 SRCS_MPLAYER-$(CACA)         += libvo/vo_caca.c
 SRCS_MPLAYER-$(COREAUDIO)    += libao2/ao_coreaudio.c
-SRCS_MPLAYER-$(COREVIDEO)    += libvo/vo_corevideo.m
+SRCS_MPLAYER-$(COREVIDEO)    += libvo/vo_corevideo.m libvo/osx_common.c
 SRCS_MPLAYER-$(DART)         += libao2/ao_dart.c
 SRCS_MPLAYER-$(DFBMGA)       += libvo/vo_dfbmga.c
 SRCS_MPLAYER-$(DGA)          += libvo/vo_dga.c
@@ -610,7 +610,7 @@ SRCS_MPLAYER-$(OSS)           += libao2/ao_oss.c
 SRCS_MPLAYER-$(PNG)           += libvo/vo_png.c
 SRCS_MPLAYER-$(PNM)           += libvo/vo_pnm.c
 SRCS_MPLAYER-$(PULSE)         += libao2/ao_pulse.c
-SRCS_MPLAYER-$(QUARTZ)        += libvo/vo_quartz.c
+SRCS_MPLAYER-$(QUARTZ)        += libvo/vo_quartz.c libvo/osx_common.c
 SRCS_MPLAYER-$(S3FB)          += libvo/vo_s3fb.c
 SRCS_MPLAYER-$(SDL)           += libao2/ao_sdl.c libvo/vo_sdl.c
 SRCS_MPLAYER-$(SGIAUDIO)      += libao2/ao_sgi.c
@@ -877,18 +877,24 @@ osdep/gx_supp-wiilib.o: osdep/gx_supp.c
 osdep/plat_gekko-wiilib.o: osdep/plat_gekko.c
 	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
 
+osdep/getch2-gekko-wiilib.o: osdep/getch2-gekko.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
 A1 =	$(subst gx_supp.o,gx_supp-wiilib.o,$(OBJS_MPLAYER))
 A2 =	$(subst mplayer.o,mplayer-wiilib.o,$(A1))
 A3 =	$(subst plat_gekko.o,plat_gekko-wiilib.o,$(A2))
 A4 =	$(subst command.o,command-wiilib.o,$(A3))
+
+A5 =	$(subst getch2-gekko.o,getch2-gekko-wiilib.o,$(OBJS_COMMON))
+
 MPLAYERWIILIB = $(A4) 
-MPLAYERWIILIB += $(OBJS_COMMON) 
+MPLAYERWIILIB += $(A5) 
 
 libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
 	rm -f $@
 	$(AR) rc $@ $(MPLAYERWIILIB)
 	 
-#	$(RANLIB) $@
+	$(RANLIB) $@
 #############################################################
 
 #TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(filter-out %mencoder.o,$(OBJS_MENCODER)) $(OBJS_COMMON) $(COMMON_LIBS)

@@ -28,6 +28,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <malloc.h>
+
 
 #include <ogcsys.h>
 #include <ogc/lwp_watchdog.h>
@@ -65,6 +67,8 @@
 
 #define MPCE_VERSION "0.76"
 
+//#define USE_NET_THREADS
+
 extern int stream_cache_size;
 
 bool reset_pressed = false;
@@ -87,11 +91,16 @@ static bool usb_init=false;
 static bool exit_automount_thread=false;
 //static bool net_called=false;
 
-#define MOUNT_STACKSIZE 32768
+#define MOUNT_STACKSIZE 8*1024
 static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
-#define NET_STACKSIZE 32768
+#define NET_STACKSIZE 8*1024
 static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
-
+#ifdef USE_NET_THREADS
+#define CONN_STACKSIZE 8*1024
+static u8 smbx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
+static u8 ftpx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
+#endif
+lwp_t mountthread;
 
 //#define CE_DEBUG 1
 
@@ -102,10 +111,16 @@ static char *default_args[] = {
 	"-idle", NULL,
 #ifndef CE_DEBUG
 	"-really-quiet",
+<<<<<<< .mine
+//	"-msglevel","all=9",
+#endif	
+=======
 #endif
+>>>>>>> .r399
 	"-vo","gekko","-ao","gekko",
 	"-menu","-menu-startup"
 };
+
 
 static void reset_cb (void) {
 	reset_pressed = true;
@@ -115,7 +130,7 @@ static void power_cb (void) {
 	power_pressed = true;
 }
 
-static void wpad_power_cb (void) {
+static void wpad_power_cb (s32 chan) {
 	power_pressed = true;
 }
 
@@ -135,11 +150,9 @@ void gekko_abort(void) {
 	exit(-1);
 }
 
-void __dec(char *cad){int i;for(i=0;cad[i]!='\0';i++)cad[i]=cad[i]-50;}
-void sp(){sleep(5);}
+static void __dec(char *cad){int i;for(i=0;cad[i]!='\0';i++)cad[i]=cad[i]-50;}
+static void sp(){sleep(5);}
 
-void trysmb();
-void tryftp();
 
 // Mounting code
 #include <sdcard/wiisd_io.h>
@@ -151,10 +164,17 @@ const static DISC_INTERFACE* usb = &__io_usbstorage;
 
 static lwp_t mainthread;
 
+<<<<<<< .mine
+/******************************************/
+/*           NETWORK FUNCTIONS            */
+/******************************************/
+
+static s32 initialise_network() 
+=======
 static s32 initialise_network()
+>>>>>>> .r399
 {
     s32 result;
-    int cnt=0;
     while ((result = net_init()) == -EAGAIN)
 	{
 		usleep(1000);
@@ -162,7 +182,11 @@ static s32 initialise_network()
     return result;
 }
 
+<<<<<<< .mine
+static int wait_for_network_initialisation() 
+=======
 int wait_for_network_initialisation()
+>>>>>>> .r399
 {
 	if(network_inited) return 1;
 
@@ -198,6 +222,14 @@ int wait_for_network_initialisation()
 	return 0;
 }
 
+<<<<<<< .mine
+static void trysmb();
+static void tryftp();
+
+=======
+>>>>>>> .r399
+<<<<<<< .mine
+=======
 bool DVDGekkoMount()
 {
 #ifdef WIILIB
@@ -225,7 +257,18 @@ bool DVDGekkoMount()
 #endif
 }
 
+>>>>>>> .r399
 static void * networkthreadfunc (void *arg)
+<<<<<<< .mine
+{	
+	//dbg_network=true;
+	wait_for_network_initialisation();
+	usleep(100);
+#ifndef USE_NET_THREADS	
+	trysmb();
+	tryftp();
+#endif	
+=======
 {
 	if(wait_for_network_initialisation())
 	{
@@ -233,9 +276,14 @@ static void * networkthreadfunc (void *arg)
 		tryftp();
 	}
 	LWP_JoinThread(mainthread,NULL);
+>>>>>>> .r399
 	return NULL;
 }
 
+<<<<<<< .mine
+static bool mount_smb(int number)
+{	
+=======
 
 #include <sys/iosupport.h>
 bool DeviceMounted(const char *device)
@@ -263,11 +311,18 @@ bool DeviceMounted(const char *device)
 bool mount_smb(int number)
 {
 
+>>>>>>> .r399
 	char* smb_ip=NULL;
 	char* smb_share=NULL;
 	char* smb_user=NULL;
 	char* smb_pass=NULL;
+<<<<<<< .mine
+	char device[10];
+	char file[100];
 
+=======
+
+>>>>>>> .r399
 	m_config_t *smb_conf;
 	m_option_t smb_opts[] =
 	{
@@ -278,13 +333,22 @@ bool mount_smb(int number)
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};
 	char cad[4][10];
+<<<<<<< .mine
+
+	sprintf(cad[0],"ip%d",number);smb_opts[0].name=cad[0];	
+	sprintf(cad[1],"share%d",number);smb_opts[1].name=cad[1];	
+	sprintf(cad[2],"user%d",number);smb_opts[2].name=cad[2];	
+	sprintf(cad[3],"pass%d",number);smb_opts[3].name=cad[3];	
+=======
 	sprintf(cad[0],"ip%d",number);smb_opts[0].name=cad[0];
 	sprintf(cad[1],"share%d",number);smb_opts[1].name=cad[1];
 	sprintf(cad[2],"user%d",number);smb_opts[2].name=cad[2];
 	sprintf(cad[3],"pass%d",number);smb_opts[3].name=cad[3];
+>>>>>>> .r399
+
+	sprintf(device,"smb%d",number);
 
 	/* read configuration */
-	char file[100];
 	sprintf(file,"%s/smb.conf",MPLAYER_DATADIR);
 
 	smb_conf = m_config_new();
@@ -292,49 +356,78 @@ bool mount_smb(int number)
 	m_config_parse_config_file(smb_conf, file);
 	m_config_free(smb_conf);
 
+<<<<<<< .mine
+	if(smb_ip==NULL || smb_share==NULL) 
+=======
 
 	if(smb_ip==NULL || smb_share==NULL)
+>>>>>>> .r399
 	{
+		if(dbg_network) printf("SMB %s not filled\n",device);
+		sleep(1); // sync problem on libogc threads
 		return false;
 	}
 
 	if(smb_user==NULL) smb_user=strdup("");
 	if(smb_pass==NULL) smb_pass=strdup("");
-	sprintf(cad[0],"smb%d",number);
+	
 	if(dbg_network)
 	{
+<<<<<<< .mine
+		 u64 t1,t2;
+	 t1=ticks_to_millisecs(gettime());
+
+	 printf("Mounting SMB : '%s' ip:%s  share:'%s'\n",device,smb_ip,smb_share);
+	 if(!smbInitDevice(device,smb_user,smb_pass,smb_share,smb_ip)) 
+=======
 	 printf("Mounting SMB : '%s' ip:%s  share:'%s'\n",cad[0],smb_ip,smb_share);
 	 if(!smbInitDevice(cad[0],smb_user,smb_pass,smb_share,smb_ip))
+>>>>>>> .r399
 	 {
-	 	printf("error mounting '%s'\n",cad[0]);
+		t2=ticks_to_millisecs(gettime());
+	 	printf("error mounting '%s' (%u ms)\n",device,(unsigned)(t2-t1));
 	 	return false;
 	 }
 	 else
 	 {
-	 	printf("ok mounting '%s'\n",cad[0]);
+	 	t2=ticks_to_millisecs(gettime());
+	 	printf("ok mounting '%s' (%u ms)\n",device,(unsigned)(t2-t1));
 	 	return true;
 	 }
 	}
 	else
-	  return smbInitDevice(cad[0],smb_user,smb_pass,smb_share,smb_ip);
+	  return smbInitDevice(device,smb_user,smb_pass,smb_share,smb_ip);
 
 }
 
+<<<<<<< .mine
+=======
 void trysmb()
 {
 	int i;
 	for(i=1;i<=5;i++) mount_smb(i);
 }
 
+>>>>>>> .r399
 bool mount_ftp(int number)
+<<<<<<< .mine
+{	
+=======
 {
 
+>>>>>>> .r399
 	char* ftp_ip=NULL;
 	char* ftp_share=NULL;
 	char* ftp_user=NULL;
 	char* ftp_pass=NULL;
 	int ftp_passive = false;
+<<<<<<< .mine
+	char device[10];
+	char cad[5][12];
+	char file[100];	
+=======
 
+>>>>>>> .r399
 	m_config_t *ftp_conf;
 	m_option_t ftp_opts[] =
 	{
@@ -346,63 +439,202 @@ bool mount_ftp(int number)
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};
 
-	char cad[4][10];
+	sprintf(device,"ftp%d",number);
+
+<<<<<<< .mine
+	sprintf(cad[0],"ip%d",number);ftp_opts[0].name=cad[0];	
+	sprintf(cad[1],"share%d",number);ftp_opts[1].name=cad[1];	
+	sprintf(cad[2],"user%d",number);ftp_opts[2].name=cad[2];	
+	sprintf(cad[3],"pass%d",number);ftp_opts[3].name=cad[3];	
+	sprintf(cad[4],"passive%d",number);ftp_opts[4].name=cad[4];	
+=======
 	sprintf(cad[0],"ip%d",number);ftp_opts[0].name=cad[0];
 	sprintf(cad[1],"share%d",number);ftp_opts[1].name=cad[1];
 	sprintf(cad[2],"user%d",number);ftp_opts[2].name=cad[2];
 	sprintf(cad[3],"pass%d",number);ftp_opts[3].name=cad[3];
 	sprintf(cad[4],"passive%d",number);ftp_opts[3].name=cad[3];
 
+>>>>>>> .r399
 	/* read configuration */
-	char file[100];
 	sprintf(file,"%s/ftp.conf",MPLAYER_DATADIR);
-
+	
 	ftp_conf = m_config_new();
 	m_config_register_options(ftp_conf, ftp_opts);
 	m_config_parse_config_file(ftp_conf, file);
 	m_config_free(ftp_conf);
 
+<<<<<<< .mine
+	if(ftp_ip==NULL || ftp_share==NULL) 
+=======
 
 	if(ftp_ip==NULL || ftp_share==NULL)
+>>>>>>> .r399
 	{
+		if(dbg_network) printf("FTP %s not filled\n",device);
+		sleep(1);  // sync problem on libogc threads
 		return false;
 	}
 
 	if(ftp_user==NULL) ftp_user=strdup("anonymous");
 	if(ftp_pass==NULL) ftp_pass=strdup("anonymous");
 
+<<<<<<< .mine
+=======
 	sprintf(cad[0],"ftp%d",number);
 
+>>>>>>> .r399
 	if(dbg_network)
 	{
+<<<<<<< .mine
+	 printf("Mounting FTP : '%s' host:%s  share:'%s, PASV: %d'\n",device,ftp_ip,ftp_share,ftp_passive);
+	 u64 t1,t2;
+	 t1=GetTimerMS();
+	 if(!ftpInitDevice(device,ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0)) 
+	 { 
+=======
 	 printf("Mounting FTP : '%s' host:%s  share:'%s, PASV: %d'\n",cad[0],ftp_ip,ftp_share,ftp_passive);
 	 if(!ftpInitDevice(cad[0],ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0))
 	 {
-	 	printf("error mounting '%s'\n",cad[0]);
+>>>>>>> .r399
+		 t2=GetTimerMS()-t1;
+	 	printf("error mounting '%s' (%u ms)\n",device,(unsigned)(t2));
 	 	return false;
 	 }
 	 else
 	 {
-	 	printf("ok mounting '%s'\n",cad[0]);
+	 	t2=GetTimerMS()-t1;
+	 	printf("ok mounting '%s' (%u ms)\n",device,(unsigned)(t2));
 	 	return true;
 	 }
 	}
 	else
+<<<<<<< .mine
+	  return ftpInitDevice(device,ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0); 
+=======
 	  return ftpInitDevice(cad[0],ftp_user,ftp_pass,ftp_share,ftp_ip,ftp_passive>0);
 
+>>>>>>> .r399
 }
 
-
-void tryftp()
+static void trysmb()
 {
+	int i;
+	for(i=1;i<=5;i++) mount_smb(i);
+}
+
+static void tryftp()
+{	
 	int i;
 	for(i=1;i<=5;i++) mount_ftp(i);
 }
 
-
-int LoadParams()
+#ifdef USE_NET_THREADS		
+static void * smbthread (void *arg)
 {
-  m_config_t *comp_conf;
+	int i;
+	i=*((int*)arg);	
+	while(network_inited==0) usleep(5000);
+	usleep(200);
+	mount_smb(i+1);
+	
+	return NULL;
+}
+
+static void * ftpthread (void *arg)
+{
+	int i;
+	i=*((int*)arg);	
+	while(network_inited==0) usleep(5000);
+	usleep(200);
+	mount_ftp(i+1);
+	
+	return NULL;
+}
+#endif
+	
+static void InitNetworkThreads()
+{
+#ifdef USE_NET_THREADS
+	int i,x1[5],x2[5];
+#endif	
+	lwp_t clientthread;		
+	memset (net_Stack, 0, NET_STACKSIZE);
+	
+
+	LWP_CreateThread(&clientthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
+#ifdef USE_NET_THREADS
+	for(i=0;i<5;i++) 
+	{
+		x1[i]=i;
+		memset (ftpx_Stack[i], 0, CONN_STACKSIZE);
+		LWP_CreateThread(&clientthread, ftpthread, &x1[i], ftpx_Stack[i], CONN_STACKSIZE, 64); // ftp initialization
+	} 
+	for(i=0;i<5;i++) 
+	{
+		x2[i]=i;
+		memset (smbx_Stack[i], 0, CONN_STACKSIZE);
+		LWP_CreateThread(&clientthread, smbthread, &x2[i], smbx_Stack[i], CONN_STACKSIZE, 64); // samba initialization
+	} 
+#endif	
+}
+/******************************************/
+/*        END NETWORK FUNCTIONS           */
+/******************************************/
+
+bool DVDGekkoMount()
+{
+	if(playing_dvd || dvd_mounted) return true;
+	set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Mounting DVD, please wait");
+	force_osd();
+
+	//if(dvd_mounted) return true;
+	dvd_mounting=true;
+	if(WIIDVD_DiscPresent())
+	{
+		int ret;
+		WIIDVD_Unmount();
+		ret = WIIDVD_Mount();
+		dvd_mounted=true;
+		dvd_mounting=false;
+		if(ret==-1) return false;
+		return true;		
+	}
+	dvd_mounting=false;
+	dvd_mounted=false;
+	return false;
+}
+
+
+
+#include <sys/iosupport.h>
+bool DeviceMounted(const char *device)
+{
+  devoptab_t *devops;
+  int i,len;
+  char *buf;
+  
+  len = strlen(device);
+  buf=(char*)malloc(sizeof(char)*len+2);
+  strcpy(buf,device);
+  if ( buf[len-1] != ':')
+  {
+    buf[len]=':';  
+    buf[len+1]='\0';
+  }   
+  devops = (devoptab_t*)GetDeviceOpTab(buf);
+  if (!devops) return false;
+  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
+  if (!devops || strncasecmp(buf,devops->name,i)) return false;
+  return true;
+}
+
+
+
+
+static int LoadParams()
+{
+	char cad[100];
+	m_config_t *comp_conf;
 	m_option_t comp_opts[] =
 	{
 	    //{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},  //deprecated
@@ -418,8 +650,7 @@ int LoadParams()
 	/* read configuration */
 	comp_conf = m_config_new();
 	m_config_register_options(comp_conf, comp_opts);
-	int ret;
-	char cad[100];
+	
 	sprintf(cad,"%s/mplayer.conf",MPLAYER_DATADIR);
 	return m_config_parse_config_file(comp_conf, cad);
 }
@@ -520,7 +751,7 @@ static off_t get_filesize(char *FileName)
     return 0;
 }
 
-bool load_ehci_module()
+static bool load_ehci_module()
 {
 	data_elf my_data_elf;
 	off_t fsize;
@@ -534,7 +765,7 @@ bool load_ehci_module()
 	if(fp!=NULL)
 	{
 		fsize=get_filesize(file);
-		external_ehcmodule= memalign(32, fsize);
+		external_ehcmodule= (void *)memalign(32, fsize);
 		if(!external_ehcmodule)
 		{
 			fclose(fp);
@@ -610,19 +841,35 @@ static void * mountthreadfunc (void *arg)
 				if(!dp)dvd_mounted=false; // eject
 			}
 		}
+<<<<<<< .mine
+		if(exit_automount_thread) break;
+		usleep(200000);	
+		if(exit_automount_thread) break;	
+		usleep(200000);		
+		if(exit_automount_thread) break;	
+		usleep(200000);		
+		if(exit_automount_thread) break;	
+		usleep(200000);		
+		//usleep(300000);		
+=======
 		usleep(400000);
 		usleep(400000);
 		//usleep(300000);
+>>>>>>> .r399
 		//sleep(1);
 	}
+<<<<<<< .mine
+#endif		
+=======
 #endif
 	LWP_JoinThread(mainthread,NULL);
+>>>>>>> .r399
 	return NULL;
 }
 
 bool FindIOS(u32 ios)
 {
-	u32 len_buf;
+	//u32 len_buf;
 	s32 ret;
 	int n;
 
@@ -642,7 +889,7 @@ bool FindIOS(u32 ios)
 		return false;
 	}
 
-	titles = memalign(32, num_titles * sizeof(u64) + 32);
+	titles = (u64 *)memalign(32, num_titles * sizeof(u64) + 32);
 	if (!titles)
 	{
 		printf("error memalign\n");
@@ -658,7 +905,7 @@ bool FindIOS(u32 ios)
 	}
 
 	for(n=0; n<num_titles; n++) {
-		u32 tidl = (titles[n] &  0xFFFFFFFF);
+		//u32 tidl = (titles[n] &  0xFFFFFFFF);
 		if((titles[n] &  0xFFFFFFFF)==ios)
 		{
 			free(titles);
@@ -700,18 +947,26 @@ printf("m1(%.2f) m2(%.2f)\n",
 
 void plat_init (int *argc, char **argv[]) {
 	int mload=-1;
+<<<<<<< .mine
+	char cad[10]={127,130,158,147,171,151,164,117,119,0};
+	
+=======
 
+>>>>>>> .r399
 	VIDEO_Init();
 	GX_InitVideo();
 	log_console_init(vmode, 0);
 
-  printf("Loading ");
+	printf("Loading ");
 
-  char cad[10]={127,130,158,147,171,151,164,117,119,0};
-  __dec(cad);
-	printf("\x1b[32m%s v.%s ....\x1b[37m\n\n",cad,MPCE_VERSION);
+	__dec(cad);
+	printf("\x1b[32m%s v.%s ....\x1b[37m\n\n",cad,MPCE_VERSION);	
+<<<<<<< .mine
+	
+=======
 
 
+>>>>>>> .r399
 	VIDEO_WaitVSync();
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
@@ -729,12 +984,11 @@ void plat_init (int *argc, char **argv[]) {
 	}
 	else WIIDVD_Init(false);
 
-//	IOS_ReloadIOS(202);
-//	if(IOS_GetVersion()<200) IOS_ReloadIOS(202);
-
 	mload=mload_init();
+<<<<<<< .mine
+=======
 	//usleep(1000);
-
+>>>>>>> .r399
 
 
 	PAD_Init();
@@ -750,9 +1004,12 @@ void plat_init (int *argc, char **argv[]) {
 
 	if (!DetectValidPath())
 	{
+<<<<<<< .mine
+=======
 		//GX_InitVideo();
 		//log_console_init(vmode, 0);
 		//printf("MPlayerCE v.%s\n\n",MPCE_VERSION);
+>>>>>>> .r399
 		printf("SD/USB access failed\n");
 		printf("Please check that you have installed MPlayerCE in the right folder\n");
 		printf("Valid folders:\n");
@@ -773,8 +1030,12 @@ void plat_init (int *argc, char **argv[]) {
 	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
 
 
+<<<<<<< .mine
+	mainthread=LWP_GetSelf(); 	
+=======
 	mainthread=LWP_GetSelf();
 	lwp_t clientthread;
+>>>>>>> .r399
 
 #ifndef CE_DEBUG  //no network on debug
 	if(dbg_network)
@@ -783,6 +1044,7 @@ void plat_init (int *argc, char **argv[]) {
 		if(wait_for_network_initialisation())
 		{
 			trysmb();
+			tryftp();
 		}
 		printf("Pause for reading (10 seconds)...");
 		VIDEO_WaitVSync();
@@ -790,8 +1052,7 @@ void plat_init (int *argc, char **argv[]) {
 	}
 	else
 	{
-		LWP_CreateThread(&clientthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 50); // network initialization
-		//LWP_CreateThread(&clientthread, networkthreadfunc, NULL, NULL, 0, 50); // network initialization
+		InitNetworkThreads();
 	}
 #endif
 
@@ -807,6 +1068,7 @@ void plat_init (int *argc, char **argv[]) {
 		 	load_ehci_module();
 		 	usb->isInserted();
 			fatMount("usb",usb,0,3,256);
+			mount_usb_ntfs();
 		}
 	}
 	else
@@ -833,7 +1095,6 @@ void plat_init (int *argc, char **argv[]) {
 
 if(*argc<3)
 {
-
 	default_args[2]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
 	strcpy(default_args[2],MPLAYER_DATADIR);
 	default_args[4]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
@@ -860,11 +1121,16 @@ else
 	{
 		usb_init=true;
 		fatMount("usb",usb,0,3,256);
+		mount_usb_ntfs();
 	}
 }
+<<<<<<< .mine
+	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
+=======
 
 	LWP_CreateThread(&clientthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 50); // auto mount fs (usb, dvd)
 	//LWP_CreateThread(&clientthread, mountthreadfunc, NULL, NULL, 0, 50); // auto mount fs (usb, dvd)
+>>>>>>> .r399
 
 	// only used for cache_mem at now  (stream_cache_size + 8kb(paranoid)
 	InitMem2Manager((stream_cache_size*1024)+(8*1024));
@@ -876,10 +1142,19 @@ else
 
 void plat_deinit (int rc) {
 	exit_automount_thread=true;
+	LWP_JoinThread(mountthread,NULL);
 	ntfsUnmount ("ntfs0", true); //I think that we don't need it
+<<<<<<< .mine
+	//ExitTimer();
+	
+=======
 
+>>>>>>> .r399
+<<<<<<< .mine
+=======
 	ExitTimer();
 
+>>>>>>> .r399
 	if (power_pressed) {
 		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);

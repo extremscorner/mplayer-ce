@@ -1256,7 +1256,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return -1;
     }
 
-    if(entries >= UINT_MAX / sizeof(int))
+    if (entries >= UINT_MAX / sizeof(int) || entries >= (UINT_MAX - 4) / field_size)
         return -1;
     sc->sample_sizes = av_malloc(entries * sizeof(int));
     if (!sc->sample_sizes)
@@ -1905,8 +1905,12 @@ free_and_return:
 /* edit list atom */
 static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
-    MOVStreamContext *sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
+    MOVStreamContext *sc;
     int i, edit_count;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
 
     get_byte(pb); /* version */
     get_be24(pb); /* flags */

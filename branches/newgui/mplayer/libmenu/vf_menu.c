@@ -58,12 +58,12 @@ struct vf_priv_s {
 
 static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts);
 
-/*
+
 void clear_pause_mpi()
 {
 	clear_mpi(pause_mpi);
 }
-*/
+
 
 void vf_menu_pause_update(struct vf_instance_s* vf) {
   const vo_functions_t *video_out = mpctx_get_video_out(vf->priv->current->ctx);
@@ -230,6 +230,7 @@ static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 			mpi->w,mpi->h);
     copy_mpi(dmpi,mpi);
   }
+
   menu_draw(vf->priv->current,dmpi);
 
   } else {

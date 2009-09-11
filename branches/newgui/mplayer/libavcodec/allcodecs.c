@@ -232,12 +232,14 @@ void avcodec_register_all(void)
     REGISTER_DECODER (VMDAUDIO, vmdaudio);
     REGISTER_ENCDEC  (VORBIS, vorbis);
     REGISTER_DECODER (WAVPACK, wavpack);
+    REGISTER_DECODER (WMAPRO, wmapro);
     REGISTER_ENCDEC  (WMAV1, wmav1);
     REGISTER_ENCDEC  (WMAV2, wmav2);
     REGISTER_DECODER (WS_SND1, ws_snd1);
 
     /* PCM codecs */
     REGISTER_ENCDEC  (PCM_ALAW, pcm_alaw);
+    REGISTER_DECODER (PCM_BLURAY, pcm_bluray);
     REGISTER_DECODER (PCM_DVD, pcm_dvd);
     REGISTER_ENCDEC  (PCM_F32BE, pcm_f32be);
     REGISTER_ENCDEC  (PCM_F32LE, pcm_f32le);
@@ -301,6 +303,7 @@ void avcodec_register_all(void)
     /* subtitles */
     REGISTER_ENCDEC  (DVBSUB, dvbsub);
     REGISTER_ENCDEC  (DVDSUB, dvdsub);
+    REGISTER_DECODER (PGSSUB, pgssub);
     REGISTER_ENCDEC  (XSUB, xsub);
 
     /* external libraries */
