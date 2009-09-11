@@ -18,6 +18,7 @@
 #include "menu.h"
 #include "video.h"
 #include "input.h"
+#include "settings.h"
 #include "libwiigui/gui.h"
 
 int rumbleRequest[4] = {0,0,0,0};
@@ -43,6 +44,8 @@ void ShutoffRumble()
 
 void DoRumble(int i)
 {
+	if(!CESettings.rumble) return;
+
 	if(rumbleRequest[i] && rumbleCount[i] < 3)
 	{
 		WPAD_Rumble(i, 1); // rumble on

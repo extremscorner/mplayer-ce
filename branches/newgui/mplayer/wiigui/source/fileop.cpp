@@ -22,6 +22,7 @@
 #include "networkop.h"
 #include "menu.h"
 #include "filebrowser.h"
+#include "settings.h"
 
 #define THREAD_SLEEP 100
 
@@ -381,17 +382,47 @@ void CreateAppPath(char * origpath)
 	free(path);
 }
 
+/****************************************************************************
+ * StripExt
+ *
+ * Strips an extension from a filename
+ ***************************************************************************/
+void StripExt(char* string)
+{
+	char* loc_dot;
+
+	if(string == NULL || strlen(string) < 4)
+		return;
+
+	loc_dot = strrchr(string,'.');
+	if (loc_dot != NULL)
+		*loc_dot = 0; // strip file extension
+}
+
+/****************************************************************************
+ * CleanFilename
+ *
+ * Strips out all of the useless nonsense from a filename
+ ***************************************************************************/
+void CleanFilename(char* string)
+{
+	if(string == NULL || strlen(string) < 4)
+		return;
+}
+
 bool ParseDirEntries()
 {
 	if(!dirIter)
 		return false;
 
 	char filename[MAXPATHLEN];
+	char **elem, *ext;
 	struct stat filestat;
 
-	int i, res;
+	int i = 0;
+	int res;
 
-	for(i=0; i < 20; i++)
+	while(i < 20)
 	{
 		res = dirnext(dirIter,filename,&filestat);
 
@@ -399,11 +430,27 @@ bool ParseDirEntries()
 			break;
 
 		if(strcmp(filename,".") == 0)
-		{
-			i--;
 			continue;
+
+		// check that this file's extension is on the list of visible file types
+		if(CESettings.filterFiles && CESettings.extensions)
+		{
+			if((ext = strrchr(filename,'.')) == NULL)
+				continue; // file does not have an extension - skip it
+
+			ext++;
+			elem = CESettings.extensions;
+
+			do
+			{
+				if (!strcasecmp(ext, *elem))
+					break;
+			} while (*++elem);
+			if (*elem == NULL) // extension not found
+				continue;
 		}
 
+		// add the entry
 		if(AddBrowserEntry())
 		{
 			strncpy(browserList[browser.numEntries+i].filename, filename, MAXJOLIET);
@@ -423,17 +470,25 @@ bool ParseDirEntries()
 			{
 				strncpy(browserList[browser.numEntries+i].displayname, browserList[browser.numEntries+i].filename, MAXJOLIET);
 				browserList[browser.numEntries+i].icon = ICON_NONE;
+
+				// hide the file's extension
+				if(CESettings.hideExtensions)
+					StripExt(browserList[browser.numEntries+i].displayname);
+
+				// strip unwanted stuff from the filename
+				if(CESettings.cleanFilenames)
+					CleanFilename(browserList[browser.numEntries+i].displayname);
 			}
+			i++;
 		}
 		else
 		{
-			i = -1;
 			parseHalt = true;
 		}
 	}
 
 	// Sort the file list
-	if(i >= 0)
+	if(i > 0)
 	{
 		browser.numEntries += i;
 		qsort(browserList, browser.numEntries, sizeof(BROWSERENTRY), FileSortCallback);

@@ -60,6 +60,7 @@ struct SCESettings {
 	int 	playOrder; // PLAY_CONTINUOUS, PLAY_SHUFFLE, PLAY_LOOP, PLAY_SINGLE
 	int 	cleanFilenames;
 	int 	hideExtensions;
+	char ** extensions;
 	int 	filterFiles;
 	int 	language;
 	char 	videoFolder[MAXPATHLEN];
