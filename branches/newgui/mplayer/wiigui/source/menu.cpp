@@ -1826,7 +1826,7 @@ void WiiMenu()
 	GuiImageData btnNavOver(nav_button_png);
 	GuiImageData btnConfig(config_button_png);
 
-	GuiText videoBtnTxt("Videos & Pictures", 18, (GXColor){255, 255, 255, 255});
+	GuiText videoBtnTxt("Videos", 18, (GXColor){255, 255, 255, 255});
 	GuiImage videoBtnImg(&btnNav);
 	GuiImage videoBtnImgOver(&btnNavOver);
 	videoBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
