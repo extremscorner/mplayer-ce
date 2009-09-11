@@ -29,7 +29,8 @@ enum {
 #define SILENT 1
 
 void ExitApp();
-void loadMPlayer();
+void LoadMPlayer();
+void ShutdownMPlayer();
 extern int ScreenshotRequested;
 extern int ConfigRequested;
 extern int ShutdownRequested;
@@ -54,8 +55,6 @@ void log_console_enable_video(bool enable);
 bool FindIOS(u32 ios);   //in plat_gekko.c
 bool load_ehci_module();  //in plat_gekko.c
 void DisableUSB2(bool);  //in special libogc, in usb2storage.c (need to be added to .h)
-
-void ShutdownMPlayer();
 
 #ifdef __cplusplus
 }

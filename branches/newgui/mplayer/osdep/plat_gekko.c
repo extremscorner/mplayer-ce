@@ -59,17 +59,147 @@
 #include "../parser-cfg.h"
 #include "../get_path.h"
 
-#ifndef WIILIB
-#include "osdep/mem2_manager.h"
-#endif
-
 #undef abort
 
 #define MPCE_VERSION "0.76"
 
-//#define USE_NET_THREADS
-
 extern int stream_cache_size;
+
+static float gxzoom=348;
+static float hor_pos=3;
+static float vert_pos=0;
+static float stretch=0;
+
+static off_t get_filesize(char *FileName)
+{
+    struct stat file;
+    if(!stat(FileName,&file))
+    {
+        return file.st_size;
+    }
+    return 0;
+}
+
+bool load_ehci_module()
+{
+	data_elf my_data_elf;
+	off_t fsize;
+	void *external_ehcmodule = NULL;
+	FILE *fp;
+	char file[100];
+	
+	sprintf(file,"%s/ehcmodule.elf",MPLAYER_DATADIR);	
+	
+	fp=fopen(file,"rb");
+	if(fp!=NULL)
+	{
+		fsize=get_filesize(file);
+		external_ehcmodule= (void *)memalign(32, fsize);
+		if(!external_ehcmodule) 
+		{
+			fclose(fp);
+			free(external_ehcmodule); 
+			external_ehcmodule=NULL;
+		}
+		else
+		{
+			if(fread(external_ehcmodule,1, fsize ,fp)!=fsize)
+			{
+				free(external_ehcmodule); 
+				external_ehcmodule=NULL;
+			}
+			else mload_elf((void *) external_ehcmodule, &my_data_elf);
+			fclose(fp);
+		}
+		
+	}
+	else
+		mload_elf((void *) ehcmodule_elf, &my_data_elf);
+
+	if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio)<0)
+	{
+		if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x48)<0) return false;
+	}
+	usleep(1000);
+	return true;
+}
+
+bool FindIOS(u32 ios)
+{
+	//u32 len_buf;
+	s32 ret;
+	int n;
+
+	u64 *titles = NULL;
+	u32 num_titles=0;
+
+	ret = ES_GetNumTitles(&num_titles);
+	if (ret < 0)
+	{
+		printf("error ES_GetNumTitles\n");
+		return false;
+	}
+
+	if(num_titles<1) 
+	{
+		printf("error num_titles<1\n");
+		return false;
+	}
+
+	titles = (u64 *)memalign(32, num_titles * sizeof(u64) + 32);
+	if (!titles)
+	{
+		printf("error memalign\n");
+		return false;
+	}
+
+	ret = ES_GetTitles(titles, num_titles);
+	if (ret < 0)
+	{
+		free(titles);
+		printf("error ES_GetTitles\n");
+		return false;	
+	}
+		
+	for(n=0; n<num_titles; n++) {
+		//u32 tidl = (titles[n] &  0xFFFFFFFF);
+		if((titles[n] &  0xFFFFFFFF)==ios) 
+		{
+			free(titles); 
+			return true;
+		}
+	}
+	
+    free(titles); 
+	return false;
+}
+
+#ifdef WIILIB
+void plat_init (int *argc, char **argv[])
+{
+	//log_console_init(vmode, 0);
+	GX_SetCamPosZ(gxzoom);
+	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
+
+	//chdir(MPLAYER_DATADIR);
+	setenv("HOME", MPLAYER_DATADIR, 1);
+	setenv("DVDCSS_CACHE", "off", 1);
+	setenv("DVDCSS_VERBOSE", "0", 1);
+	setenv("DVDREAD_VERBOSE", "0", 1);
+	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
+
+	stream_cache_size=8*1024; //default cache size (8MB)
+}
+void plat_deinit (int rc)
+{
+
+}
+#else
+
+#include "osdep/mem2_manager.h"
+
+//#define CE_DEBUG 1
+//#define USE_NET_THREADS
   
 bool reset_pressed = false;
 bool power_pressed = false;
@@ -82,14 +212,11 @@ static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static bool dbg_network = false;
 //static int component_fix = false;  //deprecated
-static float gxzoom=348;
-static float hor_pos=3;
-static float vert_pos=0;
-static float stretch=0;
 
 static bool usb_init=false;
 static bool exit_automount_thread=false;
 //static bool net_called=false;
+lwp_t mountthread;
 
 #define MOUNT_STACKSIZE 8*1024
 static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
@@ -99,10 +226,67 @@ static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #define CONN_STACKSIZE 8*1024
 static u8 smbx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
 static u8 ftpx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
-#endif
-lwp_t mountthread;
 
-//#define CE_DEBUG 1
+static void * mountthreadfunc (void *arg)
+{
+	int dp, dvd_inserted=0,usb_inserted=0;
+//todo: add sd automount
+#ifndef CE_DEBUG
+	sleep(1);
+	mount_sd_ntfs(); //only once now
+		
+	usb_inserted=usb_init;
+	
+	while(!exit_automount_thread)
+	{	
+		if(!playing_usb)
+		{
+			mounting_usb=1;
+			
+			dp=usb->isInserted();
+			usleep(500); // needed, I don't know why, but hang if it's deleted
+			//printf(".");fflush(stdout);
+			if(dp!=usb_inserted)
+			{
+				//printf("usb isInserted: %d\n",dp);
+				usb_inserted=dp;
+				if(!dp)
+				{
+					//printf("unmount usb\n");
+					fatUnmount("usb:");
+					ntfsUnmount ("ntfs_usb", true);
+				}else 
+				{
+					//printf("mount usb\n");
+					fatMount("usb",usb,0,3,256);
+					mount_usb_ntfs();
+				}
+			}
+			mounting_usb=0;
+		}	
+		if(dvd_mounting==false)
+		{
+			dp=WIIDVD_DiscPresent();
+			if(dp!=dvd_inserted)
+			{
+				dvd_inserted=dp;
+				if(!dp)dvd_mounted=false; // eject
+			}
+		}
+		if(exit_automount_thread) break;
+		usleep(200000);	
+		if(exit_automount_thread) break;	
+		usleep(200000);		
+		if(exit_automount_thread) break;	
+		usleep(200000);		
+		if(exit_automount_thread) break;	
+		usleep(200000);		
+		//usleep(300000);		
+		//sleep(1);
+	}
+#endif
+	return NULL;
+}
 
 
 static char *default_args[] = {
@@ -587,192 +771,6 @@ static bool DetectValidPath()
 	return false;	
 }
 
-static off_t get_filesize(char *FileName)
-{
-    struct stat file;
-    if(!stat(FileName,&file))
-    {
-        return file.st_size;
-    }
-    return 0;
-}
-
-bool load_ehci_module()
-{
-	data_elf my_data_elf;
-	off_t fsize;
-	void *external_ehcmodule = NULL;
-	FILE *fp;
-	char file[100];
-	
-	sprintf(file,"%s/ehcmodule.elf",MPLAYER_DATADIR);	
-	
-	fp=fopen(file,"rb");
-	if(fp!=NULL)
-	{
-		fsize=get_filesize(file);
-		external_ehcmodule= (void *)memalign(32, fsize);
-		if(!external_ehcmodule) 
-		{
-			fclose(fp);
-			free(external_ehcmodule); 
-			external_ehcmodule=NULL;
-		}
-		else
-		{
-			if(fread(external_ehcmodule,1, fsize ,fp)!=fsize)
-			{
-				free(external_ehcmodule); 
-				external_ehcmodule=NULL;
-			}
-			else mload_elf((void *) external_ehcmodule, &my_data_elf);
-			fclose(fp);
-		}
-		
-	}
-	else
-		mload_elf((void *) ehcmodule_elf, &my_data_elf);
-
-	if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio)<0)
-	{
-		if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x48)<0) return false;
-	}
-	usleep(1000);
-	return true;
-}
-
-static void * mountthreadfunc (void *arg)
-{
-	int dp, dvd_inserted=0,usb_inserted=0;
-//todo: add sd automount
-#ifndef CE_DEBUG
-	sleep(1);
-	mount_sd_ntfs(); //only once now
-		
-	usb_inserted=usb_init;
-	
-	while(!exit_automount_thread)
-	{	
-		if(!playing_usb)
-		{
-			mounting_usb=1;
-			
-			dp=usb->isInserted();
-			usleep(500); // needed, I don't know why, but hang if it's deleted
-			//printf(".");fflush(stdout);
-			if(dp!=usb_inserted)
-			{
-				//printf("usb isInserted: %d\n",dp);
-				usb_inserted=dp;
-				if(!dp)
-				{
-					//printf("unmount usb\n");
-					fatUnmount("usb:");
-					ntfsUnmount ("ntfs_usb", true);
-				}else 
-				{
-					//printf("mount usb\n");
-					fatMount("usb",usb,0,3,256);
-					mount_usb_ntfs();
-				}
-			}
-			mounting_usb=0;
-		}	
-		if(dvd_mounting==false)
-		{
-			dp=WIIDVD_DiscPresent();
-			if(dp!=dvd_inserted)
-			{
-				dvd_inserted=dp;
-				if(!dp)dvd_mounted=false; // eject
-			}
-		}
-		if(exit_automount_thread) break;
-		usleep(200000);	
-		if(exit_automount_thread) break;	
-		usleep(200000);		
-		if(exit_automount_thread) break;	
-		usleep(200000);		
-		if(exit_automount_thread) break;	
-		usleep(200000);		
-		//usleep(300000);		
-		//sleep(1);
-	}
-#endif		
-	return NULL;
-}
-
-bool FindIOS(u32 ios)
-{
-	//u32 len_buf;
-	s32 ret;
-	int n;
-
-	u64 *titles = NULL;
-	u32 num_titles=0;
-
-	ret = ES_GetNumTitles(&num_titles);
-	if (ret < 0)
-	{
-		printf("error ES_GetNumTitles\n");
-		return false;
-	}
-
-	if(num_titles<1) 
-	{
-		printf("error num_titles<1\n");
-		return false;
-	}
-
-	titles = (u64 *)memalign(32, num_titles * sizeof(u64) + 32);
-	if (!titles)
-	{
-		printf("error memalign\n");
-		return false;
-	}
-
-	ret = ES_GetTitles(titles, num_titles);
-	if (ret < 0)
-	{
-		free(titles);
-		printf("error ES_GetTitles\n");
-		return false;	
-	}
-		
-	for(n=0; n<num_titles; n++) {
-		//u32 tidl = (titles[n] &  0xFFFFFFFF);
-		if((titles[n] &  0xFFFFFFFF)==ios) 
-		{
-			free(titles); 
-			return true;
-		}
-	}
-	
-    free(titles); 
-	return false;
-
-}
-
-#ifdef WIILIB
-void plat_init (int *argc, char **argv[])
-{
-	//log_console_init(vmode, 0);
-	GX_SetCamPosZ(gxzoom);
-	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
-	DetectValidPath();
-
-	//chdir(MPLAYER_DATADIR);
-	setenv("HOME", MPLAYER_DATADIR, 1);
-	setenv("DVDCSS_CACHE", "off", 1);
-	setenv("DVDCSS_VERBOSE", "0", 1);
-	setenv("DVDREAD_VERBOSE", "0", 1);
-	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
-
-	stream_cache_size=8*1024; //default cache size (8MB)
-}
-
-#else
-
 void show_mem()
 {
 printf("m1(%.2f) m2(%.2f)\n",
@@ -943,7 +941,6 @@ else
 	if (!*((u32*)0x80001800)) sp();
 	//log_console_enable_video(false);
 }
-#endif
 
 void plat_deinit (int rc) {
 	exit_automount_thread=true;
@@ -960,96 +957,8 @@ void plat_deinit (int rc) {
 	//printf("exiting mplayerce\n");sleep(3);
 	//log_console_deinit();
 }
-
-#ifdef WIILIB
-struct SMBSettings {
-	char	ip[16];
-	char	share[20];
-	char	user[20];
-	char	pwd[20];
-};
-struct SMBSettings smbConf[5];
-
-/****************************************************************************
- * LoadConfig
- *
- * Loads all MPlayer .conf files
- ***************************************************************************/
-void LoadConfig(char * path)
-{
-	int i;
-	char filepath[1024];
-	char tmp[20];
-	char* smb_ip;
-	char* smb_share;
-	char* smb_user;
-	char* smb_pass;
-
-	// mplayer.conf
-	m_config_t *comp_conf;
-	m_option_t comp_opts[] =
-	{
-	//{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},  //deprecated
-	{   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	{   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
-	{   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	{   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	{   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	{   NULL, NULL, 0, 0, 0, 0, NULL }
-	};
-
-	comp_conf = m_config_new();
-	m_config_register_options(comp_conf, comp_opts);
-	sprintf(filepath,"%s/mplayer.conf", path);
-	m_config_parse_config_file(comp_conf, filepath);
-
-	// smb.conf
-	memset(&smbConf, 0, sizeof(smbConf));
-
-	m_config_t *smb_conf;
-	m_option_t smb_opts[] =
-	{
-		{   NULL, &smb_ip, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, &smb_share, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, &smb_user, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, &smb_pass, CONF_TYPE_STRING, 0, 0, 0, NULL },
-		{   NULL, NULL, 0, 0, 0, 0, NULL }
-	};
-
-	for(i=1; i<=5; i++)
-	{
-		smb_ip = NULL;
-		smb_share = NULL;
-		smb_user = NULL;
-		smb_pass = NULL;
-
-		sprintf(tmp,"ip%d",i); smb_opts[0].name=strdup(tmp);
-		sprintf(tmp,"share%d",i); smb_opts[1].name=strdup(tmp);
-		sprintf(tmp,"user%d",i); smb_opts[2].name=strdup(tmp);
-		sprintf(tmp,"pass%d",i); smb_opts[3].name=strdup(tmp);
-
-		smb_conf = m_config_new();
-		m_config_register_options(smb_conf, smb_opts);
-		sprintf(filepath,"%s/smb.conf", path);
-		m_config_parse_config_file(smb_conf, filepath);
-
-		if(smb_ip!=NULL && smb_share!=NULL)
-		{
-			if(smb_user==NULL) smb_user=strdup("");
-			if(smb_pass==NULL) smb_pass=strdup("");
-
-			snprintf(smbConf[i-1].ip, 16, "%s", smb_ip);
-			snprintf(smbConf[i-1].share, 20, "%s", smb_share);
-			snprintf(smbConf[i-1].user, 20, "%s", smb_user);
-			snprintf(smbConf[i-1].pwd, 20, "%s", smb_pass);
-		}
-	}
-
-	sprintf(MPLAYER_DATADIR,"%s",path);
-	sprintf(MPLAYER_CONFDIR,"%s",path);
-	sprintf(MPLAYER_LIBDIR,"%s",path);
-}
 #endif
+
 #if 0 // change 0 by 1 if you are using devkitppc r17
 int _gettimeofday_r(struct _reent *ptr,	struct timeval *ptimeval ,	void *ptimezone)
 {
@@ -1061,4 +970,6 @@ int _gettimeofday_r(struct _reent *ptr,	struct timeval *ptimeval ,	void *ptimezo
 		ptimeval->tv_usec = ticks_to_microsecs(t);
 	}
 } 
+#endif
+
 #endif

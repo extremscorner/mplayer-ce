@@ -50,6 +50,7 @@ static void ExitCleanup()
 
 void ExitApp()
 {
+	SaveSettings(SILENT);
 	ExitCleanup();
 
 	if(ShutdownRequested == 1)
@@ -91,12 +92,6 @@ void ResetCB()
 	ResetRequested = 1;
 }
 
-void ShutdownMPlayer()
-{
-	controlledbygui=2;
-	while(!LWP_ThreadIsSuspended(mthread)) usleep(500);
-}
-
 static void *
 mplayerthread (void *arg)
 {
@@ -109,12 +104,19 @@ mplayerthread (void *arg)
 	return NULL;
 }
 
-void loadMPlayer()
+void LoadMPlayer()
 {
 	HaltDeviceThread();
 	printf("return control to mplayer\n");
 	controlledbygui = 0;
 	LWP_ResumeThread(mthread);
+}
+
+void ShutdownMPlayer()
+{
+	controlledbygui=2;
+	while(!LWP_ThreadIsSuspended(mthread))
+		usleep(500);
 }
 
 int

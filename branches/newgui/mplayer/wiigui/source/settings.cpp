@@ -375,46 +375,6 @@ decodeSettingsData ()
 	return result;
 }
 
-static char **GetExtensions(char * filename)
-{
-	char **extensions, ext[32];
-	FILE *fp;
-	int n = 1;
-
-	if (!filename)
-		return NULL;
-
-	fp = fopen(filename, "r");
-
-	if(!fp)
-		return NULL;
-
-	extensions = (char **) malloc(sizeof(*extensions));
-	*extensions = NULL;
-
-	while(fgets(ext,sizeof(ext),fp))
-	{
-		char **l, *e;
-		int s = strlen (ext);
-
-		if(ext[s-1] == '\n')
-		{
-			ext[s-1] = '\0';
-			s--;
-		}
-		e = (char *) malloc(s+1);
-		extensions = (char **) realloc(extensions, ++n * sizeof(*extensions));
-		extensions = (char **) realloc(extensions, ++n * sizeof(*extensions));
-		strcpy (e, ext);
-		for (l=extensions; *l; l++);
-		*l++ = e;
-		*l = NULL;
-	}
-
-	fclose (fp);
-	return extensions;
-}
-
 /****************************************************************************
  * DefaultSettings
  *
@@ -620,9 +580,6 @@ bool LoadSettings()
 		settingsFound = LoadSettingsFile(filepath);
 		if(settingsFound) sprintf(foundpath, "usb:/%s", APPFOLDER);
 	}
-
-	sprintf(filepath, "%s/file_ext", foundpath);
-	CESettings.extensions = GetExtensions(filepath);
 
 	settingsLoaded = true; // attempted to load settings
 

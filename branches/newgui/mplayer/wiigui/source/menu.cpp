@@ -34,6 +34,7 @@ static GuiButton * dvdBtn = NULL;
 static GuiButton * onlineBtn = NULL;
 static GuiButton * configBtn = NULL;
 static GuiButton * logoBtn = NULL;
+static GuiButton * mplayerBtn = NULL;
 static GuiWindow * mainWindow = NULL;
 static GuiText * settingText = NULL;
 
@@ -96,7 +97,6 @@ UpdateGUI (void *arg)
 					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
 					Menu_Render();
 				}
-				SaveSettings(SILENT);
 				ExitApp();
 			}
 		}
@@ -796,7 +796,7 @@ static void MenuBrowse(int menu)
 	mainWindow->Append(&fileBrowser);
 	ResumeGui();
 
-	while(currentMenu == menu)
+	while(currentMenu == menu && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -823,7 +823,6 @@ static void MenuBrowse(int menu)
 				}
 				else
 				{
-					
 					ShutdownMPlayer();
 
 					sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
@@ -831,8 +830,7 @@ static void MenuBrowse(int menu)
 					ShowAction("Loading...");
 
 					// signal MPlayer to load
-					
-					loadMPlayer();
+					LoadMPlayer();
 
 					// wait until MPlayer is ready to take control
 					while(!guiHalt)
@@ -893,7 +891,7 @@ static void MenuDVD()
 	if(!ChangeInterface(DEVICE_DVD, -1, NOTSILENT))
 		ChangeMenu(lastMenu); // go back to last menu
 
-	while(currentMenu == MENU_DVD)
+	while(currentMenu == MENU_DVD && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -911,7 +909,7 @@ static void MenuDVD()
 			ShowAction("Loading...");
 
 			// signal MPlayer to load
-			loadMPlayer();
+			LoadMPlayer();
 
 			// wait until MPlayer is ready to take control
 			while(!guiHalt)
@@ -919,7 +917,6 @@ static void MenuDVD()
 
 			CancelAction();
 			shutdownGui = true;
-			break;
 		}
 	}
 
@@ -983,7 +980,7 @@ static void MenuSettingsGeneral()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_GENERAL)
+	while(currentMenu == MENU_SETTINGS_GENERAL && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1136,7 +1133,7 @@ static void MenuSettingsCache()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_CACHE)
+	while(currentMenu == MENU_SETTINGS_CACHE && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1436,7 +1433,7 @@ static void MenuSettingsVideo()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_VIDEO)
+	while(currentMenu == MENU_SETTINGS_VIDEO && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1554,7 +1551,7 @@ static void MenuSettingsAudio()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_AUDIO)
+	while(currentMenu == MENU_SETTINGS_AUDIO && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1645,7 +1642,7 @@ static void MenuSettingsSubtitles()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_SUBTITLES)
+	while(currentMenu == MENU_SETTINGS_SUBTITLES && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1762,7 +1759,7 @@ static void MenuSettings()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS)
+	while(currentMenu == MENU_SETTINGS && !shutdownGui)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1809,6 +1806,24 @@ static void MenuSettings()
 	mainWindow->Remove(&titleTxt);
 }
 
+static void BackToMplayerCallback(void * ptr)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		b->ResetState();
+		
+		// signal MPlayer to load
+		LoadMPlayer();
+
+		// wait until MPlayer is ready to take control
+		while(!guiHalt)
+			usleep(THREAD_SLEEP);
+
+		shutdownGui = true;
+	}
+}
+
 /****************************************************************************
  * Menu
  ***************************************************************************/
@@ -1830,7 +1845,7 @@ void WiiMenu()
 	GuiImageData btnNavOver(nav_button_png);
 	GuiImageData btnConfig(config_button_png);
 
-	GuiText videoBtnTxt("Videos & Pictures", 18, (GXColor){255, 255, 255, 255});
+	GuiText videoBtnTxt("Videos", 18, (GXColor){255, 255, 255, 255});
 	GuiImage videoBtnImg(&btnNav);
 	GuiImage videoBtnImgOver(&btnNavOver);
 	videoBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
@@ -1901,11 +1916,25 @@ void WiiMenu()
 	bg.SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
 	mainWindow->Append(&bg);
 
+	GuiText mplayerBtnTxt("MPlayer", 18, (GXColor){255, 255, 255, 255});
+	GuiImage mplayerBtnImg(&btnNav);
+	GuiImage mplayerBtnImgOver(&btnNavOver);
+	mplayerBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	mplayerBtn->SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
+	mplayerBtn->SetPosition(-30, 20);
+	mplayerBtn->SetLabel(&mplayerBtnTxt);
+	mplayerBtn->SetImage(&mplayerBtnImg);
+	mplayerBtn->SetImageOver(&mplayerBtnImgOver);
+	mplayerBtn->SetTrigger(&trigA);
+	mplayerBtn->SetEffectGrow();
+	mplayerBtn->SetUpdateCallback(BackToMplayerCallback);
+
 	if(videoScreenshot)
 	{
 		videoImg = new GuiImage(videoScreenshot, screenwidth, screenheight);
 		mainWindow->Append(videoImg);
 	}
+	mainWindow->Append(mplayerBtn);
 
 	GuiImageData logo(logo_png);
 	GuiImage logoBtnImg(&logo);
@@ -1962,12 +1991,12 @@ void WiiMenu()
 				MenuBrowse(MENU_BROWSE_VIDEOS);
 				break;
 		}
+		
 		usleep(THREAD_SLEEP);
 	}
 
 	ShutoffRumble();
 	CancelAction();
-	SaveSettings(SILENT);
 	HaltGui();
 
 	delete pointer[0];
@@ -1990,6 +2019,8 @@ void WiiMenu()
 	configBtn = NULL;
 	delete logoBtn;
 	logoBtn = NULL;
+	delete mplayerBtn;
+	mplayerBtn = NULL;
 
 	if(videoImg)
 	{

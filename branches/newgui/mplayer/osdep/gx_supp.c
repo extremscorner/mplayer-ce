@@ -35,9 +35,11 @@
 #define HASPECT 320
 #define VASPECT 240
 
+#ifdef WIILIB
 void HaltGui();
 void TakeScreenshot();
-extern bool controlledbygui;
+int copyScreen = 0;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -1019,8 +1021,11 @@ void GX_RenderTexture()
 	GX_DrawDone();
 
 	#ifdef WIILIB
-	if(controlledbygui)
+	if(copyScreen == 1)
+	{
 		TakeScreenshot();
+		copyScreen = 0;
+	}
 	#endif
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);

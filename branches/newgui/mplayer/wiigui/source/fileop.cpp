@@ -416,7 +416,7 @@ bool ParseDirEntries()
 		return false;
 
 	char filename[MAXPATHLEN];
-	char **elem, *ext;
+	char *ext;
 	struct stat filestat;
 
 	int i = 0;
@@ -433,20 +433,21 @@ bool ParseDirEntries()
 			continue;
 
 		// check that this file's extension is on the list of visible file types
-		if(CESettings.filterFiles && CESettings.extensions)
+		if(CESettings.filterFiles && (filestat.st_mode & _IFDIR) == 0)
 		{
 			if((ext = strrchr(filename,'.')) == NULL)
 				continue; // file does not have an extension - skip it
 
 			ext++;
-			elem = CESettings.extensions;
+
+			int j=0;
 
 			do
 			{
-				if (!strcasecmp(ext, *elem))
+				if (!strcasecmp(ext, validExtensions[j++]))
 					break;
-			} while (*++elem);
-			if (*elem == NULL) // extension not found
+			} while (validExtensions[j][0] != 0);
+			if (validExtensions[j][0] == 0) // extension not found
 				continue;
 		}
 

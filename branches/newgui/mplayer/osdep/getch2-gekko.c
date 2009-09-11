@@ -104,10 +104,12 @@ void getch2(void) {
 	if (!getch2_status)
 		return;
 
+#ifndef WIILIB
 	if (reset_pressed || power_pressed) {
 		mplayer_put_key(KEY_CLOSE_WIN);
 		return;
 	}
+#endif
 
 	tt = gettime();
 	if (ticks_to_millisecs(tt - lt) < (TB_MSPERSEC / 60))

@@ -331,6 +331,7 @@ fast_pause();
   p = strstr(mpriv->title,"%p");
 strcpy(menu_dir,mpriv->dir);
 #ifdef GEKKO
+#ifndef WIILIB
   if(!strcmp(mpriv->dir,"sd:/"))
   {
 	if(!DeviceMounted("sd")) 
@@ -440,6 +441,7 @@ strcpy(menu_dir,mpriv->dir);
 		  goto error_exit;
 	  } else rm_osd_msg(124);
   } 
+#endif
 #endif
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);
 

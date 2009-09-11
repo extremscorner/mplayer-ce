@@ -876,6 +876,9 @@ osdep/gx_supp-wiilib.o: osdep/gx_supp.c
 
 osdep/plat_gekko-wiilib.o: osdep/plat_gekko.c
 	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+	
+libmenu/menu_filesel-wiilib.o: libmenu/menu_filesel.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
 
 osdep/getch2-gekko-wiilib.o: osdep/getch2-gekko.c
 	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
@@ -884,11 +887,12 @@ A1 =	$(subst gx_supp.o,gx_supp-wiilib.o,$(OBJS_MPLAYER))
 A2 =	$(subst mplayer.o,mplayer-wiilib.o,$(A1))
 A3 =	$(subst plat_gekko.o,plat_gekko-wiilib.o,$(A2))
 A4 =	$(subst command.o,command-wiilib.o,$(A3))
+A5 =	$(subst menu_filesel.o,menu_filesel-wiilib.o,$(A4))
 
-A5 =	$(subst getch2-gekko.o,getch2-gekko-wiilib.o,$(OBJS_COMMON))
+A6 =	$(subst getch2-gekko.o,getch2-gekko-wiilib.o,$(OBJS_COMMON))
 
-MPLAYERWIILIB = $(A4) 
-MPLAYERWIILIB += $(A5) 
+MPLAYERWIILIB = $(A5) 
+MPLAYERWIILIB += $(A6) 
 
 libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
 	rm -f $@

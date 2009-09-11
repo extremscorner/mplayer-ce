@@ -914,9 +914,7 @@ void exit_player_with_rc(exit_reason_t how, int rc){
   sub_font = NULL;
   if (vo_font) free_font_desc(vo_font);
   vo_font = NULL;
-#ifndef WIILIB  
   done_freetype();
-#endif
 #endif
   free_osd_list();
 
@@ -2642,7 +2640,7 @@ static double update_video(int *blit_frame)
 int controlledbygui=0;
 void PauseAndGotoGUI()
 {
-    mp_cmd_t* cmd=NULL;
+	mp_cmd_t* cmd=NULL;
 
     if (mpctx->audio_out && mpctx->sh_audio)
 	mpctx->audio_out->pause();	// pause audio, keep data if possible
@@ -3670,8 +3668,10 @@ int vob_sub_auto = 1; //scip
 
   current_module="open_stream";
   #ifdef GEKKO
+#ifndef WIILIB
   playing_usb=false;
   playing_dvd=false;
+#endif
 
   // rodries
   static float orig_stream_cache_min_percent=-1;
@@ -3695,6 +3695,7 @@ int vob_sub_auto = 1; //scip
   
   if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9))
   {
+#ifndef WIILIB
 	  if(!DVDGekkoMount())
 	  {
   		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
@@ -3715,11 +3716,15 @@ int vob_sub_auto = 1; //scip
 	  		//goto goto_next_file;
 	  }
 	  else
+#endif
 	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
-	  
+#ifndef WIILIB	  
 	  playing_dvd=true;
+#endif
   }
+#ifndef WIILIB
   if(!strncmp(filename,"usb:",4) || !strncmp(filename,"ntfs_usb:",9)) playing_usb=true;
+#endif
 
   if(!strncmp(filename,"http:",5))
   {

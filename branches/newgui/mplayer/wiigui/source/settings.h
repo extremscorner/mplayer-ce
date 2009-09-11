@@ -60,7 +60,6 @@ struct SCESettings {
 	int 	playOrder; // PLAY_CONTINUOUS, PLAY_SHUFFLE, PLAY_LOOP, PLAY_SINGLE
 	int 	cleanFilenames;
 	int 	hideExtensions;
-	char ** extensions;
 	int 	filterFiles;
 	int 	language;
 	char 	videoFolder[MAXPATHLEN];
@@ -101,3 +100,12 @@ bool SaveSettings (bool silent);
 bool LoadSettings ();
 
 extern struct SCESettings CESettings;
+
+const char validExtensions[][7] =
+{
+	"3gp", "aac", "ape", "apl", "asf", "avi", "bin", "dat", "divx", "dvr-ms",
+	"evo", "flac", "flv", "ifo", "img", "m1v", "m2v", "m4a", "m4p", "m4v",
+	"mac", "mdf", "mka", "mkv", "mov", "mp2", "mp3", "mp4", "mp4v", "mpc",
+	"mpe", "mpeg", "mpg", "nsv", "ogg", "ogm", "qt", "ra", "rm", "rmvb", "shn",
+	"swf", "ts", "vdr", "vob", "vro", "wav", "wma", "wmv", "y4m", ""
+};
