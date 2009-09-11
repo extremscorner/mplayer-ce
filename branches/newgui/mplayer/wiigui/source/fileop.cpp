@@ -433,7 +433,7 @@ bool ParseDirEntries()
 			continue;
 
 		// check that this file's extension is on the list of visible file types
-		if(CESettings.filterFiles && CESettings.extensions && (filestat.st_mode & _IFDIR) == 0)
+		if(CESettings.filterFiles && CESettings.extensions)
 		{
 			if((ext = strrchr(filename,'.')) == NULL)
 				continue; // file does not have an extension - skip it

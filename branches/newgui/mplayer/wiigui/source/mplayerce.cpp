@@ -91,6 +91,12 @@ void ResetCB()
 	ResetRequested = 1;
 }
 
+void WaitSuspendMPlayerThread()
+{
+	controlledbygui=2;
+	while(!LWP_ThreadIsSuspended(mthread)) usleep(500);
+}
+
 static void *
 mplayerthread (void *arg)
 {
@@ -107,7 +113,7 @@ void loadMPlayer()
 {
 	HaltDeviceThread();
 	printf("return control to mplayer\n");
-	controlledbygui = false;
+	controlledbygui = 0;
 	LWP_ResumeThread(mthread);
 }
 

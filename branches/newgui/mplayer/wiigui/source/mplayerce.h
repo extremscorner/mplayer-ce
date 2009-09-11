@@ -42,7 +42,7 @@ extern char appPath[];
 extern "C" {
 #endif
 
-extern bool controlledbygui;
+extern int controlledbygui;
 
 int mplayer_loadfile(const char* _file);
 bool DVDGekkoMount();
@@ -54,6 +54,8 @@ void log_console_enable_video(bool enable);
 bool FindIOS(u32 ios);   //in plat_gekko.c
 bool load_ehci_module();  //in plat_gekko.c
 void DisableUSB2(bool);  //in special libogc, in usb2storage.c (need to be added to .h)
+
+void WaitSuspendMPlayerThread();
 
 #ifdef __cplusplus
 }
