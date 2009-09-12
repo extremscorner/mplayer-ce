@@ -1022,6 +1022,8 @@ void GX_RenderTexture()
 		copyScreen = 0;
 		GX_DrawDone();
 		TakeScreenshot();
+		GX_SetColorUpdate(GX_TRUE);
+		GX_CopyDisp(xfb[whichfb], GX_TRUE);
 		PauseAndGotoGUI();
 	}
 	else
