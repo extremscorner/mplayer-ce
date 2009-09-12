@@ -43,9 +43,6 @@ static void ExitCleanup()
 {
 	ShutoffRumble();
 	StopGX();
-	HaltDeviceThread();
-	UnmountAllFAT();
-	DI_Close();
 }
 
 void ExitApp()
