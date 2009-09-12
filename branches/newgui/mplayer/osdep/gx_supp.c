@@ -1016,19 +1016,25 @@ void GX_RenderTexture()
 		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 	GX_End();
 
-	GX_DrawDone();
-
-	#ifdef WIILIB
+#ifdef WIILIB
 	if(copyScreen == 1)
 	{
 		copyScreen = 0;
+		GX_DrawDone();
 		TakeScreenshot();
 		PauseAndGotoGUI();
 	}
-	#endif
-	
+	else
+	{
+		GX_SetColorUpdate(GX_TRUE);
+		GX_CopyDisp(xfb[whichfb], GX_TRUE);
+		GX_DrawDone();
+	}
+#else
 	GX_SetColorUpdate(GX_TRUE);
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	GX_DrawDone();
+#endif
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
