@@ -1016,8 +1016,6 @@ void GX_RenderTexture()
 		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 	GX_End();
 
-	GX_SetColorUpdate(GX_TRUE);
-	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
 
 	#ifdef WIILIB
@@ -1028,6 +1026,9 @@ void GX_RenderTexture()
 		PauseAndGotoGUI();
 	}
 	#endif
+	
+	GX_SetColorUpdate(GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
