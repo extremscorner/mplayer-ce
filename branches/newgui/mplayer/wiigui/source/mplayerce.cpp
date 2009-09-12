@@ -48,6 +48,10 @@ static void ExitCleanup()
 void ExitApp()
 {
 	SaveSettings(SILENT);
+
+	// shut down some threads
+	HaltDeviceThread();
+	CancelAction();
 	ExitCleanup();
 
 	if(ShutdownRequested == 1)

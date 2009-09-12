@@ -116,9 +116,9 @@ void TakeScreenshot()
 	if(videoScreenshot == NULL) return;
 	GX_SetTexCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
 	GX_SetTexCopyDst(vmode->fbWidth, vmode->efbHeight, GX_TF_RGBA8, GX_FALSE);
+	DCInvalidateRange(videoScreenshot, texSize);
 	GX_CopyTex(videoScreenshot, GX_FALSE);
 	GX_PixModeSync();
-	DCFlushRange(videoScreenshot, texSize);
 }
 
 #ifdef __cplusplus
