@@ -1023,8 +1023,9 @@ void GX_RenderTexture()
 	#ifdef WIILIB
 	if(copyScreen == 1)
 	{
-		TakeScreenshot();
 		copyScreen = 0;
+		TakeScreenshot();
+		PauseAndGotoGUI();
 	}
 	#endif
 

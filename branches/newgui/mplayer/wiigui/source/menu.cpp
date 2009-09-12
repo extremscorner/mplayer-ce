@@ -1840,9 +1840,41 @@ void WiiMenu()
 	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
 
 	mainWindow = new GuiWindow(screenwidth, screenheight);
-
+	
+	GuiImage bgLeft(500, screenheight, (GXColor){0, 0, 0, 255});
+	bgLeft.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	GuiImage bgRight(140, screenheight, (GXColor){155, 155, 155, 255});
+	bgRight.SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
+	
 	GuiImageData btnNav(nav_button_png);
 	GuiImageData btnNavOver(nav_button_png);
+	
+	GuiText mplayerBtnTxt("MPlayer", 18, (GXColor){255, 255, 255, 255});
+	GuiImage mplayerBtnImg(&btnNav);
+	GuiImage mplayerBtnImgOver(&btnNavOver);
+	mplayerBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	mplayerBtn->SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
+	mplayerBtn->SetPosition(-30, 20);
+	mplayerBtn->SetLabel(&mplayerBtnTxt);
+	mplayerBtn->SetImage(&mplayerBtnImg);
+	mplayerBtn->SetImageOver(&mplayerBtnImgOver);
+	mplayerBtn->SetTrigger(&trigA);
+	mplayerBtn->SetEffectGrow();
+	mplayerBtn->SetUpdateCallback(BackToMplayerCallback);
+	
+	mainWindow->Append(&bgLeft);
+	
+	if(videoScreenshot)
+	{
+		videoImg = new GuiImage(videoScreenshot, screenwidth, screenheight);
+		mainWindow->Append(videoImg);
+		mainWindow->Append(mplayerBtn);
+	}
+	else
+	{
+		mainWindow->Append(&bgRight);
+	}
+
 	GuiImageData btnConfig(config_button_png);
 
 	GuiText videoBtnTxt("Videos", 18, (GXColor){255, 255, 255, 255});
@@ -1911,30 +1943,6 @@ void WiiMenu()
 	mainWindow->Append(dvdBtn);
 	mainWindow->Append(onlineBtn);
 	mainWindow->Append(configBtn);
-
-	GuiImage bg(140, screenheight, (GXColor){155, 155, 155, 255});
-	bg.SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
-	mainWindow->Append(&bg);
-
-	GuiText mplayerBtnTxt("MPlayer", 18, (GXColor){255, 255, 255, 255});
-	GuiImage mplayerBtnImg(&btnNav);
-	GuiImage mplayerBtnImgOver(&btnNavOver);
-	mplayerBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
-	mplayerBtn->SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
-	mplayerBtn->SetPosition(-30, 20);
-	mplayerBtn->SetLabel(&mplayerBtnTxt);
-	mplayerBtn->SetImage(&mplayerBtnImg);
-	mplayerBtn->SetImageOver(&mplayerBtnImgOver);
-	mplayerBtn->SetTrigger(&trigA);
-	mplayerBtn->SetEffectGrow();
-	mplayerBtn->SetUpdateCallback(BackToMplayerCallback);
-
-	if(videoScreenshot)
-	{
-		videoImg = new GuiImage(videoScreenshot, screenwidth, screenheight);
-		mainWindow->Append(videoImg);
-	}
-	mainWindow->Append(mplayerBtn);
 
 	GuiImageData logo(logo_png);
 	GuiImage logoBtnImg(&logo);
