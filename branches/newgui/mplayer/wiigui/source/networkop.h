@@ -29,5 +29,7 @@ struct FTPSettings {
 void InitializeNetwork(bool silent);
 bool ConnectShare (int num, bool silent);
 void CloseShare(int num);
+bool ConnectFTP(int num, bool silent);
+void CloseFTP(int num);
 
 #endif

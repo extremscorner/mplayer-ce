@@ -8,6 +8,7 @@
 
 #include <network.h>
 #include <smb.h>
+#include <ftp.h>
 #include <unistd.h>
 
 #include "mplayerce.h"
@@ -21,6 +22,7 @@ static bool inNetworkInit = false;
 static bool networkInit = false;
 static bool autoNetworkInit = true;
 static bool networkShareInit[5] = { false, false, false, false, false };
+static bool ftpInit[5] = { false, false, false, false, false };
 
 /****************************************************************************
  * InitializeNetwork
@@ -77,7 +79,6 @@ void CloseShare(int num)
 	if(networkShareInit[num-1])
 		smbClose(devName);
 	networkShareInit[num-1] = false;
-	networkInit = false; // trigger a network reinit
 }
 
 /****************************************************************************
@@ -107,7 +108,7 @@ ConnectShare (int num, bool silent)
 			else if(chkI)
 				sprintf(msg, "Share IP is blank.");
 
-			sprintf(msg2, "Invalid network settings - %s", msg);
+			sprintf(msg2, "Invalid network share settings - %s", msg);
 			ErrorPrompt(msg2);
 		}
 		return false;
@@ -137,4 +138,77 @@ ConnectShare (int num, bool silent)
 	}
 
 	return networkShareInit[num-1];
+}
+
+void CloseFTP(int num)
+{
+	char devName[10];
+	sprintf(devName, "ftp%d", num);
+
+	if(ftpInit[num-1])
+		ftpClose(devName);
+	ftpInit[num-1] = false;
+}
+
+/****************************************************************************
+ * Mount FTP site
+ ****************************************************************************/
+
+bool
+ConnectFTP (int num, bool silent)
+{
+	char mountpoint[6];
+	sprintf(mountpoint, "ftp%d", num);
+
+	int chkI = (strlen(CESettings.ftpConf[num-1].ip) > 0) ? 0:1;
+	int chkU = (strlen(CESettings.ftpConf[num-1].user) > 0) ? 0:1;
+	int chkP = (strlen(CESettings.ftpConf[num-1].pwd) > 0) ? 0:1;
+
+	// check that all parameters have been set
+	if(chkI + chkU + chkP > 0)
+	{
+		if(!silent)
+		{
+			char msg[50];
+			char msg2[100];
+			if(chkI + chkU + chkP > 1) // more than one thing is wrong
+				sprintf(msg, "Check settings file.");
+			else if(chkI)
+				sprintf(msg, "IP is blank.");
+			else if(chkU)
+				sprintf(msg, "Username is blank.");
+			else if(chkP)
+				sprintf(msg, "Password is blank.");
+
+			sprintf(msg2, "Invalid FTP site settings - %s", msg);
+			ErrorPrompt(msg2);
+		}
+		return false;
+	}
+
+	if(!networkInit)
+		InitializeNetwork(silent);
+
+	if(networkInit)
+	{
+		if(!ftpInit[num-1])
+		{
+			if(!silent)
+				ShowAction ("Connecting to FTP site...");
+
+			if(ftpInitDevice(mountpoint, CESettings.ftpConf[num-1].user, 
+				CESettings.ftpConf[num-1].pwd, CESettings.ftpConf[num-1].folder, 
+				CESettings.ftpConf[num-1].ip, CESettings.ftpConf[num-1].passive))
+			{
+				ftpInit[num-1] = true;
+			}
+			if(!silent)
+				CancelAction();
+		}
+
+		if(!ftpInit[num-1] && !silent)
+			ErrorPrompt("Failed to connect to FTP site.");
+	}
+
+	return ftpInit[num-1];
 }

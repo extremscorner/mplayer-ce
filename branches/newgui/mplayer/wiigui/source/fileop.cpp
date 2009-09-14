@@ -197,7 +197,7 @@ void UnmountAllFAT()
  * Sets libfat to use the device by default
  ***************************************************************************/
 
-bool MountFAT(int device)
+static bool MountFAT(int device, int silent)
 {
 	bool mounted = true; // assume our disc is already mounted
 	char name[10], name2[10];
@@ -233,6 +233,14 @@ bool MountFAT(int device)
 		else if(!fatMount(name, disc, 0, 2, 256))
 			mounted = false;
 	}
+	
+	if(!mounted && !silent)
+	{
+		if(device == DEVICE_SD)
+			ErrorPrompt("SD card not found!");
+		else
+			ErrorPrompt("USB drive not found!");
+	}
 
 	isMounted[device] = mounted;
 	return mounted;
@@ -240,8 +248,8 @@ bool MountFAT(int device)
 
 void MountAllFAT()
 {
-	MountFAT(DEVICE_SD);
-	MountFAT(DEVICE_USB);
+	MountFAT(DEVICE_SD, SILENT);
+	MountFAT(DEVICE_USB, SILENT);
 }
 
 static bool MountDVD(int silent)
@@ -326,26 +334,22 @@ static bool FindDevice(char * filepath, int * device, int * devnum)
 bool ChangeInterface(int device, int devnum, bool silent)
 {
 	bool mounted = false;
-
-	if(device == DEVICE_SD)
+	
+	switch(device)
 	{
-		mounted = MountFAT(DEVICE_SD);
-		if(!mounted && !silent)
-			ErrorPrompt("SD card not found!");
-	}
-	else if(device == DEVICE_USB)
-	{
-		mounted = MountFAT(device);
-		if(!mounted && !silent)
-			ErrorPrompt("USB drive not found!");
-	}
-	else if(device == DEVICE_DVD)
-	{
-		mounted = MountDVD(silent);
-	}
-	else if(device == DEVICE_SMB)
-	{
-		mounted = ConnectShare(devnum, silent);
+		case DEVICE_SD:
+		case DEVICE_USB:
+			mounted = MountFAT(device, silent);
+			break;
+		case DEVICE_DVD:
+			mounted = MountDVD(silent);
+			break;
+		case DEVICE_SMB:
+			mounted = ConnectShare(devnum, silent);
+			break;
+		case DEVICE_FTP:
+			mounted = ConnectFTP(devnum, silent);
+			break;
 	}
 
 	if(mounted)
@@ -377,7 +381,7 @@ void CreateAppPath(char * origpath)
 	// replace fat:/ with sd:/
 	if(strncmp(path, "fat:/", 5) == 0)
 	{
-		path = path + 1;
+		path++;
 		path[0] = 's';
 		path[1] = 'd';
 	}

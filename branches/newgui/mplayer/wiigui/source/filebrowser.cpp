@@ -97,7 +97,8 @@ bool IsDeviceRoot(char * path)
 	if(strcmp(path, "sd:/") == 0 ||
 		strcmp(path, "usb:/") == 0 ||
 		strcmp(path, "dvd:/") == 0 ||
-		(strncmp(path, "smb", 3) == 0 && strlen(path) == 6))
+		(strncmp(path, "smb", 3) == 0 && strlen(path) == 6) ||
+		(strncmp(path, "ftp", 3) == 0 && strlen(path) == 6))
 	{
 		return true;
 	}
@@ -274,7 +275,11 @@ int BrowserChangeFolder(bool updateDir)
 					break;
 
 				sprintf(browserList[browser.numEntries].filename, "smb%d:/", i+1);
-				sprintf(browserList[browser.numEntries].displayname, "%s", CESettings.smbConf[i].share);
+				
+				if(CESettings.smbConf[i].displayname[0] != 0)
+					sprintf(browserList[browser.numEntries].displayname, "%s", CESettings.smbConf[i].displayname);
+				else
+					sprintf(browserList[browser.numEntries].displayname, "%s", CESettings.smbConf[i].share);
 				browserList[browser.numEntries].length = 0;
 				browserList[browser.numEntries].mtime = 0;
 				browserList[browser.numEntries].isdir = 1; // flag this as a dir
@@ -288,7 +293,10 @@ int BrowserChangeFolder(bool updateDir)
 					break;
 
 				sprintf(browserList[browser.numEntries].filename, "ftp%d:/", i+1);
-				sprintf(browserList[browser.numEntries].displayname, "%s", CESettings.ftpConf[i].ip);
+				if(CESettings.ftpConf[i].displayname[0] != 0)
+					sprintf(browserList[browser.numEntries].displayname, "%s", CESettings.ftpConf[i].displayname);
+				else
+					sprintf(browserList[browser.numEntries].displayname, "%s@%s/%s", CESettings.ftpConf[i].user, CESettings.ftpConf[i].ip, CESettings.ftpConf[i].folder);
 				browserList[browser.numEntries].length = 0;
 				browserList[browser.numEntries].mtime = 0;
 				browserList[browser.numEntries].isdir = 1; // flag this as a dir
