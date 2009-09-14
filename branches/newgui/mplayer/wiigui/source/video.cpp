@@ -17,6 +17,10 @@
 #include "input.h"
 #include "libwiigui/gui.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define DEFAULT_FIFO_SIZE 256 * 1024
 static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN (32);
 static Mtx GXmodelView2D;
@@ -29,6 +33,8 @@ int screenheight;
 int screenwidth;
 u32 FrameTimer = 0;
 
+u8 * mPointer[4];
+
 /****************************************************************************
  * UpdatePadsCB
  *
@@ -37,16 +43,12 @@ u32 FrameTimer = 0;
 static void
 UpdatePadsCB ()
 {
-	#ifdef HW_RVL
 	WPAD_ScanPads();
-	#endif
 	PAD_ScanPads();
 
 	for(int i=3; i >= 0; i--)
 	{
-		#ifdef HW_RVL
 		memcpy(&userInput[i].wpad, WPAD_Data(i), sizeof(WPADData));
-		#endif
 
 		userInput[i].chan = i;
 		userInput[i].pad.btns_d = PAD_ButtonsDown(i);
@@ -104,10 +106,6 @@ StartGX ()
  * Copies the current screen into a GX texture
  ***************************************************************************/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void TakeScreenshot()
 {
 	if(videoScreenshot != NULL) free(videoScreenshot);
@@ -121,38 +119,10 @@ void TakeScreenshot()
 	GX_PixModeSync();
 }
 
-#ifdef __cplusplus
-}
-#endif
-
-/****************************************************************************
- * ResetVideo_Menu
- *
- * Reset the video/rendering mode for the menu
-****************************************************************************/
-void
-ResetVideo_Menu()
+void Menu_DrawInit()
 {
 	Mtx44 p;
-
-	VIDEO_Configure (vmode);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-	else
-		while (VIDEO_GetNextField())
-			VIDEO_WaitVSync();
-
-	// clears the bg to color and clears the z buffer
-	GXColor background = {0, 0, 0, 255};
-	GX_SetCopyClear (background, 0x00ffffff);
-
-	if (vmode->aa)
-		GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
-	else
-		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-
+	
 	GX_SetNumChans(1);
 	GX_SetNumTevStages(1);
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
@@ -175,13 +145,42 @@ ResetVideo_Menu()
 	GX_SetVtxAttrFmt (GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	GX_SetZMode (GX_FALSE, GX_LEQUAL, GX_TRUE);
-
+	
 	guMtxIdentity(GXmodelView2D);
 	guMtxTransApply (GXmodelView2D, GXmodelView2D, 0.0F, 0.0F, -50.0F);
 	GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
-
+	
 	guOrtho(p,0,479,0,639,0,300);
 	GX_LoadProjectionMtx(p, GX_ORTHOGRAPHIC);
+}
+
+/****************************************************************************
+ * ResetVideo_Menu
+ *
+ * Reset the video/rendering mode for the menu
+****************************************************************************/
+void
+ResetVideo_Menu()
+{
+	VIDEO_Configure (vmode);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	else
+		while (VIDEO_GetNextField())
+			VIDEO_WaitVSync();
+
+	// clears the bg to color and clears the z buffer
+	GXColor background = {0, 0, 0, 255};
+	GX_SetCopyClear (background, 0x00ffffff);
+
+	if (vmode->aa)
+		GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
+	else
+		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+
+	Menu_DrawInit();
 
 	// video callback
 	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
@@ -357,3 +356,24 @@ void Menu_DrawRectangle(f32 x, f32 y, f32 width, f32 height, GXColor color, u8 f
 	}
 	GX_End();
 }
+
+void DrawMPlayerGui()
+{
+	Menu_DrawInit(); // reconfigure GX for GUI
+	
+	WPADData * w;
+	
+	// draw GUI elements
+	int i;
+	for(i=3; i >= 0; i--) // so that player 1's cursor appears on top!
+	{
+		w = WPAD_Data(i);
+		
+		if(w->ir.valid)
+			Menu_DrawImg(w->ir.x-48, w->ir.y-48, 96, 96, mPointer[i], w->ir.angle, 1, 1, 255);
+	}
+}
+
+#ifdef __cplusplus
+}
+#endif

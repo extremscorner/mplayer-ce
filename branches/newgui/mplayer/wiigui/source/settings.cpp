@@ -147,6 +147,7 @@ prepareSettingsData ()
 	createXMLSetting("language", "Language", toStr(CESettings.language));
 	createXMLSetting("videoFolder", "Video files folder", CESettings.videoFolder);
 	createXMLSetting("musicFolder", "Music files folder", CESettings.musicFolder);
+	createXMLSetting("onlinemediaFolder", "Online media files folder", CESettings.onlinemediaFolder);
 	createXMLSetting("exitAction", "Exit action", toStr(CESettings.exitAction));
 	createXMLSetting("rumble", "Wiimote rumble", toStr(CESettings.rumble));
 
@@ -279,100 +280,68 @@ static void loadXMLFTPSite(int i)
 	}
 }
 
-/****************************************************************************
- * decodeSettingsData
- *
- * Decodes settings - parses XML and loads settings into the variables
- ***************************************************************************/
-
-static bool
-decodeSettingsData ()
+static void RecurseOnlineMedia(mxml_node_t * top, char * path)
 {
-	bool result = false;
+	mxml_node_t * next;
+	
+	next = mxmlFindElement(top, top, "link", NULL, NULL, MXML_DESCEND_FIRST);
 
-	xml = mxmlLoadString(NULL, savebuffer, MXML_TEXT_CALLBACK);
-
-	if(xml)
+	while(next != NULL)
 	{
-		// check settings version
-		// we don't do anything with the version #, but we'll store it anyway
-		item = mxmlFindElement(xml, xml, "file", "version", NULL, MXML_DESCEND);
-		if(item) // a version entry exists
+		const char * name = mxmlElementGetAttr(next, "name");
+		const char * addr = mxmlElementGetAttr(next, "addr");
+		
+		if(name && addr) // this is a link
 		{
-			const char * version = mxmlElementGetAttr(item, "version");
-
-			if(version && strlen(version) == 5)
-			{
-				// this code assumes version in format X.X.X
-				// XX.X.X, X.XX.X, or X.X.XX will NOT work
-				int verMajor = version[0] - '0';
-				int verMinor = version[2] - '0';
-				int verPoint = version[4] - '0';
-				int curMajor = APPVERSION[0] - '0';
-				int curMinor = APPVERSION[2] - '0';
-				int curPoint = APPVERSION[4] - '0';
-
-				// first we'll check that the versioning is valid
-				if(!(verMajor >= 0 && verMajor <= 9 &&
-					verMinor >= 0 && verMinor <= 9 &&
-					verPoint >= 0 && verPoint <= 9))
-					result = false;
-				else if(verMajor < 1) // less than version 1.0.0
-					result = false; // reset settings
-				else if(verMajor > curMajor || verMinor > curMinor || verPoint > curPoint) // some future version
-					result = false; // reset settings
-				else
-					result = true;
-			}
+			onlinemediaList = (MEDIAENTRY *)realloc(onlinemediaList, (onlinemediaSize + 1) * sizeof(MEDIAENTRY));
+			memset(&(onlinemediaList[onlinemediaSize]), 0, sizeof(MEDIAENTRY)); // clear the new entry
+			strncpy(onlinemediaList[onlinemediaSize].filepath, path, MAXPATHLEN);
+			strncpy(onlinemediaList[onlinemediaSize].address, addr, MAXPATHLEN);
+			strncpy(onlinemediaList[onlinemediaSize].displayname, name, MAXJOLIET);
+			onlinemediaSize++;
 		}
-
-		if(result)
-		{
-			// General
-			loadXMLSetting(&CESettings.autoResume, "autoResume");
-			loadXMLSetting(&CESettings.playOrder, "playOrder");
-			loadXMLSetting(&CESettings.cleanFilenames, "cleanFilenames");
-			loadXMLSetting(&CESettings.hideExtensions, "hideExtensions");
-			loadXMLSetting(&CESettings.filterFiles, "filterFiles");
-			loadXMLSetting(&CESettings.language, "language");
-			loadXMLSetting(CESettings.videoFolder, "videoFolder", sizeof(CESettings.videoFolder));
-			loadXMLSetting(CESettings.musicFolder, "musicFolder", sizeof(CESettings.musicFolder));
-			loadXMLSetting(&CESettings.exitAction, "exitAction");
-			loadXMLSetting(&CESettings.rumble, "rumble");
-
-			// Cache
-			loadXMLSetting(&CESettings.cacheSize, "cacheSize");
-			loadXMLSetting(&CESettings.cacheFillStart, "cacheFillStart");
-			loadXMLSetting(&CESettings.cacheFillRestart, "cacheFillRestart");
-
-			// Network
-			for(int i=0; i<5; i++)
-			{
-				loadXMLSMBShare(i);
-				loadXMLFTPSite(i);
-			}
-
-			// Video
-			loadXMLSetting(&CESettings.frameDropping, "frameDropping");
-			loadXMLSetting(&CESettings.aspectRatio, "aspectRatio");
-			loadXMLSetting(&CESettings.videoZoom, "videoZoom");
-			loadXMLSetting(&CESettings.videoXshift, "videoXshift");
-			loadXMLSetting(&CESettings.videoYshift, "videoYshift");
-
-			// Audio
-			loadXMLSetting(&CESettings.volume, "volume");
-			loadXMLSetting(&CESettings.audioDelay, "audioDelay");
-
-			// Subtitles
-			loadXMLSetting(&CESettings.subtitleDelay, "subtitleDelay");
-			loadXMLSetting(&CESettings.subtitlePosition, "subtitlePosition");
-			loadXMLSetting(&CESettings.subtitleSize, "subtitleSize");
-			loadXMLSetting(&CESettings.subtitleAlpha, "subtitleAlpha");
-			loadXMLSetting(&CESettings.subtitleColor, "subtitleColor");
-		}
-		mxmlDelete(xml);
+		next = mxmlFindElement(next, top, "link", NULL, NULL, MXML_NO_DESCEND);
 	}
-	return result;
+	
+	next = mxmlFindElement(top, top, "folder", NULL, NULL, MXML_DESCEND_FIRST);
+	
+	while(next != NULL)
+	{
+		const char * name = mxmlElementGetAttr(next, "name");
+		
+		if(name) // this is a folder
+		{
+			char newpath[MAXPATHLEN];
+			sprintf(newpath, "%s%s/", path, name);
+			RecurseOnlineMedia(next, newpath);
+		}
+		next = mxmlFindElement(next, top, "folder", NULL, NULL, MXML_NO_DESCEND);
+	}
+}
+
+/****************************************************************************
+ * Load online media entries from specified file
+ ***************************************************************************/
+static void LoadOnlineMediaFile(char * filepath)
+{
+	int offset = 0;
+
+	savebuffer = (char *)malloc(SAVEBUFFERSIZE);
+	memset(savebuffer, 0, SAVEBUFFERSIZE);
+	offset = LoadFile(savebuffer, filepath, SILENT);
+
+	if (offset > 0)
+	{
+		xml = mxmlLoadString(NULL, savebuffer, MXML_TEXT_CALLBACK);
+
+		if(xml)
+		{
+			data = mxmlFindElement(xml, xml, "file", NULL, NULL, MXML_DESCEND);
+			if(data) RecurseOnlineMedia(data, (char *)"");
+			mxmlDelete(xml);
+		}
+	}
+	free(savebuffer);
 }
 
 /****************************************************************************
@@ -393,6 +362,7 @@ void DefaultSettings ()
 	CESettings.language = LANG_ENGLISH;
 	CESettings.videoFolder[0] = 0;
 	CESettings.musicFolder[0] = 0;
+	CESettings.onlinemediaFolder[0] = 0;
 	CESettings.exitAction = EXIT_AUTO;
 	CESettings.rumble = 1;
 
@@ -506,6 +476,7 @@ SaveSettings (bool silent)
 
 	FixInvalidSettings();
 	savebuffer = (char *)malloc(SAVEBUFFERSIZE);
+	memset(savebuffer, 0, SAVEBUFFERSIZE);
 	datasize = prepareSettingsData ();
 
 	if(strlen(appPath) > 0)
@@ -532,17 +503,102 @@ SaveSettings (bool silent)
  ***************************************************************************/
 static bool LoadSettingsFile(char * filepath)
 {
-	bool retval = false;
+	bool result = false;
 	int offset = 0;
 
 	savebuffer = (char *)malloc(SAVEBUFFERSIZE);
+	memset(savebuffer, 0, SAVEBUFFERSIZE);
 	offset = LoadFile(savebuffer, filepath, SILENT);
 
 	if (offset > 0)
-		retval = decodeSettingsData ();
+	{
+		xml = mxmlLoadString(NULL, savebuffer, MXML_TEXT_CALLBACK);
+
+		if(xml)
+		{
+			// check settings version
+			// we don't do anything with the version #, but we'll store it anyway
+			item = mxmlFindElement(xml, xml, "file", "version", NULL, MXML_DESCEND);
+			if(item) // a version entry exists
+			{
+				const char * version = mxmlElementGetAttr(item, "version");
+
+				if(version && strlen(version) == 5)
+				{
+					// this code assumes version in format X.X.X
+					// XX.X.X, X.XX.X, or X.X.XX will NOT work
+					int verMajor = version[0] - '0';
+					int verMinor = version[2] - '0';
+					int verPoint = version[4] - '0';
+					int curMajor = APPVERSION[0] - '0';
+					int curMinor = APPVERSION[2] - '0';
+					int curPoint = APPVERSION[4] - '0';
+
+					// first we'll check that the versioning is valid
+					if(!(verMajor >= 0 && verMajor <= 9 &&
+						verMinor >= 0 && verMinor <= 9 &&
+						verPoint >= 0 && verPoint <= 9))
+						result = false;
+					else if(verMajor < 1) // less than version 1.0.0
+						result = false; // reset settings
+					else if(verMajor > curMajor || verMinor > curMinor || verPoint > curPoint) // some future version
+						result = false; // reset settings
+					else
+						result = true;
+				}
+			}
+
+			if(result)
+			{
+				// General
+				loadXMLSetting(&CESettings.autoResume, "autoResume");
+				loadXMLSetting(&CESettings.playOrder, "playOrder");
+				loadXMLSetting(&CESettings.cleanFilenames, "cleanFilenames");
+				loadXMLSetting(&CESettings.hideExtensions, "hideExtensions");
+				loadXMLSetting(&CESettings.filterFiles, "filterFiles");
+				loadXMLSetting(&CESettings.language, "language");
+				loadXMLSetting(CESettings.videoFolder, "videoFolder", sizeof(CESettings.videoFolder));
+				loadXMLSetting(CESettings.musicFolder, "musicFolder", sizeof(CESettings.musicFolder));
+				loadXMLSetting(CESettings.onlinemediaFolder, "onlinemediaFolder", sizeof(CESettings.onlinemediaFolder));
+				loadXMLSetting(&CESettings.exitAction, "exitAction");
+				loadXMLSetting(&CESettings.rumble, "rumble");
+
+				// Cache
+				loadXMLSetting(&CESettings.cacheSize, "cacheSize");
+				loadXMLSetting(&CESettings.cacheFillStart, "cacheFillStart");
+				loadXMLSetting(&CESettings.cacheFillRestart, "cacheFillRestart");
+
+				// Network
+				for(int i=0; i<5; i++)
+				{
+					loadXMLSMBShare(i);
+					loadXMLFTPSite(i);
+				}
+
+				// Video
+				loadXMLSetting(&CESettings.frameDropping, "frameDropping");
+				loadXMLSetting(&CESettings.aspectRatio, "aspectRatio");
+				loadXMLSetting(&CESettings.videoZoom, "videoZoom");
+				loadXMLSetting(&CESettings.videoXshift, "videoXshift");
+				loadXMLSetting(&CESettings.videoYshift, "videoYshift");
+
+				// Audio
+				loadXMLSetting(&CESettings.volume, "volume");
+				loadXMLSetting(&CESettings.audioDelay, "audioDelay");
+
+				// Subtitles
+				loadXMLSetting(&CESettings.subtitleDelay, "subtitleDelay");
+				loadXMLSetting(&CESettings.subtitlePosition, "subtitlePosition");
+				loadXMLSetting(&CESettings.subtitleSize, "subtitleSize");
+				loadXMLSetting(&CESettings.subtitleAlpha, "subtitleAlpha");
+				loadXMLSetting(&CESettings.subtitleColor, "subtitleColor");
+			}
+			mxmlDelete(xml);
+		}
+	}
 
 	free(savebuffer);
-	return retval;
+	return result;
 }
 
 /****************************************************************************
@@ -558,27 +614,29 @@ bool LoadSettings()
 
 	bool settingsFound = false;
 	char filepath[MAXPATHLEN];
-	char foundpath[MAXPATHLEN];
 
 	// try to load from appPath
 	if(strlen(appPath) > 0)
 	{
 		sprintf(filepath, "%s/settings.xml", appPath);
 		settingsFound = LoadSettingsFile(filepath);
-		if(settingsFound) sprintf(foundpath, "%s", appPath);
+		sprintf(filepath, "%s/onlinemedia.xml", appPath);
+		LoadOnlineMediaFile(filepath);
 	}
 
 	if(!settingsFound)
 	{
 		sprintf(filepath, "sd:/%s/settings.xml", APPFOLDER);
 		settingsFound = LoadSettingsFile(filepath);
-		if(settingsFound) sprintf(foundpath, "sd:/%s", APPFOLDER);
+		sprintf(filepath, "sd:/%s/onlinemedia.xml", APPFOLDER);
+		LoadOnlineMediaFile(filepath);
 	}
 	if(!settingsFound)
 	{
 		sprintf(filepath, "usb:/%s/settings.xml", APPFOLDER);
 		settingsFound = LoadSettingsFile(filepath);
-		if(settingsFound) sprintf(foundpath, "usb:/%s", APPFOLDER);
+		sprintf(filepath, "usb:/%s/onlinemedia.xml", APPFOLDER);
+		LoadOnlineMediaFile(filepath);
 	}
 
 	settingsLoaded = true; // attempted to load settings

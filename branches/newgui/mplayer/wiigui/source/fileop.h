@@ -26,6 +26,9 @@ bool ChangeInterface(int device, int devnum, bool silent);
 bool ChangeInterface(char * filepath, bool silent);
 void CreateAppPath(char * origpath);
 int ParseDirectory(bool waitParse = false);
+int LoadPlaylist();
+int ParsePlaylist();
+int ParseOnlineMedia();
 u32 LoadFile (char * buffer, char *filepath, bool silent);
 u32 SaveFile (char * buffer, char *filepath, u32 datasize, bool silent);
 

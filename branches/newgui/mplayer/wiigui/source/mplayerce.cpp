@@ -47,7 +47,7 @@ static void ExitCleanup()
 
 void ExitApp()
 {
-	SaveSettings(SILENT);
+	//SaveSettings(SILENT);
 
 	// shut down some threads
 	HaltDeviceThread();

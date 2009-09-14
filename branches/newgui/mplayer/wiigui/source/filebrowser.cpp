@@ -24,6 +24,10 @@
 
 BROWSERINFO browser;
 BROWSERENTRY * browserList = NULL; // list of files/folders in browser
+MEDIAENTRY * onlinemediaList = NULL; // list of online media files
+int onlinemediaSize = 0; // number of online media files
+char currentPlaylist[MAXPATHLEN] = "\0";
+bool inOnlineMedia = false;
 
 /****************************************************************************
  * ResetBrowser()
@@ -128,23 +132,30 @@ int UpdateDirName()
 		}
 		else
 		{
-			/* determine last subdirectory namelength */
-			sprintf(temp,"%s",browser.dir);
-			test = strtok(temp,"/");
-			while (test != NULL)
+			if(currentPlaylist[0] != 0) // inside a playlist
 			{
-				size = strlen(test);
-				test = strtok(NULL,"/");
+				currentPlaylist[0] = 0; // leave playlist
 			}
-
-			/* remove last subdirectory name */
-			size = strlen(browser.dir) - size - 1;
-			browser.dir[size] = 0;
+			else
+			{
+				/* determine last subdirectory namelength */
+				sprintf(temp,"%s",browser.dir);
+				test = strtok(temp,"/");
+				while (test != NULL)
+				{
+					size = strlen(test);
+					test = strtok(NULL,"/");
+				}
+	
+				/* remove last subdirectory name */
+				size = strlen(browser.dir) - size - 1;
+				browser.dir[size] = 0;
+			}
 		}
 		return 1;
 	}
 
-	if(browser.dir[0] == 0)
+	if(!inOnlineMedia && browser.dir[0] == 0)
 	{
 		// try to switch to device
 		if(!ChangeInterface(browserList[browser.selIndex].filename, NOTSILENT))
@@ -156,8 +167,11 @@ int UpdateDirName()
 	/* test new directory namelength */
 	if ((strlen(browser.dir)+1+strlen(browserList[browser.selIndex].filename)) < MAXPATHLEN)
 	{
-		/* update current directory name */
-		sprintf(browser.dir, "%s%s/",browser.dir, browserList[browser.selIndex].filename);
+		if(!browserList[browser.selIndex].isplaylist)
+		{
+			/* update current directory name */
+			sprintf(browser.dir, "%s%s/",browser.dir, browserList[browser.selIndex].filename);
+		}
 		return 1;
 	}
 	else
@@ -206,7 +220,15 @@ int BrowserChangeFolder(bool updateDir)
 
 	CleanupPath(browser.dir);
 
-	if(browser.dir[0] != 0)
+	if(currentPlaylist[0] != 0)
+	{
+		ParsePlaylist();
+	}
+	else if(inOnlineMedia)
+	{
+		ParseOnlineMedia();
+	}
+	else if(browser.dir[0] != 0)
 	{
 		ParseDirectory();
 	}
@@ -252,11 +274,25 @@ int BrowserChangeFolder(bool updateDir)
 					break;
 
 				sprintf(browserList[browser.numEntries].filename, "smb%d:/", i+1);
-				sprintf(browserList[browser.numEntries].displayname, "%s (Network)", CESettings.smbConf[i].share);
+				sprintf(browserList[browser.numEntries].displayname, "%s", CESettings.smbConf[i].share);
 				browserList[browser.numEntries].length = 0;
 				browserList[browser.numEntries].mtime = 0;
 				browserList[browser.numEntries].isdir = 1; // flag this as a dir
 				browserList[browser.numEntries].icon = ICON_SMB;
+				browser.numEntries++;
+			}
+			
+			if(CESettings.ftpConf[i].ip[0] != 0)
+			{
+				if(!AddBrowserEntry())
+					break;
+
+				sprintf(browserList[browser.numEntries].filename, "ftp%d:/", i+1);
+				sprintf(browserList[browser.numEntries].displayname, "%s", CESettings.ftpConf[i].ip);
+				browserList[browser.numEntries].length = 0;
+				browserList[browser.numEntries].mtime = 0;
+				browserList[browser.numEntries].isdir = 1; // flag this as a dir
+				browserList[browser.numEntries].icon = ICON_FTP;
 				browser.numEntries++;
 			}
 		}

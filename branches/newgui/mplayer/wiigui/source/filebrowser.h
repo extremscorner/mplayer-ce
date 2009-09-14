@@ -26,14 +26,21 @@ typedef struct
 
 typedef struct
 {
-	u64 offset; // DVD offset
-	unsigned int length; // file length
+	u64 length; // file length
 	time_t mtime; // file modified time
-	char isdir; // 0 - file, 1 - directory
+	int isdir; // 0 - file, 1 - directory
+	int isplaylist;
 	char filename[MAXJOLIET + 1]; // full filename
 	char displayname[MAXJOLIET + 1]; // name for browser display
 	int icon; // icon to display
 } BROWSERENTRY;
+
+typedef struct
+{
+	char filepath[MAXPATHLEN]; // virtual filepath
+	char address[MAXPATHLEN]; // address (URL)
+	char displayname[MAXJOLIET + 1]; // name for browser display
+} MEDIAENTRY;
 
 enum
 {
@@ -42,11 +49,16 @@ enum
 	ICON_SD,
 	ICON_USB,
 	ICON_DVD,
-	ICON_SMB
+	ICON_SMB,
+	ICON_FTP
 };
 
 extern BROWSERINFO browser;
 extern BROWSERENTRY * browserList;
+extern char currentPlaylist[];
+extern bool inOnlineMedia;
+extern MEDIAENTRY * onlinemediaList;
+extern int onlinemediaSize;
 
 bool IsDeviceRoot(char * path);
 int UpdateDirName(int method);

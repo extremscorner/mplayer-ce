@@ -17,6 +17,10 @@
 #include <sdcard/wiisd_io.h>
 #include <ogc/usbstorage.h>
 
+extern "C" {
+#include "../../playtree.h"
+}
+
 #include "mplayerce.h"
 #include "fileop.h"
 #include "networkop.h"
@@ -418,12 +422,14 @@ bool ParseDirEntries()
 	char filename[MAXPATHLEN];
 	char *ext;
 	struct stat filestat;
+	bool isPlaylist;
 
 	int i = 0;
-	int res;
+	int j, res;
 
 	while(i < 20)
 	{
+		isPlaylist = false; // assume this file is not a playlist
 		res = dirnext(dirIter,filename,&filestat);
 
 		if(res != 0)
@@ -431,16 +437,32 @@ bool ParseDirEntries()
 
 		if(strcmp(filename,".") == 0)
 			continue;
+		
+		ext = strrchr(filename,'.');
+		
+		if(ext != NULL)
+		{		
+			ext++;
+			
+			// check if this is a playlist
+			j=0;
+			do
+			{
+				if (!strcasecmp(ext, validPlaylistExtensions[j++]))
+				{
+					isPlaylist = true;
+					break;
+				}
+			} while (validPlaylistExtensions[j][0] != 0);
+		}
 
 		// check that this file's extension is on the list of visible file types
-		if(CESettings.filterFiles && (filestat.st_mode & _IFDIR) == 0)
+		if(CESettings.filterFiles && (filestat.st_mode & _IFDIR) == 0 && !isPlaylist)
 		{
-			if((ext = strrchr(filename,'.')) == NULL)
+			if(ext == NULL)
 				continue; // file does not have an extension - skip it
 
-			ext++;
-
-			int j=0;
+			j=0;
 
 			do
 			{
@@ -458,7 +480,7 @@ bool ParseDirEntries()
 			browserList[browser.numEntries+i].length = filestat.st_size;
 			browserList[browser.numEntries+i].mtime = filestat.st_mtime;
 			browserList[browser.numEntries+i].isdir = (filestat.st_mode & _IFDIR) == 0 ? 0 : 1; // flag this as a dir
-
+			
 			if(browserList[browser.numEntries+i].isdir)
 			{
 				if(strcmp(filename, "..") == 0)
@@ -469,6 +491,9 @@ bool ParseDirEntries()
 			}
 			else
 			{
+				if(isPlaylist)
+					browserList[browser.numEntries+i].isplaylist = 1;
+				
 				strncpy(browserList[browser.numEntries+i].displayname, browserList[browser.numEntries+i].filename, MAXJOLIET);
 				browserList[browser.numEntries+i].icon = ICON_NONE;
 
@@ -577,6 +602,153 @@ ParseDirectory(bool waitParse)
 		CancelAction();
 	}
 
+	return browser.numEntries;
+}
+
+static char playlistEntries[200][MAXPATHLEN];
+static int numPlaylistEntries = 0;
+
+int LoadPlaylist()
+{
+	char * playlistEntry;
+	int num = 0;
+	
+	play_tree_t * playlist = parse_playlist_file(currentPlaylist);
+	
+	play_tree_iter_t *my_pt_iter = NULL;
+
+	if((my_pt_iter = pt_iter_create(&playlist, NULL)))
+	{
+		while ((playlistEntry = pt_iter_get_next_file(my_pt_iter)) != NULL)
+		{
+			strncpy(playlistEntries[num], playlistEntry, MAXPATHLEN);
+			num++;
+		}
+		pt_iter_destroy(&my_pt_iter);
+	}
+	numPlaylistEntries = num;
+	return num;
+}
+
+int ParsePlaylist()
+{
+	// halt parsing
+	HaltParseThread();
+
+	// reset browser
+	ResetBrowser();
+	
+	AddBrowserEntry();
+	sprintf(browserList[0].filename, "..");
+	sprintf(browserList[0].displayname, "Up One Level");
+	browserList[0].length = 0;
+	browserList[0].mtime = 0;
+	browserList[0].isdir = 1;
+	browserList[0].icon = ICON_FOLDER;
+	browser.numEntries++;
+	
+	int i;
+	char * start;
+	
+	for(i=0; i < numPlaylistEntries; i++)
+	{
+		AddBrowserEntry();
+		sprintf(browserList[i+1].filename, playlistEntries[i]);
+		start = strrchr(playlistEntries[i],'/');
+		if(start != NULL) // start up starting part of path
+		{
+			start++;
+			sprintf(browserList[i+1].displayname, start);
+		}
+		else
+		{
+			sprintf(browserList[i+1].displayname, playlistEntries[i]);
+		}
+		browserList[i+1].length = 0;
+		browserList[i+1].mtime = 0;
+		browserList[i+1].isdir = 0;
+		browserList[i+1].isplaylist = 0;
+		browserList[i+1].icon = ICON_NONE;
+	}
+	browser.numEntries += i;
+	return browser.numEntries;
+}
+
+int ParseOnlineMedia()
+{
+	// halt parsing
+	HaltParseThread();
+
+	// reset browser
+	ResetBrowser();
+	
+	if(browser.dir[0] != 0)
+	{
+		AddBrowserEntry();
+		sprintf(browserList[0].filename, "..");
+		sprintf(browserList[0].displayname, "Up One Level");
+		browserList[0].length = 0;
+		browserList[0].mtime = 0;
+		browserList[0].isdir = 1;
+		browserList[0].icon = ICON_FOLDER;
+		browser.numEntries++;
+	}
+	
+	for(int i=0; i < onlinemediaSize; i++)
+	{
+		int filepathLen = strlen(onlinemediaList[i].filepath);
+		int dirLen = strlen(browser.dir);
+		
+		// add file
+		if(strcmp(browser.dir, onlinemediaList[i].filepath) == 0)
+		{
+			AddBrowserEntry();
+			strncpy(browserList[browser.numEntries].filename, onlinemediaList[i].address, MAXPATHLEN);
+			strncpy(browserList[browser.numEntries].displayname, onlinemediaList[i].displayname, MAXJOLIET);
+			browserList[browser.numEntries].length = 0;
+			browserList[browser.numEntries].mtime = 0;
+			browserList[browser.numEntries].isdir = 0;
+			browserList[browser.numEntries].isplaylist = 1;
+			browserList[browser.numEntries].icon = ICON_NONE;
+			browser.numEntries++;
+		}
+		else if(filepathLen > dirLen && 
+			strncmp(browser.dir, onlinemediaList[i].filepath, dirLen) == 0)
+		{
+			char folder[MAXPATHLEN];
+			strncpy(folder, &onlinemediaList[i].filepath[dirLen], MAXPATHLEN);
+			char * end = strchr(folder, '/');
+			if(end) *end = 0; // strip end
+			
+			// check if this folder was already added
+			bool matchFound = false;
+
+			for(int j=0; j < browser.numEntries; j++)
+			{
+				if(strcmp(browserList[j].filename, folder) == 0)
+				{
+					matchFound = true;
+					break;
+				}
+			}
+			
+			if(!matchFound)
+			{			
+				// add the folder
+				AddBrowserEntry();
+				strncpy(browserList[browser.numEntries].filename, folder, MAXPATHLEN);
+				strncpy(browserList[browser.numEntries].displayname, folder, MAXJOLIET);
+				browserList[browser.numEntries].length = 0;
+				browserList[browser.numEntries].mtime = 0;
+				browserList[browser.numEntries].isdir = 1;
+				browserList[browser.numEntries].icon = ICON_FOLDER;
+				browser.numEntries++;
+			}
+		}
+	}
+	
+	// Sort the file list
+	qsort(browserList, browser.numEntries, sizeof(BROWSERENTRY), FileSortCallback);
 	return browser.numEntries;
 }
 

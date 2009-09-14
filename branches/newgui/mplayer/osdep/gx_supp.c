@@ -36,8 +36,10 @@
 #define VASPECT 240
 
 #ifdef WIILIB
+void PauseAndGotoGUI();
 void HaltGui();
 void TakeScreenshot();
+void DrawMPlayerGui();
 int copyScreen = 0;
 #endif
 
@@ -895,6 +897,9 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
     p13= pitch[1] * 3;
 }
 
+static int currentWidth;
+static u16 * currentPitch;
+
 void GX_UpdatePitch(int width,u16 *pitch)
 {
 	//black
@@ -903,6 +908,8 @@ void GX_UpdatePitch(int width,u16 *pitch)
 	memset(Utexture, 0x80, UVtexsize);
 	memset(Vtexture, 0x80, UVtexsize);
 
+	currentWidth = width;
+	currentPitch = pitch;
 	GX_ConfigTextureYUV(width, vheight, pitch);
 }
 
@@ -1016,30 +1023,34 @@ void GX_RenderTexture()
 		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 	GX_End();
 
+	GX_SetColorUpdate(GX_TRUE);
+	GX_DrawDone();
+	
 #ifdef WIILIB
+	DrawMPlayerGui();
+
 	if(copyScreen == 1)
 	{
 		copyScreen = 0;
-		GX_DrawDone();
 		TakeScreenshot();
-		GX_SetColorUpdate(GX_TRUE);
 		GX_CopyDisp(xfb[whichfb], GX_TRUE);
 		PauseAndGotoGUI();
+		return;
 	}
-	else
-	{
-		GX_SetColorUpdate(GX_TRUE);
-		GX_CopyDisp(xfb[whichfb], GX_TRUE);
-		GX_DrawDone();
-	}
-#else
-	GX_SetColorUpdate(GX_TRUE);
-	GX_CopyDisp(xfb[whichfb], GX_TRUE);
-	GX_DrawDone();
 #endif
+
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
+	
+#ifdef WIILIB
+	// reconfigure GX for MPlayer
+	Mtx44 p;
+	GX_ConfigTextureYUV(currentWidth, vheight, currentPitch);
+	guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
+	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
+#endif
 }
 
 void GX_ResetTextureYUVPointers()

@@ -26,7 +26,7 @@
 
 #define THREAD_SLEEP 100
 
-static GuiImageData * pointer[4];
+static GuiImageData * pointer[4] = { NULL, NULL, NULL, NULL };
 static GuiImage * videoImg = NULL;
 static GuiButton * videoBtn = NULL;
 static GuiButton * musicBtn = NULL;
@@ -71,7 +71,6 @@ UpdateGUI (void *arg)
 		{
 			mainWindow->Draw();
 
-			#ifdef HW_RVL
 			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
 			{
 				if(userInput[i].wpad.ir.valid)
@@ -79,7 +78,6 @@ UpdateGUI (void *arg)
 						96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
 				DoRumble(i);
 			}
-			#endif
 
 			Menu_Render();
 
@@ -751,7 +749,7 @@ static void ChangeMenu(void * ptr, int menu)
 static void ChangeMenuVideos(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_VIDEOS); }
 static void ChangeMenuMusic(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_MUSIC); }
 static void ChangeMenuDVD(void * ptr) { ChangeMenu(ptr, MENU_DVD); }
-static void ChangeMenuOnline(void * ptr) { ChangeMenu(ptr, MENU_ONLINEMEDIA); }
+static void ChangeMenuOnline(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_ONLINEMEDIA); }
 static void ChangeMenuSettings(void * ptr) { ChangeMenu(ptr, MENU_SETTINGS); }
 
 /****************************************************************************
@@ -763,9 +761,20 @@ static void MenuBrowse(int menu)
 	ShutoffRumble();
 
 	if(menu == MENU_BROWSE_VIDEOS)
+	{
 		browser.dir = &CESettings.videoFolder[0];
+		inOnlineMedia = false;
+	}
 	else if(menu == MENU_BROWSE_MUSIC)
+	{
 		browser.dir = &CESettings.musicFolder[0];
+		inOnlineMedia = false;
+	}
+	else if(menu == MENU_BROWSE_ONLINEMEDIA)
+	{
+		browser.dir = &CESettings.onlinemediaFolder[0];
+		inOnlineMedia = true;
+	}
 	else
 		return;
 
@@ -823,9 +832,45 @@ static void MenuBrowse(int menu)
 				}
 				else
 				{
+					if(browserList[browser.selIndex].isplaylist)
+					{
+						// parse list
+						if(currentMenu == MENU_BROWSE_ONLINEMEDIA)
+							sprintf(currentPlaylist, "%s", browserList[browser.selIndex].filename);
+						else
+							sprintf(currentPlaylist, "%s%s", browser.dir, browserList[browser.selIndex].filename);
+						
+						int numItems = LoadPlaylist();
+						
+						if(numItems == 0)
+						{
+							currentPlaylist[0] = 0;
+							ErrorPrompt("Error loading playlist!");
+							continue;
+						}
+						BrowserChangeFolder();
+						
+						if(numItems == 1) // let's load this one file
+						{
+							sprintf(loadedFile, browserList[1].filename);
+						}
+						else
+						{
+							fileBrowser.ResetState();
+							fileBrowser.fileList[0]->SetState(STATE_SELECTED);
+							fileBrowser.TriggerUpdate();
+							continue;
+						}
+					}
+					else
+					{
+						if(currentPlaylist[0] != 0 || currentMenu == MENU_BROWSE_ONLINEMEDIA)
+							sprintf(loadedFile, "%s", browserList[browser.selIndex].filename);
+						else
+							sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
+					}
+					
 					ShutdownMPlayer();
-
-					sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
 
 					ShowAction("Loading...");
 
@@ -846,11 +891,6 @@ static void MenuBrowse(int menu)
 done:
 	HaltGui();
 	mainWindow->Remove(&fileBrowser);
-}
-
-static void MenuOnlineMedia()
-{
-	currentMenu = MENU_BROWSE_VIDEOS;
 }
 
 static void MenuDVD()
@@ -1831,10 +1871,17 @@ void WiiMenu()
 {
 	shutdownGui = false;
 
-	pointer[0] = new GuiImageData(player1_point_png);
-	pointer[1] = new GuiImageData(player2_point_png);
-	pointer[2] = new GuiImageData(player3_point_png);
-	pointer[3] = new GuiImageData(player4_point_png);
+	if(pointer[0] == NULL)
+	{
+		pointer[0] = new GuiImageData(player1_point_png);
+		pointer[1] = new GuiImageData(player2_point_png);
+		pointer[2] = new GuiImageData(player3_point_png);
+		pointer[3] = new GuiImageData(player4_point_png);
+		mPointer[0] = pointer[0]->GetImage();
+		mPointer[1] = pointer[1]->GetImage();
+		mPointer[2] = pointer[2]->GetImage();
+		mPointer[3] = pointer[3]->GetImage();
+	}
 
 	GuiTrigger trigA;
 	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
@@ -1966,13 +2013,11 @@ void WiiMenu()
 		{
 			case MENU_BROWSE_VIDEOS:
 			case MENU_BROWSE_MUSIC:
+			case MENU_BROWSE_ONLINEMEDIA:
 				MenuBrowse(currentMenu);
 				break;
 			case MENU_DVD:
 				MenuDVD();
-				break;
-			case MENU_ONLINEMEDIA:
-				MenuOnlineMedia();
 				break;
 			case MENU_SETTINGS:
 				MenuSettings();
@@ -2006,11 +2051,6 @@ void WiiMenu()
 	ShutoffRumble();
 	CancelAction();
 	HaltGui();
-
-	delete pointer[0];
-	delete pointer[1];
-	delete pointer[2];
-	delete pointer[3];
 
 	delete mainWindow;
 	mainWindow = NULL;
