@@ -454,20 +454,31 @@ int ntfs_ftruncate_r (struct _reent *r, int fd, off_t len)
         return -1;
     }
     
-    // For compressed files, only deleting contents is supported
-    if (file->compressed && len > 0) {
+    // For compressed files, only deleting and expanding contents are implemented
+    if (file->compressed &&
+        len > 0 &&
+        len < file->data_na->initialized_size) {
         ntfsUnlock(file->vd);
         r->_errno = EOPNOTSUPP;
         return -1;
     }
-    
-    // Resize the files data attribute
-    if (ntfs_attr_truncate(file->data_na, len)) {
-        ntfsUnlock(file->vd);
-        r->_errno = errno;
-        return -1;
+
+    // Resize the files data attribute, either by expanding or truncating
+    if (file->compressed && len > file->data_na->initialized_size) {
+        char zero = 0;
+        if (ntfs_attr_pwrite(file->data_na, len - 1, 1, &zero) <= 0) {
+            ntfsUnlock(file->vd);
+            r->_errno = errno;
+            return -1;
+        }
+    } else {
+        if (ntfs_attr_truncate(file->data_na, len)) {
+            ntfsUnlock(file->vd);
+            r->_errno = errno;
+            return -1;
+        }
     }
-    
+
     // Mark the file for archiving (if we actually changed something)
     if (file->len != file->data_na->data_size)
         file->ni->flags |= FILE_ATTR_ARCHIVE;
