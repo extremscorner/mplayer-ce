@@ -181,7 +181,13 @@ void plat_init (int *argc, char **argv[])
 	GX_SetCamPosZ(gxzoom);
 	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
 
-	//chdir(MPLAYER_DATADIR);
+
+	//fixed at now, I think this path has to be passed by gui
+	sprintf(MPLAYER_DATADIR,"%s","sd:/apps/mplayer_ce");
+	sprintf(MPLAYER_CONFDIR,"%s","sd:/apps/mplayer_ce");
+	sprintf(MPLAYER_LIBDIR,"%s","sd:/apps/mplayer_ce");
+	chdir(MPLAYER_DATADIR);
+	
 	setenv("HOME", MPLAYER_DATADIR, 1);
 	setenv("DVDCSS_CACHE", "off", 1);
 	setenv("DVDCSS_VERBOSE", "0", 1);
@@ -226,6 +232,46 @@ static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #define CONN_STACKSIZE 8*1024
 static u8 smbx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
 static u8 ftpx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
+#endif
+
+#include <sdcard/wiisd_io.h>
+#include <sdcard/gcsd.h>
+#include <ogc/usbstorage.h>
+
+const static DISC_INTERFACE* sd = &__io_wiisd;
+const static DISC_INTERFACE* usb = &__io_usbstorage;
+
+static lwp_t mainthread;
+
+bool mount_sd_ntfs()
+{
+	//only mount the first ntfs partition
+	int partition_count = 0;
+	sec_t *partitions = NULL;
+	sec_t boot;
+	
+	partition_count = ntfsFindPartitions (sd, &partitions);
+	if(partition_count<1) return 0;
+
+	boot=partitions[0];
+	free(partitions);
+	
+	return ntfsMount("ntfs_sd", sd, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
+}
+
+bool mount_usb_ntfs()
+{
+	//only mount the first ntfs partition
+	int partition_count = 0;
+	sec_t *partitions = NULL;
+	sec_t boot;
+	
+	partition_count = ntfsFindPartitions (usb, &partitions);
+	if(partition_count<1) return 0;
+	boot=partitions[0];
+	free(partitions);
+	return ntfsMount("ntfs_usb", usb, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
+}
 
 static void * mountthreadfunc (void *arg)
 {
@@ -333,16 +379,6 @@ void gekko_abort(void) {
 static void __dec(char *cad){int i;for(i=0;cad[i]!='\0';i++)cad[i]=cad[i]-50;}
 static void sp(){sleep(5);}
 
-
-// Mounting code
-#include <sdcard/wiisd_io.h>
-#include <sdcard/gcsd.h>
-#include <ogc/usbstorage.h>
-
-const static DISC_INTERFACE* sd = &__io_wiisd;
-const static DISC_INTERFACE* usb = &__io_usbstorage;
-
-static lwp_t mainthread;
 
 /******************************************/
 /*           NETWORK FUNCTIONS            */
@@ -706,35 +742,6 @@ static bool CheckPath(char *path)
 	return true;
 }
 
-bool mount_sd_ntfs()
-{
-	//only mount the first ntfs partition
-	int partition_count = 0;
-	sec_t *partitions = NULL;
-	sec_t boot;
-	
-	partition_count = ntfsFindPartitions (sd, &partitions);
-	if(partition_count<1) return 0;
-
-	boot=partitions[0];
-	free(partitions);
-	
-	return ntfsMount("ntfs_sd", sd, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
-}
-
-bool mount_usb_ntfs()
-{
-	//only mount the first ntfs partition
-	int partition_count = 0;
-	sec_t *partitions = NULL;
-	sec_t boot;
-	
-	partition_count = ntfsFindPartitions (usb, &partitions);
-	if(partition_count<1) return 0;
-	boot=partitions[0];
-	free(partitions);
-	return ntfsMount("ntfs_usb", usb, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER ) ;
-}
 
 static bool DetectValidPath()
 {
@@ -957,7 +964,6 @@ void plat_deinit (int rc) {
 	//printf("exiting mplayerce\n");sleep(3);
 	//log_console_deinit();
 }
-#endif
 
 #if 0 // change 0 by 1 if you are using devkitppc r17
 int _gettimeofday_r(struct _reent *ptr,	struct timeval *ptimeval ,	void *ptimezone)

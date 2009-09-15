@@ -51,6 +51,7 @@
 #define ROUND(x) ((int)((x)<0 ? (x)-0.5 : (x)+0.5))
 
 extern int use_menu;
+extern int pause_gui;
 
 static void rescale_input_coordinates(int ix, int iy, double *dx, double *dy)
 {
@@ -2497,9 +2498,16 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_QUIT:
+#ifdef WIILIB
+//like pause
+	    cmd->pausing = 1;
+	    brk_cmd = 1;
+	    pause_gui = 1;
+	    break;
+#else	
 	    exit_player_with_rc(EXIT_QUIT,
 				(cmd->nargs > 0) ? cmd->args[0].v.i : 0);
-
+#endif
 	case MP_CMD_PLAY_TREE_STEP:{
 		int n = cmd->args[0].v.i == 0 ? 1 : cmd->args[0].v.i;
 		int force = cmd->args[1].v.i;

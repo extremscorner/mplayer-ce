@@ -1831,10 +1831,11 @@ extern int prev_dxs , prev_dys;
 void force_osd()
 {
 	update_osd_msg();
+	if (mpctx && mpctx->sh_video && mpctx->video_out && vo_config_count)
+    	mpctx->video_out->check_events();
    if (vf_menu)
    {
-   		if (mpctx && mpctx->sh_video && mpctx->video_out && vo_config_count)
-	    	mpctx->video_out->check_events();
+   	printf("force_osd\n");
 
     	vf_menu_pause_update(vf_menu);
    }
@@ -2638,6 +2639,7 @@ static double update_video(int *blit_frame)
 
 #ifdef WIILIB
 int controlledbygui=0;
+int pause_gui=0;
 void PauseAndGotoGUI()
 {
 	mp_cmd_t* cmd=NULL;
@@ -2647,7 +2649,7 @@ void PauseAndGotoGUI()
 
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
 	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
-
+printf("PauseAndGotoGUI\n");
 printf("wiimote controlled by gui\n");
 getch2_disable(); //wiimote controlled by gui
 #ifdef CONFIG_MENU
@@ -2669,12 +2671,6 @@ controlledbygui=1; //send control to gui
 	
 	usec_sleep(20000);
   }	
-  if(controlledbygui==2) // new film we have to exit
-  {
-  	uninit_player(INITIALIZED_ALL);
-//if(mpctx->eof==1) 
-	return 1;
-  }
 
   
 printf("control return to mplayer\n");
@@ -2684,32 +2680,40 @@ reinit_video();
 reinit_audio();
 printf("mplayer video reinit ok\n");usleep(100);
 
-    if (cmd && cmd->id == MP_CMD_PAUSE) {
+    if (cmd && cmd->id == MP_CMD_QUIT) {
 	cmd = mp_input_get_cmd(0,1,0);
 	mp_cmd_free(cmd);
     }
     
     mpctx->osd_function=OSD_PLAY;
 	
-    	    
-	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
-	{
-		//DI_StartMotor();
-		//printf("start motor\n");
-		void *ptr=memalign(32, 0x800*2);
-		//printf("read sector 1\n");
-		DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
-		//printf("read sector 5000\n");
-		DI_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
-		free(ptr);
-	}
-
-    if (mpctx->audio_out && mpctx->sh_audio)
-	    mpctx->audio_out->resume();	// resume audio
-    	    
+    if(controlledbygui!=2)
+	{	    
+		if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
+		{
+			//DI_StartMotor();
+			//printf("start motor\n");
+			void *ptr=memalign(32, 0x800*2);
+			//printf("read sector 1\n");
+			DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
+			//printf("read sector 5000\n");
+			DI_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
+			free(ptr);
+		}
+	
+	    if (mpctx->audio_out && mpctx->sh_audio)
+		    mpctx->audio_out->resume();	// resume audio
+    }
+    
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause
+  if(controlledbygui==2) // new film we have to exit
+  {
+  	//mp_input_queue_cmd(mp_input_parse_cmd("quit"));
+  	mpctx->eof=1;
+  }
+    
 }
 #endif
 
@@ -2826,13 +2830,12 @@ void fast_continue()
 static void pause_loop(void)
 {
     mp_cmd_t* cmd=NULL;
-
 	if(IsLoopAvi(NULL))
 	{
 		mpctx->osd_function=OSD_PLAY;
 		return;	
 	}
-   	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
+   	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE"); //impossible to see in wiigui, we haven't vf_menu
     //update_osd_msg();
     force_osd();
 
@@ -4670,7 +4673,15 @@ if(auto_quality>0){
 	  {
 	  	low_cache=false;
 	  	mpctx->osd_function = OSD_PLAY;
+	  }	  
+#ifdef WIILIB
+      else if(pause_gui)
+	  {
+	  	pause_gui=0;
+	  	mpctx->was_paused = 1;
+	  	PauseAndGotoGUI();
 	  }
+#endif	   
       else 
 	  {
 	  	mpctx->was_paused = 1;
@@ -4791,8 +4802,10 @@ if(rel_seek_secs || abs_seek_pos){
 } // while(!mpctx->eof)
 
 #ifdef WIILIB
+printf("mplayer: end film. UNINT\n");
 uninit_player(INITIALIZED_ALL);
 //if(mpctx->eof==1) 
+printf("mplayer: exit\n");
 return 1;
 #endif
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);

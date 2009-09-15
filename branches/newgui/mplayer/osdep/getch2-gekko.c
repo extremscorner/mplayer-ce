@@ -31,8 +31,6 @@
 #include <ogc/lwp_watchdog.h>
 #include <wiiuse/wpad.h>
 
-extern int copyScreen;
-
 int screen_width = 80;
 int screen_height = 24;
 char *erase_to_end_of_line = NULL;
@@ -140,20 +138,12 @@ void getch2(void) {
 	if (mod) {
 		for (i = 0; i < sizeof (pad_maps_mod) / sizeof (pad_map); ++i)
 			if ((pad & pad_maps_mod[i].pad) || (wpad & pad_maps_mod[i].wpad)) {
-#ifdef WIILIB			
-				if(pad_maps_mod[i].key=='Z') copyScreen = 1;
-				else
-#endif				
 				mplayer_put_key(pad_maps_mod[i].key);
 				return;
 			}
 	} else {
 		for (i = 0; i < sizeof (pad_maps) / sizeof (pad_map); ++i)
 			if ((pad & pad_maps[i].pad) || (wpad & pad_maps[i].wpad)) {
-#ifdef WIILIB			
-				if(pad_maps[i].key=='z') copyScreen = 1;
-				else
-#endif				
 				mplayer_put_key(pad_maps[i].key);
 				return;
 			}

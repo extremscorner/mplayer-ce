@@ -1024,6 +1024,7 @@ void GX_RenderTexture()
 	GX_End();
 
 	GX_SetColorUpdate(GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
 	
 #ifdef WIILIB
@@ -1033,13 +1034,13 @@ void GX_RenderTexture()
 	{
 		copyScreen = 0;
 		TakeScreenshot();
-		GX_CopyDisp(xfb[whichfb], GX_TRUE);
+		//GX_CopyDisp(xfb[whichfb], GX_TRUE);  //review it
 		PauseAndGotoGUI();
 		return;
 	}
 #endif
 
-	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+//	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();

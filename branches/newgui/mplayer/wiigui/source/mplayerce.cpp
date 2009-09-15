@@ -98,9 +98,12 @@ mplayerthread (void *arg)
 {
 	while(1)
 	{
-		LWP_SuspendThread(mthread);
-		mplayer_loadfile(loadedFile);
-		loadedFile[0] = 0;
+		LWP_SuspendThread(mthread);	
+		printf("load file: %s\n",loadedFile);			
+		if(loadedFile[0] != 0)
+			mplayer_loadfile(loadedFile);
+		//loadedFile[0] = 0;
+		controlledbygui=1;
 	}
 	return NULL;
 }
