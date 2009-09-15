@@ -39,20 +39,15 @@ static u8 mstack[TSTACK] ATTRIBUTE_ALIGN (32);
  * Shutdown / Reboot / Exit
  ***************************************************************************/
 
-static void ExitCleanup()
-{
-	ShutoffRumble();
-	StopGX();
-}
-
 void ExitApp()
 {
-	//SaveSettings(SILENT);
+	SaveSettings(SILENT);
 
 	// shut down some threads
 	HaltDeviceThread();
 	CancelAction();
-	ExitCleanup();
+	ShutoffRumble();
+	StopGX();
 
 	if(ShutdownRequested == 1)
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0); // Shutdown Wii
@@ -102,7 +97,6 @@ mplayerthread (void *arg)
 		printf("load file: %s\n",loadedFile);			
 		if(loadedFile[0] != 0)
 			mplayer_loadfile(loadedFile);
-		//loadedFile[0] = 0;
 		controlledbygui=1;
 	}
 	return NULL;
@@ -113,7 +107,8 @@ void LoadMPlayer()
 	HaltDeviceThread();
 	printf("return control to mplayer\n");
 	controlledbygui = 0;
-	LWP_ResumeThread(mthread);
+	if(LWP_ThreadIsSuspended(mthread))
+		LWP_ResumeThread(mthread);
 }
 
 void ShutdownMPlayer()

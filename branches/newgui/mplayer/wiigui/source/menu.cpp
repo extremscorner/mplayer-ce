@@ -399,6 +399,9 @@ CancelAction()
 void
 ShowProgress (const char *msg, int done, int total)
 {
+	if(!mainWindow || ExitRequested || ShutdownRequested)
+		return;
+
 	if(total < (256*1024))
 		return;
 	else if(done > total) // this shouldn't happen
@@ -429,6 +432,9 @@ ShowProgress (const char *msg, int done, int total)
 void
 ShowAction (const char *msg)
 {
+	if(!mainWindow || ExitRequested || ShutdownRequested)
+		return;
+
 	if(showProgress != 2)
 		CancelAction(); // wait for previous progress window to finish
 
