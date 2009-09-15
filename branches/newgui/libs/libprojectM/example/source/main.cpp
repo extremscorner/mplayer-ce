@@ -38,10 +38,10 @@
 static pm_config config;
 static projectM *pm = NULL;
 
-void pcmDecode(s16 *pcm, u32 samples)
+void pcmDecode(u32 *pcm, u32 samples)
 {
     // Queue the PCM data for beat analysis
-    pm->pcm()->addPCM16Data(pcm, samples);
+    pm->pcm()->addPCM32Data(pcm, samples);
 }
 
 int main(int argc, char **argv)
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     config.aspectCorrection = true;             // Custom shape aspect correction
     config.shufflePresets = true;               // Preset shuffling
     config.pulseWiiLight = true;                // Pulse the wii disc slot light in time with the beat
-    config.pulseSource = PM_AC_VOLUME;            // The audio characteristic to use for pulsing
+    config.pulseSource = PM_AC_VOLUME;          // The audio characteristic to use for pulsing
     config.presetDirectory = PRESET_DIRECTORY;  // Location of preset directory
     config.initialPresetName = PRESET_NAME;     // Initial preset name
     
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
         
         // Quit if 'HOME' was pressed
         if (pressed & WPAD_BUTTON_HOME)
-            return false;
+            break;
         
         // Toggle the wii disc slot light pulsing if '1' was pressed
         if ((pressed & WPAD_BUTTON_1))

@@ -79,8 +79,6 @@ void gxInit ()
     if (gp_fifo) {
         GX_Init(gp_fifo, GX_DEFAULT_FIFO_SIZE);
         
-        // ===========================================================================
-        
         // Set clear colour (black)
         GX_SetCopyClear(clearColour, clearDepth);
         
@@ -106,6 +104,8 @@ void gxInit ()
         //...
         GX_CopyDisp(xfb[fb], GX_TRUE);
         GX_SetDispCopyGamma(GX_GM_1_0);
+        
+        // ===========================================================================
         
         // Reset verticies and textures
         GX_InvVtxCache();
@@ -135,14 +135,14 @@ void gxInit ()
         glMatrixIdentity(perspective);
         guPerspective(perspective, 90.0f, 1.33f, 0.1f, 1000.0f);
         GX_LoadProjectionMtx(perspective, GX_PERSPECTIVE);
-        
+
     }
     
 }
 
 void gxDestroy ()
 {
-    
+    //...
 }
 
 void gxSwapBuffers ()
@@ -163,6 +163,9 @@ void glInit ()
 {
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_ACCUM_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     glNormal3f(0.0f, 0.0f, 0.0f);
@@ -766,9 +769,6 @@ void glBegin (GLenum _type)
     // We are now in a begin/end pair
     insideBeginEndPair = true;
     
-    // Destory all verticies
-    glVerticiesInvalidateAll();
-    
     // Determine the primitive type
     switch (_type) {
         case GL_POINTS: primitiveType = GX_POINTS; break;
@@ -782,26 +782,18 @@ void glBegin (GLenum _type)
         case GL_QUAD_STRIP: primitiveType = GX_POINTS; break; /* ??? */
         case GL_POLYGON: primitiveType = GX_POINTS; break; /* ??? */
         default: return; /* GL_INVALID_ENUM */
-    };
-}
-
-void glEnd (void)
-{
-    // Sanity check
-    if (!insideBeginEndPair)
-        return; /* GL_INVALID_OPERATION */
-    
-    // Short circuit case were we don't actually have to do anything
-    if (vertexCount == 0)
-        return;
+    }
     
     // Load the current model view matrix into memory
     glMatrixLoadModelView();
-
+    
     // Load the currently bound texture(s) (if enabled)
     if (texture2DEnabled) {
-    
+        
     }
+    
+    // Destory all verticies
+    glVerticiesInvalidateAll();
     
     // Setup vertex descriptions
     GX_ClearVtxDesc();
@@ -815,11 +807,22 @@ void glEnd (void)
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGB8, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+}
+
+void glEnd (void)
+{
+    // Sanity check
+    if (!insideBeginEndPair)
+        return; /* GL_INVALID_OPERATION */
+    
+    // Short circuit case were we don't actually have to do anything
+    if (vertexCount == 0 || !verticies)
+        return;
     
     // ===========================================================================
     GX_Begin(primitiveType, GX_VTXFMT0, vertexCount);
     // ===========================================================================
-
+    
     // Upload all verticies to memory
     GLvertex *vert = verticies;
     for (; vert; vert = vert->next) {
@@ -1428,9 +1431,48 @@ void glCompressedTexImage2DARB (GLenum param1, GLint param2, GLenum param3,
     //...
 }
 
-/**
- * Texture mapping
- */
+void glTexGend (GLenum _coord, GLenum _pname, GLdouble _param)
+{
+    // Sanity check
+    if (insideBeginEndPair)
+        return; /* GL_INVALID_OPERATION */
+    
+    // Determine the texture-coordinate generation function we are setting
+    switch(_pname) {
+        
+        case GL_TEXTURE_GEN_MODE:
+            switch ((GLint) _param) {
+                case GL_OBJECT_LINEAR: /* ??? */ break;
+                case GL_EYE_LINEAR: /* ??? */ break;
+                case GL_SPHERE_MAP: /* ??? */ break;
+                case GL_NORMAL_MAP: /* ??? */ break;
+                case GL_REFLECTION_MAP: /* ??? */ break;
+                default: return; /* GL_INVALID_ENUM */
+            }
+            break;
+        
+        case GL_OBJECT_PLANE:
+            return; /* GL_INVALID_OPERATION */
+            break;
+            
+        case GL_EYE_PLANE:
+            return; /* GL_INVALID_OPERATION */
+            break;
+            
+        default: return; /* GL_INVALID_ENUM */
+        
+    }
+}
+
+void glTexGenf (GLenum _coord, GLenum _pname, GLfloat _param)
+{
+    glTexGend(_coord, _pname, (GLdouble) _param);
+}
+
+void glTexGeni (GLenum _coord, GLenum _pname, GLint _param)
+{
+    glTexGend(_coord, _pname, (GLdouble) _param);
+}
 
 void glTexEnvf (GLenum _target, GLenum _pname, GLfloat _param)
 {
@@ -1461,6 +1503,11 @@ void glTexEnvf (GLenum _target, GLenum _pname, GLfloat _param)
         default: return; /* GL_INVALID_ENUM */
         
     }
+}
+
+void glTexEnvi (GLenum _target, GLenum _pname, GLint _param)
+{
+    glTexEnvf(_target, _pname, (GLfloat) _param);
 }
 
 void glTexParameterf (GLenum _target, GLenum _pname, GLfloat _param)
@@ -1543,6 +1590,5 @@ void glTexParameterf (GLenum _target, GLenum _pname, GLfloat _param)
 
 void glTexParameteri (GLenum _target, GLenum _pname, GLint _param)
 {
-    // Muhahahahaha...
     glTexParameterf(_target, _pname, (GLfloat) _param);
 }

@@ -38,15 +38,15 @@
 #  define PATH_MAX 1024
 #endif
 
-#define AUDIO_BUFFER_SIZE               (8 * 1024)   /* 8k */
-#define RING_BUFFER_SIZE                (128 * 1024) /* 128k */
-#define INPUT_SIZE                      512
+#define AUDIO_BUFFER_SIZE               (1 * 1024)   /* 1k */
+#define RING_BUFFER_MAX_SIZE            (128 * 1024) /* 128k */
+#define RING_BUFFER_MIN_SIZE            (32 * 1024)  /* 32k */
+#define DECODE_BUFFER_SIZE              (1 * 1024)   /* 1k */
 
 static u32 audioBuffer[2][AUDIO_BUFFER_SIZE] ATTRIBUTE_ALIGN(32) = { { 0 } };
 static u32 audioCurrentBuffer = 0;
-static bool hungry = true;
 
-static u8 ringBuffer[RING_BUFFER_SIZE] ATTRIBUTE_ALIGN(32) = { 0 };
+static u8 ringBuffer[RING_BUFFER_MAX_SIZE] ATTRIBUTE_ALIGN(32) = { 0 };
 static u32 ringRead = 0;
 static u32 ringWrite = 0;
 
@@ -64,13 +64,13 @@ void ringBufferPut (void *data, u32 size)
         return;
     
     // If the data will fit then copy it in as one chunk
-    if (ringWrite + size < RING_BUFFER_SIZE) {
+    if (ringWrite + size < RING_BUFFER_MAX_SIZE) {
         memcpy(ringBuffer + ringWrite, data, size);
         ringWrite += size;
     
     // Else we will have to copy the data in as two chunks
     } else {
-        u32 firstChunk = RING_BUFFER_SIZE - ringWrite;       
+        u32 firstChunk = RING_BUFFER_MAX_SIZE - ringWrite;       
         memcpy(ringBuffer + ringWrite, data, firstChunk);
         memcpy(ringBuffer, ((u32 *) data) + firstChunk, size - firstChunk);
         ringWrite = size - firstChunk;        
@@ -78,19 +78,19 @@ void ringBufferPut (void *data, u32 size)
 }
 
 void ringBufferGet (void *data, u32 size)
-{
+{    
     // Sanity check
     if (!data || size < 0)
         return;
     
     // If the data will fit then copy it out as one chunk
-    if (ringRead + size < RING_BUFFER_SIZE) {
+    if (ringRead + size < RING_BUFFER_MAX_SIZE) {
         memcpy(data, ringBuffer + ringRead, size);
         ringRead += size;
     
     // Else we will have to copy the data out as two chunks
     } else {
-        u32 firstChunk = RING_BUFFER_SIZE - ringRead;        
+        u32 firstChunk = RING_BUFFER_MAX_SIZE - ringRead;        
         memcpy(data, ringBuffer + ringRead, firstChunk);
         memcpy(((u32 *) data) + firstChunk, ringBuffer, size - firstChunk);
         ringRead = size - firstChunk;
@@ -101,7 +101,7 @@ u32 ringBufferSize ()
 {
     // Figure out how full the ring buffer is
     if(ringWrite < ringRead)
-        return (ringWrite + RING_BUFFER_SIZE) - ringRead;
+        return (ringWrite + RING_BUFFER_MAX_SIZE) - ringRead;
     else
         return ringWrite - ringRead;
 }
@@ -179,16 +179,21 @@ void Resample(s16 *samples, int numSamples, eqState eqs[2], u32 src_samplerate)
 
 void audioSwapBuffers ()
 {
+    // Fill up the audio buffer from the ring buffer
+    ringBufferGet(audioBuffer[audioCurrentBuffer], AUDIO_BUFFER_SIZE);
+    DCFlushRange(audioBuffer[audioCurrentBuffer], AUDIO_BUFFER_SIZE);
+    
     // Send the current audio buffer
     AUDIO_StopDMA();
     AUDIO_InitDMA((u32) audioBuffer[audioCurrentBuffer], AUDIO_BUFFER_SIZE);
     AUDIO_StartDMA();
-
+    
+    // Call the 'on decode' event callback (if any)
+    if (pcmdecode)
+        pcmdecode(audioBuffer[audioCurrentBuffer], AUDIO_BUFFER_SIZE);
+    
     // Swap the audio buffers
     audioCurrentBuffer ^= 1;
-    
-    // We need more data now...
-    hungry = true;
 }
 
 bool oggPlay (const char *filepath, ogg_cb_pcmdecode onpcmdecode)
@@ -224,9 +229,8 @@ bool oggPlay (const char *filepath, ogg_cb_pcmdecode onpcmdecode)
     Init3BandState(&eqs[0], 880, 5000, 48000);
     Init3BandState(&eqs[1], 880, 5000, 48000);
     
-    // Flush the audio buffers
-    DCFlushRange(audioBuffer[0], AUDIO_BUFFER_SIZE);
-    DCFlushRange(audioBuffer[1], AUDIO_BUFFER_SIZE);
+    //...
+    oggUpdate();
     
     // Start DMA transfer for the first time
     audioSwapBuffers();
@@ -250,20 +254,16 @@ bool oggUpdate ()
 {
     int i;
     
-    // Don't update the buffer if it is still waiting for transfer
-    if (!hungry)
-        return true;
-    
-    // Fill up the ring buffer to (at least) the size of the audio buffer
-    while(ringBufferSize() < AUDIO_BUFFER_SIZE) {
-        s16 samples[INPUT_SIZE] = { 0 };
+    // Fill up the ring buffer to (at least) the minimal buffer size
+    while (ringBufferSize() < RING_BUFFER_MIN_SIZE) {
+        s16 samples[DECODE_BUFFER_SIZE] = { 0 };
         u32 sampleCount = 0;
         s32 bitstream = 0;
         
         // Decode audio to PCM (mono)
         if (vi->channels == 1) {
-            s16 *temp = (s16 *) memalign(32, INPUT_SIZE / 2);
-            u32 ret = ov_read(&vf, (char *) temp, INPUT_SIZE / 2, 1, 2, 1, &bitstream);
+            s16 *temp = (s16 *) memalign(32, DECODE_BUFFER_SIZE / 2);
+            u32 ret = ov_read(&vf, (char *) temp, DECODE_BUFFER_SIZE / 2, 1, 2, 1, &bitstream);
             if(ret > 0) {
                 sampleCount = ret / 2;
                 
@@ -280,7 +280,7 @@ bool oggUpdate ()
             
         // Decode audio to PCM (stereo)
         } else if (vi->channels == 2) {
-            u32 ret = ov_read(&vf, (char *) samples, INPUT_SIZE, 1, 2, 1, &bitstream);
+            u32 ret = ov_read(&vf, (char *) samples, DECODE_BUFFER_SIZE, 1, 2, 1, &bitstream);
             if(ret > 0)
                 sampleCount = ret / 4;
             else
@@ -292,22 +292,11 @@ bool oggUpdate ()
             oggStop();
             return false;
         }
-        
-        // Call the 'on decode' event callback (if any)
-        if (pcmdecode)
-            pcmdecode(samples, sampleCount);
-        
+
         // Resample the PCM and put it in the ring buffer
         Resample(samples, sampleCount, eqs, vi->rate);
     
     }
-    
-    // Fill up the audio buffer from the ring buffer
-    ringBufferGet(audioBuffer[audioCurrentBuffer], AUDIO_BUFFER_SIZE);
-    DCFlushRange(audioBuffer[audioCurrentBuffer], AUDIO_BUFFER_SIZE);
-    
-    // We have just filled the audio buffer, no longer hungry :D
-    hungry = false;
     
     return true;
 }

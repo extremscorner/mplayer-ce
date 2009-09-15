@@ -190,12 +190,6 @@ u32 textureCount = 0;
 GLuint glTextureNextFreeName ();
 GLtexture *glTextureGet (GLuint _name);
 
-/**
- * Texture mapping
- */
-
-//...
-
 #ifdef __cplusplus
 }
 #endif

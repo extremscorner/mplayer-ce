@@ -57,7 +57,7 @@ typedef union _dword {
 } dword;
 
 // Event callbacks
-typedef void (*ogg_cb_pcmdecode) (s16 *pcm, u32 samples);
+typedef void (*ogg_cb_pcmdecode) (u32 *pcm, u32 samples);
 
 // Ogg player routines
 bool oggPlay (const char *filepath, ogg_cb_pcmdecode onpcmdecode);

@@ -141,6 +141,38 @@ void PCM::addPCMfloat(const float *PCMdata, int samples)
     getPCM(vdataR,512,1,1,0,0);
 }
 
+void PCM::addPCM32Data(unsigned int* pcm_data, int samples)
+{
+    int i,j;
+    
+    for(i=0;i<samples;i++)
+    {
+        j=i+start;
+        
+        if (pcm_data[i] != 0 ) {
+            
+            PCMd[0][j%maxsamples] = pcm_data[i] * 0xFFFF0000;
+            PCMd[1][j%maxsamples] = pcm_data[i] * 0x0000FFFF;
+            
+        }
+        else
+        {
+            PCMd[0][j % maxsamples] = 0;
+            PCMd[1][j % maxsamples] = 0;
+        }
+    }
+    
+    start+=samples;
+    start=start%maxsamples;
+    
+    newsamples+=samples;
+    if (newsamples>maxsamples) newsamples=maxsamples;
+    numsamples = getPCMnew(pcmdataR,1,0,waveSmoothing,0,0);
+    getPCMnew(pcmdataL,0,0,waveSmoothing,0,1);
+    getPCM(vdataL,512,0,1,0,0);
+    getPCM(vdataR,512,1,1,0,0);
+}
+
 void PCM::addPCM16Data(const short* pcm_data, short samples)  {
    int i, j;
 
