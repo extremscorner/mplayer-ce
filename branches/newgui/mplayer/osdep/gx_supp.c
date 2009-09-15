@@ -37,10 +37,11 @@
 
 #ifdef WIILIB
 void PauseAndGotoGUI();
-void HaltGui();
+void ShutdownGui();
 void TakeScreenshot();
 void DrawMPlayerGui();
 int copyScreen = 0;
+extern int pause_gui;
 #endif
 
 #ifdef __cplusplus
@@ -335,7 +336,7 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 {
 	#ifdef WIILIB
 	// tell GUI to shut down, MPlayer is ready to take over
-	HaltGui();
+	ShutdownGui();
 
 	printf("disable callback in mplayer\n");
 	VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
@@ -1023,24 +1024,22 @@ void GX_RenderTexture()
 		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 	GX_End();
 
-	GX_SetColorUpdate(GX_TRUE);
-	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
+	GX_SetColorUpdate(GX_TRUE);
 	
 #ifdef WIILIB
-	DrawMPlayerGui();
-
 	if(copyScreen == 1)
 	{
 		copyScreen = 0;
 		TakeScreenshot();
-		//GX_CopyDisp(xfb[whichfb], GX_TRUE);  //review it
-		PauseAndGotoGUI();
+		GX_CopyDisp(xfb[whichfb], GX_TRUE);
+		pause_gui = 1;
 		return;
 	}
+	DrawMPlayerGui();
 #endif
 
-//	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();

@@ -44,7 +44,7 @@ static int lastMenu = MENU_BROWSE_VIDEOS;
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
 static bool guiHalt = true;
-static bool shutdownGui = true;
+static bool guiShutdown = true;
 static int showProgress = 0;
 
 static char progressTitle[100];
@@ -130,7 +130,7 @@ ResumeGui()
 extern "C" {
 #endif
 
-void
+static void
 HaltGui()
 {
 	guiHalt = true;
@@ -141,6 +141,13 @@ HaltGui()
 	// wait for thread to finish
 	LWP_JoinThread(guithread, NULL);
 	guithread = LWP_THREAD_NULL;
+}
+
+void ShutdownGui()
+{
+	CancelAction();
+	HaltGui();
+	guiShutdown = true;
 }
 
 #ifdef __cplusplus
@@ -805,12 +812,12 @@ static void MenuBrowse(int menu)
 	mainWindow->Append(&fileBrowser);
 	ResumeGui();
 
-	while(currentMenu == menu && !shutdownGui)
+	while(currentMenu == menu && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
 		// update file browser based on arrow buttons
-		// request shutdownGui if A button pressed on a file
+		// request guiShutdown if A button pressed on a file
 		for(int i=0; i<FILE_PAGESIZE; i++)
 		{
 			if(fileBrowser.fileList[i]->GetState() == STATE_CLICKED)
@@ -871,18 +878,16 @@ static void MenuBrowse(int menu)
 					}
 					
 					ShutdownMPlayer();
-
+					
 					ShowAction("Loading...");
 
 					// signal MPlayer to load
 					LoadMPlayer();
 
 					// wait until MPlayer is ready to take control
-					while(!guiHalt)
+					while(!guiShutdown)
 						usleep(THREAD_SLEEP);
 
-					CancelAction();
-					shutdownGui = true;
 					goto done;
 				}
 			}
@@ -931,7 +936,7 @@ static void MenuDVD()
 	if(!ChangeInterface(DEVICE_DVD, -1, NOTSILENT))
 		ChangeMenu(lastMenu); // go back to last menu
 
-	while(currentMenu == MENU_DVD && !shutdownGui)
+	while(currentMenu == MENU_DVD && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -946,17 +951,19 @@ static void MenuDVD()
 		{
 			sprintf(loadedFile, "dvd://%d", ret+1);
 
+			ShutdownMPlayer();
+
 			ShowAction("Loading...");
 
 			// signal MPlayer to load
 			LoadMPlayer();
 
 			// wait until MPlayer is ready to take control
-			while(!guiHalt)
+			while(!guiShutdown)
 				usleep(THREAD_SLEEP);
 
 			CancelAction();
-			shutdownGui = true;
+			guiShutdown = true;
 		}
 	}
 
@@ -1020,7 +1027,7 @@ static void MenuSettingsGeneral()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_GENERAL && !shutdownGui)
+	while(currentMenu == MENU_SETTINGS_GENERAL && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1173,7 +1180,7 @@ static void MenuSettingsCache()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_CACHE && !shutdownGui)
+	while(currentMenu == MENU_SETTINGS_CACHE && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1473,7 +1480,7 @@ static void MenuSettingsVideo()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_VIDEO && !shutdownGui)
+	while(currentMenu == MENU_SETTINGS_VIDEO && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1591,7 +1598,7 @@ static void MenuSettingsAudio()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_AUDIO && !shutdownGui)
+	while(currentMenu == MENU_SETTINGS_AUDIO && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1682,7 +1689,7 @@ static void MenuSettingsSubtitles()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS_SUBTITLES && !shutdownGui)
+	while(currentMenu == MENU_SETTINGS_SUBTITLES && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1799,7 +1806,7 @@ static void MenuSettings()
 	mainWindow->Append(&titleTxt);
 	ResumeGui();
 
-	while(currentMenu == MENU_SETTINGS && !shutdownGui)
+	while(currentMenu == MENU_SETTINGS && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
 
@@ -1852,15 +1859,7 @@ static void BackToMplayerCallback(void * ptr)
 	if(b->GetState() == STATE_CLICKED)
 	{
 		b->ResetState();
-		
-		// signal MPlayer to load
-		LoadMPlayer();
-
-		// wait until MPlayer is ready to take control
-		while(!guiHalt)
-			usleep(THREAD_SLEEP);
-
-		shutdownGui = true;
+		LoadMPlayer(); // signal MPlayer to resume
 	}
 }
 
@@ -1869,7 +1868,7 @@ static void BackToMplayerCallback(void * ptr)
  ***************************************************************************/
 void WiiMenu()
 {
-	shutdownGui = false;
+	guiShutdown = false;
 
 	if(pointer[0] == NULL)
 	{
@@ -2007,7 +2006,7 @@ void WiiMenu()
 	if(!LoadSettings())
 		SaveSettings(SILENT);
 
-	while(!shutdownGui)
+	while(!guiShutdown)
 	{
 		switch (currentMenu)
 		{

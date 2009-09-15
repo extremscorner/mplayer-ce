@@ -51,7 +51,7 @@
 #define ROUND(x) ((int)((x)<0 ? (x)-0.5 : (x)+0.5))
 
 extern int use_menu;
-extern int pause_gui;
+extern int copyScreen;
 
 static void rescale_input_coordinates(int ix, int iy, double *dx, double *dy)
 {
@@ -2502,7 +2502,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 //like pause
 	    cmd->pausing = 1;
 	    brk_cmd = 1;
-	    pause_gui = 1;
+	    copyScreen = 1;
 	    break;
 #else	
 	    exit_player_with_rc(EXIT_QUIT,
