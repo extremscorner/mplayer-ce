@@ -9,6 +9,7 @@
  ***************************************************************************/
 
 #include "gui.h"
+#include "filebrowser.h"
 
 /**
  * Constructor for the GuiOptionBrowser class.
@@ -36,6 +37,9 @@ GuiOptionBrowser::GuiOptionBrowser(int w, int h, OptionList * l)
 	bgOptionsImg->SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
 
 	bgOptionsEntry = new GuiImageData(bg_options_entry_png);
+
+	iconSMB = new GuiImageData(icon_smb_png);
+	iconFTP = new GuiImageData(icon_ftp_png);
 
 	scrollbar = new GuiImageData(scrollbar_png);
 	scrollbarImg = new GuiImage(scrollbar);
@@ -83,6 +87,7 @@ GuiOptionBrowser::GuiOptionBrowser(int w, int h, OptionList * l)
 		optionVal[i]->SetPosition(250,0);
 
 		optionBg[i] = new GuiImage(bgOptionsEntry);
+		optionIcon[i] = NULL;
 
 		optionBtn[i] = new GuiButton(420,30);
 		optionBtn[i]->SetParent(this);
@@ -112,6 +117,8 @@ GuiOptionBrowser::~GuiOptionBrowser()
 
 	delete bgOptions;
 	delete bgOptionsEntry;
+	delete iconSMB;
+	delete iconFTP;
 	delete scrollbar;
 	delete arrowDown;
 	delete arrowDownOver;
@@ -129,6 +136,12 @@ GuiOptionBrowser::~GuiOptionBrowser()
 		delete optionBg[i];
 		delete optionBtn[i];
 	}
+}
+
+void GuiOptionBrowser::SetCol1Position(int x)
+{
+	for(int i=0; i<PAGESIZE; i++)
+		optionTxt[i]->SetPosition(x,0);
 }
 
 void GuiOptionBrowser::SetCol2Position(int x)
@@ -258,6 +271,27 @@ void GuiOptionBrowser::Update(GuiTrigger * t)
 
 				optionTxt[i]->SetText(options->name[next]);
 				optionVal[i]->SetText(options->value[next]);
+				
+				if(optionIcon[i])
+				{
+					delete(optionIcon[i]);
+					optionIcon[i] = NULL;
+				}
+				
+				if(options->icon[next] > 0)
+				{
+					switch(options->icon[next])
+					{
+						case ICON_SMB:
+							optionIcon[i] = new GuiImage(iconSMB);
+							break;
+						case ICON_FTP:
+							optionIcon[i] = new GuiImage(iconFTP);
+							break;
+					}
+					optionBtn[i]->SetIcon(optionIcon[i]);
+				}
+				
 				optionIndex[i] = next;
 				next = this->FindMenuItem(next, 1);
 			}

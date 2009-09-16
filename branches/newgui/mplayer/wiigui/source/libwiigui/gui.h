@@ -817,6 +817,7 @@ typedef struct _optionlist {
 	int length;
 	char name[MAX_OPTIONS][50];
 	char value[MAX_OPTIONS][50];
+	int icon[MAX_OPTIONS]; // icon to display
 } OptionList;
 
 //!Display a list of menu options
@@ -825,6 +826,7 @@ class GuiOptionBrowser : public GuiElement
 	public:
 		GuiOptionBrowser(int w, int h, OptionList * l);
 		~GuiOptionBrowser();
+		void SetCol1Position(int x);
 		void SetCol2Position(int x);
 		int FindMenuItem(int c, int d);
 		int GetClickedOption();
@@ -844,6 +846,7 @@ class GuiOptionBrowser : public GuiElement
 		GuiButton * optionBtn[PAGESIZE];
 		GuiText * optionTxt[PAGESIZE];
 		GuiImage * optionBg[PAGESIZE];
+		GuiImage * optionIcon[PAGESIZE];
 
 		GuiButton * arrowUpBtn;
 		GuiButton * arrowDownBtn;
@@ -857,6 +860,8 @@ class GuiOptionBrowser : public GuiElement
 
 		GuiImageData * bgOptions;
 		GuiImageData * bgOptionsEntry;
+		GuiImageData * iconSMB;
+		GuiImageData * iconFTP;
 		GuiImageData * scrollbar;
 		GuiImageData * arrowDown;
 		GuiImageData * arrowDownOver;
@@ -908,6 +913,7 @@ class GuiFileBrowser : public GuiElement
 		GuiImageData * iconUSB;
 		GuiImageData * iconDVD;
 		GuiImageData * iconSMB;
+		GuiImageData * iconFTP;
 		GuiImageData * scrollbar;
 		GuiImageData * arrowDown;
 		GuiImageData * arrowDownOver;

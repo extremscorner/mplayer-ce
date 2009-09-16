@@ -40,6 +40,7 @@ static GuiText * settingText = NULL;
 
 static int currentMenu = MENU_BROWSE_VIDEOS;
 static int lastMenu = MENU_BROWSE_VIDEOS;
+static int netEditIndex = 0; // current index of FTP/SMB share being edited
 
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
@@ -988,8 +989,8 @@ static void MenuSettingsGeneral()
 	sprintf(options.name[i++], "Auto-Resume");
 	sprintf(options.name[i++], "Play Order");
 	sprintf(options.name[i++], "Clean Filenames");
-	sprintf(options.name[i++], "Hide Filename Extensions");
-	sprintf(options.name[i++], "Hide Invalid File Types");
+	sprintf(options.name[i++], "File Extensions");
+	sprintf(options.name[i++], "Unsupported Files");
 	sprintf(options.name[i++], "Language");
 	sprintf(options.name[i++], "Video Files Folder");
 	sprintf(options.name[i++], "Music Files Folder");
@@ -997,6 +998,12 @@ static void MenuSettingsGeneral()
 	sprintf(options.name[i++], "Wiimote Rumble");
 
 	options.length = i;
+		
+	for(i=0; i < options.length; i++)
+	{
+		options.value[i][0] = 0;
+		options.icon[i] = 0;
+	}
 
 	GuiText titleTxt("Settings - General", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
@@ -1022,7 +1029,7 @@ static void MenuSettingsGeneral()
 
 	GuiOptionBrowser optionBrowser(460, 248, &options);
 	optionBrowser.SetPosition(30, 120);
-	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetCol2Position(200);
 	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
 
 	HaltGui();
@@ -1094,8 +1101,8 @@ static void MenuSettingsGeneral()
 			}
 
 			sprintf(options.value[2], "%s", CESettings.cleanFilenames ? "On" : "Off");
-			sprintf(options.value[3], "%s", CESettings.hideExtensions ? "On" : "Off");
-			sprintf(options.value[4], "%s", CESettings.filterFiles ? "On" : "Off");
+			sprintf(options.value[3], "%s", CESettings.hideExtensions ? "Hide" : "Show");
+			sprintf(options.value[4], "%s", CESettings.filterFiles ? "Hide" : "Show");
 
 			switch(CESettings.language)
 			{
@@ -1111,8 +1118,8 @@ static void MenuSettingsGeneral()
 				case LANG_KOREAN:		sprintf(options.value[5], "Korean"); break;
 			}
 
-			snprintf(options.value[6], 30, "%s", CESettings.videoFolder);
-			snprintf(options.value[7], 30, "%s", CESettings.musicFolder);
+			snprintf(options.value[6], 20, "%s", CESettings.videoFolder);
+			snprintf(options.value[7], 20, "%s", CESettings.musicFolder);
 
 			switch(CESettings.exitAction)
 			{
@@ -1129,7 +1136,7 @@ static void MenuSettingsGeneral()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			ChangeMenu(lastMenu);
+			currentMenu = MENU_SETTINGS;
 		}
 	}
 	HaltGui();
@@ -1150,6 +1157,12 @@ static void MenuSettingsCache()
 	sprintf(options.name[i++], "Refill");
 
 	options.length = i;
+
+	for(i=0; i < options.length; i++)
+	{
+		options.value[i][0] = 0;
+		options.icon[i] = 0;
+	}
 
 	GuiText titleTxt("Settings - Cache", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
@@ -1225,7 +1238,7 @@ static void MenuSettingsCache()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			ChangeMenu(lastMenu);
+			currentMenu = MENU_SETTINGS;
 		}
 	}
 	HaltGui();
@@ -1236,9 +1249,466 @@ static void MenuSettingsCache()
 
 static void MenuSettingsNetwork()
 {
-	ChangeMenu(lastMenu);
+	int ret;
+	int i = 0;
+	OptionList options;
+	
+	// find all currently set SMB/FTP entries
+	
+	for(int j=0; j < 5; j++)
+	{
+		options.name[i][0] = 0;
+		options.icon[i] = ICON_SMB;
+		options.value[i][0] = 0;
+
+		if(CESettings.smbConf[j].share[0] != 0)
+		{
+			if(CESettings.smbConf[j].displayname[0] != 0)
+				sprintf(options.name[i], "%s", CESettings.smbConf[j].displayname);
+			else
+				sprintf(options.name[i], "%s", CESettings.smbConf[j].share);
+		}
+		i++;
+	}
+	for(int j=0; j < 5; j++)
+	{
+		options.name[i][0] = 0;
+		options.icon[i] = ICON_FTP;
+		options.value[i][0] = 0;
+
+		if(CESettings.ftpConf[j].ip[0] != 0)
+		{
+			if(CESettings.ftpConf[j].displayname[0] != 0)
+				sprintf(options.name[i], "%s", CESettings.ftpConf[j].displayname);
+			else
+				sprintf(options.name[i], "%s@%s/%s", CESettings.ftpConf[j].user, CESettings.ftpConf[j].ip, CESettings.ftpConf[j].folder);
+		}
+		i++;
+	}
+
+	options.length = i;
+
+	GuiText titleTxt("Settings - Network", 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+	GuiImageData iconSMB(icon_smb_png);
+	GuiImageData iconFTP(icon_ftp_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
+	GuiImage backBtnImg(&btnOutline);
+	GuiImage backBtnImgOver(&btnOutlineOver);
+	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	backBtn.SetPosition(30, -35);
+	backBtn.SetLabel(&backBtnTxt);
+	backBtn.SetImage(&backBtnImg);
+	backBtn.SetImageOver(&backBtnImgOver);
+	backBtn.SetTrigger(&trigA);
+	backBtn.SetEffectGrow();
+	
+	GuiText addsmbBtnTxt("Add", 24, (GXColor){255, 255, 255, 255});
+	GuiImage addsmbBtnImg(&iconSMB);
+	addsmbBtnImg.SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
+	addsmbBtnTxt.SetAlignment(ALIGN_RIGHT, ALIGN_MIDDLE);
+	GuiButton addsmbBtn(75, btnOutline.GetHeight());
+	addsmbBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	addsmbBtn.SetPosition(250, -35);
+	addsmbBtn.SetLabel(&addsmbBtnTxt);
+	addsmbBtn.SetImage(&addsmbBtnImg);
+	addsmbBtn.SetTrigger(&trigA);
+	addsmbBtn.SetEffectGrow();
+	
+	GuiText addftpBtnTxt("Add", 24, (GXColor){255, 255, 255, 255});
+	GuiImage addftpBtnImg(&iconFTP);
+	addftpBtnImg.SetAlignment(ALIGN_LEFT, ALIGN_MIDDLE);
+	addftpBtnTxt.SetAlignment(ALIGN_RIGHT, ALIGN_MIDDLE);
+	GuiButton addftpBtn(75, btnOutline.GetHeight());
+	addftpBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	addftpBtn.SetPosition(335, -35);
+	addftpBtn.SetLabel(&addftpBtnTxt);
+	addftpBtn.SetImage(&addftpBtnImg);
+	addftpBtn.SetTrigger(&trigA);
+	addftpBtn.SetEffectGrow();
+
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol1Position(30);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&backBtn);
+	w.Append(&addsmbBtn);
+	w.Append(&addftpBtn);
+	mainWindow->Append(&optionBrowser);
+	mainWindow->Append(&w);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	while(currentMenu == MENU_SETTINGS_NETWORK && !guiShutdown)
+	{
+		usleep(THREAD_SLEEP);
+
+		ret = optionBrowser.GetClickedOption();
+
+		if((ret >= 0 && ret < 5) || addsmbBtn.GetState() == STATE_CLICKED)
+		{
+			netEditIndex = ret;
+			currentMenu = MENU_SETTINGS_NETWORK_SMB;
+		}
+		else if(ret >= 5 || addftpBtn.GetState() == STATE_CLICKED)
+		{
+			netEditIndex = ret-5;
+			currentMenu = MENU_SETTINGS_NETWORK_FTP;
+		}
+
+		if(backBtn.GetState() == STATE_CLICKED)
+		{
+			currentMenu = MENU_SETTINGS;
+		}
+	}
+	HaltGui();
+	mainWindow->Remove(&optionBrowser);
+	mainWindow->Remove(&w);
+	mainWindow->Remove(&titleTxt);
 }
 
+static void MenuSettingsNetworkSMB()
+{
+	int ret;
+	int i = 0;
+	bool firstRun = true;
+	OptionList options;
+	char titleStr[100];
+	char shareName[100];
+
+	sprintf(options.name[i++], "Display Name");
+	sprintf(options.name[i++], "Share IP");
+	sprintf(options.name[i++], "Share Name");
+	sprintf(options.name[i++], "Username");
+	sprintf(options.name[i++], "Password");
+
+	options.length = i;
+	
+	for(i=0; i < options.length; i++)
+	{
+		options.value[i][0] = 0;
+		options.icon[i] = 0;
+	}
+	
+	if(netEditIndex < 0)
+		sprintf(shareName, "New Share");
+	else if(CESettings.smbConf[netEditIndex].displayname[0] != 0)
+		sprintf(shareName, "%s", CESettings.smbConf[netEditIndex].displayname);
+	else
+		sprintf(shareName, "%s", CESettings.smbConf[netEditIndex].share);
+
+	sprintf(titleStr, "Settings - Network - %s", shareName);
+
+	GuiText titleTxt(titleStr, 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
+	GuiImage backBtnImg(&btnOutline);
+	GuiImage backBtnImgOver(&btnOutlineOver);
+	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	backBtn.SetPosition(30, -35);
+	backBtn.SetLabel(&backBtnTxt);
+	backBtn.SetImage(&backBtnImg);
+	backBtn.SetImageOver(&backBtnImgOver);
+	backBtn.SetTrigger(&trigA);
+	backBtn.SetEffectGrow();
+	
+	GuiText deleteBtnTxt("Delete", 24, (GXColor){255, 255, 255, 255});
+	GuiImage deleteBtnImg(&btnOutline);
+	GuiImage deleteBtnImgOver(&btnOutlineOver);
+	GuiButton deleteBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	deleteBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	deleteBtn.SetPosition(245, -35);
+	deleteBtn.SetLabel(&deleteBtnTxt);
+	deleteBtn.SetImage(&deleteBtnImg);
+	deleteBtn.SetImageOver(&deleteBtnImgOver);
+	deleteBtn.SetTrigger(&trigA);
+	deleteBtn.SetEffectGrow();
+
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&backBtn);
+	
+	if(netEditIndex < 0)
+	{
+		// find a share to put the data into
+		for(i=0; i < 5; i++)
+		{
+			if(CESettings.smbConf[i].share[0] == 0)
+			{
+				netEditIndex = i;
+				break;
+			}
+		}
+	}
+	else
+	{
+		w.Append(&deleteBtn);
+	}
+	
+	mainWindow->Append(&optionBrowser);
+	mainWindow->Append(&w);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	while(currentMenu == MENU_SETTINGS_NETWORK_SMB && !guiShutdown)
+	{
+		usleep(THREAD_SLEEP);
+
+		ret = optionBrowser.GetClickedOption();
+
+		switch (ret)
+		{
+			case 0:
+				OnScreenKeyboard(CESettings.smbConf[netEditIndex].displayname, 80);
+				break;
+			
+			case 1:
+				OnScreenKeyboard(CESettings.smbConf[netEditIndex].ip, 80);
+				break;
+
+			case 2:
+				OnScreenKeyboard(CESettings.smbConf[netEditIndex].share, 80);
+				break;
+
+			case 3:
+				OnScreenKeyboard(CESettings.smbConf[netEditIndex].user, 20);
+				break;
+
+			case 4:
+				OnScreenKeyboard(CESettings.smbConf[netEditIndex].pwd, 14);
+				break;
+		}
+
+		if(ret >= 0 || firstRun)
+		{
+			firstRun = false;
+			strncpy (options.value[0], CESettings.smbConf[netEditIndex].displayname, 80);
+			strncpy (options.value[1], CESettings.smbConf[netEditIndex].ip, 80);
+			strncpy (options.value[2], CESettings.smbConf[netEditIndex].share, 80);
+			strncpy (options.value[3], CESettings.smbConf[netEditIndex].user, 20);
+			strncpy (options.value[4], CESettings.smbConf[netEditIndex].pwd, 14);
+			optionBrowser.TriggerUpdate();
+		}
+
+		if(backBtn.GetState() == STATE_CLICKED)
+		{
+			currentMenu = MENU_SETTINGS_NETWORK;
+		}
+		if(deleteBtn.GetState() == STATE_CLICKED)
+		{
+			deleteBtn.ResetState();
+			if (WindowPrompt("Delete Share", "Are you sure that you want to delete this share?", "OK", "Cancel"))
+			{
+				CESettings.smbConf[netEditIndex].displayname[0] = 0;
+				CESettings.smbConf[netEditIndex].ip[0] = 0;
+				CESettings.smbConf[netEditIndex].share[0] = 0;
+				CESettings.smbConf[netEditIndex].user[0] = 0;
+				CESettings.smbConf[netEditIndex].pwd[0] = 0;
+				currentMenu = MENU_SETTINGS_NETWORK;
+			}
+		}
+	}
+	HaltGui();
+	mainWindow->Remove(&optionBrowser);
+	mainWindow->Remove(&w);
+	mainWindow->Remove(&titleTxt);
+}
+
+static void MenuSettingsNetworkFTP()
+{
+	int ret;
+	int i = 0;
+	bool firstRun = true;
+	OptionList options;
+	char titleStr[100];
+	char siteName[100];
+
+	sprintf(options.name[i++], "Display Name");
+	sprintf(options.name[i++], "IP");
+	sprintf(options.name[i++], "Folder");
+	sprintf(options.name[i++], "Username");
+	sprintf(options.name[i++], "Password");
+	sprintf(options.name[i++], "Mode");
+
+	options.length = i;
+		
+	for(i=0; i < options.length; i++)
+	{
+		options.value[i][0] = 0;
+		options.icon[i] = 0;
+	}
+	
+	if(netEditIndex < 0)
+		sprintf(siteName, "New Site");
+	else if(CESettings.ftpConf[netEditIndex].displayname[0] != 0)
+		sprintf(siteName, "%s", CESettings.ftpConf[netEditIndex].displayname);
+	else
+		sprintf(options.name[i], "%s@%s/%s", 
+		CESettings.ftpConf[netEditIndex].user, 
+		CESettings.ftpConf[netEditIndex].ip, 
+		CESettings.ftpConf[netEditIndex].folder);
+
+	sprintf(titleStr, "Settings - Network - %s", siteName);
+
+	GuiText titleTxt(titleStr, 26, (GXColor){255, 255, 255, 255});
+	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	titleTxt.SetPosition(30, 80);
+
+	GuiImageData btnOutline(button_png);
+	GuiImageData btnOutlineOver(button_over_png);
+
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiText backBtnTxt("Go Back", 24, (GXColor){255, 255, 255, 255});
+	GuiImage backBtnImg(&btnOutline);
+	GuiImage backBtnImgOver(&btnOutlineOver);
+	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	backBtn.SetPosition(30, -35);
+	backBtn.SetLabel(&backBtnTxt);
+	backBtn.SetImage(&backBtnImg);
+	backBtn.SetImageOver(&backBtnImgOver);
+	backBtn.SetTrigger(&trigA);
+	backBtn.SetEffectGrow();
+	
+	GuiText deleteBtnTxt("Delete", 24, (GXColor){255, 255, 255, 255});
+	GuiImage deleteBtnImg(&btnOutline);
+	GuiImage deleteBtnImgOver(&btnOutlineOver);
+	GuiButton deleteBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
+	deleteBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	deleteBtn.SetPosition(245, -35);
+	deleteBtn.SetLabel(&deleteBtnTxt);
+	deleteBtn.SetImage(&deleteBtnImg);
+	deleteBtn.SetImageOver(&deleteBtnImgOver);
+	deleteBtn.SetTrigger(&trigA);
+	deleteBtn.SetEffectGrow();
+
+	GuiOptionBrowser optionBrowser(460, 248, &options);
+	optionBrowser.SetPosition(30, 120);
+	optionBrowser.SetCol2Position(220);
+	optionBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+
+	HaltGui();
+	GuiWindow w(screenwidth, screenheight);
+	w.Append(&backBtn);
+	
+	if(netEditIndex < 0)
+	{
+		// find a site to put the data into
+		for(i=0; i < 5; i++)
+		{
+			if(CESettings.ftpConf[i].ip[0] == 0)
+			{
+				netEditIndex = i;
+				break;
+			}
+		}
+	}
+	else
+	{
+		w.Append(&deleteBtn);
+	}
+	mainWindow->Append(&optionBrowser);
+	mainWindow->Append(&w);
+	mainWindow->Append(&titleTxt);
+	ResumeGui();
+
+	while(currentMenu == MENU_SETTINGS_NETWORK_FTP && !guiShutdown)
+	{
+		usleep(THREAD_SLEEP);
+
+		ret = optionBrowser.GetClickedOption();
+
+		switch (ret)
+		{
+			case 0:
+				OnScreenKeyboard(CESettings.ftpConf[netEditIndex].displayname, 80);
+				break;
+			
+			case 1:
+				OnScreenKeyboard(CESettings.ftpConf[netEditIndex].ip, 80);
+				break;
+
+			case 2:
+				OnScreenKeyboard(CESettings.ftpConf[netEditIndex].folder, 80);
+				break;
+
+			case 3:
+				OnScreenKeyboard(CESettings.ftpConf[netEditIndex].user, 20);
+				break;
+
+			case 4:
+				OnScreenKeyboard(CESettings.ftpConf[netEditIndex].pwd, 14);
+				break;
+				
+			case 5:
+				CESettings.ftpConf[netEditIndex].passive ^= 1;
+				break;
+		}
+
+		if(ret >= 0 || firstRun)
+		{
+			firstRun = false;
+			strncpy (options.value[0], CESettings.ftpConf[netEditIndex].displayname, 80);
+			strncpy (options.value[1], CESettings.ftpConf[netEditIndex].ip, 80);
+			strncpy (options.value[2], CESettings.ftpConf[netEditIndex].folder, 80);
+			strncpy (options.value[3], CESettings.ftpConf[netEditIndex].user, 20);
+			strncpy (options.value[4], CESettings.ftpConf[netEditIndex].pwd, 14);
+			sprintf(options.value[5], "%s", CESettings.ftpConf[netEditIndex].passive ? "Passive" : "Active");
+			optionBrowser.TriggerUpdate();
+		}
+
+		if(backBtn.GetState() == STATE_CLICKED)
+		{
+			currentMenu = MENU_SETTINGS_NETWORK;
+		}
+		if(deleteBtn.GetState() == STATE_CLICKED)
+		{
+			deleteBtn.ResetState();
+			if (WindowPrompt("Delete Site", "Are you sure that you want to delete this site?", "OK", "Cancel"))
+			{
+				CESettings.ftpConf[netEditIndex].displayname[0] = 0;
+				CESettings.ftpConf[netEditIndex].ip[0] = 0;
+				CESettings.ftpConf[netEditIndex].folder[0] = 0;
+				CESettings.ftpConf[netEditIndex].user[0] = 0;
+				CESettings.ftpConf[netEditIndex].pwd[0] = 0;
+				CESettings.ftpConf[netEditIndex].passive = 0;
+				currentMenu = MENU_SETTINGS_NETWORK;
+			}
+		}
+	}
+	HaltGui();
+	mainWindow->Remove(&optionBrowser);
+	mainWindow->Remove(&w);
+	mainWindow->Remove(&titleTxt);
+}
 
 static void ScreenZoomWindowUpdate(void * ptr, float amount)
 {
@@ -1450,6 +1920,12 @@ static void MenuSettingsVideo()
 	sprintf(options.name[i++], "Position");
 
 	options.length = i;
+		
+	for(i=0; i < options.length; i++)
+	{
+		options.value[i][0] = 0;
+		options.icon[i] = 0;
+	}
 
 	GuiText titleTxt("Settings - Video", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
@@ -1548,7 +2024,7 @@ static void MenuSettingsVideo()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			ChangeMenu(lastMenu);
+			currentMenu = MENU_SETTINGS;
 		}
 	}
 	HaltGui();
@@ -1568,6 +2044,12 @@ static void MenuSettingsAudio()
 	sprintf(options.name[i++], "Delay (ms)");
 
 	options.length = i;
+		
+	for(i=0; i < options.length; i++)
+	{
+		options.value[i][0] = 0;
+		options.icon[i] = 0;
+	}
 
 	GuiText titleTxt("Settings - Audio", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
@@ -1636,7 +2118,7 @@ static void MenuSettingsAudio()
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			ChangeMenu(lastMenu);
+			currentMenu = MENU_SETTINGS;
 		}
 	}
 	HaltGui();
@@ -1659,6 +2141,12 @@ static void MenuSettingsSubtitles()
 	sprintf(options.name[i++], "Color");
 
 	options.length = i;
+		
+	for(i=0; i < options.length; i++)
+	{
+		options.value[i][0] = 0;
+		options.icon[i] = 0;
+	}
 
 	GuiText titleTxt("Settings - Subtitles", 26, (GXColor){255, 255, 255, 255});
 	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
@@ -1741,14 +2229,23 @@ static void MenuSettingsSubtitles()
 			sprintf(options.value[1], "%d", CESettings.subtitlePosition);
 			sprintf(options.value[2], "%d", CESettings.subtitleSize);
 			sprintf(options.value[3], "%.2f%%", CESettings.subtitleAlpha/255.0*100);
-			sprintf(options.value[4], "%d", CESettings.subtitleColor);
+			
+			switch(CESettings.subtitleColor)
+			{
+				case FONTCOLOR_WHITE:
+					sprintf(options.value[4], "White"); break;
+				case FONTCOLOR_BLACK:
+					sprintf(options.value[4], "Black"); break;
+				case FONTCOLOR_GRAY:
+					sprintf(options.value[4], "Gray"); break;
+			}
 
 			optionBrowser.TriggerUpdate();
 		}
 
 		if(backBtn.GetState() == STATE_CLICKED)
 		{
-			ChangeMenu(lastMenu);
+			currentMenu = MENU_SETTINGS;
 		}
 	}
 	HaltGui();
@@ -1826,27 +2323,27 @@ static void MenuSettings()
 		switch (ret)
 		{
 			case 0:
-				ChangeMenu(MENU_SETTINGS_GENERAL);
+				currentMenu = MENU_SETTINGS_GENERAL;
 				break;
 
 			case 1:
-				ChangeMenu(MENU_SETTINGS_CACHE);
+				currentMenu = MENU_SETTINGS_CACHE;
 				break;
 
 			case 2:
-				ChangeMenu(MENU_SETTINGS_NETWORK);
+				currentMenu = MENU_SETTINGS_NETWORK;
 				break;
 
 			case 3:
-				ChangeMenu(MENU_SETTINGS_VIDEO);
+				currentMenu = MENU_SETTINGS_VIDEO;
 				break;
 
 			case 4:
-				ChangeMenu(MENU_SETTINGS_AUDIO);
+				currentMenu = MENU_SETTINGS_AUDIO;
 				break;
 
 			case 5:
-				ChangeMenu(MENU_SETTINGS_SUBTITLES);
+				currentMenu = MENU_SETTINGS_SUBTITLES;
 				break;
 		}
 
@@ -2035,6 +2532,12 @@ void WiiMenu()
 				break;
 			case MENU_SETTINGS_NETWORK:
 				MenuSettingsNetwork();
+				break;
+			case MENU_SETTINGS_NETWORK_SMB:
+				MenuSettingsNetworkSMB();
+				break;
+			case MENU_SETTINGS_NETWORK_FTP:
+				MenuSettingsNetworkFTP();
 				break;
 			case MENU_SETTINGS_VIDEO:
 				MenuSettingsVideo();

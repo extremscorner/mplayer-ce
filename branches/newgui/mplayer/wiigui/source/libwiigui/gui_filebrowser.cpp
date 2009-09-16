@@ -37,6 +37,7 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 	iconUSB = new GuiImageData(icon_usb_png);
 	iconDVD = new GuiImageData(icon_dvd_png);
 	iconSMB = new GuiImageData(icon_smb_png);
+	iconFTP = new GuiImageData(icon_ftp_png);
 
 	scrollbar = new GuiImageData(scrollbar_png);
 	scrollbarImg = new GuiImage(scrollbar);
@@ -99,7 +100,7 @@ GuiFileBrowser::GuiFileBrowser(int w, int h)
 		fileListBg[i] = new GuiImage(bgBrowseEntryOver);
 		fileListIcon[i] = NULL;
 
-		fileList[i] = new GuiButton(480, 30);
+		fileList[i] = new GuiButton(440, 30);
 		fileList[i]->SetParent(this);
 		fileList[i]->SetLabel(fileListText[i]);
 		fileList[i]->SetImageOver(fileListBg[i]);
@@ -132,6 +133,7 @@ GuiFileBrowser::~GuiFileBrowser()
 	delete iconUSB;
 	delete iconDVD;
 	delete iconSMB;
+	delete iconFTP;
 	delete scrollbar;
 	delete arrowDown;
 	delete arrowDownOver;
@@ -353,6 +355,9 @@ void GuiFileBrowser::Update(GuiTrigger * t)
 						break;
 					case ICON_SMB:
 						fileListIcon[i] = new GuiImage(iconSMB);
+						break;
+					case ICON_FTP:
+						fileListIcon[i] = new GuiImage(iconFTP);
 						break;
 				}
 				fileList[i]->SetIcon(fileListIcon[i]);
