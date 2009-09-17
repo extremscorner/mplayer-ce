@@ -374,19 +374,23 @@ bool ChangeInterface(char * filepath, bool silent)
 
 void CreateAppPath(char * origpath)
 {
-	appPath[0] = 0;
-
 	char * path = strdup(origpath); // make a copy so we don't mess up original
+
+	if(!path)
+		return;
+
+	int pos = 0;
 
 	// replace fat:/ with sd:/
 	if(strncmp(path, "fat:/", 5) == 0)
 	{
-		path++;
-		path[0] = 's';
-		path[1] = 'd';
+		pos++;
+		path[1] = 's';
+		path[2] = 'd';
 	}
-	if(ChangeInterface(path, SILENT))
-		strncpy(appPath, path, 1024);
+	if(ChangeInterface(&path[pos], SILENT))
+		strncpy(appPath, &path[pos], MAXPATHLEN);
+	appPath[MAXPATHLEN-1] = 0;
 	free(path);
 }
 
