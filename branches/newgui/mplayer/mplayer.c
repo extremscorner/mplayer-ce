@@ -2674,7 +2674,7 @@ controlledbygui=1; //send control to gui
 printf("control return to mplayer\n");
 getch2_enable();
 printf("reinit mplayer video/audio\n");usleep(100);
-reinit_video();
+if(controlledbygui!=2)reinit_video();
 reinit_audio();
 printf("mplayer video reinit ok\n");usleep(100);
 
