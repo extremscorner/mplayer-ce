@@ -1,7 +1,6 @@
 /*
- * Atrac common data
- * Copyright (c) 2009 Maxim Poliakovski
- * Copyright (c) 2009 Benjamin Larsson
+ * CAF common code
+ * Copyright (c) 2007  Justin Ruggles
  *
  * This file is part of FFmpeg.
  *
@@ -21,18 +20,15 @@
  */
 
 /**
- * @file libavcodec/atrac.h
- * Atrac common header
+ * @file libavformat/caf.h
+ * CAF common code
  */
 
-#ifndef AVCODEC_ATRAC_H
-#define AVCODEC_ATRAC_H
+#ifndef AVFORMAT_CAF_H
+#define AVFORMAT_CAF_H
 
+#include "avformat.h"
 
-extern float sf_table[64];
-extern float qmf_window[48];
+extern const AVCodecTag ff_codec_caf_tags[];
 
-void atrac_generate_tables(void);
-void atrac_iqmf (float *inlo, float *inhi, unsigned int nIn, float *pOut, float *delayBuf, float *temp);
-
-#endif /* AVCODEC_ATRAC_H */
+#endif /* AVFORMAT_CAF_H */

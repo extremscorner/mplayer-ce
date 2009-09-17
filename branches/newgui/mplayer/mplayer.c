@@ -1835,8 +1835,6 @@ void force_osd()
     	mpctx->video_out->check_events();
    if (vf_menu)
    {
-   	printf("force_osd\n");
-
     	vf_menu_pause_update(vf_menu);
    }
 }
@@ -3121,7 +3119,8 @@ int gui_no_filename=0;
     }
   print_version("MPlayer");
 
-#if (defined(__MINGW32__) || defined(__CYGWIN__)) && defined(CONFIG_GUI)
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+#ifdef CONFIG_GUI
     void *runningmplayer = FindWindow("MPlayer GUI for Windows", "MPlayer for Windows");
     if(runningmplayer && filename && use_gui){
         COPYDATASTRUCT csData;
@@ -3136,7 +3135,13 @@ int gui_no_filename=0;
     }
 #endif
 
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+	{
+		HMODULE kernel32 = GetModuleHandle("Kernel32.dll");
+		BOOL WINAPI (*setDEP)(DWORD) = NULL;
+		if (kernel32)
+			setDEP = GetProcAddress(kernel32, "SetProcessDEPPolicy");
+		if (setDEP) setDEP(3);
+	}
 	// stop Windows from showing all kinds of annoying error dialogs
 	SetErrorMode(0x8003);
 	// request 1ms timer resolution

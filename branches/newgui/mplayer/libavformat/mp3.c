@@ -61,7 +61,7 @@ static int mp3_read_probe(AVProbeData *p)
         if(buf == buf0)
             first_frames= frames;
     }
-    if   (first_frames>=3) return AVPROBE_SCORE_MAX/2+1;
+    if   (first_frames>=4) return AVPROBE_SCORE_MAX/2+1;
     else if(max_frames>500)return AVPROBE_SCORE_MAX/2;
     else if(max_frames>=4) return AVPROBE_SCORE_MAX/4;
     else if(buf0!=p->buf)  return AVPROBE_SCORE_MAX/4-1;
@@ -199,6 +199,7 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
         buf[126] = atoi(tag->value);
         count++;
     }
+    buf[127] = 0xFF; /* default to unknown genre */
     if ((tag = av_metadata_get(s->metadata, "genre", NULL, 0))) {
         for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
             if (!strcasecmp(tag->value, ff_id3v1_genre_str[i])) {

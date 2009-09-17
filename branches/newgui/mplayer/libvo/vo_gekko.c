@@ -57,7 +57,7 @@ static u32 image_width = 0, image_height = 0;
 static u32 gx_width, gx_height;
 
 
-void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
+void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca, 
 	int srcstride, unsigned char* dstbase,int dststride,int x0)
 {
 // can be optimized
@@ -65,8 +65,8 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
  	unsigned char* buf,*bufa, *tmp,*tmpa;
 	int buf_st;
 	int h1,w1,Yrowpitch,df1;
-
-	u8 *dst,
+	
+	u8 *dst, 
 			*srca1,*src1,
 			*srca2,*src2,
 			*srca3,*src3,
@@ -93,23 +93,23 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 	tmpa=bufa+buf_st;
 
 
-
+    
     for(y=0;y<h;y++){
     	memcpy(tmp, src, w);
     	memcpy(tmpa, srca, w);
         src+=srcstride;
         srca+=srcstride;
         tmp+=dststride;
-        tmpa+=dststride;
-    }
+        tmpa+=dststride;        
+    }	
 	//w=srcstride=dststride;
 	//h=h1;
-
+	
 	src=buf;
 	srca=bufa;
 	h1 = h / 4 ;
 
-
+				
 	dst=dstbase;
     srca1=srca;
     src1=src;
@@ -141,7 +141,7 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 			{
 				if(*srca4) *dst=(((*dst)*(*srca4))>>8)+(*src4);
 				dst++;srca4++;src4++;
-			}
+			}			
 		}
 		dst+=df1;
 		srca1 += Yrowpitch;
@@ -155,13 +155,13 @@ void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca,
 	}
 	free(buf);
 	free(bufa);
-
+   
 }
 
 
 static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 						unsigned char *srca, int stride) {
-
+					
 	int p;
 
 	//p=pitch[0];
@@ -173,17 +173,13 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 
 	vo_draw_alpha_gekko(w, h, src, srca, stride,
 						GetYtexture() + (y0 * p),
-						pitch[0],x0);
+						pitch[0],x0);						
 }
 
-void reinit_video() {  // for newgui
-  GX_StartYUV(image_width, image_height, gx_width / 2, gx_height / 2 );
-  GX_ConfigTextureYUV(image_width, image_height, pitch);
-}
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 						int y) {
-	if(y==0)
+	if(y==0) 
 	{
 		GX_ResetTextureYUVPointers();
 		if(stride[0]!=pitch[0])
@@ -194,10 +190,10 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 			pitch[2]=stride[2];
 			GX_UpdatePitch(image_width,pitch);
 		}
-
-	}
-	GX_FillTextureYUV(h,image,stride);
-	return 0;
+		
+	} 
+	GX_FillTextureYUV(h,image,stride);  
+	return 0;	
 }
 
 static void draw_osd(void) {
@@ -227,12 +223,12 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
           uint32_t d_height, uint32_t flags, char *title,
           uint32_t format) {
 	float sar, par, iar;
-
+	
 	uint32_t orig_height=height;
 
 	image_width = width;
 	image_height = ((int)((height/8.0)))*8;
-
+	
  	pitch[0] = 0;
 	pitch[1] = 0;
 	pitch[2] = 0;
@@ -243,7 +239,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   else
     sar = 4.0f / 3.0f;
 
-  iar = (float) d_width / (float) d_height;
+  iar = (float) d_width / (float) d_height;  
   par = (float) d_width / (float) d_height;
   par *= (float) vmode->fbWidth / (float) vmode->xfbHeight;
   par /= sar;
@@ -259,9 +255,22 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
   gx_width=width;
   gx_height=height;
 
-  reinit_video();
+	/*moved to mplayer.c after cache end (reinit_video) */
+//  GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
+//  GX_ConfigTextureYUV(image_width, image_height, pitch);	
+
+//  image_height = orig_height;
+	reinit_video();
+	printf("mplayer video initied\n");
   return 0;
 }
+
+void reinit_video() {  // for newgui
+  GX_StartYUV(image_width, image_height, gx_width / 2, gx_height / 2 ); 
+  GX_ConfigTextureYUV(image_width, image_height, pitch);	
+//  log_console_enable_video(true);
+} 
+
 
 static void uninit(void) {
 	image_width = 0;
@@ -274,8 +283,8 @@ static void check_events(void) {
 
 static int preinit(const char *arg) {
 	log_console_enable_video(false);
-	reset_nunchuk_positions();
-
+	//reset_nunchuk_positions();
+	
 	return 0;
 }
 

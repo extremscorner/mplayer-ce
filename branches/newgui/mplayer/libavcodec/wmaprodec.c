@@ -190,6 +190,7 @@ typedef struct WMAProDecodeCtx {
 
     /* packet decode state */
     GetBitContext    pgb;                           ///< bitstream reader context for the packet
+    uint8_t          packet_offset;                 ///< frame offset in the packet
     uint8_t          packet_sequence_number;        ///< current packet number
     int              num_saved_bits;                ///< saved number of bits
     int              frame_offset;                  ///< frame offset in the bit reservoir
@@ -425,7 +426,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /** init MDCT windows: simple sinus window */
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
         const int n       = 1 << (WMAPRO_BLOCK_MAX_BITS - i);
-        const int win_idx = WMAPRO_BLOCK_MAX_BITS - i - 7;
+        const int win_idx = WMAPRO_BLOCK_MAX_BITS - i;
         ff_sine_window_init(ff_sine_windows[win_idx], n);
         s->windows[WMAPRO_BLOCK_SIZES - i - 1] = ff_sine_windows[win_idx];
     }
@@ -1502,6 +1503,9 @@ static int decode_packet(AVCodecContext *avctx,
 
     } else {
         int frame_size;
+        s->buf_bit_size = avpkt->size << 3;
+        init_get_bits(gb, avpkt->data, s->buf_bit_size);
+        skip_bits(gb, s->packet_offset);
         if (remaining_bits(s, gb) > s->log2_frame_size &&
             (frame_size = show_bits(gb, s->log2_frame_size)) &&
             frame_size <= remaining_bits(s, gb)) {
@@ -1519,8 +1523,9 @@ static int decode_packet(AVCodecContext *avctx,
     }
 
     *data_size = (int8_t *)s->samples - (int8_t *)data;
+    s->packet_offset = get_bits_count(gb) & 7;
 
-    return (!s->packet_done && !s->packet_loss)?0: avctx->block_align;
+    return get_bits_count(gb) >> 3;
 }
 
 /**
@@ -1552,6 +1557,7 @@ AVCodec wmapro_decoder = {
     NULL,
     decode_end,
     decode_packet,
+    .capabilities = CODEC_CAP_SUBFRAMES,
     .flush= flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
 };

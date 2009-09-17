@@ -1027,7 +1027,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
             }
             break;
         case MPEGTS_PAYLOAD:
-            if (buf_size > 0) {
+            if (buf_size > 0 && pes->buffer) {
                 if (pes->data_index+buf_size > pes->total_size) {
                     new_pes_packet(pes, ts->pkt);
                     pes->total_size = MAX_PES_PAYLOAD;
@@ -1461,6 +1461,7 @@ static int mpegts_read_packet(AVFormatContext *s,
                 PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
                 if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
                     new_pes_packet(pes, pkt);
+                    pes->state = MPEGTS_SKIP;
                     ret = 0;
                     break;
                 }
