@@ -623,6 +623,9 @@ int LoadPlaylist()
 	
 	play_tree_t * playlist = parse_playlist_file(currentPlaylist);
 	
+	if(!playlist)
+		return 0;
+	
 	play_tree_iter_t *my_pt_iter = NULL;
 
 	if((my_pt_iter = pt_iter_create(&playlist, NULL)))
