@@ -1021,10 +1021,10 @@ void GX_RenderTexture()
 		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 	GX_End();
 
-	GX_DrawDone();
-	GX_SetColorUpdate(GX_TRUE);
 	
 #ifdef WIILIB
+	GX_DrawDone();
+	GX_SetColorUpdate(GX_TRUE);
 	if(copyScreen == 1)
 	{
 		copyScreen = 0;
@@ -1034,9 +1034,12 @@ void GX_RenderTexture()
 		return;
 	}
 	DrawMPlayerGui();
-#endif
-
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+#else
+	GX_SetColorUpdate(GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	GX_DrawDone();
+#endif
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
