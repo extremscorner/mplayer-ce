@@ -337,9 +337,6 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	#ifdef WIILIB
 	// tell GUI to shut down, MPlayer is ready to take over
 	ShutdownGui();
-
-	printf("disable callback in mplayer\n");
-	VIDEO_SetPostRetraceCallback (NULL); //disable callback in mplayer, reasigned in ResetVideo_Menu
 	#endif
 
 	int w,h;

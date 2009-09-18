@@ -156,7 +156,7 @@ main(int argc, char *argv[])
 	SYS_SetResetCallback(ResetCB);
 
 	extern GXRModeObj *vmode;
-	log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko, is in libmplayerwii.a)
+	//log_console_init(vmode, 0); //to debug with usbgecko (all printf are send to usbgecko, is in libmplayerwii.a)
 
 	// store path app was loaded from
 	sprintf(appPath, "sd:/apps/mplayer_ce");

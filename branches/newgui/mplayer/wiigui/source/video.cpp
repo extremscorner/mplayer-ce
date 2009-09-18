@@ -36,34 +36,6 @@ u32 FrameTimer = 0;
 u8 * mPointer[4];
 
 /****************************************************************************
- * UpdatePadsCB
- *
- * called by postRetraceCallback in InitGCVideo - scans gcpad and wpad
- ***************************************************************************/
-static void
-UpdatePadsCB ()
-{
-	WPAD_ScanPads();
-	PAD_ScanPads();
-
-	for(int i=3; i >= 0; i--)
-	{
-		memcpy(&userInput[i].wpad, WPAD_Data(i), sizeof(WPADData));
-
-		userInput[i].chan = i;
-		userInput[i].pad.btns_d = PAD_ButtonsDown(i);
-		userInput[i].pad.btns_u = PAD_ButtonsUp(i);
-		userInput[i].pad.btns_h = PAD_ButtonsHeld(i);
-		userInput[i].pad.stickX = PAD_StickX(i);
-		userInput[i].pad.stickY = PAD_StickY(i);
-		userInput[i].pad.substickX = PAD_SubStickX(i);
-		userInput[i].pad.substickY = PAD_SubStickY(i);
-		userInput[i].pad.triggerL = PAD_TriggerL(i);
-		userInput[i].pad.triggerR = PAD_TriggerR(i);
-	}
-}
-
-/****************************************************************************
  * StartGX
  *
  * Initialises GX and sets it up for use
@@ -181,9 +153,6 @@ ResetVideo_Menu()
 		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 
 	Menu_DrawInit();
-
-	// video callback
-	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
 }
 
 /****************************************************************************
@@ -215,9 +184,6 @@ InitVideo ()
 	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 
-	// A console is always useful while debugging
-	//CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
-
 	// Clear framebuffers etc.
 	VIDEO_ClearFrameBuffer (vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer (vmode, xfb[1], COLOR_BLACK);
@@ -225,9 +191,12 @@ InitVideo ()
 
 	VIDEO_SetBlack (FALSE);
 	VIDEO_Flush ();
-	VIDEO_WaitVSync ();
+	VIDEO_WaitVSync();
 	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync ();
+		VIDEO_WaitVSync();
+	else
+		while (VIDEO_GetNextField())
+			VIDEO_WaitVSync();
 
 	StartGX();
 	// Finally, the video is up and ready for use :)

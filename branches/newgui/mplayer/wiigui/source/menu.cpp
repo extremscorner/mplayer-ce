@@ -70,6 +70,7 @@ UpdateGUI (void *arg)
 		}
 		else
 		{
+			UpdatePads();
 			mainWindow->Draw();
 
 			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
