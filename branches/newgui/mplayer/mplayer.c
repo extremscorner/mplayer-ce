@@ -2670,13 +2670,15 @@ controlledbygui=1; //send control to gui
 	usec_sleep(20000);
   }	
 
-  
 printf("control return to mplayer\n");
-getch2_enable();
-printf("reinit mplayer video/audio\n");usleep(100);
-if(controlledbygui!=2)reinit_video();
-reinit_audio();
-printf("mplayer video reinit ok\n");usleep(100);
+if(controlledbygui!=2)
+{
+	printf("reinit mplayer video/audio\n");
+	reinit_audio();
+	reinit_video();
+	printf("mplayer video reinit ok\n");
+	getch2_enable();
+}
 
     if (cmd && cmd->id == MP_CMD_QUIT) {
 	cmd = mp_input_get_cmd(0,1,0);

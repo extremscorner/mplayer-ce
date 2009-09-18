@@ -55,10 +55,14 @@ enum
 
 extern BROWSERINFO browser;
 extern BROWSERENTRY * browserList;
-extern char currentPlaylist[];
-extern bool inOnlineMedia;
+
 extern MEDIAENTRY * onlinemediaList;
 extern int onlinemediaSize;
+extern bool inOnlineMedia;
+
+extern MEDIAENTRY * playlist;
+extern int playlistSize;
+extern char currentPlaylist[];
 
 bool IsDeviceRoot(char * path);
 int UpdateDirName(int method);

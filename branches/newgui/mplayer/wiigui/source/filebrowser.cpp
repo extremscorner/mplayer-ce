@@ -24,10 +24,14 @@
 
 BROWSERINFO browser;
 BROWSERENTRY * browserList = NULL; // list of files/folders in browser
+
 MEDIAENTRY * onlinemediaList = NULL; // list of online media files
 int onlinemediaSize = 0; // number of online media files
-char currentPlaylist[MAXPATHLEN] = "\0";
 bool inOnlineMedia = false;
+
+MEDIAENTRY * playlist = NULL; // list of files in the current playlist
+int playlistSize = 0; // number of playlist files
+char currentPlaylist[MAXPATHLEN] = "\0"; // playlist URL
 
 /****************************************************************************
  * ResetBrowser()

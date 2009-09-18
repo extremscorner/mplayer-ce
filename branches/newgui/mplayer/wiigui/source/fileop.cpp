@@ -613,32 +613,37 @@ ParseDirectory(bool waitParse)
 	return browser.numEntries;
 }
 
-static char playlistEntries[200][MAXPATHLEN];
-static int numPlaylistEntries = 0;
-
 int LoadPlaylist()
 {
 	char * playlistEntry;
-	int num = 0;
 	
-	play_tree_t * playlist = parse_playlist_file(currentPlaylist);
+	play_tree_t * list = parse_playlist_file(currentPlaylist);
 	
-	if(!playlist)
+	if(!list)
 		return 0;
 	
-	play_tree_iter_t *my_pt_iter = NULL;
-
-	if((my_pt_iter = pt_iter_create(&playlist, NULL)))
+	if(playlist)
 	{
-		while ((playlistEntry = pt_iter_get_next_file(my_pt_iter)) != NULL)
-		{
-			strncpy(playlistEntries[num], playlistEntry, MAXPATHLEN);
-			num++;
-		}
-		pt_iter_destroy(&my_pt_iter);
+		free(playlist);
+		playlist = NULL;
 	}
-	numPlaylistEntries = num;
-	return num;
+
+	playlistSize = 0;
+	
+	play_tree_iter_t *pt_iter = NULL;
+
+	if((pt_iter = pt_iter_create(&list, NULL)))
+	{
+		while ((playlistEntry = pt_iter_get_next_file(pt_iter)) != NULL)
+		{
+			playlist = (MEDIAENTRY *)realloc(playlist, (playlistSize + 1) * sizeof(MEDIAENTRY));
+			memset(&(playlist[playlistSize]), 0, sizeof(MEDIAENTRY)); // clear the new entry
+			strncpy(playlist[playlistSize].address, playlistEntry, MAXPATHLEN);
+			playlistSize++;
+		}
+		pt_iter_destroy(&pt_iter);
+	}
+	return playlistSize;
 }
 
 int ParsePlaylist()
@@ -661,11 +666,11 @@ int ParsePlaylist()
 	int i;
 	char * start;
 	
-	for(i=0; i < numPlaylistEntries; i++)
+	for(i=0; i < playlistSize; i++)
 	{
 		AddBrowserEntry();
-		sprintf(browserList[i+1].filename, playlistEntries[i]);
-		start = strrchr(playlistEntries[i],'/');
+		sprintf(browserList[i+1].filename, playlist[i].address);
+		start = strrchr(playlist[i].address,'/');
 		if(start != NULL) // start up starting part of path
 		{
 			start++;
@@ -673,7 +678,7 @@ int ParsePlaylist()
 		}
 		else
 		{
-			sprintf(browserList[i+1].displayname, playlistEntries[i]);
+			sprintf(browserList[i+1].displayname, playlist[i].address);
 		}
 		browserList[i+1].length = 0;
 		browserList[i+1].mtime = 0;

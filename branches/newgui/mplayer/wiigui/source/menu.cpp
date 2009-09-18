@@ -855,7 +855,9 @@ static void MenuBrowse(int menu)
 						else
 							sprintf(currentPlaylist, "%s%s", browser.dir, browserList[browser.selIndex].filename);
 						
+						ShowAction("Loading playlist...");
 						int numItems = LoadPlaylist();
+						CancelAction();
 						
 						if(numItems == 0)
 						{
