@@ -44,6 +44,7 @@ static int netEditIndex = 0; // current index of FTP/SMB share being edited
 
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
+static lwp_t creditsthread = LWP_THREAD_NULL;
 static bool guiHalt = true;
 static bool guiShutdown = true;
 static int showProgress = 0;
@@ -53,14 +54,15 @@ static char progressMsg[200];
 static int progressDone = 0;
 static int progressTotal = 0;
 
-/****************************************************************************
- * UpdateGUI
- *
- * Primary thread to allow GUI to respond to state changes, and draws GUI
- ***************************************************************************/
+static bool creditsOpen = false;
 
+/****************************************************************************
+ * UpdateGui
+ *
+ * Primary GUI thread to allow GUI to respond to state changes, and draws GUI
+ ***************************************************************************/
 static void *
-UpdateGUI (void *arg)
+UpdateGui (void *arg)
 {
 	while(1)
 	{
@@ -99,6 +101,12 @@ UpdateGUI (void *arg)
 				}
 				ExitApp();
 			}
+
+			if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
+			{
+				LWP_JoinThread(creditsthread, NULL);
+				creditsthread = LWP_THREAD_NULL;
+			}
 		}
 	}
 	return NULL;
@@ -117,7 +125,7 @@ ResumeGui()
 	guiHalt = false;
 
 	if(guithread == LWP_THREAD_NULL)
-		LWP_CreateThread (&guithread, UpdateGUI, NULL, NULL, 0, 70);
+		LWP_CreateThread (&guithread, UpdateGui, NULL, NULL, 0, 70);
 }
 
 /****************************************************************************
@@ -624,25 +632,19 @@ SettingWindow(const char * title, GuiWindow * w)
  *
  * THIS MUST NOT BE REMOVED OR DISABLED IN ANY DERIVATIVE WORK
  ***************************************************************************/
-static void WindowCredits(void * ptr)
+static void * WindowCredits(void *arg)
 {
-	if(logoBtn->GetState() != STATE_CLICKED)
-		return;
-
-	logoBtn->ResetState();
-
 	bool exit = false;
 	int i = 0;
 	int y = 20;
 
-	GuiWindow creditsWindow(screenwidth,screenheight);
-	GuiWindow creditsWindowBox(580,448);
-	creditsWindowBox.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	GuiWindow creditsWindow(580,448);
+	creditsWindow.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
 
 	GuiImageData creditsBox(credits_box_png);
 	GuiImage creditsBoxImg(&creditsBox);
 	creditsBoxImg.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
-	creditsWindowBox.Append(&creditsBoxImg);
+	creditsWindow.Append(&creditsBoxImg);
 
 	int numEntries = 23;
 	GuiText * txt[numEntries];
@@ -708,26 +710,16 @@ static void WindowCredits(void * ptr)
 	txt[i]->SetPosition(0,y); i++; y+=20;
 
 	for(i=0; i < numEntries; i++)
-		creditsWindowBox.Append(txt[i]);
+		creditsWindow.Append(txt[i]);
 
-	creditsWindow.Append(&creditsWindowBox);
-
+	HaltGui();
+	mainWindow->SetState(STATE_DISABLED);
+	mainWindow->Append(&creditsWindow);
+	mainWindow->ChangeFocus(&creditsWindow);
+	ResumeGui();
+	
 	while(!exit)
 	{
-		creditsWindow.Draw();
-
-		for(i=3; i >= 0; i--)
-		{
-			#ifdef HW_RVL
-			if(userInput[i].wpad.ir.valid)
-				Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
-					96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
-			DoRumble(i);
-			#endif
-		}
-
-		Menu_Render();
-
 		for(i=0; i < 4; i++)
 		{
 			if(userInput[i].wpad.btns_d || userInput[i].pad.btns_d)
@@ -736,15 +728,28 @@ static void WindowCredits(void * ptr)
 		usleep(THREAD_SLEEP);
 	}
 
-	// clear buttons pressed
-	for(i=0; i < 4; i++)
-	{
-		userInput[i].wpad.btns_d = 0;
-		userInput[i].pad.btns_d = 0;
-	}
-
+	HaltGui();
+	mainWindow->Remove(&creditsWindow);
+	mainWindow->SetState(STATE_DEFAULT);
+	ResumeGui();
+	
 	for(i=0; i < numEntries; i++)
 		delete txt[i];
+	creditsOpen = false;
+	return NULL;
+}
+
+static void DisplayCredits(void * ptr)
+{
+	if(logoBtn->GetState() != STATE_CLICKED)
+		return;
+
+	logoBtn->ResetState();
+	
+	// spawn a new thread to handle the Credits
+	creditsOpen = true;
+	if(creditsthread == LWP_THREAD_NULL)
+		LWP_CreateThread (&creditsthread, WindowCredits, NULL, NULL, 0, 70);
 }
 
 static void ChangeMenu(int menu)
@@ -2503,7 +2508,7 @@ void WiiMenu()
 	logoBtn->SetPosition(-10, -20);
 	logoBtn->SetImage(&logoBtnImg);
 	logoBtn->SetTrigger(&trigA);
-	logoBtn->SetUpdateCallback(WindowCredits);
+	logoBtn->SetUpdateCallback(DisplayCredits);
 	mainWindow->Append(logoBtn);
 
 	ResumeGui();
