@@ -26,10 +26,13 @@ struct FTPSettings {
 	char	displayname[81];
 };
 
+void UpdateCheck();
+bool DownloadUpdate();
 void InitializeNetwork(bool silent);
 bool ConnectShare (int num, bool silent);
 void CloseShare(int num);
 bool ConnectFTP(int num, bool silent);
 void CloseFTP(int num);
 
+extern bool updateFound;
 #endif

@@ -18,7 +18,7 @@ include $(DEVKITPPC)/wii_rules
 MPLAYER := $(CURDIR)/..
 TARGET		:=	mplayer-ce
 BUILD		:=	build
-SOURCES		:=	source source/libwiigui source/images source/fonts
+SOURCES		:=	source source/libwiigui source/images source/fonts source/unzip
 INCLUDES	:=	source
 
 #---------------------------------------------------------------------------------

@@ -45,6 +45,7 @@ static int netEditIndex = 0; // current index of FTP/SMB share being edited
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
 static lwp_t creditsthread = LWP_THREAD_NULL;
+static lwp_t updatethread = LWP_THREAD_NULL;
 static bool guiHalt = true;
 static bool guiShutdown = true;
 static int showProgress = 0;
@@ -55,6 +56,25 @@ static int progressDone = 0;
 static int progressTotal = 0;
 
 static bool creditsOpen = false;
+
+/****************************************************************************
+ * AppUpdate
+ *
+ * Prompts for confirmation, and downloads/installs updates
+ ***************************************************************************/
+static void *
+AppUpdate (void *arg)
+{
+	bool installUpdate = WindowPrompt(
+		"Update Available",
+		"An update is available!",
+		"Update now",
+		"Update later");
+	if(installUpdate)
+		if(DownloadUpdate())
+			ExitRequested = 1;
+	return NULL;
+}
 
 /****************************************************************************
  * UpdateGui
@@ -87,6 +107,18 @@ UpdateGui (void *arg)
 
 			for(int i=0; i < 4; i++)
 				mainWindow->Update(&userInput[i]);
+			
+			if(updateFound)
+			{
+				updateFound = false;
+				LWP_CreateThread (&updatethread, AppUpdate, NULL, NULL, 0, 70);
+			}
+			
+			if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
+			{
+				LWP_JoinThread(creditsthread, NULL);
+				creditsthread = LWP_THREAD_NULL;
+			}
 
 			if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
 				ExitRequested = 1;
@@ -100,12 +132,6 @@ UpdateGui (void *arg)
 					Menu_Render();
 				}
 				ExitApp();
-			}
-
-			if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
-			{
-				LWP_JoinThread(creditsthread, NULL);
-				creditsthread = LWP_THREAD_NULL;
 			}
 		}
 	}
