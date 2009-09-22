@@ -899,11 +899,14 @@ static void MenuBrowse(int menu)
 					// signal MPlayer to load
 					LoadMPlayer();
 
-					// wait until MPlayer is ready to take control
-					while(!guiShutdown)
+					// wait until MPlayer is ready to take control (or return control)
+					while(!guiShutdown && controlledbygui != 1)
 						usleep(THREAD_SLEEP);
+					
+					CancelAction();
 
-					goto done;
+					if(guiShutdown)
+						goto done;
 				}
 			}
 		}

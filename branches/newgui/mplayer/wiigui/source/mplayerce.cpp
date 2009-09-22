@@ -172,6 +172,7 @@ void LoadMPlayer()
 
 void ShutdownMPlayer()
 {
+	printf("shutting down mplayer\n");
 	controlledbygui=2;
 	while(!LWP_ThreadIsSuspended(mthread))
 		usleep(500);
@@ -218,7 +219,7 @@ main(int argc, char *argv[])
 	SYS_SetPowerCallback(ShutdownCB);
 	SYS_SetResetCallback(ResetCB);
 
-	//USBGeckoOutput(); // uncomment to enable USB gecko output
+	USBGeckoOutput(); // uncomment to enable USB gecko output
 
 	// store path app was loaded from
 	sprintf(appPath, "sd:/apps/mplayer_ce");
@@ -252,8 +253,5 @@ main(int argc, char *argv[])
 			usleep(9000);
 
 		printf("control return to gui\n");
-
-		//log_console_enable_video(true);
-		//printf("test\n");sleep(5);
 	}
 }

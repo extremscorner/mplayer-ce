@@ -300,6 +300,12 @@ static bool InternetStream()
 	return false;
 }
 
+#ifdef WIILIB
+bool IsLoopAvi(char *_file)
+{
+	return false;
+}
+#else
 bool IsLoopAvi(char *_file)
 {
 	int i,j;
@@ -320,6 +326,8 @@ bool IsLoopAvi(char *_file)
 
 extern bool playing_usb;
 extern bool playing_dvd;
+#endif
+
 static bool low_cache=false;
 static char* fileplaying=NULL;
 static bool restore_points_changed=false;
@@ -398,7 +406,9 @@ void save_restore_points_file()
 void delete_restore_point(char *_filename)
 {
 	int i,j;
+	#ifndef WIILIB
 	if(IsLoopAvi(filename))return;
+	#endif
 	for(i=0;i<MAX_RESTORE_POINTS;i++)
 	{
 		if(!strcmp(_filename,restore_points[i].filename))
@@ -605,8 +615,12 @@ static int is_valid_metadata_type (metadata_t type) {
   case META_VIDEO_BITRATE:
   case META_VIDEO_RESOLUTION:
   {
-    //if (!mpctx->sh_video) //geexbox bgvideo patch
+    #ifdef WIILIB
+    if (!mpctx->sh_video)
+    #else
+    //geexbox bgvideo patch
     if (!mpctx->sh_video || (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh))
+    #endif
       return 0;
     break;
   }
@@ -810,7 +824,8 @@ void uninit_player(unsigned int mask){
 	free_demuxer(mpctx->demuxer);
     }
     mpctx->demuxer=NULL;
-		//geexbox bgvideo patch
+    #ifndef WIILIB
+    //geexbox bgvideo patch
     current_module="free_bg_demuxer";
     if(mpctx->bg_demuxer) {
       stream_t* bg_s = mpctx->bg_demuxer->stream;
@@ -819,6 +834,7 @@ void uninit_player(unsigned int mask){
       free_stream(bg_s);
     }
     //
+    #endif
   }
 
   // kill the cache process:
@@ -891,9 +907,8 @@ void uninit_player(unsigned int mask){
 }
 
 void exit_player_with_rc(exit_reason_t how, int rc){
-
 #ifdef GEKKO
-  if(how==EXIT_QUIT) save_restore_point(fileplaying,demuxer_get_current_time(mpctx->demuxer));
+  if(mpctx->sh_video && how==EXIT_QUIT) save_restore_point(fileplaying,demuxer_get_current_time(mpctx->demuxer));
 #endif
 
   if (mpctx->user_muted && !mpctx->edl_muted) mixer_mute(&mpctx->mixer);
@@ -953,7 +968,8 @@ void exit_player_with_rc(exit_reason_t how, int rc){
 
 #ifndef WIILIB
 #ifdef GEKKO
-  save_restore_points_file();
+  if(mpctx->sh_video)
+  	save_restore_points_file();
   plat_deinit (rc);
 #endif  
   exit(rc);
@@ -1780,10 +1796,12 @@ void update_osd_msg(void) {
             char percentage_text[10];
             int pts = demuxer_get_current_time(mpctx->demuxer);
 
+            #ifndef WIILIB
             //geexbox bgvideo patch
             //printf("bg patch");
             if (mpctx->bg_demuxer && mpctx->sh_audio) pts = playing_audio_pts(mpctx->sh_audio, mpctx->d_audio, mpctx->audio_out);
             //if (mpctx->bg_demuxer)pts = demuxer_get_current_time(mpctx->bg_demuxer);
+            #endif
 
             if (mpctx->osd_show_percentage)
                 percentage = demuxer_get_percent_pos(mpctx->demuxer);
@@ -2016,6 +2034,12 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
 	current_module = "video_read_frame";
 	in_size = ds_get_packet_pts(d_video, &start, &pts);
 	if (in_size < 0) {
+	#ifdef WIILIB
+	    // try to extract last frames in case of decoder lag
+	    in_size = 0;
+	    pts = 1e300;
+	    hit_eof = 1;
+	#else
 	  //geexbox bgvideo patch
 	  if(mpctx->bg_demuxer) {
 	    if(!demux_seek(mpctx->bg_demuxer,0,0,1)) hit_eof = 1;
@@ -2029,6 +2053,7 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
 	    hit_eof = 1;
 
 	    } //geexbox bgvideo patch
+	#endif
 	}
 	if (in_size > max_framesize)
 	    max_framesize = in_size;
@@ -2225,6 +2250,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
     current_module="av_sync";
 
     if(mpctx->sh_audio){
+    #ifndef WIILIB
     //geexbox bgvideo patch
       if(mpctx->bg_demuxer) {
       	if(!quiet) mp_msg(MSGT_AVSYNC,MSGL_STATUS,"A:%6.1f %4.1f%% %d%%   \r"
@@ -2234,6 +2260,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
  		       );
      } else {
     //
+    #endif
 	double a_pts, v_pts;
 
 	if (autosync)
@@ -2284,8 +2311,9 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
 	    if(!quiet)
 		print_status(a_pts - audio_delay, AV_delay, c_total);
 	}
-
-     } //geexbox bgvideo patch
+    #ifndef WIILIB
+    } //geexbox bgvideo patch
+    #endif
     } else {
 	// No audio:
 
@@ -2708,12 +2736,6 @@ if(controlledbygui!=2)
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause
-  if(controlledbygui==2) // new film we have to exit
-  {
-  	//mp_input_queue_cmd(mp_input_parse_cmd("quit"));
-  	mpctx->eof=1;
-  }
-    
 }
 #endif
 
@@ -2830,6 +2852,7 @@ void fast_continue()
 static void pause_loop(void)
 {
     mp_cmd_t* cmd=NULL;
+	#ifndef WIILIB
 	if(IsLoopAvi(NULL))
 	{
 		mpctx->osd_function=OSD_PLAY;
@@ -2838,6 +2861,7 @@ static void pause_loop(void)
    	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE"); //impossible to see in wiigui, we haven't vf_menu
     //update_osd_msg();
     force_osd();
+	#endif
 
 #ifdef CONFIG_GUI
     if (use_gui)
@@ -3525,18 +3549,20 @@ if(!noconsolecontrols && !slave_mode){
     }
 #endif /* CONFIG_GUI */
 
-while (player_idle_mode && !filename) { //AgentX idle hack to make loop.avi constantly play
+while (player_idle_mode && !filename) {
     play_tree_t * entry = NULL;
     mp_cmd_t * cmd;
-    /*
+#ifdef WIILIB
     while (!(cmd = mp_input_get_cmd(0,1,0))) { // wait for command
         if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
         usec_sleep(20000);
     }
-    */
+#else
+    //AgentX idle hack to make loop.avi constantly play
     while(cmd = mp_input_get_cmd(0,1,0))
     {
       if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
+#endif
     switch (cmd->id) {
         case MP_CMD_LOADFILE:
             // prepare a tree entry with the new filename
@@ -3558,10 +3584,12 @@ while (player_idle_mode && !filename) { //AgentX idle hack to make loop.avi cons
     }
 
     mp_cmd_free(cmd);
+#ifndef WIILIB
     }
    	entry = play_tree_new();
    	filename=bg_video;
     play_tree_add_file(entry, bg_video);
+#endif
 
     if (entry) { // user entered a command that gave a valid entry
         if (mpctx->playtree) // the playtree is always a node with one child. let's clear it
@@ -3678,10 +3706,6 @@ int vob_sub_auto = 1; //scip
 
   current_module="open_stream";
   #ifdef GEKKO
-#ifndef WIILIB
-  playing_usb=false;
-  playing_dvd=false;
-#endif
 
   // rodries
   static float orig_stream_cache_min_percent=-1;
@@ -3702,10 +3726,13 @@ int vob_sub_auto = 1; //scip
   	stream_cache_size=-1;
   else
   	stream_cache_size=orig_stream_cache_size;
+
+#ifndef WIILIB
+  playing_usb=false;
+  playing_dvd=false;
   
   if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9))
   {
-#ifndef WIILIB
 	  if(!DVDGekkoMount())
 	  {
   		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
@@ -3726,27 +3753,23 @@ int vob_sub_auto = 1; //scip
 	  		//goto goto_next_file;
 	  }
 	  else
-#endif
-	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));
-#ifndef WIILIB	  
+	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));  
 	  playing_dvd=true;
-#endif
   }
-#ifndef WIILIB
   if(!strncmp(filename,"usb:",4) || !strncmp(filename,"ntfs_usb:",9)) playing_usb=true;
-#endif
-
-  if(!strncmp(filename,"http:",5))
-  {
-	 stream_cache_min_percent=1;
-	 stream_cache_seek_min_percent=5;
-  }
 
 	if(!IsLoopAvi(NULL))
 	{
 		set_osd_msg(OSD_MSG_TEXT, 1, 0, "Opening Stream...");
 		force_osd();
 	}
+#endif
+
+    if(!strncmp(filename,"http:",5))
+    {
+	   stream_cache_min_percent=1;
+	   stream_cache_seek_min_percent=5;
+    }
 
   //end rodries
   #endif
@@ -4042,6 +4065,7 @@ mpctx->sh_audio=mpctx->d_audio->sh;
 mpctx->sh_video=mpctx->d_video->sh;
 
 
+#ifndef WIILIB
 //geexbox bgvideo patch
 while(mpctx->sh_audio && !mpctx->sh_video && bg_video) {
   int bg_file_format = 0;
@@ -4070,6 +4094,7 @@ while(mpctx->sh_audio && !mpctx->sh_video && bg_video) {
   mp_msg(MSGT_DEMUXER,MSGL_INFO,"Background video should work ;)\n");
   break;
 }
+#endif
 
 //
 if(mpctx->sh_video){
@@ -4304,6 +4329,11 @@ if(!mpctx->sh_audio){
 }
 
 if(!mpctx->sh_video){
+#ifdef WIILIB
+	printf("No video - returning control to GUI\n");
+	controlledbygui=1; // send control to gui
+	getch2_disable(); // wiimote controlled by gui
+#endif
    mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_Video_NoVideo);
    mp_msg(MSGT_CPLAYER,MSGL_V,"Freeing %d unused video chunks.\n",mpctx->d_video->packs);
    ds_free_packs(mpctx->d_video);
@@ -4422,6 +4452,7 @@ mpctx->osd_function=OSD_PLAY;
 mpctx->set_of_sub_size=aux;
 }
 
+if(mpctx->sh_video)
 {
 	int w,h;
 	w=mpctx->sh_video->disp_w;
@@ -4495,8 +4526,10 @@ if (mpctx->sh_audio)
 			if (!mpctx->sh_video)
 			    mpctx->eof = PT_NEXT_ENTRY;
 
+#ifndef WIILIB
 	//geexbox bgvideo patch
 	if(mpctx->bg_demuxer && mpctx->d_audio->eof) mpctx->eof=1;
+#endif
 
 if(!mpctx->sh_video) {
   // handle audio-only case:
@@ -4528,13 +4561,14 @@ if(!mpctx->sh_video) {
 	  mpctx->eof = 1; goto goto_next_file;
       }
       if (frame_time < 0)
+      #ifndef WIILIB
       //geexbox bgvideo patch
        if(mpctx->bg_demuxer) {
           if(!demux_seek(mpctx->bg_demuxer,0,0,1))
             mpctx->eof = PT_NEXT_ENTRY;
         }
         else
-      //
+      #endif
 	  mpctx->eof = 1;
       else {
 	  // might return with !eof && !blit_frame if !correct_pts
@@ -4728,6 +4762,12 @@ if(step_sec>0) {
 #endif
 
 //================= Keyboard events, SEEKing ====================
+  
+#ifdef WIILIB
+	if(controlledbygui==2) // new film - we have to exit
+		mpctx->eof=1;
+#endif
+  
   current_module="key_events";
 
 {
@@ -4743,6 +4783,7 @@ if(step_sec>0) {
   
   mpctx->was_paused = 0;
     
+  #ifndef WIILIB
    if (mpctx->eof==1 && IsLoopAvi(NULL))
    {
     play_n_frames=play_n_frames_mf;
@@ -4750,6 +4791,7 @@ if(step_sec>0) {
     abs_seek_pos=SEEK_ABSOLUTE; rel_seek_secs=seek_to_sec=0;
     loop_seek = 1;
    }
+  #endif
 
    
   /* Looping. */
