@@ -561,17 +561,14 @@ ParseDirectory(bool waitParse)
 	int retry = 1;
 	bool mounted = false;
 
-	// halt parsing
-	HaltParseThread();
-
-	// reset browser
-	ResetBrowser();
-
 	// open the directory
 	while(dirIter == NULL && retry == 1)
 	{
 		mounted = ChangeInterface(browser.dir, NOTSILENT);
-		if(mounted) dirIter = diropen(browser.dir);
+		if(mounted)
+			dirIter = diropen(browser.dir);
+		else
+			return -1;
 
 		if(dirIter == NULL)
 		{
@@ -580,22 +577,21 @@ ParseDirectory(bool waitParse)
 		}
 	}
 
-	// if we can't open the dir, try opening the root dir
-	if (dirIter == NULL && !IsDeviceRoot(browser.dir))
+	// if we can't open the dir, try higher levels
+	if (dirIter == NULL)
 	{
-		if(ChangeInterface(browser.dir, SILENT))
+		while(!IsDeviceRoot(browser.dir))
 		{
-			char * devEnd = strchr(browser.dir, '/');
-			devEnd[1] = 0; // strip remaining file listing
+			char * devEnd = strrchr(browser.dir, '/');
+			devEnd[0] = 0; // strip remaining file listing
 			dirIter = diropen(browser.dir);
-			if (dirIter == NULL)
-			{
-				sprintf(msg, "Error opening %s", browser.dir);
-				ErrorPrompt(msg);
-				return -1;
-			}
+			if (dirIter)
+				break;
 		}
 	}
+	
+	if(dirIter == NULL)
+		return -1;
 
 	if(IsDeviceRoot(browser.dir))
 	{
@@ -662,12 +658,6 @@ int LoadPlaylist()
 
 int ParsePlaylist()
 {
-	// halt parsing
-	HaltParseThread();
-
-	// reset browser
-	ResetBrowser();
-	
 	AddBrowserEntry();
 	sprintf(browserList[0].filename, "..");
 	sprintf(browserList[0].displayname, "Up One Level");
@@ -706,12 +696,6 @@ int ParsePlaylist()
 
 int ParseOnlineMedia()
 {
-	// halt parsing
-	HaltParseThread();
-
-	// reset browser
-	ResetBrowser();
-	
 	if(browser.dir[0] != 0)
 	{
 		AddBrowserEntry();

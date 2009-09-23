@@ -901,6 +901,9 @@ static void MenuBrowse(int menu)
 						if(numItems == 1) // let's load this one file
 						{
 							sprintf(loadedFile, browserList[1].filename);
+							// go up one level
+							browser.selIndex = 0;
+							BrowserChangeFolder();
 						}
 						else
 						{
