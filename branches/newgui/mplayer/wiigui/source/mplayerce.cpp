@@ -12,9 +12,9 @@
 #include <ogcsys.h>
 #include <unistd.h>
 #include <wiiuse/wpad.h>
-#include <di/di.h>
 #include <sys/iosupport.h>
 
+#include "../../osdep/di2.h"
 #include "FreeTypeGX.h"
 #include "video.h"
 #include "menu.h"
@@ -23,6 +23,10 @@
 #include "fileop.h"
 #include "mplayerce.h"
 #include "settings.h"
+
+extern "C" {
+extern void __exception_setreload(int t);
+}
 
 int ScreenshotRequested = 0;
 int ConfigRequested = 0;
@@ -185,6 +189,8 @@ void ShutdownMPlayer()
 int
 main(int argc, char *argv[])
 {
+	__exception_setreload(8);
+	
 	int mload=-1;
 
 	//try to load ios202

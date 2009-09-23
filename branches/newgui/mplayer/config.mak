@@ -31,7 +31,7 @@ RANLIB = $(DEVKITPPC)/bin/powerpc-eabi-ranlib
 WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
+EXTRA_INC = -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/portlibs/ppc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
 #EXTRA_INC =  -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include 
 EXTRAXX_INC = $(EXTRA_INC)
 

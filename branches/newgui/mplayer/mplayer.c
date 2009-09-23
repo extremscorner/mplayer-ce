@@ -115,7 +115,7 @@ char *heartbeat_cmd;
 
 #ifdef GEKKO
 #include "osdep/plat_gekko.h"
-#include <di/di.h>
+#include "osdep/di2.h"
 #include <ogc/system.h>
 
 #endif
@@ -2719,13 +2719,13 @@ if(controlledbygui!=2)
 	{	    
 		if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
 		{
-			//DI_StartMotor();
+			//DI2_StartMotor();
 			//printf("start motor\n");
 			void *ptr=memalign(32, 0x800*2);
 			//printf("read sector 1\n");
-			DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
+			DI2_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
 			//printf("read sector 5000\n");
-			DI_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
+			DI2_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
 			free(ptr);
 		}
 	
@@ -2796,13 +2796,13 @@ static void low_cache_loop(void)
 	rm_osd_msg(OSD_MSG_PAUSE);
 	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
 	{
-		//DI_StartMotor();
+		//DI2_StartMotor();
 		//printf("start motor\n");
 		void *ptr=memalign(32, 0x800*2);
 		//printf("read sector 1\n");
-		DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
+		DI2_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
 		//printf("read sector 5000\n");
-		DI_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
+		DI2_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
 		free(ptr);
 	}
 	/*
@@ -2919,9 +2919,9 @@ static void pause_loop(void)
 			//printf("start motor\n");
 			void *ptr=memalign(32, 0x800*2);
 			//printf("read sector 1\n");
-			DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
+			DI2_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
 			//printf("read sector 5000\n");
-			DI_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
+			DI2_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
 			free(ptr);
 		}
 
@@ -3081,6 +3081,7 @@ int gui_no_filename=0;
   InitTimer();
 
 #ifdef GEKKO
+  __exception_setreload(8);
   plat_init (&argc, &argv);
   fileplaying=(char*)malloc(sizeof(char)*MAXPATHLEN);
   load_restore_points();

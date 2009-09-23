@@ -40,14 +40,14 @@
 #include <fat.h>
 #include <ntfs.h>
 #include <smb.h>
-#include <ftp.h> 
 
 #include <network.h>
 #include <errno.h>
-#include <di/di.h>
+#include "di2.h"
 #include "libdvdiso.h"
 #include "mp_osd.h"
 
+#include "ftp_devoptab.h"
 #include "log_console.h"
 #include "gx_supp.h"
 #include "plat_gekko.h"

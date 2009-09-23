@@ -8,11 +8,11 @@
 
 #include <network.h>
 #include <smb.h>
-#include <ftp.h>
 #include <unistd.h>
 #include <mxml.h>
 
 #include "mplayerce.h"
+#include "../../osdep/ftp_devoptab.h"
 #include "fileop.h"
 #include "filebrowser.h"
 #include "menu.h"

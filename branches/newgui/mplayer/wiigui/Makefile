@@ -34,14 +34,14 @@ LDFLAGS		=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 MPLIBS	:=	-lmplayerwii -lavcodec -lavformat -lavutil -lpostproc -lswscale
 LIBS 	:= 	$(MPLIBS) -lfribidi -ljpeg -ldi -liconv -lpng -lz -lntfs -lfat \
-			-lwiiuse -lbte -logc -lfreetype -lmxml -ltinyftp -ltinysmb
+			-lwiiuse -lbte -logc -lfreetype -lmxml -ltinysmb
 
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(CURDIR) 				-
+LIBDIRS	:= $(PORTLIBS)				-
 
 
 #---------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ export OFILES	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) \
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD) \
-					-I$(LIBOGC_INC)
+					-I$(LIBOGC_INC) -I$(PORTLIBS)/include/freetype2
 
 #---------------------------------------------------------------------------------
 # build a list of library paths

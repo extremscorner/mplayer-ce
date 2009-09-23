@@ -1,7 +1,17 @@
+@echo off
 del mplayer-ce.dol
 rem del mplayerz3.dol
 del mplayer-ce.elf
+cd ..
+make libmplayerwii.a
+if not %errorlevel% == 0 goto error
+ 
+cd wiigui
 make
-rem dollz3 mplayer.dol mplayerz3.dol
-rem wiiload mplayerz3.dol
-wiiload mplayer-ce.dol
+
+goto end
+ 
+:error
+cd wiigui
+ 
+:end
