@@ -102,13 +102,17 @@ bool LoadSettings ();
 
 extern struct SCESettings CESettings;
 
-const char validExtensions[][7] =
+const char validVideoExtensions[][7] =
 {
-	"3gp", "aac", "ape", "apl", "asf", "avi", "bin", "dat", "divx", "dvr-ms",
-	"evo", "flac", "flv", "ifo", "img", "m1v", "m2v", "m4a", "m4p", "m4v",
-	"mac", "mdf", "mka", "mkv", "mov", "mp2", "mp3", "mp4", "mp4v", "mpc",
-	"mpe", "mpeg", "mpg", "nsv", "ogg", "ogm", "qt", "ra", "rm", "rmvb", "shn",
-	"swf", "ts", "vdr", "vob", "vro", "wav", "wma", "wmv", "y4m", ""
+	"3gp", "avi", "asf", "divx", "dvr-ms", "evo", "flv", "m1v", "m2v", "mkv", 
+	"mov", "mp4", "mp4v", "mpe", "mpeg", "mpg", "nsv", "ogm", "qt", "rmvb", 
+	"swf", "ts", "vob", "vro", "wmv", "y4m", ""
+};
+
+const char validAudioExtensions[][5] = 
+{
+	"aac", "ape", "asf", "flac", "m4a", "m4p", "m4v", "mka", "mp2", "mp3", 
+	"mpc", "ogg", "ra", "rm", "shn", "m4b", "wav", "wma", ""
 };
 
 const char validPlaylistExtensions[][5] =

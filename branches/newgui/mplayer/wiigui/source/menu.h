@@ -20,6 +20,8 @@ void CancelAction();
 void ShowProgress (const char *msg, int done, int total);
 int WindowPrompt(const char *title, const char *msg, const char *btn1Label, const char *btn2Label);
 
+extern int currentMenu;
+
 enum
 {
 	MENU_BROWSE_VIDEOS,

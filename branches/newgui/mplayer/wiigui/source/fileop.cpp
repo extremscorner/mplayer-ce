@@ -472,14 +472,27 @@ bool ParseDirEntries()
 				continue; // file does not have an extension - skip it
 
 			j=0;
-
-			do
+			
+			if(currentMenu == MENU_BROWSE_VIDEOS)
 			{
-				if (!strcasecmp(ext, validExtensions[j++]))
-					break;
-			} while (validExtensions[j][0] != 0);
-			if (validExtensions[j][0] == 0) // extension not found
-				continue;
+				do
+				{
+					if (!strcasecmp(ext, validVideoExtensions[j++]))
+						break;
+				} while (validVideoExtensions[j][0] != 0);
+				if (validVideoExtensions[j][0] == 0) // extension not found
+					continue;
+			}
+			else if(currentMenu == MENU_BROWSE_MUSIC)
+			{
+				do
+				{
+					if (!strcasecmp(ext, validAudioExtensions[j++]))
+						break;
+				} while (validAudioExtensions[j][0] != 0);
+				if (validAudioExtensions[j][0] == 0) // extension not found
+					continue;
+			}
 		}
 
 		// add the entry

@@ -38,7 +38,7 @@ static GuiButton * mplayerBtn = NULL;
 static GuiWindow * mainWindow = NULL;
 static GuiText * settingText = NULL;
 
-static int currentMenu = MENU_BROWSE_VIDEOS;
+int currentMenu = MENU_BROWSE_VIDEOS;
 static int lastMenu = MENU_BROWSE_VIDEOS;
 static int netEditIndex = 0; // current index of FTP/SMB share being edited
 
