@@ -477,9 +477,9 @@ bool ParseDirEntries()
 			{
 				do
 				{
-					if (!strcasecmp(ext, validVideoExtensions[j++]))
+					if (strcasecmp(ext, validVideoExtensions[j]) == 0)
 						break;
-				} while (validVideoExtensions[j][0] != 0);
+				} while (validVideoExtensions[++j][0] != 0);
 				if (validVideoExtensions[j][0] == 0) // extension not found
 					continue;
 			}
@@ -487,9 +487,9 @@ bool ParseDirEntries()
 			{
 				do
 				{
-					if (!strcasecmp(ext, validAudioExtensions[j++]))
+					if (strcasecmp(ext, validAudioExtensions[j]) == 0)
 						break;
-				} while (validAudioExtensions[j][0] != 0);
+				} while (validAudioExtensions[++j][0] != 0);
 				if (validAudioExtensions[j][0] == 0) // extension not found
 					continue;
 			}
