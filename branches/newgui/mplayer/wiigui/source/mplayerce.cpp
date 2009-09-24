@@ -219,6 +219,7 @@ main(int argc, char *argv[])
 	// read wiimote accelerometer and IR data
 	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
 	WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth, screenheight);
+	WPAD_SetIdleTimeout(60);
 
 	// Wii Power/Reset buttons
 	WPAD_SetPowerButtonCallback((WPADShutdownCallback)ShutdownCB);

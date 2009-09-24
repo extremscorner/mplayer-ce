@@ -854,6 +854,12 @@ static void MenuBrowse(int menu)
 	while(currentMenu == menu && !guiShutdown)
 	{
 		usleep(THREAD_SLEEP);
+		
+		if(selectLoadedFile == 2)
+		{
+			selectLoadedFile = 0;
+			fileBrowser.TriggerUpdate();
+		}
 
 		// update file browser based on arrow buttons
 		// request guiShutdown if A button pressed on a file
@@ -935,7 +941,16 @@ static void MenuBrowse(int menu)
 					CancelAction();
 
 					if(guiShutdown)
+					{
 						goto done;
+					}
+					else
+					{
+						// we loaded an audio file - if we already had a video
+						// loaded, we should remove the bg and MPlayer button
+						mainWindow->Remove(videoImg);
+						mainWindow->Remove(mplayerBtn);
+					}
 				}
 			}
 		}
@@ -2412,6 +2427,7 @@ static void BackToMplayerCallback(void * ptr)
 void WiiMenu()
 {
 	guiShutdown = false;
+	selectLoadedFile = true;
 
 	if(pointer[0] == NULL)
 	{

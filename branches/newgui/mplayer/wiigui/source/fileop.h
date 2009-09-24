@@ -37,5 +37,6 @@ extern bool isMounted[];
 extern lwp_t devicethread;
 extern int currentDevice;
 extern int currentDeviceNum;
+extern int selectLoadedFile;
 
 #endif

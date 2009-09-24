@@ -27,6 +27,7 @@ extern "C" {
 #include "menu.h"
 #include "filebrowser.h"
 #include "settings.h"
+#include "libwiigui/gui.h"
 
 #define THREAD_SLEEP 100
 
@@ -43,6 +44,7 @@ static lwp_t parsethread = LWP_THREAD_NULL;
 static DIR_ITER * dirIter = NULL;
 static bool parseHalt = true;
 bool ParseDirEntries();
+int selectLoadedFile = 0;
 
 // device thread
 lwp_t devicethread = LWP_THREAD_NULL;
@@ -538,9 +540,50 @@ bool ParseDirEntries()
 	// Sort the file list
 	if(i > 0)
 	{
-		browser.numEntries += i;
 		qsort(browserList, browser.numEntries, sizeof(BROWSERENTRY), FileSortCallback);
 	}
+
+	// try to find and select the last loaded file
+	if(selectLoadedFile == 1 && res != 0 && loadedFile[0] != 0 && browser.dir[0] != 0)
+	{
+		int indexFound = -1;
+		int dirLen = strlen(browser.dir);
+		int fileLen = strlen(loadedFile);
+		char file[MAXPATHLEN];
+		
+		if(fileLen > dirLen && strncmp(loadedFile, browser.dir, dirLen) == 0)
+			strcpy(file, &loadedFile[dirLen]);
+		else
+			strcpy(file, loadedFile);
+		
+		for(j=1; j < browser.numEntries + i; j++)
+		{
+			if(strcmp(browserList[j].filename, file) == 0)
+			{
+				indexFound = j;
+				break;
+			}
+		}
+
+		// move to this file
+		if(indexFound > 0)
+		{
+			browser.pageIndex = (ceil(indexFound/FILE_PAGESIZE*1.0)) * FILE_PAGESIZE;
+			
+			if(browser.pageIndex + FILE_PAGESIZE > browser.numEntries + i)
+			{
+				browser.pageIndex = browser.numEntries + i - FILE_PAGESIZE;
+				printf("page index changed\n");
+			}
+			
+			browser.selIndex = indexFound;
+			printf("floor: %.2f\n", ceil(indexFound/FILE_PAGESIZE*1.0));
+			printf("page: %d, sel: %d\n",browser.pageIndex,browser.selIndex );
+		}
+		selectLoadedFile = 2; // selecting done
+	}
+	
+	browser.numEntries += i;
 
 	if(res != 0 || parseHalt)
 	{
