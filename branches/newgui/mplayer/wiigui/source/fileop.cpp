@@ -568,17 +568,16 @@ bool ParseDirEntries()
 		// move to this file
 		if(indexFound > 0)
 		{
-			browser.pageIndex = (ceil(indexFound/FILE_PAGESIZE*1.0)) * FILE_PAGESIZE;
-			
-			if(browser.pageIndex + FILE_PAGESIZE > browser.numEntries + i)
-			{
-				browser.pageIndex = browser.numEntries + i - FILE_PAGESIZE;
-				printf("page index changed\n");
+			if(indexFound > FILE_PAGESIZE)
+			{			
+				browser.pageIndex = (ceil(indexFound/FILE_PAGESIZE*1.0)) * FILE_PAGESIZE;
+				
+				if(browser.pageIndex + FILE_PAGESIZE > browser.numEntries + i)
+				{
+					browser.pageIndex = browser.numEntries + i - FILE_PAGESIZE;
+				}
 			}
-			
 			browser.selIndex = indexFound;
-			printf("floor: %.2f\n", ceil(indexFound/FILE_PAGESIZE*1.0));
-			printf("page: %d, sel: %d\n",browser.pageIndex,browser.selIndex );
 		}
 		selectLoadedFile = 2; // selecting done
 	}

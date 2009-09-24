@@ -26,6 +26,7 @@
 
 extern "C" {
 extern void __exception_setreload(int t);
+extern void USB2Enable(bool e);
 }
 
 int ScreenshotRequested = 0;
@@ -189,9 +190,8 @@ void ShutdownMPlayer()
 int
 main(int argc, char *argv[])
 {
+	USBGeckoOutput(); // uncomment to enable USB gecko output
 	__exception_setreload(8);
-	
-	int mload=-1;
 
 	//try to load ios202
 	if(IOS_GetVersion()!=202)
@@ -206,9 +206,9 @@ main(int argc, char *argv[])
 	else WIIDVD_Init(false);
 
 	//load usb2 driver
-	mload=mload_init();
-	if(mload<0) DisableUSB2(true);
-	else if(!load_ehci_module()) DisableUSB2(true);
+	if(mload_init() >= 0)
+		if(load_ehci_module())
+			USB2Enable(true);
 
 	VIDEO_Init();
 	PAD_Init();
@@ -225,8 +225,6 @@ main(int argc, char *argv[])
 	WPAD_SetPowerButtonCallback((WPADShutdownCallback)ShutdownCB);
 	SYS_SetPowerCallback(ShutdownCB);
 	SYS_SetResetCallback(ResetCB);
-
-	USBGeckoOutput(); // uncomment to enable USB gecko output
 
 	// store path app was loaded from
 	sprintf(appPath, "sd:/apps/mplayer_ce");

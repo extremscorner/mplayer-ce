@@ -871,35 +871,16 @@ void plat_init (int *argc, char **argv[]) {
 		InitNetworkThreads();
 	}
 #endif
-	
-	if(usb_init)
+		
+	if(mload>=0) 
 	{		
-		if(mload<0) 
-		{
-			DisableUSB2(true);
-		}
-		else
-		{		
-			fatUnmount("usb:");
-		 	load_ehci_module();
-		 	usb->isInserted();
-			fatMount("usb",usb,0,3,256);
-			mount_usb_ntfs();
-		}
-	}
-	else 
-	{
-		if(mload<0) 
-		{
-			DisableUSB2(true);
-		}
-		else
-		{
-			if(!load_ehci_module()) 
-			{
-				DisableUSB2(true);
-			}
-		}
+		if(load_ehci_module())
+			USB2Enable(true);
+
+		fatUnmount("usb:");
+		usb->isInserted();
+		fatMount("usb",usb,0,3,256);
+		mount_usb_ntfs();
 	}
 
 	chdir(MPLAYER_DATADIR);
