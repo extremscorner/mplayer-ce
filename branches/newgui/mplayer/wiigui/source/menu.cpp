@@ -57,6 +57,9 @@ static int progressTotal = 0;
 
 static bool creditsOpen = false;
 
+int doMPlayerGuiDraw = 0; // draw MPlayer menu
+static bool menuMode = 0; // 0 - normal GUI, 1 - GUI for MPlayer
+
 /****************************************************************************
  * AppUpdate
  *
@@ -92,6 +95,13 @@ UpdateGui (void *arg)
 		}
 		else
 		{
+			while(menuMode == 1 && !doMPlayerGuiDraw) // mplayer GUI
+			{
+				usleep(THREAD_SLEEP);
+				if(guiHalt)
+					return NULL;
+			}
+
 			UpdatePads();
 			mainWindow->Draw();
 
@@ -103,35 +113,43 @@ UpdateGui (void *arg)
 				DoRumble(i);
 			}
 
-			Menu_Render();
-
 			for(int i=0; i < 4; i++)
 				mainWindow->Update(&userInput[i]);
 			
-			if(updateFound)
+			if(menuMode == 0) // normal GUI
 			{
-				updateFound = false;
-				LWP_CreateThread (&updatethread, AppUpdate, NULL, NULL, 0, 70);
-			}
-			
-			if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
-			{
-				LWP_JoinThread(creditsthread, NULL);
-				creditsthread = LWP_THREAD_NULL;
-			}
+				Menu_Render();
 
-			if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
-				ExitRequested = 1;
-
-			if(ExitRequested || ShutdownRequested)
-			{
-				for(int a = 0; a < 255; a += 15)
+				if(updateFound)
 				{
-					mainWindow->Draw();
-					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
-					Menu_Render();
+					updateFound = false;
+					LWP_CreateThread (&updatethread, AppUpdate, NULL, NULL, 0, 70);
 				}
-				ExitApp();
+				
+				if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
+				{
+					LWP_JoinThread(creditsthread, NULL);
+					creditsthread = LWP_THREAD_NULL;
+				}
+	
+				if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
+					ExitRequested = 1;
+	
+				if(ExitRequested || ShutdownRequested)
+				{
+					for(int a = 0; a < 255; a += 15)
+					{
+						mainWindow->Draw();
+						Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
+						Menu_Render();
+					}
+					ExitApp();
+				}
+			}
+			else // MPlayer GUI
+			{
+				doMPlayerGuiDraw = 0;
+				usleep(THREAD_SLEEP);
 			}
 		}
 	}
@@ -2426,6 +2444,7 @@ static void BackToMplayerCallback(void * ptr)
  ***************************************************************************/
 void WiiMenu()
 {
+	menuMode = 0; // switch to normal GUI mode
 	guiShutdown = false;
 	selectLoadedFile = true;
 
@@ -2435,10 +2454,6 @@ void WiiMenu()
 		pointer[1] = new GuiImageData(player2_point_png);
 		pointer[2] = new GuiImageData(player3_point_png);
 		pointer[3] = new GuiImageData(player4_point_png);
-		mPointer[0] = pointer[0]->GetImage();
-		mPointer[1] = pointer[1]->GetImage();
-		mPointer[2] = pointer[2]->GetImage();
-		mPointer[3] = pointer[3]->GetImage();
 	}
 
 	GuiTrigger trigA;
@@ -2645,4 +2660,52 @@ void WiiMenu()
 		free(videoScreenshot);
 		videoScreenshot = NULL;
 	}
+}
+
+/****************************************************************************
+ * MPlayer Menu
+ ***************************************************************************/
+void MPlayerMenu()
+{
+	menuMode = 1; // switch to MPlayer GUI mode
+	
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	mainWindow = new GuiWindow(screenwidth, screenheight);
+
+	GuiImage bgBottom(screenwidth, 140, (GXColor){155, 155, 155, 155});
+	bgBottom.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	
+	GuiImageData btnNav(nav_button_png);
+	GuiImageData btnNavOver(nav_button_png);
+	
+	GuiText playBtnTxt("Play", 18, (GXColor){255, 255, 255, 255});
+	GuiImage playBtnImg(&btnNav);
+	GuiImage playBtnImgOver(&btnNavOver);
+	GuiButton playBtn(btnNav.GetWidth(), btnNav.GetHeight());
+	playBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	playBtn.SetPosition(30, -40);
+	playBtn.SetLabel(&playBtnTxt);
+	playBtn.SetImage(&playBtnImg);
+	playBtn.SetImageOver(&playBtnImgOver);
+	playBtn.SetTrigger(&trigA);
+	playBtn.SetEffectGrow();
+	
+	mainWindow->Append(&bgBottom);
+	mainWindow->Append(&playBtn);
+
+	ResumeGui();
+
+	while(!controlledbygui)
+	{
+		usleep(THREAD_SLEEP);
+	}
+
+	ShutoffRumble();
+	CancelAction();
+	HaltGui();
+
+	delete mainWindow;
+	mainWindow = NULL;
 }

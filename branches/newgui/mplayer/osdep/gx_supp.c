@@ -30,6 +30,10 @@
 
 #include "gx_supp.h"
 
+#ifdef WIILIB
+#include <wiiuse/wpad.h>
+#endif
+
 #define DEFAULT_FIFO_SIZE (256 * 1024)
 
 #define HASPECT 320
@@ -1023,18 +1027,45 @@ void GX_RenderTexture()
 
 	
 #ifdef WIILIB
-	GX_DrawDone();
-	GX_SetColorUpdate(GX_TRUE);
 	if(copyScreen == 1)
 	{
 		copyScreen = 0;
+		GX_DrawDone();
+		GX_SetColorUpdate(GX_TRUE);
 		TakeScreenshot();
 		GX_CopyDisp(xfb[whichfb], GX_TRUE);
 		pause_gui = 1;
 		return;
 	}
-	DrawMPlayerGui();
-	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+
+	bool drawGui = false;
+	int i;
+	WPADData * w;
+	for(i=0; i<4; i++)
+	{
+		w = WPAD_Data(i);
+		if(w && w->ir.valid)
+		{
+			drawGui = true;
+			break;
+		}
+	}
+
+	if(drawGui)
+	{	
+		getch2_disable();
+		GX_DrawDone();
+		GX_SetColorUpdate(GX_TRUE);
+		DrawMPlayerGui();
+		GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	}
+	else
+	{
+		getch2_enable();
+		GX_SetColorUpdate(GX_TRUE);
+		GX_CopyDisp(xfb[whichfb], GX_TRUE);
+		GX_DrawDone();
+	}
 #else
 	GX_SetColorUpdate(GX_TRUE);
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
@@ -1045,11 +1076,14 @@ void GX_RenderTexture()
 	VIDEO_Flush();
 	
 #ifdef WIILIB
-	// reconfigure GX for MPlayer
-	Mtx44 p;
-	GX_ConfigTextureYUV(currentWidth, vheight, currentPitch);
-	guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
-	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
+	if(drawGui)
+	{
+		// reconfigure GX for MPlayer
+		Mtx44 p;
+		GX_ConfigTextureYUV(currentWidth, vheight, currentPitch);
+		guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
+		GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
+	}
 #endif
 }
 

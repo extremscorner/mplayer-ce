@@ -249,14 +249,8 @@ main(int argc, char *argv[])
 		AUDIO_RegisterDMACallback(NULL);
 		AUDIO_StopDMA();
 		ResetVideo_Menu();
-
 		ResumeDeviceThread();
 		WiiMenu();
-
-		printf("wait for MPlayer to pause or finish film\n");
-		while(!controlledbygui) // wait for MPlayer to pause or finish film
-			usleep(9000);
-
-		printf("control return to gui\n");
+		MPlayerMenu();
 	}
 }

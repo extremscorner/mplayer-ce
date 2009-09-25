@@ -16,6 +16,7 @@
 
 #include "input.h"
 #include "libwiigui/gui.h"
+#include "menu.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,8 +33,6 @@ u8 * videoScreenshot = NULL;
 int screenheight;
 int screenwidth;
 u32 FrameTimer = 0;
-
-u8 * mPointer[4];
 
 /****************************************************************************
  * StartGX
@@ -329,18 +328,13 @@ void Menu_DrawRectangle(f32 x, f32 y, f32 width, f32 height, GXColor color, u8 f
 void DrawMPlayerGui()
 {
 	Menu_DrawInit(); // reconfigure GX for GUI
-	
-	WPADData * w;
-	
-	// draw GUI elements
-	int i;
-	for(i=3; i >= 0; i--) // so that player 1's cursor appears on top!
-	{
-		w = WPAD_Data(i);
-		
-		if(w->ir.valid)
-			Menu_DrawImg(w->ir.x-48, w->ir.y-48, 96, 96, mPointer[i], w->ir.angle, 1, 1, 255);
-	}
+
+	// signal GUI to draw
+	doMPlayerGuiDraw = 1;
+
+	// wait for draw to complete
+	while(doMPlayerGuiDraw)
+		usleep(100);
 }
 
 #ifdef __cplusplus

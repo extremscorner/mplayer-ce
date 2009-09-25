@@ -11,7 +11,8 @@
 
 #include <ogcsys.h>
 
-void WiiMenu ();
+void WiiMenu();
+void MPlayerMenu();
 void ErrorPrompt(const char * msg);
 int ErrorPromptRetry(const char * msg);
 void InfoPrompt(const char * msg);
@@ -21,6 +22,7 @@ void ShowProgress (const char *msg, int done, int total);
 int WindowPrompt(const char *title, const char *msg, const char *btn1Label, const char *btn2Label);
 
 extern int currentMenu;
+extern int doMPlayerGuiDraw;
 
 enum
 {
