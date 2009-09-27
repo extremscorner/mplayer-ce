@@ -5015,3 +5015,99 @@ exit_player_with_rc(EXIT_EOF, 0);
 return 1;
 }
 #endif /* DISABLE_MAIN */
+
+#ifdef WIILIB
+
+void wiiPause()
+{
+	mp_cmd_t * cmd = calloc( 1,sizeof( *cmd ) );
+	cmd->id=MP_CMD_PAUSE;
+	cmd->name=strdup("pause");
+	mp_input_queue_cmd(cmd);
+}
+
+void wiiMute()
+{
+	mp_cmd_t * cmd = calloc( 1,sizeof( *cmd ) );
+	cmd->id=MP_CMD_MUTE;
+	cmd->name=strdup("mute");
+	mp_input_queue_cmd(cmd);
+}
+
+static void wiiSeek(int sec, int mode)
+{
+	mp_cmd_t * cmd = calloc( 1,sizeof( *cmd ) );
+	cmd->id=MP_CMD_SEEK;
+	cmd->name=strdup("seek");
+	cmd->nargs = 2;
+	cmd->args[0].v.f = sec; // # seconds
+	cmd->args[1].v.i = mode;
+	mp_input_queue_cmd(cmd);
+}
+
+void wiiSeekPos(int sec)
+{
+	wiiSeek(sec, 2);
+}
+
+void wiiFastForward()
+{
+	wiiSeek(30, 0);
+}
+
+void wiiRewind()
+{
+	wiiSeek(-30, 0);
+}
+
+void wiiSkipForward()
+{
+	wiiSeek(300, 0);
+}
+
+void wiiSkipBackward()
+{
+	wiiSeek(-300, 0);
+}
+
+double wiiGetTimeLength()
+{
+	if(!mpctx || !mpctx->demuxer)
+		return 0;
+
+	return demuxer_get_time_length(mpctx->demuxer);
+}
+
+int wiiGetTimePos()
+{
+	int pos = 0;
+
+	if (mpctx && mpctx->sh_video)
+		pos = mpctx->sh_video->pts;
+	else if (mpctx && mpctx->sh_audio && mpctx->audio_out)
+		pos = playing_audio_pts(mpctx->sh_audio, mpctx->d_audio, mpctx->audio_out);
+	
+	return pos;
+}
+
+char * wiiGetMetaTitle()
+{
+	return get_metadata(META_INFO_TITLE);
+}
+
+char * wiiGetMetaArtist()
+{
+	return get_metadata(META_INFO_ARTIST);
+}
+
+char * wiiGetMetaAlbum()
+{
+	return get_metadata(META_INFO_ALBUM);
+}
+
+char * wiiGetMetaYear()
+{
+	return get_metadata(META_INFO_YEAR);
+}
+
+#endif

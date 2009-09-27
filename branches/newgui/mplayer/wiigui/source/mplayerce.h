@@ -56,6 +56,20 @@ bool FindIOS(u32 ios);   //in plat_gekko.c
 bool load_ehci_module();  //in plat_gekko.c
 void DisableUSB2(bool);  //in special libogc, in usb2storage.c (need to be added to .h)
 
+void wiiPause();
+void wiiMute();
+void wiiSeekPos(int sec);
+void wiiFastForward();
+void wiiRewind();
+void wiiSkipForward();
+void wiiSkipBackward();
+double wiiGetTimeLength();
+int wiiGetTimePos();
+char * wiiGetMetaTitle();
+char * wiiGetMetaArtist();
+char * wiiGetMetaAlbum();
+char * wiiGetMetaYear();
+
 #ifdef __cplusplus
 }
 #endif

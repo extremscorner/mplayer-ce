@@ -48,8 +48,8 @@ extern const u32	button_arrow_down_over_png_size;
 
 extern const u8		playbar_circle_png[];
 extern const u32	playbar_circle_png_size;
-extern const u8		playbar_circle_on_png[];
-extern const u32	playbar_circle_on_png_size;
+extern const u8		playbar_circle_over_png[];
+extern const u32	playbar_circle_over_png_size;
 extern const u8		playbar_skipbackward_png[];
 extern const u32	playbar_skipbackward_png_size;
 extern const u8		playbar_rewind_png[];
