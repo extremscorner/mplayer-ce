@@ -46,6 +46,33 @@ extern const u32	button_arrow_up_over_png_size;
 extern const u8		button_arrow_down_over_png[];
 extern const u32	button_arrow_down_over_png_size;
 
+extern const u8		playbar_circle_png[];
+extern const u32	playbar_circle_png_size;
+extern const u8		playbar_circle_on_png[];
+extern const u32	playbar_circle_on_png_size;
+extern const u8		playbar_skipbackward_png[];
+extern const u32	playbar_skipbackward_png_size;
+extern const u8		playbar_rewind_png[];
+extern const u32	playbar_rewind_png_size;
+extern const u8		playbar_pause_png[];
+extern const u32	playbar_pause_png_size;
+extern const u8		playbar_play_png[];
+extern const u32	playbar_play_png_size;
+extern const u8		playbar_fastforward_png[];
+extern const u32	playbar_fastforward_png_size;
+extern const u8		playbar_skipforward_png[];
+extern const u32	playbar_skipforward_png_size;
+extern const u8		playbar_progress_bg_png[];
+extern const u32	playbar_progress_bg_png_size;
+extern const u8		playbar_progress_bg_short_png[];
+extern const u32	playbar_progress_bg_short_png_size;
+extern const u8		playbar_progress_left_png[];
+extern const u32	playbar_progress_left_png_size;
+extern const u8		playbar_progress_mid_png[];
+extern const u32	playbar_progress_mid_png_size;
+extern const u8		playbar_progress_right_png[];
+extern const u32	playbar_progress_right_png_size;
+
 extern const u8		screen_position_png[];
 extern const u32	screen_position_png_size;
 
