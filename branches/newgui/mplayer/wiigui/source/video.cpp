@@ -169,15 +169,12 @@ InitVideo ()
 
 	// widescreen fix
 	if(CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-	{
-		vmode->viWidth = VI_MAX_WIDTH_PAL-12;
-		vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2) + 2;
-	}
+		vmode->viWidth = VI_MAX_WIDTH_PAL;
 
 	VIDEO_Configure (vmode);
 
 	screenheight = 480;
-	screenwidth = vmode->fbWidth;
+	screenwidth = 640;
 
 	// Allocate the video buffers
 	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
