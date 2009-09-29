@@ -196,6 +196,7 @@ void plat_init (int *argc, char **argv[])
 
 	stream_cache_size=8*1024; //default cache size (8MB)
 }
+
 void plat_deinit (int rc)
 {
 
@@ -930,7 +931,8 @@ else
 	//log_console_enable_video(false);
 }
 
-void plat_deinit (int rc) {
+void plat_deinit (int rc)
+{
 	exit_automount_thread=true;
 	LWP_JoinThread(mountthread,NULL);
 	ntfsUnmount ("ntfs0", true); //I think that we don't need it

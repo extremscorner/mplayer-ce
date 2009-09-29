@@ -115,6 +115,7 @@ char *heartbeat_cmd;
 
 #ifdef GEKKO
 #include "osdep/plat_gekko.h"
+#include "osdep/gx_supp.h"
 #include "osdep/di2.h"
 #include <ogc/system.h>
 
@@ -4853,6 +4854,7 @@ if(rel_seek_secs || abs_seek_pos){
 
 #ifdef WIILIB
 printf("mplayer: end film. UNINT\n");
+StopDrawThread();
 uninit_player(INITIALIZED_ALL);
 //if(mpctx->eof==1) 
 printf("mplayer: exit\n");

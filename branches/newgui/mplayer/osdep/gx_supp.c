@@ -377,14 +377,25 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 void GX_UpdatePitch(int width,u16 *pitch)
 {
 	//black
-
+	LWP_MutexLock(texmutex);
     memset(Ytexture, 0, Ytexsize);
 	memset(Utexture, 0x80, UVtexsize);
 	memset(Vtexture, 0x80, UVtexsize);
+	LWP_MutexUnlock(texmutex);
 
 	currentWidth = width;
 	currentPitch = pitch;
 	GX_ConfigTextureYUV(width, vheight, pitch);
+}
+
+void StopDrawThread()
+{
+	if(drawthread != LWP_THREAD_NULL)
+	{
+		stopdrawthread = true;
+		LWP_JoinThread(drawthread, NULL);
+		drawthread = LWP_THREAD_NULL;
+	}
 }
 
 static void * MPlayerDraw (void *arg)
@@ -436,7 +447,7 @@ static void * MPlayerDraw (void *arg)
 			copyScreen = 0;
 			TakeScreenshot();
 			pause_gui = 1;
-			stopdrawthread = true;
+			StopDrawThread();
 		}
 		else
 		{
@@ -505,8 +516,7 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	
 	if(drawthread != LWP_THREAD_NULL)
 	{
-		stopdrawthread = true;
-		LWP_JoinThread(drawthread, NULL);
+		StopDrawThread();
 	}
 	
 	if(texmutex == LWP_MUTEX_NULL)
