@@ -558,6 +558,13 @@ void GuiElement::Draw()
 }
 
 /**
+ * Draw tooltips on screen.
+ */
+void GuiElement::DrawTooltip()
+{
+}
+
+/**
  * Check if a position is inside the GuiElement.
  * @param[in] x X position in pixel.
  * @param[in] y Y position in pixel.

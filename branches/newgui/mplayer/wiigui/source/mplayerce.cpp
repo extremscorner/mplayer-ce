@@ -47,12 +47,12 @@ static u8 mstack[TSTACK] ATTRIBUTE_ALIGN (32);
 
 void ExitApp()
 {
+	ShutoffRumble();
 	SaveSettings(SILENT);
 
 	// shut down some threads
 	HaltDeviceThread();
 	CancelAction();
-	ShutoffRumble();
 	StopGX();
 
 	if(ShutdownRequested == 1)

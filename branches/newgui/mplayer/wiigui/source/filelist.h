@@ -46,6 +46,13 @@ extern const u32	button_arrow_up_over_png_size;
 extern const u8		button_arrow_down_over_png[];
 extern const u32	button_arrow_down_over_png_size;
 
+extern const u8     tooltip_left_png[];
+extern const u32    tooltip_left_png_size;
+extern const u8     tooltip_tile_png[];
+extern const u32    tooltip_tile_png_size;
+extern const u8     tooltip_right_png[];
+extern const u32    tooltip_right_png_size;
+
 extern const u8		playbar_circle_png[];
 extern const u32	playbar_circle_png_size;
 extern const u8		playbar_circle_over_png[];

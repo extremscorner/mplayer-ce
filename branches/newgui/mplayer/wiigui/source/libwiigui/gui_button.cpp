@@ -37,6 +37,7 @@ GuiButton::GuiButton(int w, int h)
 	soundOver = NULL;
 	soundHold = NULL;
 	soundClick = NULL;
+	tooltip = NULL;
 	selectable = true;
 	holdable = false;
 	clickable = true;
@@ -121,6 +122,12 @@ void GuiButton::SetSoundClick(GuiSound * snd)
 {
 	soundClick = snd;
 }
+void GuiButton::SetTooltip(GuiTooltip* t)
+{
+	tooltip = t;
+	if(t)
+		tooltip->SetParent(this);
+}
 
 /**
  * Draw the button on screen
@@ -150,6 +157,12 @@ void GuiButton::Draw()
 	}
 
 	this->UpdateEffects();
+}
+
+void GuiButton::DrawTooltip()
+{
+	if(tooltip)
+		tooltip->DrawTooltip();
 }
 
 void GuiButton::Update(GuiTrigger * t)

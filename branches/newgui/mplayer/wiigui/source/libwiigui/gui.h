@@ -383,6 +383,8 @@ class GuiElement
 		virtual void Update(GuiTrigger * t);
 		//!Called constantly to redraw the element
 		virtual void Draw();
+		//!Called constantly to redraw the element's tooltip
+		virtual void DrawTooltip();
 	protected:
 		bool visible; //!< Visibility of the element. If false, Draw() is skipped
 		int focus; //!< Element focus (-1 = focus disabled, 0 = not focused, 1 = focused)
@@ -482,6 +484,8 @@ class GuiWindow : public GuiElement
 		void MoveSelectionVert(int d);
 		//!Draws all the elements in this GuiWindow
 		void Draw();
+		//!Draws all of the tooltips in this GuiWindow
+		void DrawTooltip();
 		//!Updates the window and all elements contains within
 		//!Allows the GuiWindow and all elements to respond to the input data specified
 		//!\param t Pointer to a GuiTrigger, containing the current input data from PAD/WPAD
@@ -649,6 +653,32 @@ class GuiText : public GuiElement
 		GXColor color; //!< Font color
 };
 
+//!Display, manage, and manipulate tooltips in the GUI
+class GuiTooltip : public GuiElement
+{
+	public:
+		//!Constructor
+		//!\param t Text
+		GuiTooltip(const char *t);
+		//!Destructor
+		~GuiTooltip();
+		//!Gets the element's current scale
+		float GetScale();
+		//!Sets the text of the GuiTooltip element
+		//!\param t Text
+		void SetText(const char * t);
+		//!Constantly called to draw the GuiTooltip
+		void DrawTooltip();
+	
+		time_t time1, time2; //!< Tooltip times
+
+	protected:
+		GuiImage leftImage; //!< Tooltip left image
+		GuiImage tileImage; //!< Tooltip tile image
+		GuiImage rightImage; //!< Tooltip right image
+		GuiText *text; //!< Tooltip text
+};
+
 //!Display, manage, and manipulate buttons in the GUI. Buttons can have images, icons, text, and sound set (all of which are optional)
 class GuiButton : public GuiElement
 {
@@ -708,8 +738,13 @@ class GuiButton : public GuiElement
 		//!Sets the sound to play on click
 		//!\param s Pointer to GuiSound object
 		void SetSoundClick(GuiSound * s);
+		//!Sets the tooltip for the button
+		//!\param t Tooltip
+		void SetTooltip(GuiTooltip * t);
 		//!Constantly called to draw the GuiButton
 		void Draw();
+		//!Constantly called to draw the GuiButton's tooltip
+		void DrawTooltip();
 		//!Constantly called to allow the GuiButton to respond to updated input data
 		//!\param t Pointer to a GuiTrigger, containing the current input data from PAD/WPAD
 		void Update(GuiTrigger * t);
@@ -729,6 +764,7 @@ class GuiButton : public GuiElement
 		GuiSound * soundOver; //!< Sound to play for STATE_SELECTED
 		GuiSound * soundHold; //!< Sound to play for STATE_HELD
 		GuiSound * soundClick; //!< Sound to play for STATE_CLICKED
+		GuiTooltip * tooltip; //!< Tooltip to display on over
 };
 
 typedef struct _keytype {

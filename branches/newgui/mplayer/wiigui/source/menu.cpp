@@ -151,6 +151,9 @@ UpdateGui (void *arg)
 			UpdatePads();
 			mainWindow->Draw();
 
+			if (mainWindow->GetState() != STATE_DISABLED)
+				mainWindow->DrawTooltip();
+
 			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
 			{
 				if(userInput[i].wpad.ir.valid)
@@ -2771,6 +2774,16 @@ void WiiMenu()
 		mainWindow->Append(&bgRight);
 	}
 
+	GuiImageData logo(logo_png);
+	GuiImage logoBtnImg(&logo);
+	logoBtn = new GuiButton(logo.GetWidth(), logo.GetHeight());
+	logoBtn->SetAlignment(ALIGN_RIGHT, ALIGN_BOTTOM);
+	logoBtn->SetPosition(-10, -20);
+	logoBtn->SetImage(&logoBtnImg);
+	logoBtn->SetTrigger(&trigA);
+	logoBtn->SetUpdateCallback(DisplayCredits);
+	mainWindow->Append(logoBtn);
+
 	GuiImageData btnConfig(config_button_png);
 
 	GuiText videoBtnTxt("Videos", 18, (GXColor){255, 255, 255, 255});
@@ -2825,11 +2838,15 @@ void WiiMenu()
 	onlineBtn->SetEffectGrow();
 	onlineBtn->SetUpdateCallback(ChangeMenuOnline);
 
+	GuiTooltip configBtnTip("Settings");
+	configBtnTip.SetPosition(0,-30);
+	
 	GuiImage configBtnImg(&btnConfig);
 	configBtn = new GuiButton(btnConfig.GetWidth(), btnConfig.GetHeight());
 	configBtn->SetAlignment(ALIGN_RIGHT, ALIGN_BOTTOM);
 	configBtn->SetPosition(-150, -20);
 	configBtn->SetImage(&configBtnImg);
+	configBtn->SetTooltip(&configBtnTip);
 	configBtn->SetTrigger(&trigA);
 	configBtn->SetEffectGrow();
 	configBtn->SetUpdateCallback(ChangeMenuSettings);
@@ -2839,16 +2856,6 @@ void WiiMenu()
 	mainWindow->Append(dvdBtn);
 	mainWindow->Append(onlineBtn);
 	mainWindow->Append(configBtn);
-
-	GuiImageData logo(logo_png);
-	GuiImage logoBtnImg(&logo);
-	logoBtn = new GuiButton(logo.GetWidth(), logo.GetHeight());
-	logoBtn->SetAlignment(ALIGN_RIGHT, ALIGN_BOTTOM);
-	logoBtn->SetPosition(-10, -20);
-	logoBtn->SetImage(&logoBtnImg);
-	logoBtn->SetTrigger(&trigA);
-	logoBtn->SetUpdateCallback(DisplayCredits);
-	mainWindow->Append(logoBtn);
 	
 	// play bar
 	SetupPlaybar();
