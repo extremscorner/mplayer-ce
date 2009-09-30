@@ -31,6 +31,7 @@ enum {
 void ExitApp();
 void LoadMPlayer();
 void ShutdownMPlayer();
+void FindNextFile();
 extern int ScreenshotRequested;
 extern int ConfigRequested;
 extern int ShutdownRequested;

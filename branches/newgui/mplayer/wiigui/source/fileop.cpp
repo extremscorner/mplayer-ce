@@ -540,7 +540,7 @@ bool ParseDirEntries()
 	// Sort the file list
 	if(i > 0)
 	{
-		qsort(browserList, browser.numEntries, sizeof(BROWSERENTRY), FileSortCallback);
+		qsort(browserList, browser.numEntries+i, sizeof(BROWSERENTRY), FileSortCallback);
 	}
 
 	// try to find and select the last loaded file

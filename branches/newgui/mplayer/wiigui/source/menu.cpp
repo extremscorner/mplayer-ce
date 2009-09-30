@@ -2587,6 +2587,8 @@ static void SkipForwardCallback(void * ptr)
 		{
 			// skip to next song
 			ShutdownMPlayer();
+			FindNextFile();
+			LoadMPlayer();
 		}
 		else
 		{
