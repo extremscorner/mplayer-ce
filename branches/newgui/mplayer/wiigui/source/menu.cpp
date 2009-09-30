@@ -925,6 +925,7 @@ static void MenuBrowse(int menu)
 		if(selectLoadedFile == 2)
 		{
 			selectLoadedFile = 0;
+			mainWindow->ChangeFocus(&fileBrowser);
 			fileBrowser.TriggerUpdate();
 		}
 
@@ -1004,6 +1005,11 @@ static void MenuBrowse(int menu)
 					// wait until MPlayer is ready to take control (or return control)
 					while(!guiShutdown && controlledbygui != 1)
 						usleep(THREAD_SLEEP);
+					
+					if(controlledbygui == 1)
+						playingAudio = true;
+					else
+						playingAudio = false;
 					
 					CancelAction();
 
@@ -2576,7 +2582,16 @@ static void SkipForwardCallback(void * ptr)
 	if(b->GetState() == STATE_CLICKED)
 	{
 		b->ResetState();
-		wiiSkipForward();
+		
+		if(playingAudio)
+		{
+			// skip to next song
+			ShutdownMPlayer();
+		}
+		else
+		{
+			wiiSkipForward();
+		}
 	}
 }
 
@@ -2725,7 +2740,7 @@ void WiiMenu()
 {
 	menuMode = 0; // switch to normal GUI mode
 	guiShutdown = false;
-	selectLoadedFile = true;
+	selectLoadedFile = 1;
 
 	if(pointer[0] == NULL)
 	{

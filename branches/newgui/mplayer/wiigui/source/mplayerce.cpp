@@ -18,9 +18,11 @@
 #include "FreeTypeGX.h"
 #include "video.h"
 #include "menu.h"
+#include "libwiigui/gui.h"
 #include "input.h"
 #include "filelist.h"
 #include "fileop.h"
+#include "filebrowser.h"
 #include "mplayerce.h"
 #include "settings.h"
 
@@ -36,6 +38,7 @@ int ResetRequested = 0;
 int ExitRequested = 0;
 char appPath[1024];
 char loadedFile[1024];
+bool playingAudio = false;
 
 #define TSTACK (512*1024)
 static lwp_t mthread = LWP_THREAD_NULL;
@@ -152,25 +155,58 @@ void USBGeckoOutput()
  * MPlayer interface
  ***************************************************************************/
 
+void FindNextFile()
+{
+	if(CESettings.playOrder == PLAY_CONTINUOUS)
+	{
+		browser.selIndex++;
+	}
+	else if(CESettings.playOrder == PLAY_SHUFFLE)
+	{
+		int n = rand() % browser.numEntries;
+		browser.selIndex = n;
+	}
+	
+	if(browser.selIndex >= browser.numEntries || browser.selIndex == 0)
+		browser.selIndex = 1;
+
+	sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
+
+	if(browser.selIndex < browser.pageIndex || browser.selIndex >= browser.pageIndex + FILE_PAGESIZE)
+	{
+		browser.pageIndex = (ceil(browser.selIndex/FILE_PAGESIZE*1.0)) * FILE_PAGESIZE;
+		if(browser.pageIndex + FILE_PAGESIZE > browser.numEntries)
+			browser.pageIndex = browser.numEntries - FILE_PAGESIZE;
+	}
+	selectLoadedFile = 2;
+}
+
 static void *
 mplayerthread (void *arg)
 {
 	while(1)
 	{
-		LWP_SuspendThread(mthread);	
-		printf("load file: %s\n",loadedFile);			
+		if(controlledbygui == 2 || (CESettings.playOrder == 0 && !playingAudio))
+			LWP_SuspendThread(mthread);	
+		
+		printf("load file: %s\n",loadedFile);
 		if(loadedFile[0] != 0)
+		{
+			controlledbygui = 0;
 			mplayer_loadfile(loadedFile);
-		controlledbygui=1;
+		}
+
+		if(controlledbygui != 2 && CESettings.playOrder > 0 && playingAudio) // load next file
+			FindNextFile();
 	}
 	return NULL;
 }
 
 void LoadMPlayer()
 {
+	controlledbygui = 0;
 	HaltDeviceThread();
 	printf("return control to mplayer\n");
-	controlledbygui = 0;
 	if(LWP_ThreadIsSuspended(mthread))
 		LWP_ResumeThread(mthread);
 }
@@ -237,6 +273,7 @@ main(int argc, char *argv[])
 	MountAllFAT(); // Initialize libFAT for SD and USB
 
 	loadedFile[0] = 0;
+	srand (time (0)); // random seed
 
 	// Initialize font system
 	InitFreeType((u8*)font_ttf, font_ttf_size);

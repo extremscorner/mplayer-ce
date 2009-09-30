@@ -38,6 +38,7 @@ extern int ExitRequested;
 extern FreeTypeGX *fontSystem[];
 extern char loadedFile[];
 extern char appPath[];
+extern bool playingAudio;
 
 #ifdef __cplusplus
 extern "C" {

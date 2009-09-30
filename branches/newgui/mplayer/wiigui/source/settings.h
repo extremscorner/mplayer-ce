@@ -57,7 +57,7 @@ enum {
 struct SCESettings {
 	// Menu
 	int 	autoResume;
-	int 	playOrder; // PLAY_CONTINUOUS, PLAY_SHUFFLE, PLAY_LOOP, PLAY_SINGLE
+	int 	playOrder; // PLAY_SINGLE, PLAY_CONTINUOUS, PLAY_SHUFFLE, PLAY_LOOP
 	int 	cleanFilenames;
 	int 	hideExtensions;
 	int 	filterFiles;
