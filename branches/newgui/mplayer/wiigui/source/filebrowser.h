@@ -65,7 +65,6 @@ extern int playlistSize;
 extern char currentPlaylist[];
 
 bool IsDeviceRoot(char * path);
-int UpdateDirName(int method);
 int FileSortCallback(const void *f1, const void *f2);
 void ResetBrowser();
 bool AddBrowserEntry();

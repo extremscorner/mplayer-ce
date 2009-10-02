@@ -80,6 +80,9 @@ bool AddBrowserEntry()
  ***************************************************************************/
 static void CleanupPath(char * path)
 {
+	if(!path || path[0] == 0)
+		return;
+
 	int pathlen = strlen(path);
 	int j = 0;
 	for(int i=0; i < pathlen && i < MAXPATHLEN; i++)
@@ -113,7 +116,7 @@ bool IsDeviceRoot(char * path)
  * UpdateDirName()
  * Update curent directory name for file browser
  ***************************************************************************/
-int UpdateDirName()
+static int UpdateDirName()
 {
 	int size=0;
 	char * test;

@@ -165,7 +165,7 @@ ResumeParseThread()
 }
 
 /****************************************************************************
- * HaltGui
+ * HaltParseThread
  *
  * Signals the parse thread to stop.
  ***************************************************************************/
@@ -381,6 +381,10 @@ void CreateAppPath(char * origpath)
 
 	if(!path)
 		return;
+	
+	char * loc = strrchr(path,'/');
+	if (loc != NULL)
+		*loc = 0; // strip file name
 
 	int pos = 0;
 
@@ -625,6 +629,10 @@ ParseDirectory(bool waitParse)
 		while(!IsDeviceRoot(browser.dir))
 		{
 			char * devEnd = strrchr(browser.dir, '/');
+
+			if(devEnd == NULL)
+				break;
+
 			devEnd[0] = 0; // strip remaining file listing
 			dirIter = diropen(browser.dir);
 			if (dirIter)
