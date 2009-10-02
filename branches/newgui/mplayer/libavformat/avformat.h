@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 38
+#define LIBAVFORMAT_VERSION_MINOR 39
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -448,7 +448,7 @@ typedef struct AVStream {
      * Number of packets to buffer for codec probing
      * NOT PART OF PUBLIC API
      */
-#define MAX_PROBE_PACKETS 100
+#define MAX_PROBE_PACKETS 2500
     int probe_packets;
 
     /**
@@ -649,7 +649,7 @@ typedef struct AVFormatContext {
      * Remaining size available for raw_packet_buffer, in bytes.
      * NOT PART OF PUBLIC API
      */
-#define RAW_PACKET_BUFFER_SIZE 32000
+#define RAW_PACKET_BUFFER_SIZE 2500000
     int raw_packet_buffer_remaining_size;
 } AVFormatContext;
 

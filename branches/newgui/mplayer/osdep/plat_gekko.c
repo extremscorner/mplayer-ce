@@ -40,14 +40,14 @@
 #include <fat.h>
 #include <ntfs.h>
 #include <smb.h>
+#include <ftp.h> 
 
 #include <network.h>
 #include <errno.h>
-#include "di2.h"
+#include <di/di.h>
 #include "libdvdiso.h"
 #include "mp_osd.h"
 
-#include "ftp_devoptab.h"
 #include "log_console.h"
 #include "gx_supp.h"
 #include "plat_gekko.h"
@@ -196,7 +196,6 @@ void plat_init (int *argc, char **argv[])
 
 	stream_cache_size=8*1024; //default cache size (8MB)
 }
-
 void plat_deinit (int rc)
 {
 
@@ -206,7 +205,7 @@ void plat_deinit (int rc)
 #include "osdep/mem2_manager.h"
 
 //#define CE_DEBUG 1
-//#define USE_NET_THREADS
+#define USE_NET_THREADS
   
 bool reset_pressed = false;
 bool power_pressed = false;
@@ -415,8 +414,9 @@ static int wait_for_network_initialisation()
 			}
 	        else
 			{
-			  network_inited = 1;
 			  if(dbg_network) printf("Network initialized. IP: %s\n",myIP);
+			  usleep(1000);
+			  network_inited = 1;
 			  return 1;
 			}
 	    }
@@ -436,9 +436,8 @@ static void tryftp();
 
 static void * networkthreadfunc (void *arg)
 {	
-	//dbg_network=true;
 	wait_for_network_initialisation();
-	usleep(100);
+	usleep(500);
 #ifndef USE_NET_THREADS	
 	trysmb();
 	tryftp();
@@ -478,7 +477,12 @@ static bool mount_smb(int number)
 
 	smb_conf = m_config_new();
 	m_config_register_options(smb_conf, smb_opts);
-	m_config_parse_config_file(smb_conf, file);
+	if(m_config_parse_config_file(smb_conf, file)==0)
+	{
+		m_config_free(smb_conf);
+		usleep(1000);
+		return false;
+	}
 	m_config_free(smb_conf);
 
 	if(smb_ip==NULL || smb_share==NULL) 
@@ -548,13 +552,18 @@ bool mount_ftp(int number)
 	
 	ftp_conf = m_config_new();
 	m_config_register_options(ftp_conf, ftp_opts);
-	m_config_parse_config_file(ftp_conf, file);
+	if(m_config_parse_config_file(ftp_conf, file)==0)
+	{
+		m_config_free(ftp_conf);
+		usleep(1000);
+		return false;
+	}
 	m_config_free(ftp_conf);
 
 	if(ftp_ip==NULL || ftp_share==NULL) 
 	{
 		if(dbg_network) printf("FTP %s not filled\n",device);
-		sleep(1);  // sync problem on libogc threads
+		usleep(20000);  // sync problem on libogc threads
 		return false;
 	}
 
@@ -601,7 +610,7 @@ static void * smbthread (void *arg)
 	int i;
 	i=*((int*)arg);	
 	while(network_inited==0) usleep(5000);
-	usleep(200);
+	usleep(1000);
 	mount_smb(i+1);
 	
 	return NULL;
@@ -612,7 +621,7 @@ static void * ftpthread (void *arg)
 	int i;
 	i=*((int*)arg);	
 	while(network_inited==0) usleep(5000);
-	usleep(200);
+	usleep(2000);
 	mount_ftp(i+1);
 	
 	return NULL;
@@ -635,12 +644,14 @@ static void InitNetworkThreads()
 		x1[i]=i;
 		memset (ftpx_Stack[i], 0, CONN_STACKSIZE);
 		LWP_CreateThread(&clientthread, ftpthread, &x1[i], ftpx_Stack[i], CONN_STACKSIZE, 64); // ftp initialization
+		usleep(100);
 	} 
 	for(i=0;i<5;i++) 
 	{
 		x2[i]=i;
 		memset (smbx_Stack[i], 0, CONN_STACKSIZE);
 		LWP_CreateThread(&clientthread, smbthread, &x2[i], smbx_Stack[i], CONN_STACKSIZE, 64); // samba initialization
+		usleep(100);
 	} 
 #endif	
 }
@@ -872,16 +883,35 @@ void plat_init (int *argc, char **argv[]) {
 		InitNetworkThreads();
 	}
 #endif
-		
-	if(mload>=0) 
+	
+	if(usb_init)
 	{		
-		if(load_ehci_module())
-			USB2Enable(true);
-
-		fatUnmount("usb:");
-		usb->isInserted();
-		fatMount("usb",usb,0,3,256);
-		mount_usb_ntfs();
+		if(mload<0) 
+		{
+			//DisableUSB2(true);
+		}
+		else
+		{		
+			fatUnmount("usb:");
+		 	load_ehci_module();
+		 	usb->isInserted();
+			fatMount("usb",usb,0,3,256);
+			mount_usb_ntfs();
+		}
+	}
+	else 
+	{
+		if(mload<0) 
+		{
+			//DisableUSB2(true);
+		}
+		else
+		{
+			if(!load_ehci_module()) 
+			{
+				//DisableUSB2(true);
+			}
+		}
 	}
 
 	chdir(MPLAYER_DATADIR);
@@ -931,7 +961,7 @@ else
 	//log_console_enable_video(false);
 }
 
-void plat_deinit (int rc)
+void plat_deinit (int rc) 
 {
 	exit_automount_thread=true;
 	LWP_JoinThread(mountthread,NULL);

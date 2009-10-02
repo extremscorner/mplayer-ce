@@ -412,20 +412,26 @@ static int decode_exponents(GetBitContext *gbc, int exp_strategy, int ngrps,
  */
 static void calc_transform_coeffs_cpl(AC3DecodeContext *s)
 {
-    int i, j, ch, bnd;
+    int bin, band, ch;
 
-    i = s->start_freq[CPL_CH];
-    for(bnd=0; bnd<s->num_cpl_bands; bnd++) {
-        for (j = 0; j < s->cpl_band_sizes[bnd]; j++,i++) {
-            for(ch=1; ch<=s->fbw_channels; ch++) {
-                if(s->channel_in_cpl[ch]) {
-                    s->fixed_coeffs[ch][i] = ((int64_t)s->fixed_coeffs[CPL_CH][i] *
-                                              (int64_t)s->cpl_coords[ch][bnd]) >> 23;
-                    if (ch == 2 && s->phase_flags[bnd])
-                        s->fixed_coeffs[ch][i] = -s->fixed_coeffs[ch][i];
+    bin = s->start_freq[CPL_CH];
+    for (band = 0; band < s->num_cpl_bands; band++) {
+        int band_start = bin;
+        int band_end = bin + s->cpl_band_sizes[band];
+        for (ch = 1; ch <= s->fbw_channels; ch++) {
+            if (s->channel_in_cpl[ch]) {
+                int64_t cpl_coord = s->cpl_coords[ch][band];
+                for (bin = band_start; bin < band_end; bin++) {
+                    s->fixed_coeffs[ch][bin] = ((int64_t)s->fixed_coeffs[CPL_CH][bin] *
+                                                cpl_coord) >> 23;
+                }
+                if (ch == 2 && s->phase_flags[band]) {
+                    for (bin = band_start; bin < band_end; bin++)
+                        s->fixed_coeffs[2][bin] = -s->fixed_coeffs[2][bin];
                 }
             }
         }
+        bin = band_end;
     }
 }
 
@@ -598,18 +604,17 @@ static void do_rematrixing(AC3DecodeContext *s)
 {
     int bnd, i;
     int end, bndend;
-    int tmp0, tmp1;
 
     end = FFMIN(s->end_freq[1], s->end_freq[2]);
 
+    i = ff_ac3_rematrix_band_tab[0];
     for(bnd=0; bnd<s->num_rematrixing_bands; bnd++) {
         if(s->rematrixing_flags[bnd]) {
             bndend = FFMIN(end, ff_ac3_rematrix_band_tab[bnd+1]);
-            for(i=ff_ac3_rematrix_band_tab[bnd]; i<bndend; i++) {
-                tmp0 = s->fixed_coeffs[1][i];
-                tmp1 = s->fixed_coeffs[2][i];
-                s->fixed_coeffs[1][i] = tmp0 + tmp1;
-                s->fixed_coeffs[2][i] = tmp0 - tmp1;
+            for(; i<bndend; i++) {
+                int tmp0 = s->fixed_coeffs[1][i];
+                s->fixed_coeffs[1][i] += s->fixed_coeffs[2][i];
+                s->fixed_coeffs[2][i]  = tmp0 - s->fixed_coeffs[2][i];
             }
         }
     }
@@ -936,8 +941,8 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
             for(bnd=0; bnd<s->num_rematrixing_bands; bnd++)
                 s->rematrixing_flags[bnd] = get_bits1(gbc);
         } else if (!blk) {
-            av_log(s->avctx, AV_LOG_ERROR, "new rematrixing strategy must be present in block 0\n");
-            return -1;
+            av_log(s->avctx, AV_LOG_WARNING, "Warning: new rematrixing strategy not present in block 0\n");
+            s->num_rematrixing_bands = 0;
         }
     }
 

@@ -157,7 +157,27 @@ void ff_vector_fmul_neon(float *dst, const float *src, int len);
 void ff_vector_fmul_window_neon(float *dst, const float *src0,
                                 const float *src1, const float *win,
                                 float add_bias, int len);
+void ff_vector_fmul_scalar_neon(float *dst, const float *src, float mul,
+                                int len);
+void ff_vector_fmul_sv_scalar_2_neon(float *dst, const float *src,
+                                     const float **vp, float mul, int len);
+void ff_vector_fmul_sv_scalar_4_neon(float *dst, const float *src,
+                                     const float **vp, float mul, int len);
+void ff_sv_fmul_scalar_2_neon(float *dst, const float **vp, float mul,
+                              int len);
+void ff_sv_fmul_scalar_4_neon(float *dst, const float **vp, float mul,
+                              int len);
+void ff_butterflies_float_neon(float *v1, float *v2, int len);
+float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
+void ff_int32_to_float_fmul_scalar_neon(float *dst, const int *src,
+                                        float mul, int len);
+void ff_vector_fmul_reverse_neon(float *dst, const float *src0,
+                                 const float *src1, int len);
+void ff_vector_fmul_add_neon(float *dst, const float *src0, const float *src1,
+                             const float *src2, int len);
 
+void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
+                          int len);
 void ff_float_to_int16_neon(int16_t *, const float *, long);
 void ff_float_to_int16_interleave_neon(int16_t *, const float **, long, int);
 
@@ -269,6 +289,20 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 
     c->vector_fmul = ff_vector_fmul_neon;
     c->vector_fmul_window = ff_vector_fmul_window_neon;
+    c->vector_fmul_scalar = ff_vector_fmul_scalar_neon;
+    c->butterflies_float = ff_butterflies_float_neon;
+    c->scalarproduct_float = ff_scalarproduct_float_neon;
+    c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_neon;
+    c->vector_fmul_reverse = ff_vector_fmul_reverse_neon;
+    c->vector_fmul_add = ff_vector_fmul_add_neon;
+
+    c->vector_fmul_sv_scalar[0] = ff_vector_fmul_sv_scalar_2_neon;
+    c->vector_fmul_sv_scalar[1] = ff_vector_fmul_sv_scalar_4_neon;
+
+    c->sv_fmul_scalar[0] = ff_sv_fmul_scalar_2_neon;
+    c->sv_fmul_scalar[1] = ff_sv_fmul_scalar_4_neon;
+
+    c->vector_clipf = ff_vector_clipf_neon;
 
     if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
         c->float_to_int16 = ff_float_to_int16_neon;

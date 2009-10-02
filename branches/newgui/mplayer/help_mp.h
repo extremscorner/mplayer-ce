@@ -4,7 +4,7 @@
 #ifndef MPLAYER_HELP_MP_H
 #define MPLAYER_HELP_MP_H
 
-// $Revision: 29549 $
+// $Revision: 29742 $
 // MASTER FILE. Use this file as base for translations.
 // Translated files should be sent to the mplayer-DOCS mailing list or
 // to the help messages maintainer, see DOCS/tech/MAINTAINERS.
@@ -1640,8 +1640,6 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Codec did not set sh->disp_w and sh->disp_h, trying workaround.\n"
-#define MSGTR_VoConfigRequest "VDec: vo config request - %d x %d (preferred colorspace: %s)\n"
-#define MSGTR_UsingXAsOutputCspNoY "VDec: using %s as output csp (no %d)\n"
 #define MSGTR_CouldNotFindColorspace "Could not find matching colorspace - retrying with -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Movie-Aspect is %.2f:1 - prescaling to correct movie aspect.\n"
 #define MSGTR_MovieAspectUndefined "Movie-Aspect is undefined - no prescaling applied.\n"

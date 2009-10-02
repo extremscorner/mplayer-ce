@@ -22,11 +22,14 @@
 #include <strings.h>
 #endif
 #include "libavutil/avstring.h"
-#include "libavcodec/mpegaudio.h"
-#include "libavcodec/mpegaudiodecheader.h"
 #include "avformat.h"
 #include "id3v2.h"
 #include "id3v1.h"
+
+#if CONFIG_MP3_DEMUXER
+
+#include "libavcodec/mpegaudio.h"
+#include "libavcodec/mpegaudiodecheader.h"
 
 /* mp3 read */
 
@@ -61,6 +64,8 @@ static int mp3_read_probe(AVProbeData *p)
         if(buf == buf0)
             first_frames= frames;
     }
+    // keep this in sync with ac3 probe, both need to avoid
+    // issues with MPEG-files!
     if   (first_frames>=4) return AVPROBE_SCORE_MAX/2+1;
     else if(max_frames>500)return AVPROBE_SCORE_MAX/2;
     else if(max_frames>=4) return AVPROBE_SCORE_MAX/4;
@@ -169,6 +174,18 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = ret;
     return ret;
 }
+
+AVInputFormat mp3_demuxer = {
+    "mp3",
+    NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
+    0,
+    mp3_read_probe,
+    mp3_read_header,
+    mp3_read_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "mp2,mp3,m2a", /* XXX: use probe */
+};
+#endif
 
 #if CONFIG_MP2_MUXER || CONFIG_MP3_MUXER
 static int id3v1_set_string(AVFormatContext *s, const char *key,
@@ -301,18 +318,6 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 }
 #endif /* CONFIG_MP2_MUXER || CONFIG_MP3_MUXER */
 
-#if CONFIG_MP3_DEMUXER
-AVInputFormat mp3_demuxer = {
-    "mp3",
-    NULL_IF_CONFIG_SMALL("MPEG audio layer 2/3"),
-    0,
-    mp3_read_probe,
-    mp3_read_header,
-    mp3_read_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "mp2,mp3,m2a", /* XXX: use probe */
-};
-#endif
 #if CONFIG_MP2_MUXER
 AVOutputFormat mp2_muxer = {
     "mp2",
@@ -339,5 +344,6 @@ AVOutputFormat mp3_muxer = {
     mp3_write_header,
     mp3_write_packet,
     mp3_write_trailer,
+    .metadata_conv = ff_id3v2_metadata_conv,
 };
 #endif

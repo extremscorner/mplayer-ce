@@ -51,6 +51,7 @@ static u8 buffer_play = 0;
 static u8 buffer_free = SFX_BUFFERS;
 static int size[SFX_BUFFERS];
 static bool playing = false;
+static unsigned int bytes_buffered = 0;
 
 static void switch_buffers() {
 	AUDIO_StopDMA();
@@ -62,10 +63,11 @@ static void switch_buffers() {
 		playing = false;
 		return;
 	}
-
+	bytes_buffered-=size[buffer_play];
 	AUDIO_InitDMA((u32) buffer[buffer_play], size[buffer_play]);
 	AUDIO_StartDMA();
 
+	size[buffer_play]=0;
 	buffer_play = (buffer_play + 1) % SFX_BUFFERS;
 
 	playing = true;
@@ -114,7 +116,8 @@ static int init(int rate, int channels, int format, int flags) {
 	buffer_play = 0;
 	buffer_free = SFX_BUFFERS;
 	
-
+	bytes_buffered = 0;
+	
 	return 1;
 }
 
@@ -132,8 +135,18 @@ static void reset(void) {
 	buffer_fill = 0;
 	buffer_play = 0;
 	buffer_free = SFX_BUFFERS;
+	
+	bytes_buffered = 0;
 
 	playing = false;
+	
+	//to be sure dma is clean	
+	AUDIO_InitDMA((u32)buffer[0],0);
+	AUDIO_StartDMA();
+	usleep(50);
+	while(AUDIO_GetDMABytesLeft()>0) usleep(50);
+	AUDIO_StopDMA();
+	
 }
 
 static void uninit(int immed) {
@@ -189,6 +202,7 @@ static int play(void* data, int len, int flags) {
 		DCFlushRange(buffer[buffer_fill], bl);
 		
 		size[buffer_fill]=bl;
+		bytes_buffered += bl;
 
 		buffer_fill = (buffer_fill + 1) % SFX_BUFFERS;
 		buffer_free--;
@@ -206,11 +220,13 @@ static int play(void* data, int len, int flags) {
 
 static float get_delay(void) {
 	float b;
-
+/*
 	if (buffer_free == SFX_BUFFERS)
 		return 0;
 
 	b = (SFX_BUFFERS - buffer_free) * SFX_BUFFER_SIZE;
+*/	
+	b = (float)bytes_buffered;
 
 	if (playing)
 		b += AUDIO_GetDMABytesLeft();

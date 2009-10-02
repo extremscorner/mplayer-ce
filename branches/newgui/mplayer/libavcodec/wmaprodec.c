@@ -166,7 +166,7 @@ typedef struct WMAProDecodeCtx {
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
-    MDCTContext      mdct_ctx[WMAPRO_BLOCK_SIZES];  ///< MDCT context per block size
+    FFTContext       mdct_ctx[WMAPRO_BLOCK_SIZES];  ///< MDCT context per block size
     DECLARE_ALIGNED_16(float, tmp[WMAPRO_BLOCK_MAX_SIZE]); ///< IMDCT output buffer
     float*           windows[WMAPRO_BLOCK_SIZES];   ///< windows for the different block sizes
 
@@ -769,7 +769,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
     int cur_coeff = 0;
     int num_zeros = 0;
     const uint16_t* run;
-    const uint16_t* level;
+    const float* level;
 
     dprintf(s->avctx, "decode coefficients for channel %i\n", c);
 
@@ -981,10 +981,13 @@ static void inverse_channel_transform(WMAProDecodeCtx *s)
                         }
                     }
                 } else if (s->num_channels == 2) {
-                    for (y = sfb[0]; y < FFMIN(sfb[1], s->subframe_len); y++) {
-                        ch_data[0][y] *= 181.0 / 128;
-                        ch_data[1][y] *= 181.0 / 128;
-                    }
+                    int len = FFMIN(sfb[1], s->subframe_len) - sfb[0];
+                    s->dsp.vector_fmul_scalar(ch_data[0] + sfb[0],
+                                              ch_data[0] + sfb[0],
+                                              181.0 / 128, len);
+                    s->dsp.vector_fmul_scalar(ch_data[1] + sfb[0],
+                                              ch_data[1] + sfb[0],
+                                              181.0 / 128, len);
                 }
             }
         }
@@ -1214,10 +1217,10 @@ static int decode_subframe(WMAProDecodeCtx *s)
                             (s->channel[c].max_scale_factor - *sf++) *
                             s->channel[c].scale_factor_step;
                 const float quant = pow(10.0, exp / 20.0);
-                int start;
-
-                for (start = s->cur_sfb_offsets[b]; start < end; start++)
-                    s->tmp[start] = s->channel[c].coeffs[start] * quant;
+                int start = s->cur_sfb_offsets[b];
+                s->dsp.vector_fmul_scalar(s->tmp + start,
+                                          s->channel[c].coeffs + start,
+                                          quant, end - start);
             }
 
             /** apply imdct (ff_imdct_half == DCTIV with reverse) */

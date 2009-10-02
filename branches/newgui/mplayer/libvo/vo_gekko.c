@@ -174,6 +174,7 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 		p++;
 	p = p * 16;
 	y0 = ((int) (y0 / 8.0)) * 8;
+	y0-=8;
 
 	vo_draw_alpha_gekko(w, h, src, srca, stride, GetYtexture() + (y0 * p),
 			pitch[0], x0);

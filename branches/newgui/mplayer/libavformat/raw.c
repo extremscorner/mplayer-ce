@@ -120,12 +120,8 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret= av_get_packet(s->pb, pkt, size);
 
     pkt->stream_index = 0;
-    if (ret <= 0) {
-        return AVERROR(EIO);
-    }
-    /* note: we need to modify the packet size here to handle the last
-       packet */
-    pkt->size = ret;
+    if (ret < 0)
+        return ret;
 
     bps= av_get_bits_per_sample(s->streams[0]->codec->codec_id);
     assert(bps); // if false there IS a bug elsewhere (NOT in this function)
@@ -142,14 +138,14 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     size = RAW_PACKET_SIZE;
 
     if (av_new_packet(pkt, size) < 0)
-        return AVERROR(EIO);
+        return AVERROR(ENOMEM);
 
     pkt->pos= url_ftell(s->pb);
     pkt->stream_index = 0;
     ret = get_partial_buffer(s->pb, pkt->data, size);
-    if (ret <= 0) {
+    if (ret < 0) {
         av_free_packet(pkt);
-        return AVERROR(EIO);
+        return ret;
     }
     pkt->size = ret;
     return ret;
@@ -174,11 +170,9 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->dts= pkt->pos / packet_size;
 
     pkt->stream_index = 0;
-    if (ret != packet_size) {
-        return AVERROR(EIO);
-    } else {
-        return 0;
-    }
+    if (ret < 0)
+        return ret;
+    return 0;
 }
 #endif
 
@@ -206,14 +200,14 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
         size, w, h, unk1, unk2);
 
     if (av_new_packet(pkt, size) < 0)
-        return AVERROR(EIO);
+        return AVERROR(ENOMEM);
 
     pkt->pos = url_ftell(s->pb);
     pkt->stream_index = 0;
     ret = get_buffer(s->pb, pkt->data, size);
-    if (ret <= 0) {
+    if (ret < 0) {
         av_free_packet(pkt);
-        return AVERROR(EIO);
+        return ret;
     }
     pkt->size = ret;
     return ret;
@@ -628,8 +622,11 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
             first_frames = frames;
     }
     if(codec_id != expected_codec_id) return 0;
-    if   (first_frames>=3) return AVPROBE_SCORE_MAX * 3 / 4;
-    else if(max_frames>=3) return AVPROBE_SCORE_MAX / 2;
+    // keep this in sync with mp3 probe, both need to avoid
+    // issues with MPEG-files!
+    if   (first_frames>=4) return AVPROBE_SCORE_MAX/2+1;
+    else if(max_frames>500)return AVPROBE_SCORE_MAX/2;
+    else if(max_frames>=4) return AVPROBE_SCORE_MAX/4;
     else if(max_frames>=1) return 1;
     else                   return 0;
 }

@@ -101,7 +101,7 @@ float stream_cache_seek_min_percent=50.0;
 
 int audio_id=-1;
 int video_id=-1;
-int dvdsub_id=-2;
+int dvdsub_id=-1;
 int vobsub_id=-1;
 char* audio_lang=NULL;
 char* dvdsub_lang=NULL;
@@ -217,6 +217,12 @@ void mplayer_put_key(int code)
 #include "libass/ass_mp.h"
 char *current_module;
 #include "mpcommon.h"
+
+// Needed by mpcommon.c
+void set_osd_subtitle(subtitle *subs) {
+    vo_sub = subs;
+    vo_osd_changed(OSDTYPE_SUBTITLE);
+}
 
 //char *out_audio_codec=NULL; // override audio codec
 //char *out_video_codec=NULL; // override video codec
@@ -521,14 +527,14 @@ play_next_file:
 #ifdef CONFIG_DVDREAD
 if(stream->type==STREAMTYPE_DVD){
   if(audio_lang && audio_id==-1) audio_id=dvd_aid_from_lang(stream,audio_lang);
-  if(dvdsub_lang && dvdsub_id==-2) dvdsub_id=dvd_sid_from_lang(stream,dvdsub_lang);
+  if(dvdsub_lang && dvdsub_id==-1) dvdsub_id=dvd_sid_from_lang(stream,dvdsub_lang);
 }
 #endif
 
 #ifdef CONFIG_DVDNAV
 if(stream->type==STREAMTYPE_DVDNAV){
   if(audio_lang && audio_id==-1) audio_id=mp_dvdnav_aid_from_lang(stream,audio_lang);
-  if(dvdsub_lang && dvdsub_id==-2) dvdsub_id=mp_dvdnav_sid_from_lang(stream,dvdsub_lang);
+  if(dvdsub_lang && dvdsub_id==-1) dvdsub_id=mp_dvdnav_sid_from_lang(stream,dvdsub_lang);
 }
 #endif
 
@@ -548,10 +554,10 @@ if(stream->type==STREAMTYPE_DVDNAV){
 
   select_audio(demuxer, audio_id, audio_lang);
 
-  if (dvdsub_id < 0 && dvdsub_lang)
+  if (dvdsub_id == -1 && dvdsub_lang)
     dvdsub_id = demuxer_sub_track_by_lang(demuxer, dvdsub_lang);
 
-  if (dvdsub_id < 0)
+  if (dvdsub_id == -1)
     dvdsub_id = demuxer_default_sub_track(demuxer);
 
   for (i = 0; i < MAX_S_STREAMS; i++) {
@@ -1454,7 +1460,7 @@ if(sh_audio && !demuxer2){
  }
  else
 #endif
-    update_subtitles(sh_video, d_dvdsub, 0);
+    update_subtitles(sh_video, sh_video->pts, d_dvdsub, 0);
 
  frame_data = (s_frame_data){ .start = NULL, .in_size = 0, .frame_time = 0., .already_read = 0 };
 

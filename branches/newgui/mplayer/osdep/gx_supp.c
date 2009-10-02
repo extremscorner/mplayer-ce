@@ -402,7 +402,9 @@ static void * MPlayerDraw (void *arg)
 {
 	bool drawGui;
 	int i;
+	#ifdef WIILIB	
 	WPADData * w;
+	#endif
 	frameCounter = 0;
 	
 	while(frameCounter == 0)

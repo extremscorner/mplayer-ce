@@ -631,7 +631,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
                 dv_decode_ac(&gb, mb, block);
             }
             if (mb->pos >= 64 && mb->pos < 127)
-                av_log(NULL, AV_LOG_ERROR, "AC EOB marker is absent pos=%d\n", mb->pos);
+                av_log(avctx, AV_LOG_ERROR, "AC EOB marker is absent pos=%d\n", mb->pos);
             block += 64;
             mb++;
         }
@@ -1099,11 +1099,20 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
        if (enc_blks[j].partial_bit_count)
            pb = dv_encode_ac(&enc_blks[j], pb, &pbs[s->sys->bpm*5]);
        if (enc_blks[j].partial_bit_count)
-            av_log(NULL, AV_LOG_ERROR, "ac bitstream overflow\n");
+            av_log(avctx, AV_LOG_ERROR, "ac bitstream overflow\n");
     }
 
-    for (j=0; j<5*s->sys->bpm; j++)
+    for (j=0; j<5*s->sys->bpm; j++) {
+       int pos;
+       int size = pbs[j].size_in_bits >> 3;
        flush_put_bits(&pbs[j]);
+       pos = put_bits_count(&pbs[j]) >> 3;
+       if (pos > size) {
+           av_log(avctx, AV_LOG_ERROR, "bitstream written beyond buffer size\n");
+           return -1;
+       }
+       memset(pbs[j].buf + pos, 0xff, size - pos);
+    }
 
     return 0;
 }

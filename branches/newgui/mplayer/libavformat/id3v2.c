@@ -81,6 +81,7 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
     char *q, dst[512];
     int len, dstlen = sizeof(dst) - 1;
     unsigned genre;
+    unsigned int (*get)(ByteIOContext*) = get_be16;
 
     dst[0] = 0;
     if (taglen < 1)
@@ -92,11 +93,36 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
 
     case 0:  /* ISO-8859-1 (0 - 255 maps directly into unicode) */
         q = dst;
-        while (taglen--) {
+        while (taglen-- && q - dst < dstlen - 7) {
             uint8_t tmp;
-            PUT_UTF8(get_byte(s->pb), tmp, if (q - dst < dstlen - 1) *q++ = tmp;)
+            PUT_UTF8(get_byte(s->pb), tmp, *q++ = tmp;)
         }
-        *q = '\0';
+        *q = 0;
+        break;
+
+    case 1:  /* UTF-16 with BOM */
+        taglen -= 2;
+        switch (get_be16(s->pb)) {
+        case 0xfffe:
+            get = get_le16;
+        case 0xfeff:
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Incorrect BOM value in tag %s.\n", key);
+            return;
+        }
+        // fall-through
+
+    case 2:  /* UTF-16BE without BOM */
+        q = dst;
+        while (taglen > 1 && q - dst < dstlen - 7) {
+            uint32_t ch;
+            uint8_t tmp;
+
+            GET_UTF16(ch, ((taglen -= 2) >= 0 ? get(s->pb) : 0), break;)
+            PUT_UTF8(ch, tmp, *q++ = tmp;)
+        }
+        *q = 0;
         break;
 
     case 3:  /* UTF-8 */
@@ -104,6 +130,8 @@ static void read_ttag(AVFormatContext *s, int taglen, const char *key)
         get_buffer(s->pb, dst, len);
         dst[len] = 0;
         break;
+    default:
+        av_log(s, AV_LOG_WARNING, "Unknown encoding in tag %s\n.", key);
     }
 
     if (!strcmp(key, "genre")
@@ -214,3 +242,22 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
     av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
     url_fskip(s->pb, len);
 }
+
+const AVMetadataConv ff_id3v2_metadata_conv[] = {
+    { "TALB", "album"},
+    { "TCOM", "composer"},
+    { "TCON", "genre"},
+    { "TCOP", "copyright"},
+    { "TDRL", "date"},
+    { "TENC", "encoder"},
+    { "TIT2", "title"},
+    { "TLAN", "language"},
+    { "TPE1", "author"},
+    { "TPOS", "disc"},
+    { "TPUB", "publisher"},
+    { "TRCK", "track"},
+    { "TSOA", "albumsort"},
+    { "TSOP", "authorsort"},
+    { "TSOT", "titlesort"},
+    { 0 }
+};

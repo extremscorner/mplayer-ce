@@ -1248,13 +1248,13 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec_id = ff_codec_get_id(ff_codec_bmp_tags, track->video.fourcc);
             extradata_offset = 40;
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
-                   && track->codec_priv.size >= 18
+                   && track->codec_priv.size >= 14
                    && track->codec_priv.data != NULL) {
             init_put_byte(&b, track->codec_priv.data, track->codec_priv.size,
                           URL_RDONLY, NULL, NULL, NULL, NULL);
             ff_get_wav_header(&b, st->codec, track->codec_priv.size);
             codec_id = st->codec->codec_id;
-            extradata_offset = 18;
+            extradata_offset = FFMIN(track->codec_priv.size, 18);
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
@@ -1351,18 +1351,20 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
                       track->default_duration, 1000000000, 30000);
 
-        if(extradata){
-            st->codec->extradata = extradata;
-            st->codec->extradata_size = extradata_size;
-        } else if(track->codec_priv.data && track->codec_priv.size > 0){
-            st->codec->extradata = av_mallocz(track->codec_priv.size +
-                                              FF_INPUT_BUFFER_PADDING_SIZE);
-            if(st->codec->extradata == NULL)
-                return AVERROR(ENOMEM);
-            st->codec->extradata_size = track->codec_priv.size;
-            memcpy(st->codec->extradata,
-                   track->codec_priv.data + extradata_offset,
-                   track->codec_priv.size);
+        if (!st->codec->extradata) {
+            if(extradata){
+                st->codec->extradata = extradata;
+                st->codec->extradata_size = extradata_size;
+            } else if(track->codec_priv.data && track->codec_priv.size > 0){
+                st->codec->extradata = av_mallocz(track->codec_priv.size +
+                                                  FF_INPUT_BUFFER_PADDING_SIZE);
+                if(st->codec->extradata == NULL)
+                    return AVERROR(ENOMEM);
+                st->codec->extradata_size = track->codec_priv.size;
+                memcpy(st->codec->extradata,
+                       track->codec_priv.data + extradata_offset,
+                       track->codec_priv.size);
+            }
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {

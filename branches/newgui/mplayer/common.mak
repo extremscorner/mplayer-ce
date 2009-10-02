@@ -18,28 +18,19 @@ endif
 
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
-CFLAGS := -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(OPTFLAGS)
+CPPFLAGS := -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(CPPFLAGS)
 #CFLAGS := -DHAVE_AV_CONFIG_H -I$(BUILD_ROOT_REL) -I$(SRC_PATH) $(OPTFLAGS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+	$(CCDEP)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(CC_DEPFLAGS) -c $(CC_O) $<
 
 %.o: %.S
-	$(AS) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+	$(ASDEP)
+	$(AS) $(CPPFLAGS) $(ASFLAGS) $(AS_DEPFLAGS) -c -o $@ $<
 
 %.ho: %.h
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -Wno-unused -c -o $@ -x c $<
-
-%.d: %.c
-	$(DEPEND_CMD) > $@
-
-%.d: %.S
-	$(DEPEND_CMD) > $@
-
-%.d: %.cpp
-	$(DEPEND_CMD) > $@
-
-%.o: %.d
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Wno-unused -c -o $@ -x c $<
 
 %$(EXESUF): %.c
 
@@ -72,16 +63,17 @@ EXAMPLES  := $(addprefix $(SUBDIR),$(addsuffix -example$(EXESUF),$(EXAMPLES)))
 OBJS      := $(addprefix $(SUBDIR),$(OBJS))
 TESTPROGS := $(addprefix $(SUBDIR),$(addsuffix -test$(EXESUF),$(TESTPROGS)))
 
-DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(BUILD_SHARED:yes=S)LIBNAME))
+DEP_LIBS := $(foreach NAME,$(FFLIBS),$(BUILD_ROOT_REL)/lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME))
 
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/$(ARCH)/*.h))
-checkheaders: $(filter-out %_template.ho,$(ALLHEADERS:.h=.ho))
+SKIPHEADERS = $(addprefix $(SUBDIR),$(SKIPHEADERS-))
+checkheaders: $(filter-out $(SKIPHEADERS:.h=.ho),$(ALLHEADERS:.h=.ho))
 
 DEPS := $(OBJS:.o=.d)
 depend dep: $(DEPS)
 
-CLEANSUFFIXES     = *.o *~ *.ho
+CLEANSUFFIXES     = *.o *~ *.ho *.map
 DISTCLEANSUFFIXES = *.d *.pc
-LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp *.map
+LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
 
--include $(DEPS)
+-include $(wildcard $(DEPS))
