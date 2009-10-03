@@ -22,6 +22,7 @@ LIBDIR = $(DESTDIR)/tmp/mplayerhaxx/lib
 
 AR = $(DEVKITPPC)/bin/powerpc-eabi-ar
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
+AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc
 CXX = $(DEVKITPPC)/bin/powerpc-eabi-gcc
 HOST_CC = gcc
 YASM = 
@@ -31,8 +32,8 @@ RANLIB = $(DEVKITPPC)/bin/powerpc-eabi-ranlib
 WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-EXTRA_INC = -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/portlibs/ppc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
-#EXTRA_INC =  -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include 
+#EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
+EXTRA_INC = -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/portlibs/ppc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
 EXTRAXX_INC = $(EXTRA_INC)
 
 COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O2 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
@@ -265,7 +266,9 @@ LIBSWSCALE = yes
 LIBSWSCALE_A = yes
 LIBSWSCALE_SO = auto
 
-BUILD_STATIC=yes
+CC_O=-o $@
+LD=$(DEVKITPPC)/bin/powerpc-eabi-gcc
+CONFIG_STATIC=yes
 SRC_PATH=..
 BUILD_ROOT=..
 LIBPREF=lib
@@ -435,9 +438,9 @@ CONFIG_ZLIB_DECODER=yes
 CONFIG_ZMBV_DECODER=yes
 CONFIG_AAC_DECODER=yes
 CONFIG_AC3_DECODER=yes
+CONFIG_AEA_DEMUXER=yes
 CONFIG_ALAC_DECODER=yes
 CONFIG_APE_DECODER=yes
-CONFIG_ATRAC1_DECODER=yes
 CONFIG_ATRAC3_DECODER=yes
 CONFIG_COOK_DECODER=yes
 CONFIG_DCA_DECODER=yes
@@ -571,7 +574,6 @@ CONFIG_AVS_DEMUXER=yes
 CONFIG_BETHSOFTVID_DEMUXER=yes
 CONFIG_BFI_DEMUXER=yes
 CONFIG_C93_DEMUXER=yes
-CONFIG_CAF_DEMUXER=yes
 CONFIG_CAVSVIDEO_DEMUXER=yes
 CONFIG_DAUD_DEMUXER=yes
 CONFIG_DIRAC_DEMUXER=yes

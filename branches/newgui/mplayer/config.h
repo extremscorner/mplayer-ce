@@ -110,6 +110,7 @@ char MPLAYER_LIBDIR[100];
 #define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\n\t"
 #define HAVE_BUILTIN_EXPECT 1
 #define HAVE_LIBDL 1
+#define EXTERN_ASM _
 #define EXTERN_PREFIX "_"
 #define CONFIG_ICONV 1
 #undef HAVE_LIBKSTAT
@@ -150,7 +151,9 @@ char MPLAYER_LIBDIR[100];
 #define ARCH_AVR32 0
 #define ARCH_SH4 0
 #define ARCH_PPC 1
+#define ARCH_PPC64 0
 #define ARCH_ALPHA 0
+#define ARCH_MIPS 0
 #define ARCH_SGI_MIPS 0
 #define ARCH_PA_RISC 0
 #define ARCH_S390 0
@@ -174,6 +177,7 @@ char MPLAYER_LIBDIR[100];
 #define HAVE_ARMV6 0
 #define HAVE_ARMV6T2 0
 #define HAVE_ARMVFP 0
+#define HAVE_NEON 0
 #define HAVE_IWMMXT 0
 #define HAVE_MMI 0
 #define HAVE_VIS 0
@@ -276,6 +280,7 @@ char MPLAYER_LIBDIR[100];
 #undef CONFIG_WIN32WAVEOUT
 
 #undef CONFIG_LADSPA
+#undef CONFIG_LIBBS2B
 
 
 /* input */
@@ -476,11 +481,19 @@ char MPLAYER_LIBDIR[100];
 /* External libraries used through libavcodec. */
 #define CONFIG_LIBFAAC 0
 
+/*
 #define CONFIG_LIBAMR_NB 0
 #define CONFIG_LIBAMR_WB 0
 #define CONFIG_LIBDIRAC 0
 #define CONFIG_LIBSCHROEDINGER 0
 #define CONFIG_LIBMP3LAME 0
+*/
+
+#define CONFIG_LIBDIRAC 0
+#define CONFIG_LIBOPENCORE_AMRNB 0
+#define LIBOPENCORE_AMRWB 0
+#define CONFIG_LIBSCHROEDINGER 0
+
 #define CONFIG_LIBX264 0
 #define CONFIG_LIBXVID 0
 
@@ -846,6 +859,7 @@ char MPLAYER_LIBDIR[100];
 #define CONFIG_VP3_PARSER 1
 #define CONFIG_AAC_DEMUXER 1
 #define CONFIG_AC3_DEMUXER 1
+#define CONFIG_AEA_DEMUXER 1
 #define CONFIG_AIFF_DEMUXER 1
 #define CONFIG_AMR_DEMUXER 1
 #define CONFIG_APC_DEMUXER 1
