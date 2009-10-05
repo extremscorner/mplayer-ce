@@ -36,7 +36,7 @@ int ConfigRequested = 0;
 int ShutdownRequested = 0;
 int ResetRequested = 0;
 int ExitRequested = 0;
-char appPath[1024];
+char appPath[1024] = { 0 };
 char loadedFile[1024];
 bool playingAudio = false;
 
@@ -186,9 +186,9 @@ mplayerthread (void *arg)
 {
 	while(1)
 	{
-		if(controlledbygui == 2 || (CESettings.playOrder == 0 && !playingAudio))
-			LWP_SuspendThread(mthread);	
-		
+		if(controlledbygui == 2 || CESettings.playOrder == 0 || !playingAudio)
+			LWP_SuspendThread(mthread);
+
 		printf("load file: %s\n",loadedFile);
 		if(loadedFile[0] != 0)
 		{
@@ -263,7 +263,6 @@ main(int argc, char *argv[])
 	SYS_SetResetCallback(ResetCB);
 
 	// store path app was loaded from
-	sprintf(appPath, "sd:/apps/mplayer_ce");
 	if(argc > 0 && argv[0] != NULL)
 		CreateAppPath(argv[0]);
 

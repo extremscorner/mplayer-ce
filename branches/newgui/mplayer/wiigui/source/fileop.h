@@ -29,8 +29,8 @@ int ParseDirectory(bool waitParse = false);
 int LoadPlaylist();
 int ParsePlaylist();
 int ParseOnlineMedia();
-u32 LoadFile (char * buffer, char *filepath, bool silent);
-u32 SaveFile (char * buffer, char *filepath, u32 datasize, bool silent);
+size_t LoadFile (char * buffer, char *filepath, bool silent);
+size_t SaveFile (char * buffer, char *filepath, size_t datasize, bool silent);
 
 extern bool unmountRequired[];
 extern bool isMounted[];

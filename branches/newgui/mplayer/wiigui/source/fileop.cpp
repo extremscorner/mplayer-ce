@@ -819,10 +819,11 @@ int ParseOnlineMedia()
 /****************************************************************************
  * LoadFile
  ***************************************************************************/
-u32 LoadFile (char * buffer, char *filepath, bool silent)
+size_t LoadFile (char * buffer, char *filepath, bool silent)
 {
-	u32 size = 0;
-	u32 readsize = 0;
+	size_t size = 0;
+	size_t offset = 0;
+	size_t readsize, nextread;
 	int retry = 1;
 	FILE * file;
 
@@ -831,7 +832,7 @@ u32 LoadFile (char * buffer, char *filepath, bool silent)
 	HaltDeviceThread();
 
 	// halt parsing
-	parseHalt = true;
+	HaltParseThread();
 
 	// open the file
 	while(!size && retry == 1)
@@ -847,8 +848,6 @@ u32 LoadFile (char * buffer, char *filepath, bool silent)
 				{
 					size = fileinfo.st_size;
 
-					u32 offset = 0;
-					u32 nextread = 0;
 					while(offset < size)
 					{
 						if(size - offset > 4*1024) nextread = 4*1024;
@@ -873,13 +872,9 @@ u32 LoadFile (char * buffer, char *filepath, bool silent)
 		if(!size)
 		{
 			if(!silent)
-			{
 				retry = ErrorPromptRetry("Error loading file!");
-			}
 			else
-			{
 				retry = 0;
-			}
 		}
 	}
 
@@ -893,9 +888,10 @@ u32 LoadFile (char * buffer, char *filepath, bool silent)
  * SaveFile
  * Write buffer to file
  ***************************************************************************/
-u32 SaveFile (char * buffer, char *filepath, u32 datasize, bool silent)
+size_t SaveFile (char * buffer, char *filepath, size_t datasize, bool silent)
 {
-	u32 written = 0;
+	size_t written = 0;
+	size_t writesize, nextwrite;
 	int retry = 1;
 	FILE * file;
 
@@ -908,6 +904,9 @@ u32 SaveFile (char * buffer, char *filepath, u32 datasize, bool silent)
 	// since we're saving a file
 	HaltDeviceThread();
 
+	// halt parsing
+	HaltParseThread();
+
 	while(!written && retry == 1)
 	{
 		if(ChangeInterface(filepath, silent))
@@ -916,7 +915,6 @@ u32 SaveFile (char * buffer, char *filepath, u32 datasize, bool silent)
 
 			if (file > 0)
 			{
-				u32 writesize, nextwrite;
 				while(written < datasize)
 				{
 					if(datasize - written > 4*1024) nextwrite=4*1024;

@@ -4875,10 +4875,11 @@ if(rel_seek_secs || abs_seek_pos){
 } // while(!mpctx->eof)
 
 #ifdef WIILIB
-printf("mplayer: end film. UNINT\n");
+printf("mplayer: end film. UNINIT\n");
 StopDrawThread();
 uninit_player(INITIALIZED_ALL);
-//if(mpctx->eof==1) 
+if(controlledbygui == 0)
+	controlledbygui = 1;
 printf("mplayer: exit\n");
 return 1;
 #endif
