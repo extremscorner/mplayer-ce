@@ -994,9 +994,9 @@ static void MenuBrowse(int menu)
 						else
 							sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
 					}
-					
+
 					ShutdownMPlayer();
-					
+
 					ShowAction("Loading...");
 
 					// signal MPlayer to load
@@ -1005,20 +1005,19 @@ static void MenuBrowse(int menu)
 					// wait until MPlayer is ready to take control (or return control)
 					while(!guiShutdown && controlledbygui != 1)
 						usleep(THREAD_SLEEP);
-					
-					if(controlledbygui == 1)
-						playingAudio = true;
-					else
-						playingAudio = false;
-					
+
 					CancelAction();
 
 					if(guiShutdown)
 					{
+						playingAudio = false;
 						goto done;
 					}
 					else
 					{
+						playingAudio = true;
+						ResumeDeviceThread();
+
 						// we loaded an audio file - if we already had a video
 						// loaded, we should remove the bg and MPlayer button
 						mainWindow->Remove(videoImg);

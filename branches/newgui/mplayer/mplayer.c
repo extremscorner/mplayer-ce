@@ -2705,8 +2705,9 @@ getch2_disable(); //wiimote controlled by gui
 #endif
 
 printf("send control to gui	\n");
+StopDrawThread();
 if(controlledbygui == 0)
-	controlledbygui=1; //send control to gui	
+	controlledbygui=1; //send control to gui
   while (controlledbygui==1 && ((cmd = mp_input_get_cmd(20, 1, 1)) == NULL || cmd->pausing == 4)) {
 	if (cmd) {
 	  cmd = mp_input_get_cmd(0,1,0);	  

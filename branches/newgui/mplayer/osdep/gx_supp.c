@@ -451,7 +451,6 @@ static void * MPlayerDraw (void *arg)
 			copyScreen = 0;
 			TakeScreenshot();
 			pause_gui = 1;
-			StopDrawThread();
 		}
 		else
 		{
@@ -517,12 +516,7 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	// tell GUI to shut down, MPlayer is ready to take over
 	ShutdownGui();
 	#endif
-	
-	if(drawthread != LWP_THREAD_NULL)
-	{
-		StopDrawThread();
-	}
-	
+
 	if(texmutex == LWP_MUTEX_NULL)
 		LWP_MutexInit(&texmutex, false);
 
