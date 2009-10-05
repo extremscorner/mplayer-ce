@@ -118,7 +118,7 @@ char *heartbeat_cmd;
 #include "osdep/gx_supp.h"
 #include "osdep/di2.h"
 #include <ogc/system.h>
-
+void wiiPause();
 #endif
 
 //**************************************************************************//
@@ -406,7 +406,7 @@ void save_restore_points_file()
 
 void delete_restore_point(char *_filename)
 {
-	int i,j;
+	int i;
 	#ifndef WIILIB
 	if(IsLoopAvi(filename))return;
 	#endif
@@ -2705,7 +2705,8 @@ getch2_disable(); //wiimote controlled by gui
 #endif
 
 printf("send control to gui	\n");
-controlledbygui=1; //send control to gui	
+if(controlledbygui == 0)
+	controlledbygui=1; //send control to gui	
   while (controlledbygui==1 && ((cmd = mp_input_get_cmd(20, 1, 1)) == NULL || cmd->pausing == 4)) {
 	if (cmd) {
 	  cmd = mp_input_get_cmd(0,1,0);	  
@@ -2916,6 +2917,11 @@ static void pause_loop(void)
 	    vf_menu_pause_update(vf_menu);
 #endif
 	usec_sleep(20000);		
+
+#ifdef WIILIB
+	if(controlledbygui==2)
+		wiiPause(); // unpause
+#endif
     }
 
     if (cmd && cmd->id == MP_CMD_PAUSE) {
@@ -4354,7 +4360,8 @@ if(!mpctx->sh_audio){
 if(!mpctx->sh_video){
 #ifdef WIILIB
 	printf("No video - returning control to GUI\n");
-	controlledbygui=1; // send control to gui
+	if(controlledbygui == 0)
+		controlledbygui=1; // send control to gui
 	getch2_disable(); // wiimote controlled by gui
 #endif
    mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_Video_NoVideo);
