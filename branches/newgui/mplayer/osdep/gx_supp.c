@@ -37,6 +37,8 @@
 #include <wiiuse/wpad.h>
 #endif
 
+extern void wii_draw_osd();
+
 static lwp_t drawthread = LWP_THREAD_NULL;
 static mutex_t texmutex = LWP_MUTEX_NULL;
 static bool stopdrawthread = false;
@@ -685,6 +687,7 @@ void GX_FillTextureYUV(u16 height,u8 *buffer[3])
 		Vsrc3 += UVrowpitch;
 		Vsrc4 += UVrowpitch;
 	}
+	wii_draw_osd();
 	LWP_MutexUnlock(texmutex);
 }
 

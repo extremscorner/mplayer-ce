@@ -43,6 +43,8 @@
 
 #include <gccore.h>
 
+extern int osd_level;
+
 static const vo_info_t info = {
 	"gekko video output",
 	"gekko",
@@ -202,7 +204,14 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 
 static void draw_osd(void)
 {
-	vo_draw_text(image_width, image_height, draw_alpha);
+	// do nothing - will be drawn immediately after frame is drawn
+}
+
+void wii_draw_osd()
+{
+	// this is not the best test - 'OSD: Disabled' message will not show up!
+	if(osd_level >= 1)
+		vo_draw_text(image_width, image_height, draw_alpha);
 }
 
 static void flip_page(void)
