@@ -57,7 +57,7 @@ static int drawMode = 0;
 void PauseAndGotoGUI();
 void ShutdownGui();
 void TakeScreenshot();
-void DrawMPlayerGui();
+int DrawMPlayerGui();
 int copyScreen = 0;
 extern int pause_gui;
 #endif
