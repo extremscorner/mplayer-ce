@@ -136,70 +136,66 @@ UpdateGui (void *arg)
 	while(1)
 	{
 		if(guiHalt)
-		{
 			break;
-		}
-		else
+
+		while(menuMode == 1 && !doMPlayerGuiDraw) // mplayer GUI
 		{
-			while(menuMode == 1 && !doMPlayerGuiDraw) // mplayer GUI
+			usleep(THREAD_SLEEP);
+			if(guiHalt)
+				return NULL;
+		}
+
+		UpdatePads();
+		mainWindow->Draw();
+
+		if (mainWindow->GetState() != STATE_DISABLED)
+			mainWindow->DrawTooltip();
+
+		for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
+		{
+			if(userInput[i].wpad.ir.valid)
+				Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
+					96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
+			DoRumble(i);
+		}
+
+		for(int i=0; i < 4; i++)
+			mainWindow->Update(&userInput[i]);
+		
+		if(menuMode == 0) // normal GUI
+		{
+			Menu_Render();
+
+			if(updateFound)
 			{
-				usleep(THREAD_SLEEP);
-				if(guiHalt)
-					return NULL;
+				updateFound = false;
+				LWP_CreateThread (&updatethread, AppUpdate, NULL, NULL, 0, 70);
 			}
-
-			UpdatePads();
-			mainWindow->Draw();
-
-			if (mainWindow->GetState() != STATE_DISABLED)
-				mainWindow->DrawTooltip();
-
-			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
-			{
-				if(userInput[i].wpad.ir.valid)
-					Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
-						96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
-				DoRumble(i);
-			}
-
-			for(int i=0; i < 4; i++)
-				mainWindow->Update(&userInput[i]);
 			
-			if(menuMode == 0) // normal GUI
+			if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
 			{
-				Menu_Render();
+				LWP_JoinThread(creditsthread, NULL);
+				creditsthread = LWP_THREAD_NULL;
+			}
 
-				if(updateFound)
-				{
-					updateFound = false;
-					LWP_CreateThread (&updatethread, AppUpdate, NULL, NULL, 0, 70);
-				}
-				
-				if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
-				{
-					LWP_JoinThread(creditsthread, NULL);
-					creditsthread = LWP_THREAD_NULL;
-				}
-	
-				if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
-					ExitRequested = 1;
-	
-				if(ExitRequested || ShutdownRequested)
-				{
-					for(int a = 0; a < 255; a += 15)
-					{
-						mainWindow->Draw();
-						Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
-						Menu_Render();
-					}
-					ExitApp();
-				}
-			}
-			else // MPlayer GUI
+			if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
+				ExitRequested = 1;
+
+			if(ExitRequested || ShutdownRequested)
 			{
-				doMPlayerGuiDraw = 0;
-				usleep(THREAD_SLEEP);
+				for(int a = 0; a < 255; a += 15)
+				{
+					mainWindow->Draw();
+					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
+					Menu_Render();
+				}
+				ExitApp();
 			}
+		}
+		else // MPlayer GUI
+		{
+			doMPlayerGuiDraw = 0;
+			usleep(THREAD_SLEEP);
 		}
 	}
 	return NULL;
@@ -1031,6 +1027,7 @@ static void MenuBrowse(int menu)
 		}
 	}
 done:
+	HaltParseThread(); // halt parsing
 	HaltGui();
 	mainWindow->Remove(&fileBrowser);
 }

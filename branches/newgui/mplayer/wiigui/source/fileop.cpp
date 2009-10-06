@@ -202,9 +202,13 @@ void UnmountAllFAT()
 
 static bool MountFAT(int device, int silent)
 {
-	bool mounted = true; // assume our disc is already mounted
+	bool mounted = false;
+	int retry = 1;
 	char name[10], name2[10];
 	const DISC_INTERFACE* disc = NULL;
+
+	if(isMounted[device])
+		return true;
 
 	switch(device)
 	{
@@ -229,20 +233,19 @@ static bool MountFAT(int device, int silent)
 		disc->shutdown();
 		isMounted[device] = false;
 	}
-	if(!isMounted[device])
+
+	while(retry)
 	{
-		if(!disc->startup())
-			mounted = false;
-		else if(!fatMount(name, disc, 0, 2, 256))
-			mounted = false;
-	}
-	
-	if(!mounted && !silent)
-	{
+		if(disc->startup() && fatMount(name, disc, 0, 2, 256))
+			mounted = true;
+
+		if(mounted || silent)
+			break;
+
 		if(device == DEVICE_SD)
-			ErrorPrompt("SD card not found!");
+			retry = ErrorPromptRetry("SD card not found!");
 		else
-			ErrorPrompt("USB drive not found!");
+			retry = ErrorPromptRetry("USB drive not found!");
 	}
 
 	isMounted[device] = mounted;
@@ -255,8 +258,16 @@ void MountAllFAT()
 	MountFAT(DEVICE_USB, SILENT);
 }
 
-static bool MountDVD(int silent)
+/****************************************************************************
+ * MountDVD()
+ *
+ * Tests if a ISO9660 DVD is inserted and available, and mounts it
+ ***************************************************************************/
+bool MountDVD(bool silent)
 {
+	bool mounted = false;
+	int retry = 1;
+
 	if(isMounted[DEVICE_DVD])
 		return true;
 
@@ -266,26 +277,33 @@ static bool MountDVD(int silent)
 		WIIDVD_Unmount();
 	}
 
-	bool res = false;
-
-	ShowAction("Loading DVD...");
-
-	if(WIIDVD_DiscPresent())
+	while(retry)
 	{
-		if(WIIDVD_Mount() >= 0)
-			res = true;
-		else if(!silent)
-			ErrorPrompt("Invalid DVD!");
-	}
-	else
-	{
-		if(!silent)
-			ErrorPrompt("No disc inserted!");
-	}
+		ShowAction("Loading DVD...");
 
+		if(!WIIDVD_DiscPresent())
+		{
+			if(silent)
+				break;
+
+			retry = ErrorPromptRetry("No disc inserted!");
+		}
+		else if(WIIDVD_Mount() < 0)
+		{
+			if(silent)
+				break;
+			
+			retry = ErrorPromptRetry("Invalid DVD.");
+		}
+		else
+		{
+			mounted = true;
+			break;
+		}
+	}
 	CancelAction();
-	isMounted[DEVICE_DVD] = res;
-	return res;
+	isMounted[DEVICE_DVD] = mounted;
+	return mounted;
 }
 
 static bool FindDevice(char * filepath, int * device, int * devnum)
@@ -607,10 +625,13 @@ ParseDirectory(bool waitParse)
 	int retry = 1;
 	bool mounted = false;
 
+	ResetBrowser(); // reset browser
+
 	// open the directory
 	while(dirIter == NULL && retry == 1)
 	{
 		mounted = ChangeInterface(browser.dir, NOTSILENT);
+
 		if(mounted)
 			dirIter = diropen(browser.dir);
 		else
@@ -626,14 +647,17 @@ ParseDirectory(bool waitParse)
 	// if we can't open the dir, try higher levels
 	if (dirIter == NULL)
 	{
+		char * devEnd = strrchr(browser.dir, '/');
+
 		while(!IsDeviceRoot(browser.dir))
 		{
-			char * devEnd = strrchr(browser.dir, '/');
+			devEnd[0] = 0; // strip slash
+			devEnd = strrchr(browser.dir, '/');
 
 			if(devEnd == NULL)
 				break;
 
-			devEnd[0] = 0; // strip remaining file listing
+			devEnd[1] = 0; // strip remaining file listing
 			dirIter = diropen(browser.dir);
 			if (dirIter)
 				break;
@@ -651,6 +675,7 @@ ParseDirectory(bool waitParse)
 		browserList[0].length = 0;
 		browserList[0].mtime = 0;
 		browserList[0].isdir = 1; // flag this as a dir
+		browserList[0].icon = ICON_FOLDER;
 	}
 
 	parseHalt = false;
@@ -821,9 +846,7 @@ int ParseOnlineMedia()
  ***************************************************************************/
 size_t LoadFile (char * buffer, char *filepath, bool silent)
 {
-	size_t size = 0;
-	size_t offset = 0;
-	size_t readsize, nextread;
+	size_t size = 0, offset = 0, readsize = 0;
 	int retry = 1;
 	FILE * file;
 
@@ -835,47 +858,39 @@ size_t LoadFile (char * buffer, char *filepath, bool silent)
 	HaltParseThread();
 
 	// open the file
-	while(!size && retry == 1)
+	while(!size && retry)
 	{
-		if(ChangeInterface(filepath, silent))
+		if(!ChangeInterface(filepath, silent))
+			break;
+
+		file = fopen (filepath, "rb");
+
+		if(!file)
 		{
-			file = fopen (filepath, "rb");
+			if(silent)
+				break;
 
-			if(file > 0)
-			{
-				struct stat fileinfo;
-				if(fstat(file->_file, &fileinfo) == 0)
-				{
-					size = fileinfo.st_size;
-
-					while(offset < size)
-					{
-						if(size - offset > 4*1024) nextread = 4*1024;
-						else nextread = size-offset;
-						ShowProgress ("Loading...", offset, size);
-						readsize = fread (buffer + offset, 1, nextread, file); // read in next chunk
-
-						if(readsize <= 0 || readsize > nextread)
-							break; // read failure
-
-						if(readsize > 0)
-							offset += readsize;
-					}
-					CancelAction();
-
-					if(offset != size) // # bytes read doesn't match # expected
-						size = 0;
-				}
-				fclose (file);
-			}
+			retry = ErrorPromptRetry("Error opening file!");
+			continue;
 		}
-		if(!size)
+
+		fseeko(file,0,SEEK_END);
+		size = ftello(file);
+		fseeko(file,0,SEEK_SET);
+
+		while(!feof(file))
 		{
-			if(!silent)
-				retry = ErrorPromptRetry("Error loading file!");
-			else
-				retry = 0;
+			ShowProgress ("Loading...", offset, size);
+			readsize = fread (buffer + offset, 1, 4096, file); // read in next chunk
+
+			if(readsize <= 0)
+				break; // reading finished (or failed)
+
+			offset += readsize;
 		}
+		fclose (file);
+		size = offset;
+		CancelAction();
 	}
 
 	// go back to checking if devices were inserted/removed
@@ -907,33 +922,37 @@ size_t SaveFile (char * buffer, char *filepath, size_t datasize, bool silent)
 	// halt parsing
 	HaltParseThread();
 
-	while(!written && retry == 1)
+	while(!written && retry)
 	{
-		if(ChangeInterface(filepath, silent))
+		if(!ChangeInterface(filepath, silent))
+			break;
+
+		file = fopen (filepath, "wb");
+
+		if(!file)
 		{
-			file = fopen (filepath, "wb");
+			if(silent)
+				break;
 
-			if (file > 0)
-			{
-				while(written < datasize)
-				{
-					if(datasize - written > 4*1024) nextwrite=4*1024;
-					else nextwrite = datasize-written;
-					writesize = fwrite (buffer+written, 1, nextwrite, file);
-					if(writesize != nextwrite) break; // write failure
-					written += writesize;
-				}
-
-				if(written != datasize) written = 0;
-				fclose (file);
-			}
+			retry = ErrorPromptRetry("Error creating file!");
+			continue;
 		}
+
+		while(written < datasize)
+		{
+			if(datasize - written > 4096) nextwrite=4096;
+			else nextwrite = datasize-written;
+			writesize = fwrite (buffer+written, 1, nextwrite, file);
+			if(writesize != nextwrite) break; // write failure
+			written += writesize;
+		}
+		fclose (file);
+
+		if(written != datasize) written = 0;
+
 		if(!written)
 		{
-			if(!silent)
-				retry = ErrorPromptRetry("Error saving file!");
-			else
-				retry = 0;
+			retry = ErrorPromptRetry("Error saving file!");
 		}
 	}
 

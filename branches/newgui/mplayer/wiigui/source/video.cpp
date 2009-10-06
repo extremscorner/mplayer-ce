@@ -33,6 +33,7 @@ u8 * videoScreenshot = NULL;
 int screenheight;
 int screenwidth;
 u32 FrameTimer = 0;
+bool drawGui = false;
 
 /****************************************************************************
  * StartGX
@@ -322,7 +323,7 @@ void Menu_DrawRectangle(f32 x, f32 y, f32 width, f32 height, GXColor color, u8 f
 	GX_End();
 }
 
-void DrawMPlayerGui()
+int DrawMPlayerGui()
 {
 	Menu_DrawInit(); // reconfigure GX for GUI
 
@@ -332,6 +333,8 @@ void DrawMPlayerGui()
 	// wait for draw to complete
 	while(doMPlayerGuiDraw)
 		usleep(100);
+		
+	return 1;
 }
 
 #ifdef __cplusplus

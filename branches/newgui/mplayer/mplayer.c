@@ -5051,6 +5051,14 @@ return 1;
 
 #ifdef WIILIB
 
+void wiiGotoGui()
+{
+	mp_cmd_t * cmd = calloc( 1,sizeof( *cmd ) );
+	cmd->id=MP_CMD_QUIT;
+	cmd->name=strdup("quit");
+	mp_input_queue_cmd(cmd);
+}
+
 void wiiPause()
 {
 	mp_cmd_t * cmd = calloc( 1,sizeof( *cmd ) );
@@ -5121,6 +5129,16 @@ int wiiGetTimePos()
 		pos = playing_audio_pts(mpctx->sh_audio, mpctx->d_audio, mpctx->audio_out);
 	
 	return pos;
+}
+
+void wiiSetOSDLevel(int l)
+{
+	osd_level = l;
+}
+
+int wiiGetOSDLevel()
+{
+	return osd_level;
 }
 
 char * wiiGetMetaTitle()

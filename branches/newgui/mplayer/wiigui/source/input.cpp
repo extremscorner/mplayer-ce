@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <wiiuse/wpad.h>
 
+#include "mplayerce.h"
 #include "menu.h"
 #include "video.h"
 #include "input.h"
@@ -89,4 +90,51 @@ void DoRumble(int i)
 			rumbleCount[i]--;
 		WPAD_Rumble(i, 0); // rumble off
 	}
+}
+
+/****************************************************************************
+ * MPlayerInput
+ ***************************************************************************/
+
+void MPlayerInput()
+{
+	int i;
+	bool ir = false;
+	int level = wiiGetOSDLevel();
+
+	for(i=0; i<4; i++)
+	{
+		if(userInput[i].wpad.ir.valid)
+			ir = true;
+
+		if(userInput[i].wpad.btns_d & WPAD_BUTTON_1)
+		{
+			if(level == 3)
+				wiiSetOSDLevel(0);
+			else
+				wiiSetOSDLevel(level+1);
+		}
+		
+		if(userInput[i].wpad.btns_d & WPAD_BUTTON_HOME)
+			wiiGotoGui();
+		
+		if(!drawGui)
+		{			
+			if(userInput[i].wpad.btns_d & WPAD_BUTTON_A)
+				wiiPause();
+			if(userInput[i].wpad.btns_d & WPAD_BUTTON_UP)
+				wiiFastForward();
+			if(userInput[i].wpad.btns_d & WPAD_BUTTON_LEFT)
+				wiiRewind();
+			if(userInput[i].wpad.btns_d & WPAD_BUTTON_RIGHT)
+				wiiSkipForward();
+			if(userInput[i].wpad.btns_d & WPAD_BUTTON_DOWN)
+				wiiSkipBackward();
+		}
+	}
+
+	if(ir || wiiGetOSDLevel() >= 2)
+		drawGui = true;
+	else
+		drawGui = false;
 }
