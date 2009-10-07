@@ -138,30 +138,31 @@ UpdateGui (void *arg)
 		if(guiHalt)
 			break;
 
-		while(menuMode == 1 && !doMPlayerGuiDraw) // mplayer GUI
-		{
-			usleep(THREAD_SLEEP);
-			if(guiHalt)
-				return NULL;
-		}
-
 		UpdatePads();
-		mainWindow->Draw();
 
-		if (mainWindow->GetState() != STATE_DISABLED)
-			mainWindow->DrawTooltip();
+		if(menuMode == 1)
+			MPlayerInput();
 
-		for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
+		if(menuMode == 0 || doMPlayerGuiDraw)
 		{
-			if(userInput[i].wpad.ir.valid)
-				Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
-					96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
-			DoRumble(i);
+			mainWindow->Draw();
+
+			if (mainWindow->GetState() != STATE_DISABLED)
+				mainWindow->DrawTooltip();
+
+			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
+			{
+				if(userInput[i].wpad.ir.valid)
+					Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
+						96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
+				DoRumble(i);
+			}
+			doMPlayerGuiDraw = 0;
 		}
 
 		for(int i=0; i < 4; i++)
 			mainWindow->Update(&userInput[i]);
-		
+
 		if(menuMode == 0) // normal GUI
 		{
 			Menu_Render();
@@ -192,11 +193,7 @@ UpdateGui (void *arg)
 				ExitApp();
 			}
 		}
-		else // MPlayer GUI
-		{
-			doMPlayerGuiDraw = 0;
-			usleep(THREAD_SLEEP);
-		}
+		usleep(THREAD_SLEEP);
 	}
 	return NULL;
 }

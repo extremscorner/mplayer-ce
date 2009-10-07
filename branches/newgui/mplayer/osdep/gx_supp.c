@@ -402,11 +402,6 @@ void StopDrawThread()
 
 static void * MPlayerDraw (void *arg)
 {
-	bool drawGui;
-	int i;
-	#ifdef WIILIB	
-	WPADData * w;
-	#endif
 	frameCounter = 0;
 	
 	while(frameCounter == 0)
@@ -454,27 +449,7 @@ static void * MPlayerDraw (void *arg)
 		}
 		else
 		{
-			drawGui = false;
-			for(i=0; i<4; i++)
-			{
-				w = WPAD_Data(i);
-				if(w && w->ir.valid)
-				{
-					drawGui = true;
-					break;
-				}
-			}
-		
-			if(drawGui)
-			{	
-				getch2_disable();
-				DrawMPlayerGui();
-				drawMode = 1;
-			}
-			else
-			{
-				getch2_enable();
-			}
+			drawMode = DrawMPlayerGui();
 		}
 		#endif
 

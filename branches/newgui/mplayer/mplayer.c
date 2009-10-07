@@ -2697,8 +2697,8 @@ void PauseAndGotoGUI()
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
 	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
 printf("PauseAndGotoGUI\n");
-printf("wiimote controlled by gui\n");
-getch2_disable(); //wiimote controlled by gui
+//printf("wiimote controlled by gui\n");
+//getch2_disable(); //wiimote controlled by gui
 #ifdef CONFIG_MENU
 	if (vf_menu)
 	    vf_menu_pause_update(vf_menu);
@@ -2728,7 +2728,7 @@ if(controlledbygui!=2)
 	reinit_audio();
 	reinit_video();
 	printf("mplayer video reinit ok\n");
-	getch2_enable();
+	//getch2_enable();
 }
 
     if (cmd && cmd->id == MP_CMD_QUIT) {
@@ -4363,7 +4363,7 @@ if(!mpctx->sh_video){
 	printf("No video - returning control to GUI\n");
 	if(controlledbygui == 0)
 		controlledbygui=1; // send control to gui
-	getch2_disable(); // wiimote controlled by gui
+	//getch2_disable(); // wiimote controlled by gui
 #endif
    mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_Video_NoVideo);
    mp_msg(MSGT_CPLAYER,MSGL_V,"Freeing %d unused video chunks.\n",mpctx->d_video->packs);
