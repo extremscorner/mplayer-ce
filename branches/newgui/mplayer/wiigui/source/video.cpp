@@ -17,10 +17,14 @@
 #include "input.h"
 #include "libwiigui/gui.h"
 #include "menu.h"
+#include "mplayerce.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static lwp_t drawthread = LWP_THREAD_NULL;
+static bool stopdrawthread = true;
 
 #define DEFAULT_FIFO_SIZE 256 * 1024
 static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN (32);
@@ -156,50 +160,6 @@ ResetVideo_Menu()
 }
 
 /****************************************************************************
- * InitVideo
- *
- * This function MUST be called at startup.
- * - also sets up menu video mode
- ***************************************************************************/
-
-void
-InitVideo ()
-{
-	VIDEO_Init();
-	vmode = VIDEO_GetPreferredMode(NULL); // get default video mode
-
-	// widescreen fix
-	if(CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-		vmode->viWidth = VI_MAX_WIDTH_PAL;
-
-	VIDEO_Configure (vmode);
-
-	screenheight = 480;
-	screenwidth = 640;
-
-	// Allocate the video buffers
-	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
-	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
-
-	// Clear framebuffers etc.
-	VIDEO_ClearFrameBuffer (vmode, xfb[0], COLOR_BLACK);
-	VIDEO_ClearFrameBuffer (vmode, xfb[1], COLOR_BLACK);
-	VIDEO_SetNextFramebuffer (xfb[0]);
-
-	VIDEO_SetBlack (FALSE);
-	VIDEO_Flush ();
-	VIDEO_WaitVSync();
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-	else
-		while (VIDEO_GetNextField())
-			VIDEO_WaitVSync();
-
-	StartGX();
-	// Finally, the video is up and ready for use :)
-}
-
-/****************************************************************************
  * StopGX
  *
  * Stops GX (when exiting)
@@ -323,6 +283,43 @@ void Menu_DrawRectangle(f32 x, f32 y, f32 width, f32 height, GXColor color, u8 f
 	GX_End();
 }
 
+static void * MPlayerDrawThread (void *arg)
+{
+	while (1)
+	{
+		if(stopdrawthread)
+		{
+			LWP_SuspendThread(drawthread);
+
+			while(frameCounter == 0)
+				usleep(100);
+		}
+
+		DrawMPlayer();
+		VIDEO_WaitVSync();
+	}
+	return NULL;
+}
+
+void StartDrawThread()
+{
+	frameCounter = 0;
+	stopdrawthread = false;
+	LWP_ResumeThread(drawthread);
+}
+
+void StopDrawThread()
+{
+	if(drawthread != LWP_THREAD_NULL)
+	{
+		stopdrawthread = true;
+		
+		// wait for thread to finish
+		while(!LWP_ThreadIsSuspended(drawthread))
+			usleep(100);
+	}
+}
+
 int DrawMPlayerGui()
 {
 	if(!drawGui)
@@ -338,6 +335,51 @@ int DrawMPlayerGui()
 		usleep(100);
 		
 	return 1;
+}
+
+/****************************************************************************
+ * InitVideo
+ *
+ * This function MUST be called at startup.
+ * - also sets up menu video mode
+ ***************************************************************************/
+
+void
+InitVideo ()
+{
+	VIDEO_Init();
+	vmode = VIDEO_GetPreferredMode(NULL); // get default video mode
+
+	// widescreen fix
+	if(CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+		vmode->viWidth = VI_MAX_WIDTH_PAL;
+
+	VIDEO_Configure (vmode);
+
+	screenheight = 480;
+	screenwidth = 640;
+
+	// Allocate the video buffers
+	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
+	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
+
+	// Clear framebuffers etc.
+	VIDEO_ClearFrameBuffer (vmode, xfb[0], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer (vmode, xfb[1], COLOR_BLACK);
+	VIDEO_SetNextFramebuffer (xfb[0]);
+
+	VIDEO_SetBlack (FALSE);
+	VIDEO_Flush ();
+	VIDEO_WaitVSync();
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	else
+		while (VIDEO_GetNextField())
+			VIDEO_WaitVSync();
+
+	StartGX();
+
+	LWP_CreateThread (&drawthread, MPlayerDrawThread, NULL, NULL, 0, 69);
 }
 
 #ifdef __cplusplus

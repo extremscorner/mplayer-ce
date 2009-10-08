@@ -170,7 +170,7 @@ UpdateGui (void *arg)
 			if(updateFound)
 			{
 				updateFound = false;
-				LWP_CreateThread (&updatethread, AppUpdate, NULL, NULL, 0, 70);
+				LWP_CreateThread (&updatethread, AppUpdate, NULL, NULL, 0, 60);
 			}
 			
 			if(!creditsOpen && creditsthread != LWP_THREAD_NULL)
@@ -211,7 +211,7 @@ ResumeGui()
 	guiHalt = false;
 
 	if(guithread == LWP_THREAD_NULL)
-		LWP_CreateThread (&guithread, UpdateGui, NULL, NULL, 0, 70);
+		LWP_CreateThread (&guithread, UpdateGui, NULL, NULL, 0, 66);
 }
 
 /****************************************************************************
@@ -516,7 +516,7 @@ ShowProgress (const char *msg, int done, int total)
 	progressDone = done;
 
 	if(progressthread == LWP_THREAD_NULL)
-		LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 40);
+		LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 60);
 }
 
 /****************************************************************************
@@ -541,7 +541,7 @@ ShowAction (const char *msg)
 	progressTotal = 0;
 
 	if(progressthread == LWP_THREAD_NULL)
-		LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 40);
+		LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 60);
 }
 
 void ErrorPrompt(const char *msg)
@@ -835,7 +835,7 @@ static void DisplayCredits(void * ptr)
 	// spawn a new thread to handle the Credits
 	creditsOpen = true;
 	if(creditsthread == LWP_THREAD_NULL)
-		LWP_CreateThread (&creditsthread, WindowCredits, NULL, NULL, 0, 70);
+		LWP_CreateThread (&creditsthread, WindowCredits, NULL, NULL, 0, 60);
 }
 
 static void ChangeMenu(int menu)

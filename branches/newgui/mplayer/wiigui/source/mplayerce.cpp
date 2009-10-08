@@ -226,7 +226,7 @@ void ShutdownMPlayer()
 int
 main(int argc, char *argv[])
 {
-	USBGeckoOutput(); // uncomment to enable USB gecko output
+	//USBGeckoOutput(); // uncomment to enable USB gecko output
 	__exception_setreload(8);
 
 	//try to load ios202
@@ -278,7 +278,7 @@ main(int argc, char *argv[])
 	InitFreeType((u8*)font_ttf, font_ttf_size);
 
 	// create mplayer thread
-	LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 69);
+	LWP_CreateThread (&mthread, mplayerthread, NULL, mstack, TSTACK, 68);
 
 	while(1)
 	{

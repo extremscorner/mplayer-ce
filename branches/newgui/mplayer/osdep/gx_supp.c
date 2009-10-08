@@ -39,10 +39,8 @@
 
 extern void wii_draw_osd();
 
-static lwp_t drawthread = LWP_THREAD_NULL;
 static mutex_t texmutex = LWP_MUTEX_NULL;
-static bool stopdrawthread = false;
-static u64 frameCounter = 0;
+u64 frameCounter = 0;
 
 #define DEFAULT_FIFO_SIZE (256 * 1024)
 
@@ -54,6 +52,7 @@ static u16 * currentPitch = NULL;
 static int drawMode = 0;
 
 #ifdef WIILIB
+void StartDrawThread();
 void PauseAndGotoGUI();
 void ShutdownGui();
 void TakeScreenshot();
@@ -390,92 +389,66 @@ void GX_UpdatePitch(int width,u16 *pitch)
 	GX_ConfigTextureYUV(width, vheight, pitch);
 }
 
-void StopDrawThread()
+void DrawMPlayer()
 {
-	if(drawthread != LWP_THREAD_NULL)
+	// render textures
+
+	GX_InvVtxCache();
+	GX_InvalidateTexAll();
+
+	LWP_MutexLock(texmutex);
+
+	DCFlushRange(Ytexture, Ytexsize);
+	DCFlushRange(Utexture, UVtexsize);
+	DCFlushRange(Vtexture, UVtexsize);
+
+	GX_LoadTexObj(&YtexObj, GX_TEXMAP0);	// MAP0 <- Y
+	GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
+	GX_LoadTexObj(&VtexObj, GX_TEXMAP2);	// MAP2 <- V
+
+	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+		GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
+		GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
+		GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
+		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
+	GX_End();
+
+	GX_DrawDone();
+	GX_SetColorUpdate(GX_TRUE);
+
+	LWP_MutexUnlock(texmutex);
+
+	#ifdef WIILIB
+	if(copyScreen == 1)
+		TakeScreenshot();
+	else
+		drawMode = DrawMPlayerGui();
+	#endif
+
+	whichfb ^= 1;
+
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	VIDEO_Flush();
+
+	#ifdef WIILIB
+	if(copyScreen == 1)
 	{
-		stopdrawthread = true;
-		LWP_JoinThread(drawthread, NULL);
-		drawthread = LWP_THREAD_NULL;
+		copyScreen = 0;
+		pause_gui = 1;
 	}
-}
-
-static void * MPlayerDraw (void *arg)
-{
-	frameCounter = 0;
-	
-	while(frameCounter == 0)
-		usleep(100);
-
-	while (1)
+	else if(drawMode != 0)
 	{
-		if(stopdrawthread)
-			break;
-		
-		// render textures
-
-		GX_InvVtxCache();
-		GX_InvalidateTexAll();
-		
-		LWP_MutexLock(texmutex);
-
-		DCFlushRange(Ytexture, Ytexsize);
-		DCFlushRange(Utexture, UVtexsize);
-		DCFlushRange(Vtexture, UVtexsize);
-
-		GX_LoadTexObj(&YtexObj, GX_TEXMAP0);	// MAP0 <- Y
-		GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
-		GX_LoadTexObj(&VtexObj, GX_TEXMAP2);	// MAP2 <- V
-
-		GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-			GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
-			GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
-			GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
-			GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
-		GX_End();
-		
-		GX_DrawDone();
-		GX_SetColorUpdate(GX_TRUE);
-		
-		LWP_MutexUnlock(texmutex);
-		
-		#ifdef WIILIB
-		
-		if(copyScreen == 1)
-		{
-			copyScreen = 0;
-			TakeScreenshot();
-			pause_gui = 1;
-		}
-		else
-		{
-			drawMode = DrawMPlayerGui();
-		}
-		#endif
-
-		whichfb ^= 1;
-	
-		GX_CopyDisp(xfb[whichfb], GX_TRUE);
-
-		VIDEO_SetNextFramebuffer(xfb[whichfb]);
-		VIDEO_Flush();
-		
-		#ifdef WIILIB
-		if(drawMode != 0)
-		{
-			// reconfigure GX for MPlayer
-			Mtx44 p;
-			draw_initYUV();
-			draw_scaling();
-			guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
-			GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
-			drawMode = 0;
-		}
-		#endif
-		
-		VIDEO_WaitVSync();
+		// reconfigure GX for MPlayer
+		Mtx44 p;
+		draw_initYUV();
+		draw_scaling();
+		guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
+		GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
+		drawMode = 0;
 	}
-	return NULL;
+	#endif
 }
 
 /****************************************************************************
@@ -495,8 +468,9 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	if(texmutex == LWP_MUTEX_NULL)
 		LWP_MutexInit(&texmutex, false);
 
-	stopdrawthread = false;
-	LWP_CreateThread (&drawthread, MPlayerDraw, NULL, NULL, 0, 78);
+	#ifdef WIILIB
+	StartDrawThread();
+	#endif
 
 	/*** Set new aspect ***/
 	square[0] = square[9] = -haspect;
@@ -683,6 +657,10 @@ void GX_UpdateSquare()
 
 void GX_RenderTexture()
 {
+	#ifndef WIILIB
+	DrawMPlayer();
+	#endif
+
 	frameCounter++;
 }
 

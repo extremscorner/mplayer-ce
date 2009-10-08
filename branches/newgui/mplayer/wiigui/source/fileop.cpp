@@ -161,7 +161,7 @@ ResumeParseThread()
 {
 	parseHalt = false;
 	if(parsethread == LWP_THREAD_NULL)
-		LWP_CreateThread (&parsethread, parsecallback, NULL, NULL, 0, 80);
+		LWP_CreateThread (&parsethread, parsecallback, NULL, NULL, 0, 40);
 }
 
 /****************************************************************************

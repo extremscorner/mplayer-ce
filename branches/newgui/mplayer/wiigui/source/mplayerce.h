@@ -46,8 +46,10 @@ extern "C" {
 #endif
 
 extern int controlledbygui;
+extern u64 frameCounter;
 
 int mplayer_loadfile(const char* _file);
+void DrawMPlayer();
 bool DVDGekkoMount();
 void log_console_init(GXRModeObj *vmode, u16 logsize);
 //void log_console_deinit(void);
