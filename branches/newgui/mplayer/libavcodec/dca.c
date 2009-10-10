@@ -609,7 +609,7 @@ static int dca_subframe_header(DCAContext * s)
                 s->joint_scale_factor[j][k] = scale;    /*joint_scale_table[scale]; */
             }
 
-            if (!s->debug_flag & 0x02) {
+            if (!(s->debug_flag & 0x02)) {
                 av_log(s->avctx, AV_LOG_DEBUG,
                        "Joint stereo coding not supported\n");
                 s->debug_flag |= 0x02;
@@ -1324,7 +1324,7 @@ static av_cold int dca_decode_init(AVCodecContext * avctx)
         s->samples_chanptr[i] = s->samples + i * 256;
     avctx->sample_fmt = SAMPLE_FMT_S16;
 
-    if(s->dsp.float_to_int16 == ff_float_to_int16_c) {
+    if(s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
         s->add_bias = 385.0f;
         s->scale_bias = 1.0 / 32768.0;
     } else {

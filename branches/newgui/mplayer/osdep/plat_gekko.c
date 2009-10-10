@@ -118,9 +118,10 @@ bool load_ehci_module()
 
 	if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio)<0)
 	{
+		usleep(1000);
 		if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x48)<0) return false;
 	}
-	usleep(1000);
+	usleep(5000);
 	return true;
 }
 
@@ -802,6 +803,7 @@ void plat_init (int *argc, char **argv[]) {
 	int mload=-1;
 	char cad[10]={127,130,158,147,171,151,164,117,119,0};
 	
+	__exception_setreload(8);
 	VIDEO_Init();
 	GX_InitVideo();
 	log_console_init(vmode, 0);
@@ -824,10 +826,12 @@ void plat_init (int *argc, char **argv[]) {
 			IOS_ReloadIOS(202);
 			WIIDVD_Init(false);
 		}
-		else WIIDVD_Init(true);
+		else 
+		{
+			WIIDVD_Init(true);
+		}
 	} 
 	else WIIDVD_Init(false);
-	
 	mload=mload_init();
 
 	PAD_Init();
@@ -840,7 +844,6 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_Init(NULL);
 	AUDIO_RegisterDMACallback(NULL);
 	AUDIO_StopDMA();
-	
 	if (!DetectValidPath())
 	{
 		printf("SD/USB access failed\n");
@@ -866,6 +869,7 @@ void plat_init (int *argc, char **argv[]) {
 	mainthread=LWP_GetSelf(); 	
 	 
 #ifndef CE_DEBUG  //no network on debug
+
 	if(dbg_network)
 	{
 		printf("\nDebugging Network\n");
@@ -884,15 +888,18 @@ void plat_init (int *argc, char **argv[]) {
 	}
 #endif
 
+	USB2Enable(false);
 	if(mload>=0) 
 	{		
 		if(load_ehci_module())
 			USB2Enable(true);
-
+			
+/*
 		fatUnmount("usb:");
 		usb->isInserted();
 		fatMount("usb",usb,0,3,256);
 		mount_usb_ntfs();
+*/		
 	}
 
 	chdir(MPLAYER_DATADIR);
@@ -933,6 +940,7 @@ else
 		mount_usb_ntfs();
 	}
 }
+
 	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
 
 	// only used for cache_mem at now  (stream_cache_size + 8kb(paranoid)

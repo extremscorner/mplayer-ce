@@ -210,7 +210,7 @@ void USB2Enable(bool enable)
 	}
 	else
 	{
-		USB2Storage_Initialize(0);
+		//USB2Storage_Initialize(0);
 		__io_usbstorage = __io_usb2storage;
 	}
 }

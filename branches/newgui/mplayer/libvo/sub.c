@@ -1308,6 +1308,7 @@ void vo_draw_text_ext(int dxs, int dys, int left_border, int top_border,
 }
 
 void vo_draw_text(int dxs, int dys, void (*draw_alpha)(int x0, int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride)) {
+  if(!vo_osd_list)return;
   vo_draw_text_ext(dxs, dys, 0, 0, 0, 0, dxs, dys, draw_alpha);
 }
 

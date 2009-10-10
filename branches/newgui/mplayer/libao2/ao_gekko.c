@@ -141,7 +141,7 @@ static void reset(void) {
 	playing = false;
 	
 	//to be sure dma is clean	
-	AUDIO_InitDMA((u32)buffer[0],SFX_BUFFER_SIZE);
+	AUDIO_InitDMA((u32)buffer[0],32);
 	AUDIO_StartDMA();
 	usleep(50);
 	while(AUDIO_GetDMABytesLeft()>0) usleep(50);

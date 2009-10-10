@@ -205,12 +205,16 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 static void draw_osd(void)
 {
 	// do nothing - will be drawn immediately after frame is drawn
+#ifndef WIILIB
+	vo_draw_text(image_width, image_height, draw_alpha);
+#endif
+
 }
 
 void wii_draw_osd()
 {
 	// this is not the best test - 'OSD: Disabled' message will not show up!
-	if(osd_level >= 1)
+//	if(osd_level >= 1)
 		vo_draw_text(image_width, image_height, draw_alpha);
 }
 
@@ -287,7 +291,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 
 	//  image_height = orig_height;
 	reinit_video();
-	printf("mplayer video inited\n");
+	//printf("mplayer video inited\n");
 	return 0;
 }
 
@@ -295,7 +299,7 @@ static void uninit(void)
 {
 	image_width = 0;
 	image_height = 0;
-	reset_nunchuk_positions();
+	//reset_nunchuk_positions();
 }
 
 static void check_events(void)

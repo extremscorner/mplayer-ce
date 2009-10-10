@@ -39,9 +39,10 @@
 
 extern void wii_draw_osd();
 
+#ifdef WIILIB
 static mutex_t texmutex = LWP_MUTEX_NULL;
 u64 frameCounter = 0;
-
+#endif
 #define DEFAULT_FIFO_SIZE (256 * 1024)
 
 #define HASPECT 320
@@ -378,11 +379,15 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 void GX_UpdatePitch(int width,u16 *pitch)
 {
 	//black
+	#ifdef WIILIB		
 	LWP_MutexLock(texmutex);
+	#endif
     memset(Ytexture, 0, Ytexsize);
 	memset(Utexture, 0x80, UVtexsize);
 	memset(Vtexture, 0x80, UVtexsize);
+	#ifdef WIILIB
 	LWP_MutexUnlock(texmutex);
+	#endif
 
 	currentWidth = width;
 	currentPitch = pitch;
@@ -396,7 +401,9 @@ void DrawMPlayer()
 	GX_InvVtxCache();
 	GX_InvalidateTexAll();
 
+	#ifdef WIILIB
 	LWP_MutexLock(texmutex);
+	#endif
 
 	DCFlushRange(Ytexture, Ytexsize);
 	DCFlushRange(Utexture, UVtexsize);
@@ -413,21 +420,26 @@ void DrawMPlayer()
 		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 	GX_End();
 
+	whichfb ^= 1;
+
+	#ifdef WIILIB
 	GX_DrawDone();
 	GX_SetColorUpdate(GX_TRUE);
-
 	LWP_MutexUnlock(texmutex);
+	#else
+	GX_SetColorUpdate(GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	GX_DrawDone();
+	#endif
 
 	#ifdef WIILIB
 	if(copyScreen == 1)
 		TakeScreenshot();
 	else
 		drawMode = DrawMPlayerGui();
-	#endif
-
-	whichfb ^= 1;
 
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	#endif
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
@@ -465,10 +477,10 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	ShutdownGui();
 	#endif
 
-	if(texmutex == LWP_MUTEX_NULL)
-		LWP_MutexInit(&texmutex, false);
-
 	#ifdef WIILIB
+	if(texmutex == LWP_MUTEX_NULL)
+		LWP_MutexInit(&texmutex, false);	
+
 	StartDrawThread();
 	#endif
 
@@ -559,6 +571,7 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
 
 	GX_Flush();
+	GX_UpdateSquare();
 }
 
 void GX_FillTextureYUV(u16 height,u8 *buffer[3])
@@ -585,8 +598,9 @@ void GX_FillTextureYUV(u16 height,u8 *buffer[3])
     	h2 = height >> 3 ;
 	}
 	
+	#ifdef WIILIB
 	LWP_MutexLock(texmutex);
-
+	#endif
 	//Convert YUV frame to GX textures
 	//Convert Y plane to texture
 	for (h = 0; h < h1; h++)
@@ -631,7 +645,9 @@ void GX_FillTextureYUV(u16 height,u8 *buffer[3])
 		Vsrc4 += UVrowpitch;
 	}
 	wii_draw_osd();
+	#ifdef WIILIB	
 	LWP_MutexUnlock(texmutex);
+	#endif
 }
 
 //nunchuk control
@@ -659,9 +675,9 @@ void GX_RenderTexture()
 {
 	#ifndef WIILIB
 	DrawMPlayer();
-	#endif
-
+	#else
 	frameCounter++;
+	#endif
 }
 
 void GX_ResetTextureYUVPointers()

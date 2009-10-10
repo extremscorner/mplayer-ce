@@ -527,7 +527,7 @@ static av_cold int aac_decode_init(AVCodecContext *avccontext)
     // 32768 - Required to scale values to the correct range for the bias method
     //         for float to int16 conversion.
 
-    if (ac->dsp.float_to_int16 == ff_float_to_int16_c) {
+    if (ac->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
         ac->add_bias  = 385.0f;
         ac->sf_scale  = 1. / (-1024. * 32768.);
         ac->sf_offset = 0;
@@ -1682,7 +1682,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
             ac->m4ac.chan_config = hdr_info.chan_config;
             if (set_default_channel_config(ac, new_che_pos, hdr_info.chan_config))
                 return -7;
-            if (output_configure(ac, ac->che_pos, new_che_pos, 1))
+            if (output_configure(ac, ac->che_pos, new_che_pos, hdr_info.chan_config))
                 return -7;
         }
         ac->m4ac.sample_rate     = hdr_info.sample_rate;

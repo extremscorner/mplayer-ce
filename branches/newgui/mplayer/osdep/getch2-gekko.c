@@ -94,11 +94,6 @@ void reset_nunchuk_positions()
 }
 
 void getch2(void) {
-
-#ifdef WIILIB
-	return;
-#endif
-
 	static s64 lt = 0;
 	s64 tt;
 	u16 pad, i;

@@ -481,21 +481,24 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/mpegvideo_alpha.o       \
                                           alpha/simple_idct_alpha.o     \
 
-OBJS-$(ARCH_ARM)                       += arm/dsputil_arm.o             \
-                                          arm/dsputil_arm_s.o           \
+OBJS-$(ARCH_ARM)                       += arm/dsputil_init_arm.o        \
+                                          arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
                                           arm/jrevdct_arm.o             \
                                           arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
 
-OBJS-$(HAVE_ARMV5TE)                   += arm/mpegvideo_armv5te.o       \
+OBJS-$(HAVE_ARMV5TE)                   += arm/dsputil_init_armv5te.o    \
+                                          arm/mpegvideo_armv5te.o       \
                                           arm/mpegvideo_armv5te_s.o     \
                                           arm/simple_idct_armv5te.o     \
 
-OBJS-$(HAVE_ARMV6)                     += arm/simple_idct_armv6.o       \
+OBJS-$(HAVE_ARMV6)                     += arm/dsputil_init_armv6.o      \
+                                          arm/dsputil_armv6.o           \
+                                          arm/simple_idct_armv6.o       \
 
 OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
-                                          arm/float_arm_vfp.o           \
+                                          arm/dsputil_init_vfp.o        \
 
 OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
                                           arm/mpegvideo_iwmmxt.o        \
@@ -509,8 +512,8 @@ NEON-OBJS-$(CONFIG_H264_DECODER)       += arm/h264dsp_neon.o            \
 
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
-OBJS-$(HAVE_NEON)                      += arm/dsputil_neon.o            \
-                                          arm/dsputil_neon_s.o          \
+OBJS-$(HAVE_NEON)                      += arm/dsputil_init_neon.o       \
+                                          arm/dsputil_neon.o            \
                                           arm/simple_idct_neon.o        \
                                           $(NEON-OBJS-yes)
 
