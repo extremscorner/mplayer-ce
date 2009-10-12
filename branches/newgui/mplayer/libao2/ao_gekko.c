@@ -179,8 +179,8 @@ static void copy_swap_channels(u32 *d, u32 *s, int len)
 {
 	int n;
 	
+	//if(len%4>0)printf("no u32 data, len: %d\n",len);
 	len=len/4;
-	
 	for(n=0;n<len;n++) d[n] = SWAP(s[n]);
 }
 
@@ -193,6 +193,7 @@ static int play(void* data, int len, int flags) {
 		if (bl > SFX_BUFFER_SIZE)
 			bl = SFX_BUFFER_SIZE;
 
+		memset(buffer[buffer_fill] , 0, SFX_BUFFER_SIZE); //test, eliminating sound pitch: I think is not needed
 		copy_swap_channels((u32*)buffer[buffer_fill], (u32*)s, bl);
 		//memcpy(buffer[buffer_fill], s, bl);
 

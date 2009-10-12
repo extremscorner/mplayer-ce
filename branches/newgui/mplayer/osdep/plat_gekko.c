@@ -291,10 +291,11 @@ static void * mountthreadfunc (void *arg)
 			mounting_usb=1;
 			
 			dp=usb->isInserted();
-			usleep(500); // needed, I don't know why, but hang if it's deleted
+			
 			//printf(".");fflush(stdout);
 			if(dp!=usb_inserted)
 			{
+				usleep(500); // needed, I don't know why, but hang if it's deleted
 				//printf("usb isInserted: %d\n",dp);
 				usb_inserted=dp;
 				if(!dp)
@@ -322,8 +323,6 @@ static void * mountthreadfunc (void *arg)
 		}
 		if(exit_automount_thread) break;
 		usleep(200000);	
-		if(exit_automount_thread) break;	
-		usleep(200000);		
 		if(exit_automount_thread) break;	
 		usleep(200000);		
 		if(exit_automount_thread) break;	
@@ -699,11 +698,21 @@ bool DeviceMounted(const char *device)
   {
     buf[len]=':';  
     buf[len+1]='\0';
+    len++;
   }   
   devops = (devoptab_t*)GetDeviceOpTab(buf);
-  if (!devops) return false;
-  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
-  if (!devops || strncasecmp(buf,devops->name,i)) return false;
+  if (!devops) 
+  {
+  	free(buf);
+  	return false;
+  }
+  //for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
+  if (!devops || strncasecmp(buf,devops->name,len))
+  {
+  	free(buf);
+  	return false;
+  }
+  free(buf);
   return true;
 }
 
