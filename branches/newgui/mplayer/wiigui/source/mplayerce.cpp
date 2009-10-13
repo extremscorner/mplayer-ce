@@ -247,15 +247,9 @@ main(int argc, char *argv[])
 			USB2Enable(true);
 
 	VIDEO_Init();
-	PAD_Init();
-	WPAD_Init();
+	SetupPads();
 	InitVideo(); // Initialise video
 	AUDIO_Init(NULL);
-
-	// read wiimote accelerometer and IR data
-	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
-	WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth, screenheight);
-	WPAD_SetIdleTimeout(60);
 
 	// Wii Power/Reset buttons
 	WPAD_SetPowerButtonCallback((WPADShutdownCallback)ShutdownCB);

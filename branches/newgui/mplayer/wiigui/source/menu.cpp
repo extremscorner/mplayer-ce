@@ -152,9 +152,9 @@ UpdateGui (void *arg)
 
 			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
 			{
-				if(userInput[i].wpad.ir.valid)
-					Menu_DrawImg(userInput[i].wpad.ir.x-48, userInput[i].wpad.ir.y-48,
-						96, 96, pointer[i]->GetImage(), userInput[i].wpad.ir.angle, 1, 1, 255);
+				if(userInput[i].wpad->ir.valid)
+					Menu_DrawImg(userInput[i].wpad->ir.x-48, userInput[i].wpad->ir.y-48,
+						96, 96, pointer[i]->GetImage(), userInput[i].wpad->ir.angle, 1, 1, 255);
 				DoRumble(i);
 			}
 			doMPlayerGuiDraw = 0;
@@ -179,7 +179,7 @@ UpdateGui (void *arg)
 				creditsthread = LWP_THREAD_NULL;
 			}
 
-			if(userInput[0].wpad.btns_d & WPAD_BUTTON_HOME)
+			if(userInput[0].wpad->btns_d & WPAD_BUTTON_HOME)
 				ExitRequested = 1;
 
 			if(ExitRequested || ShutdownRequested)
@@ -808,7 +808,7 @@ static void * WindowCredits(void *arg)
 	{
 		for(i=0; i < 4; i++)
 		{
-			if(userInput[i].wpad.btns_d || userInput[i].pad.btns_d)
+			if(userInput[i].wpad->btns_d || userInput[i].pad.btns_d)
 				exit = true;
 		}
 		usleep(THREAD_SLEEP);
@@ -2503,7 +2503,7 @@ static void ProgressCallback(void * ptr)
 	
 	if(b->GetState() == STATE_CLICKED)
 	{
-		percent = (userInput[b->GetStateChan()].wpad.ir.x - b->GetLeft())/360.0;
+		percent = (userInput[b->GetStateChan()].wpad->ir.x - b->GetLeft())/360.0;
 		done = total*percent;
 		b->ResetState();
 		wiiSeekPos(done);
