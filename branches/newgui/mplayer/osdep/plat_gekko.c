@@ -63,6 +63,7 @@
 
 #define MPCE_VERSION "0.76"
 
+extern char appPath[1024];
 extern int stream_cache_size;
 
 static float gxzoom=348;
@@ -178,17 +179,11 @@ bool FindIOS(u32 ios)
 #ifdef WIILIB
 void plat_init (int *argc, char **argv[])
 {
-	//log_console_init(vmode, 0);
-	GX_SetCamPosZ(gxzoom);
-	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
+	sprintf(MPLAYER_DATADIR,"%s",appPath);
+	sprintf(MPLAYER_CONFDIR,"%s",appPath);
+	sprintf(MPLAYER_LIBDIR,"%s",appPath);
+	chdir(appPath);
 
-
-	//fixed at now, I think this path has to be passed by gui
-	sprintf(MPLAYER_DATADIR,"%s","sd:/apps/mplayer_ce");
-	sprintf(MPLAYER_CONFDIR,"%s","sd:/apps/mplayer_ce");
-	sprintf(MPLAYER_LIBDIR,"%s","sd:/apps/mplayer_ce");
-	chdir(MPLAYER_DATADIR);
-	
 	setenv("HOME", MPLAYER_DATADIR, 1);
 	setenv("DVDCSS_CACHE", "off", 1);
 	setenv("DVDCSS_VERBOSE", "0", 1);
@@ -196,6 +191,9 @@ void plat_init (int *argc, char **argv[])
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
 
 	stream_cache_size=8*1024; //default cache size (8MB)
+
+	// only used for cache_mem
+	InitMem2Manager((stream_cache_size*1024)+(8*1024));
 }
 void plat_deinit (int rc)
 {

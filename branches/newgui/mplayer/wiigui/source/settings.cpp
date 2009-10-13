@@ -485,12 +485,18 @@ SaveSettings (bool silent)
 		sprintf(filepath, "sd:/%s/settings.xml", APPFOLDER);
 	else if(ChangeInterface(DEVICE_USB, -1, SILENT))
 		sprintf(filepath, "usb:/%s/settings.xml", APPFOLDER);
+
 	offset = SaveFile(savebuffer, filepath, datasize, silent);
+
 	free(savebuffer);
 	CancelAction();
 
 	if (offset > 0)
 	{
+		strcpy(appPath, filepath); // save successful path
+		char * end = strrchr(appPath, '/');
+		end[0] = 0; // strip filename
+
 		if (!silent)
 			InfoPrompt("Settings saved");
 		return true;
@@ -613,30 +619,25 @@ bool LoadSettings()
 		return true;
 
 	bool settingsFound = false;
+	char path[3][MAXPATHLEN];
 	char filepath[MAXPATHLEN];
 
-	// try to load from appPath
-	if(strlen(appPath) > 0)
-	{
-		sprintf(filepath, "%s/settings.xml", appPath);
-		settingsFound = LoadSettingsFile(filepath);
-		sprintf(filepath, "%s/onlinemedia.xml", appPath);
-		LoadOnlineMediaFile(filepath);
-	}
+	sprintf(path[0], "%s", appPath);
+	sprintf(path[1], "sd:/%s", APPFOLDER);
+	sprintf(path[2], "usb:/%s", APPFOLDER);
 
-	if(!settingsFound)
+	for(int i=0; i<3; i++)
 	{
-		sprintf(filepath, "sd:/%s/settings.xml", APPFOLDER);
+		sprintf(filepath, "%s/settings.xml", path[i]);
 		settingsFound = LoadSettingsFile(filepath);
-		sprintf(filepath, "sd:/%s/onlinemedia.xml", APPFOLDER);
+		sprintf(filepath, "%s/onlinemedia.xml", path[i]);
 		LoadOnlineMediaFile(filepath);
-	}
-	if(!settingsFound)
-	{
-		sprintf(filepath, "usb:/%s/settings.xml", APPFOLDER);
-		settingsFound = LoadSettingsFile(filepath);
-		sprintf(filepath, "usb:/%s/onlinemedia.xml", APPFOLDER);
-		LoadOnlineMediaFile(filepath);
+
+		if(settingsFound)
+		{
+			strcpy(appPath, path[i]);
+			break;
+		}
 	}
 
 	settingsLoaded = true; // attempted to load settings

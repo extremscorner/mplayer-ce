@@ -308,6 +308,9 @@ bool MountDVD(bool silent)
 
 static bool FindDevice(char * filepath, int * device, int * devnum)
 {
+	if(!filepath || filepath[0] == 0)
+		return false;
+
 	int tmp = -1;
 
 	if(strncmp(filepath, "sd:", 3) == 0)
@@ -384,6 +387,9 @@ bool ChangeInterface(int device, int devnum, bool silent)
 
 bool ChangeInterface(char * filepath, bool silent)
 {
+	if(!filepath || filepath[0] == 0)
+		return false;
+
 	int device = -1;
 	int devnum = -1;
 
@@ -395,6 +401,9 @@ bool ChangeInterface(char * filepath, bool silent)
 
 void CreateAppPath(char * origpath)
 {
+	if(!origpath || origpath[0] == 0)
+		return;
+
 	char * path = strdup(origpath); // make a copy so we don't mess up original
 
 	if(!path)
