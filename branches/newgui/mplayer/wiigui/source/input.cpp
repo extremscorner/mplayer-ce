@@ -108,10 +108,10 @@ void MPlayerInput()
 
 	for(i=0; i<4; i++)
 	{
-		if(userInput[i].wpad.ir.valid)
+		if(userInput[i].wpad->ir.valid)
 			ir = true;
 
-		if(userInput[i].wpad.btns_d & WPAD_BUTTON_1)
+		if(userInput[i].wpad->btns_d & WPAD_BUTTON_1)
 		{
 			if(level == 3)
 				wiiSetOSDLevel(0);
@@ -119,20 +119,20 @@ void MPlayerInput()
 				wiiSetOSDLevel(level+1);
 		}
 		
-		if(userInput[i].wpad.btns_d & WPAD_BUTTON_HOME)
+		if(userInput[i].wpad->btns_d & WPAD_BUTTON_HOME)
 			wiiGotoGui();
 		
 		if(!drawGui)
 		{			
-			if(userInput[i].wpad.btns_d & WPAD_BUTTON_A)
+			if(userInput[i].wpad->btns_d & WPAD_BUTTON_A)
 				wiiPause();
-			if(userInput[i].wpad.btns_d & WPAD_BUTTON_UP)
+			if(userInput[i].wpad->btns_d & WPAD_BUTTON_UP)
 				wiiFastForward();
-			if(userInput[i].wpad.btns_d & WPAD_BUTTON_LEFT)
+			if(userInput[i].wpad->btns_d & WPAD_BUTTON_LEFT)
 				wiiRewind();
-			if(userInput[i].wpad.btns_d & WPAD_BUTTON_RIGHT)
+			if(userInput[i].wpad->btns_d & WPAD_BUTTON_RIGHT)
 				wiiSkipForward();
-			if(userInput[i].wpad.btns_d & WPAD_BUTTON_DOWN)
+			if(userInput[i].wpad->btns_d & WPAD_BUTTON_DOWN)
 				wiiSkipBackward();
 		}
 	}

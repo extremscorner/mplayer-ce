@@ -247,8 +247,8 @@ main(int argc, char *argv[])
 			USB2Enable(true);
 
 	VIDEO_Init();
-	SetupPads();
 	InitVideo(); // Initialise video
+	SetupPads();
 	AUDIO_Init(NULL);
 
 	// Wii Power/Reset buttons

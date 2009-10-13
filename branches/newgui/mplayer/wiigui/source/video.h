@@ -25,6 +25,7 @@ int DrawMPlayerGui();
 
 extern int screenheight;
 extern int screenwidth;
+extern bool widescreenMode;
 extern u8 * videoScreenshot;
 extern u32 FrameTimer;
 extern u8 * mPointer[4];

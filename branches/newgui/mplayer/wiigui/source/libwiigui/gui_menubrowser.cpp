@@ -168,7 +168,7 @@ void GuiMenuBrowser::Update(GuiTrigger * t)
 
 		int currChan = t->chan;
 
-		if(t->wpad.ir.valid && !itemBtn[i]->IsInside(t->wpad.ir.x, t->wpad.ir.y))
+		if(t->wpad->ir.valid && !itemBtn[i]->IsInside(t->wpad->ir.x, t->wpad->ir.y))
 			t->chan = -1;
 
 		itemBtn[i]->Update(t);

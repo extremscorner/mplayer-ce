@@ -422,23 +422,20 @@ void DrawMPlayer()
 
 	whichfb ^= 1;
 
-	#ifdef WIILIB
-	GX_DrawDone();
 	GX_SetColorUpdate(GX_TRUE);
-	LWP_MutexUnlock(texmutex);
-	#else
-	GX_SetColorUpdate(GX_TRUE);
-	GX_CopyDisp(xfb[whichfb], GX_TRUE);
-	GX_DrawDone();
-	#endif
 
 	#ifdef WIILIB
 	if(copyScreen == 1)
 		TakeScreenshot();
 	else
 		drawMode = DrawMPlayerGui();
+	#endif
 
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	GX_DrawDone();
+
+	#ifdef WIILIB
+	LWP_MutexUnlock(texmutex);
 	#endif
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);

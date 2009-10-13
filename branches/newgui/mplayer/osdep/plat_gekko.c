@@ -242,8 +242,6 @@ static u8 ftpx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);
 const static DISC_INTERFACE* sd = &__io_wiisd;
 const static DISC_INTERFACE* usb = &__io_usbstorage;
 
-static lwp_t mainthread;
-
 bool mount_sd_ntfs()
 {
 	//only mount the first ntfs partition
@@ -872,10 +870,7 @@ void plat_init (int *argc, char **argv[]) {
 	LoadParams();
 	//GX_SetComponentFix(component_fix); //deprecated
 	GX_SetCamPosZ(gxzoom);
-	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);  
-
-
-	mainthread=LWP_GetSelf(); 	
+	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);  	
 	 
 #ifndef CE_DEBUG  //no network on debug
 

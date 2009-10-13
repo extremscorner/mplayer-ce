@@ -93,13 +93,17 @@ void reset_nunchuk_positions()
 	m_screenbottom_shift = 0;
 }
 
-void getch2(void) {
+void getch2(void)
+{
+	#ifdef WIILIB
+	return;
+	#endif
+
 	static s64 lt = 0;
 	s64 tt;
 	u16 pad, i;
 	u32 wpad;
 	bool mod,update;
-	
 
 	if (!getch2_status)
 		return;
