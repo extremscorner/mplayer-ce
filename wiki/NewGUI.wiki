@@ -37,6 +37,9 @@ Please limit your designs to the GUI as I have described it above. Keep in mind 
 ===File browse root - device listing===
 [http://tantric.dyndns.org/gui/device-listing.png]
 
+===Mockup (by drmr) of switching between videos===
+[http://tantric.dyndns.org/gui/mplayer_gui_v001a.png]
+
 ===Music tab===
 [http://tantric.dyndns.org/gui/music-playback.png]
 
