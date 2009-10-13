@@ -39,6 +39,7 @@ Please limit your designs to the GUI as I have described it above. Keep in mind 
 
 ===Music tab===
 [http://tantric.dyndns.org/gui/music-playback.png]
+
 Note that this does not show file/folder enqueuing - that has yet to be determined
 
 ===In-video progress bar===
