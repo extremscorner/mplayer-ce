@@ -430,13 +430,11 @@ void DrawMPlayer()
 		DCFlushRange(Ytexture[frame], Ytexsize);
 		DCFlushRange(Utexture[frame], UVtexsize);
 		DCFlushRange(Vtexture[frame], UVtexsize);
-	
-		GX_LoadTexObj(&YtexObj[frame], GX_TEXMAP0);	// MAP0 <- Y
-		GX_LoadTexObj(&UtexObj[frame], GX_TEXMAP1);	// MAP1 <- U
-		GX_LoadTexObj(&VtexObj[frame], GX_TEXMAP2);	// MAP2 <- V
-
 	}
 	
+	GX_LoadTexObj(&YtexObj[frame], GX_TEXMAP0);	// MAP0 <- Y
+	GX_LoadTexObj(&UtexObj[frame], GX_TEXMAP1);	// MAP1 <- U
+	GX_LoadTexObj(&VtexObj[frame], GX_TEXMAP2);	// MAP2 <- V
 	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
 		GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
 		GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
@@ -446,7 +444,6 @@ void DrawMPlayer()
 	GX_SetColorUpdate(GX_TRUE);
 
 
-	whichfb ^= 1;
 
 	#ifdef WIILIB
 	if(copyScreen == 1)
@@ -455,6 +452,7 @@ void DrawMPlayer()
 		drawMode = DrawMPlayerGui();
 	#endif
 
+	whichfb ^= 1;
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
 
@@ -705,11 +703,11 @@ void GX_UpdateSquare()
 
 void GX_RenderTexture()
 {
+	whichmpfb ^= 1;
 	#ifndef WIILIB
 	DrawMPlayer();
 	#else
-	frameCounter++;
-	whichmpfb ^= 1;
+	frameCounter++;	
 	#endif
 }
 
