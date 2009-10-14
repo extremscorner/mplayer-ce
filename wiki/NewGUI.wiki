@@ -6,6 +6,8 @@ Thank you all for your interest in the new GUI. I see lots of interesting though
 
 I've taken some screenshots of the GUI as it is now. It's important to note that these are only to show the currently proposed layout and feature set, and are not a reflection on the look or end design - that is still in flux.
 
+This layout is not set in stone, feel free to change it up. However, if you decide to do so, *please don't present any half thought out or totally unrealistic ideas*. It must have practical navigation and a layout that's sensible for the Wii. For example, the Wii doesn't lend itself well to small buttons, small controls, or small fonts - everything must be somewhat "oversized". Also, you need to respect the [http://en.wikipedia.org/wiki/Safe_area safe area] and work within a 640x480 target resolution.
+
 There will be a menu bar (at the top or bottom) that will go into the different areas (Videos, Pictures, Music, DVD, Online Media). Each area will have a somewhat different layout to reflect the different content type. The app will jump into the Videos area on startup, to the last browsed folder.
 
 
