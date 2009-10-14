@@ -112,7 +112,6 @@ void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca,
 	src3 = src + dststride * 2;
 	srca4 = srca + dststride * 3;
 	src4 = src + dststride * 3;
-
 	for (y = 0; y < h1; y++)
 	{
 		for (w = 0; w < w1; w++)
@@ -204,19 +203,15 @@ static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
 
 static void draw_osd(void)
 {
-	// do nothing - will be drawn immediately after frame is drawn
-#ifndef WIILIB
 	vo_draw_text(image_width, image_height, draw_alpha);
-#endif
-
 }
 
-void wii_draw_osd()
-{
+//void wii_draw_osd()
+//{
 	// this is not the best test - 'OSD: Disabled' message will not show up!
 //	if(osd_level >= 1)
-		vo_draw_text(image_width, image_height, draw_alpha);
-}
+//		vo_draw_text(image_width, image_height, draw_alpha);
+//}
 
 static void flip_page(void)
 {

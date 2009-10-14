@@ -37,10 +37,10 @@
 #include <wiiuse/wpad.h>
 #endif
 
-extern void wii_draw_osd();
+//extern void wii_draw_osd();
 
 #ifdef WIILIB
-static mutex_t texmutex = LWP_MUTEX_NULL;
+//static mutex_t texmutex = LWP_MUTEX_NULL;
 u64 frameCounter = 0;
 #endif
 #define DEFAULT_FIFO_SIZE (256 * 1024)
@@ -71,6 +71,7 @@ static u32 whichfb;
 static u32 *xfb[2];
 GXRModeObj *vmode = NULL;
 #endif
+static u32 whichmpfb=0;
 
 //static bool component_fix=false;
 static int hor_pos=0, vert_pos=0, stretch=0;
@@ -83,10 +84,13 @@ static u8 *gp_fifo;
 /*** Texture memory ***/
 //static u8 *texturemem = NULL;
 //static u32 texturesize;
-static u8 *Ytexture = NULL,*Utexture = NULL,*Vtexture = NULL;
+static u8 *Ytexture[2] = {NULL,NULL};
+static u8 *Utexture[2] = {NULL,NULL};
+static u8 *Vtexture[2] = {NULL,NULL};
+
 static u32 Ytexsize,UVtexsize;
 
-GXTexObj texobj,YtexObj,UtexObj,VtexObj;
+GXTexObj texobj,YtexObj[2],UtexObj[2],VtexObj[2];
 static Mtx view;
 static u16 vwidth, vheight, oldvwidth, oldvheight, oldpitch;
 static u16 Ywidth, Yheight, UVwidth, UVheight;
@@ -149,12 +153,19 @@ void GX_InitVideo()
 		VIDEO_WaitVSync();
 
 	//make texture memory fixed (max texture 900*700, gx can't manage more) and in mem1 (is faster)
-	if (!Ytexture)
-		Ytexture = (u8 *) memalign(32,900*700);
-	if (!Utexture)
-		Utexture = (u8 *) memalign(32,900*700/4);
-	if (!Vtexture)
-		Vtexture = (u8 *) memalign(32,900*700/4);
+	if (!Ytexture[0])
+		Ytexture[0] = (u8 *) memalign(32,900*700);
+	if (!Utexture[0])
+		Utexture[0] = (u8 *) memalign(32,900*700/4);
+	if (!Vtexture[0])
+		Vtexture[0] = (u8 *) memalign(32,900*700/4);
+
+	if (!Ytexture[1])
+		Ytexture[1] = (u8 *) memalign(32,900*700);
+	if (!Utexture[1])
+		Utexture[1] = (u8 *) memalign(32,900*700/4);
+	if (!Vtexture[1])
+		Vtexture[1] = (u8 *) memalign(32,900*700/4);
 }
 #endif
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
@@ -297,9 +308,13 @@ static void draw_initYUV(void)
 	GX_SetArray(GX_VA_TEX1, texcoords, 2 * sizeof(u8));
 
 	//init YUV texture objects
-	GX_InitTexObj(&YtexObj, Ytexture, (u16) Ywidth, (u16) Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-	GX_InitTexObj(&UtexObj, Utexture, (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-	GX_InitTexObj(&VtexObj, Vtexture, (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObj(&YtexObj[0], Ytexture[0], (u16) Ywidth, (u16) Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObj(&UtexObj[0], Utexture[0], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObj(&VtexObj[0], Vtexture[0], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+
+	GX_InitTexObj(&YtexObj[1], Ytexture[1], (u16) Ywidth, (u16) Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObj(&UtexObj[1], Utexture[1], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObj(&VtexObj[1], Vtexture[1], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 }
 
 //------- rodries change: to avoid image_buffer intermediate ------
@@ -332,9 +347,8 @@ static void draw_scaling()
 void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 {
 	int wp,ww;
-	Ydst = (u64 *) Ytexture;
-	Udst = (u64 *) Utexture;
-	Vdst = (u64 *) Vtexture;
+	
+	GX_ResetTextureYUVPointers();
 
 	wp=pitch[0];
 	ww=width;
@@ -380,13 +394,16 @@ void GX_UpdatePitch(int width,u16 *pitch)
 {
 	//black
 	#ifdef WIILIB		
-	LWP_MutexLock(texmutex);
+	//LWP_MutexLock(texmutex);
 	#endif
-    memset(Ytexture, 0, Ytexsize);
-	memset(Utexture, 0x80, UVtexsize);
-	memset(Vtexture, 0x80, UVtexsize);
+    memset(Ytexture[0], 0, Ytexsize);
+	memset(Utexture[0], 0x80, UVtexsize);
+	memset(Vtexture[0], 0x80, UVtexsize);
+    memset(Ytexture[1], 0, Ytexsize);
+	memset(Utexture[1], 0x80, UVtexsize);
+	memset(Vtexture[1], 0x80, UVtexsize);
 	#ifdef WIILIB
-	LWP_MutexUnlock(texmutex);
+	//LWP_MutexUnlock(texmutex);
 	#endif
 
 	currentWidth = width;
@@ -397,32 +414,39 @@ void GX_UpdatePitch(int width,u16 *pitch)
 void DrawMPlayer()
 {
 	// render textures
+	static u32 last_frame=-1;
+	u32 frame=whichmpfb^1;
 
 	GX_InvVtxCache();
 	GX_InvalidateTexAll();
 
 	#ifdef WIILIB
-	LWP_MutexLock(texmutex);
+	//LWP_MutexLock(texmutex);
 	#endif
 
-	DCFlushRange(Ytexture, Ytexsize);
-	DCFlushRange(Utexture, UVtexsize);
-	DCFlushRange(Vtexture, UVtexsize);
+	if(last_frame!=frame) //not sure If we get performance here
+	{
+		last_frame=frame;
+		DCFlushRange(Ytexture[frame], Ytexsize);
+		DCFlushRange(Utexture[frame], UVtexsize);
+		DCFlushRange(Vtexture[frame], UVtexsize);
+	
+		GX_LoadTexObj(&YtexObj[frame], GX_TEXMAP0);	// MAP0 <- Y
+		GX_LoadTexObj(&UtexObj[frame], GX_TEXMAP1);	// MAP1 <- U
+		GX_LoadTexObj(&VtexObj[frame], GX_TEXMAP2);	// MAP2 <- V
 
-	GX_LoadTexObj(&YtexObj, GX_TEXMAP0);	// MAP0 <- Y
-	GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
-	GX_LoadTexObj(&VtexObj, GX_TEXMAP2);	// MAP2 <- V
-
+	}
+	
 	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
 		GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
 		GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
 		GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
 		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 	GX_End();
+	GX_SetColorUpdate(GX_TRUE);
+
 
 	whichfb ^= 1;
-
-	GX_SetColorUpdate(GX_TRUE);
 
 	#ifdef WIILIB
 	if(copyScreen == 1)
@@ -435,7 +459,7 @@ void DrawMPlayer()
 	GX_DrawDone();
 
 	#ifdef WIILIB
-	LWP_MutexUnlock(texmutex);
+	//LWP_MutexUnlock(texmutex);
 	#endif
 
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
@@ -475,8 +499,8 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	#endif
 
 	#ifdef WIILIB
-	if(texmutex == LWP_MUTEX_NULL)
-		LWP_MutexInit(&texmutex, false);	
+//	if(texmutex == LWP_MUTEX_NULL)
+//		LWP_MutexInit(&texmutex, false);	
 
 	StartDrawThread();
 	#endif
@@ -521,18 +545,29 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 
 #ifdef WIILIB
 	//make memory fixed (max texture 900*700, gx can't manage more)
-	if (!Ytexture)
-		Ytexture = (u8 *) memalign(32,900*700);
-	if (!Utexture)
-		Utexture = (u8 *) memalign(32,900*700/4);
-	if (!Vtexture)
-		Vtexture = (u8 *) memalign(32,900*700/4);
+	if (!Ytexture[0])
+		Ytexture[0] = (u8 *) memalign(32,900*700);
+	if (!Utexture[0])
+		Utexture[0] = (u8 *) memalign(32,900*700/4);
+	if (!Vtexture[0])
+		Vtexture[0] = (u8 *) memalign(32,900*700/4);
+	if (!Ytexture[1])
+		Ytexture[1] = (u8 *) memalign(32,900*700);
+	if (!Utexture[1])
+		Utexture[1] = (u8 *) memalign(32,900*700/4);
+	if (!Vtexture[1])
+		Vtexture[1] = (u8 *) memalign(32,900*700/4);
 #endif
 
-	memset(Ytexture, 0, Ytexsize);
-	memset(Utexture, 128, UVtexsize);
-	memset(Vtexture, 128, UVtexsize);
+	memset(Ytexture[0], 0, Ytexsize);
+	memset(Utexture[0], 128, UVtexsize);
+	memset(Vtexture[0], 128, UVtexsize);
 
+	memset(Ytexture[1], 0, Ytexsize);
+	memset(Utexture[1], 128, UVtexsize);
+	memset(Vtexture[1], 128, UVtexsize);
+	
+	whichmpfb = 0;
 	/*** Setup for first call to scaler ***/
 	oldvwidth = oldvheight = oldpitch = -1;
 
@@ -596,7 +631,7 @@ void GX_FillTextureYUV(u16 height,u8 *buffer[3])
 	}
 	
 	#ifdef WIILIB
-	LWP_MutexLock(texmutex);
+	//LWP_MutexLock(texmutex);
 	#endif
 	//Convert YUV frame to GX textures
 	//Convert Y plane to texture
@@ -641,9 +676,9 @@ void GX_FillTextureYUV(u16 height,u8 *buffer[3])
 		Vsrc3 += UVrowpitch;
 		Vsrc4 += UVrowpitch;
 	}
-	wii_draw_osd();
+	//wii_draw_osd();
 	#ifdef WIILIB	
-	LWP_MutexUnlock(texmutex);
+	//LWP_MutexUnlock(texmutex);
 	#endif
 }
 
@@ -674,17 +709,20 @@ void GX_RenderTexture()
 	DrawMPlayer();
 	#else
 	frameCounter++;
+	whichmpfb ^= 1;
 	#endif
 }
 
 void GX_ResetTextureYUVPointers()
 {
-	Ydst = (u64 *) Ytexture;
-	Udst = (u64 *) Utexture;
-	Vdst = (u64 *) Vtexture;
+	
+
+	Ydst = (u64 *) Ytexture[whichmpfb];
+	Udst = (u64 *) Utexture[whichmpfb];
+	Vdst = (u64 *) Vtexture[whichmpfb];
 }
 
-u8* GetYtexture() {return Ytexture;}
+u8* GetYtexture() {return Ytexture[whichmpfb];}
 int GetYrowpitch() {return Yrowpitch;}
 int GetYrowpitchDf() {return Yrowpitch+df1;}
 
