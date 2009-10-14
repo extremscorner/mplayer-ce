@@ -295,31 +295,38 @@ static bool __usb2storage_IsInserted(void)
 	
 	if (usb2 == -1)
 	{
-		ret = __usb2storage_Startup();
+		retval = __usb2storage_Startup();
+		debug_printf("__usb2storage_Startup ret: %d  fd: %i\n",retval,fd);
 	}
-	else if (fd > 0)
+	//else 
+	LWP_MutexLock(usb2_mutex);
+	if (fd > 0)
 	{
-		LWP_MutexLock(usb2_mutex);
+		
 		retval = IOS_IoctlvFormat(hId, fd, USB_IOCTL_UMS_IS_INSERTED, ":");
-		debug_printf("isinserted usb2 ret: %d\n",ret);
+		debug_printf("isinserted usb2 retval: %d  ret: %d\n",retval,ret);
 
 		if (retval > 0)
 		{
 			currentMode = 2;
 			ret = true;
+			debug_printf("isinserted(2) usb2 retval: %d  ret: %d\n",retval,ret);
 		}
-		else
-		{
-			retval = __io_usb1storage.isInserted();
-
-			if (retval > 0)
-			{
-				currentMode = 1;
-				ret = true;
-			}
-		}
-		LWP_MutexUnlock(usb2_mutex);
+		
 	}
+	if(ret==false)
+	{
+		retval = __io_usb1storage.isInserted();
+
+		if (retval > 0)
+		{
+			debug_printf("isinserted usb1 retval: %d\n",retval);
+			currentMode = 1;
+			ret = true;
+		}
+	}
+	debug_printf("final isinserted usb2 retval: %d  ret: %d\n",retval,ret);
+	LWP_MutexUnlock(usb2_mutex);
 	return ret;
 }
 
@@ -418,6 +425,7 @@ static bool __usb2storage_Shutdown(void)
 		return __io_usb1storage.shutdown();
 
 	LWP_MutexLock(usb2_mutex);
+	debug_printf("__usb2storage_Shutdown\n");
 	usb2 = -1;
 	LWP_MutexUnlock(usb2_mutex);
 	return true;

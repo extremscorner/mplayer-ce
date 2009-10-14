@@ -694,7 +694,6 @@ bool DeviceMounted(const char *device)
   {
     buf[len]=':';  
     buf[len+1]='\0';
-    len++;
   }   
   devops = (devoptab_t*)GetDeviceOpTab(buf);
   if (!devops) 
@@ -702,8 +701,8 @@ bool DeviceMounted(const char *device)
   	free(buf);
   	return false;
   }
-  //for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
-  if (!devops || strncasecmp(buf,devops->name,len))
+  for(i=0;buf[i]!='\0' && buf[i]!=':';i++);  
+  if (!devops || strncasecmp(buf,devops->name,i))
   {
   	free(buf);
   	return false;
