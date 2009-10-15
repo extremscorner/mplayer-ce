@@ -359,12 +359,14 @@ static void wpad_power_cb (s32 chan) {
 #include <sys/time.h>
 #include <sys/timeb.h>
 
+/*
 void gekko_gettimeofday(struct timeval *tv, void *tz) {
 	u64 t;
 	t=gettime();
 	tv->tv_sec = ticks_to_secs(t);
 	tv->tv_usec = ticks_to_microsecs(t);
 } 
+*/
 
 void gekko_abort(void) {
 	//printf("abort() called\n");

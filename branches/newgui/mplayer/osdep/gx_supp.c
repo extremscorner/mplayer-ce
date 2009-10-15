@@ -154,13 +154,6 @@ void GX_InitVideo()
 		Utexture[0] = (u8 *) memalign(32,900*700/4);
 	if (!Vtexture[0])
 		Vtexture[0] = (u8 *) memalign(32,900*700/4);
-
-	if (!Ytexture[1])
-		Ytexture[1] = (u8 *) memalign(32,900*700);
-	if (!Utexture[1])
-		Utexture[1] = (u8 *) memalign(32,900*700/4);
-	if (!Vtexture[1])
-		Vtexture[1] = (u8 *) memalign(32,900*700/4);
 }
 #endif
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
@@ -307,9 +300,11 @@ static void draw_initYUV(void)
 	GX_InitTexObj(&UtexObj[0], Utexture[0], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	GX_InitTexObj(&VtexObj[0], Vtexture[0], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
+#ifdef WIILIB
 	GX_InitTexObj(&YtexObj[1], Ytexture[1], (u16) Ywidth, (u16) Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	GX_InitTexObj(&UtexObj[1], Utexture[1], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	GX_InitTexObj(&VtexObj[1], Vtexture[1], (u16) UVwidth, (u16) UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+#endif	
 }
 
 //------- rodries change: to avoid image_buffer intermediate ------
@@ -391,10 +386,11 @@ void GX_UpdatePitch(int width,u16 *pitch)
     memset(Ytexture[0], 0, Ytexsize);
 	memset(Utexture[0], 0x80, UVtexsize);
 	memset(Vtexture[0], 0x80, UVtexsize);
+#ifdef WIILIB	
     memset(Ytexture[1], 0, Ytexsize);
 	memset(Utexture[1], 0x80, UVtexsize);
 	memset(Vtexture[1], 0x80, UVtexsize);
-
+#endif
 	currentWidth = width;
 	currentPitch = pitch;
 	GX_ConfigTextureYUV(width, vheight, pitch);
@@ -403,19 +399,28 @@ void GX_UpdatePitch(int width,u16 *pitch)
 void DrawMPlayer()
 {
 	// render textures
+#ifdef WIILIB	
 	static u32 last_frame=-1;
 	u32 frame=whichtex^1;
+#else
+	u32 frame=0;	
+#endif
+	
 
 	GX_InvVtxCache();
 	GX_InvalidateTexAll();
 
+#ifdef WIILIB	
 	if(last_frame!=frame) //not sure If we get performance here
 	{
 		last_frame=frame;
+#endif
 		DCFlushRange(Ytexture[frame], Ytexsize);
 		DCFlushRange(Utexture[frame], UVtexsize);
 		DCFlushRange(Vtexture[frame], UVtexsize);
+#ifdef WIILIB	
 	}
+#endif
 
 	GX_LoadTexObj(&YtexObj[frame], GX_TEXMAP0);	// MAP0 <- Y
 	GX_LoadTexObj(&UtexObj[frame], GX_TEXMAP1);	// MAP1 <- U
@@ -472,7 +477,7 @@ void DrawMPlayer()
 extern float m_screenleft_shift, m_screenright_shift;
 extern float m_screentop_shift, m_screenbottom_shift;
 static s16 mysquare[12] ATTRIBUTE_ALIGN(32);
-static void GX_UpdateSquare()
+void GX_UpdateSquare()
 {
 	memcpy(mysquare, square, sizeof(square));
 	
@@ -564,10 +569,11 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	memset(Ytexture[0], 0, Ytexsize);
 	memset(Utexture[0], 128, UVtexsize);
 	memset(Vtexture[0], 128, UVtexsize);
-
+#ifdef WIILIB
 	memset(Ytexture[1], 0, Ytexsize);
 	memset(Utexture[1], 128, UVtexsize);
 	memset(Vtexture[1], 128, UVtexsize);
+#endif
 
 	whichtex = 0;
 
@@ -680,10 +686,10 @@ void GX_FillTextureYUV(u16 height,u8 *buffer[3])
 
 void GX_RenderTexture()
 {
-	whichtex ^= 1;
 	#ifndef WIILIB
 	DrawMPlayer();
 	#else
+	whichtex ^= 1;
 	frameCounter++;
 	#endif
 }
