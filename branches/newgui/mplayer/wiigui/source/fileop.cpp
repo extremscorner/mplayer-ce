@@ -104,7 +104,7 @@ devicecallback (void *arg)
 				devicesChanged = true;
 			}
 		}
-		else if(usb->isInserted()) // device was inserted
+		else if(usb->startup() && usb->isInserted()) // device was inserted
 		{
 			isInserted[DEVICE_USB] = true;
 			MountPartitions(DEVICE_USB, SILENT);
@@ -316,6 +316,23 @@ typedef struct _EXTENDED_BOOT_RECORD {
 #endif
 
 DEVICE_STRUCT part[2][MAX_DEVICES];
+static int devnum = 0;
+
+static void AddPartition(sec_t sector, int device, int type)
+{
+	if (devnum >= MAX_DEVICES)
+		return;
+
+	part[device][devnum].sector = sector;
+
+	if(device == DEVICE_SD)
+		part[device][devnum].interface = (DISC_INTERFACE *)sd;
+	else
+		part[device][devnum].interface = (DISC_INTERFACE *)usb;
+
+	part[device][devnum].type = type;
+	devnum++;
+}
 
 static int FindPartitions(int device)
 {
@@ -328,7 +345,7 @@ static int FindPartitions(int device)
 
 	MASTER_BOOT_RECORD mbr;
 	PARTITION_RECORD *partition = NULL;
-	int devnum = 0;
+	devnum = 0;
 
 	sec_t part_lba = 0;
 	int i;
@@ -382,27 +399,16 @@ static int FindPartitions(int device)
 					// Read and validate the NTFS partition
 					if (interface->readSectors(part_lba, 1, &sector))
 					{
-						debug_printf("sector.boot.oem_id: 0x%x\n",
-								sector.boot.oem_id);
+						debug_printf("sector.boot.oem_id: 0x%x\n", sector.boot.oem_id);
 						debug_printf("NTFS_OEM_ID: 0x%x\n", NTFS_OEM_ID);
 						if (sector.boot.oem_id == NTFS_OEM_ID)
 						{
-							printf(
-									"Partition %i: Valid NTFS boot sector found\n",
-									i + 1);
-							if (devnum < MAX_DEVICES)
-							{
-								part[device][devnum].sector = part_lba;
-								part[device][devnum].interface = interface;
-								part[device][devnum].type = T_NTFS;
-								devnum++;
-							}
+							printf("Partition %i: Valid NTFS boot sector found\n", i + 1);
+							AddPartition(part_lba, device, T_NTFS);
 						}
 						else
 						{
-							printf(
-									"Partition %i: Invalid NTFS boot sector, not actually NTFS\n",
-									i + 1);
+							printf("Partition %i: Invalid NTFS boot sector, not actually NTFS\n", i + 1);
 						}
 					}
 
@@ -419,7 +425,6 @@ static int FindPartitions(int device)
 					sec_t next_erb_lba = 0;
 					do
 					{
-
 						// Read and validate the extended boot record
 						if (interface->readSectors(ebr_lba + next_erb_lba, 1,
 								&sector))
@@ -459,16 +464,7 @@ static int FindPartitions(int device)
 													sector.ebr.partition.type,
 													PARTITION_TYPE_NTFS);
 										}
-										if (devnum < MAX_DEVICES)
-										{
-											part[device][devnum].sector
-													= part_lba;
-											part[device][devnum].interface
-													= interface;
-											part[device][devnum].type
-													= T_NTFS;
-											devnum++;
-										}
+										AddPartition(part_lba, device, T_NTFS);
 									}
 									else if (!memcmp(sector.buffer
 											+ BPB_FAT16_fileSysType, FAT_SIG,
@@ -477,18 +473,8 @@ static int FindPartitions(int device)
 													+ BPB_FAT32_fileSysType,
 											FAT_SIG, sizeof(FAT_SIG)))
 									{
-										printf(
-												"Partition : Valid FAT boot sector found\n");
-										if (devnum < MAX_DEVICES)
-										{
-											part[device][devnum].sector
-													= part_lba;
-											part[device][devnum].interface
-													= interface;
-											part[device][devnum].type
-													= T_FAT;
-											devnum++;
-										}
+										printf("Partition : Valid FAT boot sector found\n");
+										AddPartition(part_lba, device, T_FAT);
 									}
 								}
 							}
@@ -510,9 +496,7 @@ static int FindPartitions(int device)
 					{
 						if (sector.boot.oem_id == NTFS_OEM_ID)
 						{
-							printf(
-									"Partition %i: Valid NTFS boot sector found\n",
-									i + 1);
+							printf("Partition %i: Valid NTFS boot sector found\n",i + 1);
 							if (partition->type != PARTITION_TYPE_NTFS)
 							{
 								printf(
@@ -520,28 +504,15 @@ static int FindPartitions(int device)
 										i + 1, partition->type,
 										PARTITION_TYPE_NTFS);
 							}
-							if (devnum < MAX_DEVICES)
-							{
-								part[device][devnum].sector = part_lba;
-								part[device][devnum].interface = interface;
-								part[device][devnum].type = T_NTFS;
-								devnum++;
-							}
+							AddPartition(part_lba, device, T_NTFS);
 						}
 						else if (!memcmp(sector.buffer + BPB_FAT16_fileSysType,
 								FAT_SIG, sizeof(FAT_SIG)) || !memcmp(
 								sector.buffer + BPB_FAT32_fileSysType, FAT_SIG,
 								sizeof(FAT_SIG)))
 						{
-							printf(
-									"Partition : Valid FAT boot sector found\n");
-							if (devnum < MAX_DEVICES)
-							{
-								part[device][devnum].sector = part_lba;
-								part[device][devnum].interface = interface;
-								part[device][devnum].type = T_FAT;
-								devnum++;
-							}
+							printf("Partition : Valid FAT boot sector found\n");
+							AddPartition(part_lba, device, T_FAT);
 						}
 					}
 					break;
@@ -560,29 +531,16 @@ static int FindPartitions(int device)
 			{
 				if (sector.boot.oem_id == NTFS_OEM_ID)
 				{
-					printf(
-							"Valid NTFS boot sector found at sector %d!\n", i);
-					if (devnum < MAX_DEVICES)
-					{
-						part[device][devnum].sector = i;
-						part[device][devnum].interface = interface;
-						part[device][devnum].type = T_NTFS;
-						devnum++;
-					}
+					printf("Valid NTFS boot sector found at sector %d!\n", i);
+					AddPartition(i, device, T_NTFS);
 				}
 			}
 			else if (!memcmp(sector.buffer + BPB_FAT16_fileSysType, FAT_SIG,
 					sizeof(FAT_SIG)) || !memcmp(sector.buffer
 					+ BPB_FAT32_fileSysType, FAT_SIG, sizeof(FAT_SIG)))
 			{
-				if (devnum < MAX_DEVICES)
-				{
-					printf("Partition : Valid FAT boot sector found\n");
-					part[device][devnum].sector = i;
-					part[device][devnum].interface = interface;
-					part[device][devnum].type = T_FAT;
-					devnum++;
-				}
+				printf("Partition : Valid FAT boot sector found\n");
+				AddPartition(i, device, T_FAT);
 			}
 		}
 	}
