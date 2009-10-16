@@ -259,51 +259,42 @@ typedef struct _MASTER_BOOT_RECORD {
  * struct BIOS_PARAMETER_BLOCK - BIOS parameter block (bpb) structure.
  */
 typedef struct {
-	u16 bytes_per_sector;		/* Size of a sector in bytes. */
-	u8  sectors_per_cluster;	/* Size of a cluster in sectors. */
-	u16 reserved_sectors;		/* zero */
-	u8  fats;			/* zero */
-	u16 root_entries;		/* zero */
-	u16 sectors;			/* zero */
-	u8  media_type;			/* 0xf8 = hard disk */
-	u16 sectors_per_fat;		/* zero */
-/*0x0d*/u16 sectors_per_track;		/* Required to boot Windows. */
-/*0x0f*/u16 heads;			/* Required to boot Windows. */
-/*0x11*/u32 hidden_sectors;		/* Offset to the start of the partition
-					   relative to the disk in sectors.
-					   Required to boot Windows. */
-/*0x15*/u32 large_sectors;		/* zero */
-/* sizeof() = 25 (0x19) bytes */
+	u16 bytes_per_sector;					/* Size of a sector in bytes. */
+	u8  sectors_per_cluster;				/* Size of a cluster in sectors. */
+	u16 reserved_sectors;					/* zero */
+	u8  fats;								/* zero */
+	u16 root_entries;						/* zero */
+	u16 sectors;							/* zero */
+	u8  media_type;							/* 0xf8 = hard disk */
+	u16 sectors_per_fat;					/* zero */
+	u16 sectors_per_track;					/* Required to boot Windows. */
+	u16 heads;								/* Required to boot Windows. */
+	u32 hidden_sectors;						/* Offset to the start of the partition */
+	u32 large_sectors;						/* zero */
 } __attribute__((__packed__)) BIOS_PARAMETER_BLOCK;
 
 /**
  * struct NTFS_BOOT_SECTOR - NTFS boot sector structure.
  */
 typedef struct {
-	u8  jump[3];			/* Irrelevant (jump to boot up code).*/
-	u64 oem_id;			/* Magic "NTFS    ". */
-/*0x0b*/BIOS_PARAMETER_BLOCK bpb;	/* See BIOS_PARAMETER_BLOCK. */
-	u8 physical_drive;		/* 0x00 floppy, 0x80 hard disk */
-	u8 current_head;		/* zero */
-	u8 extended_boot_signature; 	/* 0x80 */
-	u8 reserved2;			/* zero */
-/*0x28*/s64 number_of_sectors;		/* Number of sectors in volume. Gives
-					   maximum volume size of 2^63 sectors.
-					   Assuming standard sector size of 512
-					   bytes, the maximum byte size is
-					   approx. 4.7x10^21 bytes. (-; */
-	s64 mft_lcn;			/* Cluster location of mft data. */
-	s64 mftmirr_lcn;		/* Cluster location of copy of mft. */
-	s8  clusters_per_mft_record;	/* Mft record size in clusters. */
-	u8  reserved0[3];		/* zero */
-	s8  clusters_per_index_record;	/* Index block size in clusters. */
-	u8  reserved1[3];		/* zero */
-	u64 volume_serial_number;	/* Irrelevant (serial number). */
-	u32 checksum;			/* Boot sector checksum. */
-/*0x54*/u8  bootstrap[426];		/* Irrelevant (boot up code). */
-	u16 end_of_sector_marker;	/* End of bootsector magic. Always is
-					   0xaa55 in little endian. */
-/* sizeof() = 512 (0x200) bytes */
+	u8  jump[3];							/* Irrelevant (jump to boot up code).*/
+	u64 oem_id;								/* Magic "NTFS    ". */
+	BIOS_PARAMETER_BLOCK bpb;				/* See BIOS_PARAMETER_BLOCK. */
+	u8 physical_drive;						/* 0x00 floppy, 0x80 hard disk */
+	u8 current_head;						/* zero */
+	u8 extended_boot_signature; 			/* 0x80 */
+	u8 reserved2;							/* zero */
+	s64 number_of_sectors;					/* Number of sectors in volume. */
+	s64 mft_lcn;							/* Cluster location of mft data. */
+	s64 mftmirr_lcn;						/* Cluster location of copy of mft. */
+	s8  clusters_per_mft_record;			/* Mft record size in clusters. */
+	u8  reserved0[3];						/* zero */
+	s8  clusters_per_index_record;			/* Index block size in clusters. */
+	u8  reserved1[3];						/* zero */
+	u64 volume_serial_number;				/* Irrelevant (serial number). */
+	u32 checksum;							/* Boot sector checksum. */
+	u8  bootstrap[426];						/* Irrelevant (boot up code). */
+	u16 end_of_sector_marker;				/* End of bootsector magic. */
 } __attribute__((__packed__)) NTFS_BOOT_SECTOR;
 
 /**
@@ -317,14 +308,12 @@ typedef struct _EXTENDED_BOOT_RECORD {
     u16 signature;                          /* EBR signature; 0xAA55 */
 } __attribute__((__packed__)) EXTENDED_BOOT_RECORD;
 
-#define DEBUG_MOUNTALL
-
 #ifdef DEBUG_MOUNTALL
 #define debug_printf(fmt, args...) \
 	fprintf(stderr, "%s:%d:" fmt, __FUNCTION__, __LINE__, ##args)
 #else
 #define debug_printf(fmt, args...)
-#endif // DEBUG_MOUNTALL
+#endif
 
 DEVICE_STRUCT part[2][MAX_DEVICES];
 
