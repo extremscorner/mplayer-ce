@@ -626,7 +626,6 @@ bool LoadSettings()
 	char path[5][MAXPATHLEN];
 	char filepath[MAXPATHLEN];
 
-	// TODO - appPath will never work, since it will be sd:/ or usb:/
 	sprintf(path[0], "%s", appPath);
 	sprintf(path[1], "sd1:/%s", APPFOLDER);
 	sprintf(path[2], "usb1:/%s", APPFOLDER);

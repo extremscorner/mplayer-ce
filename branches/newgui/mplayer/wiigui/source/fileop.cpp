@@ -854,28 +854,18 @@ void CreateAppPath(char * origpath)
 	if(!origpath || origpath[0] == 0)
 		return;
 
-	char * path = strdup(origpath); // make a copy so we don't mess up original
-
-	if(!path)
+	if(strncmp(origpath, "fat", 3) == 0)
+		sprintf(appPath, "sd1:/%s", &origpath[5]);
+	else if(strncmp(origpath, "sd", 2) == 0)
+		sprintf(appPath, "sd1:/%s", &origpath[4]);
+	else if(strncmp(origpath, "usb", 2) == 0)
+		sprintf(appPath, "usb1:/%s", &origpath[5]);
+	else
 		return;
-	
-	char * loc = strrchr(path,'/');
+
+	char * loc = strrchr(appPath,'/');
 	if (loc != NULL)
 		*loc = 0; // strip file name
-
-	int pos = 0;
-
-	// replace fat:/ with sd:/
-	if(strncmp(path, "fat:/", 5) == 0)
-	{
-		pos++;
-		path[1] = 's';
-		path[2] = 'd';
-	}
-	if(ChangeInterface(&path[pos], SILENT))
-		strncpy(appPath, &path[pos], MAXPATHLEN);
-	appPath[MAXPATHLEN-1] = 0;
-	free(path);
 }
 
 /****************************************************************************
