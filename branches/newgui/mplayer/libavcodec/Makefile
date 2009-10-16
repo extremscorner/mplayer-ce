@@ -27,10 +27,12 @@ OBJS = allcodecs.o                                                      \
 # parts needed for many different codecs
 OBJS-$(CONFIG_AANDCT)                  += aandcttab.o
 OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
-OBJS-$(CONFIG_FFT)                     += fft.o
+FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
+OBJS-$(CONFIG_FFT)                     += fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
-OBJS-$(CONFIG_RDFT)                    += rdft.o
+RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
+OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
 OBJS-$(CONFIG_VAAPI)                   += vaapi.o
 OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 
@@ -73,8 +75,8 @@ OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o
 OBJS-$(CONFIG_DVBSUB_ENCODER)          += dvbsub.o
 OBJS-$(CONFIG_DVDSUB_DECODER)          += dvdsubdec.o
 OBJS-$(CONFIG_DVDSUB_ENCODER)          += dvdsubenc.o
-OBJS-$(CONFIG_DVVIDEO_DECODER)         += dv.o
-OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o
+OBJS-$(CONFIG_DVVIDEO_DECODER)         += dv.o dvdata.o
+OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o dvdata.o
 OBJS-$(CONFIG_DXA_DECODER)             += dxa.o
 OBJS-$(CONFIG_EAC3_DECODER)            += eac3dec.o eac3dec_data.o
 OBJS-$(CONFIG_EACMV_DECODER)           += eacmv.o
@@ -360,6 +362,8 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcm.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
+OBJS-$(CONFIG_DV_DEMUXER)              += dvdata.o
+OBJS-$(CONFIG_DV_MUXER)                += dvdata.o
 OBJS-$(CONFIG_EAC3_DEMUXER)            += ac3_parser.o ac3tab.o aac_ac3_parser.o
 OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o flac.o
@@ -572,6 +576,17 @@ TESTPROGS-$(HAVE_MMX) += motion
 
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
+CLEANFILES = cos_tables.c costablegen$(HOSTEXESUF)
+
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
+
+$(SUBDIR)costablegen$(HOSTEXESUF): $(SUBDIR)costablegen.c
+	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
+
+$(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+	./$< > $@
+
+$(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+	./$< sin > $@
