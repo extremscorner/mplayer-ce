@@ -481,10 +481,14 @@ SaveSettings (bool silent)
 
 	if(strlen(appPath) > 0)
 		sprintf(filepath, "%s/settings.xml", appPath);
-	else if(ChangeInterface(DEVICE_SD, -1, SILENT))
-		sprintf(filepath, "sd:/%s/settings.xml", APPFOLDER);
-	else if(ChangeInterface(DEVICE_USB, -1, SILENT))
-		sprintf(filepath, "usb:/%s/settings.xml", APPFOLDER);
+	else if(ChangeInterface(DEVICE_SD, 1, SILENT))
+		sprintf(filepath, "sd1:/%s/settings.xml", APPFOLDER);
+	else if(ChangeInterface(DEVICE_USB, 1, SILENT))
+		sprintf(filepath, "usb1:/%s/settings.xml", APPFOLDER);
+	else if(ChangeInterface(DEVICE_USB, 2, SILENT))
+		sprintf(filepath, "usb2:/%s/settings.xml", APPFOLDER);
+	else if(ChangeInterface(DEVICE_USB, 3, SILENT))
+		sprintf(filepath, "usb3:/%s/settings.xml", APPFOLDER);
 
 	offset = SaveFile(savebuffer, filepath, datasize, silent);
 
@@ -619,14 +623,17 @@ bool LoadSettings()
 		return true;
 
 	bool settingsFound = false;
-	char path[3][MAXPATHLEN];
+	char path[5][MAXPATHLEN];
 	char filepath[MAXPATHLEN];
 
+	// TODO - appPath will never work, since it will be sd:/ or usb:/
 	sprintf(path[0], "%s", appPath);
-	sprintf(path[1], "sd:/%s", APPFOLDER);
-	sprintf(path[2], "usb:/%s", APPFOLDER);
+	sprintf(path[1], "sd1:/%s", APPFOLDER);
+	sprintf(path[2], "usb1:/%s", APPFOLDER);
+	sprintf(path[3], "usb2:/%s", APPFOLDER);
+	sprintf(path[4], "usb3:/%s", APPFOLDER);
 
-	for(int i=0; i<3; i++)
+	for(int i=0; i<5; i++)
 	{
 		sprintf(filepath, "%s/settings.xml", path[i]);
 		settingsFound = LoadSettingsFile(filepath);

@@ -40,7 +40,7 @@ bool updateFound = false; // true if an app update was found
 void UpdateCheck()
 {
 	// we can only check for the update if we have internet + SD
-	if(!updateChecked && networkInit && isMounted[DEVICE_SD])
+	if(!updateChecked && networkInit && isInserted[DEVICE_SD])
 	{
 		static char url[128];
 		int retval;

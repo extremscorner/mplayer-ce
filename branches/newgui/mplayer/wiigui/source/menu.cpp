@@ -922,6 +922,23 @@ static void MenuBrowse(int menu)
 			fileBrowser.TriggerUpdate();
 		}
 
+		// devices were inserted or removed - update the filebrowser!
+		if(devicesChanged)
+		{
+			devicesChanged = false;
+
+			if(BrowserChangeFolder(false))
+			{
+				fileBrowser.ResetState();
+				fileBrowser.fileList[0]->SetState(STATE_SELECTED);
+				fileBrowser.TriggerUpdate();
+			}
+			else
+			{
+				goto done;
+			}
+		}
+
 		// update file browser based on arrow buttons
 		// request guiShutdown if A button pressed on a file
 		for(int i=0; i<FILE_PAGESIZE; i++)

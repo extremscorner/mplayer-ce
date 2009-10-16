@@ -256,14 +256,14 @@ main(int argc, char *argv[])
 	SYS_SetPowerCallback(ShutdownCB);
 	SYS_SetResetCallback(ResetCB);
 
+	MountAllDevices(); // Initialize SD and USB devices
+
 	// store path app was loaded from
 	if(argc > 0 && argv[0] != NULL)
 		CreateAppPath(argv[0]);
 
 	// Set defaults
 	DefaultSettings();
-
-	MountAllFAT(); // Initialize libFAT for SD and USB
 
 	loadedFile[0] = 0;
 	srand (time (0)); // random seed

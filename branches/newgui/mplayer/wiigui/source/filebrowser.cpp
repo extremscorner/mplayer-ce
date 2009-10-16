@@ -101,11 +101,13 @@ bool IsDeviceRoot(char * path)
 	if(path == NULL || path[0] == 0)
 		return false;
 
-	if(strcmp(path, "sd:/") == 0 ||
-		strcmp(path, "usb:/") == 0 ||
+	int pathlen = strlen(path);
+
+	if((strncmp(path, "sd", 2) == 0 && pathlen == 5) ||
+		(strncmp(path, "usb", 3) == 0 && pathlen == 6) ||
 		strcmp(path, "dvd:/") == 0 ||
-		(strncmp(path, "smb", 3) == 0 && strlen(path) == 6) ||
-		(strncmp(path, "ftp", 3) == 0 && strlen(path) == 6))
+		(strncmp(path, "smb", 3) == 0 && pathlen == 6) ||
+		(strncmp(path, "ftp", 3) == 0 && pathlen == 6))
 	{
 		return true;
 	}
@@ -242,38 +244,59 @@ int BrowserChangeFolder(bool updateDir)
 	{
 		if(browser.dir[0] != 0)
 			ParseDirectory();
-		
+
 		if(browser.numEntries == 0)
 		{
 			browser.dir[0] = 0;
 			
+			int i;
+
+			for(i=0; i < MAX_DEVICES; i++)
+			{
+				if(part[DEVICE_SD][i].type > 0)
+				{
+					if(!AddBrowserEntry())
+						break;
+
+					sprintf(browserList[browser.numEntries].filename, "%s:/", part[DEVICE_SD][i].mount);
+					sprintf(browserList[browser.numEntries].displayname, "SD - %s", part[DEVICE_SD][i].name);
+
+					browserList[browser.numEntries].length = 0;
+					browserList[browser.numEntries].mtime = 0;
+					browserList[browser.numEntries].isdir = 1; // flag this as a dir
+					browserList[browser.numEntries].icon = ICON_SD;
+					browser.numEntries++;
+				}
+			}
+
+			for(i=0; i < MAX_DEVICES; i++)
+			{
+				if(part[DEVICE_USB][i].type > 0)
+				{
+					if(!AddBrowserEntry())
+						break;
+
+					sprintf(browserList[browser.numEntries].filename, "%s:/", part[DEVICE_USB][i].mount);
+					sprintf(browserList[browser.numEntries].displayname, "USB - %s", part[DEVICE_USB][i].name);
+
+					browserList[browser.numEntries].length = 0;
+					browserList[browser.numEntries].mtime = 0;
+					browserList[browser.numEntries].isdir = 1; // flag this as a dir
+					browserList[browser.numEntries].icon = ICON_USB;
+					browser.numEntries++;
+				}
+			}
+
 			AddBrowserEntry();
-			sprintf(browserList[0].filename, "sd:/");
-			sprintf(browserList[0].displayname, "SD Card");
-			browserList[0].length = 0;
-			browserList[0].mtime = 0;
-			browserList[0].isdir = 1;
-			browserList[0].icon = ICON_SD;
-	
-			AddBrowserEntry();
-			sprintf(browserList[1].filename, "usb:/");
-			sprintf(browserList[1].displayname, "USB Mass Storage");
-			browserList[1].length = 0;
-			browserList[1].mtime = 0;
-			browserList[1].isdir = 1;
-			browserList[1].icon = ICON_USB;
-	
-			AddBrowserEntry();
-			sprintf(browserList[2].filename, "dvd:/");
-			sprintf(browserList[2].displayname, "Data DVD");
-			browserList[2].length = 0;
-			browserList[2].mtime = 0;
-			browserList[2].isdir = 1;
-			browserList[2].icon = ICON_DVD;
-	
-			browser.numEntries = 3;
-	
-			for(int i=0; i < 5; i++)
+			sprintf(browserList[browser.numEntries].filename, "dvd:/");
+			sprintf(browserList[browser.numEntries].displayname, "Data DVD");
+			browserList[browser.numEntries].length = 0;
+			browserList[browser.numEntries].mtime = 0;
+			browserList[browser.numEntries].isdir = 1;
+			browserList[browser.numEntries].icon = ICON_DVD;
+			browser.numEntries++;
+
+			for(i=0; i < 5; i++)
 			{
 				if(CESettings.smbConf[i].share[0] != 0)
 				{
@@ -292,7 +315,10 @@ int BrowserChangeFolder(bool updateDir)
 					browserList[browser.numEntries].icon = ICON_SMB;
 					browser.numEntries++;
 				}
-				
+			}
+
+			for(i=0; i < 5; i++)
+			{
 				if(CESettings.ftpConf[i].ip[0] != 0)
 				{
 					if(!AddBrowserEntry())

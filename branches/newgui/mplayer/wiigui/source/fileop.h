@@ -14,14 +14,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <ogcsys.h>
-#include <fat.h>
 #include <unistd.h>
+
+#define MAX_DEVICES 10
+
+typedef struct
+{
+	char name[100];
+	char mount[10];
+	int type;
+	DISC_INTERFACE* interface;
+	sec_t sector;
+} DEVICE_STRUCT;
 
 void ResumeDeviceThread();
 void HaltDeviceThread();
 void HaltParseThread();
-void MountAllFAT();
-void UnmountAllFAT();
+void MountAllDevices();
 bool ChangeInterface(int device, int devnum, bool silent);
 bool ChangeInterface(char * filepath, bool silent);
 void CreateAppPath(char * origpath);
@@ -32,8 +41,10 @@ int ParseOnlineMedia();
 size_t LoadFile (char * buffer, char *filepath, bool silent);
 size_t SaveFile (char * buffer, char *filepath, size_t datasize, bool silent);
 
-extern bool unmountRequired[];
-extern bool isMounted[];
+extern DEVICE_STRUCT part[2][MAX_DEVICES];
+
+extern bool devicesChanged;
+extern bool isInserted[];
 extern lwp_t devicethread;
 extern int currentDevice;
 extern int currentDeviceNum;
