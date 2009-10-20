@@ -553,9 +553,9 @@ void ntfsUnmount (const char *name, bool force)
 const char *ntfsGetVolumeName (const char *name)
 {
     ntfs_vd *vd = NULL;
-    ntfs_attr *na = NULL;
-    ntfschar *ulabel = NULL;
-    char *volumeName = NULL;
+    //ntfs_attr *na = NULL;
+    //ntfschar *ulabel = NULL;
+    //char *volumeName = NULL;
     
     // Sanity check
     if (!name) {
@@ -567,8 +567,10 @@ const char *ntfsGetVolumeName (const char *name)
     vd = ntfsGetVolume(name);
     if (!vd) {
         errno = ENODEV;
-        return false;
+        return NULL;
     }
+    return vd->vol->vol_name;
+/*    
     
     // If the volume name has already been cached then just use that
     if (vd->name[0])
@@ -600,7 +602,7 @@ const char *ntfsGetVolumeName (const char *name)
         errno = EIO;
         return false;
     }
-    
+
     // Convert the volume name to the current local
     if (ntfsUnicodeToLocal(ulabel, na->data_size, &volumeName, 0) < 0) {
         errno = EINVAL;
@@ -625,6 +627,7 @@ const char *ntfsGetVolumeName (const char *name)
     ntfsUnlock(vd);
     
     return vd->name;
+*/    
 }
 
 bool ntfsSetVolumeName (const char *name, const char *volumeName)
