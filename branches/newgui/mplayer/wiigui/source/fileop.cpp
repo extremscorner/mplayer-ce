@@ -575,19 +575,14 @@ static bool MountPartitions(int device, int silent)
 {
 	bool mounted = false;
 	int retry = 1;
-	char name[10], name2[10];
 	const DISC_INTERFACE* disc = NULL;
 
 	switch(device)
 	{
 		case DEVICE_SD:
-			sprintf(name, "sd");
-			sprintf(name2, "sd:");
 			disc = sd;
 			break;
 		case DEVICE_USB:
-			sprintf(name, "usb");
-			sprintf(name2, "usb:");
 			disc = usb;
 			break;
 		default:
@@ -597,7 +592,7 @@ static bool MountPartitions(int device, int silent)
 	while(retry)
 	{
 		disc->shutdown();
-		
+
 		if(disc->startup() && disc->isInserted())
 		{
 			int numFound = FindPartitions(device);
@@ -609,7 +604,7 @@ static bool MountPartitions(int device, int silent)
 				if(part[device][i].type == T_FAT)
 				{
 					fatMount(part[device][i].mount, disc, part[device][i].sector, 3, 256);
-					fatGetVolumeLabel(part[device][i].mount,part[device][i].name);					
+					fatGetVolumeLabel(part[device][i].mount, part[device][i].name);
 				}
 				else
 				{
