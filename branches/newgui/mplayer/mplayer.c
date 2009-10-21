@@ -4532,7 +4532,7 @@ vo_osd_changed(OSDTYPE_OSD);
 //reinit_video(); //to help gui
 
 total_time_usage_start=GetTimer();
-GetRelativeTime();
+//GetRelativeTime();
 mpctx->eof=0;
 while(!mpctx->eof){
     double aq_sleep_time=0;

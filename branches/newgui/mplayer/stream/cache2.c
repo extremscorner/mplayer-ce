@@ -600,7 +600,7 @@ int cache_stream_seek_long(stream_t *stream,off_t pos){
 	LWP_MutexLock(cache_mutex);
 
   pos-=newpos;
-  GetRelativeTime();
+  //GetRelativeTime();
   if(pos>=0 && pos<=stream->buf_len){
     stream->buf_pos=pos; // byte position in sector
     LWP_MutexUnlock(cache_mutex);

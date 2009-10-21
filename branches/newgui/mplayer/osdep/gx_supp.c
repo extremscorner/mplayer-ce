@@ -378,6 +378,8 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
     p11= pitch[1];
     p12= pitch[1] * 2;
     p13= pitch[1] * 3;
+    
+    GX_UpdateSquare();
 }
 
 void GX_UpdatePitch(int width,u16 *pitch)

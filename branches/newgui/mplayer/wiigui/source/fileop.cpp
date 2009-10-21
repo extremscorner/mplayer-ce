@@ -609,7 +609,7 @@ static bool MountPartitions(int device, int silent)
 				if(part[device][i].type == T_FAT)
 				{
 					fatMount(part[device][i].mount, disc, part[device][i].sector, 3, 256);
-					sprintf(part[device][i].name, "TODO");
+					fatGetVolumeLabel(part[device][i].mount,part[device][i].name);					
 				}
 				else
 				{

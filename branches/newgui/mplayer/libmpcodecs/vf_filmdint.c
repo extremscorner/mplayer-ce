@@ -909,12 +909,20 @@ static void init(struct vf_priv_s *p, mp_image_t *mpi)
     p->num_fields = 3;
 }
 
+#ifdef GEKKO
+#include <ogc/lwp_watchdog.h>
+static inline double get_time(void)
+{
+	return tick_microsecs(gettime());
+}
+#else
 static inline double get_time(void)
 {
     struct timeval tv;
     gettimeofday(&tv, 0);
     return tv.tv_sec + tv.tv_usec * 1e-6;
 }
+#endif
 
 static void get_image(struct vf_instance_s* vf, mp_image_t *mpi)
 {

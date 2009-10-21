@@ -14,7 +14,6 @@
 #include <wiiuse/wpad.h>
 #include <sys/iosupport.h>
 
-#include "../../osdep/di2.h"
 #include "FreeTypeGX.h"
 #include "video.h"
 #include "menu.h"
@@ -25,11 +24,6 @@
 #include "filebrowser.h"
 #include "mplayerce.h"
 #include "settings.h"
-
-extern "C" {
-extern void __exception_setreload(int t);
-extern void USB2Enable(bool e);
-}
 
 int ScreenshotRequested = 0;
 int ConfigRequested = 0;
@@ -144,8 +138,9 @@ const devoptab_t gecko_out = {
 
 void USBGeckoOutput()
 {
-	LWP_MutexInit(&gecko_mutex, false);
 	gecko = usb_isgeckoalive(1);
+	if(!gecko) return;
+	LWP_MutexInit(&gecko_mutex, false);
 	
 	devoptab_list[STD_OUT] = &gecko_out;
 	devoptab_list[STD_ERR] = &gecko_out;
@@ -226,7 +221,7 @@ void ShutdownMPlayer()
 int
 main(int argc, char *argv[])
 {
-	//USBGeckoOutput(); // uncomment to enable USB gecko output
+	USBGeckoOutput(); // uncomment to enable USB gecko output
 	__exception_setreload(8);
 
 	//try to load ios202

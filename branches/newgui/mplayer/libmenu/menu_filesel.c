@@ -357,9 +357,10 @@ strcpy(menu_dir,mpriv->dir);
   else if(!strcmp(mpriv->dir,"usb:/"))
   {
 	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
-  	if(!playing_usb)
+  	//if(!playing_usb)
   	{
   		while(mounting_usb)usleep(500);
+  		usleep(500);
   		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
   		if(!DeviceMounted("usb")) 
 		{
@@ -374,9 +375,10 @@ strcpy(menu_dir,mpriv->dir);
   else if(!strcmp(mpriv->dir,"ntfs_usb:/"))
   {
 	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
-  	if(!playing_usb)
+  	//if(!playing_usb)
   	{
   		while(mounting_usb)usleep(500);
+  		usleep(500);
   		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
   		if(!DeviceMounted("ntfs_usb")) 
 		{
@@ -444,7 +446,6 @@ strcpy(menu_dir,mpriv->dir);
 #endif
 #endif
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);
-
   if ((dirp = opendir (mpriv->dir)) == NULL){
     mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_LIBMENU_OpendirError, strerror(errno));
     goto error_exit;
@@ -463,7 +464,6 @@ strcpy(menu_dir,mpriv->dir);
 
   namelist = (char **) malloc(sizeof(char *));
   extensions = get_extensions(menu);
-  
   if(extensions != NULL && *extensions == NULL)
   {
     set_osd_msg(124,1,4000,"Your 'file_ext' file is empty, check it");  
@@ -519,7 +519,6 @@ strcpy(menu_dir,mpriv->dir);
       strcat(namelist[n], "/");
     n++;
   }
-
 bailout:
   free_extensions (extensions);
   closedir(dirp);
@@ -543,7 +542,6 @@ bailout:
     free(namelist[n]);
   }
   free(namelist);
-
 fast_continue();
   return 1;
   

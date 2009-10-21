@@ -829,16 +829,27 @@ void plat_init (int *argc, char **argv[]) {
 	{
 		if(FindIOS(202)) 
 		{
+			printf("IOS 202 found, reloadind IOS\n");
 			IOS_ReloadIOS(202);
 			WIIDVD_Init(false);
+			printf("DVD initiated");
+			mload=mload_init();
 		}
 		else 
 		{
+			printf("IOS 202 NOT found, using DVDx\n");
 			WIIDVD_Init(true);
+			printf("DVDx loaded\n");
 		}
 	} 
-	else WIIDVD_Init(false);
-	mload=mload_init();
+	else 
+	{
+		printf("IOS 202 loaded\n");
+		WIIDVD_Init(false);
+		printf("DVD initiated");
+		mload=mload_init();
+	}
+	
 
 	PAD_Init();
 	WPAD_Init();
@@ -852,7 +863,7 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_StopDMA();
 	if (!DetectValidPath())
 	{
-		printf("SD/USB access failed\n");
+		printf("\nSD/USB access failed\n");
 		printf("Please check that you have installed MPlayerCE in the right folder\n");
 		printf("Valid folders:\n");
 		printf(" sd:/apps/mplayer_ce\n sd:/mplayer\n usb:/apps/mplayer_ce\n usb:/mplayer\n");

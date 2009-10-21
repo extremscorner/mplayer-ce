@@ -336,7 +336,7 @@ InitVideo ()
 	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,GX_TRUE,vmode->vfilter);
 	GX_SetFieldMode(vmode->field_rendering,((vmode->viHeight==2*vmode->xfbHeight)?GX_ENABLE:GX_DISABLE));
 
-	LWP_CreateThread (&drawthread, MPlayerDrawThread, NULL, NULL, 0, 69);
+	LWP_CreateThread (&drawthread, MPlayerDrawThread, NULL, NULL, 0, 67);
 }
 
 #ifdef __cplusplus
