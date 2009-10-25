@@ -8,6 +8,7 @@
  * GUI class definitions
  ***************************************************************************/
 
+#include "../utils/pngu.h"
 #include "../utils/jmemsrc.h"
 #include "../utils/easybmp.h"
 #include "gui.h"

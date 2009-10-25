@@ -40,7 +40,6 @@
 #include <wchar.h>
 #include <math.h>
 #include <wiiuse/wpad.h>
-#include "../utils/pngu.h"
 #include "../utils/FreeTypeGX.h"
 #include "../video.h"
 #include "../filelist.h"
