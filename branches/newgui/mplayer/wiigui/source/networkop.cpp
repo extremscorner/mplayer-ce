@@ -19,8 +19,8 @@
 #include "networkop.h"
 #include "settings.h"
 #include "utils/http.h"
-#include "unzip/unzip.h"
-#include "unzip/miniunz.h"
+#include "utils/unzip/unzip.h"
+#include "utils/unzip/miniunz.h"
 
 static bool inNetworkInit = false;
 static bool networkInit = false;

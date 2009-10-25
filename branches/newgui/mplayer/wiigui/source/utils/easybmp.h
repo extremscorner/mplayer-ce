@@ -20,8 +20,8 @@
 
 #include <gctypes.h>
 
-#ifndef EasyBMP
-#define EasyBMP
+#ifndef EASYBMP_H
+#define EASYBMP_H
 
 u8 * DecodeBMP(const u8 * src, u32 len, int * width, int * height);
 
