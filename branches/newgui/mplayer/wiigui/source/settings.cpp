@@ -147,6 +147,7 @@ prepareSettingsData ()
 	createXMLSetting("language", "Language", toStr(CESettings.language));
 	createXMLSetting("videoFolder", "Video files folder", CESettings.videoFolder);
 	createXMLSetting("musicFolder", "Music files folder", CESettings.musicFolder);
+	createXMLSetting("pictureFolder", "Picture files folder", CESettings.pictureFolder);
 	createXMLSetting("onlinemediaFolder", "Online media files folder", CESettings.onlinemediaFolder);
 	createXMLSetting("exitAction", "Exit action", toStr(CESettings.exitAction));
 	createXMLSetting("rumble", "Wiimote rumble", toStr(CESettings.rumble));
@@ -362,6 +363,7 @@ void DefaultSettings ()
 	CESettings.language = LANG_ENGLISH;
 	CESettings.videoFolder[0] = 0;
 	CESettings.musicFolder[0] = 0;
+	CESettings.pictureFolder[0] = 0;
 	CESettings.onlinemediaFolder[0] = 0;
 	CESettings.exitAction = EXIT_AUTO;
 	CESettings.rumble = 1;
@@ -569,6 +571,7 @@ static bool LoadSettingsFile(char * filepath)
 				loadXMLSetting(&CESettings.language, "language");
 				loadXMLSetting(CESettings.videoFolder, "videoFolder", sizeof(CESettings.videoFolder));
 				loadXMLSetting(CESettings.musicFolder, "musicFolder", sizeof(CESettings.musicFolder));
+				loadXMLSetting(CESettings.pictureFolder, "pictureFolder", sizeof(CESettings.pictureFolder));
 				loadXMLSetting(CESettings.onlinemediaFolder, "onlinemediaFolder", sizeof(CESettings.onlinemediaFolder));
 				loadXMLSetting(&CESettings.exitAction, "exitAction");
 				loadXMLSetting(&CESettings.rumble, "rumble");

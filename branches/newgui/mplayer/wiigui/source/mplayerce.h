@@ -8,7 +8,7 @@
 #ifndef _MPLAYERGUI_H_
 #define _MPLAYERGUI_H_
 
-#include "FreeTypeGX.h"
+#include "utils/FreeTypeGX.h"
 #include "network.h"
 #include "../../osdep/libdvdiso.h"
 #include "../../osdep/mload.h"

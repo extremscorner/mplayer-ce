@@ -113,7 +113,10 @@ void GuiWindow::ResetState()
 {
 	if(state != STATE_DISABLED)
 		state = STATE_DEFAULT;
+}
 
+void GuiWindow::ResetStateAll()
+{
 	for (u8 i = 0; i < _elements.size(); i++)
 	{
 		try { _elements.at(i)->ResetState(); }
@@ -124,7 +127,10 @@ void GuiWindow::ResetState()
 void GuiWindow::SetState(int s)
 {
 	state = s;
+}
 
+void GuiWindow::SetStateAll(int s)
+{
 	for (u8 i = 0; i < _elements.size(); i++)
 	{
 		try { _elements.at(i)->SetState(s); }
@@ -135,7 +141,10 @@ void GuiWindow::SetState(int s)
 void GuiWindow::SetVisible(bool v)
 {
 	visible = v;
+}
 
+void GuiWindow::SetVisibleAll(bool v)
+{
 	for (u8 i = 0; i < _elements.size(); i++)
 	{
 		try { _elements.at(i)->SetVisible(v); }

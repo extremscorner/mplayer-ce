@@ -18,7 +18,8 @@ include $(DEVKITPPC)/wii_rules
 MPLAYER := $(CURDIR)/..
 TARGET		:=	mplayer-ce
 BUILD		:=	build
-SOURCES		:=	source source/libwiigui source/images source/fonts source/unzip
+SOURCES		:=	source source/libwiigui source/utils source/unzip \
+				source/images source/fonts
 INCLUDES	:=	source
 
 #---------------------------------------------------------------------------------
@@ -34,7 +35,7 @@ LDFLAGS		=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 MPLIBS	:=	-lmplayerwii -lavcodec -lavformat -lavutil -lpostproc -lswscale
 LIBS 	:= 	$(MPLIBS) -lfribidi -ljpeg -ldi -liconv -lpng -lz -lntfs -lfat \
-			-lwiiuse -lbte -logc -lfreetype -lmxml -ltinysmb
+			-lwiiuse -lbte -logc -lfreetype -ljpeg -lmxml -ltinysmb
 
 
 #---------------------------------------------------------------------------------

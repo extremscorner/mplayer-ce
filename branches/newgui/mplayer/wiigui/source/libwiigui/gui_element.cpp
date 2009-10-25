@@ -520,6 +520,13 @@ void GuiElement::Draw()
 {
 }
 
+/**
+ * Draw tooltips on screen.
+ */
+void GuiElement::DrawTooltip()
+{
+}
+
 bool GuiElement::IsInside(int x, int y)
 {
 	if(x > this->GetLeft() && x < (this->GetLeft()+width)

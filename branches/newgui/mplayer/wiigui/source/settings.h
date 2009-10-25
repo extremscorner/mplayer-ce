@@ -64,6 +64,7 @@ struct SCESettings {
 	int 	language;
 	char 	videoFolder[MAXPATHLEN];
 	char	musicFolder[MAXPATHLEN];
+	char	pictureFolder[MAXPATHLEN];
 	char	onlinemediaFolder[MAXPATHLEN];
 	int		exitAction;
 	int		rumble;
@@ -113,6 +114,11 @@ const char validAudioExtensions[][5] =
 {
 	"aac", "ape", "asf", "flac", "m4a", "m4p", "m4v", "mka", "mp2", "mp3", 
 	"mpc", "ogg", "ra", "rm", "shn", "m4b", "wav", "wma", ""
+};
+
+const char validImageExtensions[][5] = 
+{
+	"bmp", "jpeg", "jpg", "png", ""
 };
 
 const char validPlaylistExtensions[][5] =

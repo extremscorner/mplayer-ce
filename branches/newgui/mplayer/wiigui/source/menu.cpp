@@ -30,6 +30,7 @@ static GuiImageData * pointer[4] = { NULL, NULL, NULL, NULL };
 static GuiImage * videoImg = NULL;
 static GuiButton * videoBtn = NULL;
 static GuiButton * musicBtn = NULL;
+static GuiButton * pictureBtn = NULL;
 static GuiButton * dvdBtn = NULL;
 static GuiButton * onlineBtn = NULL;
 static GuiButton * configBtn = NULL;
@@ -712,6 +713,37 @@ SettingWindow(const char * title, GuiWindow * w)
 	return save;
 }
 
+static void PictureViewer()
+{
+	HaltGui();
+	mainWindow->SetVisibleAll(false);
+	mainWindow->SetStateAll(STATE_DISABLED);
+	GuiWindow w(screenwidth, screenheight);
+	mainWindow->Append(&w);
+	ResumeGui();
+
+	u8 * buffer = (u8 *)malloc(1024*1024*5);
+	int size = LoadFile((char *)buffer, loadedFile, NOTSILENT);
+
+	if(size > 0)
+	{
+		GuiImageData picture(buffer, size);
+		GuiImage pictureImg(&picture);
+		pictureImg.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+		HaltGui();
+		w.Append(&pictureImg);
+		ResumeGui();
+		usleep(1000*1000*3); // wait for 3 seconds
+	}
+
+	HaltGui();
+	mainWindow->Remove(&w);
+	mainWindow->SetVisibleAll(true);
+	mainWindow->SetStateAll(STATE_DEFAULT);
+	ResumeGui();
+	free(buffer);
+}
+
 /****************************************************************************
  * WindowCredits
  * Display credits, legal copyright and licence
@@ -854,6 +886,7 @@ static void ChangeMenu(void * ptr, int menu)
 }
 static void ChangeMenuVideos(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_VIDEOS); }
 static void ChangeMenuMusic(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_MUSIC); }
+static void ChangeMenuPictures(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_PICTURES); }
 static void ChangeMenuDVD(void * ptr) { ChangeMenu(ptr, MENU_DVD); }
 static void ChangeMenuOnline(void * ptr) { ChangeMenu(ptr, MENU_BROWSE_ONLINEMEDIA); }
 static void ChangeMenuSettings(void * ptr) { ChangeMenu(ptr, MENU_SETTINGS); }
@@ -874,6 +907,11 @@ static void MenuBrowse(int menu)
 	else if(menu == MENU_BROWSE_MUSIC)
 	{
 		browser.dir = &CESettings.musicFolder[0];
+		inOnlineMedia = false;
+	}
+	else if(menu == MENU_BROWSE_PICTURES)
+	{
+		browser.dir = &CESettings.pictureFolder[0];
 		inOnlineMedia = false;
 	}
 	else if(menu == MENU_BROWSE_ONLINEMEDIA)
@@ -946,6 +984,7 @@ static void MenuBrowse(int menu)
 			if(fileBrowser.fileList[i]->GetState() == STATE_CLICKED)
 			{
 				fileBrowser.fileList[i]->ResetState();
+
 				// check corresponding browser entry
 				if(browserList[browser.selIndex].isdir)
 				{
@@ -1003,6 +1042,13 @@ static void MenuBrowse(int menu)
 							sprintf(loadedFile, "%s", browserList[browser.selIndex].filename);
 						else
 							sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
+					}
+
+					if(currentMenu == MENU_BROWSE_PICTURES)
+					{
+						// load picture viewer
+						PictureViewer();
+						continue;
 					}
 
 					ShutdownMPlayer();
@@ -2816,9 +2862,9 @@ void WiiMenu()
 	GuiText videoBtnTxt("Videos", 18, (GXColor){255, 255, 255, 255});
 	GuiImage videoBtnImg(&btnNav);
 	GuiImage videoBtnImgOver(&btnNavOver);
-	videoBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	videoBtn = new GuiButton(80, btnNav.GetHeight());
 	videoBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	videoBtn->SetPosition(30, 30);
+	videoBtn->SetPosition(10, 30);
 	videoBtn->SetLabel(&videoBtnTxt);
 	//videoBtn->SetImage(&videoBtnImg);
 	//videoBtn->SetImageOver(&videoBtnImgOver);
@@ -2829,9 +2875,9 @@ void WiiMenu()
 	GuiText musicBtnTxt("Music", 18, (GXColor){255, 255, 255, 255});
 	GuiImage musicBtnImg(&btnNav);
 	GuiImage musicBtnImgOver(&btnNavOver);
-	musicBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	musicBtn = new GuiButton(60, btnNav.GetHeight());
 	musicBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	musicBtn->SetPosition(160, 30);
+	musicBtn->SetPosition(110, 30);
 	musicBtn->SetLabel(&musicBtnTxt);
 	//musicBtn->SetImage(&musicBtnImg);
 	//musicBtn->SetImageOver(&musicBtnImgOver);
@@ -2839,12 +2885,25 @@ void WiiMenu()
 	musicBtn->SetEffectGrow();
 	musicBtn->SetUpdateCallback(ChangeMenuMusic);
 
+	GuiText pictureBtnTxt("Pictures", 18, (GXColor){255, 255, 255, 255});
+	GuiImage pictureBtnImg(&btnNav);
+	GuiImage pictureBtnImgOver(&btnNavOver);
+	pictureBtn = new GuiButton(80, btnNav.GetHeight());
+	pictureBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	pictureBtn->SetPosition(195, 30);
+	pictureBtn->SetLabel(&pictureBtnTxt);
+	//pictureBtn->SetImage(&pictureBtnImg);
+	//pictureBtn->SetImageOver(&pictureBtnImgOver);
+	pictureBtn->SetTrigger(&trigA);
+	pictureBtn->SetEffectGrow();
+	pictureBtn->SetUpdateCallback(ChangeMenuPictures);
+
 	GuiText dvdBtnTxt("DVD", 18, (GXColor){255, 255, 255, 255});
 	GuiImage dvdBtnImg(&btnNav);
 	GuiImage dvdBtnImgOver(&btnNavOver);
-	dvdBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	dvdBtn = new GuiButton(50, btnNav.GetHeight());
 	dvdBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	dvdBtn->SetPosition(240, 30);
+	dvdBtn->SetPosition(290, 30);
 	dvdBtn->SetLabel(&dvdBtnTxt);
 	//dvdBtn->SetImage(&dvdBtnImg);
 	//dvdBtn->SetImageOver(&dvdBtnImgOver);
@@ -2855,9 +2914,9 @@ void WiiMenu()
 	GuiText onlineBtnTxt("Online Media", 18, (GXColor){255, 255, 255, 255});
 	GuiImage onlineBtnImg(&btnNav);
 	GuiImage onlineBtnImgOver(&btnNavOver);
-	onlineBtn = new GuiButton(btnNav.GetWidth(), btnNav.GetHeight());
+	onlineBtn = new GuiButton(100, btnNav.GetHeight());
 	onlineBtn->SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	onlineBtn->SetPosition(340, 30);
+	onlineBtn->SetPosition(370, 30);
 	onlineBtn->SetLabel(&onlineBtnTxt);
 	//onlineBtn->SetImage(&onlineBtnImg);
 	//onlineBtn->SetImageOver(&onlineBtnImgOver);
@@ -2880,6 +2939,7 @@ void WiiMenu()
 
 	mainWindow->Append(videoBtn);
 	mainWindow->Append(musicBtn);
+	mainWindow->Append(pictureBtn);
 	mainWindow->Append(dvdBtn);
 	mainWindow->Append(onlineBtn);
 	mainWindow->Append(configBtn);
@@ -2902,6 +2962,7 @@ void WiiMenu()
 		{
 			case MENU_BROWSE_VIDEOS:
 			case MENU_BROWSE_MUSIC:
+			case MENU_BROWSE_PICTURES:
 			case MENU_BROWSE_ONLINEMEDIA:
 				MenuBrowse(currentMenu);
 				break;
@@ -2954,6 +3015,8 @@ void WiiMenu()
 	videoBtn = NULL;
 	delete musicBtn;
 	musicBtn = NULL;
+	delete pictureBtn;
+	pictureBtn = NULL;
 	delete dvdBtn;
 	dvdBtn = NULL;
 	delete onlineBtn;

@@ -40,8 +40,8 @@
 #include <wchar.h>
 #include <math.h>
 #include <wiiuse/wpad.h>
-#include "../pngu.h"
-#include "../FreeTypeGX.h"
+#include "../utils/pngu.h"
+#include "../utils/FreeTypeGX.h"
 #include "../video.h"
 #include "../filelist.h"
 #include "../input.h"
@@ -456,11 +456,19 @@ class GuiWindow : public GuiElement
 		//!Sets the visibility of the window
 		//!\param v visibility (true = visible)
 		void SetVisible(bool v);
+		//!Sets the visibility of the window's elements
+		//!\param v visibility (true = visible)
+		void SetVisibleAll(bool v);
 		//!Resets the window's state to STATE_DEFAULT
 		void ResetState();
+		//!Resets the state of the window's elements to STATE_DEFAULT
+		void ResetStateAll();
 		//!Sets the window's state
 		//!\param s State
 		void SetState(int s);
+		//!Sets the state of the window's elements
+		//!\param s State
+		void SetStateAll(int s);
 		//!Gets the index of the GuiElement inside the window that is currently selected
 		//!\return index of selected GuiElement
 		int GetSelected();
@@ -503,6 +511,10 @@ class GuiImageData
 		//!Converts the image data to RGBA8 - expects PNG format
 		//!\param i Image data
 		GuiImageData(const u8 * i);
+		//!\overload
+		//!\param i Image data
+		//!\param s Image data size
+		GuiImageData(const u8 * i, int s);
 		//!Destructor
 		~GuiImageData();
 		//!Gets a pointer to the image data
@@ -515,6 +527,9 @@ class GuiImageData
 		//!\return image height
 		int GetHeight();
 	protected:
+		void LoadPNG(const u8 *i); //!< Load a PNG
+		void LoadBMP(const u8 *i, int s); //!< Load a BMP
+		void LoadJPEG(const u8 *i, int s); //!< Load a JPEG
 		u8 * data; //!< Image data
 		int height; //!< Height of image
 		int width; //!< Width of image

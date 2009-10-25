@@ -18,7 +18,7 @@
 #include "menu.h"
 #include "networkop.h"
 #include "settings.h"
-#include "http.h"
+#include "utils/http.h"
 #include "unzip/unzip.h"
 #include "unzip/miniunz.h"
 

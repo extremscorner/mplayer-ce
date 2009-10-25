@@ -155,12 +155,13 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
-#include <Metaphrasis.h>
 
 #include <malloc.h>
 #include <string.h>
 #include <wchar.h>
 #include <map>
+
+#include "Metaphrasis.h"
 
 #define MAX_FONT_SIZE 100
 

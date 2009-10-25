@@ -14,7 +14,7 @@
 #include <wiiuse/wpad.h>
 #include <sys/iosupport.h>
 
-#include "FreeTypeGX.h"
+#include "utils/FreeTypeGX.h"
 #include "video.h"
 #include "menu.h"
 #include "libwiigui/gui.h"

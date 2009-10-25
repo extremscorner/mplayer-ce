@@ -908,6 +908,16 @@ static bool ParseDirEntries()
 				if (validAudioExtensions[j][0] == 0) // extension not found
 					continue;
 			}
+			else if(currentMenu == MENU_BROWSE_PICTURES)
+			{
+				do
+				{
+					if (strcasecmp(ext, validImageExtensions[j]) == 0)
+						break;
+				} while (validImageExtensions[++j][0] != 0);
+				if (validImageExtensions[j][0] == 0) // extension not found
+					continue;
+			}
 		}
 
 		// add the entry
