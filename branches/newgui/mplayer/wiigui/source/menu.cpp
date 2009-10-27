@@ -716,8 +716,8 @@ SettingWindow(const char * title, GuiWindow * w)
 static void PictureViewer()
 {
 	HaltGui();
-	mainWindow->SetVisibleAll(false);
-	mainWindow->SetStateAll(STATE_DISABLED);
+	mainWindow->SetVisible(false);
+	mainWindow->SetState(STATE_DISABLED);
 	GuiWindow w(screenwidth, screenheight);
 	mainWindow->Append(&w);
 	ResumeGui();
@@ -738,8 +738,8 @@ static void PictureViewer()
 
 	HaltGui();
 	mainWindow->Remove(&w);
-	mainWindow->SetVisibleAll(true);
-	mainWindow->SetStateAll(STATE_DEFAULT);
+	mainWindow->SetVisible(true);
+	mainWindow->SetState(STATE_DEFAULT);
 	ResumeGui();
 	free(buffer);
 }

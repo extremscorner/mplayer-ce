@@ -455,19 +455,11 @@ class GuiWindow : public GuiElement
 		//!Sets the visibility of the window
 		//!\param v visibility (true = visible)
 		void SetVisible(bool v);
-		//!Sets the visibility of the window's elements
-		//!\param v visibility (true = visible)
-		void SetVisibleAll(bool v);
 		//!Resets the window's state to STATE_DEFAULT
 		void ResetState();
-		//!Resets the state of the window's elements to STATE_DEFAULT
-		void ResetStateAll();
 		//!Sets the window's state
 		//!\param s State
 		void SetState(int s);
-		//!Sets the state of the window's elements
-		//!\param s State
-		void SetStateAll(int s);
 		//!Gets the index of the GuiElement inside the window that is currently selected
 		//!\return index of selected GuiElement
 		int GetSelected();

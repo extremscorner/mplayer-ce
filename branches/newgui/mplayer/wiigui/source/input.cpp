@@ -67,6 +67,7 @@ void ShutoffRumble()
 	{
 		WPAD_Rumble(i, 0);
 		rumbleCount[i] = 0;
+		rumbleRequest[i] = 0;
 	}
 }
 
@@ -138,7 +139,12 @@ void MPlayerInput()
 	}
 
 	if(ir || wiiGetOSDLevel() >= 2)
+	{
 		drawGui = true;
-	else
+	}
+	else if(drawGui)
+	{
 		drawGui = false;
+		ShutoffRumble();
+	}
 }
