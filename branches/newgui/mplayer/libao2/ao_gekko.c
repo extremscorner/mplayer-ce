@@ -159,19 +159,27 @@ static void copy_swap_channels(u32 *d, u32 *s)
 
 static int play(void* data, int len, int flags)
 {
-	if(len < SFX_BUFFER_SIZE || get_space() == 0)
-		return 0;
+	u8 *s = (u8 *)data;
+	int bl = 0;
 
-	copy_swap_channels((u32*)buffer[buffer_fill], (u32*)data);
-	bytes_buffered += SFX_BUFFER_SIZE;
-	buffer_fill = (buffer_fill + 1) % SFX_BUFFERS;
-
-	if (!playing)
+	while (bl < len && get_space() > SFX_BUFFER_SIZE)
 	{
-		playing = true;
-		switch_buffers();
+		if(len - bl < SFX_BUFFER_SIZE)
+			break;
+
+		copy_swap_channels((u32*)buffer[buffer_fill], (u32*)s);
+		buffer_fill = (buffer_fill + 1) % SFX_BUFFERS;
+		bytes_buffered += SFX_BUFFER_SIZE;
+		bl += SFX_BUFFER_SIZE;
+		s += SFX_BUFFER_SIZE;
+
+		if (!playing)
+		{
+			playing = true;
+			switch_buffers();
+		}
 	}
-	return SFX_BUFFER_SIZE;
+	return bl;
 }
 
 static float get_delay(void)
