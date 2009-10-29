@@ -41,6 +41,8 @@ static GuiText * settingText = NULL;
 
 // playbar
 
+static GuiText * statusText = NULL;
+
 static GuiWindow * playbar = NULL;
 static GuiTrigger * playbarTrigA = NULL;
 
@@ -3041,6 +3043,21 @@ void WiiMenu()
 	}
 }
 
+bool StatusSet()
+{
+	return statusText->IsVisible();
+}
+
+void SetStatus(const char * txt)
+{
+	if(txt)
+		statusText->SetVisible(true);
+	else
+		statusText->SetVisible(false);
+
+	statusText->SetText(txt);
+}
+
 /****************************************************************************
  * MPlayer Menu
  ***************************************************************************/
@@ -3059,8 +3076,13 @@ void MPlayerMenu()
 	playbar->SetAlignment(ALIGN_CENTRE, ALIGN_BOTTOM);
 	playbar->SetPosition(0, -40);
 	
+	// status text
+	statusText = new GuiText(NULL, 24, (GXColor){255, 255, 255, 255});
+	statusText->SetVisible(false);
+
 	mainWindow->Append(&bgBottom);
 	mainWindow->Append(playbar);
+	mainWindow->Append(statusText);
 
 	ResumeGui();
 
@@ -3073,6 +3095,7 @@ void MPlayerMenu()
 	CancelAction();
 	HaltGui();
 
+	delete statusText;
 	delete mainWindow;
 	mainWindow = NULL;
 }

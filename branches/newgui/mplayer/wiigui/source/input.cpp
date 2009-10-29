@@ -138,7 +138,7 @@ void MPlayerInput()
 		}
 	}
 
-	if(ir || wiiGetOSDLevel() >= 2)
+	if(ir || StatusSet() || wiiGetOSDLevel() >= 2)
 	{
 		drawGui = true;
 	}

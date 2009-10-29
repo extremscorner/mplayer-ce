@@ -119,6 +119,7 @@ char *heartbeat_cmd;
 #include "osdep/di2.h"
 #include <ogc/system.h>
 void wiiPause();
+void SetStatus(const char * txt);
 #endif
 
 //**************************************************************************//
@@ -2804,7 +2805,11 @@ static void low_cache_loop(void)
 	   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) cfs:%2.2f  p:%2.2f",(int)(cache_fill_status*100.0/percent),cache_fill_status,percent);
 	   	set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) ",(int)(cache_fill_status*100.0/percent));
     	force_osd();
-    	
+		#ifdef WIILIB
+		char msg[512];
+		sprintf(msg, "Buffering (%02d%%) ",(int)(cache_fill_status*100.0/percent));
+		SetStatus(msg);
+		#endif
     	//percent=0.0;
 
 	if (mpctx->sh_video && mpctx->video_out && vo_config_count)
@@ -2817,6 +2822,11 @@ static void low_cache_loop(void)
 		usec_sleep(50000);		
     }
 	rm_osd_msg(OSD_MSG_PAUSE);
+
+	#ifdef WIILIB
+	SetStatus(NULL);
+	#endif
+
 	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
 	{
 		//DI2_StartMotor();
