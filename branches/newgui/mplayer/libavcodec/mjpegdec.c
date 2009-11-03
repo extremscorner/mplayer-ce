@@ -105,6 +105,8 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_DEBUG, "mjpeg bottom field first\n");
         }
     }
+    if (avctx->codec->id == CODEC_ID_AMV)
+        s->flipped = 1;
 
     return 0;
 }
@@ -614,13 +616,13 @@ static int decode_block_refinement(MJpegDecodeContext *s, DCTELEM *block, uint8_
 
 static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point_transform){
     int i, mb_x, mb_y;
-    uint16_t buffer[32768][4];
+    uint16_t (*buffer)[4];
     int left[3], top[3], topleft[3];
     const int linesize= s->linesize[0];
     const int mask= (1<<s->bits)-1;
 
-    if((unsigned)s->mb_width > 32768) //dynamic alloc
-        return -1;
+    av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size, (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
+    buffer= s->ljpeg_buffer;
 
     for(i=0; i<3; i++){
         buffer[0][i]= 1 << (s->bits + point_transform - 1);
@@ -773,7 +775,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
         data[c] = s->picture.data[c];
         linesize[c]=s->linesize[c];
         s->coefs_finished[c] |= 1;
-        if(s->avctx->codec->id==CODEC_ID_AMV) {
+        if(s->flipped) {
             //picture should be flipped upside-down for this codec
             assert(!(s->avctx->flags & CODEC_FLAG_EMU_EDGE));
             data[c] += (linesize[c] * (s->v_scount[i] * (8 * s->mb_height -((s->height/s->v_max)&7)) - 1 ));
@@ -1176,6 +1178,9 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
             else if(!strcmp(cbuf, "CS=ITU601")){
                 s->cs_itu601= 1;
             }
+            else if(len > 20 && !strncmp(cbuf, "Intel(R) JPEG Library", 21)){
+                s->flipped = 1;
+            }
 
             av_free(cbuf);
         }
@@ -1499,6 +1504,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 
     av_free(s->buffer);
     av_free(s->qscale_table);
+    av_freep(&s->ljpeg_buffer);
+    s->ljpeg_buffer_size=0;
 
     for(i=0;i<2;i++) {
         for(j=0;j<4;j++)

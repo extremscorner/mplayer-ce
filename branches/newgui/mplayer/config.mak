@@ -59,9 +59,9 @@ EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii
 EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lfribidi -lz -ljpeg -ldi -ltinyftp -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -lm
 #EXTRALIBS = 
 #EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
+EXTRALIBS += $(EXTRA_LIB)
 EXTRALIBS_MPLAYER =  -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
-
 DEPEND_CMD   = $(CC) -MM $(CFLAGS) $(filter-out %.h,$^) | sed "s,[0-9a-z._-]*: \($(SRC_DIR)/\)*\([a-z0-9]*/\)[^/]* ,\2&,"
 
 MPDEPEND_CMD     = $(CC) -MM $(CFLAGS)   $(filter-out %.xpm,$(filter-out %.h,$^)) | sed -e "s,[0-9a-z._-]*: \([a-z0-9/]*/\)[^/]* ,\1&," -e "s,\(.*\)\.o: ,\1.d &,"

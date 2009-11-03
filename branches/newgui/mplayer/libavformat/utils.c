@@ -471,6 +471,12 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             /* read probe data */
             pd->buf= av_realloc(pd->buf, probe_size + AVPROBE_PADDING_SIZE);
             pd->buf_size = get_buffer(pb, pd->buf, probe_size);
+
+            if ((int)pd->buf_size < 0) {
+                err = pd->buf_size;
+                goto fail;
+            }
+
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
             if (url_fseek(pb, 0, SEEK_SET) < 0) {
                 url_fclose(pb);
@@ -1018,11 +1024,12 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
 
             if(s->debug & FF_FDEBUG_TS)
-                av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d,  flags=%d\n",
+                av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
                     st->cur_pkt.stream_index,
                     st->cur_pkt.pts,
                     st->cur_pkt.dts,
                     st->cur_pkt.size,
+                    st->cur_pkt.duration,
                     st->cur_pkt.flags);
 
             s->cur_st = st;
@@ -1044,11 +1051,12 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         }
     }
     if(s->debug & FF_FDEBUG_TS)
-        av_log(s, AV_LOG_DEBUG, "av_read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, flags=%d\n",
+        av_log(s, AV_LOG_DEBUG, "av_read_frame_internal stream=%d, pts=%"PRId64", dts=%"PRId64", size=%d, duration=%d, flags=%d\n",
             pkt->stream_index,
             pkt->pts,
             pkt->dts,
             pkt->size,
+            pkt->duration,
             pkt->flags);
 
     return 0;
@@ -1880,6 +1888,7 @@ static int has_codec_parameters(AVCodecContext *enc)
         if(!enc->frame_size &&
            (enc->codec_id == CODEC_ID_VORBIS ||
             enc->codec_id == CODEC_ID_AAC ||
+            enc->codec_id == CODEC_ID_MP3 ||
             enc->codec_id == CODEC_ID_SPEEX))
             return 0;
         break;
@@ -2828,6 +2837,11 @@ void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
     AVProgram *program=NULL;
     void *tmp;
 
+    if (idx >= ac->nb_streams) {
+        av_log(ac, AV_LOG_ERROR, "stream index %d is not valid\n", idx);
+        return;
+    }
+
     for(i=0; i<ac->nb_programs; i++){
         if(ac->programs[i]->id != progid)
             continue;
@@ -2898,6 +2912,9 @@ void dump_format(AVFormatContext *ic,
                  int is_output)
 {
     int i;
+    uint8_t *printed = av_mallocz(ic->nb_streams);
+    if (ic->nb_streams && !printed)
+        return;
 
     av_log(NULL, AV_LOG_INFO, "%s #%d, %s, %s '%s':\n",
             is_output ? "Output" : "Input",
@@ -2936,18 +2953,25 @@ void dump_format(AVFormatContext *ic,
         av_log(NULL, AV_LOG_INFO, "\n");
     }
     if(ic->nb_programs) {
-        int j, k;
+        int j, k, total = 0;
         for(j=0; j<ic->nb_programs; j++) {
             AVMetadataTag *name = av_metadata_get(ic->programs[j]->metadata,
                                                   "name", NULL, 0);
             av_log(NULL, AV_LOG_INFO, "  Program %d %s\n", ic->programs[j]->id,
                    name ? name->value : "");
-            for(k=0; k<ic->programs[j]->nb_stream_indexes; k++)
+            for(k=0; k<ic->programs[j]->nb_stream_indexes; k++) {
                 dump_stream_format(ic, ic->programs[j]->stream_index[k], index, is_output);
-         }
-    } else
+                printed[ic->programs[j]->stream_index[k]] = 1;
+            }
+            total += ic->programs[j]->nb_stream_indexes;
+        }
+        if (total < ic->nb_streams)
+            av_log(NULL, AV_LOG_INFO, "  No Program\n");
+    }
     for(i=0;i<ic->nb_streams;i++)
-        dump_stream_format(ic, i, index, is_output);
+        if (!printed[i])
+            dump_stream_format(ic, i, index, is_output);
+
     if (ic->metadata) {
         AVMetadataTag *tag=NULL;
         av_log(NULL, AV_LOG_INFO, "  Metadata\n");
@@ -2955,7 +2979,7 @@ void dump_format(AVFormatContext *ic,
             av_log(NULL, AV_LOG_INFO, "    %-16s: %s\n", tag->key, tag->value);
         }
     }
-
+    av_free(printed);
 }
 
 #if LIBAVFORMAT_VERSION_MAJOR < 53

@@ -1,4 +1,4 @@
-.\" $Revision: 29771 $
+.\" $Revision: 29814 $
 .\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .
@@ -3101,7 +3101,7 @@ Use the _WIN_LAYER hint with the given layer number.
 .IPs netwm
 Force NETWM style.
 .IPs "none\ "
-Do not set fullscreen window layer.
+Clear the list of modes; you can add modes to enable afterward.
 .IPs stays_on_top
 Use _NETWM_STATE_STAYS_ON_TOP hint if available.
 .REss
@@ -3494,7 +3494,7 @@ Useful with slow video memory.
 .IPs pullup
 Try to apply inverse telecine, needs motion adaptive temporal deinterlacing.
 .IPs colorspace
-Select the color space for YUV to RGB conversion (default: 1, BT.601).
+Select the color space for YUV to RGB conversion.
 In general BT.601 should be used for standard definition (SD) content and
 BT.709 for high definition (HD) content.
 Using incorrect color space results in slightly under or over saturated and
@@ -3511,6 +3511,11 @@ Use ITU-R BT.709 color space.
 .IPs 3
 Use SMPTE-240M color space.
 .RE
+.IPs force\-mixer
+Forces the use of the VDPAU mixer, which implements all above options (default).
+Use noforce\-mixer to allow displaying BGRA colorspace.
+(Disables all above options and the hardware equalizer
+if image format BGRA is actually used.)
 .RE
 .PD 1
 .
@@ -5105,15 +5110,15 @@ Set cut frequency in Hz.
 Set feed level for low frequencies in 0.1*dB.
 .IPs profile=<value>
 Several profiles are available for convenience:
+.PD 0
 .RSs
-default: will be used if nothing else was specified (fcut=700,
-feed=45);
-.br
-cmoy: Chu Moy circuit implementation (fcut=700, feed=60);
-.br
-jmeier: Jan Meier circuit implementation (fcut=650, feed=95).
-.REss
-.PD 1
+.IPs default
+will be used if nothing else was specified (fcut=700, feed=45)
+.IPs "cmoy\ "
+Chu Moy circuit implementation (fcut=700, feed=60)
+.IPs jmeier
+Jan Meier circuit implementation (fcut=650, feed=95)
+.RE
 .RE
 .sp 1
 .RS
@@ -5798,7 +5803,7 @@ Rotate by 90 degrees counterclockwise and flip.
 .RE
 .
 .TP
-.B scale[=w:h[:ilaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
+.B scale[=w:h[:interlaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
 Scales the image with the software scaler (slow) and performs a YUV<\->RGB
 colorspace conversion (also see \-sws).
 .RSs
@@ -5819,7 +5824,7 @@ incapable of scaling, it defaults to d_width/\:d_height!
 .br
 \-(n+8): Like \-n above, but rounding the dimension to the closest multiple of 16.
 .REss
-.IPs <ilaced>
+.IPs <interlaced>
 Toggle interlaced scaling.
 .RSss
 0: off (default)

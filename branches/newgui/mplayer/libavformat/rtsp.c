@@ -704,6 +704,9 @@ void rtsp_parse_line(RTSPMessageHeader *reply, const char *buf)
     } else if (av_stristart(p, "Notice:", &p) ||
                av_stristart(p, "X-Notice:", &p)) {
         reply->notice = strtol(p, NULL, 10);
+    } else if (av_stristart(p, "Location:", &p)) {
+        skip_spaces(&p);
+        av_strlcpy(reply->location, p , sizeof(reply->location));
     }
 }
 
@@ -1125,12 +1128,19 @@ make_setup_request (AVFormatContext *s, const char *host, int port,
             {
                 char url[1024];
                 struct in_addr in;
+                int port, ttl;
 
-                in.s_addr = htonl(reply->transports[0].destination);
+                if (reply->transports[0].destination) {
+                    in.s_addr = htonl(reply->transports[0].destination);
+                    port      = reply->transports[0].port_min;
+                    ttl       = reply->transports[0].ttl;
+                } else {
+                    in        = rtsp_st->sdp_ip;
+                    port      = rtsp_st->sdp_port;
+                    ttl       = rtsp_st->sdp_ttl;
+                }
                 snprintf(url, sizeof(url), "rtp://%s:%d?ttl=%d",
-                         inet_ntoa(in),
-                         reply->transports[0].port_min,
-                         reply->transports[0].ttl);
+                         inet_ntoa(in), port, ttl);
                 if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                     err = AVERROR_INVALIDDATA;
                     goto fail;
@@ -1165,14 +1175,15 @@ static int rtsp_read_header(AVFormatContext *s,
                             AVFormatParameters *ap)
 {
     RTSPState *rt = s->priv_data;
-    char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128], *option_list, *option;
+    char host[1024], path[1024], tcpname[1024], cmd[2048], auth[128];
+    char *option_list, *option, *filename;
     URLContext *rtsp_hd;
     int port, ret, err;
     RTSPMessageHeader reply1, *reply = &reply1;
     unsigned char *content = NULL;
     int lower_transport_mask = 0;
     char real_challenge[64];
-
+  redirect:
     /* extract hostname and port */
     url_split(NULL, 0, auth, sizeof(auth),
               host, sizeof(host), &port, path, sizeof(path), s->filename);
@@ -1192,14 +1203,14 @@ static int rtsp_read_header(AVFormatContext *s,
     /* search for options */
     option_list = strchr(path, '?');
     if (option_list) {
-        /* remove the options from the path */
-        *option_list++ = 0;
+        filename = strchr(s->filename, '?');
         while(option_list) {
             /* move the option pointer */
-            option = option_list;
+            option = ++option_list;
             option_list = strchr(option_list, '&');
             if (option_list)
-                *(option_list++) = 0;
+                *option_list = 0;
+
             /* handle the options */
             if (strcmp(option, "udp") == 0)
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP);
@@ -1207,7 +1218,13 @@ static int rtsp_read_header(AVFormatContext *s,
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_UDP_MULTICAST);
             else if (strcmp(option, "tcp") == 0)
                 lower_transport_mask = (1<< RTSP_LOWER_TRANSPORT_TCP);
+            else {
+                strcpy(++filename, option);
+                filename += strlen(option);
+                if (option_list) *filename = '&';
+            }
         }
+        *filename = 0;
     }
 
     if (!lower_transport_mask)
@@ -1323,7 +1340,13 @@ static int rtsp_read_header(AVFormatContext *s,
     rtsp_close_streams(rt);
     av_freep(&content);
     url_close(rt->rtsp_hd);
-    av_freep(&rt->auth_b64);
+    if (reply->status_code >=300 && reply->status_code < 400) {
+        av_strlcpy(s->filename, reply->location, sizeof(s->filename));
+        av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
+               reply->status_code,
+               s->filename);
+        goto redirect;
+    }
     return err;
 }
 
@@ -1775,71 +1798,5 @@ AVInputFormat sdp_demuxer = {
     sdp_read_header,
     sdp_read_packet,
     sdp_read_close,
-};
-#endif
-
-#if CONFIG_REDIR_DEMUXER
-/* dummy redirector format (used directly in av_open_input_file now) */
-static int redir_probe(AVProbeData *pd)
-{
-    const char *p;
-    p = pd->buf;
-    skip_spaces(&p);
-    if (av_strstart(p, "http://", NULL) ||
-        av_strstart(p, "rtsp://", NULL))
-        return AVPROBE_SCORE_MAX;
-    return 0;
-}
-
-static int redir_read_header(AVFormatContext *s, AVFormatParameters *ap)
-{
-    char buf[4096], *q;
-    int c;
-    AVFormatContext *ic = NULL;
-    ByteIOContext *f = s->pb;
-
-    /* parse each URL and try to open it */
-    c = url_fgetc(f);
-    while (c != URL_EOF) {
-        /* skip spaces */
-        for(;;) {
-            if (!redir_isspace(c))
-                break;
-            c = url_fgetc(f);
-        }
-        if (c == URL_EOF)
-            break;
-        /* record url */
-        q = buf;
-        for(;;) {
-            if (c == URL_EOF || redir_isspace(c))
-                break;
-            if ((q - buf) < sizeof(buf) - 1)
-                *q++ = c;
-            c = url_fgetc(f);
-        }
-        *q = '\0';
-        //printf("URL='%s'\n", buf);
-        /* try to open the media file */
-        if (av_open_input_file(&ic, buf, NULL, 0, NULL) == 0)
-            break;
-    }
-    if (!ic)
-        return AVERROR(EIO);
-
-    *s = *ic;
-    url_fclose(f);
-
-    return 0;
-}
-
-AVInputFormat redir_demuxer = {
-    "redir",
-    NULL_IF_CONFIG_SMALL("Redirector format"),
-    0,
-    redir_probe,
-    redir_read_header,
-    NULL,
-    NULL,
 };
 #endif

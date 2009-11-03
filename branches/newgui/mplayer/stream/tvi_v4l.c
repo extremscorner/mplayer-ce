@@ -40,6 +40,7 @@
 #include "mp_msg.h"
 #include "libaf/af_format.h"
 #include "libmpcodecs/img_format.h"
+#include "libmpcodecs/dec_teletext.h"
 #include "libvo/fastmemcpy.h"
 #include "libvo/videodev_mjpeg.h"
 
@@ -1522,7 +1523,7 @@ static int control(priv_t *priv, int cmd, void *arg)
             if(vbi_get_props(priv,&tsp)==TVI_CONTROL_TRUE)
             {
                 ptr=&tsp;
-                if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==TVI_CONTROL_TRUE)
+                if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==VBI_CONTROL_TRUE)
                     priv->priv_vbi=ptr;
                 else
                     priv->priv_vbi=NULL;
