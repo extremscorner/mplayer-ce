@@ -252,7 +252,7 @@ static int loop_seek=0;
 static m_time_size_t end_at = { .type = END_AT_NONE, .pos = 0 };
 
 // A/V sync:
-       int autosync=0; // 30 might be a good default value.
+int autosync=1; // 30 might be a good default value.
 
 // may be changed by GUI:  (FIXME!)
 float rel_seek_secs=0;
@@ -496,7 +496,7 @@ static float c_total=0;
        float audio_delay=0;
 static int ignore_start=0;
 
-static int softsleep=0;
+static int softsleep=1;
 
        double force_fps=0;
 static int force_srate=0;
@@ -2100,8 +2100,12 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
     int rtc_fd = -1;
 #endif
 
-static float timing_sleep(double time_frame)
+static double timing_sleep(double time_frame)
 {
+    int x=0,y=0;
+    double t=time_frame;
+    s32 frame=time_frame*1000000; //in us
+
 #ifdef HAVE_RTC
     if (rtc_fd >= 0){
 	// -------- RTC -----------
@@ -2117,24 +2121,49 @@ static float timing_sleep(double time_frame)
     {
 	// assume kernel HZ=100 for softsleep, works with larger HZ but with
 	// unnecessarily high CPU usage
-	float margin = softsleep ? 0.011 : 0;
-	current_module = "sleep_timer";
-	while (time_frame > margin) {
-	    usec_sleep(1000000 * (time_frame - margin));
-	    time_frame -= GetRelativeTime();
-	}
-	if (softsleep){
-	    current_module = "sleep_soft";
-	    if (time_frame < 0)
-		mp_msg(MSGT_AVSYNC, MSGL_WARN, MSGTR_SoftsleepUnderflow);
-	    while (time_frame > 0)
-	    {
-	    usleep(10);
-		time_frame-=GetRelativeTime(); // burn the CPU
-		}
+    //double margin = softsleep ? 0.0011 : 0.0;
+    s32 margin = softsleep ? 500 : 0;  //in us
 
+    current_module = "sleep_timer";
+	//printf("timing_sleep run: %li\n",frame);
+	while (frame > margin) {
+	    usec_sleep(frame - margin);
+	    y++;
+	    frame -= GetRelativeTime();
+	    break;
 	}
+	//printf("-end\n");
+	if (softsleep){
+		//printf("sleep_soft run: %li\n",frame);
+	    current_module = "sleep_soft";
+	    if (frame < 0)
+	    {
+		//mp_msg(MSGT_AVSYNC, MSGL_WARN, MSGTR_SoftsleepUnderflow);
+		printf("SoftsleepUnderflow: %li\n",frame);
+	    }
+	    else
+	    {
+			while (frame > 10)
+			{
+				x++;
+				frame-=GetRelativeTime(); // burn the CPU
+				if(x>10000) break;
+			}
+	    }
+	}
+	time_frame=frame * 0.000001F;
     }
+
+    if(time_frame >0.000050 || time_frame<-0.00006 || x>10000 || y>1)
+    {
+    	printf("orig: %f  timeframe: %f   x: %i  y: %i  frame: %li\n",t,time_frame,x,y,frame);
+        if(time_frame<-0.03 )
+        {
+        	time_frame=-0.03;
+        	GetRelativeTime();
+        }
+    }
+
     return time_frame;
 }
 
@@ -2409,9 +2438,6 @@ static int fill_audio_out_buffers(void)
 	playsize = mpctx->audio_out->play(sh_audio->a_out_buffer, playsize, playflags);
 
 	if (playsize > 0) {
-				//geexbox bad memmove patch
-			if (sh_audio->a_out_buffer_len < playsize) playsize = sh_audio->a_out_buffer_len;
-
 	    sh_audio->a_out_buffer_len -= playsize;
 	    memmove(sh_audio->a_out_buffer, &sh_audio->a_out_buffer[playsize],
 		    sh_audio->a_out_buffer_len);
@@ -2421,6 +2447,7 @@ static int fill_audio_out_buffers(void)
 	    // Sanity check to avoid hanging in case current ao doesn't output
 	    // partial chunks and doesn't check for AOPLAY_FINAL_CHUNK
 	    mp_msg(MSGT_CPLAYER, MSGL_WARN, "Audio output truncated at end.\n");
+	    printf("Audio output truncated at end.\n");
 	    sh_audio->a_out_buffer_len = 0;
 	}
     }
@@ -2432,7 +2459,7 @@ static int sleep_until_update(double *time_frame, double *aq_sleep_time)
     int frame_time_remaining = 0;
     current_module="calc_sleep_time";
 
-    *time_frame -= GetRelativeTime(); // reset timer
+    *time_frame -= GetRelativeTime() * (double)0.000001; // reset timer;
 
     if (mpctx->sh_audio && !mpctx->d_audio->eof) {
 	float delay = mpctx->audio_out->get_delay();
@@ -3097,10 +3124,11 @@ int mplayer_loadfile(const char* _file){
 int argc;
 char *argv[] = {
 	"",
+	//"-nocache",
 	"-vo","gekko","-ao","gekko",
 	_file
 }; 
-argc=6;
+argc=argc = sizeof(argv) / sizeof(char *);
 #else 
 int main(int argc,char* argv[]){
 #endif
@@ -4650,26 +4678,6 @@ if(!mpctx->sh_video) {
 #endif
     frame_time_remaining = sleep_until_update(&time_frame, &aq_sleep_time);
 
-/*
-#ifdef GEKKO
-  if(!first_frame && blit_frame && !frame_time_remaining )
-  {
-  	first_frame=true;
-
-	if (restore_seek)
-	{
-		seek(mpctx, restore_seek, SEEK_ABSOLUTE);
-		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Resume");
-		force_osd();
-		restore_seek=0;
-	}else seek(mpctx, 0, SEEK_ABSOLUTE);
-	if (mpctx->sh_audio && mpctx->mixer.muted)mixer_mute(&mpctx->mixer);
-	goto init_while;
-
-	if (mpctx->sh_audio && mpctx->mixer.muted)mixer_mute(&mpctx->mixer);
-  }
-#endif
-*/
 //====================== FLIP PAGE (VIDEO BLT): =========================
 
         current_module="flip_page";

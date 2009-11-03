@@ -329,8 +329,8 @@ void *decode_video(sh_video_t *sh_video, unsigned char *start, int in_size,
 		   int drop_frame, double pts)
 {
     mp_image_t *mpi = NULL;
-    unsigned int t = GetTimer();
-    unsigned int t2;
+    u64 t = GetTimer();
+    u64 t2;
     double tt;
 
     if (correct_pts && pts != MP_NOPTS_VALUE) {
@@ -407,7 +407,7 @@ void *decode_video(sh_video_t *sh_video, unsigned char *start, int in_size,
 int filter_video(sh_video_t *sh_video, void *frame, double pts)
 {
     mp_image_t *mpi = frame;
-    unsigned int t2 = GetTimer();
+    u64 t2 = GetTimer();
     vf_instance_t *vf = sh_video->vfilter;
     // apply video filters and call the leaf vo/ve
     int ret = vf->put_image(vf, mpi, pts);

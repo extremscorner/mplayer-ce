@@ -2,7 +2,6 @@
    ao_gekko.c - MPlayer audio driver for Wii
 
    Copyright (C) 2008 dhewg
-   Improved by Tantric & rodries
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -43,48 +42,51 @@ static ao_info_t info = {
 
 LIBAO_EXTERN(gekko)
 
-#define SFX_BUFFER_SIZE (8*1024)
-#define SFX_BUFFERS 32
-#define BUFFERSIZE ((SFX_BUFFERS-1)*SFX_BUFFER_SIZE)
+#define SFX_BUFFER_SIZE (4*1024)
+#define SFX_BUFFERS 64
 
 static u8 buffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
 static u8 buffer_fill = 0;
 static u8 buffer_play = 0;
+static u8 buffer_free = SFX_BUFFERS;
 static bool playing = false;
-static unsigned int bytes_buffered = 0;
 
-static void switch_buffers()
-{
-	if (bytes_buffered == 0)
-	{
+static void switch_buffers() {
+
+	if (playing)
+		buffer_free++;
+
+	if (buffer_free == SFX_BUFFERS) {
 		playing = false;
 		AUDIO_StopDMA();
 		return;
 	}
 
-	AUDIO_StopDMA();
-	DCFlushRange(buffer[buffer_play], SFX_BUFFER_SIZE);
-	AUDIO_InitDMA((u32)buffer[buffer_play], SFX_BUFFER_SIZE);
+	//DCFlushRange(buffer[buffer_play], SFX_BUFFER_SIZE);
+	AUDIO_InitDMA((u32) buffer[buffer_play], SFX_BUFFER_SIZE);
 	AUDIO_StartDMA();
-	bytes_buffered -= SFX_BUFFER_SIZE;
+	playing = true;
 	buffer_play = (buffer_play + 1) % SFX_BUFFERS;
 }
 
-static int control(int cmd, void *arg)
-{
+static int control(int cmd, void *arg) {
 	//mp_msg(MSGT_AO, MSGL_ERR, "[AOGEKKO]: control %d\n", cmd);
+
 	return CONTROL_UNKNOWN;
 }
 
-void reinit_audio() // for newgui
+void reinit_audio()  // for newgui
 {
 	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
 	AUDIO_RegisterDMACallback(switch_buffers);
 }
 
-static int init(int rate, int channels, int format, int flags)
-{
+static int init(int rate, int channels, int format, int flags) {
 	u8 i;
+	
+	AUDIO_StopDMA();
+	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
+	AUDIO_RegisterDMACallback(switch_buffers);
 
 	ao_data.buffersize = SFX_BUFFER_SIZE * SFX_BUFFERS;
 	ao_data.outburst = SFX_BUFFER_SIZE;
@@ -92,105 +94,103 @@ static int init(int rate, int channels, int format, int flags)
 	ao_data.samplerate = 48000;
 	ao_data.format = AF_FORMAT_S16_BE;
 	ao_data.bps = 192000;
-
-	for (i = 0; i < SFX_BUFFERS; ++i)
+	
+	for (i = 0; i < SFX_BUFFERS; ++i) {
 		memset(buffer[i], 0, SFX_BUFFER_SIZE);
+		DCFlushRange(buffer[i], SFX_BUFFER_SIZE);
+	}
 
+	playing = false;
 	buffer_fill = 0;
 	buffer_play = 0;
-	bytes_buffered = 0;
-	playing = false;
-
-	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
-	AUDIO_RegisterDMACallback(switch_buffers);
-
+	buffer_free = SFX_BUFFERS;
+	
 	return 1;
 }
 
-static void reset(void)
-{
+static void reset(void) {
 	u8 i;
 
 	AUDIO_StopDMA();
 
-	for (i = 0; i < SFX_BUFFERS; ++i)
+	for (i = 0; i < SFX_BUFFERS; ++i) {
 		memset(buffer[i], 0, SFX_BUFFER_SIZE);
+		DCFlushRange(buffer[i], SFX_BUFFER_SIZE);
+	}
 
 	buffer_fill = 0;
 	buffer_play = 0;
-	bytes_buffered = 0;
+	buffer_free = SFX_BUFFERS;
+
 	playing = false;
 }
 
-static void uninit(int immed)
-{
+static void uninit(int immed) {
 	reset();
+
 	AUDIO_RegisterDMACallback(NULL);
 }
 
-static void audio_pause(void)
-{
+static void audio_pause(void) {
 	AUDIO_StopDMA();
+
+	if (playing	&& (buffer_free<SFX_BUFFERS)) {
+		memset(buffer[buffer_play] , 0, SFX_BUFFER_SIZE );
+		DCFlushRange(buffer[buffer_play], SFX_BUFFER_SIZE);
+		//buffer_play = (buffer_play + 1) % SFX_BUFFERS;
+		buffer_free++;
+	}
+
 	playing = false;
 }
 
-static void audio_resume(void)
-{
-	if (playing)
-		return;
-
-	playing = true;
-	switch_buffers();
+static void audio_resume(void) {
+	//switch_buffers();
 }
 
-static int get_space(void)
-{
-	return BUFFERSIZE - bytes_buffered;
+static int get_space(void) {
+	return buffer_free  * SFX_BUFFER_SIZE;
 }
 
 #define SWAP(x) ((x>>16)|(x<<16))
-#define SWAP_LEN (SFX_BUFFER_SIZE / 4)
-
+#define SWAP_LEN SFX_BUFFER_SIZE/4
 static void copy_swap_channels(u32 *d, u32 *s)
 {
 	int n;
-
-	for(n = 0; n < SWAP_LEN; n++)
-		d[n] = SWAP(s[n]);
+	for(n=0;n<SWAP_LEN;n++) d[n] = SWAP(s[n]);
 }
 
-static int play(void* data, int len, int flags)
-{
+static int play(void* data, int len, int flags) {
 	int ret = 0;
 	u8 *s = (u8 *) data;
 
-	if(len < SFX_BUFFER_SIZE)
-		return 0;
-
-	while (len >= SFX_BUFFER_SIZE && get_space() > SFX_BUFFER_SIZE)
-	{
-		copy_swap_channels((u32*) buffer[buffer_fill], (u32*) s);
+	while ((len >= SFX_BUFFER_SIZE)	&& (buffer_free>1)) {
+		copy_swap_channels((u32*)buffer[buffer_fill], (u32*)s);
+		DCFlushRange(buffer[buffer_play], SFX_BUFFER_SIZE);
 		buffer_fill = (buffer_fill + 1) % SFX_BUFFERS;
+		buffer_free--;
 
-		bytes_buffered += SFX_BUFFER_SIZE;
 		len -= SFX_BUFFER_SIZE;
 		s += SFX_BUFFER_SIZE;
 		ret += SFX_BUFFER_SIZE;
 	}
-
 	if (!playing)
-	{
-		playing = true;
 		switch_buffers();
-	}
 
 	return ret;
 }
 
-static float get_delay(void)
-{
-	if (playing)
-		return (bytes_buffered + AUDIO_GetDMABytesLeft()) / 192000.0f;
+static float get_delay(void) {
+	int b;
 
-	return bytes_buffered / 192000.0f;
+	if (buffer_free == SFX_BUFFERS)
+		return 0;
+
+	b = (SFX_BUFFERS - buffer_free  ) * SFX_BUFFER_SIZE;
+
+	if (playing)
+		b += AUDIO_GetDMABytesLeft();
+
+	return b / 192000.0f;
 }
+

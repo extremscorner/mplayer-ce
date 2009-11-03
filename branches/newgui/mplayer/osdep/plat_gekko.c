@@ -46,6 +46,7 @@
 #include "di2.h"
 #include "libdvdiso.h"
 #include "mp_osd.h"
+#include "timer.h"
 
 #include "ftp_devoptab.h"
 #include "log_console.h"
@@ -61,7 +62,7 @@
 
 #undef abort
 
-#define MPCE_VERSION "0.76"
+#define MPCE_VERSION "0.76 02/11 b1"
 
 extern char appPath[1024];
 extern int stream_cache_size;
@@ -809,7 +810,6 @@ void plat_init (int *argc, char **argv[]) {
 	int mload=-1;
 	char cad[10]={127,130,158,147,171,151,164,117,119,0};
 	
-	__exception_setreload(8);
 	VIDEO_Init();
 	GX_InitVideo();
 	log_console_init(vmode, 0);
@@ -829,24 +829,24 @@ void plat_init (int *argc, char **argv[]) {
 	{
 		if(FindIOS(202)) 
 		{
-			printf("IOS 202 found, reloadind IOS\n");
+			//printf("IOS 202 found, reloadind IOS\n");
 			IOS_ReloadIOS(202);
 			WIIDVD_Init(false);
-			printf("DVD initiated");
+			//printf("DVD initiated");
 			mload=mload_init();
 		}
 		else 
 		{
-			printf("IOS 202 NOT found, using DVDx\n");
+			//printf("IOS 202 NOT found, using DVDx\n");
 			WIIDVD_Init(true);
-			printf("DVDx loaded\n");
+			//printf("DVDx loaded\n");
 		}
 	} 
 	else 
 	{
-		printf("IOS 202 loaded\n");
+		//printf("IOS 202 loaded\n");
 		WIIDVD_Init(false);
-		printf("DVD initiated");
+		//printf("DVD initiated");
 		mload=mload_init();
 	}
 	

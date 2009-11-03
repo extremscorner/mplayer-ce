@@ -24,13 +24,15 @@
 
 #include <ogc/lwp_watchdog.h>
 #include <sys/time.h>
+#include "timer.h"
 
 const char *timer_name = "gekko";
 
-int usec_sleep(int usec_delay) {
-	return usleep(usec_delay);
-}
 
+/*
+int usec_sleep(unsigned int usec_delay) {
+	return usleep(usec_delay);
+}*
 // Returns current time in microseconds
 u64 GetTimer(void) {
 	return ticks_to_microsecs(gettime());
@@ -40,45 +42,41 @@ u64 GetTimer(void) {
 u64 GetTimerMS(void) {
 	return ticks_to_millisecs(gettime());
 }
-
+*/
 
 static u64 RelativeTime=0;
-
+/*
 double GetRelativeTime(void){
   u64 t,r;
   t=GetTimer();
 
   r=t-RelativeTime;
   RelativeTime=t;
-  return (double)r * 0.000001F;
+  return (double)(r * (double)0.000001);
+}
+*/
+u64 GetRelativeTime(void){
+  u64 t,r;
+  t=GetTimer();
+
+  r=t-RelativeTime;
+  RelativeTime=t;
+  return r;
 }
 /*
-float GetRelativeTime1(void) {
+double GetRelativeTime(void) {
 	u64 t;
 	float res;
 
 	t = gettime();
-	res = (float) ticks_to_nanosecs(diff_ticks(relative, t)) /
-			(float) TB_NSPERSEC;
-	relative = t;
+	res = (double) ticks_to_nanosecs(diff_ticks(t, RelativeTime)) /
+			(double) TB_NSPERSEC;
+	RelativeTime = t;
 
 	return res;
 }
 */
-static u64 timeinit;
+
 void InitTimer(void) {
-/*
-	timeinit = gettime();	
-	settime(timeinit); //testing
-	gettime();	
-	usleep(50);
-	gettime();	
-*/	
 	GetRelativeTime();
-	//relative = gettime();
-}
-void ExitTimer(void) {
-//	settime(timeinit); //testing
-	//usleep(500);
-	//GetRelativeTime();
 }
