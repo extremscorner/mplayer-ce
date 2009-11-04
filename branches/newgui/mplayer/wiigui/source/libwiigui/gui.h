@@ -47,8 +47,9 @@
 
 extern FreeTypeGX *fontSystem[];
 
-#define SCROLL_INITIAL_DELAY 	20
-#define SCROLL_LOOP_DELAY		3
+#define SCROLL_DELAY_INITIAL	200000
+#define SCROLL_DELAY_LOOP		30000
+#define SCROLL_DELAY_DECREASE	300
 #define FILE_PAGESIZE 			9
 #define PAGESIZE 				8
 #define MAX_OPTIONS 			30
@@ -195,6 +196,14 @@ class GuiTrigger
 		//!\param axis Controller stick axis (x-axis = 0, y-axis = 1)
 		//!\return Stick value
 		s8 WPAD_Stick(u8 right, int axis);
+		//!Get X value from Wii Joystick (classic, nunchuk) input
+		//!\param stick Controller stick (left = 0, right = 1)
+		//!\return Stick value
+		s8 WPAD_StickX(u8 stick);
+		//!Get Y value from Wii Joystick (classic, nunchuk) input
+		//!\param stick Controller stick (left = 0, right = 1)
+		//!\return Stick value
+		s8 WPAD_StickY(u8 stick);
 		//!Move menu selection left (via pad/joystick). Allows scroll delay and button overriding
 		//!\return true if selection should be moved left, false otherwise
 		bool Left();
