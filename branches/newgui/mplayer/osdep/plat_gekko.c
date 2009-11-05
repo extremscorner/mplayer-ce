@@ -62,7 +62,7 @@
 
 #undef abort
 
-#define MPCE_VERSION "0.76 02/11 b1"
+#define MPCE_VERSION "0.76 05/11 b1"
 
 extern char appPath[1024];
 extern int stream_cache_size;
@@ -286,7 +286,6 @@ static void * mountthreadfunc (void *arg)
 		if(!playing_usb)
 		{
 			mounting_usb=1;
-			
 			dp=usb->isInserted();
 			
 			//printf(".");fflush(stdout);
@@ -303,11 +302,15 @@ static void * mountthreadfunc (void *arg)
 				}else 
 				{
 					//printf("mount usb\n");
+					fatUnmount("usb:");
+					ntfsUnmount ("ntfs_usb", true);
 					fatMount("usb",usb,0,3,256);
 					mount_usb_ntfs();
 				}
+				usleep(200);
 			}
 			mounting_usb=0;
+
 		}	
 		if(dvd_mounting==false)
 		{
