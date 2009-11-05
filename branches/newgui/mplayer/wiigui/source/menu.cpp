@@ -136,6 +136,8 @@ AppUpdate (void *arg)
 static void *
 UpdateGui (void *arg)
 {
+	int i;
+
 	while(1)
 	{
 		if(guiHalt)
@@ -153,7 +155,7 @@ UpdateGui (void *arg)
 			if (mainWindow->GetState() != STATE_DISABLED)
 				mainWindow->DrawTooltip();
 
-			for(int i=3; i >= 0; i--) // so that player 1's cursor appears on top!
+			for(i=3; i >= 0; i--) // so that player 1's cursor appears on top!
 			{
 				if(userInput[i].wpad->ir.valid)
 					Menu_DrawImg(userInput[i].wpad->ir.x-48, userInput[i].wpad->ir.y-48,
@@ -163,7 +165,7 @@ UpdateGui (void *arg)
 			doMPlayerGuiDraw = 0;
 		}
 
-		for(int i=0; i < 4; i++)
+		for(i=3; i >= 0; i--)
 			mainWindow->Update(&userInput[i]);
 
 		if(menuMode == 0) // normal GUI
@@ -187,10 +189,10 @@ UpdateGui (void *arg)
 
 			if(ExitRequested || ShutdownRequested)
 			{
-				for(int a = 0; a < 255; a += 15)
+				for(i = 0; i < 255; i += 15)
 				{
 					mainWindow->Draw();
-					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, a},1);
+					Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, i},1);
 					Menu_Render();
 				}
 				ExitApp();
@@ -924,6 +926,17 @@ static void MenuBrowse(int menu)
 	else
 		return;
 
+	GuiTrigger trigA;
+	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
+
+	GuiFileBrowser fileBrowser(480, 300);
+	fileBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
+	fileBrowser.SetPosition(10, 100);
+
+	HaltGui();
+	mainWindow->Append(&fileBrowser);
+	ResumeGui();
+
 	// populate initial directory listing
 	while(BrowserChangeFolder(false) <= 0)
 	{
@@ -936,20 +949,9 @@ static void MenuBrowse(int menu)
 		if(choice == 0)
 		{
 			ChangeMenu(MENU_SETTINGS);
-			return;
+			goto done;
 		}
 	}
-
-	GuiTrigger trigA;
-	trigA.SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
-
-	GuiFileBrowser fileBrowser(480, 300);
-	fileBrowser.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	fileBrowser.SetPosition(10, 100);
-
-	HaltGui();
-	mainWindow->Append(&fileBrowser);
-	ResumeGui();
 
 	while(currentMenu == menu && !guiShutdown)
 	{
