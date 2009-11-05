@@ -33,10 +33,10 @@ WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
 #EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
-EXTRA_INC = -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/portlibs/ppc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
+EXTRA_INC = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
 EXTRAXX_INC = $(EXTRA_INC)
 
-COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O2 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 #COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS = $(EXTRA_INC) $(COMMONFLAGS) 
 OPTFLAGS =  $(EXTRA_INC) $(COMMONFLAGS)
