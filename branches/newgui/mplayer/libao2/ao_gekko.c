@@ -45,6 +45,7 @@ LIBAO_EXTERN(gekko)
 
 #define SFX_BUFFER_SIZE (4*1024)
 #define SFX_BUFFERS 64
+#define PREBUFFER 65536
 
 static u8 buffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
 static u8 buffer_fill = 0;
@@ -173,7 +174,7 @@ static int play(void* data, int len, int flags) {
 		ret += SFX_BUFFER_SIZE;
 		buffered+=SFX_BUFFER_SIZE;
 	}
-	if (!playing)
+	if (!playing && buffered>=PREBUFFER)
 	{
 		playing=true;
 		switch_buffers();

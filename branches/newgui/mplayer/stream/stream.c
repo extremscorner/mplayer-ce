@@ -248,12 +248,20 @@ stream_t* open_output_stream(char* filename,char** options) {
 #include <errno.h>
 int stream_fill_buffer(stream_t *s){
   int len;
+  static int try=0;
   if (/*s->fd == NULL ||*/ s->eof) { s->buf_pos = s->buf_len = 0; return 0; }
   switch(s->type){
   case STREAMTYPE_STREAM:
 #ifdef CONFIG_NETWORK
     if( s->streaming_ctrl!=NULL && s->streaming_ctrl->streaming_read ) {
+#ifdef GEKKO
+	    len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);
+    	//len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);
+	    usleep(3000);
+	    break;
+#else
 	    len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);break;
+#endif
     } else {
       len=read(s->fd,s->buffer,STREAM_BUFFER_SIZE);break;
     }
@@ -268,11 +276,12 @@ int stream_fill_buffer(stream_t *s){
   default:
     len= s->fill_buffer ? s->fill_buffer(s,s->buffer,STREAM_BUFFER_SIZE) : 0;
   }
-  if(len==0){ s->eof=1; s->buf_pos=s->buf_len=0; return 0; }
+  if(len==0){ if(try>3)s->eof=1; try++; s->buf_pos=s->buf_len=0; return 0; }
   if(len<0) { s->eof=1; s->buf_pos=s->buf_len=0;/*printf("errno: %i\n",errno);*/if(s->error==0 && errno==EIO )s->error=1;return 0; } 
   s->buf_pos=0;
   s->buf_len=len;
   s->pos+=len;
+  try=0;
 //  printf("[%d]",len);fflush(stdout);
   return len;
 }
