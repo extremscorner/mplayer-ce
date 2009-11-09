@@ -1879,7 +1879,6 @@ static int mp_property_tv_color(m_option_t * prop, int action, void *arg,
 
 #endif
 
-#ifdef CONFIG_TV_TELETEXT
 static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
@@ -1890,8 +1889,7 @@ static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
       SET is GET+1
       STEP is GET+2
     */
-    tvi_handle_t *tvh = mpctx->demuxer->priv;
-    if (mpctx->demuxer->type != DEMUXER_TYPE_TV || !tvh)
+    if (!mpctx->demuxer || !mpctx->demuxer->teletext)
         return M_PROPERTY_UNAVAILABLE;
     if(!base_ioctl)
         return M_PROPERTY_ERROR;
@@ -1900,31 +1898,30 @@ static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
     case M_PROPERTY_GET:
         if (!arg)
             return M_PROPERTY_ERROR;
-        result=tvh->functions->control(tvh->priv, base_ioctl, arg);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl, arg);
         break;
     case M_PROPERTY_SET:
         if (!arg)
             return M_PROPERTY_ERROR;
         M_PROPERTY_CLAMP(prop, *(int *) arg);
-        result=tvh->functions->control(tvh->priv, base_ioctl+1, arg);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl+1, arg);
         break;
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_STEP_DOWN:
-        result=tvh->functions->control(tvh->priv, base_ioctl, &val);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl, &val);
         val += (arg ? *(int *) arg : 1) * (action == M_PROPERTY_STEP_DOWN ? -1 : 1);
-        result=tvh->functions->control(tvh->priv, base_ioctl+1, &val);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl+1, &val);
         break;
     default:
         return M_PROPERTY_NOT_IMPLEMENTED;
     }
 
-    return result == TVI_CONTROL_TRUE ? M_PROPERTY_OK : M_PROPERTY_ERROR;
+    return result == VBI_CONTROL_TRUE ? M_PROPERTY_OK : M_PROPERTY_ERROR;
 }
 
 static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
-    tvi_handle_t *tvh = mpctx->demuxer->priv;
     int result;
     int val;
 
@@ -1933,7 +1930,8 @@ static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
     if(result!=M_PROPERTY_OK)
         return result;
 
-    if(tvh->functions->control(tvh->priv, prop->priv, &val)==TVI_CONTROL_TRUE && val)
+    if(teletext_control(mpctx->demuxer->teletext,
+                        (int)prop->priv, &val)==VBI_CONTROL_TRUE && val)
         mp_input_set_section("teletext");
     else
         mp_input_set_section("tv");
@@ -1943,26 +1941,23 @@ static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
 static int mp_property_teletext_page(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
-    tvi_handle_t *tvh = mpctx->demuxer->priv;
     int result;
     int val;
-    if (mpctx->demuxer->type != DEMUXER_TYPE_TV || !tvh)
+    if (!mpctx->demuxer->teletext)
         return M_PROPERTY_UNAVAILABLE;
     switch(action){
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_STEP_DOWN:
         //This should be handled separately
         val = (arg ? *(int *) arg : 1) * (action == M_PROPERTY_STEP_DOWN ? -1 : 1);
-        result=tvh->functions->control(tvh->priv, TV_VBI_CONTROL_STEP_PAGE, &val);
+        result=teletext_control(mpctx->demuxer->teletext,
+                                TV_VBI_CONTROL_STEP_PAGE, &val);
         break;
     default:
         result=mp_property_teletext_common(prop,action,arg,mpctx);
     }
     return result;
 }
-
-
-#endif /* CONFIG_TV_TELETEXT */
 
 ///@}
 
@@ -2116,8 +2111,6 @@ static const m_option_t mp_properties[] = {
     { "tv_hue", mp_property_tv_color, CONF_TYPE_INT,
      M_OPT_RANGE, -100, 100, (void *) TV_COLOR_HUE },
 #endif
-
-#ifdef CONFIG_TV_TELETEXT
     { "teletext_page", mp_property_teletext_page, CONF_TYPE_INT,
      M_OPT_RANGE, 100, 899,  (void*)TV_VBI_CONTROL_GET_PAGE },
     { "teletext_subpage", mp_property_teletext_common, CONF_TYPE_INT,
@@ -2128,8 +2121,6 @@ static const m_option_t mp_properties[] = {
      M_OPT_RANGE, 0, 3, (void*)TV_VBI_CONTROL_GET_FORMAT },
     { "teletext_half_page", mp_property_teletext_common, CONF_TYPE_INT,
      M_OPT_RANGE, 0, 2, (void*)TV_VBI_CONTROL_GET_HALF_PAGE },
-#endif
-
     { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
 
@@ -2882,23 +2873,21 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    if (mpctx->file_format == DEMUXER_TYPE_TV)
 		tv_step_chanlist((tvi_handle_t *) (mpctx->demuxer->priv));
 	    break;
-#ifdef CONFIG_TV_TELETEXT
+#endif /* CONFIG_TV */
 	case MP_CMD_TV_TELETEXT_ADD_DEC:
 	{
-	    tvi_handle_t* tvh=(tvi_handle_t *)(mpctx->demuxer->priv);
-	    if (mpctx->file_format == DEMUXER_TYPE_TV)
-		tvh->functions->control(tvh->priv,TV_VBI_CONTROL_ADD_DEC,&(cmd->args[0].v.s));
+	    if (mpctx->demuxer->teletext)
+	        teletext_control(mpctx->demuxer->teletext,TV_VBI_CONTROL_ADD_DEC,
+	                         &(cmd->args[0].v.s));
 	    break;
 	}
 	case MP_CMD_TV_TELETEXT_GO_LINK:
 	{
-	    tvi_handle_t* tvh=(tvi_handle_t *)(mpctx->demuxer->priv);
-	    if (mpctx->file_format == DEMUXER_TYPE_TV)
-		tvh->functions->control(tvh->priv,TV_VBI_CONTROL_GO_LINK,&(cmd->args[0].v.i));
+	    if (mpctx->demuxer->teletext)
+	        teletext_control(mpctx->demuxer->teletext,TV_VBI_CONTROL_GO_LINK,
+	                         &(cmd->args[0].v.i));
 	    break;
 	}
-#endif /* CONFIG_TV_TELETEXT */
-#endif /* CONFIG_TV */
 
 	case MP_CMD_SUB_LOAD:
 	    if (sh_video) {

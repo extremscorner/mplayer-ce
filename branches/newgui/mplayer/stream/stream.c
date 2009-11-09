@@ -254,20 +254,14 @@ int stream_fill_buffer(stream_t *s){
   case STREAMTYPE_STREAM:
 #ifdef CONFIG_NETWORK
     if( s->streaming_ctrl!=NULL && s->streaming_ctrl->streaming_read ) {
-#ifdef GEKKO
 	    len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);
-    	//len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);
+#ifdef GEKKO
 	    usleep(3000);
-	    break;
-#else
-	    len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);break;
 #endif
-    } else {
-      len=read(s->fd,s->buffer,STREAM_BUFFER_SIZE);break;
-    }
-#else
-    len=read(s->fd,s->buffer,STREAM_BUFFER_SIZE);break;
+    } else
 #endif
+      len=read(s->fd,s->buffer,STREAM_BUFFER_SIZE);
+    break;
   case STREAMTYPE_DS:
     len = demux_read_data((demux_stream_t*)s->priv,s->buffer,STREAM_BUFFER_SIZE);
     break;

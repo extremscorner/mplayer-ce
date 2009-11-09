@@ -50,7 +50,6 @@ static unsigned int opt_probesize = 0;
 static unsigned int opt_analyzeduration = 0;
 static char *opt_format;
 static char *opt_cryptokey;
-extern int ts_prog;
 static char *opt_avopt = NULL;
 
 const m_option_t lavfdopts_conf[] = {
@@ -384,6 +383,8 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
                 type = 'a';
             else if(codec->codec_id == CODEC_ID_DVD_SUBTITLE)
                 type = 'v';
+            else if(codec->codec_id == CODEC_ID_DVB_TELETEXT)
+                type = 'd';
             else
                 break;
             sh_sub = new_sh_sub_sid(demuxer, i, priv->sub_streams);
@@ -493,30 +494,12 @@ static demuxer_t* demux_open_lavf(demuxer_t *demuxer){
     for(i=0; i<avfc->nb_streams; i++)
         handle_stream(demuxer, avfc, i);
     if(avfc->nb_programs) {
-        int p, start=0, found=0;
-
-        if(ts_prog) {
-            for(p=0; p<avfc->nb_programs; p++) {
-                if(avfc->programs[p]->id == ts_prog) {
-                    start = p;
-                    found = 1;
-                    break;
-                }
-            }
-            if(!found) {
-                mp_msg(MSGT_HEADER,MSGL_ERR,"DEMUX_LAVF: program %d doesn't seem to be present\n", ts_prog);
-                return NULL;
-            }
-        }
-        p = start;
-        do {
+        int p;
+        for (p = 0; p < avfc->nb_programs; p++) {
             AVProgram *program = avfc->programs[p];
             t = av_metadata_get(program->metadata, "title", NULL, 0);
             mp_msg(MSGT_HEADER,MSGL_INFO,"LAVF: Program %d %s\n", program->id, t ? t->value : "");
-            if(!priv->cur_program && (demuxer->video->sh || demuxer->audio->sh))
-                priv->cur_program = program->id;
-            p = (p + 1) % avfc->nb_programs;
-        } while(p!=start);
+        }
     }
 
     mp_msg(MSGT_HEADER,MSGL_V,"LAVF: %d audio and %d video streams found\n",priv->audio_streams,priv->video_streams);
@@ -711,8 +694,9 @@ static int demux_lavf_control(demuxer_t *demuxer, int cmd, void *arg)
             int p, i;
             int start;
 
-            if(priv->avfc->nb_programs < 2)
-                return DEMUXER_CTRL_NOTIMPL;
+            prog->vid = prog->aid = prog->sid = -2;	//no audio and no video by default
+            if(priv->avfc->nb_programs < 1)
+                return DEMUXER_CTRL_DONTKNOW;
 
             if(prog->progid == -1)
             {
@@ -727,10 +711,9 @@ static int demux_lavf_control(demuxer_t *demuxer, int cmd, void *arg)
                     if(priv->avfc->programs[i]->id == prog->progid)
                         break;
                 if(i==priv->avfc->nb_programs)
-                    return DEMUXER_CTRL_NOTIMPL;
+                    return DEMUXER_CTRL_DONTKNOW;
                 p = i;
             }
-            prog->vid = prog->aid = prog->sid = -2;	//no audio and no video by default
             start = p;
 redo:
             program = priv->avfc->programs[p];

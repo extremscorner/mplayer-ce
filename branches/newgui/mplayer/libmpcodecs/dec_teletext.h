@@ -23,6 +23,13 @@
 #ifndef MPLAYER_DEC_TELETEXT_H
 #define MPLAYER_DEC_TELETEXT_H
 
+struct tt_param {
+    char *device;  ///< teletext device
+    int format;    ///< teletext display format
+    int page;      ///< start teletext page
+    int lang;      ///< primary language code
+};
+
 #define VBI_CONTROL_FALSE              0
 #define VBI_CONTROL_TRUE               1
 #define VBI_CONTROL_UNKNOWN           -1

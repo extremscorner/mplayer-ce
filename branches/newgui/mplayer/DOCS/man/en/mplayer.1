@@ -1,4 +1,4 @@
-.\" $Revision: 29814 $
+.\" $Revision: 29852 $
 .\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .
@@ -182,7 +182,10 @@ more.
 .PP
 .B gmplayer
 is MPlayer with a graphical user interface.
-It has the same options as MPlayer.
+It has the same options as MPlayer, however they might not all work correctly
+due to conflicts with the configuration via the GUI (stored in gui.conf).
+In particular some options might be overwritten by settings in gui.conf while
+others might end up stored permanently in gui.conf.
 .PP
 Usage examples to get you started quickly can be found at the end
 of this man page.
@@ -3510,6 +3513,13 @@ Use ITU-R BT.601 color space (default).
 Use ITU-R BT.709 color space.
 .IPs 3
 Use SMPTE-240M color space.
+.RE
+.IPs hqscaling
+.RSss
+.IPs 0
+Use default VDPAU scaling (default).
+.IPs 1\-9
+Apply high quality VDPAU scaling (needs capable hardware).
 .RE
 .IPs force\-mixer
 Forces the use of the VDPAU mixer, which implements all above options (default).

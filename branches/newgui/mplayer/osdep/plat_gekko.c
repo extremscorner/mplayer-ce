@@ -62,7 +62,7 @@
 
 #undef abort
 
-#define MPCE_VERSION "0.76 05/11 b1"
+#define MPCE_VERSION "0.76 09/11 b1"
 
 extern char appPath[1024];
 extern int stream_cache_size;

@@ -343,7 +343,7 @@ static int SocketRecv(SOCKET theSocket, char* buf, size_t count, bool exitonempt
 			{
 				return -1;	/* timeout */
 			}
-			usleep(100);	/* allow system to perform work. Stabilizes system */
+			usleep(4000);	/* allow system to perform work. Stabilizes system */
 			continue;
 		}
 		else if(ret<0)
@@ -360,6 +360,7 @@ static int SocketRecv(SOCKET theSocket, char* buf, size_t count, bool exitonempt
 				return received;
 			}
 			t1=ticks_to_millisecs(gettime());
+			usleep(4000);
 		}
 	}
 

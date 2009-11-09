@@ -248,7 +248,6 @@ Optional features:
   --disable-tv-v4l1      disable Video4Linux TV interface [autodetect]
   --disable-tv-v4l2      disable Video4Linux2 TV interface [autodetect]
   --disable-tv-bsdbt848  disable BSD BT848 interface [autodetect]
-  --disable-tv-teletext  disable TV teletext interface [autodetect]
   --disable-pvr          disable Video4Linux2 MPEG PVR [autodetect]
   --disable-rtc          disable RTC (/dev/rtc) on Linux [autodetect]
   --disable-network      disable networking [enable]
@@ -668,7 +667,6 @@ _tv_v4l1=auto
 _tv_v4l2=auto
 _tv_bsdbt848=auto
 _tv_dshow=auto
-_tv_teletext=auto
 _pvr=auto
 _network=yes
 _winsock2_h=auto
@@ -1092,8 +1090,6 @@ for ac_option do
   --disable-tv-v4l2)	_tv_v4l2=no	;;
   --enable-tv-dshow)	_tv_dshow=yes	;;
   --disable-tv-dshow)	_tv_dshow=no	;;
-  --enable-tv-teletext)    _tv_teletext=yes        ;;
-  --disable-tv-teletext)    _tv_teletext=no        ;;
   --enable-radio)       _radio=yes	;;
   --enable-radio-capture)       _radio_capture=yes	;;
   --disable-radio-capture)       _radio_capture=no	;;
@@ -1577,7 +1573,7 @@ test "$cc_fail" = yes && die "unsupported compiler version"
 if test -z "$_target" && x86 ; then
   cat > $TMPC << EOF
 int main(void) {
-    int test[sizeof(char *)-7];
+    int test[(int)sizeof(char *)-7];
     return 0;
 }
 EOF
@@ -2580,6 +2576,20 @@ EOF
 cc_check && ebx_available=yes && def_ebx_available='#define HAVE_EBX_AVAILABLE 1'
 echores $ebx_available
 
+echocheck "PIC"
+pic=no
+cat > $TMPC << EOF
+int main(void) {
+// keep in sync with mangle.h and libavutil/internal.h
+#if !(defined(__PIC__) || defined(__pic__) || defined(PIC))
+#error PIC not enabled
+#endif
+    return 0;
+}
+EOF
+cc_check && pic=yes
+echores $pic
+
 echocheck "yasm"
 if test -z "$YASMFLAGS" ; then
   if darwin ; then
@@ -2592,9 +2602,9 @@ if test -z "$YASMFLAGS" ; then
   # currently tested for Linux x86, x86_64
   YASMFLAGS="-f $objformat"
   x86_64 && YASMFLAGS="$YASMFLAGS -DARCH_X86_64 -m amd64"
+  test "$pic" = "yes" && YASMFLAGS="$YASMFLAGS -DPIC"
   case "$objformat" in
     elf) test $_debug && YASMFLAGS="$YASMFLAGS -g dwarf2" ;;
-    macho64)             YASMFLAGS="$YASMFLAGS -DPIC -DPREFIX" ;;
     *)                   YASMFLAGS="$YASMFLAGS -DPREFIX"  ;;
   esac
 else
@@ -2681,7 +2691,7 @@ def_xform_asm='#define HAVE_XFORM_ASM 0'
 xform_asm=no
 echocheck "XFORM ASM support"
   cat > $TMPC << EOF
-int main(void) { __asm__ volatile ("lwzx 0, %y0" :: "Z"(*(int*)0)); return 0; }
+int main(void) { __asm__ volatile ("lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)); return 0; }
 EOF
 cc_check && xform_asm=yes && def_xform_asm='#define HAVE_XFORM_ASM 1'
 echores "$xform_asm"
@@ -4339,7 +4349,7 @@ if test "$_vdpau" = auto ; then
   if test "$_dl" = yes ; then
     cat > $TMPC <<EOF
 #include <vdpau/vdpau_x11.h>
-int main(void) {return VDP_VIDEO_MIXER_ATTRIBUTE_SKIP_CHROMA_DEINTERLACE;}
+int main(void) {return VDP_VIDEO_MIXER_FEATURE_HIGH_QUALITY_SCALING_L1;}
 EOF
     cc_check && _vdpau=yes
   fi
@@ -5364,7 +5374,6 @@ if test "$_v4l2" = auto ; then
 int main(void) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
 #error kernel headers too old, need 2.6.22
-  bad_kernel_version();
 #endif
   struct v4l2_ext_controls ctrls;
   ctrls.ctrl_class = V4L2_CTRL_CLASS_MPEG;
@@ -7616,25 +7625,6 @@ fi
 echores "$_tv_v4l2"
 
 
-echocheck "TV teletext interface"
-if test "$_tv_teletext" = auto ; then
-  _tv_teletext=no
-  if test "$_freetype" = yes && test "$_pthreads" = yes; then
-    if test "$_tv_v4l2" = yes || test "$_v4l" = yes || test "$_tv_dshow" = yes; then
-      _tv_teletext=yes
-    fi
-  fi
-fi
-if test "$_tv_teletext" = yes ; then
-  def_tv_teletext='#define CONFIG_TV_TELETEXT 1'
-  _inputmodules="tv-teletext $_inputmodules"
-else
-  _noinputmodules="tv-teletext $_noinputmodules"
-  def_tv_teletext='#undef CONFIG_TV_TELETEXT'
-fi
-echores "$_tv_teletext"
-
-
 echocheck "Radio interface"
 if test "$_radio" = yes ; then
   def_radio='#define CONFIG_RADIO 1'
@@ -8352,7 +8342,6 @@ TREMOR_INTERNAL = $_tremor_internal
 TV = $_tv
 TV_BSDBT848 = $_tv_bsdbt848
 TV_DSHOW = $_tv_dshow
-TV_TELETEXT = $_tv_teletext
 TV_V4L  = $_tv_v4l
 TV_V4L1 = $_tv_v4l1
 TV_V4L2 = $_tv_v4l2
@@ -8749,7 +8738,6 @@ $def_radio_v4l2
 $def_tv
 $def_tv_bsdbt848
 $def_tv_dshow
-$def_tv_teletext
 $def_tv_v4l
 $def_tv_v4l1
 $def_tv_v4l2
