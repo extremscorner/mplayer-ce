@@ -120,9 +120,12 @@ void MPlayerInput()
 				wiiSetOSDLevel(level+1);
 		}
 		
-		if(userInput[i].wpad->btns_d & WPAD_BUTTON_HOME)
+		if(ConfigRequested || userInput[i].wpad->btns_d & WPAD_BUTTON_HOME)
+		{
+			ConfigRequested = 0;
 			wiiGotoGui();
-		
+		}
+
 		if(!drawGui)
 		{			
 			if(userInput[i].wpad->btns_d & WPAD_BUTTON_A)
