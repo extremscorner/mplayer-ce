@@ -165,6 +165,17 @@ void GuiButton::DrawTooltip()
 		tooltip->DrawTooltip();
 }
 
+void GuiButton::ResetText()
+{
+	for(int i=0; i<3; i++)
+	{
+		if(label[i])
+			label[i]->ResetText();
+		if(labelOver[i])
+			labelOver[i]->ResetText();
+	}
+}
+
 void GuiButton::Update(GuiTrigger * t)
 {
 	if(state == STATE_CLICKED || state == STATE_DISABLED || !t)

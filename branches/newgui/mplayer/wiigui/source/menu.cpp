@@ -22,6 +22,7 @@
 #include "input.h"
 #include "networkop.h"
 #include "filebrowser.h"
+#include "utils/gettext.h"
 #include "filelist.h"
 
 #define THREAD_SLEEP 100
@@ -254,6 +255,15 @@ void ShutdownGui()
 #ifdef __cplusplus
 }
 #endif
+
+void ResetText()
+{
+	LoadLanguage();
+
+	if(mainWindow)
+		mainWindow->ResetText();
+}
+
 /****************************************************************************
  * WindowPrompt
  *
@@ -1334,6 +1344,7 @@ static void MenuSettingsGeneral()
 	mainWindow->Remove(&optionBrowser);
 	mainWindow->Remove(&w);
 	mainWindow->Remove(&titleTxt);
+	ResetText();
 }
 
 static void MenuSettingsCache()

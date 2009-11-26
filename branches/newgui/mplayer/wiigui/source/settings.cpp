@@ -11,6 +11,7 @@
 #include <string.h>
 #include <ogcsys.h>
 #include <mxml.h>
+#include <ogc/conf.h>
 
 #include "mplayerce.h"
 #include "menu.h"
@@ -360,7 +361,7 @@ void DefaultSettings ()
 	CESettings.cleanFilenames = 1;
 	CESettings.hideExtensions = 1;
 	CESettings.filterFiles = 1;
-	CESettings.language = LANG_ENGLISH;
+	CESettings.language = CONF_GetLanguage();
 	CESettings.videoFolder[0] = 0;
 	CESettings.musicFolder[0] = 0;
 	CESettings.pictureFolder[0] = 0;
@@ -654,5 +655,6 @@ bool LoadSettings()
 	if(settingsFound)
 		FixInvalidSettings();
 
+	ResetText();
 	return settingsFound;
 }

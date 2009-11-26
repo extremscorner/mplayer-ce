@@ -154,6 +154,14 @@ void GuiMenuBrowser::Draw()
 	this->UpdateEffects();
 }
 
+void GuiMenuBrowser::ResetText()
+{
+	for(int i=0; i<items->length; i++)
+	{
+		itemBtn[i]->ResetText();
+	}
+}
+
 void GuiMenuBrowser::Update(GuiTrigger * t)
 {
 	if(state == STATE_DISABLED || !t)

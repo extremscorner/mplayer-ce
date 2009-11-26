@@ -513,16 +513,14 @@ int GuiElement::GetSelected()
 	return -1;
 }
 
-/**
- * Draw an element on screen.
- */
+void GuiElement::ResetText()
+{
+}
+
 void GuiElement::Draw()
 {
 }
 
-/**
- * Draw tooltips on screen.
- */
 void GuiElement::DrawTooltip()
 {
 }

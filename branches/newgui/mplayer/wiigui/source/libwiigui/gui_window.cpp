@@ -385,6 +385,15 @@ void GuiWindow::MoveSelectionVert(int dir)
 	}
 }
 
+void GuiWindow::ResetText()
+{
+	for (u8 i = 0; i < _elements.size(); i++)
+	{
+		try { _elements.at(i)->ResetText(); }
+		catch (const std::exception& e) { }
+	}
+}
+
 void GuiWindow::Update(GuiTrigger * t)
 {
 	if(_elements.size() == 0 || (state == STATE_DISABLED && parentElement))

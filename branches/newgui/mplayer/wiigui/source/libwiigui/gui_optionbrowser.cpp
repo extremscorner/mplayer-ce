@@ -244,6 +244,22 @@ void GuiOptionBrowser::TriggerUpdate()
 	listChanged = true;
 }
 
+void GuiOptionBrowser::ResetText()
+{
+	int next = listOffset;
+
+	for(int i=0; i<PAGESIZE; i++)
+	{
+		if(next >= 0)
+		{
+			optionBtn[i]->ResetText();
+			next = this->FindMenuItem(next, 1);
+		}
+		else
+			break;
+	}
+}
+
 void GuiOptionBrowser::Update(GuiTrigger * t)
 {
 	if(state == STATE_DISABLED || !t)

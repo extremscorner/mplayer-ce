@@ -387,6 +387,8 @@ class GuiElement
 		//!\param hor Horizontal alignment (ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTRE)
 		//!\param vert Vertical alignment (ALIGN_TOP, ALIGN_BOTTOM, ALIGN_MIDDLE)
 		virtual void SetAlignment(int hor, int vert);
+		//!Called when the language has changed, to obtain new text values for all text elements
+		virtual void ResetText();
 		//!Called constantly to allow the element to respond to the current input data
 		//!\param t Pointer to a GuiTrigger, containing the current input data from PAD/WPAD
 		virtual void Update(GuiTrigger * t);
@@ -491,6 +493,8 @@ class GuiWindow : public GuiElement
 		//!Moves the selected element to the element above or below
 		//!\param d Direction to move (-1 = up, 1 = down)
 		void MoveSelectionVert(int d);
+		//!Resets the text for all contained elements
+		void ResetText();
 		//!Draws all the elements in this GuiWindow
 		void Draw();
 		//!Draws all of the tooltips in this GuiWindow
@@ -652,6 +656,8 @@ class GuiText : public GuiElement
 		//!\param hor Horizontal alignment (ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTRE)
 		//!\param vert Vertical alignment (ALIGN_TOP, ALIGN_BOTTOM, ALIGN_MIDDLE)
 		void SetAlignment(int hor, int vert);
+		//!Updates the text to the selected language
+		void ResetText();
 		//!Constantly called to draw the text
 		void Draw();
 	protected:
@@ -761,6 +767,8 @@ class GuiButton : public GuiElement
 		void Draw();
 		//!Constantly called to draw the GuiButton's tooltip
 		void DrawTooltip();
+		//!Resets the text for all contained elements
+		void ResetText();
 		//!Constantly called to allow the GuiButton to respond to updated input data
 		//!\param t Pointer to a GuiTrigger, containing the current input data from PAD/WPAD
 		void Update(GuiTrigger * t);
@@ -851,6 +859,7 @@ class GuiMenuBrowser : public GuiElement
 		void ResetState();
 		void SetFocus(int f);
 		void Draw();
+		void ResetText();
 		void Update(GuiTrigger * t);
 	protected:
 		int selectedItem;
@@ -886,6 +895,7 @@ class GuiOptionBrowser : public GuiElement
 		void SetFocus(int f);
 		void Draw();
 		void TriggerUpdate();
+		void ResetText();
 		void Update(GuiTrigger * t);
 		GuiText * optionVal[PAGESIZE];
 	protected:
