@@ -19,7 +19,7 @@ MPLAYER := $(CURDIR)/..
 TARGET		:=	mplayer-ce
 BUILD		:=	build
 SOURCES		:=	source source/libwiigui source/utils source/utils/unzip \
-				source/images source/fonts
+				source/images source/lang source/fonts
 INCLUDES	:=	source
 
 #---------------------------------------------------------------------------------
@@ -64,6 +64,7 @@ CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 sFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.S)))
 TTFFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.ttf)))
+LANGFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.lang)))
 PNGFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.png)))
 
 	
@@ -78,7 +79,8 @@ endif
 
 export OFILES	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) \
 					$(sFILES:.s=.o) $(SFILES:.S=.o) \
-					$(TTFFILES:.ttf=.ttf.o) $(PNGFILES:.png=.png.o) 
+					$(TTFFILES:.ttf=.ttf.o) $(LANGFILES:.lang=.lang.o) \
+					$(PNGFILES:.png=.png.o) 
 					
 
 #---------------------------------------------------------------------------------
@@ -136,9 +138,13 @@ $(OUTPUT).elf: $(OFILES)
 
 
 #---------------------------------------------------------------------------------
-# This rule links in binary data with .ttf and .png extensions
+# This rule links in binary data with .ttf, .lang, and .png extensions
 #---------------------------------------------------------------------------------
 %.ttf.o : %.ttf
+	@echo $(notdir $<)
+	$(bin2o)
+	
+%.lang.o : %.lang
 	@echo $(notdir $<)
 	$(bin2o)
 
