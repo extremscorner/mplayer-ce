@@ -3,6 +3,17 @@
 
 = Changelog to MPlayerCE =
 
+== 0.76 ==
+
+ * Fixes for 4.2 update
+ * Stability fixes (hopefully freezing is gone forever now)
+ * Network (LAN and WAN) speeds increased
+ * Added directory play feature
+ * YouTube section entirely revamped
+ * Added Nintendo Channel content (quality may not yet be optimal) (thanks to yellowstar6 for his work on ninchdl-listext)
+ * `[`blip.tv was planned but couldn't make it on time`]`
+ * Many, many more bugs fixed
+
 == 0.75 ==
 
  * FTP support added (thanks to hax)
