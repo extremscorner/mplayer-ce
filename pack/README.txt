@@ -357,12 +357,22 @@ Example:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         Youtube/SHOUTcast                    · oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-You can add changes to the Youtube/SHOUTcast, review your menu.conf as by 
-default it is running via Extrems Server.
+You can add changes to the Youtube/SHOUTcast, check your menu.conf. 
+By default it is running via Extrems' Server.
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+v0.76
+   * Fixes for 4.2 update
+   * Stability fixes (hopefully freezing is gone forever now)
+   * Network (LAN and WAN) speeds increased
+   * Added directory play feature
+   * YouTube section entirely revamped
+   * Added Nintendo Channel content (quality may not yet be optimal) (thanks to yellowstar6 for his work on ninchdl-listext)
+   * [blip.tv was planned but couldn't make it on time]
+   * Many, many more bugs fixed
 
 v0.75
    * FTP support added
@@ -574,6 +584,7 @@ V0.1 Christmas Edition
                                  Shareese - NTFS						
                               Brakken - Documentation
                                  Blue_K - loop.avi
+						  yellowstar6 - ninchdl-listext
                               
                               Thanks Goes Out To ...
                               
