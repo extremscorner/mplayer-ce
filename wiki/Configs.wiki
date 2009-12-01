@@ -111,26 +111,13 @@ X switch_ratio 1.7778
 }}}
 ===mplayer.conf===
 
-This is where you can add a line so MPlayerCE loads with a specific setting, for example forcing your aspect ratio always to 16:9.  Open up your mplayer.conf and compare to my example.
+This is where you can add a line so MPlayerCE loads with a specific setting, for example forcing your aspect ratio always to 16:9.
 
-{{{
-vo=gekko
-ao=gekko
-framedrop=yes
-alang=en
-really-quiet=yes
-menu=yes
-menu-startup=yes
-cache=8192
-cache-min=4
-aspect=1.7778
-}}}
-
-As you can see, I have added the line *aspect=1.7778* MPlayerCE will default to 16/9.
+You can add the line *aspect=1.7778* and MPlayerCE will default to 16/9.
 The options are the standard [http://www.mplayerhq.hu/DOCS/man/en/mplayer.1.html MPlayer options].
 Change to suit you.
 
-As of MPlayer CE v0.21b there is a new option *component_fix=yes*.  If your TV displays side bars when it shouldn't, add this line to your mplayer.conf.
+You can use the gxzoom, hor_pos and vert_pos parameters to adjust the screen size and position.  hor_pos and vert_pos offset the centre of the display and gxzoom adjusts the picture zoom. The lower the zoom value, the more the picture zooms. If you are experiencing black bars on the left and the right of your picture, try gxzoom=340.
 
 = Customising =
 
@@ -186,3 +173,32 @@ Sets the font outline thickness (default: 2).
 subfont−text−scale <0−100>
 Sets the subtitle text autoscale coefficient as percentage of the screen size (default: 5).
 }}}
+
+To enable fonts for your language there are some settings you can configure, thanks to mika7k7 for the guide.
+
+{{{
+1.Copy the Arial font from your Windows font folder (drag & drop) to mplayer_ce
+directory on your SD, or acquire from somewhere else, taking copyright into
+consideration.
+
+2.Rename subfont.ttf to subfont.ttf.dist (as a backup)
+
+3.Rename arial.ttf to subfont.ttf
+
+4.Edit your mplayer.conf (w/ notepad) by adding to the end of the file:
+
+#Subtitles Setting
+slang=ar
+subcp=windows-1256
+
+5.That should do it.
+
+Notes:
+The font wii be tiny, edit
+
+                subfont-text-scale=
+
+in mplayer.conf to your liking.
+}}}
+
+You will need to change the slang and subcp parameters to fit your locale.
