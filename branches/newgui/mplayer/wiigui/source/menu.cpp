@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wiiuse/wpad.h>
+#include <ogc/lwp_watchdog.h>
 
 #include "libwiigui/gui.h"
 #include "menu.h"
@@ -59,6 +60,8 @@ static GuiImageData * playbarPause = NULL;
 static GuiImageData * playbarPlay = NULL;
 static GuiImageData * playbarFastForward = NULL;
 static GuiImageData * playbarSkipForward = NULL;
+static GuiImageData * playbarSlideshow = NULL;
+static GuiImageData * playbarClose = NULL;
 
 static GuiImage * playbarProgressImg = NULL;
 static GuiImage * playbarProgressLeftImg = NULL;
@@ -87,6 +90,26 @@ static GuiButton * playbarRewindBtn = NULL;
 static GuiButton * playbarPauseBtn = NULL;
 static GuiButton * playbarFastForwardBtn = NULL;
 static GuiButton * playbarSkipForwardBtn = NULL;
+
+static GuiWindow * picturebar = NULL;
+
+static GuiImage * picturebarPreviousImg = NULL;
+static GuiImage * picturebarPreviousOverImg = NULL;
+static GuiImage * picturebarPreviousIcon = NULL;
+static GuiImage * picturebarNextImg = NULL;
+static GuiImage * picturebarNextOverImg = NULL;
+static GuiImage * picturebarNextIcon = NULL;
+static GuiImage * picturebarSlideshowImg = NULL;
+static GuiImage * picturebarSlideshowOverImg = NULL;
+static GuiImage * picturebarSlideshowIcon = NULL;
+static GuiImage * picturebarCloseImg = NULL;
+static GuiImage * picturebarCloseOverImg = NULL;
+static GuiImage * picturebarCloseIcon = NULL;
+
+static GuiButton * picturebarPreviousBtn = NULL;
+static GuiButton * picturebarNextBtn = NULL;
+static GuiButton * picturebarSlideshowBtn = NULL;
+static GuiButton * picturebarCloseBtn = NULL;
 
 int currentMenu = MENU_BROWSE_VIDEOS;
 static int lastMenu = MENU_BROWSE_VIDEOS;
@@ -727,36 +750,111 @@ SettingWindow(const char * title, GuiWindow * w)
 	return save;
 }
 
+// Picture Viewer
+static int changePicture = 0; // load a new picture
+static int closePictureViewer = 0; // is picture viewer open
+static int slideshow = 0; // slideshow mode
+static u64 slideprev, slidenow; // slideshow timer
+
+static void ChangePicture(int dir)
+{
+	browser.selIndex += dir;
+
+	if(browser.selIndex >= browser.numEntries)
+		browser.selIndex = 0;
+	else if(browser.selIndex < 0)
+		browser.selIndex = browser.numEntries-1;
+
+	sprintf(loadedFile, "%s%s", browser.dir, browserList[browser.selIndex].filename);
+	printf("now loading: %s\n", loadedFile);
+	changePicture = 1;
+}
+
+static void ToggleSlideshow()
+{
+	if(slideshow == 0)
+		slideprev = gettime(); // setup timer
+
+	slideshow ^= 1;
+}
+
 static void PictureViewer()
 {
+	closePictureViewer = 0;
+	changePicture = 1;
+	slideshow = 0;
+	u8 * picBuffer = NULL;
+	GuiWindow * oldWindow = mainWindow;
+	GuiImageData * picture = NULL;
+	GuiImage pictureImg;
+	pictureImg.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+
 	HaltGui();
-	mainWindow->SetVisible(false);
-	mainWindow->SetState(STATE_DISABLED);
 	GuiWindow w(screenwidth, screenheight);
-	mainWindow->Append(&w);
+	w.Append(&pictureImg);
+	w.Append(picturebar);
+	mainWindow = &w;
 	ResumeGui();
 
-	u8 * buffer = (u8 *)malloc(1024*1024*5);
-	int size = LoadFile((char *)buffer, loadedFile, NOTSILENT);
-
-	if(size > 0)
+	while(closePictureViewer == 0)
 	{
-		GuiImageData picture(buffer, size);
-		GuiImage pictureImg(&picture);
-		pictureImg.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
-		HaltGui();
-		w.Append(&pictureImg);
-		ResumeGui();
-		usleep(1000*1000*3); // wait for 3 seconds
-	}
+		if(changePicture)
+		{
+			printf("changing picture!\n");
+			printf("selected index: %d, length: %d\n", browser.selIndex, (int)browserList[browser.selIndex].length);
+			printf("mem1: %d, mem2: %d\n", SYS_GetArena1Size(), SYS_GetArena2Size());
+			picBuffer = (u8 *)malloc(browserList[browser.selIndex].length);
+			printf("done allocating!\n");
+			if(!picBuffer)
+			{
+				printf("could not allocate picture buffer!\n");
+				break;
+			}
 
+			printf("loading file: %s\n", loadedFile);
+			int size = LoadFile((char *)picBuffer, loadedFile, NOTSILENT);
+
+			if(!size)
+			{
+				printf("could not load file!\n");
+				break;
+			}
+			printf("done loading file\n");
+			HaltGui();
+			if(picture)	delete picture;
+			picture = new GuiImageData(picBuffer, size);
+			free(picBuffer);
+
+			if(picture->GetImage() == NULL)
+			{
+				printf("image data empty - could not create image!\n");
+				break;
+			}
+
+			pictureImg.SetImage(picture);
+			ResumeGui();
+			changePicture = 0;
+		}
+
+		if(slideshow) // slideshow mode - change every 3 seconds
+		{
+			slidenow = gettime();
+			if(diff_usec(slideprev, slidenow) > 1000*1000*3)
+			{
+				ChangePicture(1); // change to next picture
+				slideprev = slidenow; // reset timer
+			}
+		}
+		usleep(THREAD_SLEEP);
+	}
+	printf("done!\n");
 	HaltGui();
-	mainWindow->Remove(&w);
-	mainWindow->SetVisible(true);
-	mainWindow->SetState(STATE_DEFAULT);
+	mainWindow = oldWindow;
 	ResumeGui();
-	free(buffer);
+	if(picBuffer) free(picBuffer);
+	if(picture)	delete picture;
 }
+
 
 /****************************************************************************
  * WindowCredits
@@ -2668,6 +2766,46 @@ static void SkipForwardCallback(void * ptr)
 	}
 }
 
+static void PBPreviousCallback(void * ptr)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		b->ResetState();
+		ChangePicture(-1);
+	}
+}
+
+static void PBNextCallback(void * ptr)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		b->ResetState();
+		ChangePicture(1);
+	}
+}
+
+static void PBSlideshowCallback(void * ptr)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		b->ResetState();
+		ToggleSlideshow();
+	}
+}
+
+static void PBCloseCallback(void * ptr)
+{
+	GuiButton * b = (GuiButton *)ptr;
+	if(b->GetState() == STATE_CLICKED)
+	{
+		b->ResetState();
+		closePictureViewer = 1;
+	}
+}
+
 static void SetupPlaybar()
 {	
 	static int playbarSetup = 0;
@@ -2802,6 +2940,86 @@ static void SetupPlaybar()
 	playbar->Append(playbarPauseBtn);
 	playbar->Append(playbarFastForwardBtn);
 	playbar->Append(playbarSkipForwardBtn);
+	
+	// setup picture bar
+	
+	playbarClose = new GuiImageData(playbar_close_png);
+	playbarSlideshow = new GuiImageData(playbar_slideshow_png);
+
+	picturebarPreviousImg = new GuiImage(playbarCircle);
+	picturebarPreviousImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarPreviousOverImg = new GuiImage(playbarCircleOver);
+	picturebarPreviousOverImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarPreviousIcon = new GuiImage(playbarRewind);
+	picturebarPreviousIcon->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	
+	picturebarNextImg = new GuiImage(playbarCircle);
+	picturebarNextImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarNextOverImg = new GuiImage(playbarCircleOver);
+	picturebarNextOverImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarNextIcon = new GuiImage(playbarFastForward);
+	picturebarNextIcon->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	
+	picturebarSlideshowImg = new GuiImage(playbarCircle);
+	picturebarSlideshowImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarSlideshowOverImg = new GuiImage(playbarCircleOver);
+	picturebarSlideshowOverImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarSlideshowIcon = new GuiImage(playbarSlideshow);
+	picturebarSlideshowIcon->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+
+	picturebarCloseImg = new GuiImage(playbarCircle);
+	picturebarCloseImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarCloseOverImg = new GuiImage(playbarCircleOver);
+	picturebarCloseOverImg->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+	picturebarCloseIcon = new GuiImage(playbarClose);
+	picturebarCloseIcon->SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
+
+	picturebarPreviousBtn = new GuiButton(50, 50);
+	picturebarPreviousBtn->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	picturebarPreviousBtn->SetPosition(0, 0);
+	picturebarPreviousBtn->SetImage(picturebarPreviousImg);
+	picturebarPreviousBtn->SetImageOver(picturebarPreviousOverImg);
+	picturebarPreviousBtn->SetIcon(picturebarPreviousIcon);
+	picturebarPreviousBtn->SetTrigger(playbarTrigA);
+	picturebarPreviousBtn->SetUpdateCallback(PBPreviousCallback);
+	picturebarPreviousBtn->SetEffectGrow();
+	
+	picturebarNextBtn = new GuiButton(50, 50);
+	picturebarNextBtn->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	picturebarNextBtn->SetPosition(80, 0);
+	picturebarNextBtn->SetImage(picturebarNextImg);
+	picturebarNextBtn->SetImageOver(picturebarNextOverImg);
+	picturebarNextBtn->SetIcon(picturebarNextIcon);
+	picturebarNextBtn->SetTrigger(playbarTrigA);
+	picturebarNextBtn->SetUpdateCallback(PBNextCallback);
+	picturebarNextBtn->SetEffectGrow();
+	
+	picturebarSlideshowBtn = new GuiButton(50, 50);
+	picturebarSlideshowBtn->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	picturebarSlideshowBtn->SetPosition(160, 0);
+	picturebarSlideshowBtn->SetImage(picturebarSlideshowImg);
+	picturebarSlideshowBtn->SetImageOver(picturebarSlideshowOverImg);
+	picturebarSlideshowBtn->SetIcon(picturebarSlideshowIcon);
+	picturebarSlideshowBtn->SetTrigger(playbarTrigA);
+	picturebarSlideshowBtn->SetUpdateCallback(PBSlideshowCallback);
+	picturebarSlideshowBtn->SetEffectGrow();
+	
+	picturebarCloseBtn = new GuiButton(50, 50);
+	picturebarCloseBtn->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
+	picturebarCloseBtn->SetPosition(240, 0);
+	picturebarCloseBtn->SetImage(picturebarCloseImg);
+	picturebarCloseBtn->SetImageOver(picturebarCloseOverImg);
+	picturebarCloseBtn->SetIcon(picturebarCloseIcon);
+	picturebarCloseBtn->SetTrigger(playbarTrigA);
+	picturebarCloseBtn->SetUpdateCallback(PBCloseCallback);
+	picturebarCloseBtn->SetEffectGrow();
+	
+	picturebar = new GuiWindow(360, 80);
+
+	picturebar->Append(picturebarPreviousBtn);
+	picturebar->Append(picturebarNextBtn);
+	picturebar->Append(picturebarSlideshowBtn);
+	picturebar->Append(picturebarCloseBtn);
 	
 	playbarSetup = 1;
 }
