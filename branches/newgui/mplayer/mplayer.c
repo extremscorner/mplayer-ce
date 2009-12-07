@@ -252,7 +252,7 @@ static int loop_seek=0;
 static m_time_size_t end_at = { .type = END_AT_NONE, .pos = 0 };
 
 // A/V sync:
-int autosync=1; // 30 might be a good default value.
+int autosync=0; // 30 might be a good default value.
 
 // may be changed by GUI:  (FIXME!)
 float rel_seek_secs=0;
@@ -273,6 +273,10 @@ extern char *sub_demuxer_name; // override sub demuxer
 int audio_id=-1;
 int video_id=-1;
 int dvdsub_id=-1;
+// this dvdsub_id was selected via slang
+// use this to allow dvdnav to follow -slang across stream resets,
+// in particular the subtitle ID for a language changes
+int dvdsub_lang_id;
 int vobsub_id=-1;
 char* audio_lang=NULL;
 char* dvdsub_lang=NULL;
@@ -333,6 +337,7 @@ extern bool playing_dvd;
 static bool low_cache=false;
 static char* fileplaying=NULL;
 static bool restore_points_changed=false;
+int enable_restore_points=1;
 
 #define MAX_RESTORE_POINTS 10
 
@@ -354,6 +359,7 @@ void load_restore_points()
 		restore_points[i].filename[0]='\0';
 		restore_points[i].position=0;
 	}
+	if(!enable_restore_points)return;
 	sprintf(aux,"%s/%s",MPLAYER_DATADIR,"restore_points");
 	f=fopen(aux,"r");
 	if(f==NULL) return;
@@ -373,7 +379,7 @@ void save_restore_points_file()
 	int i;
 	char aux[1024];
 	static char *buff=NULL;
-	
+	if(!enable_restore_points)return;
 	if(!restore_points_changed) return;
 	
 	if(buff==NULL)buff=malloc(sizeof(char)*MAX_RESTORE_POINTS*1024); //created only once
@@ -408,6 +414,7 @@ void save_restore_points_file()
 void delete_restore_point(char *_filename)
 {
 	int i;
+	if(!enable_restore_points)return;
 	#ifndef WIILIB
 	if(IsLoopAvi(filename))return;
 	#endif
@@ -431,6 +438,7 @@ void delete_restore_point(char *_filename)
 void save_restore_point(char *_filename,int position)
 {
 	int i,j;
+	if(!enable_restore_points)return;
 	if(_filename==NULL || IsLoopAvi(_filename))return;
 	
 	if(!strncmp(_filename,"dvd://",6) || !strncmp(_filename,"dvdnav",6 )
@@ -468,6 +476,7 @@ void save_restore_point(char *_filename,int position)
 int get_restore_point(char *_filename)
 {
 	int j;
+	if(!enable_restore_points)return 0;
 	//printf("search rp: %s - ",_filename);
 	for(j=0;j<MAX_RESTORE_POINTS;j++)
 	{
@@ -496,8 +505,7 @@ static float c_total=0;
        float audio_delay=0;
 static int ignore_start=0;
 
-static int softsleep=1;
-
+static int softsleep=0;
        double force_fps=0;
 static int force_srate=0;
 static int audio_output_format=-1; // AF_FORMAT_UNKNOWN
@@ -560,6 +568,7 @@ edl_record_ptr next_edl_record = NULL; ///< only for traversing edl_records
 short edl_decision = 0; ///< 1 when an EDL operation has been made.
 FILE* edl_fd = NULL; ///< fd to write to when in -edlout mode.
 int use_filedir_conf;
+int use_filename_title;
 
 static unsigned int initialized_flags=0;
 #include "mpcommon.h"
@@ -884,7 +893,8 @@ void uninit_player(unsigned int mask){
     initialized_flags&=~INITIALIZED_AO;
     current_module="uninit_ao";
     if (mpctx->edl_muted) mixer_mute(&mpctx->mixer);
-    mpctx->audio_out->uninit(mpctx->eof?0:1); mpctx->audio_out=NULL;
+    if (mpctx->audio_out) mpctx->audio_out->uninit(mpctx->eof?0:1);
+    mpctx->audio_out=NULL;
   }
 
 #ifdef CONFIG_GUI
@@ -970,9 +980,10 @@ void exit_player_with_rc(exit_reason_t how, int rc){
 
 #ifndef WIILIB
 #ifdef GEKKO
-  if(mpctx->sh_video)
+  //if(mpctx->sh_video)
   	save_restore_points_file();
-  plat_deinit (rc);
+
+  	plat_deinit (rc);
 #endif  
   exit(rc);
 #endif
@@ -2099,7 +2110,7 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
 static double timing_sleep(double time_frame)
 {
     //int x=0,y=0;
-    double t=time_frame;
+    //double t=time_frame;
     s32 frame=time_frame*1000000; //in us
 
 #ifdef HAVE_RTC
@@ -2139,7 +2150,7 @@ static double timing_sleep(double time_frame)
 	    }
 	    else
 	    {
-			while (frame > 10)
+			while (frame > 5)
 			{
 				//x++;
 				frame-=GetRelativeTime(); // burn the CPU
@@ -2149,21 +2160,43 @@ static double timing_sleep(double time_frame)
 	}
 	time_frame=frame * 0.000001F;
     }
+    //printf("timeframe: %f   \n",time_frame);
 
-    /*
+/*
     if(time_frame >0.000050 || time_frame<-0.00006 || x>10000 || y>1)
     {
     	printf("orig: %f  timeframe: %f   x: %i  y: %i  frame: %li\n",t,time_frame,x,y,frame);
 
-        if(time_frame<-0.03 )
-        {
-        	time_frame=-0.03;
-        	GetRelativeTime();
-        }
-
-    }*/
-
+    }
+*/
     return time_frame;
+}
+
+static void select_subtitle(MPContext *mpctx) {
+  // find the best sub to use
+  int vobsub_index_id = vobsub_get_index_by_id(vo_vobsub, vobsub_id);
+  mpctx->global_sub_pos = -1; // no subs by default
+  if (vobsub_index_id >= 0) {
+    // if user asks for a vobsub id, use that first.
+    mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_VOBSUB] + vobsub_index_id;
+  } else if (dvdsub_id >= 0 && mpctx->global_sub_indices[SUB_SOURCE_DEMUX] >= 0) {
+    // if user asks for a dvd sub id, use that next.
+    mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_DEMUX] + dvdsub_id;
+  } else if (mpctx->global_sub_indices[SUB_SOURCE_SUBS] >= 0) {
+    // if there are text subs to use, use those.  (autosubs come last here)
+    mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_SUBS];
+  } else if (dvdsub_id == -1 && mpctx->global_sub_indices[SUB_SOURCE_DEMUX] >= 0) {
+    // finally select subs by language and container hints
+    if (dvdsub_id == -1 && dvdsub_lang)
+      dvdsub_id = demuxer_sub_track_by_lang(mpctx->demuxer, dvdsub_lang);
+    if (dvdsub_id == -1)
+      dvdsub_id = demuxer_default_sub_track(mpctx->demuxer);
+    if (dvdsub_id >= 0)
+      mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_DEMUX] + dvdsub_id;
+  }
+  // rather than duplicate code, use the SUB_SELECT handler to init the right one.
+  mpctx->global_sub_pos--;
+  mp_property_do("sub",M_PROPERTY_STEP_UP,NULL, mpctx);
 }
 
 #ifdef CONFIG_DVDNAV
@@ -2222,6 +2255,14 @@ static void mp_dvdnav_reset_stream (MPContext *ctx) {
     }
 
     audio_delay = 0.0f;
+    mpctx->global_sub_size = mpctx->global_sub_indices[SUB_SOURCE_DEMUX] + mp_dvdnav_number_of_subs(mpctx->stream);
+    if (dvdsub_lang && dvdsub_id == dvdsub_lang_id) {
+        dvdsub_lang_id = mp_dvdnav_sid_from_lang(ctx->stream, dvdsub_lang);
+        if (dvdsub_lang_id != dvdsub_id) {
+            dvdsub_id = dvdsub_lang_id;
+            select_subtitle(ctx);
+        }
+    }
 
     /// clear all EOF related flags
     ctx->d_video->eof = ctx->d_audio->eof = ctx->stream->eof = 0;
@@ -2492,7 +2533,7 @@ static int sleep_until_update(double *time_frame, double *aq_sleep_time)
 	// don't try to "catch up".
 	// If benchmark is set always output frames as fast as possible
 	// without sleeping.
-	if (*time_frame < -0.2 || benchmark)
+	if (*time_frame < -0.02 || benchmark)
 	    *time_frame = 0;
     }
 
@@ -2503,7 +2544,8 @@ static int sleep_until_update(double *time_frame, double *aq_sleep_time)
 
     // flag 256 means: libvo driver does its timing (dvb card)
     if (*time_frame > 0.001 && !(vo_flags&256))
-	*time_frame = timing_sleep(*time_frame);
+    	*time_frame = timing_sleep(*time_frame);
+    //else printf("no timing_sleep: %f, %i\n",*time_frame,frame_time_remaining);
     return frame_time_remaining;
 }
 
@@ -2572,10 +2614,10 @@ int reinit_video_chain(void) {
 #ifdef GEKKO
 //rodries patch for big resolution on wii
 
-if(sh_video->disp_w>900) {
-
+if(sh_video->disp_w>=900)
+ {
 		char *arg_scale[]={"w","xxxx","h","-2",NULL};
-		sprintf(arg_scale[1],"%i",sh_video->disp_w/2);
+		sprintf(arg_scale[1],"%i",(int)sh_video->disp_w/2);
 		sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);
 }
 
@@ -2715,7 +2757,7 @@ int pause_gui=0;
 void PauseAndGotoGUI()
 {
 	mp_cmd_t* cmd=NULL;
-
+	setwatchdogcounter(-1);
     if (mpctx->audio_out && mpctx->sh_audio)
 	mpctx->audio_out->pause();	// pause audio, keep data if possible
 
@@ -2784,6 +2826,7 @@ if(controlledbygui!=2)
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause
+    setwatchdogcounter(WATCH_TIMEOUT);
 }
 #endif
 
@@ -2793,7 +2836,7 @@ static void low_cache_loop(void)
 	int brk_cmd ;
     mp_cmd_t* cmd;
         
-    
+    setwatchdogcounter(-1);
     //this values can be improved
 	if(!strncmp(fileplaying,"usb:",4) || !strncmp(fileplaying,"ntfs_usb:",9) ||
 	   !strncmp(fileplaying,"ntfs_sd:",8) || !strncmp(fileplaying,"sd:",3)) percent=stream_cache_min_percent/6;
@@ -2874,24 +2917,22 @@ static void low_cache_loop(void)
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause
+    setwatchdogcounter(WATCH_TIMEOUT);
 #ifdef CONFIG_GUI
-    if (use_gui) {
-	if (guiIntfStruct.Playing == guiSetStop)
-	    mpctx->eof = 1;
-	else
-	    guiGetEvent(guiCEvent, (char *)guiSetPlay);
-    }
+    if (use_gui)
+        guiGetEvent(guiCEvent, (char *)guiSetPause);
 #endif
 }
 
 void fast_pause()
 {
 	if(mpctx->osd_function==OSD_PAUSE) return;
+	setwatchdogcounter(-1);
     if (mpctx->audio_out && mpctx->sh_audio)
 	mpctx->audio_out->pause();	// pause audio, keep data if possible
 
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
-	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
+        mpctx->video_out->control(VOCTRL_PAUSE, NULL);
 
 }
 
@@ -2903,6 +2944,7 @@ void fast_continue()
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause
+    setwatchdogcounter(WATCH_TIMEOUT);
 		
 }
 
@@ -2915,6 +2957,7 @@ static void pause_loop(void)
 		mpctx->osd_function=OSD_PLAY;
 		return;	
 	}
+	setwatchdogcounter(-1);
    	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE"); //impossible to see in wiigui, we haven't vf_menu
     //update_osd_msg();
     force_osd();
@@ -2925,7 +2968,7 @@ static void pause_loop(void)
 	guiGetEvent(guiCEvent, (char *)guiSetPause);
 #endif
     if (mpctx->audio_out && mpctx->sh_audio)
-	mpctx->audio_out->pause();	// pause audio, keep data if possible
+        mpctx->audio_out->pause(); // pause audio, keep data if possible
 
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
 	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
@@ -2940,16 +2983,16 @@ static void pause_loop(void)
 	if (mpctx->sh_video && mpctx->video_out && vo_config_count)
 	    mpctx->video_out->check_events();
 #ifdef CONFIG_GUI
-	if (use_gui) {
-	    guiEventHandling();
-	    guiGetEvent(guiReDraw, NULL);
-	    if (guiIntfStruct.Playing!=2 || (rel_seek_secs || abs_seek_pos))
-		break;
-	}
+        if (use_gui) {
+            guiEventHandling();
+            guiGetEvent(guiReDraw, NULL);
+            if (guiIntfStruct.Playing!=2 || (rel_seek_secs || abs_seek_pos))
+                break;
+        }
 #endif
 #ifdef CONFIG_MENU
-	if (vf_menu)
-	    vf_menu_pause_update(vf_menu);
+        if (vf_menu)
+            vf_menu_pause_update(vf_menu);
 #endif
 	usec_sleep(20000);		
 
@@ -2960,8 +3003,8 @@ static void pause_loop(void)
     }
 
     if (cmd && cmd->id == MP_CMD_PAUSE) {
-	cmd = mp_input_get_cmd(0,1,0);
-	mp_cmd_free(cmd);
+        cmd = mp_input_get_cmd(0,1,0);
+        mp_cmd_free(cmd);
     }
     
     mpctx->osd_function=OSD_PLAY;
@@ -2993,14 +3036,15 @@ static void pause_loop(void)
     }
 
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
-        mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
-    (void)GetRelativeTime();	// ignore time that passed during pause
+        mpctx->video_out->control(VOCTRL_RESUME, NULL); // resume video
+    (void)GetRelativeTime(); // ignore time that passed during pause
+    setwatchdogcounter(WATCH_TIMEOUT);
 #ifdef CONFIG_GUI
     if (use_gui) {
-	if (guiIntfStruct.Playing == guiSetStop)
-	    mpctx->eof = 1;
-	else
-	    guiGetEvent(guiCEvent, (char *)guiSetPlay);
+        if (guiIntfStruct.Playing == guiSetStop)
+            mpctx->eof = 1;
+        else
+            guiGetEvent(guiCEvent, (char *)guiSetPlay);
     }
 #endif
 }
@@ -3066,6 +3110,7 @@ static void edl_update(MPContext *mpctx)
 // return -1 if seek failed (non-seekable stream?), 0 otherwise
 static int seek(MPContext *mpctx, double amount, int style)
 {
+	setwatchdogcounter(-1);
     current_module = "seek";
     if (demux_seek(mpctx->demuxer, amount, audio_delay, style) == 0)
 	return -1;
@@ -3109,6 +3154,7 @@ static int seek(MPContext *mpctx, double amount, int style)
     drop_frame_cnt = 0;
 
     current_module = NULL;
+    setwatchdogcounter(WATCH_TIMEOUT);
     return 0;
 }
 static int error_playing;
@@ -3542,17 +3588,17 @@ current_module = NULL;
 
 // ******************* Now, let's see the per-file stuff ********************
 play_next_file:
-
+setwatchdogcounter(-1);
   // init global sub numbers
   mpctx->global_sub_size = 0;
   { int i; for (i = 0; i < SUB_SOURCES; i++) mpctx->global_sub_indices[i] = -1; }
 
-// I don't know why but args are lossed now so I have to add manually
 //m_config_set_option(mconfig,"framedrop",NULL);
 m_config_set_option(mconfig,"sws","4");
 m_config_set_option(mconfig,"lavdopts","lowres=1,900");
+m_config_set_option(mconfig,"af","volume=7:0");
 
-  if (filename) {
+if (filename) {
     load_per_protocol_config (mconfig, filename);
     load_per_extension_config (mconfig, filename);
     load_per_file_config (mconfig, filename);
@@ -3637,6 +3683,7 @@ while (player_idle_mode && !filename) {
             // The entry is added to the main playtree after the switch().
             break;
         case MP_CMD_LOADLIST:
+        	printf("loadlist\n");
             entry = parse_playlist_file(cmd->args[0].v.s);
             break;
         case MP_CMD_QUIT:
@@ -3683,9 +3730,12 @@ while (player_idle_mode && !filename) {
 }
 //---------------------------------------------------------------------------
 
-    if(filename)
+    if(filename) {
 	mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_Playing,
 		filename_recode(filename));
+        if(use_filename_title && vo_wintitle == NULL)
+            vo_wintitle = strdup ( mp_basename2 (filename));
+    }
 
 if (edl_filename) {
     if (edl_records) free_edl(edl_records);
@@ -3839,6 +3889,7 @@ int vob_sub_auto = 1; //scip
 
   //end rodries
   #endif
+setwatchdogcounter(-1);
   mpctx->stream=open_stream(filename,0,&mpctx->file_format);
   if(!mpctx->stream) { // error...
     mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY);
@@ -3856,6 +3907,7 @@ int vob_sub_auto = 1; //scip
     play_tree_t* entry;
     // Handle playlist
     current_module="handle_playlist";
+    printf(MSGL_V,"Parsing playlist %s...\n",filename_recode(filename));
     mp_msg(MSGT_CPLAYER,MSGL_V,"Parsing playlist %s...\n",
 	    filename_recode(filename));
     entry = parse_playtree(mpctx->stream,0);
@@ -3869,10 +3921,6 @@ if(stream_dump_type==5){
   int len;
   FILE *f;
   current_module="dumpstream";
-  if(mpctx->stream->type==STREAMTYPE_STREAM && mpctx->stream->fd<0){
-    mp_msg(MSGT_CPLAYER,MSGL_FATAL,MSGTR_DumpstreamFdUnavailable);
-    exit_player(EXIT_ERROR);
-  }
   stream_reset(mpctx->stream);
   stream_seek(mpctx->stream,mpctx->stream->start_pos);
   f=fopen(stream_dump_name,"wb");
@@ -3923,7 +3971,9 @@ if(mpctx->stream->type==STREAMTYPE_DVD){
 if(mpctx->stream->type==STREAMTYPE_DVDNAV){
   current_module="dvdnav lang->id";
   if(audio_id==-1) audio_id=mp_dvdnav_aid_from_lang(mpctx->stream,audio_lang);
-  if(dvdsub_lang && dvdsub_id==-1) dvdsub_id=mp_dvdnav_sid_from_lang(mpctx->stream,dvdsub_lang);
+  dvdsub_lang_id = -3;
+  if(dvdsub_lang && dvdsub_id==-1)
+    dvdsub_lang_id=dvdsub_id=mp_dvdnav_sid_from_lang(mpctx->stream,dvdsub_lang);
   // setup global sub numbering
   mpctx->global_sub_indices[SUB_SOURCE_DEMUX] = mpctx->global_sub_size; // the global # of the first demux-specific sub.
   mpctx->global_sub_size += mp_dvdnav_number_of_subs(mpctx->stream);
@@ -4248,30 +4298,7 @@ if(1 || mpctx->sh_video) {
 
 }
 if (mpctx->global_sub_size) {
-  // find the best sub to use
-  int vobsub_index_id = vobsub_get_index_by_id(vo_vobsub, vobsub_id);
-  mpctx->global_sub_pos = -1; // no subs by default
-  if (vobsub_index_id >= 0) {
-    // if user asks for a vobsub id, use that first.
-    mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_VOBSUB] + vobsub_index_id;
-  } else if (dvdsub_id >= 0 && mpctx->global_sub_indices[SUB_SOURCE_DEMUX] >= 0) {
-    // if user asks for a dvd sub id, use that next.
-    mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_DEMUX] + dvdsub_id;
-  } else if (mpctx->global_sub_indices[SUB_SOURCE_SUBS] >= 0) {
-    // if there are text subs to use, use those.  (autosubs come last here)
-    mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_SUBS];
-  } else if (dvdsub_id == -1 && mpctx->global_sub_indices[SUB_SOURCE_DEMUX] >= 0) {
-    // finally select subs by language and container hints
-    if (dvdsub_id == -1 && dvdsub_lang)
-      dvdsub_id = demuxer_sub_track_by_lang(mpctx->demuxer, dvdsub_lang);
-    if (dvdsub_id == -1)
-      dvdsub_id = demuxer_default_sub_track(mpctx->demuxer);
-    if (dvdsub_id >= 0)
-      mpctx->global_sub_pos = mpctx->global_sub_indices[SUB_SOURCE_DEMUX] + dvdsub_id;
-  }
-  // rather than duplicate code, use the SUB_SELECT handler to init the right one.
-  mpctx->global_sub_pos--;
-  mp_property_do("sub",M_PROPERTY_STEP_UP,NULL, mpctx);
+  select_subtitle(mpctx);
   if(subdata)
     switch (stream_dump_type) {
         case 3: list_sub_file(subdata); break;
@@ -4527,7 +4554,7 @@ if(mpctx->sh_video)
 	int w,h;
 	w=mpctx->sh_video->disp_w;
 	h=mpctx->sh_video->disp_h;
-	if(w>900) 
+	if(w>=900)
 	{
 		w=w/2;
 		h=h/2;
@@ -4576,6 +4603,8 @@ mpctx->eof=0;
 while(!mpctx->eof){
     double aq_sleep_time=0;
 //init_while:
+setwatchdogcounter(WATCH_TIMEOUT);
+
 if(dvd_last_chapter>0) {
   int cur_chapter = demuxer_get_current_chapter(mpctx->demuxer);
   if(cur_chapter!=-1 && cur_chapter+1>dvd_last_chapter)
@@ -4900,7 +4929,7 @@ if(rel_seek_secs || abs_seek_pos){
 #endif /* CONFIG_GUI */
 
 } // while(!mpctx->eof)
-
+setwatchdogcounter(-1);
 #ifdef WIILIB
 printf("mplayer: end film. UNINIT\n");
 StopDrawThread();

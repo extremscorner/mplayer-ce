@@ -47,10 +47,6 @@ typedef struct {
   unsigned int     state;
 } dvdnav_priv_t;
 
-extern char *dvd_device;
-extern char *audio_lang, *dvdsub_lang;
-extern char *dvd_audio_stream_channels[6], *dvd_audio_stream_types[8];
-
 static struct stream_priv_s {
   int track;
   char* device;
@@ -90,6 +86,8 @@ static dvdnav_priv_t * new_dvdnav_stream(char * filename) {
     free(priv);
     return NULL;
   }
+
+  dvd_set_speed(priv->filename, dvd_speed);
 
   if(dvdnav_open(&(priv->dvdnav),priv->filename)!=DVDNAV_STATUS_OK)
   {
@@ -295,6 +293,7 @@ static void stream_dvdnav_close(stream_t *s) {
   dvdnav_priv_t *priv = s->priv;
   dvdnav_close(priv->dvdnav);
   priv->dvdnav = NULL;
+  dvd_set_speed(priv->filename, -1);
   free(priv);
 }
 
@@ -350,8 +349,10 @@ static int fill_buffer(stream_t *s, char *but, int len)
           if(dvdnav_current_title_info(priv->dvdnav, &tit, &part) == DVDNAV_STATUS_OK) {
             mp_msg(MSGT_CPLAYER,MSGL_V, "\r\nDVDNAV, NEW TITLE %d\r\n", tit);
             dvdnav_get_highlight (priv, 0);
-            if(priv->title > 0 && tit != priv->title)
+            if(priv->title > 0 && tit != priv->title) {
+              priv->state |= NAV_FLAG_EOF;
               return 0;
+            }
           }
           break;
         }
@@ -365,8 +366,10 @@ static int fill_buffer(stream_t *s, char *but, int len)
             priv->state |= NAV_FLAG_WAIT_READ;
           if(priv->title > 0 && dvd_last_chapter > 0) {
             int tit=0, part=0;
-            if(dvdnav_current_title_info(priv->dvdnav, &tit, &part) == DVDNAV_STATUS_OK && part > dvd_last_chapter)
+            if(dvdnav_current_title_info(priv->dvdnav, &tit, &part) == DVDNAV_STATUS_OK && part > dvd_last_chapter) {
+              priv->state |= NAV_FLAG_EOF;
               return 0;
+            }
           }
           dvdnav_get_highlight (priv, 1);
         }
@@ -593,7 +596,7 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
     dvdnav_angle_change(priv->dvdnav, dvd_angle);
 
   stream->sector_size = 2048;
-  stream->flags = STREAM_READ | STREAM_SEEK;
+  stream->flags = STREAM_READ | MP_STREAM_SEEK;
   stream->fill_buffer = fill_buffer;
   stream->seek = seek;
   stream->control = control;
@@ -795,7 +798,7 @@ int mp_dvdnav_sid_from_lang(stream_t *stream, unsigned char *language) {
  * \return 0 on error, 1 if successful
  */
 int mp_dvdnav_lang_from_sid(stream_t *stream, int sid, unsigned char *buf) {
-    uint8_t lg, k;
+    uint8_t k;
     uint16_t lang;
     dvdnav_priv_t *priv = stream->priv;
     if(sid < 0) return 0;

@@ -22,8 +22,8 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 39
-#define LIBAVFORMAT_VERSION_MICRO  2
+#define LIBAVFORMAT_VERSION_MINOR 41
+#define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -39,6 +39,16 @@
  * Returns the LIBAVFORMAT_VERSION_INT constant.
  */
 unsigned avformat_version(void);
+
+/**
+ * Returns the libavformat build-time configuration.
+ */
+const char * avformat_configuration(void);
+
+/**
+ * Returns the libavformat license.
+ */
+const char * avformat_license(void);
 
 #include <time.h>
 #include <stdio.h>  /* FILE */

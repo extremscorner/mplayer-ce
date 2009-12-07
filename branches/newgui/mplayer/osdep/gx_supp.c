@@ -121,6 +121,55 @@ static camera cam = {
 	{ 0.0f, 0.0f, -0.5f }
 };
 #ifndef WIILIB
+int video_mode=0;
+void ChangeVideoMode(int video_mode)
+{
+	switch(video_mode)
+	{
+		case 1: // NTSC (480i)
+			vmode = &TVNtsc480IntDf;
+				break;
+		case 2: // Progressive (480p)
+			vmode = &TVNtsc480Prog;
+				break;
+		case 3: // PAL (50Hz)
+			vmode = &TVPal574IntDfScale;
+				break;
+		case 4: // PAL (60Hz)
+			vmode = &TVEurgb60Hz480IntDf;
+				break;
+		default:
+			return;
+	}
+
+	vmode->viWidth = 678;
+	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
+
+	VIDEO_Configure(vmode);
+	VIDEO_Flush();
+
+	free(MEM_K1_TO_K0(xfb[0]));
+	free(MEM_K1_TO_K0(xfb[1]));
+
+	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
+	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
+
+	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
+
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	else
+	    while (VIDEO_GetNextField())
+	    	VIDEO_WaitVSync();
+
+
+}
 void GX_InitVideo()
 {
 	vmode = VIDEO_GetPreferredMode(NULL);
@@ -146,6 +195,9 @@ void GX_InitVideo()
 
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
+	else
+	    while (VIDEO_GetNextField())
+	    	VIDEO_WaitVSync();
 
 	//make texture memory fixed (max texture 900*700, gx can't manage more) and in mem1 (is faster)
 	if (!Ytexture[0])

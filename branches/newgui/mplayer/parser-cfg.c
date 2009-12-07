@@ -86,10 +86,14 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 	}
 
 	while (fgets(line, MAX_LINE_LEN, fp)) {
+#ifndef GEKKO
 		if (errors >= 16) {
 			mp_msg(MSGT_CFGPARSER,MSGL_FATAL,"too many errors\n");
+			free(line);
+			fclose(fp);
 			goto out;
 		}
+#endif
 
 		line_num++;
 		line_pos = 0;
@@ -146,8 +150,10 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 
 		/* check '=' */
 		if (line[line_pos++] != '=') {
+#ifndef GEKKO
 			PRINT_LINENUM;
 			mp_msg(MSGT_CFGPARSER,MSGL_ERR,"Option %s needs a parameter at line %d\n",opt,line_num);
+#endif
 			ret = -1;
 			errors++;
 			continue;
@@ -189,8 +195,10 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 
 		/* did we read a parameter? */
 		if (param_pos == 0) {
+#ifndef GEKKO
 			PRINT_LINENUM;
 			mp_msg(MSGT_CFGPARSER,MSGL_ERR,"Option %s needs a parameter at line %d\n",opt,line_num);
+#endif
 			ret = -1;
 			errors++;
 			continue;
@@ -224,7 +232,9 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 		if (tmp < 0) {
 			PRINT_LINENUM;
 			if(tmp == M_OPT_UNKNOWN) {
+				#ifndef GEKKO
 				mp_msg(MSGT_CFGPARSER,MSGL_WARN,"Warning unknown option %s at line %d\n", opt,line_num);
+				#endif
 				continue;
 			}
 			mp_msg(MSGT_CFGPARSER,MSGL_ERR,"Error parsing option %s=%s at line %d\n",opt,param,line_num);

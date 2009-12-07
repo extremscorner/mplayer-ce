@@ -32,6 +32,7 @@ const AVCodecTag ff_mp4_obj_type[] = {
     { CODEC_ID_MPEG4     , 0x20 },
     { CODEC_ID_H264      , 0x21 },
     { CODEC_ID_AAC       , 0x40 },
+    { CODEC_ID_MP4ALS    , 0x40 }, /* 14496-3 ALS */
     { CODEC_ID_MPEG2VIDEO, 0x61 }, /* MPEG2 Main */
     { CODEC_ID_MPEG2VIDEO, 0x60 }, /* MPEG2 Simple */
     { CODEC_ID_MPEG2VIDEO, 0x62 }, /* MPEG2 SNR */
@@ -184,7 +185,9 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') }, /*  */
     { CODEC_ID_PCM_S16LE, MKTAG('l', 'p', 'c', 'm') },
     { CODEC_ID_PCM_F32BE, MKTAG('f', 'l', '3', '2') },
+    { CODEC_ID_PCM_F32LE, MKTAG('f', 'l', '3', '2') },
     { CODEC_ID_PCM_F64BE, MKTAG('f', 'l', '6', '4') },
+    { CODEC_ID_PCM_F64LE, MKTAG('f', 'l', '6', '4') },
     { CODEC_ID_PCM_S8,    MKTAG('s', 'o', 'w', 't') },
     { CODEC_ID_PCM_U8,    MKTAG('r', 'a', 'w', ' ') }, /* 8 bits unsigned */
     { CODEC_ID_PCM_U8,    MKTAG('N', 'O', 'N', 'E') }, /* uncompressed */

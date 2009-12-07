@@ -30,8 +30,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 37
-#define LIBAVCODEC_VERSION_MICRO  1
+#define LIBAVCODEC_VERSION_MINOR 42
+#define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -199,6 +199,7 @@ enum CodecID {
     CODEC_ID_DPX,
     CODEC_ID_MAD,
     CODEC_ID_FRWU,
+    CODEC_ID_FLASHSV2,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -386,6 +387,11 @@ enum SampleFormat {
 #define CH_TOP_BACK_RIGHT         0x00020000
 #define CH_STEREO_LEFT            0x20000000  ///< Stereo downmix.
 #define CH_STEREO_RIGHT           0x40000000  ///< See CH_STEREO_LEFT.
+
+/** Channel mask value used for AVCodecContext.request_channel_layout
+    to indicate that the user requests the channel order of the decoder output
+    to be the native codec channel order. */
+#define CH_LAYOUT_NATIVE          0x8000000000000000LL
 
 /* Audio channel convenience macros */
 #define CH_LAYOUT_MONO              (CH_FRONT_CENTER)
@@ -2548,6 +2554,16 @@ typedef struct AVCodecContext {
      * - decoding: Set by libavcodec, user can override.
      */
     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
+
+    /**
+     * explicit P-frame weighted prediction analysis method
+     * 0: off
+     * 1: fast blind weighting (one reference duplicate with -1 offset)
+     * 2: smart weighting (full fade detection analysis)
+     * - encoding: Set by user.
+     * - decoding: unused
+     */
+    int weighted_p_pred;
 } AVCodecContext;
 
 /**
@@ -3060,6 +3076,16 @@ AVCodec *av_codec_next(AVCodec *c);
  * Returns the LIBAVCODEC_VERSION_INT constant.
  */
 unsigned avcodec_version(void);
+
+/**
+ * Returns the libavcodec build-time configuration.
+ */
+const char * avcodec_configuration(void);
+
+/**
+ * Returns the libavcodec license.
+ */
+const char * avcodec_license(void);
 
 /**
  * Initializes libavcodec.

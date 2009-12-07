@@ -390,7 +390,7 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
         if ((ret = set_default_channel_config(ac, new_che_pos, channel_config)))
             return ret;
     }
-    if ((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_LOCKED)))
+    if ((ret = output_configure(ac, ac->che_pos, new_che_pos, channel_config, OC_GLOBAL_HDR)))
         return ret;
 
     if (extension_flag) {
@@ -678,7 +678,7 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
     for (g = 0; g < ics->num_window_groups; g++) {
         int k = 0;
         while (k < ics->max_sfb) {
-            uint8_t sect_len = k;
+            uint8_t sect_end = k;
             int sect_len_incr;
             int sect_band_type = get_bits(gb, 4);
             if (sect_band_type == 12) {
@@ -686,17 +686,17 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
                 return -1;
             }
             while ((sect_len_incr = get_bits(gb, bits)) == (1 << bits) - 1)
-                sect_len += sect_len_incr;
-            sect_len += sect_len_incr;
-            if (sect_len > ics->max_sfb) {
+                sect_end += sect_len_incr;
+            sect_end += sect_len_incr;
+            if (sect_end > ics->max_sfb) {
                 av_log(ac->avccontext, AV_LOG_ERROR,
                        "Number of bands (%d) exceeds limit (%d).\n",
-                       sect_len, ics->max_sfb);
+                       sect_end, ics->max_sfb);
                 return -1;
             }
-            for (; k < sect_len; k++) {
+            for (; k < sect_end; k++) {
                 band_type        [idx]   = sect_band_type;
-                band_type_run_end[idx++] = sect_len;
+                band_type_run_end[idx++] = sect_end;
             }
         }
     }
@@ -1687,6 +1687,8 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
         } else if (ac->output_configured != OC_LOCKED) {
             ac->output_configured = OC_NONE;
         }
+        if (ac->output_configured != OC_LOCKED)
+            ac->m4ac.sbr = -1;
         ac->m4ac.sample_rate     = hdr_info.sample_rate;
         ac->m4ac.sampling_index  = hdr_info.sampling_index;
         ac->m4ac.object_type     = hdr_info.object_type;
@@ -1762,7 +1764,7 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
             memset(new_che_pos, 0, 4 * MAX_ELEM_ID * sizeof(new_che_pos[0][0]));
             if ((err = decode_pce(ac, new_che_pos, &gb)))
                 break;
-            if (ac->output_configured <= OC_TRIAL_PCE)
+            if (ac->output_configured > OC_TRIAL_PCE)
                 av_log(avccontext, AV_LOG_ERROR,
                        "Not evaluating a further program_config_element as this construct is dubious at best.\n");
             else

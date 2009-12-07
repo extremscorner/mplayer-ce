@@ -45,7 +45,8 @@ LIBAO_EXTERN(gekko)
 
 #define SFX_BUFFER_SIZE (4*1024)
 #define SFX_BUFFERS 64
-#define PREBUFFER 65536
+//#define PREBUFFER 65536
+#define PREBUFFER 32768
 
 static u8 buffer[SFX_BUFFERS][SFX_BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
 static u8 buffer_fill = 0;
@@ -56,7 +57,7 @@ static int buffered=0;
 static void switch_buffers() {
 
 	if (buffered <= 0) {
-			printf("stop no data\n");
+			//printf("audio stop no data\n");
 			playing = false;
 			AUDIO_StopDMA();
 			return;
@@ -149,7 +150,7 @@ static void audio_resume(void) {
 }
 
 static int get_space(void) {
-	return (SFX_BUFFER_SIZE*(SFX_BUFFERS-2))-buffered;
+	return (SFX_BUFFER_SIZE*(SFX_BUFFERS-1))-buffered;
 }
 
 #define SWAP(x) ((x>>16)|(x<<16))
@@ -164,7 +165,7 @@ static int play(void* data, int len, int flags) {
 	int ret = 0;
 	u8 *s = (u8 *) data;
 
-	while ((len >= SFX_BUFFER_SIZE)	&& (get_space()>0)) {
+	while ((len >= SFX_BUFFER_SIZE)	&& (get_space()>=SFX_BUFFER_SIZE)) {
 		copy_swap_channels((u32*)buffer[buffer_fill], (u32*)s);
 		DCFlushRange(buffer[buffer_play], SFX_BUFFER_SIZE);
 
@@ -185,6 +186,9 @@ static int play(void* data, int len, int flags) {
 }
 
 static float get_delay(void) {
-	return (buffered+AUDIO_GetDMABytesLeft()) / 192000.0f;
+	if(playing)
+		return (buffered+AUDIO_GetDMABytesLeft()) / 192000.0f;
+	else
+		return (buffered) / 192000.0f;
 }
 

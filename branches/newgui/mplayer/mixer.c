@@ -15,8 +15,13 @@
 
 char * mixer_device=NULL;
 char * mixer_channel=NULL;
+#ifdef GEKKO
+int soft_vol = 1;
+float soft_vol_max = 300.0;
+#else
 int soft_vol = 0;
 float soft_vol_max = 110.0;
+#endif
 
 void mixer_getvolume(mixer_t *mixer, float *l, float *r)
 {
@@ -41,6 +46,7 @@ void mixer_getvolume(mixer_t *mixer, float *l, float *r)
     *r=vol.right;
     *l=vol.left;
   }
+  printf("get vol: %f\n",vol.right);
 }
 
 void mixer_setvolume(mixer_t *mixer, float l, float r)

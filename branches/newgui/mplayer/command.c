@@ -49,6 +49,10 @@
 #include "mp_fifo.h"
 #include "libavutil/avstring.h"
 
+#ifdef GEKKO
+#include "osdep/plat_gekko.h"
+#endif
+
 #define ROUND(x) ((int)((x)<0 ? (x)-0.5 : (x)+0.5))
 
 extern int use_menu;
@@ -1021,6 +1025,8 @@ static int mp_property_deinterlace(m_option_t * prop, int action,
 	vf->control(vf, VFCTRL_GET_DEINTERLACE, &deinterlace);
 	deinterlace = !deinterlace;
 	vf->control(vf, VFCTRL_SET_DEINTERLACE, &deinterlace);
+	set_osd_msg(OSD_MSG_SPEED, 1, osd_duration, MSGTR_OSDDeinterlace,
+	    deinterlace ? MSGTR_Enabled : MSGTR_Disabled);
 	return M_PROPERTY_OK;
     }
     return M_PROPERTY_NOT_IMPLEMENTED;
@@ -1499,8 +1505,8 @@ static int mp_property_sub(m_option_t * prop, int action, void *arg,
 	&& (mpctx->stream->type == STREAMTYPE_DVD
 	    || mpctx->stream->type == STREAMTYPE_DVDNAV)
 	&& dvdsub_id < 0 && reset_spu) {
-	dvdsub_id = -2;
-	d_sub->id = dvdsub_id;
+	d_sub->id = -2;
+	d_sub->sh = NULL;
     }
 #endif
     if (mpctx->sh_audio)
@@ -2656,6 +2662,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_LOADLIST:{
+		setwatchdogcounter(-1);
 		play_tree_t *e = parse_playlist_file(cmd->args[0].v.s);
 		if (!e)
 		    mp_msg(MSGT_CPLAYER, MSGL_ERR,
@@ -2675,6 +2682,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 			mpctx->eof = PT_NEXT_SRC;
 		    }
 		}
+		setwatchdogcounter(WATCH_TIMEOUT);
 		brk_cmd = 1;
 	    }
 	    break;

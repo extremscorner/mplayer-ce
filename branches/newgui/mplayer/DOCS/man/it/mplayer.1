@@ -1,4 +1,4 @@
-.\" synced with r29791
+.\" synced with r29905
 .\" Encoding: iso-8859-1
 .\" MPlayer (C) 2000-2009 MPlayer Team
 .\" Questa pagina di manuale è stata fatta da Gabucino, Diego Biurrun,
@@ -190,7 +190,11 @@ controllo rumore/\:disturbo, conversioni RGB/\:YUV) ed oltre.
 .PP
 .B gmplayer
 è MPlayer con una interfaccia utente grafica.
-Ha le stesse opzioni di MPlayer.
+Ha le stesse opzioni di MPlayer, tuttavia alcune potrebbero non funzionare
+correttamente a causa di conflitti con la configurazione fatta via GUI (salvata
+in gui.conf).
+In particolare alcune opzioni potrebbero venire sovrascritte da opzioni nel file
+gui.conf mentre altre potrebbero venire salvate definitivamente in gui.conf.
 .PP
 Esempi di utilizzo per farti partire rapidamente possono essere trovati alla
 fine di questa pagina di manuale.
@@ -445,7 +449,9 @@ Conferma la scelta.
 .RS
 .
 (I seguenti tasti sono validi solo se MPlayer è stato compilato col supporto
-per televideo (teletext): vengono usati per controllare il televideo della TV)
+per televideo (teletext): vengono usati per controllare il televideo della TV,
+i cui dati possono arrivare sia da una sorgente TV analogica che da un flusso
+MPEG.)
 .RE
 .PP
 .PD 0
@@ -547,10 +553,10 @@ Puoi anche mettere tale file di configurazione nella stessa directory in cui si
 trova il file relativo, sempre che tu imposti poi l'opzione \-use\-filedir\-conf
 (dalla riga comando oppure nel tuo file di configurazione globale).
 Se viene trovato un file di configurazione specifico nella stessa directory del
-file, nessun file di configurazione specifico vine letto da ~/.mplayer.
-Inoltre l'opzione \-use\-filedir\-conf abilita i file di configurazione
+file, nessun file di configurazione specifico viene letto da ~/.mplayer.
+Inoltre, l'opzione \-use\-filedir\-conf abilita i file di configurazione
 specifici nella directory.
-Per questo, MPlayer dapprima cerca di caricare un mplayer.conf dalla stessa
+Per questo MPlayer dapprima cerca di caricare un mplayer.conf dalla stessa
 directory del file riprodotto e poi cerca un file di configurazione specifico.
 .PP
 .I ESEMPIO DI UN FILE DI CONFIGURAZIONE PER MPLAYER:
@@ -1234,11 +1240,12 @@ programma (se presente) con il flusso audio scelto.
 .TP
 .B \-ausid <ID> (vedi anche \-alang)
 Selezione il canale del sottoflussio audio.
-Attualmente la gamma valida è 0x55..0x75 e viene applicata solo a MPEG-TS
-quando viene decodificato dal demuxer nativo (non da libavformat).
-Il tipo di formato potrebbe non venir correttamente identificato a causa di
-come questa informazione (o la sua assenza) viene impacchettata nel flusso, ma
-decodificherà correttamente i flussi audio quando sono presenti più sottoflussi.
+Attualmente la gamma valida è 0x55..0x75 e viene applicata solo ad un flusso
+MPEG-TS quando viene decodificato dal demuxer nativo (non da libavformat).
+Il tipo di formato potrebbe non venir identificato correttamente a causa del
+modo in cui questa informazione (o la sua assenza) viene impacchettata nel
+flusso, ma decodificherà correttamente i flussi audio quando sono presenti più
+sottoflussi.
 MPlayer emette gli ID dei sottoflussi disponibili se eseguito con \-identify.
 .
 .TP
@@ -1385,6 +1392,8 @@ stereo
 surround
 .IPs 6
 5.1 completo
+.IPs 8
+7.1 completo
 .RE
 .PD 1
 .
@@ -2441,8 +2450,8 @@ Se non riesci a selezionare un sottotitolo di un DVD, prova anche \-vobsubid.
 .
 .TP
 .B \-nosub
-Disabilita qualsiasi sottotitolo auto-selezionato (cosa che per es.\& il demuxer
-Matroska/mkv implementa).
+Disabilita qualsiasi sottotitolo selezionato automaticamente (cosa che per
+es.\& il demuxer Matroska/mkv implementa).
 .
 .TP
 .B \-slang <codice linguaggio[,codice linguaggio]> (vedi anche \-sid)
@@ -3234,7 +3243,7 @@ Utilizza l'hint _WIN_LAYER hint con il numero di layer specificato.
 .IPs netwm
 Forza lo stile NETWM.
 .IPs "none\ "
-Non attivare il layer della finestra a schermo intero.
+Pulisce la lista delle modalità; ne puoi aggiungere per abilitarle dopo.
 .IPs stays_on_top
 Utilizza l'hint _NETWM_STATE_STAYS_ON_TOP se disponibile.
 .REss
@@ -3335,6 +3344,10 @@ Un valore 1 significa pixel quadrati
 (valore corretto per (quasi?) tutti gli schermi LCD).
 .
 .TP
+.B \-name (solo X11)
+Imposta il nome classe della finestra.
+.
+.TP
 .B \-nodouble
 Disabilita il doppio buffering, fondamentalmente usato a scopi di
 debug.
@@ -3419,6 +3432,17 @@ Se il tuo salvaschermo non gestisce né la API XSS né XResetScreenSaver,
 perfavore usa al suo posto \-heartbeat\-cmd.
 .
 .TP
+.B \-title (vedi anche \-use\-filename\-title)
+Imposta il titolo della finestra.
+Gestito dai driver di uscita video basati su X11.
+.
+.TP
+.B \-use\-filename\-title (vedi anche \-title)
+Imposta il titolo della finestra usando il nome del file multimediale, se non
+è stato impostato con \-title.
+Gestito dai driver di uscita video basati su X11.
+.
+.TP
 .B "\-vm \ \ \ "
 Cerca di cambiare in un modalità video differente.
 Supportato dai driver di uscita video dga, x11, xv, sdl e directx.
@@ -3451,9 +3475,9 @@ la finestra.
 La posizione iniziale selezionata con l'opzione \-geometry è relativa allo
 schermo specificato.
 Funzionerà solitamente solo con "\-fstype \-fullscreen" o "\-fstype none".
-Quest'opzione non è indicata per impostare solo la schermata di avvio
-(dato che si aprirà sempre a tutto schermo sullo schermo indicato), per farlo
-la miglior opzione attualmente disponibilie è \-geometry.
+Quest'opzione non è utilizzabile per impostare solo la schermata di avvio
+(dato che si aprirà sempre a tutto schermo sullo schermo indicato), per far
+ciò la miglior opzione attualmente disponibilie è \-geometry.
 Supportata almeno dai driver di uscita video direct3d, gl, gl2, x11 e xv.
 .
 .TP
@@ -3652,7 +3676,8 @@ E' lo stesso che \-vo xv:ck-method (vedi \-vo xv).
 .PD 1
 .
 .TP
-.B vdpau (con \-vc ffmpeg12vdpau, ffwmv3vdpau, ffvc1vdpau o ffh264vdpau)
+.B vdpau (con \-vc ffmpeg12vdpau, ffwmv3vdpau, ffvc1vdpau, ffh264vdpau
+o ffodivxvdpau)
 Driver di uscita video che usa VDPAU per la docodifica video via hardware.
 Gestisce anche la visualizzazione di video decodificato via software.
 .PD 0
@@ -3710,6 +3735,19 @@ Usa lo spazio colore ITU-R BT.709.
 .IPs 3
 Usa lo spazio colore SMPTE-240M.
 .RE
+.IPs hqscaling
+.RSss
+.IPs 0
+Utilizza la scalatura di default di VDPAU (default).
+.IPs 1\-9
+Applica la scalatura VDPAU ad alta qualità (serve hardware abbastanza potente).
+.RE
+.IPs force\-mixer
+Forza l'utilizzo del mixer VDPAU, che implementa tutte le opzioni di cui sopra
+(default).
+Usa noforce\-mixer per permettere la visualizzazione dello spazio colore BGRA.
+(Se viene usato il formato immagine BGRA, disabilita tutte le opzioni sopra e
+l'equalizzatore hardware.)
 .RE
 .PD 1
 .
@@ -3813,7 +3851,7 @@ Forza la modalità WarpOverlay!.
 .IPs dive
 Forza la modalità DIVE.
 .IPs (no)t23
-Abilita o disabilita i workaround per il laptop T23 (default: diabilita).
+Abilita o disabilita i workaround per il laptop T23 (default: disabilita).
 Prova ad abilitare questa opzione se la tua scheda video supporta solo
 l'ingrandimento.
 .RE
@@ -5344,7 +5382,7 @@ Imposta la frequenza di taglio in Hz.
 .IPs feed=<10\-150>
 Imposta il livello di feed per basse frequenze, in 0.1*dB.
 .IPs profile=<valore>
-Alcuni profili sono disponibili per comodità:
+Sono disponibili alcuni profili di comodo:
 .PD 0
 .RSs
 .IPs default
@@ -5442,11 +5480,11 @@ canali in eccesso sono troncati.
 .PD 0
 .RSs
 .IPs <numero_canali>
-numero di canali di uscita (1\-6)
+numero di canali di uscita (1\-8)
 .IPs "<numero>\ "
-numero di indirizzamenti (1\-6)
+numero di indirizzamenti (1\-8)
 .IPs <da1:a1:da2:a2:da3:a3:...>
-Coppie di numeri tra 0 e 5 che definiscono dove reindirizzare ogni canale.
+Coppie di numeri tra 0 e 7 che definiscono dove reindirizzare ogni canale.
 .RE
 .sp 1
 .RS
@@ -5552,7 +5590,7 @@ con questo filtro si trova nella sezione degli esempi verso la fine.
 .PD 0
 .RSs
 .IPs "<n>\ \ "
-numero di canali di uscita (1\-6)
+numero di canali di uscita (1\-8)
 .IPs <Lij>
 Quanta parte del canale di ingresso i è miscelata nel canale di uscita j (0\-1).
 Così all'inizio hai n numeri che dicono cosa fare col primo canale di ingresso,
@@ -5597,7 +5635,7 @@ basso possibile.
 Questo migliorerà l'esperienza del suono stereo o surround.
 .IPs "<ch>\ "
 Determina il numero di canale in cui inserire il sotto-canale audio.
-Il numero del canale può essere tra 0 e 5 (default: 5).
+Il numero del canale può essere tra 0 e 7 (default: 5).
 Nota che il numero di canali verrà automaticamente incrementato a <ch>
 se necessario.
 .RE
@@ -5622,7 +5660,7 @@ semplicemente somma e media i canali interessati.
 .RSs
 .IPs "<ch>\ "
 Determina il numero del canale su cui inserire il canale centrale.
-Il numero del canale può essere tra 0 e 5 (default: 5).
+Il numero del canale può essere tra 0 e 7 (default: 5).
 Nota che il numero di canali verrà automaticamente incrementato a <ch>
 se necessario.
 .RE
@@ -9685,7 +9723,7 @@ Attualmente funziona solo se la rilevazione del cambio scena è disattivata
 .
 .TP
 .B "gmc\ \ \ \ "
-Abilita la compensazione del moto globale (Global Motion Compensation),
+Abilita la compensazione del moto globale (Global Motion Compensation).
 .
 .TP
 .B (no)lowdelay
@@ -10761,7 +10799,7 @@ Esegue la miglior stima del movimento a quarto di pixel in tutti i
 tipi di macroblocchi candidati prima di selezionare il tipo migliore.
 Inoltre rifinisce con una metrica SATD i due vettori di movimento usati nei
 macroblocchi bidirezionali, invece di riutilizzare i vettori delle ricerche
-in avanti e indietro.
+in avanti e all'indietro.
 .IPs 6
 Abilita l'ottimizzazione rate-distorsion (?) dei tipi di macroblocco nei
 fotogrammi I e P (default).

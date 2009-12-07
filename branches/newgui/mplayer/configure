@@ -348,6 +348,8 @@ Codecs:
   --enable-encoder=ENCODER  enable specified FFmpeg encoder
   --disable-parser=PARSER   disable specified FFmpeg parser
   --enable-parser=PARSER    enable specified FFmpeg parser
+  --disable-protocol=PROTO  disable specified FFmpeg protocol
+  --enable-protocol=PROTO   enable specified FFmpeg protocol
   --disable-demuxer=DEMUXER disable specified FFmpeg demuxer
   --enable-demuxer=DEMUXER  enable specified FFmpeg demuxer
   --disable-muxer=MUXER     disable specified FFmpeg muxer
@@ -551,6 +553,7 @@ _libavdemuxers=$(echo $_libavdemuxers_all | sed -e 's/ LIB[A-Z0-9_]*_DEMUXER//g'
 _libavmuxers_all=$(sed -n 's/^[^#]*_MUX.*(.*, *\(.*\)).*/\1_muxer/p' libavformat/allformats.c | tr '[a-z]' '[A-Z]')
 _libavmuxers=$(echo $_libavmuxers_all | sed -e 's/ LIB[A-Z0-9_]*_MUXER//g' -e s/RTP_MUXER//)
 _libavprotocols_all=$(sed -n 's/^[^#]*PROTOCOL.*(.*, *\(.*\)).*/\1_protocol/p' libavformat/allformats.c | tr '[a-z]' '[A-Z]')
+_libavprotocols=""
 _libavcodec_so=auto
 _libavformat_a=auto
 _libavformat_so=auto
@@ -1154,6 +1157,8 @@ for ac_option do
   --disable-encoder=*) _libavencoders=$(echo $_libavencoders | sed "s/$(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')//g") ;;
   --enable-parser=*)   _libavparsers="$_libavparsers $(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')" ;;
   --disable-parser=*)  _libavparsers=$(echo $_libavparsers | sed "s/$(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')//g") ;;
+  --enable-protocol=*)   _libavprotocols="$_libavprotocols $(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')" ;;
+  --disable-protocol=*)  _libavprotocols=$(echo $_libavprotocols | sed "s/$(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')//g") ;;
   --enable-demuxer=*)  _libavdemuxers="$_libavdemuxers $(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')" ;;
   --disable-demuxer=*) _libavdemuxers=$(echo $_libavdemuxers | sed "s/$(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')//g") ;;
   --enable-muxer=*)    _libavmuxers="$_libavmuxers $(echo $ac_option | cut -d '=' -f 2 | tr '[a-z]' '[A-Z]')" ;;
@@ -2580,14 +2585,13 @@ echocheck "PIC"
 pic=no
 cat > $TMPC << EOF
 int main(void) {
-// keep in sync with mangle.h and libavutil/internal.h
 #if !(defined(__PIC__) || defined(__pic__) || defined(PIC))
 #error PIC not enabled
 #endif
     return 0;
 }
 EOF
-cc_check && pic=yes
+cc_check && pic=yes && extra_cflags="$extra_cflags -DPIC"
 echores $pic
 
 echocheck "yasm"
@@ -4349,18 +4353,21 @@ if test "$_vdpau" = auto ; then
   if test "$_dl" = yes ; then
     cat > $TMPC <<EOF
 #include <vdpau/vdpau_x11.h>
-int main(void) {return VDP_VIDEO_MIXER_FEATURE_HIGH_QUALITY_SCALING_L1;}
+int main(void) {
+    (void) vdp_device_create_x11(0, 0, 0, 0);
+    return VDP_VIDEO_MIXER_FEATURE_HIGH_QUALITY_SCALING_L1; }
 EOF
-    cc_check && _vdpau=yes
+    cc_check -lvdpau && _vdpau=yes
   fi
 fi
 if test "$_vdpau" = yes ; then
   def_vdpau='#define CONFIG_VDPAU 1'
+  libs_mplayer="$libs_mplayer -lvdpau"
   _vomodules="vdpau $_vomodules"
 else
   def_vdpau='#define CONFIG_VDPAU 0'
   _novomodules="vdpau $_novomodules"
-  _libavdecoders=$(echo $_libavdecoders | sed -e s/MPEG_VDPAU_DECODER// -e s/MPEG1_VDPAU_DECODER// -e s/H264_VDPAU_DECODER// -e s/WMV3_VDPAU_DECODER// -e s/VC1_VDPAU_DECODER//)
+  _libavdecoders=$(echo $_libavdecoders | sed -e s/MPEG_VDPAU_DECODER// -e s/MPEG1_VDPAU_DECODER// -e s/H264_VDPAU_DECODER// -e s/WMV3_VDPAU_DECODER// -e s/VC1_VDPAU_DECODER// -e s/MPEG4_VDPAU_DECODER//)
 fi
 echores "$_vdpau"
 
@@ -7230,7 +7237,7 @@ if test "$_x264" = auto ; then
   cat > $TMPC << EOF
 #include <inttypes.h>
 #include <x264.h>
-#if X264_BUILD < 78
+#if X264_BUILD < 79
 #error We do not support old versions of x264. Get the latest from git.
 #endif
 int main(void) { x264_encoder_open((void*)0); return 0; }
@@ -8456,6 +8463,7 @@ $(echo $_libavencoders | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 $(echo $_libavparsers | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 $(echo $_libavdemuxers | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 $(echo $_libavmuxers | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
+$(echo $_libavprotocols | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 $(echo $_libavbsfs | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 EOF
 
@@ -8916,6 +8924,9 @@ $def_ebx_available
 #else
 #define HAVE_EBP_AVAILABLE 0
 #endif
+
+#define FFMPEG_CONFIGURATION "--enable-gpl --enable-postproc"
+#define FFMPEG_LICENSE "GPL version 2 or later"
 
 /* External libraries used through libavcodec. */
 $def_faac_lavc

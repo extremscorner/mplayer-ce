@@ -1,4 +1,4 @@
-.\" $Revision: 29852 $
+.\" $Revision: 29905 $
 .\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .
@@ -431,7 +431,8 @@ Confirm choice.
 .RS
 .
 (The following keys are only valid if teletext support is enabled during
-compilation: They are used for controlling TV teletext.)
+compilation: They are used for controlling TV teletext, whose data may come
+from either an analog TV source or an MPEG Transport Stream.)
 .RE
 .PP
 .PD 0
@@ -1049,7 +1050,7 @@ Display the main menu at MPlayer startup.
 Permit MPlayer to receive pointer events reported by the video
 output driver.
 Necessary to select the buttons in DVD menus.
-Supported for X11 based VOs (x11, xv, xvmc, etc) and the gl, gl2, direct3d and
+Supported for X11-based VOs (x11, xv, xvmc, etc) and the gl, gl2, direct3d and
 corevideo VOs.
 .
 .TP
@@ -1325,6 +1326,8 @@ stereo
 surround
 .IPs 6
 full 5.1
+.IPs 8
+full 7.1
 .RE
 .PD 1
 .
@@ -3201,6 +3204,10 @@ A value of 1 means square pixels
 (correct for (almost?) all LCDs).
 .
 .TP
+.B \-name (X11 only)
+Set the window class name.
+.
+.TP
 .B \-nodouble
 Disables double buffering, mostly for debugging purposes.
 Double buffering fixes flicker by storing two frames in memory, and
@@ -3278,6 +3285,16 @@ do not know the screen resolution like fbdev, x11 and TV-out.
 Turns off xscreensaver at startup and turns it on again on exit.
 If your screensaver supports neither the XSS nor XResetScreenSaver
 API please use \-heartbeat\-cmd instead.
+.
+.TP
+.B \-title (also see \-use\-filename\-title)
+Set the window title.
+Supported by X11-based video output drivers.
+.
+.TP
+.B \-use\-filename\-title (also see \-title)
+Set the window title using the media filename, when not set with \-title.
+Supported by X11-based video output drivers.
 .
 .TP
 .B "\-vm \ \ \ "
@@ -3462,7 +3479,8 @@ Select the driver to use as source to overlay on top of X11.
 .PD 1
 .
 .TP
-.B vdpau (with \-vc ffmpeg12vdpau, ffwmv3vdpau, ffvc1vdpau or ffh264vdpau)
+.B vdpau (with \-vc ffmpeg12vdpau, ffwmv3vdpau, ffvc1vdpau, ffh264vdpau
+or ffodivxvdpau)
 Video output that uses VDPAU to decode video via hardware.
 Also supports displaying of software-decoded video.
 .PD 0
@@ -5212,11 +5230,11 @@ of input channels the exceeding channels are truncated.
 .PD 0
 .RSs
 .IPs <nch>
-number of output channels (1\-6)
+number of output channels (1\-8)
 .IPs "<nr>\ "
-number of routes (1\-6)
+number of routes (1\-8)
 .IPs <from1:to1:from2:to2:from3:to3:...>
-Pairs of numbers between 0 and 5 that define where to route each channel.
+Pairs of numbers between 0 and 7 that define where to route each channel.
 .RE
 .sp 1
 .RS
@@ -5319,7 +5337,7 @@ this filter can be found in the examples section near the end.
 .PD 0
 .RSs
 .IPs "<n>\ \ "
-number of output channels (1\-6)
+number of output channels (1\-8)
 .IPs <Lij>
 How much of input channel i is mixed into output channel j (0\-1).
 So in principle you first have n numbers saying what to do with the
@@ -5362,7 +5380,7 @@ For the best result try setting the cutoff frequency as low as possible.
 This will improve the stereo or surround sound experience.
 .IPs "<ch>\ "
 Determines the channel number in which to insert the sub-channel audio.
-Channel number can be between 0 and 5 (default: 5).
+Channel number can be between 0 and 7 (default: 5).
 Observe that the number of channels will automatically
 be increased to <ch> if necessary.
 .RE
@@ -5387,7 +5405,7 @@ halves the channels instead.
 .RSs
 .IPs "<ch>\ "
 Determines the channel number in which to insert the center channel.
-Channel number can be between 0 and 5 (default: 5).
+Channel number can be between 0 and 7 (default: 5).
 Observe that the number of channels will automatically
 be increased to <ch> if necessary.
 .RE

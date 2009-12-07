@@ -43,6 +43,17 @@ unsigned avformat_version(void)
     return LIBAVFORMAT_VERSION_INT;
 }
 
+const char * avformat_configuration(void)
+{
+    return FFMPEG_CONFIGURATION;
+}
+
+const char * avformat_license(void)
+{
+#define LICENSE_PREFIX "libavformat license: "
+    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+}
+
 /* fraction handling */
 
 /**
@@ -1302,6 +1313,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     int64_t av_uninit(pos_min), av_uninit(pos_max), pos, pos_limit;
     int64_t ts_min, ts_max, ts;
     int index;
+    int64_t ret;
     AVStream *st;
 
     if (stream_index < 0)
@@ -1354,7 +1366,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         return -1;
 
     /* do the seek */
-    url_fseek(s->pb, pos, SEEK_SET);
+    if ((ret = url_fseek(s->pb, pos, SEEK_SET)) < 0)
+        return ret;
 
     av_update_cur_dts(s, st, ts);
 
@@ -1504,7 +1517,8 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
 static int av_seek_frame_generic(AVFormatContext *s,
                                  int stream_index, int64_t timestamp, int flags)
 {
-    int index, ret;
+    int index;
+    int64_t ret;
     AVStream *st;
     AVIndexEntry *ie;
 
@@ -1856,6 +1870,7 @@ static void av_estimate_timings(AVFormatContext *ic, int64_t old_offset)
            the components */
         fill_all_stream_timings(ic);
     } else {
+        av_log(ic, AV_LOG_WARNING, "Estimating duration from bitrate, this may be inaccurate\n");
         /* less precise: use bitrate info */
         av_estimate_timings_from_bit_rate(ic);
     }
@@ -2586,11 +2601,11 @@ int av_write_header(AVFormatContext *s)
 }
 
 //FIXME merge with compute_pkt_fields
-static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
+static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt){
     int delay = FFMAX(st->codec->has_b_frames, !!st->codec->max_b_frames);
     int num, den, frame_size, i;
 
-//    av_log(st->codec, AV_LOG_DEBUG, "av_write_frame: pts:%"PRId64" dts:%"PRId64" cur_dts:%"PRId64" b:%d size:%d st:%d\n", pkt->pts, pkt->dts, st->cur_dts, delay, pkt->size, pkt->stream_index);
+//    av_log(s, AV_LOG_DEBUG, "av_write_frame: pts:%"PRId64" dts:%"PRId64" cur_dts:%"PRId64" b:%d size:%d st:%d\n", pkt->pts, pkt->dts, st->cur_dts, delay, pkt->size, pkt->stream_index);
 
 /*    if(pkt->pts == AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE)
         return -1;*/
@@ -2625,15 +2640,17 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     }
 
     if(st->cur_dts && st->cur_dts != AV_NOPTS_VALUE && st->cur_dts >= pkt->dts){
-        av_log(st->codec, AV_LOG_ERROR, "error, non monotone timestamps %"PRId64" >= %"PRId64"\n", st->cur_dts, pkt->dts);
+        av_log(s, AV_LOG_ERROR,
+               "st:%d error, non monotone timestamps %"PRId64" >= %"PRId64"\n",
+               st->index, st->cur_dts, pkt->dts);
         return -1;
     }
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts){
-        av_log(st->codec, AV_LOG_ERROR, "error, pts < dts\n");
+        av_log(s, AV_LOG_ERROR, "st:%d error, pts < dts\n", st->index);
         return -1;
     }
 
-//    av_log(NULL, AV_LOG_DEBUG, "av_write_frame: pts2:%"PRId64" dts2:%"PRId64"\n", pkt->pts, pkt->dts);
+//    av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%"PRId64" dts2:%"PRId64"\n", pkt->pts, pkt->dts);
     st->cur_dts= pkt->dts;
     st->pts.val= pkt->dts;
 
@@ -2660,7 +2677,7 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
 
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret = compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
+    int ret = compute_pkt_fields2(s, s->streams[pkt->stream_index], pkt);
 
     if(ret<0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
@@ -2774,7 +2791,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
         return 0;
 
 //av_log(NULL, AV_LOG_DEBUG, "av_interleaved_write_frame %d %"PRId64" %"PRId64"\n", pkt->size, pkt->dts, pkt->pts);
-    if(compute_pkt_fields2(st, pkt) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
+    if(compute_pkt_fields2(s, st, pkt) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return -1;
 
     if(pkt->dts == AV_NOPTS_VALUE && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
@@ -3229,6 +3246,7 @@ int av_get_frame_filename(char *buf, int buf_size,
 static void hex_dump_internal(void *avcl, FILE *f, int level, uint8_t *buf, int size)
 {
     int len, i, j, c;
+#undef fprintf
 #define PRINT(...) do { if (!f) av_log(avcl, level, __VA_ARGS__); else fprintf(f, __VA_ARGS__); } while(0)
 
     for(i=0;i<size;i+=16) {
@@ -3267,6 +3285,7 @@ void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size)
  //FIXME needs to know the time_base
 static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt, int dump_payload)
 {
+#undef fprintf
 #define PRINT(...) do { if (!f) av_log(avcl, level, __VA_ARGS__); else fprintf(f, __VA_ARGS__); } while(0)
     PRINT("stream #%d:\n", pkt->stream_index);
     PRINT("  keyframe=%d\n", ((pkt->flags & PKT_FLAG_KEY) != 0));

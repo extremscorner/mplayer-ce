@@ -304,7 +304,7 @@ static void free_extensions(char **extensions){
   }
 }
 #ifdef GEKKO
-extern int network_inited;
+extern int network_initied;
 extern int mounting_usb;
 #endif
 static int open_dir(menu_t* menu,char* args) {
@@ -359,7 +359,8 @@ strcpy(menu_dir,mpriv->dir);
 	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
   	//if(!playing_usb)
   	{
-  		while(mounting_usb)usleep(500);
+  		while(mounting_usb)usleep(50);
+  		mounting_usb=1;
   		usleep(500);
   		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
   		if(!DeviceMounted("usb")) 
@@ -368,8 +369,10 @@ strcpy(menu_dir,mpriv->dir);
 		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
 		  	update_osd_msg();
   			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+  			mounting_usb=0;
 			goto error_exit;
 		}
+  		mounting_usb=0;
 	}
   } 
   else if(!strcmp(mpriv->dir,"ntfs_usb:/"))
@@ -377,7 +380,8 @@ strcpy(menu_dir,mpriv->dir);
 	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
   	//if(!playing_usb)
   	{
-  		while(mounting_usb)usleep(500);
+  		while(mounting_usb)usleep(50);
+  		mounting_usb=1;
   		usleep(500);
   		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
   		if(!DeviceMounted("ntfs_usb")) 
@@ -386,8 +390,10 @@ strcpy(menu_dir,mpriv->dir);
 		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
 		  	update_osd_msg();
   			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+  			mounting_usb=0;
 			goto error_exit;
 		}
+  		mounting_usb=0;
 	}
   } 
   else if(!strcmp(mpriv->dir,"dvd:/"))
@@ -405,7 +411,7 @@ strcpy(menu_dir,mpriv->dir);
   { // reconnect samba if needed
 	  char device[5]="smbx";
 	  
-	  if(network_inited==0)
+	  if(network_initied==0)
 	  {
   		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Network not yet initialized, Please Wait");
   		  update_osd_msg();
@@ -427,7 +433,7 @@ strcpy(menu_dir,mpriv->dir);
   { // reconnect ftp if needed
 	  char device[5]="ftpx";
 	  
-	  if(network_inited==0)
+	  if(network_initied==0)
 	  {
   		  set_osd_msg(124,1,2000,"Network not yet initialized, Please Wait");
   		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));

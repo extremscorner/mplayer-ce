@@ -34,11 +34,13 @@
 #define IMGFMT_BGRA (IMGFMT_RGB32|64)
 #define IMGFMT_ARGB IMGFMT_BGR32
 #define IMGFMT_RGBA (IMGFMT_BGR32|64)
+#define IMGFMT_RGB48NE IMGFMT_RGB48BE
 #else
 #define IMGFMT_ABGR (IMGFMT_BGR32|64)
 #define IMGFMT_BGRA IMGFMT_BGR32
 #define IMGFMT_ARGB (IMGFMT_RGB32|64)
 #define IMGFMT_RGBA IMGFMT_RGB32
+#define IMGFMT_RGB48NE IMGFMT_RGB48LE
 #endif
 
 /* old names for compatibility */
@@ -120,6 +122,7 @@
 #define IMGFMT_VDPAU_H264          (IMGFMT_VDPAU|0x03)
 #define IMGFMT_VDPAU_WMV3          (IMGFMT_VDPAU|0x04)
 #define IMGFMT_VDPAU_VC1           (IMGFMT_VDPAU|0x05)
+#define IMGFMT_VDPAU_MPEG4         (IMGFMT_VDPAU|0x06)
 
 typedef struct {
     void* data;

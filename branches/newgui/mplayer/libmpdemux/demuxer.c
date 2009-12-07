@@ -39,6 +39,7 @@
 #include "mf.h"
 
 #include "libaf/af_format.h"
+#include "libmpcodecs/dec_teletext.h"
 
 #ifdef CONFIG_ASS
 #include "libass/ass.h"
@@ -390,6 +391,8 @@ void free_demuxer(demuxer_t *demuxer)
         }
         free(demuxer->attachments);
     }
+    if (demuxer->teletext)
+        teletext_control(demuxer->teletext, TV_VBI_CONTROL_STOP, NULL);
     free(demuxer);
 }
 
@@ -538,7 +541,7 @@ int demux_read_data(demux_stream_t *ds, unsigned char *mem, int len)
     int bytes = 0;
     while (len > 0) {
         x = ds->buffer_size - ds->buffer_pos;
-        if (x == 0) {
+        if (x <= 0) {
             if (!ds_fill_buffer(ds))
                 return bytes;
         } else {

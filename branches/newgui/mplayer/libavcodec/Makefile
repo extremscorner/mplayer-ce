@@ -51,6 +51,7 @@ OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3tab.o   \
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o
+OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o
 OBJS-$(CONFIG_AMV_DECODER)             += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_APE_DECODER)             += apedec.o
 OBJS-$(CONFIG_ASV1_DECODER)            += asv1.o mpeg12data.o
@@ -601,6 +602,7 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
 OBJS-$(ARCH_ARM)                       += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
                                           arm/fft_init_arm.o            \
+                                          arm/h264pred_init_arm.o       \
                                           arm/jrevdct_arm.o             \
                                           arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
@@ -626,6 +628,7 @@ NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
 
 NEON-OBJS-$(CONFIG_H264_DECODER)       += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o           \
+                                          arm/h264pred_neon.o           \
 
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
@@ -704,8 +707,10 @@ $(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 
 ifdef CONFIG_MPEGAUDIO_HP
 $(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=23
+$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=23
 else
 $(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=15
+$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=15
 endif
 
 $(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)tableprint.c
@@ -716,4 +721,5 @@ $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
 
 ifdef CONFIG_HARDCODED_TABLES
 $(SUBDIR)mpegaudiodec.o: $(SUBDIR)mpegaudio_tables.h
+$(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
 endif

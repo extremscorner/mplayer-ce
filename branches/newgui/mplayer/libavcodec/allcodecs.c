@@ -123,6 +123,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (MPEG1VIDEO, mpeg1video);
     REGISTER_ENCDEC  (MPEG2VIDEO, mpeg2video);
     REGISTER_ENCDEC  (MPEG4, mpeg4);
+    REGISTER_DECODER (MPEG4_VDPAU, mpeg4_vdpau);
     REGISTER_DECODER (MPEGVIDEO, mpegvideo);
     REGISTER_DECODER (MPEG_VDPAU, mpeg_vdpau);
     REGISTER_DECODER (MPEG1_VDPAU, mpeg1_vdpau);
@@ -199,6 +200,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (AAC, aac);
     REGISTER_ENCDEC  (AC3, ac3);
     REGISTER_ENCDEC  (ALAC, alac);
+    REGISTER_DECODER (ALS, als);
     REGISTER_DECODER (APE, ape);
     REGISTER_DECODER (ATRAC1, atrac1);
     REGISTER_DECODER (ATRAC3, atrac3);

@@ -118,8 +118,7 @@ static s32 USB2Storage_Initialize(int verbose)
 	u32 size = 0;
 	char *devicepath = NULL;
 	
-	if(usb2_inited)
-		return ret;
+	//if(usb2_inited)	return ret;
 
 	if (usb2_mutex == LWP_MUTEX_NULL)
 		LWP_MutexInit(&usb2_mutex, false);
@@ -132,11 +131,15 @@ static s32 USB2Storage_Initialize(int verbose)
 	if (hId < 0)
 	{
 		LWP_MutexUnlock(usb2_mutex);
+		debug_printf("error IPC_ENOMEM\n",fd);
 		return IPC_ENOMEM;
 	}
 
 	if (USB2CreateHeap() != IPC_OK)
+	{
+		debug_printf("error USB2 IPC_ENOMEM\n",fd);
 		return IPC_ENOMEM;
+	}
 
 	if (fixed_buffer == NULL)
 		fixed_buffer = __lwp_heap_allocate(&usb2_heap, USB2_BUFFER);
@@ -170,7 +173,8 @@ static s32 USB2Storage_Initialize(int verbose)
 			debug_printf("usb2 error init\n");
 		else
 			size = IOS_IoctlvFormat(hId, fd, USB_IOCTL_UMS_GET_CAPACITY, ":i",
-					&sector_size);debug_printf("usb2 GET_CAPACITY: %d\n", size);
+					&sector_size);
+		debug_printf("usb2 GET_CAPACITY: %d\n", size);
 
 		if (size == 0)
 			ret = -2012;
@@ -330,7 +334,7 @@ static bool __usb2storage_IsInserted(void)
 	return ret;
 }
 
-static s32 __usb2storage_ReadSectors(u32 sector, u32 numSectors, void *buffer)
+static bool __usb2storage_ReadSectors(u32 sector, u32 numSectors, void *buffer)
 {
 	s32 ret = 1;
 	u32 sectors = 0;
@@ -362,17 +366,18 @@ static s32 __usb2storage_ReadSectors(u32 sector, u32 numSectors, void *buffer)
 					sector, sectors, dest, sector_size * sectors);
 
 		dest += sector_size * sectors;
-		if (ret < 1)
-			break;
+		if (ret < 1) break;
 
 		sector += sectors;
 		numSectors -= sectors;
 	}
+	if(ret<1)usb2 = -1;
 	LWP_MutexUnlock(usb2_mutex);
-	return ret;
+	if (ret < 1) return false;
+	return true;
 }
 
-static s32 __usb2storage_WriteSectors(u32 sector, u32 numSectors, const void *buffer)
+static bool __usb2storage_WriteSectors(u32 sector, u32 numSectors, const void *buffer)
 {
 	s32 ret = 1;
 	u32 sectors = 0;
@@ -404,11 +409,14 @@ static s32 __usb2storage_WriteSectors(u32 sector, u32 numSectors, const void *bu
 		else
 			ret = IOS_IoctlvFormat(hId, fd, USB_IOCTL_UMS_WRITE_SECTORS,
 					"ii:d", sector, sectors, dest, sector_size * sectors);
+		if (ret < 1)break;
+
 		dest += sector_size * sectors;
 		sector += sectors;
 	}
 	LWP_MutexUnlock(usb2_mutex);
-	return ret;
+	if(ret < 1 ) return false;
+	return true;
 }
 
 static bool __usb2storage_ClearStatus(void)
