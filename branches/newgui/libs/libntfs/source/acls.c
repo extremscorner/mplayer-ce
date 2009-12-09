@@ -4,7 +4,7 @@
  *	This module is part of ntfs-3g library, but may also be
  *	integrated in tools running over Linux or Windows
  *
- * Copyright (c) 2007-2008 Jean-Pierre Andre
+ * Copyright (c) 2007-2009 Jean-Pierre Andre
  *
  * This program/include file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
@@ -635,12 +635,14 @@ BOOL ntfs_valid_descr(const char *securattr, unsigned int attrsz)
 			 * but "Dr Watson" has SE_DACL_PRESENT though no DACL
 			 */
 		&& (!offdacl
-                    || ((pdacl->revision == ACL_REVISION)
-		       && (phead->control & SE_DACL_PRESENT)))
+		    || ((phead->control & SE_DACL_PRESENT)
+			&& ((pdacl->revision == ACL_REVISION)
+			   || (pdacl->revision == ACL_REVISION_DS))))
 			/* same for SACL */
 		&& (!offsacl
-                    || ((psacl->revision == ACL_REVISION)
-		       && (phead->control & SE_SACL_PRESENT)))) {
+		    || ((phead->control & SE_SACL_PRESENT)
+			&& ((psacl->revision == ACL_REVISION)
+			    || (psacl->revision == ACL_REVISION_DS))))) {
 			/*
 			 *  Check the DACL and SACL if present
 			 */
@@ -2131,9 +2133,10 @@ return (0);
 		}
 	}
 
-	if (!ok)
+	if (!ok) {
 		errno = EINVAL;
-	else {
+		pos = 0;
+	} else {
 		/* an ACE for administrators */
 		/* always full access */
 

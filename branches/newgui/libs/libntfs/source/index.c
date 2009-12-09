@@ -558,7 +558,7 @@ static int ntfs_ie_lookup(const void *key, const int key_len,
 	*vcn = ntfs_ie_get_vcn(ie);
 	if (*vcn < 0) {
 		errno = EINVAL;
-		ntfs_log_perror("Negative vcn in inode %llu\n",
+		ntfs_log_perror("Negative vcn in inode %llu",
 			       	(unsigned long long)icx->ni->mft_no);
 		return STATUS_ERROR;
 	}
@@ -1771,7 +1771,8 @@ out:
  *
  * Return 0 on success or -1 on error with errno set to the error code.
  */
-static int ntfs_index_rm(ntfs_index_context *icx)
+/*static JPA*/
+int ntfs_index_rm(ntfs_index_context *icx)
 {
 	INDEX_HEADER *ih;
 	int err, ret = STATUS_OK;

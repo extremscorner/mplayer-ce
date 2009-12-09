@@ -109,6 +109,10 @@ install:
 	cp ../lib/wii/libntfs.a $(DEVKITPRO)/libogc/lib/wii
 	cp ../lib/cube/libntfs.a $(DEVKITPRO)/libogc/lib/cube
 
+wii-install:
+	cp ../include/ntfs.h $(DEVKITPRO)/libogc/include
+	cp ../lib/wii/libntfs.a $(DEVKITPRO)/libogc/lib/wii
+
 #---------------------------------------------------------------------------------
 else
 
