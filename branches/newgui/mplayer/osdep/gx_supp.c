@@ -64,6 +64,9 @@ extern int pause_gui;
 #ifdef WIILIB
 extern u32 whichfb;
 extern u32 *xfb[2];
+
+extern int screenwidth;
+extern int screenheight;
 #else
 static u32 whichfb;
 static u32 *xfb[2];
