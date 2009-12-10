@@ -1844,14 +1844,20 @@ void update_osd_msg(void) {
             else
                 percentage_text[0] = 0;
 
-            if (osd_level == 3)
-                snprintf(osd_text_timer, 63,
-                         "%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f) m2(%.2f)",
-                         mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
-                         len/3600,(len/60)%60,len%60,percentage_text, (int)cache_fill_status,
-						 	((float)((char*)SYS_GetArenaHi()-(char*)SYS_GetArenaLo()))/0x100000,
-							 ((float)((char*)SYS_GetArena2Hi()-(char*)SYS_GetArena2Lo()))/0x100000);
-            else
+            if (osd_level >= 3) {
+				if (osd_level == 4)
+					snprintf(osd_text_timer, 63,
+							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f) m2(%.2f)",
+							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
+							len/3600,(len/60)%60,len%60,percentage_text, (int)cache_fill_status,
+								((float)((char*)SYS_GetArenaHi()-(char*)SYS_GetArenaLo()))/0x100000,
+								((float)((char*)SYS_GetArena2Hi()-(char*)SYS_GetArena2Lo()))/0x100000);
+				else
+					snprintf(osd_text_timer, 63,
+							"%c %02d:%02d:%02d / %02d:%02d:%02d%s",
+							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
+							len/3600,(len/60)%60,len%60,percentage_text);
+            } else
                 snprintf(osd_text_timer, 63, "%c %02d:%02d:%02d%s",
                          mpctx->osd_function,pts/3600,(pts/60)%60,
                          pts%60,percentage_text);

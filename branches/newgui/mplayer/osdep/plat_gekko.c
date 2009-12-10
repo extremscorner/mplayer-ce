@@ -63,7 +63,7 @@
 #undef abort
 
 
-#define MPCE_VERSION "0.761 b1 07/12"
+#define MPCE_VERSION "0.761 b1 10/12"
 
 //#define DEBUG_INIT
 #define USE_NET_THREADS
@@ -856,10 +856,10 @@ static int LoadParams()
 	{
 	    //{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},  //deprecated
 	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	    {   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
-	    {   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
-	    {   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
-	    {   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
+	    //{   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
+	    //{   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
+	    //{   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
+	    //{   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
 		{	"cache", &stream_cache_size, CONF_TYPE_INT, CONF_RANGE, 32, 1048576, NULL},	 
 	    {   "restore_points", &enable_restore_points, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "watchdog", &enable_watchdog, CONF_TYPE_FLAG, 0, 0, 1, NULL},
@@ -1026,8 +1026,8 @@ void plat_init (int *argc, char **argv[]) {
 	printf_debug("Loading params\n");
 	LoadParams();
 	//GX_SetComponentFix(component_fix); //deprecated
-	GX_SetCamPosZ(gxzoom);
-	GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
+	//GX_SetCamPosZ(gxzoom);
+	//GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
 
 	if(video_mode>0)
 	{

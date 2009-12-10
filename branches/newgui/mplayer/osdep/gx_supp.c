@@ -29,6 +29,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <unistd.h>
+#include <math.h>
 #include <ogc/mutex.h>
 #include <ogc/lwp.h>
 #include "gx_supp.h"
@@ -67,6 +68,9 @@ extern u32 *xfb[2];
 static u32 whichfb;
 static u32 *xfb[2];
 GXRModeObj *vmode = NULL;
+
+int screenwidth = 640;
+int screenheight = 480;
 #endif
 static u32 whichtex=0;
 
@@ -141,9 +145,28 @@ void ChangeVideoMode(int video_mode)
 		default:
 			return;
 	}
-
-	vmode->viWidth = 678;
-	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
+	
+	vmode->viHeight *= 0.95; vmode->viHeight += fmod(vmode->viHeight, 2);
+	screenheight = vmode->efbHeight;
+	
+	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+	{
+        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.95;
+		screenwidth = (int)(((float)screenheight / 9) * 16);
+	}
+	else
+	{
+        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.93;
+		screenwidth = (int)(((float)screenheight / 3) * 4);
+	}
+	
+	screenwidth -= fmod(screenwidth, 4);
+	
+	vmode->xfbHeight *= 0.95; vmode->xfbHeight += fmod(vmode->xfbHeight, 2);
+	vmode->efbHeight *= 0.95; vmode->efbHeight += fmod(vmode->efbHeight, 2);
+	
+	vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
+	vmode->viYOrigin = (screenheight - vmode->viHeight) / 2;
 
 	VIDEO_Configure(vmode);
 	VIDEO_Flush();
@@ -173,10 +196,28 @@ void ChangeVideoMode(int video_mode)
 void GX_InitVideo()
 {
 	vmode = VIDEO_GetPreferredMode(NULL);
-
-	vmode->viWidth = 678;
-
-	vmode->viXOrigin = ((VI_MAX_WIDTH_PAL - vmode->viWidth) / 2);
+	
+	vmode->viHeight *= 0.95; vmode->viHeight += fmod(vmode->viHeight, 2);
+	screenheight = vmode->efbHeight;
+	
+	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+	{
+        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.95;
+		screenwidth = (int)(((float)screenheight / 9) * 16);
+	}
+	else
+	{
+        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.93;
+		screenwidth = (int)(((float)screenheight / 3) * 4);
+	}
+	
+	screenwidth -= fmod(screenwidth, 4);
+	
+	vmode->xfbHeight *= 0.95; vmode->xfbHeight += fmod(vmode->xfbHeight, 2);
+	vmode->efbHeight *= 0.95; vmode->efbHeight += fmod(vmode->efbHeight, 2);
+	
+	vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
+	vmode->viYOrigin = (screenheight - vmode->viHeight) / 2;
 
 	VIDEO_Configure(vmode);
 
@@ -520,8 +561,8 @@ void DrawMPlayer()
 		Mtx44 p;
 		draw_initYUV();
 		draw_scaling();
-		guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
-		GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
+		guOrtho(p, screenheight / 2, -(screenheight / 2), -(screenwidth / 2), screenwidth / 2, 10, 1000);
+		GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
 		drawMode = 0;
 	}
 	#endif
@@ -662,8 +703,8 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	GX_SetCullMode(GX_CULL_NONE);
 	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
 	GX_SetDispCopyGamma(GX_GM_1_0);
-	guPerspective(p, 60, 1.33f, 10.0f, 1000.0f);
-	GX_LoadProjectionMtx(p, GX_PERSPECTIVE);
+	guOrtho(p, screenheight / 2, -(screenheight / 2), -(screenwidth / 2), screenwidth / 2, 10, 1000);
+	GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
 
 	GX_Flush();
 	GX_UpdateSquare();

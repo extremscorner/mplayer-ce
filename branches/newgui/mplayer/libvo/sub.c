@@ -197,7 +197,7 @@ inline static void vo_update_text_osd(mp_osd_obj_t* obj,int dxs,int dys){
 	int font;
 
         obj->bbox.x1=obj->x=x;
-        obj->bbox.y1=obj->y=10;
+        obj->bbox.y1=obj->y=20;
 
         while (*cp){
           uint16_t c=utf8_get_char(&cp);
