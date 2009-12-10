@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <limits.h>
+#include <locale.h>
 
 #ifdef GEKKO
 #include <sdcard/wiisd_io.h>
@@ -54,7 +55,13 @@ extern bool playing_usb;
 #include "input/input.h"
 #include "osdep/keycodes.h"
 
+
+#include "fsysloc.h"
+
 #define MENU_KEEP_PATH "mp_current_path"
+
+fsysloc_table_t *fsysloc_table = NULL;
+static int fsysloc_table_init_flag = 0;
 
 int menu_keepdir = 0;
 char *menu_chroot = NULL;
@@ -217,7 +224,21 @@ static char* replace_path(char* title , char* dir , int escape) {
 
 typedef int (*kill_warn)(const void*, const void*);
 
-static int mylstat(char *dir, char *file,struct stat* st) {
+static int mystat( const fsysloc_t *fsysloc, const char *dir, struct stat *st)
+{
+    char *iconv_buf;
+    int ret;
+
+    iconv_buf = fsysloc_iconv_to_fsys( fsysloc, dir);
+
+    ret = stat( iconv_buf, st);
+
+    if ( iconv_buf != dir) {
+        free(iconv_buf);
+    }
+    return ret;
+}
+static int mylstat(const fsysloc_t *fsysloc, char *dir, char *file,struct stat* st) {
   int l = strlen(dir) + strlen(file);
   char s[l+2];
   if (!strcmp("..", file)) {
@@ -236,12 +257,12 @@ static int mylstat(char *dir, char *file,struct stat* st) {
       slash = strrchr(s,'\\');
 #endif
     if (!slash)
-      return stat(dir,st);
+      return mystat( fsysloc,dir,st);
     slash[1] = '\0';
-    return stat(s,st);
+    return mystat( fsysloc,s,st);
   }
   sprintf(s,"%s/%s",dir,file);
-  return stat(s,st);
+  return mystat(fsysloc,s,st);
 }
 
 static int compare(char **a, char **b){
@@ -318,7 +339,10 @@ static int open_dir(menu_t* menu,char* args) {
   DIR* dirp;
   extern int file_filter;
   char **extensions, **elem, *ext;
-
+  fsysloc_t *fsysloc = NULL;
+  char *locale_changed = NULL;
+  char *d_name_save = NULL;
+  char *d_name_iconv = NULL;
 fast_pause();	  	  
 
   menu_list_init(menu);
@@ -451,8 +475,22 @@ strcpy(menu_dir,mpriv->dir);
   } 
 #endif
 #endif
+
+
+  if ( !fsysloc_table_init_flag) {
+     char cad[100];
+     sprintf( cad, "%s%s", MPLAYER_CONFDIR, "/fsysloc.conf");
+     fsysloc_table = fsysloc_table_init( cad);
+     fsysloc_table_init_flag = 1;
+  }
+  fsysloc = fsysloc_table_locate( fsysloc_table, mpriv->dir);
+  locale_changed = fsysloc_setlocale( fsysloc);
+
+  d_name_save = mpriv->dir;
+  d_name_iconv = fsysloc_iconv_to_fsys( fsysloc, d_name_save);
+
   mpriv->p.title = replace_path(mpriv->title,mpriv->dir,0);
-  if ((dirp = opendir (mpriv->dir)) == NULL){
+  if ((dirp = opendir (d_name_iconv)) == NULL){
     mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_LIBMENU_OpendirError, strerror(errno));
     goto error_exit;
   }
@@ -488,11 +526,17 @@ strcpy(menu_dir,mpriv->dir);
           && !strncmp (mpriv->dir, menu_chroot, len))
         continue;
     }
-    if (mylstat(args,dp->d_name,&st))
+    if ( d_name_iconv!=NULL && d_name_iconv!=d_name_save) {
+        free( d_name_iconv);
+    }
+    d_name_save = dp->d_name;
+    d_name_iconv = fsysloc_iconv_from_fsys( fsysloc, d_name_save);
+
+    if (mylstat(fsysloc, args, d_name_iconv,&st))
       continue;
       
     if (file_filter && extensions && !S_ISDIR(st.st_mode)) {
-      if((ext = strrchr(dp->d_name,'.')) == NULL)
+      if((ext = strrchr(d_name_iconv,'.')) == NULL)
         continue;
       ext++;
       elem = extensions;
@@ -513,19 +557,25 @@ strcpy(menu_dir,mpriv->dir);
       namelist=tp;
     }
 
-    namelist[n] = (char *) malloc(strlen(dp->d_name) + 2);
+    namelist[n] = (char *) malloc(strlen(d_name_iconv) + 2);
     if(namelist[n] == NULL){
       mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_LIBMENU_MallocError, strerror(errno));
       n--;
       goto bailout;
     }
 
-    strcpy(namelist[n], dp->d_name);
+    strcpy(namelist[n], d_name_iconv);
     if(S_ISDIR(st.st_mode))
       strcat(namelist[n], "/");
     n++;
   }
 bailout:
+    if ( d_name_iconv!=NULL && d_name_iconv!=d_name_save) {
+        free( d_name_iconv);
+    }
+    d_name_iconv = d_name_save = NULL;
+
+    fsysloc_restorelocale( fsysloc, locale_changed);
   free_extensions (extensions);
   closedir(dirp);
 
@@ -552,6 +602,11 @@ fast_continue();
   return 1;
   
 error_exit:
+    if ( d_name_iconv!=NULL && d_name_iconv!=d_name_save) {
+        free( d_name_iconv);
+    }
+    fsysloc_restorelocale( fsysloc, locale_changed);
+
 fast_continue();
 return 0;  
 }

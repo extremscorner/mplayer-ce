@@ -592,6 +592,7 @@ SRCS_MPLAYER-$(LIBMENU)      += libmenu/menu.c \
                                 libmenu/menu_pt.c \
                                 libmenu/menu_txt.c \
                                 libmenu/vf_menu.c \
+                                libmenu/fsysloc.c \
 
 SRCS_MPLAYER-$(LIBMENU_DVBIN) += libmenu/menu_dvbin.c
 SRCS_MPLAYER-$(LIRC)          += input/lirc.c
@@ -877,6 +878,9 @@ osdep/plat_gekko-wiilib.o: osdep/plat_gekko.c
 libmenu/menu_filesel-wiilib.o: libmenu/menu_filesel.c
 	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
 
+libmenu/fsysloc-wiilib.o: libmenu/fsysloc.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
 osdep/getch2-gekko-wiilib.o: osdep/getch2-gekko.c
 	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
 
@@ -885,11 +889,12 @@ A2 =	$(subst mplayer.o,mplayer-wiilib.o,$(A1))
 A3 =	$(subst plat_gekko.o,plat_gekko-wiilib.o,$(A2))
 A4 =	$(subst command.o,command-wiilib.o,$(A3))
 A5 =	$(subst menu_filesel.o,menu_filesel-wiilib.o,$(A4))
+A6 =	$(subst fsysloc.o,fsysloc-wiilib.o,$(A5))
 
-A6 =	$(subst getch2-gekko.o,getch2-gekko-wiilib.o,$(OBJS_COMMON))
+A7 =	$(subst getch2-gekko.o,getch2-gekko-wiilib.o,$(OBJS_COMMON))
 
-MPLAYERWIILIB = $(A5) 
-MPLAYERWIILIB += $(A6) 
+MPLAYERWIILIB = $(A6) 
+MPLAYERWIILIB += $(A7) 
 
 libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
 	rm -f $@
