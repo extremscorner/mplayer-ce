@@ -1245,12 +1245,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             && track->codec_priv.size >= 40
             && track->codec_priv.data != NULL) {
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
-<<<<<<< .working
-            codec_id = ff_codec_get_id(ff_codec_bmp_tags, track->video.fourcc);
-=======
             codec_id = ff_codec_get_id(ff_codec_bmp_tags, track->video.fourcc);
             extradata_offset = 40;
->>>>>>> .merge-right.r523
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
                    && track->codec_priv.size >= 14
                    && track->codec_priv.data != NULL) {

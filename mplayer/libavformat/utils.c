@@ -530,13 +530,9 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     av_freep(&pd->buf);
     if (pb)
         url_fclose(pb);
-<<<<<<< .working
-    av_freep(ic_ptr);
-=======
     if (ap && ap->prealloced_context)
         av_free(*ic_ptr);
     *ic_ptr = NULL;
->>>>>>> .merge-right.r523
     return err;
 
 }
@@ -796,16 +792,10 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int num, den, presentation_delayed, delay, i;
     int64_t offset;
 
-<<<<<<< .working
-    if (pc && pc->pict_type == FF_B_TYPE)
-        st->codec->has_b_frames = 1;
-
-=======
     if (st->codec->codec_id != CODEC_ID_H264 && pc && pc->pict_type == FF_B_TYPE)
         //FIXME Set low_delay = 0 when has_b_frames = 1
         st->codec->has_b_frames = 1;
 
->>>>>>> .merge-right.r523
     /* do we have a video B-frame ? */
     delay= st->codec->has_b_frames;
     presentation_delayed = 0;
@@ -1150,15 +1140,6 @@ static void flush_packet_queue(AVFormatContext *s)
         av_free_packet(&pktl->pkt);
         av_free(pktl);
     }
-<<<<<<< .working
-    while(s->raw_packet_buffer){
-        pktl = s->raw_packet_buffer;
-        s->raw_packet_buffer = pktl->next;
-        av_free_packet(&pktl->pkt);
-        av_free(pktl);
-    }
-    s->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
-=======
     while(s->raw_packet_buffer){
         pktl = s->raw_packet_buffer;
         s->raw_packet_buffer = pktl->next;
@@ -1168,7 +1149,6 @@ static void flush_packet_queue(AVFormatContext *s)
     s->packet_buffer_end=
     s->raw_packet_buffer_end= NULL;
     s->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
->>>>>>> .merge-right.r523
 }
 
 /*******************************************************/
@@ -2144,11 +2124,7 @@ int av_find_stream_info(AVFormatContext *ic)
         /* we did not get all the codec info, but we read too much data */
         if (read_size >= ic->probesize) {
             ret = count;
-<<<<<<< .working
-            av_log(ic, AV_LOG_DEBUG, "MAX_READ_SIZE:%d reached\n", ic->probesize);
-=======
             av_log(ic, AV_LOG_WARNING, "MAX_READ_SIZE:%d reached\n", ic->probesize);
->>>>>>> .merge-right.r523
             break;
         }
 
@@ -2183,13 +2159,8 @@ int av_find_stream_info(AVFormatContext *ic)
 
         st = ic->streams[pkt->stream_index];
         if(codec_info_nb_frames[st->index]>1) {
-<<<<<<< .working
-            if (st->time_base.den > 0 && av_rescale_q(codec_info_duration[st->index], st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration){
-                av_log(ic, AV_LOG_DEBUG, "max_analyze_duration reached\n");
-=======
             if (st->time_base.den > 0 && av_rescale_q(codec_info_duration[st->index], st->time_base, AV_TIME_BASE_Q) >= ic->max_analyze_duration){
                 av_log(ic, AV_LOG_WARNING, "max_analyze_duration reached\n");
->>>>>>> .merge-right.r523
                 break;
             }
             codec_info_duration[st->index] += pkt->duration;

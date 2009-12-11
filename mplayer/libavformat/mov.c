@@ -430,17 +430,10 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
     AVStream *st;
     int tag, len;
 
-<<<<<<< .working
-    if (c->fc->nb_streams < 1)
-        return 0;
-    st = c->fc->streams[c->fc->nb_streams-1];
-
-=======
     if (fc->nb_streams < 1)
         return 0;
     st = fc->streams[fc->nb_streams-1];
 
->>>>>>> .merge-right.r523
     get_be32(pb); /* version + flags */
     len = mp4_read_descr(fc, pb, &tag);
     if (tag == MP4ESDescrTag) {
@@ -457,15 +450,9 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
         get_be32(pb); /* max bitrate */
         get_be32(pb); /* avg bitrate */
 
-<<<<<<< .working
-        st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
-        dprintf(c->fc, "esds object type id %d\n", object_type_id);
-        len = mp4_read_descr(c, pb, &tag);
-=======
         st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
         dprintf(fc, "esds object type id 0x%02x\n", object_type_id);
         len = mp4_read_descr(fc, pb, &tag);
->>>>>>> .merge-right.r523
         if (tag == MP4DecSpecificDescrTag) {
             dprintf(fc, "Specific MPEG4 header len=%d\n", len);
             if((uint64_t)len > (1<<30))
@@ -1416,33 +1403,6 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
-<<<<<<< .working
-    get_be32(pb); // version + flags
-
-    sc->dts_shift = get_be32(pb);
-    dprintf(c->fc, "dts shift %d\n", sc->dts_shift);
-
-    get_be32(pb); // least dts to pts delta
-    get_be32(pb); // greatest dts to pts delta
-    get_be32(pb); // pts start
-    get_be32(pb); // pts end
-
-    return 0;
-}
-
-static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
-{
-    AVStream *st;
-    MOVStreamContext *sc;
-    unsigned int i, entries;
-
-=======
->>>>>>> .merge-right.r523
-    if (c->fc->nb_streams < 1)
-        return 0;
-    st = c->fc->streams[c->fc->nb_streams-1];
-    sc = st->priv_data;
-
     get_byte(pb); /* version */
     get_be24(pb); /* flags */
     entries = get_be32(pb);
@@ -1462,16 +1422,12 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
         sc->ctts_data[i].count   = count;
         sc->ctts_data[i].duration= duration;
-<<<<<<< .working
-    }
-=======
         if (duration < 0)
             sc->dts_shift = FFMAX(sc->dts_shift, -duration);
     }
 
     dprintf(c->fc, "dts shift %d\n", sc->dts_shift);
 
->>>>>>> .merge-right.r523
     return 0;
 }
 
@@ -1544,12 +1500,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
 
                 current_offset += sample_size;
-<<<<<<< .working
-                current_dts += sc->stts_data[stts_index].duration;
-=======
                 stream_size += sample_size;
                 current_dts += sc->stts_data[stts_index].duration;
->>>>>>> .merge-right.r523
                 distance++;
                 stts_sample++;
                 current_sample++;
@@ -1559,13 +1511,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
             }
         }
-<<<<<<< .working
-    } else {
-=======
         if (st->duration > 0)
             st->codec->bit_rate = stream_size*8*sc->time_scale/st->duration;
     } else {
->>>>>>> .merge-right.r523
         for (i = 0; i < sc->chunk_count; i++) {
             unsigned chunk_samples;
 
@@ -1682,12 +1630,8 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return 0;
     }
 
-<<<<<<< .working
-    if (!sc->time_scale)
-=======
     if (!sc->time_scale) {
         av_log(c->fc, AV_LOG_WARNING, "stream %d, timescale not set\n", st->index);
->>>>>>> .merge-right.r523
         sc->time_scale = c->time_scale;
         if (!sc->time_scale)
             sc->time_scale = 1;

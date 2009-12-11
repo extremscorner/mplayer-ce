@@ -307,12 +307,8 @@ void avcodec_register_all(void)
     /* subtitles */
     REGISTER_ENCDEC  (DVBSUB, dvbsub);
     REGISTER_ENCDEC  (DVDSUB, dvdsub);
-<<<<<<< .working
-    REGISTER_ENCDEC  (XSUB, xsub);
-=======
     REGISTER_DECODER (PGSSUB, pgssub);
     REGISTER_ENCDEC  (XSUB, xsub);
->>>>>>> .merge-right.r523
 
     /* external libraries */
     REGISTER_ENCDEC  (LIBDIRAC, libdirac);

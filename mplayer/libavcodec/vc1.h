@@ -310,15 +310,10 @@ typedef struct VC1Context{
     uint8_t bfraction_lut_index;///< Index for BFRACTION value (see Table 40, reproduced into ff_vc1_bfraction_lut[])
     uint8_t broken_link;        ///< Broken link flag (BROKEN_LINK syntax element)
     uint8_t closed_entry;       ///< Closed entry point flag (CLOSED_ENTRY syntax element)
-<<<<<<< .working
-
-    int parse_only;             ///< Context is used within parser
-=======
 
     int parse_only;             ///< Context is used within parser
 
     int warn_interlaced;
->>>>>>> .merge-right.r523
 } VC1Context;
 
 /** Find VC-1 marker in buffer

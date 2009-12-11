@@ -27,21 +27,12 @@
 #include <string.h>
 
 typedef struct X264Context {
-<<<<<<< .working
-    x264_param_t params;
-    x264_t *enc;
-    x264_picture_t pic;
-    uint8_t *sei;
-    int sei_size;
-    AVFrame out_pic;
-=======
     x264_param_t    params;
     x264_t         *enc;
     x264_picture_t  pic;
     uint8_t        *sei;
     int             sei_size;
     AVFrame         out_pic;
->>>>>>> .merge-right.r523
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -60,47 +51,18 @@ static void X264_log(void *p, int level, const char *fmt, va_list args)
 }
 
 
-<<<<<<< .working
-static int
-encode_nals(AVCodecContext *ctx, uint8_t *buf, int size, x264_nal_t *nals, int nnal, int skip_sei)
-=======
 static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
                        x264_nal_t *nals, int nnal, int skip_sei)
->>>>>>> .merge-right.r523
 {
     X264Context *x4 = ctx->priv_data;
     uint8_t *p = buf;
-    int i, s;
+    int i;
 
-<<<<<<< .working
-    /* Write the SEI as part of the first frame. */
-    if(x4->sei_size > 0 && nnal > 0)
-    {
-        memcpy(p, x4->sei, x4->sei_size);
-        p += x4->sei_size;
-        x4->sei_size = 0;
-    }
-
-    for(i = 0; i < nnal; i++){
-        /* Don't put the SEI in extradata. */
-        if(skip_sei && nals[i].i_type == NAL_SEI)
-        {
-            x4->sei = av_malloc( 5 + nals[i].i_payload * 4 / 3 );
-            if(x264_nal_encode(x4->sei, &x4->sei_size, 1, nals + i) < 0)
-                return -1;
-            continue;
-        }
-        s = x264_nal_encode(p, &size, 1, nals + i);
-        if(s < 0)
-            return -1;
-        p += s;
-=======
     /* Write the SEI as part of the first frame. */
     if (x4->sei_size > 0 && nnal > 0) {
         memcpy(p, x4->sei, x4->sei_size);
         p += x4->sei_size;
         x4->sei_size = 0;
->>>>>>> .merge-right.r523
     }
 
     for (i = 0; i < nnal; i++){
@@ -143,13 +105,8 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
         return -1;
 
-<<<<<<< .working
-    bufsize = encode_nals(ctx, buf, bufsize, nal, nnal, 0);
-    if(bufsize < 0)
-=======
     bufsize = encode_nals(ctx, buf, bufsize, nal, nnal, 0);
     if (bufsize < 0)
->>>>>>> .merge-right.r523
         return -1;
 
     /* FIXME: dts */
@@ -337,17 +294,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
         s = x264_encoder_headers(x4->enc, &nal, &nnal);
 
-<<<<<<< .working
-        /* 5 bytes NAL header + worst case escaping */
-        for(i = 0; i < nnal; i++)
-            s += 5 + nal[i].i_payload * 4 / 3;
-
-        avctx->extradata = av_malloc(s);
-        avctx->extradata_size = encode_nals(avctx, avctx->extradata, s, nal, nnal, 1);
-=======
         avctx->extradata      = av_malloc(s);
         avctx->extradata_size = encode_nals(avctx, avctx->extradata, s, nal, nnal, 1);
->>>>>>> .merge-right.r523
     }
 
     return 0;

@@ -53,11 +53,7 @@ static const AVCodecTag mp_wav_tags[] = {
     { 0, 0 },
 };
 
-<<<<<<< .working
-const struct AVCodecTag *mp_wav_taglists[] = {ff_codec_wav_tags, mp_wav_tags, 0};
-=======
 const struct AVCodecTag * const mp_wav_taglists[] = {ff_codec_wav_tags, mp_wav_tags, 0};
->>>>>>> .merge-right.r523
 
 static const AVCodecTag mp_codecid_override_tags[] = {
     { CODEC_ID_AAC,               MKTAG('M', 'P', '4', 'A')},
@@ -116,9 +112,5 @@ static const AVCodecTag mp_bmp_tags[] = {
     { 0, 0 },
 };
 
-<<<<<<< .working
-const struct AVCodecTag *mp_bmp_taglists[] = {ff_codec_bmp_tags, mp_bmp_tags, 0};
-=======
 const struct AVCodecTag * const mp_bmp_taglists[] = {ff_codec_bmp_tags, mp_bmp_tags, 0};
->>>>>>> .merge-right.r523
 

@@ -22,11 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-<<<<<<< .working
-#define LIBAVFORMAT_VERSION_MINOR 36
-=======
 #define LIBAVFORMAT_VERSION_MINOR 41
->>>>>>> .merge-right.r523
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -457,15 +453,6 @@ typedef struct AVStream {
      * AV_NOPTS_VALUE by default.
      */
     int64_t reference_dts;
-<<<<<<< .working
-
-    /**
-     * Number of packets to buffer for codec probing
-     * NOT PART OF PUBLIC API
-     */
-#define MAX_PROBE_PACKETS 100
-    int probe_packets;
-=======
 
     /**
      * Number of packets to buffer for codec probing
@@ -479,7 +466,6 @@ typedef struct AVStream {
      * used internally, NOT PART OF PUBLIC API, dont read or write from outside of libav*
      */
     struct AVPacketList *last_in_packet_buffer;
->>>>>>> .merge-right.r523
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -668,15 +654,6 @@ typedef struct AVFormatContext {
     struct AVPacketList *packet_buffer_end;
 
     AVMetadata *metadata;
-<<<<<<< .working
-
-    /**
-     * Remaining size available for raw_packet_buffer, in bytes.
-     * NOT PART OF PUBLIC API
-     */
-#define RAW_PACKET_BUFFER_SIZE 32000
-    int raw_packet_buffer_remaining_size;
-=======
 
     /**
      * Remaining size available for raw_packet_buffer, in bytes.
@@ -684,7 +661,6 @@ typedef struct AVFormatContext {
      */
 #define RAW_PACKET_BUFFER_SIZE 2500000
     int raw_packet_buffer_remaining_size;
->>>>>>> .merge-right.r523
 } AVFormatContext;
 
 typedef struct AVPacketList {

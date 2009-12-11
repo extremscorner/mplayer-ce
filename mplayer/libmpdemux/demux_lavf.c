@@ -153,15 +153,6 @@ static int lavf_check_file(demuxer_t *demuxer){
         mp_msg(MSGT_DEMUX,MSGL_INFO,"Forced lavf %s demuxer\n", priv->avif->long_name);
         return DEMUXER_TYPE_LAVF;
     }
-<<<<<<< .working
-
-    if(stream_read(demuxer->stream, buf, PROBE_BUF_SIZE)!=PROBE_BUF_SIZE)
-        return 0;
-    avpd.filename= demuxer->stream->url;
-    avpd.buf= buf;
-    avpd.buf_size= PROBE_BUF_SIZE;
-
-=======
 
     probe_data_size = stream_read(demuxer->stream, priv->buffer, PROBE_BUF_SIZE);
     if(probe_data_size <= 0)
@@ -170,7 +161,6 @@ static int lavf_check_file(demuxer_t *demuxer){
     avpd.buf= priv->buffer;
     avpd.buf_size= probe_data_size;
 
->>>>>>> .merge-right.r523
     priv->avif= av_probe_input_format(&avpd, 1);
     if(!priv->avif){
         mp_msg(MSGT_HEADER,MSGL_V,"LAVF_check: no clue about this gibberish!\n");
@@ -232,26 +222,16 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
     lavf_priv_t *priv= demuxer->priv;
     AVStream *st= avfc->streams[i];
     AVCodecContext *codec= st->codec;
-<<<<<<< .working
-    AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL, 0);
-    int g;
-=======
     AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL, 0);
     int g, override_tag = av_codec_get_tag(mp_codecid_override_taglists,
                                            codec->codec_id);
     // For some formats (like PCM) always trust CODEC_ID_* more than codec_tag
     if (override_tag)
         codec->codec_tag = override_tag;
->>>>>>> .merge-right.r523
 
     switch(codec->codec_type){
         case CODEC_TYPE_AUDIO:{
-<<<<<<< .working
-            int override_tag;
             WAVEFORMATEX *wf;
-=======
-            WAVEFORMATEX *wf;
->>>>>>> .merge-right.r523
             sh_audio_t* sh_audio;
             sh_audio=new_sh_audio(demuxer, i);
             mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "lavf", i);
@@ -259,15 +239,7 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
                 break;
             priv->astreams[priv->audio_streams] = i;
             priv->audio_streams++;
-<<<<<<< .working
             wf= calloc(sizeof(WAVEFORMATEX) + codec->extradata_size, 1);
-            // For some formats (like PCM) always trust CODEC_ID_* more than codec_tag
-            override_tag= av_codec_get_tag(mp_wav_override_taglists, codec->codec_id);
-            if (override_tag)
-                codec->codec_tag= override_tag;
-=======
-            wf= calloc(sizeof(WAVEFORMATEX) + codec->extradata_size, 1);
->>>>>>> .merge-right.r523
             // mp4a tag is used for all mp4 files no matter what they actually contain
             if(codec->codec_tag == MKTAG('m', 'p', '4', 'a'))
                 codec->codec_tag= 0;
@@ -507,21 +479,10 @@ static demuxer_t* demux_open_lavf(demuxer_t *demuxer){
         return NULL;
     }
 
-<<<<<<< .working
-    if(avfc->title    [0]) demux_info_add(demuxer, "title"    , avfc->title    );
-    if(avfc->author   [0]) demux_info_add(demuxer, "author"   , avfc->author   );
-    if(avfc->copyright[0]) demux_info_add(demuxer, "copyright", avfc->copyright);
-    if(avfc->comment  [0]) demux_info_add(demuxer, "comments" , avfc->comment  );
-    if(avfc->album    [0]) demux_info_add(demuxer, "album"    , avfc->album    );
-//    if(avfc->year        ) demux_info_add(demuxer, "year"     , avfc->year     );
-//    if(avfc->track       ) demux_info_add(demuxer, "track"    , avfc->track    );
-    if(avfc->genre    [0]) demux_info_add(demuxer, "genre"    , avfc->genre    );
-=======
     /* Add metadata. */
     av_metadata_conv(avfc, NULL, avfc->iformat->metadata_conv);
     while((t = av_metadata_get(avfc->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
         demux_info_add(demuxer, t->key, t->value);
->>>>>>> .merge-right.r523
 
     for(i=0; i < avfc->nb_chapters; i++) {
         AVChapter *c = avfc->chapters[i];

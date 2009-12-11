@@ -56,15 +56,9 @@ static int wav_write_header(AVFormatContext *s)
     }
     ff_end_tag(pb, fmt);
 
-<<<<<<< .working
-    if(s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
-       && !url_is_streamed(s->pb)) {
-        fact = ff_start_tag(pb, "fact");
-=======
     if (s->streams[0]->codec->codec_tag != 0x01 /* hence for all other than PCM */
         && !url_is_streamed(s->pb)) {
         fact = ff_start_tag(pb, "fact");
->>>>>>> .merge-right.r523
         put_le32(pb, 0);
         ff_end_tag(pb, fact);
     }
@@ -186,12 +180,8 @@ static int wav_probe(AVProbeData *p)
 static int wav_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-<<<<<<< .working
-    int64_t size;
-=======
     int64_t size, av_uninit(data_size);
     int rf64;
->>>>>>> .merge-right.r523
     unsigned int tag;
     ByteIOContext *pb = s->pb;
     AVStream *st;
@@ -411,14 +401,6 @@ AVInputFormat w64_demuxer = {
     "w64",
     NULL_IF_CONFIG_SMALL("Sony Wave64 format"),
     sizeof(WAVContext),
-<<<<<<< .working
-    CODEC_ID_PCM_S16LE,
-    CODEC_ID_NONE,
-    wav_write_header,
-    wav_write_packet,
-    wav_write_trailer,
-    .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
-=======
     w64_probe,
     w64_read_header,
     wav_read_packet,
@@ -426,6 +408,5 @@ AVInputFormat w64_demuxer = {
     wav_read_seek,
     .flags = AVFMT_GENERIC_INDEX,
     .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
->>>>>>> .merge-right.r523
 };
 #endif /* CONFIG_W64_DEMUXER */

@@ -27,31 +27,13 @@ extern const int av_sha1_size;
 
 struct AVSHA1;
 
-<<<<<<< .working
-/**
- * Initializes SHA-1 hashing.
- *
- * @param context pointer to the function context (of size av_sha_size)
- */
-=======
 /**
  * Initializes SHA-1 hashing.
  *
  * @param context pointer to the function context (of size av_sha_size)
  * @deprecated use av_sha_init() instead
  */
->>>>>>> .merge-right.r523
 void av_sha1_init(struct AVSHA1* context);
-<<<<<<< .working
-
-/**
- * Updates hash value.
- *
- * @param context hash function context
- * @param data    input data to update hash with
- * @param len     input data length
- */
-=======
 
 /**
  * Updates hash value.
@@ -61,17 +43,7 @@ void av_sha1_init(struct AVSHA1* context);
  * @param len     input data length
  * @deprecated use av_sha_update() instead
  */
->>>>>>> .merge-right.r523
 void av_sha1_update(struct AVSHA1* context, const uint8_t* data, unsigned int len);
-<<<<<<< .working
-
-/**
- * Finishes hashing and output digest value.
- *
- * @param context hash function context
- * @param digest  buffer where output digest value is stored
- */
-=======
 
 /**
  * Finishes hashing and output digest value.
@@ -80,7 +52,6 @@ void av_sha1_update(struct AVSHA1* context, const uint8_t* data, unsigned int le
  * @param digest  buffer where output digest value is stored
  * @deprecated use av_sha_final() instead
  */
->>>>>>> .merge-right.r523
 void av_sha1_final(struct AVSHA1* context, uint8_t digest[20]);
 
 #endif /* AVUTIL_SHA1_H */

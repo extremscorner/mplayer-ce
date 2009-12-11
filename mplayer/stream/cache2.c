@@ -432,16 +432,9 @@ int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
   int ss = stream->sector_size ? stream->sector_size : STREAM_BUFFER_SIZE;
   cache_vars_t* s;
 
-<<<<<<< .working
-	cache_fill_status=-1;
-
-  if (stream->type==STREAMTYPE_STREAM && stream->fd < 0) {
-    // The stream has no 'fd' behind it, so is non-cacheable
-=======
 	cache_fill_status=-1;
 
   if (stream->flags & STREAM_NON_CACHEABLE) {
->>>>>>> .merge-right.r523
     //mp_msg(MSGT_CACHE,MSGL_STATUS,"\rThis stream is non-cacheable\n");
     return 1;
   }
@@ -720,29 +713,6 @@ int stream_read(stream_t *s,char* mem,int total){
   return total;
 }
 
-<<<<<<< .working
-void refillcache(stream_t *stream,float min)
-{
-	cache_vars_t* s;
-	s=stream->cache_data;
-    while(cache_fill_status<min)
-    {
-
-		if(!IsLoopAvi(NULL))
-	    {
-		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Cache fill: %5.2f%%  ",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
-		force_osd();
-		}
-		
-		if(s->eof) break; // file is smaller than prefill size
-		if(stream_check_interrupt(PREFILL_SLEEP_TIME))
-			return 0;
-		//printf("Cache fill: %5.2f%%  \n",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
-	  
-    }
-    //printf("end Cache fill: %5.2f%%  \n",cache_fill_status);
-    
-}=======
 void refillcache(stream_t *stream,float min)
 {
 	cache_vars_t* s;
@@ -799,4 +769,3 @@ int stream_error(stream_t *stream)
 	//s=stream->cache_data;
   	return ((cache_vars_t*)stream->cache_data)->stream->error;
 }
->>>>>>> .merge-right.r523

@@ -1399,21 +1399,8 @@ if test -z "$_target" ; then
       case "$(uname -m 2>&1)" in
       x86_64|amd64|i[3-9]86*|x86|x86pc|k5|k6|k6_2|k6_3|k6-2|k6-3|pentium*|athlon*|i586_i686|i586-i686|BePC) host_arch=i386 ;;
       ia64) host_arch=ia64 ;;
-<<<<<<< .working
-      x86_64|amd64)
-        if [ -n "$($_cc -dumpmachine | sed -n '/^x86_64-/p;/^amd64-/p')" -a \
-             -z "$(echo $CFLAGS $_cc | grep -- -m32)" ]; then
-          host_arch=x86_64
-        else
-          host_arch=i386
-        fi
-      ;;
       macppc|ppc) host_arch=ppc ;;
       ppc64) host_arch=ppc64 ;;
-=======
-      macppc|ppc) host_arch=ppc ;;
-      ppc64) host_arch=ppc64 ;;
->>>>>>> .merge-right.r523
       alpha) host_arch=alpha ;;
       sparc) host_arch=sparc ;;
       sparc64) host_arch=sparc64 ;;
@@ -2891,31 +2878,6 @@ test "$language_doc" = "all" && language_doc=$doc_lang_all
 test "$language_man" = "all" && language_man=$man_lang_all
 test "$language_msg" = "all" && language_msg=en
 
-<<<<<<< .working
-# Prune non-existing translations from language lists.
-# Set message translation to the first available language.
-# Fall back on English.
-for lang in $language_doc ; do
-  test -d DOCS/xml/$lang && tmp_language_doc="$tmp_language_doc $lang"
-done
-language_doc=$tmp_language_doc
-test -z "$language_doc" && language_doc=en
-
-for lang in $language_man ; do
-  test -d DOCS/man/$lang && tmp_language_man="$tmp_language_man $lang"
-done
-language_man=$tmp_language_man
-test -z "$language_man" && language_man=en
-
-for lang in $language_msg ; do
-  test -f "help/help_mp-${lang}.h" && language_msg=$lang && break
-done
-test -z "$language_msg" && language_msg=en
-_mp_help="help/help_mp-${language_msg}.h"
-echores "messages: $language_msg - man pages: $language_man - documentation: $language_doc"
-
-
-=======
 # Prune non-existing translations from language lists.
 # Set message translation to the first available language.
 # Fall back on English.
@@ -2940,7 +2902,6 @@ _mp_help="help/help_mp-${language_msg}.h"
 echores "messages: $language_msg - man pages: $language_man - documentation: $language_doc"
 
 
->>>>>>> .merge-right.r523
 echocheck "enable sighandler"
 if test "$_sighandler" = yes ; then
   def_sighandler='#define CONFIG_SIGHANDLER 1'

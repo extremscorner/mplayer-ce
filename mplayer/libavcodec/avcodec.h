@@ -30,11 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-<<<<<<< .working
-#define LIBAVCODEC_VERSION_MINOR 32
-=======
 #define LIBAVCODEC_VERSION_MINOR 42
->>>>>>> .merge-right.r523
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -200,15 +196,10 @@ enum CodecID {
     CODEC_ID_V210X,
     CODEC_ID_TMV,
     CODEC_ID_V210,
-<<<<<<< .working
-    CODEC_ID_DPX,
-    CODEC_ID_MAD,
-=======
     CODEC_ID_DPX,
     CODEC_ID_MAD,
     CODEC_ID_FRWU,
     CODEC_ID_FLASHSV2,
->>>>>>> .merge-right.r523
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -3269,13 +3260,8 @@ attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *s
  * avcodec_decode_audio3 has to be called again with an AVPacket that contains
  * the remaining data in order to decode the second frame etc.
  * If no frame
-<<<<<<< .working
- * could be decompressed, frame_size_ptr is zero. Otherwise, it is the
- * decompressed frame size in bytes.
-=======
  * could be outputted, frame_size_ptr is zero. Otherwise, it is the
  * decompressed frame size in bytes.
->>>>>>> .merge-right.r523
  *
  * @warning You must set frame_size_ptr to the allocated size of the
  * output buffer before calling avcodec_decode_audio3().

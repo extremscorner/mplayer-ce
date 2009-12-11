@@ -179,12 +179,8 @@ void av_register_all(void)
     REGISTER_DEMUXER  (SIFF, siff);
     REGISTER_DEMUXER  (SMACKER, smacker);
     REGISTER_DEMUXER  (SOL, sol);
-<<<<<<< .working
-    REGISTER_MUXDEMUX (SOX, sox);
-=======
     REGISTER_MUXDEMUX (SOX, sox);
     REGISTER_MUXER    (SPDIF, spdif);
->>>>>>> .merge-right.r523
     REGISTER_DEMUXER  (STR, str);
     REGISTER_MUXDEMUX (SWF, swf);
     REGISTER_MUXER    (TG2, tg2);

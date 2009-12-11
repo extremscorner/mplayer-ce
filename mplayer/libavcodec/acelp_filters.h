@@ -55,8 +55,6 @@ void ff_acelp_interpolate(int16_t* out, const int16_t* in,
                           const int16_t* filter_coeffs, int precision,
                           int frac_pos, int filter_length, int length);
 
-<<<<<<< .working
-=======
 /**
  * Floating point version of ff_acelp_interpolate()
  */
@@ -64,7 +62,6 @@ void ff_acelp_interpolatef(float *out, const float *in,
                            const float *filter_coeffs, int precision,
                            int frac_pos, int filter_length, int length);
 
->>>>>>> .merge-right.r523
 
 /**
  * high-pass filtering and upscaling (4.2.5 of G.729).

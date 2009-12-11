@@ -99,13 +99,9 @@ void log_console_init(GXRModeObj *vmode, u16 logsize) {
 	LWP_MutexInit(&console_mutex, false);
 #ifndef WIILIB	
 	CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
-<<<<<<< .working
-#endif
-=======
 	//CON_InitEx(vmode, 10, 10 , (vmode->fbWidth / 2)-80, vmode->xfbHeight - 40);
 	
 #endif
->>>>>>> .merge-right.r523
 	rcb = VIDEO_SetPostRetraceCallback(NULL);
 	VIDEO_SetPostRetraceCallback(rcb);
 

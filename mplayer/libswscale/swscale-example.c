@@ -29,20 +29,6 @@
 #include "libavutil/lfg.h"
 #include "swscale.h"
 
-<<<<<<< .working
-/* HACK Duplicated from swscale_internal.h.
- * Should be removed when a cleaner pixel format system exists. */
-const char *sws_format_name(enum PixelFormat format);
-#define isALPHA(x)      (           \
-           (x)==PIX_FMT_BGR32       \
-        || (x)==PIX_FMT_BGR32_1     \
-        || (x)==PIX_FMT_RGB32       \
-        || (x)==PIX_FMT_RGB32_1     \
-        || (x)==PIX_FMT_YUVA420P    \
-    )
-
-static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
-=======
 /* HACK Duplicated from swscale_internal.h.
  * Should be removed when a cleaner pixel format system exists. */
 const char *sws_format_name(enum PixelFormat format);
@@ -66,7 +52,6 @@ const char *sws_format_name(enum PixelFormat format);
 
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h)
 {
->>>>>>> .merge-right.r523
     int x,y;
     uint64_t ssd=0;
 

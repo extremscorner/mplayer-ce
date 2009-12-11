@@ -300,11 +300,7 @@ float stream_cache_seek_min_percent=50.0;
 #endif
 #ifdef GEKKO
 
-<<<<<<< .working
-bool IsLoopAvi(char *_file)
-=======
 static bool InternetStream()
->>>>>>> .merge-right.r523
 {
 	if(!strncmp(filename,"http:",5)) return true;
 	return false;
@@ -336,21 +332,13 @@ bool IsLoopAvi(char *_file)
 
 extern bool playing_usb;
 extern bool playing_dvd;
-<<<<<<< .working
-static bool low_cache=false;
-=======
 #endif
 
 static bool low_cache=false;
->>>>>>> .merge-right.r523
 static char* fileplaying=NULL;
-<<<<<<< .working
-
-=======
 static bool restore_points_changed=false;
 int enable_restore_points=1;
 
->>>>>>> .merge-right.r523
 #define MAX_RESTORE_POINTS 10
 
 typedef struct st_restore_points restore_points_t;
@@ -389,9 +377,6 @@ void save_restore_points_file()
 { //save file
 	FILE *f;
 	int i;
-<<<<<<< .working
-	char aux[80];
-=======
 	char aux[1024];
 	static char *buff=NULL;
 	if(!enable_restore_points)return;
@@ -399,34 +384,22 @@ void save_restore_points_file()
 	
 	if(buff==NULL)buff=malloc(sizeof(char)*MAX_RESTORE_POINTS*1024); //created only once
 	buff[0]='\0';
->>>>>>> .merge-right.r523
 	sprintf(aux,"%s/%s",MPLAYER_DATADIR,"restore_points");
-<<<<<<< .working
-	f=fopen(aux,"w");
-	if(f==NULL)
-=======
 	//printf("saving rp: %s\n------------------\n",aux);
 	f=fopen(aux,"wb+");
 	if(f==NULL)
->>>>>>> .merge-right.r523
 	{
 		//printf("error save rp: %s\n",aux);
 		return;
 	}
-<<<<<<< .working
-
-	setvbuf(f,NULL,_IONBF,0);
-	//printf("saving rp: %s\n",aux);
-=======
 	//setvbuf(f,NULL,_IONBF,0);
 	//printf("saving rp: %s\n------------------\n",aux);
->>>>>>> .merge-right.r523
 	for(i=0;i<MAX_RESTORE_POINTS && restore_points[i].filename[0]!='\0';i++)
 	{
 		//fprintf(f,"%s\t%i\n",restore_points[i].filename,restore_points[i].position);
 		sprintf(aux,"%s\t%i\n",restore_points[i].filename,restore_points[i].position);
 		strcat(buff,aux);
-		//printf("%s\t%i\n",restore_points[i].filename,restore_points[i].position);
+		//printf("%s\t%i\n",restore_points[i].filename,restore_points[i].position);		
 	}
 	//printf("writing\n");
 	
@@ -440,17 +413,11 @@ void save_restore_points_file()
 
 void delete_restore_point(char *_filename)
 {
-<<<<<<< .working
-	int i,j;
-	if(IsLoopAvi(filename))return;
-	//printf("delete_restore_point: %s\n",_filename);
-=======
 	int i;
 	if(!enable_restore_points)return;
 	#ifndef WIILIB
 	if(IsLoopAvi(filename))return;
 	#endif
->>>>>>> .merge-right.r523
 	for(i=0;i<MAX_RESTORE_POINTS;i++)
 	{
 		if(!strcmp(_filename,restore_points[i].filename))
@@ -462,27 +429,15 @@ void delete_restore_point(char *_filename)
 				restore_points[i].position=restore_points[i+1].position;
 
 			}
-<<<<<<< .working
-			restore_points[MAX_RESTORE_POINTS].filename[0]='\0';
-			restore_points[MAX_RESTORE_POINTS].position=0;
-		}
-		save_restore_points_file();
-=======
 			restore_points[MAX_RESTORE_POINTS-1].filename[0]='\0';
 			restore_points[MAX_RESTORE_POINTS-1].position=0;
 		}
->>>>>>> .merge-right.r523
 	}
 }
 
 void save_restore_point(char *_filename,int position)
 {
 	int i,j;
-<<<<<<< .working
-	if(IsLoopAvi(_filename))return;
-	if(!strncmp(_filename,"dvd://",6) || !strncmp(_filename,"dvdnav",6))return;
-	//printf("save_restore_point: %s - %d\n",_filename,position);
-=======
 	if(!enable_restore_points)return;
 	if(_filename==NULL || IsLoopAvi(_filename))return;
 	
@@ -495,7 +450,6 @@ void save_restore_point(char *_filename,int position)
 		return;
 	}
 	//printf("save_restore_point: %s - %d\n",_filename,position);
->>>>>>> .merge-right.r523
 	for(j=0;j<MAX_RESTORE_POINTS ;j++)
 	{
 		if(restore_points[j].filename[0]=='\0' || !strcmp(_filename,restore_points[j].filename))
@@ -506,30 +460,17 @@ void save_restore_point(char *_filename,int position)
 			break;
 		}
 	}
-<<<<<<< .working
-	for(i=j-1;i>0;i--)
-	{
-		strcpy(restore_points[i].filename,restore_points[i-1].filename);
-		restore_points[i].position=restore_points[i-1].position;
-	}
-=======
 	if(j>1)
 		for(i=j-1;i>0;i--)
 		{
 			strcpy(restore_points[i].filename,restore_points[i-1].filename);
 			restore_points[i].position=restore_points[i-1].position;
 		}
->>>>>>> .merge-right.r523
 	restore_points[0].position=position;
-<<<<<<< .working
-	strcpy(restore_points[0].filename,_filename);
-	save_restore_points_file();
-=======
 	strcpy(restore_points[0].filename,_filename);
 	restore_points_changed=true;
 	//save_restore_points_file();
 	//printf("end save_restore_point\n");
->>>>>>> .merge-right.r523
 }
 
 int get_restore_point(char *_filename)
@@ -903,12 +844,8 @@ void uninit_player(unsigned int mask){
       mpctx->bg_demuxer = NULL;
       free_stream(bg_s);
     }
-<<<<<<< .working
-    //
-=======
     //
     #endif
->>>>>>> .merge-right.r523
   }
 
   // kill the cache process:
@@ -1894,18 +1831,11 @@ void update_osd_msg(void) {
 
             #ifndef WIILIB
             //geexbox bgvideo patch
-<<<<<<< .working
-            //printf("bg patch");
-            if (mpctx->bg_demuxer && mpctx->sh_audio) pts = playing_audio_pts(mpctx->sh_audio, mpctx->d_audio, mpctx->audio_out);
-            //if (mpctx->bg_demuxer)pts = demuxer_get_current_time(mpctx->bg_demuxer);
-
-=======
             //printf("bg patch");
             if (mpctx->bg_demuxer && mpctx->sh_audio) pts = playing_audio_pts(mpctx->sh_audio, mpctx->d_audio, mpctx->audio_out);
             //if (mpctx->bg_demuxer)pts = demuxer_get_current_time(mpctx->bg_demuxer);
             #endif
 
->>>>>>> .merge-right.r523
             if (mpctx->osd_show_percentage)
                 percentage = demuxer_get_percent_pos(mpctx->demuxer);
 
@@ -1914,14 +1844,6 @@ void update_osd_msg(void) {
             else
                 percentage_text[0] = 0;
 
-<<<<<<< .working
-            if (osd_level == 3)
-                snprintf(osd_text_timer, 63,
-                         "%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%)",
-                         mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
-                         len/3600,(len/60)%60,len%60,percentage_text, (int)cache_fill_status);
-            else
-=======
             if (osd_level >= 3) {
 				if (osd_level == 4)
 					snprintf(osd_text_timer, 63,
@@ -1936,7 +1858,6 @@ void update_osd_msg(void) {
 							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
 							len/3600,(len/60)%60,len%60,percentage_text);
             } else
->>>>>>> .merge-right.r523
                 snprintf(osd_text_timer, 63, "%c %02d:%02d:%02d%s",
                          mpctx->osd_function,pts/3600,(pts/60)%60,
                          pts%60,percentage_text);
@@ -1966,14 +1887,10 @@ extern int prev_dxs , prev_dys;
 
 void force_osd()
 {
-<<<<<<< .working
-   if (vf_menu)
-=======
 	update_osd_msg();
 	if (mpctx && mpctx->sh_video && mpctx->video_out && vo_config_count)
     	mpctx->video_out->check_events();
    if (vf_menu)
->>>>>>> .merge-right.r523
    {
     	vf_menu_pause_update(vf_menu);
    }
@@ -2234,12 +2151,6 @@ static double timing_sleep(double time_frame)
 	    current_module = "sleep_soft";
 	    if (frame < 0)
 	    {
-<<<<<<< .working
-	    usleep(10);
-		time_frame-=GetRelativeTime(); // burn the CPU
-		}
-
-=======
 		//mp_msg(MSGT_AVSYNC, MSGL_WARN, MSGTR_SoftsleepUnderflow);
 		printf("SoftsleepUnderflow: %li\n",frame);
 	    }
@@ -2252,7 +2163,6 @@ static double timing_sleep(double time_frame)
 				//if(x>10000) break;
 			}
 	    }
->>>>>>> .merge-right.r523
 	}
 	time_frame=frame * 0.000001F;
     }
@@ -2443,14 +2353,9 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
  		       ,(mpctx->delay>0.5)?100.0*audio_time_usage/(double)mpctx->delay:0
  		       ,(int)cache_fill_status
  		       );
-<<<<<<< .working
-     } else {
-    //
-=======
      } else {
     //
     #endif
->>>>>>> .merge-right.r523
 	double a_pts, v_pts;
 
 	if (autosync)
@@ -2714,25 +2619,12 @@ int reinit_video_chain(void) {
 
 #ifdef GEKKO
 //rodries patch for big resolution on wii
-<<<<<<< .working
 
-if(sh_video->disp_w>900) {
-=======
->>>>>>> .merge-right.r523
-
-<<<<<<< .working
-=======
 if(sh_video->disp_w>=900)
  {
->>>>>>> .merge-right.r523
 		char *arg_scale[]={"w","xxxx","h","-2",NULL};
-<<<<<<< .working
-		sprintf(arg_scale[1],"%i",sh_video->disp_w/2);
-		sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);
-=======
 		sprintf(arg_scale[1],"%i",(int)sh_video->disp_w/2);
 		sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);
->>>>>>> .merge-right.r523
 }
 
 #endif
@@ -2865,131 +2757,16 @@ static double update_video(int *blit_frame)
     return frame_time;
 }
 
-<<<<<<< .working
-static void low_cache_loop(void)
-{
-    float percent;
-	int brk_cmd ;
-    mp_cmd_t* cmd;
-    
-    //this values can be improved
-	if(!strncmp(fileplaying,"usb:",4) || 
-	   !strncmp(fileplaying,"sd:",3)) percent=stream_cache_min_percent/6;
-	else if(!strncmp(fileplaying,"smb:",4)) percent=stream_cache_min_percent/2;
-	else percent=stream_cache_min_percent;
-		
-   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) cfs:%2.2f  p:%2.2f",(int)(cache_fill_status*100.0/percent),cache_fill_status,percent);
-   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) ",(int)(cache_fill_status*100.0/percent));
-    //force_osd();
-
-    if (mpctx->video_out && mpctx->sh_video && vo_config_count)
-	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
-
-    if (mpctx->audio_out && mpctx->sh_audio)
-	mpctx->audio_out->pause();	// pause audio, keep data if possible
-
-    while ( cache_fill_status < percent  && cache_fill_status>=0) {
-    
-		cmd = mp_input_get_cmd(20, 1, 1);
-		if (cmd) {
-	  		cmd = mp_input_get_cmd(0,1,0);
-	  		brk_cmd = run_command(mpctx, cmd);
-	  		if(cmd->pausing != 4)brk_cmd=1;
-	    	if (cmd->id == MP_CMD_PAUSE) {
-	    		mp_cmd_free(cmd);
-				cmd = mp_input_get_cmd(0,1,0);				
-	  		}
-	  		mp_cmd_free(cmd);
-	  		if(brk_cmd > 0) break;
-	  		//continue;
-		}
-		
-	   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) cfs:%2.2f  p:%2.2f",(int)(cache_fill_status*100.0/percent),cache_fill_status,percent);
-	   	set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) ",(int)(cache_fill_status*100.0/percent));
-    	force_osd();
-    	
-    	//percent=0.0;
-
-	if (mpctx->sh_video && mpctx->video_out && vo_config_count)
-	    mpctx->video_out->check_events();
-
-#ifdef CONFIG_MENU
-	if (vf_menu)
-	    vf_menu_pause_update(vf_menu);
-#endif
-		usec_sleep(50000);		
-    }
-	rm_osd_msg(OSD_MSG_PAUSE);
-	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
-	{
-		//DI_StartMotor();
-		//printf("start motor\n");
-		void *ptr=memalign(32, 0x800*2);
-		//printf("read sector 1\n");
-		DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
-		//printf("read sector 5000\n");
-		DI_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
-		free(ptr);
-	}
-	/*
-    if (cmd && cmd->id == MP_CMD_PAUSE) {
-	cmd = mp_input_get_cmd(0,1,0);
-	mp_cmd_free(cmd);
-    }
-    */
-    mpctx->osd_function=OSD_PLAY;
-    if (mpctx->audio_out && mpctx->sh_audio)
-        mpctx->audio_out->resume();	// resume audio
-    if (mpctx->video_out && mpctx->sh_video && vo_config_count)
-        mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
-    (void)GetRelativeTime();	// ignore time that passed during pause
-#ifdef CONFIG_GUI
-    if (use_gui) {
-	if (guiIntfStruct.Playing == guiSetStop)
-	    mpctx->eof = 1;
-	else
-	    guiGetEvent(guiCEvent, (char *)guiSetPlay);
-    }
-#endif
-}
-
-static void pause_loop(void)
-=======
 #ifdef WIILIB
 int controlledbygui=0;
 int pause_gui=0;
 void PauseAndGotoGUI()
->>>>>>> .merge-right.r523
 {
-<<<<<<< .working
-    mp_cmd_t* cmd;
-/*
-    if (!quiet) {
-        // Small hack to display the pause message on the OSD line.
-        // The pause string is: "\n == PAUSE == \r" so we need to
-        // take the first and the last char out
-	if (term_osd && !mpctx->sh_video) {
-	    set_osd_msg(OSD_MSG_PAUSE, 1, 0, "%s", msg+1);
-	    update_osd_msg();
-	} else
-	    mp_msg(MSGT_CPLAYER,MSGL_STATUS,MSGTR_Paused);
-        mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_PAUSED\n");
-    }
-*/
-   	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE");
-    update_osd_msg();
-
-#ifdef CONFIG_GUI
-    if (use_gui)
-	guiGetEvent(guiCEvent, (char *)guiSetPause);
-#endif
-=======
 	mp_cmd_t* cmd=NULL;
 	setwatchdogcounter(-1);
     if (mpctx->audio_out && mpctx->sh_audio)
 	mpctx->audio_out->pause();	// pause audio, keep data if possible
 
->>>>>>> .merge-right.r523
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
 	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
 printf("PauseAndGotoGUI\n");
@@ -3117,10 +2894,6 @@ static void low_cache_loop(void)
 #endif
 		usec_sleep(50000);		
     }
-<<<<<<< .working
-
-	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
-=======
 	rm_osd_msg(OSD_MSG_PAUSE);
 
 	#ifdef WIILIB
@@ -3128,15 +2901,7 @@ static void low_cache_loop(void)
 	#endif
 
 	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
->>>>>>> .merge-right.r523
 	{
-<<<<<<< .working
-		//DI_StartMotor();
-		//printf("start motor\n");
-		void *ptr=memalign(32, 0x800*2);
-		//printf("read sector 1\n");
-		DI_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
-=======
 		//DI2_StartMotor();
 		//printf("start motor\n");
 		void *ptr=memalign(32, 0x800*2);
@@ -3144,16 +2909,9 @@ static void low_cache_loop(void)
 		DI2_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
 		//printf("read sector 5000\n");
 		DI2_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
->>>>>>> .merge-right.r523
-		//printf("read sector 5000\n");
-		DI_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
 		free(ptr);
-<<<<<<< .working
-	}
-=======
 	}
 	/*
->>>>>>> .merge-right.r523
     if (cmd && cmd->id == MP_CMD_PAUSE) {
 	cmd = mp_input_get_cmd(0,1,0);
 	mp_cmd_free(cmd);
@@ -3410,18 +3168,6 @@ static int error_playing;
 /* This preprocessor directive is a hack to generate a mplayer-nomain.o object
  * file for some tools to link against. */
 #ifndef DISABLE_MAIN
-<<<<<<< .working
-#ifdef WIILIB
-int mplayer_loadfile(const char* _file){
-int argc;
-char *argv[] = {
-	"",
-	"-vo","gekko","-ao","gekko",
-	_file
-}; 
-argc=6;
-#else 
-=======
 #ifdef WIILIB
 int mplayer_loadfile(const char* _file){
 int argc;
@@ -3433,7 +3179,6 @@ char *argv[] = {
 }; 
 argc=argc = sizeof(argv) / sizeof(char *);
 #else 
->>>>>>> .merge-right.r523
 int main(int argc,char* argv[]){
 #endif
 char * mem_ptr;
@@ -3592,9 +3337,6 @@ int gui_no_filename=0;
 #ifdef GEKKO
 load_builtin_codecs();
 #else
-#ifdef GEKKO
-load_builtin_codecs();
-#else
 /* Check codecs.conf. */
 if(!codecs_file || !parse_codec_cfg(codecs_file)){
   mem_ptr=get_path("codecs.conf");
@@ -3610,12 +3352,7 @@ if(!codecs_file || !parse_codec_cfg(codecs_file)){
   }
   free( mem_ptr ); // release the buffer created by get_path()
 }
-<<<<<<< .working
 #endif
-
-=======
-#endif
->>>>>>> .merge-right.r523
 #if 0
     if(video_codec_list){
 	int i;
@@ -3735,7 +3472,6 @@ if(!codecs_file || !parse_codec_cfg(codecs_file)){
 #endif
 
   vo_init_osd();
-
 
 #ifdef CONFIG_ASS
   ass_library = ass_init();
@@ -3863,21 +3599,12 @@ setwatchdogcounter(-1);
   mpctx->global_sub_size = 0;
   { int i; for (i = 0; i < SUB_SOURCES; i++) mpctx->global_sub_indices[i] = -1; }
 
-<<<<<<< .working
-// I don't know why but args are lossed now so I have to add manually
-m_config_set_option(mconfig,"sws","4");
-m_config_set_option(mconfig,"framedrop",NULL);
-m_config_set_option(mconfig,"lavdopts","lowres=1,900");
-
-  if (filename) {
-=======
 //m_config_set_option(mconfig,"framedrop",NULL);
 m_config_set_option(mconfig,"sws","4");
 m_config_set_option(mconfig,"lavdopts","lowres=1,900");
 m_config_set_option(mconfig,"af","volume=7:0");
 
 if (filename) {
->>>>>>> .merge-right.r523
     load_per_protocol_config (mconfig, filename);
     load_per_extension_config (mconfig, filename);
     load_per_file_config (mconfig, filename);
@@ -4031,14 +3758,9 @@ if (edl_output_filename) {
 
 //==================== Open VOB-Sub ============================
 int vob_sub_auto = 1; //scip
-<<<<<<< .working
-    current_module="vobsub";
-    if(!IsLoopAvi(NULL))
-=======
 
     current_module="vobsub";
     if(!IsLoopAvi(NULL) && !InternetStream())
->>>>>>> .merge-right.r523
     {
 		set_osd_msg(OSD_MSG_TEXT, 1, 80000, "Loading vobsub subtitles...");
 		force_osd();
@@ -4101,21 +3823,11 @@ int vob_sub_auto = 1; //scip
 
 //============ Open & Sync STREAM --- fork cache2 ====================
 
-<<<<<<< .working
-
-  mpctx->stream=NULL;
-=======
->>>>>>> .merge-right.r523
 
   //mpctx->stream=NULL;
 
   current_module="open_stream";
   #ifdef GEKKO
-<<<<<<< .working
-=======
-
-  // rodries
->>>>>>> .merge-right.r523
 
   // rodries
   static float orig_stream_cache_min_percent=-1;
@@ -4132,9 +3844,6 @@ int vob_sub_auto = 1; //scip
     stream_cache_min_percent=orig_stream_cache_min_percent;
     stream_cache_seek_min_percent=orig_stream_cache_seek_min_percent;
   }
-<<<<<<< .working
-  if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9))
-=======
   if(!strncmp(filename,"dvdnav://",9))
   	stream_cache_size=-1;
   else
@@ -4145,9 +3854,7 @@ int vob_sub_auto = 1; //scip
   playing_dvd=false;
   
   if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9))
->>>>>>> .merge-right.r523
   {
-	  
 	  if(!DVDGekkoMount())
 	  {
   		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
@@ -4169,29 +3876,8 @@ int vob_sub_auto = 1; //scip
 	  }
 	  else
 	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));  
-	  
 	  playing_dvd=true;
-<<<<<<< .working
   }
-  if(!strncmp(filename,"usb:",4)) playing_usb=true;
-
-  if(!strncmp(filename,"http:",5))
-  {
-	 stream_cache_min_percent=1;
-	 stream_cache_seek_min_percent=5;
-=======
->>>>>>> .merge-right.r523
-  }
-<<<<<<< .working
-
-	if(!IsLoopAvi(NULL))
-	{
-		set_osd_msg(OSD_MSG_TEXT, 1, 0, "Opening Stream...");
-		force_osd();
-	}
-
-
-=======
   if(!strncmp(filename,"usb:",4) || !strncmp(filename,"ntfs_usb:",9)) playing_usb=true;
 
 	if(!IsLoopAvi(NULL))
@@ -4207,7 +3893,6 @@ int vob_sub_auto = 1; //scip
 	   stream_cache_seek_min_percent=5;
     }
 
->>>>>>> .merge-right.r523
   //end rodries
   #endif
 setwatchdogcounter(-1);
@@ -4217,13 +3902,8 @@ setwatchdogcounter(-1);
     goto goto_next_file;
   }
   initialized_flags|=INITIALIZED_STREAM;
-<<<<<<< .working
-  strcpy(fileplaying,/*filename_recode*/(filename));
-=======
   //strcpy(fileplaying,filename_recode(filename));
   strcpy(fileplaying,filename);
->>>>>>> .merge-right.r523
-
 
 #ifdef CONFIG_GUI
   if ( use_gui ) guiGetEvent( guiSetStream,(char *)mpctx->stream );
@@ -4314,26 +3994,17 @@ if(stream_cache_size>0){
   current_module="enable_cache";
 stream_cache_min_percent=1.0;  
   if(!stream_enable_cache(mpctx->stream,stream_cache_size*1024,
-                          stream_cache_size*1024*(1.0 / 100.0),
+                          stream_cache_size*1024*(stream_cache_min_percent / 100.0),
                           stream_cache_size*1024*(stream_cache_seek_min_percent / 100.0)))
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
 	if(!IsLoopAvi(NULL))
     {
-<<<<<<< .working
-    //printf("Analysing Stream...");
-    	clear_osd_msgs();
-		update_osd_msg();
-
-		set_osd_msg(OSD_MSG_TEXT, 1, 0, "Analysing Stream...");
-		force_osd();
-=======
     //printf("Analysing Stream...");
     	clear_osd_msgs();
 		update_osd_msg();
 		set_osd_msg(OSD_MSG_TEXT, 1, 0, "Analysing Stream...");
 		force_osd();
->>>>>>> .merge-right.r523
 	}
   if(mpctx->demuxer)
   {
@@ -4354,29 +4025,19 @@ stream_cache_min_percent=1.0;
   	mpctx->sh_audio=NULL;
   	mpctx->mixer.afilter = NULL;
   }
-<<<<<<< .working
-  if(mpctx->sh_video)
-  {
-=======
   
   if(mpctx->sh_video)
   {
->>>>>>> .merge-right.r523
   	uninit_video(mpctx->sh_video);
     mpctx->sh_video=NULL;
 #ifdef CONFIG_MENU
     vf_menu=NULL;
-<<<<<<< .working
 #endif
   }
-
-=======
-#endif
-  }
->>>>>>> .merge-right.r523
 //============ Open DEMUXERS --- DETECT file type =======================
 current_module="demux_open";
 mpctx->demuxer=demux_open(mpctx->stream,mpctx->file_format,audio_id,video_id,dvdsub_id,filename);
+
 // HACK to get MOV Reference Files working
 if (mpctx->demuxer && mpctx->demuxer->type==DEMUXER_TYPE_PLAYLIST)
 {
@@ -4477,13 +4138,10 @@ current_module="demux_open2";
 mpctx->d_audio=mpctx->demuxer->audio;
 mpctx->d_video=mpctx->demuxer->video;
 mpctx->d_sub=mpctx->demuxer->sub;
-<<<<<<< .working
-=======
 if (ts_prog) {
   int tmp = ts_prog;
   mp_property_do("switch_program", M_PROPERTY_SET, &tmp, mpctx);
 }
->>>>>>> .merge-right.r523
 // select audio stream
 select_audio(mpctx->demuxer, audio_id, audio_lang);
 // DUMP STREAMS:
@@ -4685,14 +4343,9 @@ if (mpctx->global_sub_size) {
   }
 
   mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_LENGTH=%.2lf\n", demuxer_get_time_length(mpctx->demuxer));
-<<<<<<< .working
-  mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_SEEKABLE=%d\n",
-         mpctx->stream->seek && (!mpctx->demuxer || mpctx->demuxer->seekable));
-=======
   mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_SEEKABLE=%d\n",
          mpctx->stream->seek && (!mpctx->demuxer || mpctx->demuxer->seekable));
 
->>>>>>> .merge-right.r523
   if (mpctx->demuxer) {
       if (mpctx->demuxer->num_chapters == 0)
       {
@@ -4701,10 +4354,6 @@ if (mpctx->global_sub_size) {
       mp_msg(MSGT_IDENTIFY,MSGL_INFO,"ID_CHAPTERS=%d\n", mpctx->demuxer->num_chapters);
   }
 if(!mpctx->sh_video) goto main; // audio-only
-<<<<<<< .working
-
-=======
->>>>>>> .merge-right.r523
 if(!reinit_video_chain()) {
 
   if(!mpctx->sh_video){
@@ -4823,7 +4472,6 @@ if(mpctx->loop_times>1) mpctx->loop_times--; else
 if(mpctx->loop_times==1) mpctx->loop_times = -1;
 mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_StartPlaying);
 
-
 total_time_usage_start=GetTimer();
 audio_time_usage=0; video_time_usage=0; vout_time_usage=0;
 total_frame_cnt=0; drop_frame_cnt=0; // fix for multifile fps benchmark
@@ -4885,14 +4533,6 @@ if(!mpctx->sh_video || !strncmp(filename,"dvd",3))first_frame=true;
 	force_osd();
 	}
 */
-<<<<<<< .working
-seek_to_sec=restore_seek;
-if (seek_to_sec) {
-    seek(mpctx, seek_to_sec, SEEK_ABSOLUTE);
-    end_at.pos += seek_to_sec;
-}
-
-=======
 seek_to_sec=restore_seek;
 {
  if(seek_to_sec && strncmp(fileplaying,"dvd://",6) && strncmp(fileplaying,"dvdnav",6 ) /*&& hasvideo*/)
@@ -4904,32 +4544,7 @@ seek_to_sec=restore_seek;
 }
 
 
->>>>>>> .merge-right.r523
 #endif
-<<<<<<< .working
-
-  if(!strncmp(filename,"http:",5))
-  {
-  	  if (!mpctx->sh_video || (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh))
-	  {
-		 //printf("internet audio\n");
-	  }else 
-	  {
-		 stream_cache_min_percent=orig_stream_cache_min_percent;
-		 stream_cache_seek_min_percent=orig_stream_cache_seek_min_percent;
-	  	//printf("internet video\n");
-	  }
-  }
-
-refillcache(mpctx->stream,stream_cache_min_percent);
-//printf("end refillcache\n");
-clear_osd_msgs();
-update_osd_msg();
-
-GetRelativeTime();
-
-mpctx->eof=0;
-=======
 {
 int aux=mpctx->set_of_sub_size;
 mpctx->set_of_sub_size=0; // to not load subfonts
@@ -4991,17 +4606,11 @@ vo_osd_changed(OSDTYPE_OSD);
 total_time_usage_start=GetTimer();
 //GetRelativeTime();
 mpctx->eof=0;
->>>>>>> .merge-right.r523
 while(!mpctx->eof){
-<<<<<<< .working
-    float aq_sleep_time=0;
-//init_while:
-=======
     double aq_sleep_time=0;
 //init_while:
 setwatchdogcounter(WATCH_TIMEOUT);
 
->>>>>>> .merge-right.r523
 if(dvd_last_chapter>0) {
   int cur_chapter = demuxer_get_current_chapter(mpctx->demuxer);
   if(cur_chapter!=-1 && cur_chapter+1>dvd_last_chapter)
@@ -5058,23 +4667,14 @@ if(!mpctx->sh_video) {
 	  mpctx->eof = 1; goto goto_next_file;
       }
       if (frame_time < 0)
-<<<<<<< .working
-      //geexbox bgvideo patch
-=======
       #ifndef WIILIB
       //geexbox bgvideo patch
->>>>>>> .merge-right.r523
        if(mpctx->bg_demuxer) {
           if(!demux_seek(mpctx->bg_demuxer,0,0,1))
             mpctx->eof = PT_NEXT_ENTRY;
         }
-<<<<<<< .working
-        else
-      //
-=======
         else
       #endif
->>>>>>> .merge-right.r523
 	  mpctx->eof = 1;
       else {
 	  // might return with !eof && !blit_frame if !correct_pts
@@ -5114,44 +4714,13 @@ if(!mpctx->sh_video) {
 #endif
     frame_time_remaining = sleep_until_update(&time_frame, &aq_sleep_time);
 
-<<<<<<< .working
-/*
-#ifdef GEKKO
-  if(!first_frame && blit_frame && !frame_time_remaining )
-  {
-  	first_frame=true;
-
-	if (restore_seek)
-	{
-		seek(mpctx, restore_seek, SEEK_ABSOLUTE);
-		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Resume");
-		force_osd();
-		restore_seek=0;
-	}else seek(mpctx, 0, SEEK_ABSOLUTE);
-	if (mpctx->sh_audio && mpctx->mixer.muted)mixer_mute(&mpctx->mixer);
-	goto init_while;
-
-	if (mpctx->sh_audio && mpctx->mixer.muted)mixer_mute(&mpctx->mixer);
-  }
-#endif
-=======
->>>>>>> .merge-right.r523
-*/
 //====================== FLIP PAGE (VIDEO BLT): =========================
 
-<<<<<<< .working
-        current_module="flip_page";
-        if (!frame_time_remaining && blit_frame) {
-       unsigned int t2=GetTimer();
-
-	   if(vo_config_count && first_frame) mpctx->video_out->flip_page();
-=======
         current_module="flip_page";
         if (!frame_time_remaining && blit_frame) {
        u64 t2=GetTimer();
 
 	   if(vo_config_count && first_frame) mpctx->video_out->flip_page();
->>>>>>> .merge-right.r523
 	   mpctx->num_buffered_frames--;
 
 	   vout_time_usage += (GetTimer() - t2) * 0.000001;
@@ -5212,33 +4781,6 @@ if(auto_quality>0){
 
   current_module="pause";
 
-<<<<<<< .working
-    //low cache
-	if (stream_cache_size > 0.0 && stream_cache_min_percent> 1.0 && cache_fill_status<4.0 && cache_fill_status>=0.0 && !IsLoopAvi(NULL)) {
-   		if(mpctx->osd_function == OSD_PAUSE)
-   		{
-		   mpctx->was_paused = 1;
-   		   low_cache=false;
-   		   low_cache_loop();
-   		}else 
-		{
-			mpctx->osd_function = OSD_PAUSE;
-			low_cache=true;
-		}
-	}
-	else if (mpctx->osd_function == OSD_PAUSE) {
-      
-      if(low_cache) 
-	  {
-	  	low_cache=false;
-	  	mpctx->osd_function = OSD_PLAY;
-	  }
-      else 
-	  {
-	  	mpctx->was_paused = 1;
-	  	pause_loop();
-	  }
-=======
     //low cache
 	if (stream_cache_size > 0.0 && stream_cache_min_percent> 1.0 && cache_fill_status<4.0 && cache_fill_status>=0.0 && !IsLoopAvi(NULL)) {
    		if(mpctx->osd_function == OSD_PAUSE)
@@ -5272,7 +4814,6 @@ if(auto_quality>0){
 	  	mpctx->was_paused = 1;
 	  	pause_loop();
 	  }
->>>>>>> .merge-right.r523
   }
 
 
@@ -5284,27 +4825,6 @@ if(step_sec>0) {
 
  edl_update(mpctx);
 
-<<<<<<< .working
-#ifdef GEKKO
-  if(!first_frame && blit_frame && !frame_time_remaining )
-  {
-  	first_frame=true;
-
-	if (restore_seek)
-	{
-		//char cad[100];
-		//sprintf(cad,"seek %d 2",restore_seek);
-		//mp_input_queue_cmd(mp_input_parse_cmd(cad));
-		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Resume");
-		force_osd();
-		//edl_decision=1;
-		restore_seek=0;
-	}
-	//if (mpctx->sh_audio && mpctx->mixer.muted)mixer_mute(&mpctx->mixer);
-  }
-#endif
-
-=======
 #ifdef GEKKO
   if(!first_frame && blit_frame && !frame_time_remaining )
   {
@@ -5327,7 +4847,6 @@ if(step_sec>0) {
   }
 #endif
 
->>>>>>> .merge-right.r523
 //================= Keyboard events, SEEKing ====================
   
 #ifdef WIILIB
@@ -5349,14 +4868,9 @@ if(step_sec>0) {
 }
   
   mpctx->was_paused = 0;
-<<<<<<< .working
-    
-   if (mpctx->eof==1 && IsLoopAvi(NULL))
-=======
     
   #ifndef WIILIB
    if (mpctx->eof==1 && IsLoopAvi(NULL))
->>>>>>> .merge-right.r523
    {
     play_n_frames=play_n_frames_mf;
     mpctx->eof=0;
@@ -5420,16 +4934,7 @@ if(rel_seek_secs || abs_seek_pos){
       }
 #endif /* CONFIG_GUI */
 
-<<<<<<< .working
-
-=======
->>>>>>> .merge-right.r523
 } // while(!mpctx->eof)
-<<<<<<< .working
-#ifdef WIILIB
-if(mpctx->eof==1) return 1;
-#endif
-=======
 setwatchdogcounter(-1);
 #ifdef WIILIB
 printf("mplayer: end film. UNINIT\n");
@@ -5440,10 +4945,8 @@ if(controlledbygui == 0)
 printf("mplayer: exit\n");
 return 1;
 #endif
->>>>>>> .merge-right.r523
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);
 error_playing=stream_error(mpctx->stream);
-
 
 #ifdef CONFIG_DVBIN
 if(mpctx->dvbin_reopen)
@@ -5540,11 +5043,8 @@ if( mpctx->eof == PT_NEXT_ENTRY)
 
 
 #endif
-<<<<<<< .working
-=======
 load_next_file:
 
->>>>>>> .merge-right.r523
 if(mpctx->eof == PT_NEXT_ENTRY || mpctx->eof == PT_PREV_ENTRY) {
     mpctx->eof = mpctx->eof == PT_NEXT_ENTRY ? 1 : -1;
     if(play_tree_iter_step(mpctx->playtree_iter,mpctx->play_tree_step,0) == PLAY_TREE_ITER_ENTRY) {
@@ -5570,6 +5070,7 @@ if(mpctx->eof == PT_NEXT_ENTRY || mpctx->eof == PT_PREV_ENTRY) {
 } else { // NEXT PREV SRC
     mpctx->eof = mpctx->eof == PT_PREV_SRC ? -1 : 1;
 }
+
 if(mpctx->eof == 0) mpctx->eof = 1;
 while(mpctx->playtree_iter != NULL) {
     filename = play_tree_iter_get_file(mpctx->playtree_iter,mpctx->eof);
@@ -5581,6 +5082,7 @@ while(mpctx->playtree_iter != NULL) {
     } else
         break;
 }
+
 #ifdef CONFIG_GUI
 if(use_gui && !mpctx->playtree_iter) {
 #ifdef CONFIG_DVDREAD
@@ -5590,10 +5092,6 @@ if(use_gui && !mpctx->playtree_iter) {
 }
 #endif
 
-<<<<<<< .working
-
-=======
->>>>>>> .merge-right.r523
 if(use_gui || mpctx->playtree_iter != NULL || player_idle_mode){
     if(!mpctx->playtree_iter) filename = NULL;
     mpctx->eof = 0;

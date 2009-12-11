@@ -501,54 +501,10 @@ enum dv_pack_type {
  */
 #define DV_MAX_BPM 8
 
-<<<<<<< .working
-static inline
-const DVprofile* dv_frame_profile(const DVprofile *sys,
-                                  const uint8_t* frame, unsigned buf_size)
-{
-   int i;
-=======
 const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
                                   const uint8_t* frame, unsigned buf_size);
 const DVprofile* ff_dv_codec_profile(AVCodecContext* codec);
->>>>>>> .merge-right.r523
 
-<<<<<<< .working
-   int dsf = (frame[3] & 0x80) >> 7;
-
-   int stype = frame[80*5 + 48 + 3] & 0x1f;
-
-   /* 576i50 25Mbps 4:1:1 is a special case */
-   if (dsf == 1 && stype == 0 && frame[5] & 0x07) {
-       return &dv_profiles[2];
-   }
-
-   for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
-       if (dsf == dv_profiles[i].dsf && stype == dv_profiles[i].video_stype)
-           return &dv_profiles[i];
-
-   /* check if old sys matches and assumes corrupted input */
-   if (sys && buf_size == sys->frame_size)
-       return sys;
-
-   return NULL;
-}
-
-static const DVprofile* dv_codec_profile(AVCodecContext* codec)
-{
-    int i;
-
-    for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
-       if (codec->height  == dv_profiles[i].height  &&
-           codec->pix_fmt == dv_profiles[i].pix_fmt &&
-           codec->width   == dv_profiles[i].width)
-               return &dv_profiles[i];
-
-    return NULL;
-}
-
-=======
->>>>>>> .merge-right.r523
 static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num,
                                   uint8_t seq_num, uint8_t dif_num,
                                   uint8_t* buf)

@@ -123,11 +123,7 @@ static inline void flush_put_bits(PutBitContext *s)
 void align_put_bits(PutBitContext *s);
 
 /**
-<<<<<<< .working
- * Puts the string s in the bitstream.
-=======
  * Puts the string string in the bitstream.
->>>>>>> .merge-right.r523
  *
  * @param terminate_string 0-terminates the written string if value is 1
  */

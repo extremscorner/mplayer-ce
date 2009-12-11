@@ -322,11 +322,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     uint8_t *ppcm[4] = {0};
 
     if (buf_size < DV_PROFILE_BYTES ||
-<<<<<<< .working
-        !(c->sys = dv_frame_profile(c->sys, buf, buf_size)) ||
-=======
         !(c->sys = ff_dv_frame_profile(c->sys, buf, buf_size)) ||
->>>>>>> .merge-right.r523
         buf_size < c->sys->frame_size) {
           return -1;   /* Broken frame, or not enough data */
     }
@@ -435,11 +431,7 @@ static int dv_read_header(AVFormatContext *s,
         url_fseek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
         return AVERROR(EIO);
 
-<<<<<<< .working
-    c->dv_demux->sys = dv_frame_profile(c->dv_demux->sys, c->buf, DV_PROFILE_BYTES);
-=======
     c->dv_demux->sys = ff_dv_frame_profile(c->dv_demux->sys, c->buf, DV_PROFILE_BYTES);
->>>>>>> .merge-right.r523
     if (!c->dv_demux->sys) {
         av_log(s, AV_LOG_ERROR, "Can't determine profile of DV input stream.\n");
         return -1;
@@ -514,10 +506,6 @@ static int dv_probe(AVProbeData *p)
             marker_pos = i;
         if (state == 0xff3f0701 && i - marker_pos == 80)
             matches++;
-        if (state == 0x003f0700 || state == 0xff3f0700)
-            marker_pos = i;
-        if (state == 0xff3f0701 && i - marker_pos == 80)
-            return AVPROBE_SCORE_MAX/4;
         state = (state << 8) | p->buf[i];
     }
 
