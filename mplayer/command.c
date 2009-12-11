@@ -25,46 +25,38 @@
 #include "mpcommon.h"
 #include "mixer.h"
 #include "libmpcodecs/dec_video.h"
+#include "libmpcodecs/dec_teletext.h"
 #include "vobsub.h"
 #include "spudec.h"
 #include "get_path.h"
-#ifdef CONFIG_TV
 #include "stream/tv.h"
-#endif
-#ifdef CONFIG_RADIO
 #include "stream/stream_radio.h"
-#endif
-#ifdef CONFIG_PVR
 #include "stream/pvr.h"
-#endif
 #ifdef CONFIG_DVBIN
 #include "stream/dvbin.h"
 #endif
 #ifdef CONFIG_DVDREAD
 #include "stream/stream_dvd.h"
 #endif
-#ifdef CONFIG_DVDNAV
 #include "stream/stream_dvdnav.h"
-#endif
-#ifdef CONFIG_ASS
 #include "libass/ass.h"
 #include "libass/ass_mp.h"
-#endif
-#ifdef CONFIG_MENU
 #include "m_struct.h"
 #include "libmenu/menu.h"
-#endif
-#ifdef CONFIG_GUI
 #include "gui/interface.h"
-#endif
 
 #include "mp_core.h"
 #include "mp_fifo.h"
 #include "libavutil/avstring.h"
 
+#ifdef GEKKO
+#include "osdep/plat_gekko.h"
+#endif
+
 #define ROUND(x) ((int)((x)<0 ? (x)-0.5 : (x)+0.5))
 
 extern int use_menu;
+extern int copyScreen;
 
 static void rescale_input_coordinates(int ix, int iy, double *dx, double *dy)
 {
@@ -959,6 +951,10 @@ static int mp_property_program(m_option_t * prop, int action, void *arg,
 	     &prog) == DEMUXER_CTRL_NOTIMPL)
 	    return M_PROPERTY_ERROR;
 
+	if (prog.aid < 0 && prog.vid < 0) {
+	    mp_msg(MSGT_CPLAYER, MSGL_ERR, "Selected program contains no audio or video streams!\n");
+	    return M_PROPERTY_ERROR;
+	}
 	mp_property_do("switch_audio", M_PROPERTY_SET, &prog.aid, mpctx);
 	mp_property_do("switch_video", M_PROPERTY_SET, &prog.vid, mpctx);
 	return M_PROPERTY_OK;
@@ -1029,6 +1025,8 @@ static int mp_property_deinterlace(m_option_t * prop, int action,
 	vf->control(vf, VFCTRL_GET_DEINTERLACE, &deinterlace);
 	deinterlace = !deinterlace;
 	vf->control(vf, VFCTRL_SET_DEINTERLACE, &deinterlace);
+	set_osd_msg(OSD_MSG_SPEED, 1, osd_duration, MSGTR_OSDDeinterlace,
+	    deinterlace ? MSGTR_Enabled : MSGTR_Disabled);
 	return M_PROPERTY_OK;
     }
     return M_PROPERTY_NOT_IMPLEMENTED;
@@ -1324,6 +1322,7 @@ static int mp_property_sub(m_option_t * prop, int action, void *arg,
     demux_stream_t *const d_sub = mpctx->d_sub;
     const int global_sub_size = mpctx->global_sub_size;
     int source = -1, reset_spu = 0;
+    double pts = 0;
     char *sub_name;
 
     if (global_sub_size <= 0)
@@ -1506,11 +1505,15 @@ static int mp_property_sub(m_option_t * prop, int action, void *arg,
 	&& (mpctx->stream->type == STREAMTYPE_DVD
 	    || mpctx->stream->type == STREAMTYPE_DVDNAV)
 	&& dvdsub_id < 0 && reset_spu) {
-	dvdsub_id = -2;
-	d_sub->id = dvdsub_id;
+	d_sub->id = -2;
+	d_sub->sh = NULL;
     }
 #endif
-    update_subtitles(mpctx->sh_video, d_sub, 1);
+    if (mpctx->sh_audio)
+        pts = mpctx->sh_audio->pts;
+    if (mpctx->sh_video)
+        pts = mpctx->sh_video->pts;
+    update_subtitles(mpctx->sh_video, pts, d_sub, 1);
 
     return M_PROPERTY_OK;
 }
@@ -1882,7 +1885,6 @@ static int mp_property_tv_color(m_option_t * prop, int action, void *arg,
 
 #endif
 
-#ifdef CONFIG_TV_TELETEXT
 static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
@@ -1893,8 +1895,7 @@ static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
       SET is GET+1
       STEP is GET+2
     */
-    tvi_handle_t *tvh = mpctx->demuxer->priv;
-    if (mpctx->demuxer->type != DEMUXER_TYPE_TV || !tvh)
+    if (!mpctx->demuxer || !mpctx->demuxer->teletext)
         return M_PROPERTY_UNAVAILABLE;
     if(!base_ioctl)
         return M_PROPERTY_ERROR;
@@ -1903,31 +1904,30 @@ static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
     case M_PROPERTY_GET:
         if (!arg)
             return M_PROPERTY_ERROR;
-        result=tvh->functions->control(tvh->priv, base_ioctl, arg);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl, arg);
         break;
     case M_PROPERTY_SET:
         if (!arg)
             return M_PROPERTY_ERROR;
         M_PROPERTY_CLAMP(prop, *(int *) arg);
-        result=tvh->functions->control(tvh->priv, base_ioctl+1, arg);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl+1, arg);
         break;
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_STEP_DOWN:
-        result=tvh->functions->control(tvh->priv, base_ioctl, &val);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl, &val);
         val += (arg ? *(int *) arg : 1) * (action == M_PROPERTY_STEP_DOWN ? -1 : 1);
-        result=tvh->functions->control(tvh->priv, base_ioctl+1, &val);
+        result=teletext_control(mpctx->demuxer->teletext, base_ioctl+1, &val);
         break;
     default:
         return M_PROPERTY_NOT_IMPLEMENTED;
     }
 
-    return result == TVI_CONTROL_TRUE ? M_PROPERTY_OK : M_PROPERTY_ERROR;
+    return result == VBI_CONTROL_TRUE ? M_PROPERTY_OK : M_PROPERTY_ERROR;
 }
 
 static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
-    tvi_handle_t *tvh = mpctx->demuxer->priv;
     int result;
     int val;
 
@@ -1936,7 +1936,8 @@ static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
     if(result!=M_PROPERTY_OK)
         return result;
 
-    if(tvh->functions->control(tvh->priv, prop->priv, &val)==TVI_CONTROL_TRUE && val)
+    if(teletext_control(mpctx->demuxer->teletext,
+                        (int)prop->priv, &val)==VBI_CONTROL_TRUE && val)
         mp_input_set_section("teletext");
     else
         mp_input_set_section("tv");
@@ -1946,26 +1947,23 @@ static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
 static int mp_property_teletext_page(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
-    tvi_handle_t *tvh = mpctx->demuxer->priv;
     int result;
     int val;
-    if (mpctx->demuxer->type != DEMUXER_TYPE_TV || !tvh)
+    if (!mpctx->demuxer->teletext)
         return M_PROPERTY_UNAVAILABLE;
     switch(action){
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_STEP_DOWN:
         //This should be handled separately
         val = (arg ? *(int *) arg : 1) * (action == M_PROPERTY_STEP_DOWN ? -1 : 1);
-        result=tvh->functions->control(tvh->priv, TV_VBI_CONTROL_STEP_PAGE, &val);
+        result=teletext_control(mpctx->demuxer->teletext,
+                                TV_VBI_CONTROL_STEP_PAGE, &val);
         break;
     default:
         result=mp_property_teletext_common(prop,action,arg,mpctx);
     }
     return result;
 }
-
-
-#endif /* CONFIG_TV_TELETEXT */
 
 ///@}
 
@@ -2119,8 +2117,6 @@ static const m_option_t mp_properties[] = {
     { "tv_hue", mp_property_tv_color, CONF_TYPE_INT,
      M_OPT_RANGE, -100, 100, (void *) TV_COLOR_HUE },
 #endif
-
-#ifdef CONFIG_TV_TELETEXT
     { "teletext_page", mp_property_teletext_page, CONF_TYPE_INT,
      M_OPT_RANGE, 100, 899,  (void*)TV_VBI_CONTROL_GET_PAGE },
     { "teletext_subpage", mp_property_teletext_common, CONF_TYPE_INT,
@@ -2131,8 +2127,6 @@ static const m_option_t mp_properties[] = {
      M_OPT_RANGE, 0, 3, (void*)TV_VBI_CONTROL_GET_FORMAT },
     { "teletext_half_page", mp_property_teletext_common, CONF_TYPE_INT,
      M_OPT_RANGE, 0, 2, (void*)TV_VBI_CONTROL_GET_HALF_PAGE },
-#endif
-
     { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
 
@@ -2507,9 +2501,16 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_QUIT:
+#ifdef WIILIB
+//like pause
+	    cmd->pausing = 1;
+	    brk_cmd = 1;
+	    copyScreen = 1;
+	    break;
+#else	
 	    exit_player_with_rc(EXIT_QUIT,
 				(cmd->nargs > 0) ? cmd->args[0].v.i : 0);
-
+#endif
 	case MP_CMD_PLAY_TREE_STEP:{
 		int n = cmd->args[0].v.i == 0 ? 1 : cmd->args[0].v.i;
 		int force = cmd->args[1].v.i;
@@ -2661,6 +2662,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_LOADLIST:{
+		setwatchdogcounter(-1);
 		play_tree_t *e = parse_playlist_file(cmd->args[0].v.s);
 		if (!e)
 		    mp_msg(MSGT_CPLAYER, MSGL_ERR,
@@ -2680,6 +2682,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 			mpctx->eof = PT_NEXT_SRC;
 		    }
 		}
+		setwatchdogcounter(WATCH_TIMEOUT);
 		brk_cmd = 1;
 	    }
 	    break;
@@ -2878,23 +2881,21 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    if (mpctx->file_format == DEMUXER_TYPE_TV)
 		tv_step_chanlist((tvi_handle_t *) (mpctx->demuxer->priv));
 	    break;
-#ifdef CONFIG_TV_TELETEXT
+#endif /* CONFIG_TV */
 	case MP_CMD_TV_TELETEXT_ADD_DEC:
 	{
-	    tvi_handle_t* tvh=(tvi_handle_t *)(mpctx->demuxer->priv);
-	    if (mpctx->file_format == DEMUXER_TYPE_TV)
-		tvh->functions->control(tvh->priv,TV_VBI_CONTROL_ADD_DEC,&(cmd->args[0].v.s));
+	    if (mpctx->demuxer->teletext)
+	        teletext_control(mpctx->demuxer->teletext,TV_VBI_CONTROL_ADD_DEC,
+	                         &(cmd->args[0].v.s));
 	    break;
 	}
 	case MP_CMD_TV_TELETEXT_GO_LINK:
 	{
-	    tvi_handle_t* tvh=(tvi_handle_t *)(mpctx->demuxer->priv);
-	    if (mpctx->file_format == DEMUXER_TYPE_TV)
-		tvh->functions->control(tvh->priv,TV_VBI_CONTROL_GO_LINK,&(cmd->args[0].v.i));
+	    if (mpctx->demuxer->teletext)
+	        teletext_control(mpctx->demuxer->teletext,TV_VBI_CONTROL_GO_LINK,
+	                         &(cmd->args[0].v.i));
 	    break;
 	}
-#endif /* CONFIG_TV_TELETEXT */
-#endif /* CONFIG_TV */
 
 	case MP_CMD_SUB_LOAD:
 	    if (sh_video) {

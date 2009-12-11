@@ -94,8 +94,13 @@
 #ifdef CONFIG_LIBNEMESI
         {"rtsp-stream-over-sctp", &rtsp_transport_sctp, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 #else
+<<<<<<< .working
         {"rtsp-stream-over-sctp", "-rtsp-stream-over-sctp requires the", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 #endif /* CONFIG_LIBNEMESI */
+=======
+        {"rtsp-stream-over-sctp", "-rtsp-stream-over-sctp requires the \"libnemesi\" library\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
+#endif /* CONFIG_LIBNEMESI */
+>>>>>>> .merge-right.r523
 #ifdef CONFIG_NETWORK
 #ifndef GEKKO
         {"rtsp-port", &rtsp_port, CONF_TYPE_INT, CONF_RANGE, -1, 65535, NULL},
@@ -132,10 +137,11 @@
 	{"loadidx", &index_file_load, CONF_TYPE_STRING, 0, 0, 0, NULL},
 
 	// select audio/video/subtitle stream
-	{"aid", &audio_id, CONF_TYPE_INT, CONF_RANGE, 0, 8190, NULL},
+	{"aid", &audio_id, CONF_TYPE_INT, CONF_RANGE, -2, 8190, NULL},
 	{"ausid", &audio_substream_id, CONF_TYPE_INT, 0, 0, 0, NULL},
-	{"vid", &video_id, CONF_TYPE_INT, CONF_RANGE, 0, 8190, NULL},
-	{"sid", &dvdsub_id, CONF_TYPE_INT, CONF_RANGE, 0, 8190, NULL},
+	{"vid", &video_id, CONF_TYPE_INT, CONF_RANGE, -2, 8190, NULL},
+	{"sid", &dvdsub_id, CONF_TYPE_INT, CONF_RANGE, -2, 8190, NULL},
+	{"nosub", &dvdsub_id, CONF_TYPE_FLAG, 0, -1, -2, NULL},
 	{"novideo", &video_id, CONF_TYPE_FLAG, 0, -1, -2, NULL},
 
 	{ "hr-mp3-seek", &hr_mp3_seek, CONF_TYPE_FLAG, 0, 0, 1, NULL },
@@ -191,7 +197,7 @@
 	// force video/audio rate:
 	{"fps", &force_fps, CONF_TYPE_DOUBLE, CONF_MIN, 0, 0, NULL},
 	{"srate", &force_srate, CONF_TYPE_INT, CONF_RANGE, 1000, 8*48000, NULL},
-	{"channels", &audio_output_channels, CONF_TYPE_INT, CONF_RANGE, 1, 6, NULL},
+	{"channels", &audio_output_channels, CONF_TYPE_INT, CONF_RANGE, 1, 8, NULL},
 	{"format", &audio_output_format, CONF_TYPE_AFMT, 0, 0, 0, NULL},
 	{"speed", &playback_speed, CONF_TYPE_FLOAT, CONF_RANGE, 0.01, 100.0, NULL},
 
@@ -291,15 +297,15 @@
 	{"noflip-hebrew-commas", "MPlayer was compiled without FriBiDi support.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 #endif /* CONFIG_FRIBIDI */
 #ifdef CONFIG_ICONV
-	{"subcp", &sub_cp, CONF_TYPE_STRING, 0, 0, 0, NULL},
+	{"subcp", &sub_cp, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
 #endif
 	{"subdelay", &sub_delay, CONF_TYPE_FLOAT, 0, 0.0, 10.0, NULL},
 	{"subfps", &sub_fps, CONF_TYPE_FLOAT, 0, 0.0, 10.0, NULL},
 	{"autosub", &sub_auto, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-        {"noautosub", &sub_auto, CONF_TYPE_FLAG, 0, 1, 0, NULL},
+    {"noautosub", &sub_auto, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"unicode", &sub_unicode, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"nounicode", &sub_unicode, CONF_TYPE_FLAG, 0, 1, 0, NULL},
-	{"utf8", &sub_utf8, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+	{"utf8", &sub_utf8, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
 	{"noutf8", &sub_utf8, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"forcedsubsonly", &forced_subs_only, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	// specify IFO file for VOBSUB subtitle

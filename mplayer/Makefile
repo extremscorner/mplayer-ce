@@ -24,15 +24,6 @@ include config.mak
 
 ###### variable declarations #######
 
-COMMON_LDFLAGS += $(EXTRA_LIB)\
-                  $(EXTRALIBS) \
-
-LDFLAGS_MPLAYER = $(EXTRALIBS_MPLAYER) \
-                  $(COMMON_LDFLAGS) \
-
-LDFLAGS_MENCODER = $(EXTRALIBS_MENCODER) \
-                   $(COMMON_LDFLAGS) \
-
 SRCS_AUDIO_INPUT-$(ALSA1X)           += stream/ai_alsa1x.c
 SRCS_AUDIO_INPUT-$(ALSA9)            += stream/ai_alsa.c
 SRCS_AUDIO_INPUT-$(OSS)              += stream/ai_oss.c
@@ -153,7 +144,9 @@ SRCS_COMMON-$(LIBAVCODEC_A)          += libaf/af_lavcac3enc.c \
                                         libmpcodecs/vf_spp.c \
                                         libmpcodecs/vf_uspp.c \
 
-SRCS_COMMON-$(LIBAVFORMAT)           += libmpdemux/demux_lavf.c
+SRCS_COMMON-$(LIBAVFORMAT)           += libmpdemux/demux_lavf.c \
+                                        stream/stream_ffmpeg.c \
+
 SRCS_COMMON-$(LIBBS2B)               += libaf/af_bs2b.c
 SRCS_COMMON-$(LIBDCA)                += libmpcodecs/ad_libdca.c
 SRCS_COMMON-$(LIBDV)                 += libmpcodecs/ad_libdv.c \
@@ -281,7 +274,6 @@ SRCS_COMMON-$(TV)                    += stream/stream_tv.c stream/tv.c \
                                         stream/frequencies.c stream/tvi_dummy.c
 SRCS_COMMON-$(TV_BSDBT848)           += stream/tvi_bsdbt848.c
 SRCS_COMMON-$(TV_DSHOW)              += stream/tvi_dshow.c
-SRCS_COMMON-$(TV_TELETEXT)           += stream/tvi_vbi.c
 SRCS_COMMON-$(TV_V4L1)               += stream/tvi_v4l.c  stream/audio_in.c
 SRCS_COMMON-$(TV_V4L2)               += stream/tvi_v4l2.c stream/audio_in.c
 SRCS_COMMON-$(UNRAR_EXEC)            += unrar_exec.c
@@ -387,6 +379,7 @@ SRCS_COMMON = asxparser.c \
               libmpcodecs/ad_msgsm.c \
               libmpcodecs/ad_pcm.c \
               libmpcodecs/dec_audio.c \
+              libmpcodecs/dec_teletext.c \
               libmpcodecs/dec_video.c \
               libmpcodecs/img_format.c \
               libmpcodecs/mp_image.c \
@@ -533,7 +526,7 @@ SRCS_MPLAYER-$(ARTS)         += libao2/ao_arts.c
 SRCS_MPLAYER-$(BL)           += libvo/vo_bl.c
 SRCS_MPLAYER-$(CACA)         += libvo/vo_caca.c
 SRCS_MPLAYER-$(COREAUDIO)    += libao2/ao_coreaudio.c
-SRCS_MPLAYER-$(COREVIDEO)    += libvo/vo_corevideo.m
+SRCS_MPLAYER-$(COREVIDEO)    += libvo/vo_corevideo.m libvo/osx_common.c
 SRCS_MPLAYER-$(DART)         += libao2/ao_dart.c
 SRCS_MPLAYER-$(DFBMGA)       += libvo/vo_dfbmga.c
 SRCS_MPLAYER-$(DGA)          += libvo/vo_dga.c
@@ -599,6 +592,7 @@ SRCS_MPLAYER-$(LIBMENU)      += libmenu/menu.c \
                                 libmenu/menu_pt.c \
                                 libmenu/menu_txt.c \
                                 libmenu/vf_menu.c \
+                                libmenu/fsysloc.c \
 
 SRCS_MPLAYER-$(LIBMENU_DVBIN) += libmenu/menu_dvbin.c
 SRCS_MPLAYER-$(LIRC)          += input/lirc.c
@@ -610,7 +604,7 @@ SRCS_MPLAYER-$(OSS)           += libao2/ao_oss.c
 SRCS_MPLAYER-$(PNG)           += libvo/vo_png.c
 SRCS_MPLAYER-$(PNM)           += libvo/vo_pnm.c
 SRCS_MPLAYER-$(PULSE)         += libao2/ao_pulse.c
-SRCS_MPLAYER-$(QUARTZ)        += libvo/vo_quartz.c
+SRCS_MPLAYER-$(QUARTZ)        += libvo/vo_quartz.c libvo/osx_common.c
 SRCS_MPLAYER-$(S3FB)          += libvo/vo_s3fb.c
 SRCS_MPLAYER-$(SDL)           += libao2/ao_sdl.c libvo/vo_sdl.c
 SRCS_MPLAYER-$(SGIAUDIO)      += libao2/ao_sgi.c
@@ -660,6 +654,9 @@ SRCS_MPLAYER-$(YUV4MPEG)      += libvo/vo_yuv4mpeg.c
 SRCS_MPLAYER-$(ZR)            += libvo/jpeg_enc.c libvo/vo_zr.c libvo/vo_zr2.c
 
 SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
+							 osdep/di2.c \
+							 osdep/usb2storage.c \
+							 osdep/ftp_devoptab.c \
 							 osdep/gx_supp.c \
 							 osdep/glob_gekko.c \
 							 osdep/libdvdiso.c \
@@ -855,12 +852,20 @@ $(FFMPEGLIBS): $(FFMPEGFILES) config.h
 	touch $@
 
 mencoder$(EXESUF): $(MENCODER_DEPS)
-	$(CC) -o $@ $^ $(LDFLAGS_MENCODER)
+mencoder$(EXESUF): EXTRALIBS += $(EXTRALIBS_MENCODER)
 
+<<<<<<< .working
 
 mplayer$(EXESUF): $(MPLAYER_DEPS) 
 	$(CC) -o $@ $^ $(LDFLAGS_MPLAYER)
+=======
+mplayer$(EXESUF): $(MPLAYER_DEPS) 
+mplayer$(EXESUF): EXTRALIBS += $(EXTRALIBS_MPLAYER)
+mencoder$(EXESUF) mplayer$(EXESUF):
+	$(CC) -o $@ $^ $(EXTRALIBS)
+>>>>>>> .merge-right.r523
 
+<<<<<<< .working
 #############################################################
 #                   MPLAYER WII LIB                         #
 #############################################################
@@ -895,6 +900,56 @@ libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
 #	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
 
 
+=======
+#############################################################
+#                   MPLAYER WII LIB                         #
+#############################################################
+
+mplayer-wiilib.o: mplayer.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+command-wiilib.o: command.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+osdep/gx_supp-wiilib.o: osdep/gx_supp.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+osdep/plat_gekko-wiilib.o: osdep/plat_gekko.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+	
+libmenu/menu_filesel-wiilib.o: libmenu/menu_filesel.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+libmenu/fsysloc-wiilib.o: libmenu/fsysloc.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+osdep/getch2-gekko-wiilib.o: osdep/getch2-gekko.c
+	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
+
+A1 =	$(subst gx_supp.o,gx_supp-wiilib.o,$(OBJS_MPLAYER))
+A2 =	$(subst mplayer.o,mplayer-wiilib.o,$(A1))
+A3 =	$(subst plat_gekko.o,plat_gekko-wiilib.o,$(A2))
+A4 =	$(subst command.o,command-wiilib.o,$(A3))
+A5 =	$(subst menu_filesel.o,menu_filesel-wiilib.o,$(A4))
+A6 =	$(subst fsysloc.o,fsysloc-wiilib.o,$(A5))
+
+A7 =	$(subst getch2-gekko.o,getch2-gekko-wiilib.o,$(OBJS_COMMON))
+
+MPLAYERWIILIB = $(A6) 
+MPLAYERWIILIB += $(A7) 
+
+libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
+	rm -f $@
+	$(AR) rc $@ $(MPLAYERWIILIB)
+	 
+	$(RANLIB) $@
+#############################################################
+
+#TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(filter-out %mencoder.o,$(OBJS_MENCODER)) $(OBJS_COMMON) $(COMMON_LIBS)
+#	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
+
+
+>>>>>>> .merge-right.r523
 #codec-cfg$(EXESUF): codec-cfg.c help_mp.h
 #	$(HOST_CC) -O -DCODECS2HTML -I. -o $@ $<
 
@@ -1100,7 +1155,7 @@ mplayer-nomain.o: mplayer.c
 TOOLS/netstream$(EXESUF): TOOLS/netstream.c
 TOOLS/vivodump$(EXESUF): TOOLS/vivodump.c
 TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(filter-out %mencoder.o,$(OBJS_MENCODER)) $(OBJS_COMMON) $(COMMON_LIBS)
-	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(EXTRALIBS)
 
 REAL_SRCS    = $(wildcard TOOLS/realcodecs/*.c)
 REAL_TARGETS = $(REAL_SRCS:.c=.so.6.0)
