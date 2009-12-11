@@ -20,23 +20,34 @@ MANDIR = $(DESTDIR)/tmp/mplayerhaxx/share/man
 CONFDIR = $(DESTDIR)/tmp/mplayerhaxx/etc/mplayer
 LIBDIR = $(DESTDIR)/tmp/mplayerhaxx/lib
 
-AR = $(DEVKITPPC)/bin/powerpc-gekko-ar
-CC = $(DEVKITPPC)/bin/powerpc-gekko-gcc
-CXX = $(DEVKITPPC)/bin/powerpc-gekko-gcc
+AR = $(DEVKITPPC)/bin/powerpc-eabi-ar
+CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
+AS = $(DEVKITPPC)/bin/powerpc-eabi-gcc
+CXX = $(DEVKITPPC)/bin/powerpc-eabi-gcc
 HOST_CC = gcc
 YASM = 
 INSTALL = install
 INSTALLSTRIP = -s
-RANLIB = $(DEVKITPPC)/bin/powerpc-gekko-ranlib
+RANLIB = $(DEVKITPPC)/bin/powerpc-eabi-ranlib
 WINDRES = windres
-OBJCOPY = $(DEVKITPPC)/bin/powerpc-gekko-objcopy
+OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
+<<<<<<< .working
 EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2
 #EXTRA_INC =  -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include 
+=======
+#EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
+EXTRA_INC = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
+>>>>>>> .merge-right.r523
 EXTRAXX_INC = $(EXTRA_INC)
 
+<<<<<<< .working
 #COMMONFLAGS = -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+=======
+COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+#COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+>>>>>>> .merge-right.r523
 CFLAGS = $(EXTRA_INC) $(COMMONFLAGS) 
 OPTFLAGS =  $(EXTRA_INC) $(COMMONFLAGS)
 CXXFLAGS = $(COMMONFLAGS) -D__STDC_LIMIT_MACROS $(EXTRAXX_INC)
@@ -55,12 +66,16 @@ YASMFLAGS =
 EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii
 #EXTRA_LIB = -static $(COMMONFLAGS) -ldvdread -ldvdnav -lwiiuse -lbte -lfat -ldi -ltinysmb -logc -ldb -lm
 #EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
+<<<<<<< .working
 EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lfribidi -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
+=======
+EXTRA_LIB = -static $(COMMONFLAGS) -lfreetype -liconv -lfribidi -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -lm
+>>>>>>> .merge-right.r523
 #EXTRALIBS = 
 #EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
+EXTRALIBS += $(EXTRA_LIB)
 EXTRALIBS_MPLAYER =  -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
-
 DEPEND_CMD   = $(CC) -MM $(CFLAGS) $(filter-out %.h,$^) | sed "s,[0-9a-z._-]*: \($(SRC_DIR)/\)*\([a-z0-9]*/\)[^/]* ,\2&,"
 
 MPDEPEND_CMD     = $(CC) -MM $(CFLAGS)   $(filter-out %.xpm,$(filter-out %.h,$^)) | sed -e "s,[0-9a-z._-]*: \([a-z0-9/]*/\)[^/]* ,\1&," -e "s,\(.*\)\.o: ,\1.d &,"
@@ -104,8 +119,8 @@ BL = no
 CACA = no
 CDDA = 
 CDDB = no
-COREAUDIO = 
-COREVIDEO = 
+COREAUDIO = auto
+COREVIDEO = auto
 DART = auto
 DFBMGA = 
 DGA = no
@@ -121,6 +136,7 @@ DXR2 = no
 DXR3 = no
 ESD = no
 FAAC=no
+GEKKO = yes
 FAAD = yes
 FAAD_INTERNAL = yes
 FASTMEMCPY = yes
@@ -131,7 +147,6 @@ GIF = no
 GGI = no
 GL = no
 GL_WIN32 = 
-GEKKO = yes
 GUI = no
 GUI_GTK = 
 GUI_WIN32 = 
@@ -141,23 +156,28 @@ IVTV = no
 JACK = no
 JOYSTICK = no
 JPEG = yes
+KVA = auto
 LADSPA = no
 LIBA52 = yes
 LIBA52_INTERNAL = yes
+<<<<<<< .working
 LIBASS = yes
+=======
+LIBASS = yes
+LIBBS2B = no
+>>>>>>> .merge-right.r523
 LIBDCA = no
 LIBDV = no
 LIBDVDCSS_INTERNAL = yes
 LIBLZO = no
 LIBMAD = no
 LIBMENU = yes
-LIBMENU_DVBIN = no
+LIBMENU_DVBIN = 
 LIBMPEG2 = yes
 LIBNEMESI = no
 LIBNUT = no
 LIBSMBCLIENT = no
 LIBTHEORA = no
-LIBVORBIS = yes
 LIRC = no
 LIVE555 = no
 MACOSX_BUNDLE = no
@@ -182,7 +202,7 @@ PVR = no
 QTX_CODECS = auto
 QTX_CODECS_WIN32 = no
 QTX_EMULATION = no
-QUARTZ = 
+QUARTZ = auto
 RADIO=no
 RADIO_CAPTURE=no
 REAL_CODECS = no
@@ -228,6 +248,7 @@ VIDIX_S3=no
 VIDIX_SH_VEU=no
 VIDIX_SIS=no
 VIDIX_UNICHROME=no
+VORBIS = yes
 VSTREAM = no
 WII = no
 WIN32DLL = no
@@ -243,6 +264,7 @@ XV = no
 XVID4 = no
 XVIDIX = no
 XVMC = no
+XVR100 = no
 YUV4MPEG = yes
 ZR = no
 
@@ -262,9 +284,10 @@ LIBPOSTPROC_SO = auto
 LIBSWSCALE = yes
 LIBSWSCALE_A = yes
 LIBSWSCALE_SO = auto
-LIBBS2B = no
 
-BUILD_STATIC=yes
+CC_O=-o $@
+LD=$(DEVKITPPC)/bin/powerpc-eabi-gcc
+CONFIG_STATIC=yes
 SRC_PATH=..
 BUILD_ROOT=..
 LIBPREF=lib
@@ -282,6 +305,7 @@ CONFIG_RDFT=yes
 CONFIG_BZLIB=no
 CONFIG_ENCODERS=no
 CONFIG_GPL=yes
+<<<<<<< .working
 CONFIG_LIBAMR=
 CONFIG_LIBAMR_NB=no
 CONFIG_LIBAMR_WB=no
@@ -293,6 +317,20 @@ CONFIG_LIBSCHROEDINGER=no
 CONFIG_LIBVORBIS=no
 CONFIG_LIBX264=no
 CONFIG_LIBXVID=no
+=======
+CONFIG_LIBDIRAC_DECODER=no
+CONFIG_LIBDIRAC_ENCODER=no
+CONFIG_LIBFAAC_ENCODER=no
+CONFIG_LIBMP3LAME_ENCODER=auto
+CONFIG_LIBOPENCORE_AMRNB_DECODER=no
+CONFIG_LIBOPENCORE_AMRNB_ENCODER=no
+CONFIG_LIBOPENCORE_AMRWB_DECODER=no
+CONFIG_LIBSCHROEDINGER_DECODER=no
+CONFIG_LIBSCHROEDINGER_ENCODER=no
+CONFIG_LIBVORBIS_ENCODER=no
+CONFIG_LIBX264_ENCODER=no
+CONFIG_LIBXVID_ENCODER=no
+>>>>>>> .merge-right.r523
 CONFIG_MLIB = no
 CONFIG_MUXERS=no
 CONFIG_POSTPROC = yes
@@ -322,8 +360,13 @@ CONFIG_CLJR_DECODER=yes
 CONFIG_CSCD_DECODER=yes
 CONFIG_CYUV_DECODER=yes
 CONFIG_DNXHD_DECODER=yes
+<<<<<<< .working
 CONFIG_DNXHD_DECODER=yes
 CONFIG_DPX_DECODER=yes
+=======
+CONFIG_DPX_DECODER=yes
+CONFIG_DSICINVIDEO_DECODER=yes
+>>>>>>> .merge-right.r523
 CONFIG_DVVIDEO_DECODER=yes
 CONFIG_DXA_DECODER=yes
 CONFIG_EACMV_DECODER=yes
@@ -342,6 +385,7 @@ CONFIG_FLIC_DECODER=yes
 CONFIG_FLV_DECODER=yes
 CONFIG_FOURXM_DECODER=yes
 CONFIG_FRAPS_DECODER=yes
+CONFIG_FRWU_DECODER=yes
 CONFIG_GIF_DECODER=yes
 CONFIG_H261_DECODER=yes
 CONFIG_H263_DECODER=yes
@@ -435,7 +479,9 @@ CONFIG_ZMBV_DECODER=yes
 CONFIG_AAC_DECODER=yes
 CONFIG_AC3_DECODER=yes
 CONFIG_ALAC_DECODER=yes
+CONFIG_ALS_DECODER=yes
 CONFIG_APE_DECODER=yes
+CONFIG_ATRAC1_DECODER=yes
 CONFIG_ATRAC3_DECODER=yes
 CONFIG_COOK_DECODER=yes
 CONFIG_DCA_DECODER=yes
@@ -464,14 +510,17 @@ CONFIG_SONIC_DECODER=yes
 CONFIG_TRUEHD_DECODER=yes
 CONFIG_TRUESPEECH_DECODER=yes
 CONFIG_TTA_DECODER=yes
+CONFIG_TWINVQ_DECODER=yes
 CONFIG_VMDAUDIO_DECODER=yes
 CONFIG_VORBIS_DECODER=yes
 CONFIG_WAVPACK_DECODER=yes
+CONFIG_WMAPRO_DECODER=yes
 CONFIG_WMAV1_DECODER=yes
 CONFIG_WMAV2_DECODER=yes
 CONFIG_WS_SND1_DECODER=yes
 CONFIG_PCM_ALAW_DECODER=yes
 CONFIG_PCM_DVD_DECODER=yes
+CONFIG_PCM_BLURAY_DECODER=yes
 CONFIG_PCM_F32BE_DECODER=yes
 CONFIG_PCM_F32LE_DECODER=yes
 CONFIG_PCM_F64BE_DECODER=yes
@@ -528,11 +577,18 @@ CONFIG_ADPCM_XA_DECODER=yes
 CONFIG_ADPCM_YAMAHA_DECODER=yes
 CONFIG_DVBSUB_DECODER=yes
 CONFIG_DVDSUB_DECODER=yes
+CONFIG_PGSSUB_DECODER=yes
 CONFIG_XSUB_DECODER=yes
+<<<<<<< .working
 CONFIG_MPEG1VIDEO_ENCODER=no
 CONFIG_SNOW_ENCODER=no
 CONFIG_PNG_ENCODER=no
 CONFIG_AAC_ENCODER=no
+=======
+CONFIG_MPEG1VIDEO_ENCODER=yes
+CONFIG_SNOW_ENCODER=yes
+CONFIG_PNG_ENCODER=yes
+>>>>>>> .merge-right.r523
 CONFIG_AAC_PARSER=yes
 CONFIG_AC3_PARSER=yes
 CONFIG_CAVSVIDEO_PARSER=yes
@@ -554,6 +610,7 @@ CONFIG_VC1_PARSER=yes
 CONFIG_VP3_PARSER=yes
 CONFIG_AAC_DEMUXER=yes
 CONFIG_AC3_DEMUXER=yes
+CONFIG_AEA_DEMUXER=yes
 CONFIG_AIFF_DEMUXER=yes
 CONFIG_AMR_DEMUXER=yes
 CONFIG_APC_DEMUXER=yes
@@ -566,6 +623,7 @@ CONFIG_AVS_DEMUXER=yes
 CONFIG_BETHSOFTVID_DEMUXER=yes
 CONFIG_BFI_DEMUXER=yes
 CONFIG_C93_DEMUXER=yes
+CONFIG_CAF_DEMUXER=yes
 CONFIG_CAVSVIDEO_DEMUXER=yes
 CONFIG_DAUD_DEMUXER=yes
 CONFIG_DIRAC_DEMUXER=yes
@@ -595,6 +653,7 @@ CONFIG_INGENIENT_DEMUXER=yes
 CONFIG_IPMOVIE_DEMUXER=yes
 CONFIG_ISS_DEMUXER=yes
 CONFIG_LMLM4_DEMUXER=yes
+CONFIG_IV8_DEMUXER=yes
 CONFIG_M4V_DEMUXER=yes
 CONFIG_MATROSKA_DEMUXER=yes
 CONFIG_MJPEG_DEMUXER=yes
@@ -666,6 +725,7 @@ CONFIG_VC1T_DEMUXER=yes
 CONFIG_VMD_DEMUXER=yes
 CONFIG_VOC_DEMUXER=yes
 CONFIG_VQF_DEMUXER=yes
+CONFIG_W64_DEMUXER=yes
 CONFIG_WAV_DEMUXER=yes
 CONFIG_WC3_DEMUXER=yes
 CONFIG_WSAUD_DEMUXER=yes
@@ -673,7 +733,12 @@ CONFIG_WSVQA_DEMUXER=yes
 CONFIG_WV_DEMUXER=yes
 CONFIG_XA_DEMUXER=yes
 CONFIG_YUV4MPEGPIPE_DEMUXER=yes
+<<<<<<< .working
 CONFIG_=yes
+=======
+CONFIG_=yes
+CONFIG_AAC_ADTSTOASC_BSF=yes
+>>>>>>> .merge-right.r523
 CONFIG_DUMP_EXTRADATA_BSF=yes
 CONFIG_H264_MP4TOANNEXB_BSF=yes
 CONFIG_IMX_DUMP_HEADER_BSF=yes

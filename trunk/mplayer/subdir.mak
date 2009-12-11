@@ -5,7 +5,7 @@ include $(SUBDIR)../common.mak
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
 
-ifeq ($(BUILD_STATIC),yes)
+ifeq ($(CONFIG_STATIC),yes)
 all: $(SUBDIR)$(LIBNAME)
 
 install-libs: install-lib$(NAME)-static
@@ -18,33 +18,31 @@ endif
 
 INCINSTDIR := $(INCDIR)/lib$(NAME)
 
-THIS_LIB := $(SUBDIR)$($(BUILD_SHARED:yes=S)LIBNAME)
+THIS_LIB := $(SUBDIR)$($(CONFIG_SHARED:yes=S)LIBNAME)
 
 define RULES
 $(SUBDIR)%$(EXESUF): $(SUBDIR)%.o
-	$(CC) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS) $$(ELIBS)
+	$(LD) $(FFLDFLAGS) -o $$@ $$^ -l$(FULLNAME) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)%-test.o: $(SUBDIR)%.c
-	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c -o $$@ $$^
 
 $(SUBDIR)%-test.o: $(SUBDIR)%-test.c
-	$(CC) $(CFLAGS) -DTEST -c -o $$@ $$^
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DTEST -c -o $$@ $$^
 
 $(SUBDIR)x86/%.o: $(SUBDIR)x86/%.asm
+	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$@ $$< > $$(@:.o=.d)
 	$(YASM) $(YASMFLAGS) -I $$(<D)/ -o $$@ $$<
 
-$(SUBDIR)x86/%.d: $(SUBDIR)x86/%.asm
-	$(YASM) $(YASMFLAGS) -I $$(<D)/ -M -o $$(@:%.d=%.o) $$< > $$@
-
 clean::
-	rm -f $(EXAMPLES) $(addprefix $(SUBDIR),*-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
+	rm -f $(addprefix $(SUBDIR),*-example$(EXESUF) *-test$(EXESUF) $(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
 	    $(addprefix $(SUBDIR), $(foreach suffix,$(CLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
 distclean:: clean
 	rm -f  $(addprefix $(SUBDIR),$(DISTCLEANSUFFIXES)) \
             $(addprefix $(SUBDIR), $(foreach suffix,$(DISTCLEANSUFFIXES),$(addsuffix /$(suffix),$(DIRS))))
 
-ifdef BUILD_SHARED
+ifdef CONFIG_SHARED
 all: $(SUBDIR)$(SLIBNAME)
 
 install-libs: install-lib$(NAME)-shared
@@ -54,7 +52,7 @@ $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS)
 	$(SLIB_CREATE_DEF_CMD)
-	$(CC) $(SHFLAGS) $(FFLDFLAGS) -o $$@ $$(filter-out $(DEP_LIBS),$$^) $(FFEXTRALIBS) $(EXTRAOBJS)
+	$(LD) $(SHFLAGS) $(FFLDFLAGS) -o $$@ $$(filter %.o,$$^) $(FFEXTRALIBS) $(EXTRAOBJS)
 	$(SLIB_EXTRA_CMD)
 
 ifdef SUBDIR
