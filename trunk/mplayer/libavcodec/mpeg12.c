@@ -2402,14 +2402,6 @@ static int decode_chunks(AVCodecContext *avctx,
                     if(s2->pict_type==FF_B_TYPE){
                         if(!s2->closed_gop)
                             break;
-<<<<<<< .working
-                        /* Allocate a dummy frame */
-                        i= ff_find_unused_picture(s2, 0);
-                        s2->last_picture_ptr= &s2->picture[i];
-                        if(ff_alloc_picture(s2, s2->last_picture_ptr, 0) < 0)
-                            return -1;
-=======
->>>>>>> .merge-right.r523
                     }
                 }
                 if(s2->pict_type==FF_I_TYPE)

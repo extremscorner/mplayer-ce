@@ -107,18 +107,10 @@ OBJS-$(CONFIG_MMF_DEMUXER)               += mmf.o raw.o
 OBJS-$(CONFIG_MMF_MUXER)                 += mmf.o riff.o
 OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o riff.o isom.o
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o riff.o isom.o avc.o
-<<<<<<< .working
-OBJS-$(CONFIG_MP2_MUXER)                 += mp3.o
-OBJS-$(CONFIG_MP3_DEMUXER)               += mp3.o id3v1.o id3v2.o
-OBJS-$(CONFIG_MP3_MUXER)                 += mp3.o
-OBJS-$(CONFIG_MP4_MUXER)                 += movenc.o riff.o isom.o avc.o
-OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o id3v2.o
-=======
 OBJS-$(CONFIG_MP2_MUXER)                 += mp3.o id3v1.o
 OBJS-$(CONFIG_MP3_DEMUXER)               += mp3.o id3v1.o id3v2.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3.o id3v1.o id3v2.o
 OBJS-$(CONFIG_MPC_DEMUXER)               += mpc.o id3v1.o id3v2.o apetag.o
->>>>>>> .merge-right.r523
 OBJS-$(CONFIG_MPC8_DEMUXER)              += mpc8.o
 OBJS-$(CONFIG_MPEG1SYSTEM_MUXER)         += mpegenc.o
 OBJS-$(CONFIG_MPEG1VCD_MUXER)            += mpegenc.o
@@ -212,10 +204,6 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             rtpenc.o      \
                                             rtpenc_h264.o \
                                             avc.o
-<<<<<<< .working
-OBJS-$(CONFIG_RTSP_DEMUXER)              += rdt.o rtsp.o rtp_vorbis.o rtp_asf.o
-OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o rtp.o rtpdec.o rtp_h264.o rtp_vorbis.o rtp_asf.o
-=======
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rdt.o         \
@@ -224,20 +212,14 @@ OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rtp_asf.o     \
                                             rtp_h264.o    \
                                             rtp_vorbis.o
->>>>>>> .merge-right.r523
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += raw.o id3v2.o
 OBJS-$(CONFIG_SIFF_DEMUXER)              += siff.o
 OBJS-$(CONFIG_SMACKER_DEMUXER)           += smacker.o
 OBJS-$(CONFIG_SOL_DEMUXER)               += sol.o raw.o
-<<<<<<< .working
-OBJS-$(CONFIG_SOX_DEMUXER)               += soxdec.o
-OBJS-$(CONFIG_SOX_MUXER)                 += soxenc.o
-=======
 OBJS-$(CONFIG_SOX_DEMUXER)               += soxdec.o raw.o
 OBJS-$(CONFIG_SOX_MUXER)                 += soxenc.o
 OBJS-$(CONFIG_SPDIF_MUXER)               += spdif.o
->>>>>>> .merge-right.r523
 OBJS-$(CONFIG_STR_DEMUXER)               += psxstr.o
 OBJS-$(CONFIG_SWF_DEMUXER)               += swfdec.o
 OBJS-$(CONFIG_SWF_MUXER)                 += swfenc.o

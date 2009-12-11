@@ -31,15 +31,10 @@
 
 #if   ARCH_ARM
 #   include "arm/intreadwrite.h"
-<<<<<<< .working
-#elif ARCH_MIPS
-#   include "mips/intreadwrite.h"
-=======
 #elif ARCH_AVR32
 #   include "avr32/intreadwrite.h"
 #elif ARCH_MIPS
 #   include "mips/intreadwrite.h"
->>>>>>> .merge-right.r523
 #elif ARCH_PPC
 #   include "ppc/intreadwrite.h"
 #endif

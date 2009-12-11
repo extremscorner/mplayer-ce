@@ -73,60 +73,23 @@ void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca,
 
 	u8 *dst, *srca1, *src1, *srca2, *src2, *srca3, *src3, *srca4, *src4;
 
-<<<<<<< .working
-	getStrideInfo(&w1,&df1,&Yrowpitch);
-	Yrowpitch=Yrowpitch*8;
-	df1=df1*8;
-
-
-
-	h1 = ((h/8.0)+0.5)*8;
-=======
 	getStrideInfo(&w1, &df1, &Yrowpitch);
 	Yrowpitch = Yrowpitch * 8;
 	df1 = df1 * 8;
 
 	h1 = ((h / 8.0) + 0.5) * 8;
->>>>>>> .merge-right.r523
 	buf = malloc(dststride * h1);
 	bufa = malloc(dststride * h1);
 
 	memset(buf, 0, dststride * h1);
 	memset(bufa, 0, dststride * h1);
 
-<<<<<<< .working
-//	buf_st=(dststride-srcstride)/2; //center
-//	buf_st=0; //align to left
-	buf_st=x0;  // original pos
-	tmp=buf+buf_st;
-	tmpa=bufa+buf_st;
-
-
-    
-    for(y=0;y<h;y++){
-    	memcpy(tmp, src, w);
-    	memcpy(tmpa, srca, w);
-        src+=srcstride;
-        srca+=srcstride;
-        tmp+=dststride;
-        tmpa+=dststride;        
-    }	
-	//w=srcstride=dststride;
-	//h=h1;
-	
-	src=buf;
-	srca=bufa;
-	h1 = h / 4 ;
-=======
 	//	buf_st=(dststride-srcstride)/2; //center
 	//	buf_st=0; //align to left
 	buf_st = x0; // original pos
 	tmp = buf + buf_st;
 	tmpa = bufa + buf_st;
->>>>>>> .merge-right.r523
 
-<<<<<<< .working
-=======
 	for (y = 0; y < h; y++)
 	{
 		memcpy(tmp, src, w);
@@ -139,7 +102,6 @@ void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca,
 	//w=srcstride=dststride;
 	//h=h1;
 
->>>>>>> .merge-right.r523
 	src = buf;
 	srca = bufa;
 	h1 = h / 4;
@@ -209,18 +171,6 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 {
 	int p;
 
-<<<<<<< .working
-	//p=pitch[0];
-	p=image_width;
-	p= (p / 16);
-	if(p % 2) p++;
-	p=p*16;
-	y0=((int)(y0/8.0))*8;
-
-	vo_draw_alpha_gekko(w, h, src, srca, stride,
-						GetYtexture() + (y0 * p),
-						pitch[0],x0);						
-=======
 	//p=pitch[0];
 	p = image_width;
 	p = (p / 16);
@@ -232,7 +182,6 @@ static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
 
 	vo_draw_alpha_gekko(w, h, src, srca, stride, GetYtexture() + (y0 * p),
 			pitch[0], x0);
->>>>>>> .merge-right.r523
 }
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
@@ -331,25 +280,10 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 	//  GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
 	//  GX_ConfigTextureYUV(image_width, image_height, pitch);	
 
-<<<<<<< .working
-  if (iar > sar) {
-    width = vmode->viWidth;
-    height = (float) width / par;
-  } else {
-    height = vmode->viHeight;
-    width = (float) height * par + vmode->viWidth - vmode->fbWidth;
-  }
-  
-  GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
-  GX_ConfigTextureYUV(image_width, image_height, pitch);	
-  
-  return 0;
-=======
 	//  image_height = orig_height;
 	reinit_video();
 	//printf("mplayer video inited\n");
 	return 0;
->>>>>>> .merge-right.r523
 }
 
 static void uninit(void)

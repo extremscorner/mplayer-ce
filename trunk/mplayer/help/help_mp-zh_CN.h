@@ -1,8 +1,4 @@
-<<<<<<< .working
-// Synced with help_mp-en.h r29209 (MSGTR_SaveSlotTooOld)
-=======
 // Synced with help_mp-en.h r29912 (MSGTR_MPDEMUX_ASFHDR_HeaderSizeOver1MB)
->>>>>>> .merge-right.r523
 // Reminder of hard terms which need better/final solution later:
 //   (file links to be updated later if available!);
 //   NAV; section/subsection;  XScreenSaver; keycolor;

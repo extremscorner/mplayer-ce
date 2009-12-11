@@ -368,13 +368,8 @@ static int decode_ga_specific_config(AACContext *ac, GetBitContext *gb,
     enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
     int extension_flag, ret;
 
-<<<<<<< .working
-    if(get_bits1(gb)) {  // frameLengthFlag
-        av_log_missing_feature(ac->avccontext, "960/120 MDCT window is", 1);
-=======
     if (get_bits1(gb)) { // frameLengthFlag
         av_log_missing_feature(ac->avccontext, "960/120 MDCT window is", 1);
->>>>>>> .merge-right.r523
         return -1;
     }
 
@@ -624,34 +619,18 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 ics->group_len[ics->num_window_groups - 1] = 1;
             }
         }
-<<<<<<< .working
-        ics->num_windows   = 8;
-        ics->swb_offset    =    ff_swb_offset_128[ac->m4ac.sampling_index];
-        ics->num_swb       =   ff_aac_num_swb_128[ac->m4ac.sampling_index];
-        ics->tns_max_bands = ff_tns_max_bands_128[ac->m4ac.sampling_index];
-=======
         ics->num_windows       = 8;
         ics->swb_offset        =    ff_swb_offset_128[ac->m4ac.sampling_index];
         ics->num_swb           =   ff_aac_num_swb_128[ac->m4ac.sampling_index];
         ics->tns_max_bands     = ff_tns_max_bands_128[ac->m4ac.sampling_index];
->>>>>>> .merge-right.r523
         ics->predictor_present = 0;
     } else {
-<<<<<<< .working
-        ics->max_sfb       = get_bits(gb, 6);
-        ics->num_windows   = 1;
-        ics->swb_offset    =    ff_swb_offset_1024[ac->m4ac.sampling_index];
-        ics->num_swb       =   ff_aac_num_swb_1024[ac->m4ac.sampling_index];
-        ics->tns_max_bands = ff_tns_max_bands_1024[ac->m4ac.sampling_index];
-        ics->predictor_present = get_bits1(gb);
-=======
         ics->max_sfb               = get_bits(gb, 6);
         ics->num_windows           = 1;
         ics->swb_offset            =    ff_swb_offset_1024[ac->m4ac.sampling_index];
         ics->num_swb               =   ff_aac_num_swb_1024[ac->m4ac.sampling_index];
         ics->tns_max_bands         = ff_tns_max_bands_1024[ac->m4ac.sampling_index];
         ics->predictor_present     = get_bits1(gb);
->>>>>>> .merge-right.r523
         ics->predictor_reset_group = 0;
         if (ics->predictor_present) {
             if (ac->m4ac.object_type == AOT_AAC_MAIN) {
@@ -1346,13 +1325,8 @@ static int decode_sbr_extension(AACContext *ac, GetBitContext *gb,
                                 int crc, int cnt)
 {
     // TODO : sbr_extension implementation
-<<<<<<< .working
-    av_log_missing_feature(ac->avccontext, "SBR", 0);
-    skip_bits_long(gb, 8*cnt - 4); // -4 due to reading extension type
-=======
     av_log_missing_feature(ac->avccontext, "SBR", 0);
     skip_bits_long(gb, 8 * cnt - 4); // -4 due to reading extension type
->>>>>>> .merge-right.r523
     return cnt;
 }
 

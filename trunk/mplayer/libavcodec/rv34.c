@@ -993,13 +993,8 @@ static void rv34_output_macroblock(RV34DecContext *r, int8_t *intra_types, int c
             Y += s->linesize * 4 - 4*4;
             intra_types += r->intra_types_stride;
         }
-<<<<<<< .working
-        intra_types -= r->intra_types_stride * 4;
-        fill_rectangle(r->avail_cache + 5, 2, 2, 4, 0, 4);
-=======
         intra_types -= r->intra_types_stride * 4;
         fill_rectangle(r->avail_cache + 6, 2, 2, 4, 0, 4);
->>>>>>> .merge-right.r523
         for(j = 0; j < 2; j++){
             idx = 6 + j*4;
             for(i = 0; i < 2; i++, cbp >>= 1, idx++){

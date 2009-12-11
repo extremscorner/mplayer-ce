@@ -854,53 +854,11 @@ $(FFMPEGLIBS): $(FFMPEGFILES) config.h
 mencoder$(EXESUF): $(MENCODER_DEPS)
 mencoder$(EXESUF): EXTRALIBS += $(EXTRALIBS_MENCODER)
 
-<<<<<<< .working
-
-mplayer$(EXESUF): $(MPLAYER_DEPS) 
-	$(CC) -o $@ $^ $(LDFLAGS_MPLAYER)
-=======
 mplayer$(EXESUF): $(MPLAYER_DEPS) 
 mplayer$(EXESUF): EXTRALIBS += $(EXTRALIBS_MPLAYER)
 mencoder$(EXESUF) mplayer$(EXESUF):
 	$(CC) -o $@ $^ $(EXTRALIBS)
->>>>>>> .merge-right.r523
 
-<<<<<<< .working
-#############################################################
-#                   MPLAYER WII LIB                         #
-#############################################################
-
-mplayer-wiilib.o: mplayer.c
-	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
-
-command-wiilib.o: command.c
-	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
-
-osdep/gx_supp-wiilib.o: osdep/gx_supp.c
-	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
-
-osdep/plat_gekko-wiilib.o: osdep/plat_gekko.c
-	$(CC) $(CFLAGS) -DWIILIB -c -o $@ $<
-
-A1 =	$(subst gx_supp.o,gx_supp-wiilib.o,$(OBJS_MPLAYER))
-A2 =	$(subst mplayer.o,mplayer-wiilib.o,$(A1))
-A3 =	$(subst plat_gekko.o,plat_gekko-wiilib.o,$(A2))
-A4 =	$(subst command.o,command-wiilib.o,$(A3))
-MPLAYERWIILIB = $(A4) 
-MPLAYERWIILIB += $(OBJS_COMMON) 
-
-libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
-	rm -f $@
-	$(AR) rc $@ $(MPLAYERWIILIB)
-	 
-#	$(RANLIB) $@
-#############################################################
-
-#TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(filter-out %mencoder.o,$(OBJS_MENCODER)) $(OBJS_COMMON) $(COMMON_LIBS)
-#	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
-
-
-=======
 #############################################################
 #                   MPLAYER WII LIB                         #
 #############################################################
@@ -949,7 +907,6 @@ libmplayerwii.a: $(MPLAYERWIILIB) $(COMMON_LIBS)
 #	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
 
 
->>>>>>> .merge-right.r523
 #codec-cfg$(EXESUF): codec-cfg.c help_mp.h
 #	$(HOST_CC) -O -DCODECS2HTML -I. -o $@ $<
 

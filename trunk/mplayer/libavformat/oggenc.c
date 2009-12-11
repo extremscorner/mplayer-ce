@@ -130,25 +130,14 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     bytestream_put_byte(&p, 0x00); // streaminfo
     bytestream_put_be24(&p, 34);
     bytestream_put_buffer(&p, streaminfo, FLAC_STREAMINFO_SIZE);
-<<<<<<< .working
-
-    // second packet: VorbisComment
-    oggstream->header_len[1] = 1+3+4+strlen(vendor)+4;
-    oggstream->header[1] = av_mallocz(oggstream->header_len[1]);
-    p = oggstream->header[1];
-=======
 
     // second packet: VorbisComment
     p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1]);
     if (!p)
         return AVERROR_NOMEM;
     oggstream->header[1] = p;
->>>>>>> .merge-right.r523
-    if (!p)
-        return AVERROR_NOMEM;
     bytestream_put_byte(&p, 0x84); // last metadata block and vorbis comment
     bytestream_put_be24(&p, oggstream->header_len[1] - 4);
-
 
     return 0;
 }

@@ -305,13 +305,8 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
 
             AV_DEBUG(" ordered, current length: %d \n", current_length);  //FIXME
 
-<<<<<<< .working
-            used_entries=entries;
-            for(;current_entry<used_entries && current_length <= 32;++current_length) {
-=======
             used_entries = entries;
             for (; current_entry < used_entries && current_length <= 32; ++current_length) {
->>>>>>> .merge-right.r523
                 uint_fast16_t i, number;
 
                 AV_DEBUG(" number bits: %d ", ilog(entries - current_entry));

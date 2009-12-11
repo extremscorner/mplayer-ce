@@ -55,11 +55,7 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType f
     int i, j;
     FFIIRFilterCoeffs *c;
     double wa;
-<<<<<<< .working
-    double complex p[MAXORDER + 1];
-=======
     double p[MAXORDER + 1][2];
->>>>>>> .merge-right.r523
 
     if(filt_type != FF_FILTER_TYPE_BUTTERWORTH || filt_mode != FF_FILTER_MODE_LOWPASS)
         return NULL;
@@ -82,11 +78,7 @@ av_cold struct FFIIRFilterCoeffs* ff_iir_filter_init_coeffs(enum IIRFilterType f
     for(i = 1; i <= order; i++)
         p[i][0] = p[i][1] = 0.0;
     for(i = 0; i < order; i++){
-<<<<<<< .working
-        double complex zp;
-=======
         double zp[2];
->>>>>>> .merge-right.r523
         double th = (i + (order >> 1) + 0.5) * M_PI / order;
         double a_re, a_im, c_re, c_im;
         zp[0] = cos(th) * wa;

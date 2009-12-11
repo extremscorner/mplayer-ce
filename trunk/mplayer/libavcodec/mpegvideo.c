@@ -557,9 +557,6 @@ av_cold int MPV_common_init(MpegEncContext *s)
     for(i = 0; i < MAX_PICTURE_COUNT; i++) {
         avcodec_get_frame_defaults((AVFrame *)&s->picture[i]);
     }
-    for(i = 0; i < MAX_PICTURE_COUNT; i++) {
-        avcodec_get_frame_defaults((AVFrame *)&s->picture[i]);
-    }
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->error_status_table, mb_array_size*sizeof(uint8_t), fail)
 

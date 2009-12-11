@@ -27,14 +27,11 @@
 #include "id3v2.h"
 #include "id3v1.h"
 
-<<<<<<< .working
-=======
 #if CONFIG_MP3_DEMUXER
 
 #include "libavcodec/mpegaudio.h"
 #include "libavcodec/mpegaudiodecheader.h"
 
->>>>>>> .merge-right.r523
 /* mp3 read */
 
 static int mp3_read_probe(AVProbeData *p)
@@ -147,21 +144,13 @@ static int mp3_read_header(AVFormatContext *s,
     st->need_parsing = AVSTREAM_PARSE_FULL;
     st->start_time = 0;
 
-<<<<<<< .working
-    ff_id3v1_read(s);
-    ff_id3v2_read(s);
-=======
     // lcm of all mp3 sample rates
     av_set_pts_info(st, 64, 1, 14112000);
->>>>>>> .merge-right.r523
 
-<<<<<<< .working
-=======
     ff_id3v2_read(s);
     if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
->>>>>>> .merge-right.r523
     off = url_ftell(s->pb);
     if (mp3_parse_vbr_tags(s, st, off) < 0)
         url_fseek(s->pb, off, SEEK_SET);

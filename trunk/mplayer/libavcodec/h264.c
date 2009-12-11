@@ -1997,17 +1997,11 @@ static void free_tables(H264Context *h){
         av_freep(&hx->top_borders[1]);
         av_freep(&hx->top_borders[0]);
         av_freep(&hx->s.obmc_scratchpad);
-<<<<<<< .working
-        av_freep(&hx->rbsp_buffer[1]);
-        av_freep(&hx->rbsp_buffer[0]);
-        if (i) av_freep(&h->thread_context[i]);
-=======
         av_freep(&hx->rbsp_buffer[1]);
         av_freep(&hx->rbsp_buffer[0]);
         hx->rbsp_buffer_size[0] = 0;
         hx->rbsp_buffer_size[1] = 0;
         if (i) av_freep(&h->thread_context[i]);
->>>>>>> .merge-right.r523
     }
 }
 
@@ -7904,13 +7898,9 @@ static int decode_frame(AVCodecContext *avctx,
                     out = h->delayed_pic[i];
                     out_idx = i;
                 }
-<<<<<<< .working
-            cross_idr = !!h->delayed_pic[i] || h->delayed_pic[0]->key_frame || h->delayed_pic[0]->mmco_reset;
-=======
             if(s->avctx->has_b_frames == 0 && (h->delayed_pic[0]->key_frame || h->delayed_pic[0]->mmco_reset))
                 h->outputed_poc= INT_MIN;
             out_of_order = out->poc < h->outputed_poc;
->>>>>>> .merge-right.r523
 
             if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
                 { }

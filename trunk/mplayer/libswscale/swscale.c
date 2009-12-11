@@ -318,24 +318,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32[8][8])={
 {  1,  25,   7,  31,   0,  24,   6,  30, },
 };
 
-<<<<<<< .working
-#if 0
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_64[8][8])={
-{  0,  48,  12,  60,   3,  51,  15,  63, },
-{ 32,  16,  44,  28,  35,  19,  47,  31, },
-{  8,  56,   4,  52,  11,  59,   7,  55, },
-{ 40,  24,  36,  20,  43,  27,  39,  23, },
-{  2,  50,  14,  62,   1,  49,  13,  61, },
-{ 34,  18,  46,  30,  33,  17,  45,  29, },
-{ 10,  58,   6,  54,   9,  57,   5,  53, },
-{ 42,  26,  38,  22,  41,  25,  37,  21, },
-};
-#endif
-
 DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73[8][8])={
-=======
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73[8][8])={
->>>>>>> .merge-right.r523
 {  0,  55,  14,  68,   3,  58,  17,  72, },
 { 37,  18,  50,  32,  40,  22,  54,  35, },
 {  9,  64,   5,  59,  13,  67,   8,  63, },
@@ -346,22 +329,6 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73[8][8])={
 { 48,  30,  43,  25,  47,  29,  42,  24, },
 };
 
-<<<<<<< .working
-#if 0
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_128[8][8])={
-{ 68,  36,  92,  60,  66,  34,  90,  58, },
-{ 20, 116,  12, 108,  18, 114,  10, 106, },
-{ 84,  52,  76,  44,  82,  50,  74,  42, },
-{  0,  96,  24, 120,   6, 102,  30, 126, },
-{ 64,  32,  88,  56,  70,  38,  94,  62, },
-{ 16, 112,   8, 104,  22, 118,  14, 110, },
-{ 80,  48,  72,  40,  86,  54,  78,  46, },
-{  4, 100,  28, 124,   2,  98,  26, 122, },
-};
-#endif
-
-=======
->>>>>>> .merge-right.r523
 #if 1
 DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220[8][8])={
 {117,  62, 158, 103, 113,  58, 155, 100, },
@@ -834,24 +801,6 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
 
 #define YSCALE_YUV_2_ANYRGB_C(func, func2, func_g16, func_monoblack)\
     switch(c->dstFormat) {\
-    case PIX_FMT_RGB48BE:\
-    case PIX_FMT_RGB48LE:\
-        func(uint8_t,0)\
-            ((uint8_t*)dest)[ 0]= r[Y1];\
-            ((uint8_t*)dest)[ 1]= r[Y1];\
-            ((uint8_t*)dest)[ 2]= g[Y1];\
-            ((uint8_t*)dest)[ 3]= g[Y1];\
-            ((uint8_t*)dest)[ 4]= b[Y1];\
-            ((uint8_t*)dest)[ 5]= b[Y1];\
-            ((uint8_t*)dest)[ 6]= r[Y2];\
-            ((uint8_t*)dest)[ 7]= r[Y2];\
-            ((uint8_t*)dest)[ 8]= g[Y2];\
-            ((uint8_t*)dest)[ 9]= g[Y2];\
-            ((uint8_t*)dest)[10]= b[Y2];\
-            ((uint8_t*)dest)[11]= b[Y2];\
-            dest+=12;\
-        }\
-        break;\
     case PIX_FMT_RGB48BE:\
     case PIX_FMT_RGB48LE:\
         func(uint8_t,0)\

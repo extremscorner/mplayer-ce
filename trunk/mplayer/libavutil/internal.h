@@ -254,8 +254,6 @@ if ((y) < (x)) {\
     }\
 }
 
-<<<<<<< .working
-=======
 #define FF_ALLOCZ_OR_GOTO(ctx, p, size, label)\
 {\
     p = av_mallocz(size);\
@@ -265,7 +263,6 @@ if ((y) < (x)) {\
     }\
 }
 
->>>>>>> .merge-right.r523
 #if !HAVE_LLRINT
 #ifndef GEKKO
 static av_always_inline av_const long long llrint(double x)

@@ -79,10 +79,6 @@ void ff_acelp_interpolatef(float *out, const float *in,
 {
     int n, i;
 
-<<<<<<< .working
-void ff_acelp_high_pass_filter(int16_t* out, int hpf_f[2],
-                               const int16_t* in, int length)
-=======
     for (n = 0; n < length; n++) {
         int idx = 0;
         float v = 0;
@@ -100,7 +96,6 @@ void ff_acelp_high_pass_filter(int16_t* out, int hpf_f[2],
 
 void ff_acelp_high_pass_filter(int16_t* out, int hpf_f[2],
                                const int16_t* in, int length)
->>>>>>> .merge-right.r523
 {
     int i;
     int tmp;

@@ -48,14 +48,6 @@ unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n)
 
 // Generate vlc codes from vorbis huffman code lengths
 
-<<<<<<< .working
-// the two bits[p] > 32 checks should be redundant, all calling code should
-// already ensure that, but since it allows overwriting the stack it seems
-// reasonable to check redundantly.
-int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num) {
-    uint_fast32_t exit_at_level[33]={404,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-=======
 // the two bits[p] > 32 checks should be redundant, all calling code should
 // already ensure that, but since it allows overwriting the stack it seems
 // reasonable to check redundantly.
@@ -64,7 +56,6 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num)
     uint_fast32_t exit_at_level[33] = {
         404, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
->>>>>>> .merge-right.r523
 
     uint_fast8_t i, j;
     uint_fast32_t code, p;
@@ -80,19 +71,11 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num)
         return 0;
     }
 
-<<<<<<< .working
-    codes[p]=0;
-    if (bits[p] > 32) return 1;
-    for(i=0;i<bits[p];++i) {
-        exit_at_level[i+1]=1<<i;
-    }
-=======
     codes[p] = 0;
     if (bits[p] > 32)
         return 1;
     for (i = 0; i < bits[p]; ++i)
         exit_at_level[i+1] = 1 << i;
->>>>>>> .merge-right.r523
 
 #ifdef V_DEBUG
     av_log(NULL, AV_LOG_INFO, " %d. of %d code len %d code %d - ", p, num, bits[p], codes[p]);
@@ -104,17 +87,11 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num)
 
     ++p;
 
-<<<<<<< .working
-    for(;p<num;++p) {
-        if (bits[p] > 32) return 1;
-        if (bits[p]==0) continue;
-=======
     for (; p < num; ++p) {
         if (bits[p] > 32)
              return 1;
         if (bits[p] == 0)
              continue;
->>>>>>> .merge-right.r523
         // find corresponding exit(node which the tree can grow further from)
         for (i = bits[p]; i > 0; --i)
             if (exit_at_level[i])

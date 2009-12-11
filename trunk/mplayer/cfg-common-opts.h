@@ -94,13 +94,8 @@
 #ifdef CONFIG_LIBNEMESI
         {"rtsp-stream-over-sctp", &rtsp_transport_sctp, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 #else
-<<<<<<< .working
-        {"rtsp-stream-over-sctp", "-rtsp-stream-over-sctp requires the", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
-#endif /* CONFIG_LIBNEMESI */
-=======
         {"rtsp-stream-over-sctp", "-rtsp-stream-over-sctp requires the \"libnemesi\" library\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 #endif /* CONFIG_LIBNEMESI */
->>>>>>> .merge-right.r523
 #ifdef CONFIG_NETWORK
 #ifndef GEKKO
         {"rtsp-port", &rtsp_port, CONF_TYPE_INT, CONF_RANGE, -1, 65535, NULL},
