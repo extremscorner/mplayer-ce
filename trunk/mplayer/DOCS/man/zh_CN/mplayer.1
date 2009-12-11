@@ -1,4 +1,4 @@
-.\" sync with en/mplayer.1 r29252
+.\" sync with en/mplayer.1 r29905
 .\" Encoding: UTF-8
 .\" Reminder of hard terms which need better/final solution later:
 .\"   /capture; playtree in parent list; colorkey; retrace; desync; downmix;
@@ -188,7 +188,10 @@ MPlayer 可播放的电影(见上所述)编码成其他的 MPlayer 可播放格�
 扩展, 反转, 后处理, 旋转, 缩放, 降噪声, RGB/\:YUV 转换)等。
 .PP
 .B gmplayer
-是具有图形用户界面的 MPlayer。其选项与 MPlayer 相同。
+其与 MPlayer 具有相同的选项，然而这些选项可能无法全部正常工作，因为与经由 GUI 所作
+的配置（保存在 gui.conf 中）有冲突。
+特别是有些选项的设置可能被 gui.conf 中的设置覆盖，而另一些可能最终永久保存在
+gui.conf 中。
 .PP
 本手册页最后有用法示例, 能让你迅速上手。
 .PP
@@ -424,7 +427,7 @@ MPlayer 有个完全可配置的, 命令驱动的控制层,
 .RS
 .
 （以下按键只有当编译时启用对于电视字幕的支持（teletext）时才有效：这些按键用于控制电
-视字幕。）
+视字幕，数据可能来自模拟电视输入或是 MPEG 传输流。）
 .RE
 .PP
 .PD 0
@@ -511,11 +514,16 @@ MEncoder 的配置文件是 "mencoder.conf" 位于你的配置目录
 而如果要停用就把它们设置为 "no" 或者 "0" 或者 "false"。
 甚至子选项也可以如此设定选项。
 .PP
-你也可以为特定文件写配置文件。
-如果你希望一个特定文件 "movie.avi" 有个配置文件, 就新建文件,
-名为 "movie.avi.conf", 写上该特定文件的选项并放在目录 ~/.mplayer/ 下。
-你也可以把配置文件放在与播放该特定文件时该特定文件相同的目录之下,
-只要你（要么在命令行或者在全局配置文件中）给出 \-use\-filedir\-conf 选项。
+你也可以编写每个媒体文件专用的配置文件。
+如果要给名叫‘movie.avi’的一个文件设置一个配置文件，则创建一个名为‘movie.avi.conf’的文件，
+其中存放了该媒体文件专用的选项，并将其放到 ~/.mplayer/。
+只要给出了 \-use\-filedir\-conf 选项（或是通行命令行，或是在全局配置文件中），你也可以把配置文
+件放到与所播放的媒体文件相同的目录下。
+如果在媒体文件所在目录下找到其专用的配置文件，则不会从 ~/.maplyer 目录下加载任何媒体文件专用的
+配置。
+另外，\-use\-filedir\-conf 选项启用了目录专用的配置文件。
+对于该选项，MPlayer 首先尝试所播放文件的目录下加载 mplayer.conf，然后尝试加载任何存在的媒体文件
+专用的配置。
 .PP
 .I MPLAYER 配置文件示例:
 .sp 1
@@ -1242,7 +1250,9 @@ MPlayer 要求解码器把音频解码到指定数量的声道。
 .IPs 4
 环绕立体声
 .IPs 6
-5.1 立体声
+5.1 全声道输出
+.IPs 8
+7.1 全声道输出
 .RE
 .PD 1
 .
@@ -2177,6 +2187,10 @@ MPlayer 运行在 verbose (\-v) 模式时, 打印可用的字幕标识。
 如果你不能选择 DVD 中其中之一的字幕, 也请试试 \-vobsubid。
 .
 .TP
+.B \-nosub
+禁止所有默认情况下自动选择的字幕（就像比如 Matroska/mkv 流分离器所支持的那样）。
+.
+.TP
 .B \-slang <语言代号[,语言代号,...]> (也请参见 \-sid)
 指定使用字幕语言的优先级列表。
 不同的容器格式使用不同的语言代号。DVDs 使用 ISO 639\-1 的
@@ -2895,7 +2909,7 @@ VESA 帧缓冲不支持改变模式。
 .IPs netwm
 锁定 NETWM 风格。
 .IPs "none\ "
-不设置全屏窗口层。
+清空模式列表；你可以之后添加要启用的模式。
 .IPs stays_on_top
 如果可用的话, 使用 _NETWM_STATE_STAYS_ON_TOP 提示。
 .REss
@@ -2988,6 +3002,10 @@ gl、gl2、directx、fbdev 和 tdfxfb 视频输出驱动支持。
 值 1 表示正方形像素((几乎?)对所有的 LCD 是正确的)。
 .
 .TP
+.B \-name（仅用于 X11）
+设置窗口类的名字。
+.
+.TP
 .B \-nodouble
 停用双缓冲, 多数用于调试目的。
 双缓冲通过在内存里储存两帧来解决闪烁问题, 在显示一帧的同时解码另一帧。
@@ -3061,6 +3079,16 @@ ggi 和 gl2 的都支持此功能。
 如果你的屏保程序不支持 XSS 或 XResetScreenSaver 的 API，则请使用 \-heartbeat\-cmd 选项。
 .
 .TP
+.B \-title（另见 \-use\-filename\-title）
+设置窗口的标题。
+基于 X11 的视频输出驱动支持。
+.
+.TP
+.B \-use\-filename\-title（另见 \-title）
+当未使用 \-title 设置窗口的标题时，使用媒体的文件名设置。
+基于 X11 的视频输出驱动支持。
+.
+.TP
 .B "\-vm \ \ \ "
 尝试改变不同的视频模式。
 视频输出驱动支持的有 dga, x11, xv, sdl 和 directx。
@@ -3072,9 +3100,11 @@ ggi 和 gl2 的都支持此功能。
 启用 VBI 用于 vesa, dfbmga 和 svga 视频输出驱动。
 .
 .TP
-.B \-wid <窗口标识> (也请参见 \-guiwid) (仅用于 X11, OpenGL 和 DirectX)
-告诉 MPlayer 附着于一个已有的窗口。
-把 MPlayer 嵌入浏览器(比如 plugger 扩展)时有用。
+.B \-wid <窗口标识>（另见 \-guiwid）（仅用于 X11、OpenGL 和 DirectX）
+该选项让 MPlayer 绑定至一个已有的窗口上。
+适用于将 MPlayer 嵌入至浏览器中（比如扩展插件）。
+该选项将完全充填所给的窗口，从而会缩放宽高比。MPlayer 不再负责诸如全景模式之类
+的功能，而是由创建该窗口的应用程序管理。
 .
 .TP
 .B \-xineramascreen <\-2\-...>
@@ -3221,7 +3251,8 @@ ggi 和 gl2 的都支持此功能。
 .PD 1
 .
 .TP
-.B vdpau（与 \-vc ffmpeg12vdpau，ffwmv3vdpau，ffvc1vdpau 或 ffh264vdpau 一同使用）
+.B vdpau（与 \-vc ffmpeg12vdpau，ffwmv3vdpau，ffvc1vdpau，ffh264vdpau 或
+ffodivxvdpau 一同使用）
 使用 VDPAU 硬件解码视频的视频输出方式。
 同时支持显示软件解码的视频。
 .PD 0
@@ -3255,6 +3286,32 @@ ggi 和 gl2 的都支持此功能。
 对于低速显存很有用。
 .IPs pullup
 尝试应用反电视电影模式，需要使用运动自适应的瞬间反隔行扫描算法。
+.IPs colorspace
+选择 YUV 至 RGB 转换时使用的色彩空间
+通常标清（SD）内容应使用 BT.601，而高清（HD）内容用 BT.709。
+使用不正确的色彩空间将导致稍许的饱和度过度或不足，以及色彩偏移。
+.RSss
+.IPs 0
+根据视频分辨率判断色彩空间。
+宽度大于 1280 或高度大于 576 的视频将被假定为 HD，从而使用 BT.709 色彩空间。
+.IPs 1
+使用 ITU-R BT.601 色彩空间（默认值）。
+.IPs 2
+使用 ITU-R BT.709 色彩空间。
+.IPs 3
+使用 SMPTE-240M 色彩空间。
+.RE
+.IPs hqscaling
+.RSss
+.IPs 0
+使用默认的 VDPAU 缩放模式（默认值）。
+.IPs 1\-9
+应用高质量的 VDPAU 缩放模式（需要足够性能的硬件）。
+.RE
+.IPs force\-mixer
+强制使用 VDPAU 混合器，其实现了所有以上选项（默认值）。
+要允许显示 BGRA 色彩空间，则使用 noforce\-mixer。
+（如果实际使用了BGRA，则禁用所有以上选项和硬件均衡器。）
 .RE
 .PD 1
 .
@@ -3378,7 +3435,7 @@ VIDIX 的 Windows 前台
 .IPs dive
 强制使用 DIVE 模式。
 .IPs (no)t23
-启用/禁用解决 T23 笔记本问题的变通模式（默认值：\-not23）。
+启用或禁用解决 T23 笔记本问题的变通模式（默认值：禁用）。
 如果你的显卡仅支持画面放大输出，尝试开启这个选项。
 .RE
 .PD 1
@@ -4747,7 +4804,7 @@ delta 的正弦, 使用非常低的值听此扫听(sweep)。
 .PD 1
 .
 .TP
-.B bs2b[=option1:option2]
+.B bs2b[=option1:option2:...]
 使用 libbs2b 的 Bauer 立体声至双耳声道转换模式。
 通过使声音更类似于如同从扬声器传来以提升耳机的听觉效果。该模式让每个耳朵同时
 听见两个声道，并考虑了声音传播距离的差别及头部回响效果。
@@ -4760,14 +4817,15 @@ delta 的正弦, 使用非常低的值听此扫听(sweep)。
 设置以 0.1*dB 为单位的用于低频率的反馈级别。
 .IPs profile=<value>
 有许多配置可供方便选用：
+.PD 0
 .RSs
-默认配置：如果未指定其它参数将被使用（fcut=700，feed=45）；
-.br
-cmoy：Chu Moy 回路实现方案（fcut=700，feed=60）；
-.br
-jmeier：Jan Meier 回路实现方案（fcut=650，feed=95）。
-.REss
-.PD 1
+.IPs default
+如果未指定其它选项则使用这个选项（fcut=700, feed=45）
+.IPs "cmoy\ "
+Chu Moy 回路实现算法（fcut=700, feed=60）
+.IPs jmeier
+Jan Meier 回路实现算法（fcut=650, feed=95）
+.RE
 .RE
 .sp 1
 .RS
@@ -4842,11 +4900,11 @@ jmeier：Jan Meier 回路实现方案（fcut=650，feed=95）。
 .PD 0
 .RSs
 .IPs <nch>
-输出声道数 (1\-6)
+输出声道数（1\-8）
 .IPs "<nr>\ "
-路由数 (1\-6)
+转换路径数（1\-8）
 .IPs <from1:to1:from2:to2:from3:to3:...>
-0 到 5 对定义各声道的路由。
+0 到 7 的数字对定义各声道的转换路径。
 .RE
 .sp 1
 .RS
@@ -4928,7 +4986,7 @@ s8, floatle, floatbe, floatne, mulaw, alaw, mpeg2, ac3 和 imaadpcm。
 .PD 0
 .RSs
 .IPs "<n>\ \ "
-输出声道数 (1\-6)
+输出声道数（1\-8）
 .IPs <Lij>
 输入声道 i 混音成输出声道 j 的份量 (0\-1)。
 所以基本上你先要有 n 个数表示要作用到第一个输入声道,
@@ -4965,7 +5023,7 @@ s8, floatle, floatbe, floatne, mulaw, alaw, mpeg2, ac3 和 imaadpcm。
 为了最佳结果, 尝试设置截频尽可能低。这能改善立体声或环绕音效的体验。
 .IPs "<ch>\ "
 决定插入超音声道音频的声道号。
-声道号在 0 和 5 之间 (默认是: 5)。
+声道号在 0 和 7 之间（默认值：5）。
 观察到声道数会自动增加到 <ch>, 如果必要的话。
 .RE
 .sp 1
@@ -4986,8 +5044,8 @@ s8, floatle, floatbe, floatne, mulaw, alaw, mpeg2, ac3 和 imaadpcm。
 .PD 0
 .RSs
 .IPs "<ch>\ "
-决定插入中心声道的声道号。
-声道号在 0 和 5 之间 (默认是: 5)。
+决定插入中心声道的声道编号。
+声道编号取值于 0 和 7 之间（默认值：5）。
 观察到声道数会自动增加到 <ch>, 如果必要的话。
 .RE
 .PD 1
@@ -5384,7 +5442,7 @@ w和h的负数值将被视作为相对于原始大小的增量。
 .RE
 .
 .TP
-.B scale[=w:h[:ilaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
+.B scale[=w:h[:interlaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
 使用软件缩放器（速度慢）缩放图像并执行YUV<\->RGB色彩空间转换（另参见\-sws）。
 .RSs
 .IPs <w>,<h>
@@ -5404,7 +5462,7 @@ d_宽/\:d_高！
 .br
 \-(n+8)：与以上的\-n相似，但舍入尺寸值至最接近的16的倍数。
 .REss
-.IPs <ilaced>
+.IPs <interlaced>
 触发隔行扫描视频的缩放方式。
 .RSss
 0：关闭（默认）
@@ -6823,6 +6881,8 @@ h参数值。
 可以用的编号——不会覆盖任何文件。
 该滤镜在不用时不占用资源，并且支持任意色彩空间，所以将其添加进
 配置文件中很安全。
+要确保 screenshot 滤镜是加在所有其效果你希望录在所保存图像中的滤镜之后。
+例如，如果你希望截屏与你在显示屏上看到的完全一致，则它应当是最后一个滤镜。
 .RE
 .
 .TP
@@ -6851,6 +6911,23 @@ h参数值。
 .IPs <threshold>
 决定像素值低于多少就被认作是黑色的阈值（默认值：32）。
 .RE
+.
+.TP
+.B gradfun[=strength[:radius]]
+消除有时候因为将色深降至 8 比特后，在颜色近似不变的区域造成的带状损伤。
+通过插值在带状区域产生变化坡度，从而使其颜色产生抖动效果。
+.sp 1
+设计该滤镜仅为播放目的。
+不要在有损压缩步骤前使用该滤镜，因为压缩过程容易丢失抖动效果，从而恢复带状损伤。
+.RSs
+.IPs <strength>
+滤镜改变单个像素的最大程度。
+同时也是侦测颜色近似不变区域的阈值（默认值：1.2）。
+.IPs <radius>
+应用变化坡度的周边区域大小。
+较大的 radius 值带来较平缓的变化坡度，但同时使滤镜不能修改靠近颜色变化丰富区域
+的像素（默认值：16）。
+.RE.
 .
 .
 .
@@ -7343,10 +7420,6 @@ Dolby Digital（AC-3）
 Free Lossless Audio Codec（FLAC，免费无损音频编解码器）
 .IPs "g726\ "
 G.726 ADPCM
-.IPs libamr_nb
-3GPP的自适应多码率（AMR）窄频段格式
-.IPs libamr_wb
-3GPP的自适应多码率（AMR）宽频段格式
 .IPs libfaac
 Advanced Audio Coding（AAC，高级音频编码）——使用FAAC
 .IPs libmp3lame
@@ -9622,7 +9695,6 @@ subq=5能比subq=1多压缩掉10%。
 trellis（要求 trellis，实验性）（默认值：0.0）
 .RE
 .PD 1
-.
 .
 .TP
 .B deadzone_inter=<0\-32>

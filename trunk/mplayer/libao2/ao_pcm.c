@@ -94,7 +94,7 @@ static int control(int cmd,void *arg){
 // return: 1=success 0=fail
 static int init(int rate,int channels,int format,int flags){
     int bits;
-    opt_t subopts[] = {
+    const opt_t subopts[] = {
         {"waveheader", OPT_ARG_BOOL, &ao_pcm_waveheader, NULL},
         {"file",       OPT_ARG_MSTRZ, &ao_outputfilename, NULL},
         {"fast",       OPT_ARG_BOOL, &fast, NULL},
@@ -234,7 +234,7 @@ static int play(void* data,int len,int flags){
 
 // let libaf to do the conversion...
 #if 0
-//#ifdef WORDS_BIGENDIAN
+//#if HAVE_BIGENDIAN
     if (ao_data.format == AFMT_S16_LE) {
       unsigned short *buffer = (unsigned short *) data;
       register int i;
@@ -244,7 +244,7 @@ static int play(void* data,int len,int flags){
     }
 #endif
 
-    if (ao_data.channels == 6 || ao_data.channels == 5) {
+    if (ao_data.channels == 5 || ao_data.channels == 6 || ao_data.channels == 8) {
         int frame_size = le2me_16(wavhdr.bits) / 8;
         len -= len % (frame_size * ao_data.channels);
         reorder_channel_nch(data, AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,

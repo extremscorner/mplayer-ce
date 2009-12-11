@@ -2,7 +2,11 @@
 // Updated by: Roberto Togni <see AUTHORS for email address>
 // Updated by: PaulTT <see AUTHORS for email address>
 
+<<<<<<< .working
 // Updated to help_mp-en.h r29209
+=======
+// Updated to help_mp-en.h r29912
+>>>>>>> .merge-right.r523
 
 
 // ========================= MPlayer help ===========================
@@ -209,6 +213,7 @@ static const char help_text[]=
 #define MSGTR_OSDosd "OSD: %so"
 #define MSGTR_OSDChapter "Capitolo: (%d) %s"
 #define MSGTR_OSDAngle "Angolazione: %d/%d"
+#define MSGTR_OSDDeinterlace "Deinterlacciamento: %s"
 
 // property values
 #define MSGTR_Enabled "abilitat"
@@ -1133,10 +1138,17 @@ static const char help_text[]=
 #define MSGTR_CouldNotFindXScreenSaver "xscreensaver_disable: Non riesco a trovare la finestra di XScreenSaver.\n"
 #define MSGTR_SelectedVideoMode "XF86VM: Scelta modalità video %dx%d per la dimensione immagine %dx%d.\n"
 
+<<<<<<< .working
 #define MSGTR_InsertingAfVolume "[Mixer] Nessun mixer hardware, filtro volume inserito automaticamente.\n"
 #define MSGTR_NoVolume "[Mixer] Regolazione del volume non disponibile.\n"
 #define MSGTR_NoBalance "[Mixer] Controllo del bilanciamento non disponibile.\n"
 
+// old vo drivers that have been replaced
+=======
+#define MSGTR_InsertingAfVolume "[Mixer] Nessun mixer hardware, filtro volume inserito automaticamente.\n"
+#define MSGTR_NoVolume "[Mixer] Regolazione del volume non disponibile.\n"
+#define MSGTR_NoBalance "[Mixer] Controllo del bilanciamento non disponibile.\n"
+>>>>>>> .merge-right.r523
 // old vo drivers that have been replaced
 #define MSGTR_VO_PGM_HasBeenReplaced "Il driver di uscita video pgm è stato sostituito con -vo pnm:pgmyuv.\n"
 #define MSGTR_VO_MD5_HasBeenReplaced "Il driver di uscita video md5 è stato sostituito con -vo md5sum.\n"
@@ -1274,9 +1286,7 @@ static const char help_text[]=
 #define MSGTR_AO_ALSA_UnableToSetSamplerate2 "[AO_ALSA] Impossibile impostare samplerate-2: %s\n"
 // TODO::
 //#define MSGTR_AO_ALSA_UnableToSetBufferTimeNear "[AO_ALSA] Unable to set buffer time near: %s\n"
-#define MSGTR_AO_ALSA_UnableToSetPeriodTime "[AO_ALSA] Impossibile impostare il tempo del periodo: %s\n"
 #define MSGTR_AO_ALSA_UnableToGetPeriodSize "[AO ALSA] Impossibile ricavare la dimensione periodo: %s\n"
-#define MSGTR_AO_ALSA_UnableToSetPeriodSize "[AO ALSA] Impossibile impostare la dimensione periodo(%ld): %s\n"
 #define MSGTR_AO_ALSA_UnableToSetPeriods "[AO_ALSA] Impossibile impostare i periodi: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetHwParameters "[AO_ALSA] Impossibile impostare hw-parameters: %s\n"
 #define MSGTR_AO_ALSA_UnableToGetBufferSize "[AO_ALSA] Impossibile ricavare buffersize: %s\n"
@@ -1630,6 +1640,7 @@ static const char help_text[]=
 // libmpcodecs/ad_libdv.c
 #define MSGTR_MPCODECS_AudioFramesizeDiffers "[AD_LIBDV] Attenzione! Dimensione frame audio diversa! letta=%d  hdr=%d.\n"
 
+<<<<<<< .working
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Il codec non ha impostato sh->disp_w and sh->disp_h, tento di risolvere.\n"
 #define MSGTR_VoConfigRequest "VDec: configurazione chiesta dal vo - %d x %d (sp.col. preferito: %s)\n"
@@ -1643,6 +1654,19 @@ static const char help_text[]=
 #define MSGTR_DShowInitOK "INFO: Win32/DShow inizializzato correttamente.\n"
 #define MSGTR_DMOInitOK "INFO: Win32/DMO inizializzato correttamente.\n"
 
+=======
+// vd.c
+#define MSGTR_CodecDidNotSet "VDec: Il codec non ha impostato sh->disp_w and sh->disp_h, tento di risolvere.\n"
+#define MSGTR_CouldNotFindColorspace "Impossibile trovare uno spazio colore adatto - riprovo con -vf scale...\n"
+#define MSGTR_MovieAspectIsSet "Movie-Aspect è %.2f:1 - riscalo per ottenere un rapporto corretto.\n"
+#define MSGTR_MovieAspectUndefined "Movie-Aspect non definito - nessuna scalatura.\n"
+
+// vd_dshow.c, vd_dmo.c
+#define MSGTR_DownloadCodecPackage "Devi installare o aggiornare i codec binari.\nVai su http://www.mplayerhq.hu/dload.html\n"
+#define MSGTR_DShowInitOK "INFO: Win32/DShow inizializzato correttamente.\n"
+#define MSGTR_DMOInitOK "INFO: Win32/DMO inizializzato correttamente.\n"
+
+>>>>>>> .merge-right.r523
 // libmpcodecs/vd_dmo.c vd_dshow.c vd_vfw.c
 #define MSGTR_MPCODECS_CouldntAllocateImageForCinepakCodec "[VD_DMO] Impossibile allocare l'immagine per il codec cinepak.\n"
 

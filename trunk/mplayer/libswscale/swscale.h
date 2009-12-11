@@ -31,7 +31,7 @@
 
 #define LIBSWSCALE_VERSION_MAJOR 0
 #define LIBSWSCALE_VERSION_MINOR 7
-#define LIBSWSCALE_VERSION_MICRO 1
+#define LIBSWSCALE_VERSION_MICRO 2
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
                                                LIBSWSCALE_VERSION_MINOR, \
@@ -47,6 +47,16 @@
  * Returns the LIBSWSCALE_VERSION_INT constant.
  */
 unsigned swscale_version(void);
+
+/**
+ * Returns the libswscale build-time configuration.
+ */
+const char * swscale_configuration(void);
+
+/**
+ * Returns the libswscale license.
+ */
+const char * swscale_license(void);
 
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR     1
@@ -112,6 +122,10 @@ typedef struct {
 
 struct SwsContext;
 
+/**
+ * Frees the swscaler context swsContext.
+ * If swsContext is NULL, then does nothing.
+ */
 void sws_freeContext(struct SwsContext *swsContext);
 
 /**
@@ -136,6 +150,10 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
  * Scales the image slice in srcSlice and puts the resulting scaled
  * slice in the image in dst. A slice is a sequence of consecutive
  * rows in an image.
+ *
+ * Slices have to be provided in sequential order, either in
+ * top-bottom or bottom-top order. If slices are provided in
+ * non-sequential order the behavior of the function is undefined.
  *
  * @param context   the scaling context previously created with
  *                  sws_getContext()
@@ -180,6 +198,11 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
 int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
                              int *srcRange, int **table, int *dstRange,
                              int *brightness, int *contrast, int *saturation);
+
+/**
+ * Allocates and returns an uninitialized vector with length coefficients.
+ */
+SwsVector *sws_allocVec(int length);
 
 /**
  * Returns a normalized Gaussian curve used to filter stuff

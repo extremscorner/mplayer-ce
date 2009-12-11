@@ -212,7 +212,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
             if (c->nch >= 5)
                 reorder_channel_nch(s->pending_data,
                                     AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
-                                    AF_CHANNEL_LAYOUT_LAVC_AC3_DEFAULT,
+                                    AF_CHANNEL_LAYOUT_LAVC_DEFAULT,
                                     c->nch,
                                     s->expect_len / 2, 2);
 
@@ -224,7 +224,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
             if (c->nch >= 5)
                 reorder_channel_nch(src,
                                     AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
-                                    AF_CHANNEL_LAYOUT_LAVC_AC3_DEFAULT,
+                                    AF_CHANNEL_LAYOUT_LAVC_DEFAULT,
                                     c->nch,
                                     s->expect_len / 2, 2);
             len = avcodec_encode_audio(s->lavc_actx,dest,destsize,(void *)src);
@@ -238,7 +238,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
             int16_t *out = (int16_t *)buf;
             int bsmod = dest[5] & 0x7;
 
-#ifndef WORDS_BIGENDIAN
+#if !HAVE_BIGENDIAN
             int i;
             char tmp;
             for (i = 0; i < len; i += 2) {
