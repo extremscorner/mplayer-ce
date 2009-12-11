@@ -1,7 +1,7 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: decod386.c 29305 2009-05-13 02:58:57Z diego $
+ * $Id: decod386.c 29443 2009-07-26 19:53:00Z diego $
  */
 
 /*
@@ -50,11 +50,11 @@
  * On a SPARC cpu, we fetch the low-order 32-bit from the second 32-bit
  * word of the double fp value stored in memory.  On an x86 cpu, we fetch it
  * from the first 32-bit word.
- * I'm not sure if the WORDS_BIGENDIAN feature test covers all possible memory
+ * I'm not sure if the HAVE_BIGENDIAN feature test covers all possible memory
  * layouts of double floating point values an all cpu architectures.  If
  * it doesn't work for you, just enable the "old WRITE_SAMPLE" macro.
  */
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
 #define	MANTISSA_OFFSET	1
 #else
 #define	MANTISSA_OFFSET	0

@@ -4836,6 +4836,16 @@ static int exp_1Lockit_dummy(void)
     return 0;
 }
 
+static void * WINAPI expEncodePointer(void *p)
+{
+    return p;
+}
+
+static void * WINAPI expDecodePointer(void *p)
+{
+    return p;
+}
+
 struct exports
 {
     char name[64];
@@ -5011,6 +5021,8 @@ struct exports exp_kernel32[]=
     {"LoadLibraryExA", -1, (void*)&LoadLibraryExA},
     FF(SetThreadIdealProcessor,-1)
     FF(SetProcessAffinityMask, -1)
+    FF(EncodePointer, -1)
+    FF(DecodePointer, -1)
     UNDEFF(FlsAlloc, -1)
     UNDEFF(FlsGetValue, -1)
     UNDEFF(FlsSetValue, -1)
@@ -5273,6 +5285,9 @@ struct exports exp_msvcr80[]={
     FF(_initterm_e, -1)
     FF(_initterm, -1)
     FF(_decode_pointer, -1)
+/* needed by KGV1-VFW.dll */
+    {"??2@YAPAXI@Z", -1, expnew},
+    {"??3@YAXPAX@Z", -1, expdelete}
 };
 
 struct exports exp_msvcp60[]={

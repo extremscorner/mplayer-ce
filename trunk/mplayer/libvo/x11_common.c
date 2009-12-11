@@ -738,7 +738,7 @@ void vo_x11_classhint(Display * display, Window window, char *name)
     XClassHint wmClass;
     pid_t pid = getpid();
 
-    wmClass.res_name = name;
+    wmClass.res_name = vo_winname ? vo_winname : name;
     wmClass.res_class = "MPlayer";
     XSetClassHint(display, window, &wmClass);
     XChangeProperty(display, window, XA_NET_WM_PID, XA_CARDINAL, 32,
@@ -1086,14 +1086,14 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
 {
   XGCValues xgcv;
   if (WinID >= 0) {
+    vo_fs = flags & VOFLAG_FULLSCREEN;
     vo_window = WinID ? (Window)WinID : mRootWin;
     if (col_map != CopyFromParent) {
       unsigned long xswamask = CWColormap;
       XSetWindowAttributes xswa;
       xswa.colormap = col_map;
-      XUnmapWindow(mDisplay, vo_window);
       XChangeWindowAttributes(mDisplay, vo_window, xswamask, &xswa);
-      XMapWindow(mDisplay, vo_window);
+      XInstallColormap(mDisplay, col_map);
     }
     if (WinID) vo_x11_update_geometry();
     vo_x11_selectinput_witherr(mDisplay, vo_window,
@@ -1258,7 +1258,6 @@ static int vo_x11_get_fs_type(int supported)
 
     if (vo_fstype_list)
     {
-        i = 0;
         for (i = 0; vo_fstype_list[i]; i++)
         {
             int neg = 0;
@@ -1316,7 +1315,7 @@ static int vo_x11_get_fs_type(int supported)
                 else
                     type |= vo_wm_NETWM;
             } else if (!strcmp(arg, "none"))
-                return 0;
+                type = 0; // clear; keep parsing
         }
     }
 
@@ -1336,27 +1335,29 @@ int vo_x11_update_geometry(void) {
     if (w <= INT_MAX && h <= INT_MAX) { vo_dwidth = w; vo_dheight = h; }
     XTranslateCoordinates(mDisplay, vo_window, mRootWin, 0, 0, &vo_dx, &vo_dy,
                           &dummy_win);
+    if (vo_wintitle)
+        XStoreName(mDisplay, vo_window, vo_wintitle);
+
     return depth <= INT_MAX ? depth : 0;
 }
 
 void vo_x11_fullscreen(void)
 {
     int x, y, w, h;
+    x = vo_old_x;
+    y = vo_old_y;
+    w = vo_old_width;
+    h = vo_old_height;
 
-    if (WinID >= 0 || vo_fs_flip)
+    if (WinID >= 0) {
+        vo_fs = !vo_fs;
+        return;
+    }
+    if (vo_fs_flip)
         return;
 
     if (vo_fs)
     {
-        // fs->win
-        if ( ! (vo_fs_type & vo_wm_FULLSCREEN) ) // not needed with EWMH fs
-        {
-            x = vo_old_x;
-            y = vo_old_y;
-            w = vo_old_width;
-            h = vo_old_height;
-	}
-
         vo_x11_ewmh_fullscreen(_NET_WM_STATE_REMOVE);   // removes fullscreen state if wm supports EWMH
         vo_fs = VO_FALSE;
     } else
