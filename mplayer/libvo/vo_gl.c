@@ -163,18 +163,18 @@ static void resize(int x,int y){
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   ass_border_x = ass_border_y = 0;
-  if (vo_fs && use_aspect) {
+  if (aspect_scaling() && use_aspect) {
     int new_w, new_h;
     GLdouble scale_x, scale_y;
-    aspect(&new_w, &new_h, A_ZOOM);
-    panscan_calc();
+    aspect(&new_w, &new_h, A_WINZOOM);
+    panscan_calc_windowed();
     new_w += vo_panscan_x;
     new_h += vo_panscan_y;
     scale_x = (GLdouble)new_w / (GLdouble)x;
     scale_y = (GLdouble)new_h / (GLdouble)y;
     glScaled(scale_x, scale_y, 1);
-    ass_border_x = (vo_screenwidth - new_w) / 2;
-    ass_border_y = (vo_screenheight - new_h) / 2;
+    ass_border_x = (vo_dwidth - new_w) / 2;
+    ass_border_y = (vo_dheight - new_h) / 2;
   }
   glOrtho(0, image_width, image_height, 0, -1,1);
 
@@ -435,7 +435,7 @@ static void uninitGl(void) {
     DeleteBuffers(2, gl_buffer_uv);
   gl_buffer_uv[0] = gl_buffer_uv[1] = 0; gl_buffersize_uv = 0;
   gl_bufferptr_uv[0] = gl_bufferptr_uv[1] = 0;
-#ifndef GL_WIN32
+#ifdef CONFIG_X11
   if (mesa_bufferptr)
     FreeMemoryMESA(mDisplay, mScreen, mesa_bufferptr);
 #endif
@@ -545,9 +545,7 @@ config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uin
   if (use_gui) {
     // GUI creates and manages window for us
     guiGetEvent(guiSetShVideo, 0);
-#ifndef GL_WIN32
     goto glconfig;
-#endif
   }
 #endif
 #ifdef GL_WIN32
@@ -561,6 +559,7 @@ config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uin
       mp_msg(MSGT_VO, MSGL_ERR, "[gl] no GLX support present\n");
       return -1;
     }
+    mp_msg(MSGT_VO, MSGL_V, "[gl] GLX chose visual with ID 0x%x\n", (int)vinfo->visualid);
 
     vo_x11_create_vo_window(vinfo, vo_dx, vo_dy, d_width, d_height, flags,
             XCreateColormap(mDisplay, mRootWin, vinfo->visual, AllocNone),
@@ -571,7 +570,12 @@ config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uin
 glconfig:
   if (vo_config_count)
     uninitGl();
-  setGlWindow(&gl_vinfo, &gl_context, vo_window);
+  if (setGlWindow(&gl_vinfo, &gl_context, vo_window) == SET_WINDOW_FAILED)
+    return -1;
+  if (mesa_buffer && !AllocateMemoryMESA) {
+    mp_msg(MSGT_VO, MSGL_ERR, "Can not enable mesa-buffer because AllocateMemoryMESA was not found\n");
+    mesa_buffer = 0;
+  }
   initGl(vo_dwidth, vo_dheight);
 
   return 0;
@@ -722,7 +726,7 @@ static void flip_page(void) {
   if (vo_doublebuffering) {
     if (use_glFinish) glFinish();
     swapGlBuffers();
-    if (vo_fs && use_aspect)
+    if (aspect_scaling() && use_aspect)
       glClear(GL_COLOR_BUFFER_BIT);
   } else {
     do_render();
@@ -776,13 +780,13 @@ static uint32_t get_image(mp_image_t *mpi) {
   mpi->stride[0] = mpi->width * mpi->bpp / 8;
   needed_size = mpi->stride[0] * mpi->height;
   if (mesa_buffer) {
-#ifndef GL_WIN32
+#ifdef CONFIG_X11
     if (mesa_bufferptr && needed_size > mesa_buffersize) {
       FreeMemoryMESA(mDisplay, mScreen, mesa_bufferptr);
       mesa_bufferptr = NULL;
     }
     if (!mesa_bufferptr)
-      mesa_bufferptr = AllocateMemoryMESA(mDisplay, mScreen, needed_size, 0, 0, 0);
+      mesa_bufferptr = AllocateMemoryMESA(mDisplay, mScreen, needed_size, 0, 1.0, 1.0);
     mesa_buffersize = needed_size;
 #endif
     mpi->planes[0] = mesa_bufferptr;
@@ -1145,14 +1149,12 @@ static int control(uint32_t request, void *data, ...)
   case VOCTRL_GET_EOSD_RES:
     {
       mp_eosd_res_t *r = data;
+      r->w = vo_dwidth; r->h = vo_dheight;
       r->mt = r->mb = r->ml = r->mr = 0;
       if (scaled_osd) {r->w = image_width; r->h = image_height;}
-      else if (vo_fs) {
-        r->w = vo_screenwidth; r->h = vo_screenheight;
+      else if (aspect_scaling()) {
         r->ml = r->mr = ass_border_x;
         r->mt = r->mb = ass_border_y;
-      } else {
-        r->w = vo_dwidth; r->h = vo_dheight;
       }
     }
     return VO_TRUE;

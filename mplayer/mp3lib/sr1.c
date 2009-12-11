@@ -73,13 +73,13 @@ int mp3_read(char *buf,int size);
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: sr1.c 29305 2009-05-13 02:58:57Z diego $
+ * $Id: sr1.c 29761 2009-10-08 11:32:17Z diego $
  */
 
 
 //void mp3_seek(int pos){
 //  fseek(mp3_file,pos,SEEK_SET);
-//  return (MP3_fpos=ftell(mp3_file));
+//  return MP3_fpos = ftell(mp3_file);
 //}
 
 /*       Frame reader           */
@@ -168,7 +168,7 @@ LOCAL unsigned int get1bit(void)
   bitindex++;
   wordpointer += (bitindex>>3);
   bitindex &= 7;
-  return ((rval>>7)&1);
+  return (rval >> 7) & 1;
 }
 
 LOCAL void set_pointer(int backstep)
@@ -537,8 +537,8 @@ int MP3_Open(char *filename,int buffsize){
 int MP3_DecodeFrame(unsigned char *hova,short single){
    pcm_sample = hova;
    pcm_point = 0;
-   if(!read_frame(&fr))return(0);
-   if(single==-2){ set_pointer(512); return(1); }
+   if(!read_frame(&fr)) return 0;
+   if(single==-2){ set_pointer(512); return 1; }
    if(fr.error_protection) getbits(16); /* skip crc */
    fr.single=single;
    switch(fr.lay){
@@ -549,7 +549,7 @@ int MP3_DecodeFrame(unsigned char *hova,short single){
          return 0;	// unsupported
    }
 //   ++MP3_frames;
-   return(pcm_point?pcm_point:2);
+   return pcm_point ? pcm_point : 2;
 }
 
 // Prints last frame header in ascii.

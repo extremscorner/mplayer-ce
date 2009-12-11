@@ -7,10 +7,10 @@
 #include <sys/iosupport.h>
 #include <ogc/ipc.h>
 #include <gccore.h>
-#include <di/di.h>
 #include <ogc/mutex.h>
 #endif
 #include "libdvdiso.h"
+#include "di2.h"
 
 #define MAXPATH 4096
 #define MAXNAMELEN 208
@@ -128,10 +128,17 @@ int WIIDVD_Init(bool dvdx)
 	totalentries=0;
 	
 #ifndef DEBUG
+<<<<<<< .working
 	if(dvdx)retval=DI_Init();
 	else retval=DI_InitNoDVDx();
 	if(retval>=0) dvd_initied=true;
 	else dvd_initied=false;
+=======
+	if(dvdx)retval=DI2_Init();
+	else retval=DI2_InitNoDVDx();
+	if(retval>=0) dvd_initied=true;
+	else dvd_initied=false;
+>>>>>>> .merge-right.r523
 #else
 	fpin=fopen("/dev/sr0","rb");
 	
@@ -154,7 +161,7 @@ void WIIDVD_Close()
 	freedirentrieslist();
 	DestroyReadAheadCache();
 #ifndef DEBUG
-	DI_Close();
+	DI2_Close();
 #endif
 	LWP_MutexDestroy(_DVD_mutex);
 }
@@ -163,10 +170,10 @@ void WIIDVD_Close()
 int WIIDVD_Mount()
 {
 #ifndef DEBUG
-	DI_Mount();
+	DI2_Mount();
 	unsigned int t1,t2;
 	t1=ticks_to_secs(gettime());
-	while(DI_GetStatus() & DVD_INIT)
+	while(DI2_GetStatus() & DVD_INIT)
 	{
 		t2=ticks_to_secs(gettime());		
 		if(t2-t1 > 15)return -1;
@@ -195,8 +202,13 @@ int WIIDVD_ReadDVD(void* buf, uint32_t len, uint32_t lba)
 	if(retval!=2048)printf("  fread returned %d\n",retval);
 	return 0;
 #else
+<<<<<<< .working
 	retval=DI_ReadDVD(buf,len,lba);
 	//if(retval)printf("Error %d reading sectors %d->%d\n",retval,lba,lba+len-1);
+=======
+	retval=DI2_ReadDVD(buf,len,lba);
+	//if(retval)printf("Error %d reading sectors %d->%d\n",retval,lba,lba+len-1);
+>>>>>>> .merge-right.r523
 	return retval;
 #endif
 }
@@ -207,8 +219,13 @@ int WIIDVD_DiscPresent()
 	return 1;
 #else
 	uint32_t val;
+<<<<<<< .working
 	if(!dvd_initied) return 0;
 	DI_GetCoverRegister(&val);	
+=======
+	if(!dvd_initied) return 0;
+	DI2_GetCoverRegister(&val);	
+>>>>>>> .merge-right.r523
 	if(val&0x2)return 1;
 	return 0;
 #endif

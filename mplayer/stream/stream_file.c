@@ -86,7 +86,6 @@ static int control(stream_t *s, int cmd, void *arg) {
       //size = lseek(s->fd, 0, SEEK_END);
       //lseek(s->fd, s->pos, SEEK_SET);
       size = get_filesize(s->url);
-      printf("size1: %i\n",size);
       if(size != (off_t)-1) {
         *((off_t*)arg) = size;
         return 1;
@@ -172,7 +171,7 @@ static int open_f(stream_t *stream,int mode, void* opts, int* file_format) {
 #endif
     if(mode == STREAM_READ) stream->seek = seek_forward;
     stream->type = STREAMTYPE_STREAM; // Must be move to STREAMTYPE_FILE
-    stream->flags |= STREAM_SEEK_FW;
+    stream->flags |= MP_STREAM_SEEK_FW;
   } else if(len >= 0) {
     stream->seek = seek;
     stream->end_pos = get_filesize(filename);

@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "input/input.h"
 #include "osdep/shmem.h"
 #include "osdep/timer.h"
 #if defined(__MINGW32__)
@@ -51,7 +52,8 @@ int stream_fill_buffer(stream_t *s);
 int stream_seek_long(stream_t *s,off_t pos);
 
 #ifdef GEKKO
-#define GEKKO_THREAD_STACKSIZE (32 * 1024)
+//#define GEKKO_THREAD_STACKSIZE (32 * 1024)
+#define GEKKO_THREAD_STACKSIZE (512 * 1024)
 #define GEKKO_THREAD_PRIO 70
 static u8 gekko_stack[GEKKO_THREAD_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #include <ogc/mutex.h>
@@ -245,10 +247,41 @@ retry:
   	//goto retry;
   }
   len=stream_read(s->stream,&s->buffer[pos],space);
-  if(len<=0) 
+  if(len==0) 
   {
-  	s->eof=1;
-  	len=0;
+  	if(s->stream->error>0)
+	{
+		s->stream->error++; //count read error
+		
+		if(s->stream->error>1000) //num retries
+		{
+			//s->stream->error=0;
+			s->eof=1;
+			//printf("eof\n");
+		}
+		else		
+		{
+		  //printf("Error reading stream\n");
+		  //retry if we have cache
+		  cache_fill_status=(s->max_filepos-s->read_filepos)*100.0/s->buffer_size;
+		  if(cache_fill_status<5)
+		  {	  
+	  		s->eof=1;
+	  		cache_fill_status=-1;  		
+	  		//printf("error: %i\n",s->stream->error);
+	  	  }
+	  	  else 
+			{
+			s->stream->eof=0;
+			//printf("retry read (%f)\n",cache_fill_status);
+			}
+  	    }
+	}
+  	else
+  	{
+  		cache_fill_status=-1;  	
+  		s->eof=1;
+  	}
   }
 
   s->max_filepos+=len;
@@ -266,8 +299,10 @@ retry:
 
 static int cache_execute_control(cache_vars_t *s) {
   int res = 1;
-  static unsigned last;
-  unsigned now;
+  //static unsigned last;
+  //unsigned now;
+  static u64 last;
+  u64 now;
   if (!s->stream->control) {
     s->stream_time_length = 0;
     s->control_new_pos = 0;
@@ -363,7 +398,6 @@ void cache_uninit(stream_t *s) {
   cache_do_control(s, -2, NULL);
   c->thread_active = 0;
   while(!c->exited) usleep(1000);
-  usleep(1000);
   LWP_JoinThread(s->cache_pid, NULL);  
 #else  
 #if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__)
@@ -398,10 +432,16 @@ int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
   int ss = stream->sector_size ? stream->sector_size : STREAM_BUFFER_SIZE;
   cache_vars_t* s;
 
+<<<<<<< .working
 	cache_fill_status=-1;
 
   if (stream->type==STREAMTYPE_STREAM && stream->fd < 0) {
     // The stream has no 'fd' behind it, so is non-cacheable
+=======
+	cache_fill_status=-1;
+
+  if (stream->flags & STREAM_NON_CACHEABLE) {
+>>>>>>> .merge-right.r523
     //mp_msg(MSGT_CACHE,MSGL_STATUS,"\rThis stream is non-cacheable\n");
     return 1;
   }
@@ -421,6 +461,7 @@ if(size>CACHE_LIMIT)
   stream->cache_data=s;
   s->stream=stream; // callback
   s->seek_limit=seek_limit;
+  s->stream->error=0;
 
 
   //make sure that we won't wait from cache_fill
@@ -505,7 +546,6 @@ static void ThreadProc( void *s ){
 #else
   } while (cache_execute_control(s) && ((cache_vars_t*)s)->thread_active);
   ((cache_vars_t*)s)->exited=1;
-
 #endif  
 #if defined(__MINGW32__) || defined(__OS2__)
   _endthread();
@@ -546,7 +586,10 @@ int cache_stream_fill_buffer(stream_t *s){
 int cache_stream_seek_long(stream_t *stream,off_t pos){
   cache_vars_t* s;
   off_t newpos;
-  if(!stream->cache_pid) return stream_seek_long(stream,pos);
+  if(!stream->cache_pid) 
+  {
+  	return stream_seek_long(stream,pos);
+  }
   LWP_MutexLock(cache_mutex);
 
   s=stream->cache_data;
@@ -563,7 +606,7 @@ int cache_stream_seek_long(stream_t *stream,off_t pos){
 	LWP_MutexLock(cache_mutex);
 
   pos-=newpos;
-  GetRelativeTime();
+  //GetRelativeTime();
   if(pos>=0 && pos<=stream->buf_len){
     stream->buf_pos=pos; // byte position in sector
     LWP_MutexUnlock(cache_mutex);
@@ -605,8 +648,10 @@ int cache_do_control(stream_t *stream, int cmd, void *arg) {
     default:
       return STREAM_UNSUPPORTED;
   }
-  while (s->control != -1)
-    usec_sleep(CONTROL_SLEEP_TIME);
+  
+while (s->control != -1)
+	usec_sleep(CONTROL_SLEEP_TIME); 
+
   switch (cmd) {
     case STREAM_CTRL_GET_TIME_LENGTH:
     case STREAM_CTRL_GET_CURRENT_TIME:
@@ -640,7 +685,7 @@ int stream_read(stream_t *s,char* mem,int total){
       if(!cache_stream_fill_buffer(s)) 
 	  {
 	  	//debug_str="stream_read: cache_stream_fill_buffer ok return";
-	  	return total-len; // EOF
+	  	return total-len; // EOF or error
 	  }
       //debug_str="stream_read: cache_stream_fill_buffer ok";
       x=s->buf_len-s->buf_pos;
@@ -675,6 +720,7 @@ int stream_read(stream_t *s,char* mem,int total){
   return total;
 }
 
+<<<<<<< .working
 void refillcache(stream_t *stream,float min)
 {
 	cache_vars_t* s;
@@ -696,4 +742,61 @@ void refillcache(stream_t *stream,float min)
     }
     //printf("end Cache fill: %5.2f%%  \n",cache_fill_status);
     
+}=======
+void refillcache(stream_t *stream,float min)
+{
+	cache_vars_t* s;
+	int out=0;
+	s=stream->cache_data;
+	u64 t1;
+	float old=0;
+	t1 = GetTimerMS();
+    while(cache_fill_status<min)
+    {
+
+		if(!IsLoopAvi(NULL))
+	    {
+		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Cache fill: %5.2f%%  ",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
+		force_osd();
+		//printf("Cache fill: %5.2f%%  \n",(float)(100.0*(float)(cache_fill_status)/(float)(min)));
+		}
+		if(s->eof) break; // file is smaller than prefill size
+			
+		if(out==0)out=stream_check_interrupt(PREFILL_SLEEP_TIME);
+		else
+		{ //remove others pause commands if you press pause several times
+		  mp_cmd_t* cmd;
+		  if((cmd = mp_input_get_cmd(PREFILL_SLEEP_TIME,0,1)) != NULL)
+		  {
+			  if(cmd->id==MP_CMD_PAUSE)
+			  {
+				  cmd = mp_input_get_cmd(time,0,0);
+				  mp_cmd_free(cmd);
+			  }
+		  }
+
+		}
+		//printf("Cache fill: %5.2f%%  \n",cache_fill_status);
+		if(cache_fill_status > 5 && out)
+		{
+			//printf("break Cache fill: %5.2f%%  \n",cache_fill_status);
+			return ;
+		}	
+		
+		//not needed, for security	
+		if(old<cache_fill_status)t1 = GetTimerMS();
+	    if(GetTimerMS()-t1>1500) return ;
+		old=cache_fill_status;
+		usleep(50);
+    }
+    //printf("end Cache fill: %5.2f%%  \n",cache_fill_status);
+    
 }
+int stream_error(stream_t *stream)
+{
+	//cache_vars_t* s;
+
+	//s=stream->cache_data;
+  	return ((cache_vars_t*)stream->cache_data)->stream->error;
+}
+>>>>>>> .merge-right.r523

@@ -79,6 +79,11 @@ int vo_directrendering=0;
 int vo_colorkey = 0x0000ff00; // default colorkey is green
                               // (0xff000000 means that colorkey has been disabled)
 
+// name to be used instead of the vo's default
+char *vo_winname;
+// title to be applied to movie window
+char *vo_wintitle;
+
 //
 // Externally visible list of all vo drivers
 //
@@ -415,9 +420,9 @@ void calc_src_dst_rects(int src_width, int src_height, struct vo_rect *src, stru
   if (borders) {
     borders->left = 0; borders->top = 0;
   }
-  if (vo_fs) {
-    aspect(&scaled_width, &scaled_height, A_ZOOM);
-    panscan_calc();
+  if (aspect_scaling()) {
+    aspect(&scaled_width, &scaled_height, A_WINZOOM);
+    panscan_calc_windowed();
     scaled_width  += vo_panscan_x;
     scaled_height += vo_panscan_y;
     if (borders) {
