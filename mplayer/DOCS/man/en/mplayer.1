@@ -1,4 +1,4 @@
-.\" $Revision: 29305 $
+.\" $Revision: 29905 $
 .\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .
@@ -182,7 +182,10 @@ more.
 .PP
 .B gmplayer
 is MPlayer with a graphical user interface.
-It has the same options as MPlayer.
+It has the same options as MPlayer, however they might not all work correctly
+due to conflicts with the configuration via the GUI (stored in gui.conf).
+In particular some options might be overwritten by settings in gui.conf while
+others might end up stored permanently in gui.conf.
 .PP
 Usage examples to get you started quickly can be found at the end
 of this man page.
@@ -428,7 +431,8 @@ Confirm choice.
 .RS
 .
 (The following keys are only valid if teletext support is enabled during
-compilation: They are used for controlling TV teletext.)
+compilation: They are used for controlling TV teletext, whose data may come
+from either an analog TV source or an MPEG Transport Stream.)
 .RE
 .PP
 .PD 0
@@ -527,6 +531,12 @@ named 'movie.avi.conf' with the file-specific options in it and put it in
 You can also put the configuration file in the same directory as the file to
 be played, as long as you give the \-use\-filedir\-conf option (either on the
 command line or in your global config file).
+If a file-specific configuration file is found in the same directory, no
+file-specific configuration is loaded from ~/.mplayer.
+In addition, the \-use\-filedir\-conf option enables directory-specific
+configuration files.
+For this, MPlayer first tries to load a mplayer.conf from the same directory as
+the file played and then tries to load any file-specific configuration.
 .PP
 .I EXAMPLE MPLAYER CONFIGURATION FILE:
 .sp 1
@@ -1040,7 +1050,7 @@ Display the main menu at MPlayer startup.
 Permit MPlayer to receive pointer events reported by the video
 output driver.
 Necessary to select the buttons in DVD menus.
-Supported for X11 based VOs (x11, xv, xvmc, etc.) and the gl, gl2, direct3d and
+Supported for X11-based VOs (x11, xv, xvmc, etc) and the gl, gl2, direct3d and
 corevideo VOs.
 .
 .TP
@@ -1316,6 +1326,8 @@ stereo
 surround
 .IPs 6
 full 5.1
+.IPs 8
+full 7.1
 .RE
 .PD 1
 .
@@ -1811,7 +1823,7 @@ Not guaranteed to work correctly with \-oac copy.
 .
 .TP
 .B \-srate <Hz>
-Selects the output sample rate to be used
+Select the output sample rate to be used
 (of course sound cards have limits on this).
 If the sample frequency selected is different from that
 of the current media, the resample or lavcresample audio filter will be inserted
@@ -2336,6 +2348,11 @@ MPlayer prints the available subtitle IDs when run in verbose (\-v) mode.
 If you cannot select one of the subtitles on a DVD, also try \-vobsubid.
 .
 .TP
+.B \-nosub
+Disables any otherwise auto-selected subtitles (as e.g.\& the Matroska/mkv
+demuxer supports).
+.
+.TP
 .B \-slang <language code[,language code,...]> (also see \-sid)
 Specify a priority list of subtitle languages to use.
 Different container formats employ different language codes.
@@ -2775,8 +2792,8 @@ Useful if you want to have certain connections established automatically.
 .IPs (no)estimate
 Estimate the audio delay, supposed to make the video playback smoother
 (default: enabled).
-.IPs (no)autostart (default: disabled)
-Automatically start jackd if necessary.
+.IPs (no)autostart
+Automatically start jackd if necessary (default: disabled).
 Note that this seems unreliable and will spam stdout with server messages.
 .RE
 .PD 1
@@ -3090,7 +3107,7 @@ Use the _WIN_LAYER hint with the given layer number.
 .IPs netwm
 Force NETWM style.
 .IPs "none\ "
-Do not set fullscreen window layer.
+Clear the list of modes; you can add modes to enable afterward.
 .IPs stays_on_top
 Use _NETWM_STATE_STAYS_ON_TOP hint if available.
 .REss
@@ -3187,6 +3204,10 @@ A value of 1 means square pixels
 (correct for (almost?) all LCDs).
 .
 .TP
+.B \-name (X11 only)
+Set the window class name.
+.
+.TP
 .B \-nodouble
 Disables double buffering, mostly for debugging purposes.
 Double buffering fixes flicker by storing two frames in memory, and
@@ -3266,6 +3287,16 @@ If your screensaver supports neither the XSS nor XResetScreenSaver
 API please use \-heartbeat\-cmd instead.
 .
 .TP
+.B \-title (also see \-use\-filename\-title)
+Set the window title.
+Supported by X11-based video output drivers.
+.
+.TP
+.B \-use\-filename\-title (also see \-title)
+Set the window title using the media filename, when not set with \-title.
+Supported by X11-based video output drivers.
+.
+.TP
 .B "\-vm \ \ \ "
 Try to change to a different video mode.
 Supported by the dga, x11, xv, sdl and directx video output drivers.
@@ -3281,6 +3312,9 @@ Enables VBI for the vesa, dfbmga and svga video output drivers.
 .B \-wid <window ID> (also see \-guiwid) (X11, OpenGL and DirectX only)
 This tells MPlayer to attach to an existing window.
 Useful to embed MPlayer in a browser (e.g.\& the plugger extension).
+This option fills the given window completely, thus aspect scaling,
+panscan, etc are no longer handled by MPlayer but must be managed by the
+application that created the window.
 .
 .TP
 .B \-xineramascreen <\-2\-...>
@@ -3445,7 +3479,8 @@ Select the driver to use as source to overlay on top of X11.
 .PD 1
 .
 .TP
-.B vdpau (with \-vc ffmpeg12vdpau, ffwmv3vdpau, ffvc1vdpau or ffh264vdpau)
+.B vdpau (with \-vc ffmpeg12vdpau, ffwmv3vdpau, ffvc1vdpau, ffh264vdpau
+or ffodivxvdpau)
 Video output that uses VDPAU to decode video via hardware.
 Also supports displaying of software-decoded video.
 .PD 0
@@ -3456,21 +3491,21 @@ for negative values a blurring algorithm (default: 0).
 .IPs denoise=<0\-1>
 Apply a noise reduction algorithm to the video (default: 0, no noise reduction).
 .IPs deint=<0\-4>
-Chooses the deinterlacer (default: 0).
+Select the deinterlacer (default: 0).
 All modes > 0 respect \-field\-dominance.
 .RSss
 .IPs 0
-No deinterlacing.
+no deinterlacing
 .IPs 1
 Show only first field, similar to \-vf field.
 .IPs 2
 Bob deinterlacing, similar to \-vf tfields=1.
 .IPs 3
-Motion adaptive temporal deinterlacing.
+motion adaptive temporal deinterlacing
 May lead to A/V desync with slow video hardware and/or high resolution.
 This is the default if "D" is used to enable deinterlacing.
 .IPs 4
-Motion adaptive temporal deinterlacing with edge-guided spatial interpolation.
+motion adaptive temporal deinterlacing with edge-guided spatial interpolation
 Needs fast video hardware.
 .RE
 .IPs chroma\-deint
@@ -3479,6 +3514,36 @@ Use nochroma\-deint to solely use luma and speed up advanced deinterlacing.
 Useful with slow video memory.
 .IPs pullup
 Try to apply inverse telecine, needs motion adaptive temporal deinterlacing.
+.IPs colorspace
+Select the color space for YUV to RGB conversion.
+In general BT.601 should be used for standard definition (SD) content and
+BT.709 for high definition (HD) content.
+Using incorrect color space results in slightly under or over saturated and
+shifted colors.
+.RSss
+.IPs 0
+Guess the color space based on video resolution.
+Video with width >= 1280 or height > 576 is assumed to be HD and BT.709 color
+space will be used.
+.IPs 1
+Use ITU-R BT.601 color space (default).
+.IPs 2
+Use ITU-R BT.709 color space.
+.IPs 3
+Use SMPTE-240M color space.
+.RE
+.IPs hqscaling
+.RSss
+.IPs 0
+Use default VDPAU scaling (default).
+.IPs 1\-9
+Apply high quality VDPAU scaling (needs capable hardware).
+.RE
+.IPs force\-mixer
+Forces the use of the VDPAU mixer, which implements all above options (default).
+Use noforce\-mixer to allow displaying BGRA colorspace.
+(Disables all above options and the hardware equalizer
+if image format BGRA is actually used.)
 .RE
 .PD 1
 .
@@ -3527,7 +3592,7 @@ Since SDL uses its own X11 layer, MPlayer X11 options do not have
 any effect on SDL.
 Note that it has several minor bugs (\-vm/\-novm is mostly ignored,
 \-fs behaves like \-novm should, window is in top-left corner when
-returning from fullscreen, panscan is not supported, ...)
+returning from fullscreen, panscan is not supported, ...).
 .PD 0
 .RSs
 .IPs driver=<driver>
@@ -3612,7 +3677,7 @@ Force WarpOverlay! mode.
 .IPs dive
 Force DIVE mode.
 .IPs (no)t23
-Enable/disable workaround for T23 laptop (default: \-not23).
+Enable or disable workaround for T23 laptop (default: disabled).
 Try to enable this option if your video card supports upscaling only.
 .RE
 .PD 1
@@ -4953,7 +5018,7 @@ Allow (1) or disallow (0) the output frequency to differ slightly
 from the frequency given by <srate> (default: 1).
 Can be used if the startup of the playback is extremely slow.
 .IPs <type>
-Selects which resampling method to use.
+Select which resampling method to use.
 .RSss
 0: linear interpolation (fast, poor quality especially when upsampling)
 .br
@@ -5058,7 +5123,7 @@ Reasonable values are around 0.001.
 .PD 1
 .
 .TP
-.B bs2b[=option1:option2]
+.B bs2b[=option1:option2:...]
 Bauer stereophonic to binaural transformation using libbs2b.
 Improves the headphone listening experience by making the sound
 similar to that from loudspeakers, allowing each ear to hear both
@@ -5073,15 +5138,15 @@ Set cut frequency in Hz.
 Set feed level for low frequencies in 0.1*dB.
 .IPs profile=<value>
 Several profiles are available for convenience:
+.PD 0
 .RSs
-default: will be used if nothing else was specified (fcut=700,
-feed=45);
-.br
-cmoy: Chu Moy circuit implementation (fcut=700, feed=60);
-.br
-jmeier: Jan Meier circuit implementation (fcut=650, feed=95).
-.REss
-.PD 1
+.IPs default
+will be used if nothing else was specified (fcut=700, feed=45)
+.IPs "cmoy\ "
+Chu Moy circuit implementation (fcut=700, feed=60)
+.IPs jmeier
+Jan Meier circuit implementation (fcut=650, feed=95)
+.RE
 .RE
 .sp 1
 .RS
@@ -5165,11 +5230,11 @@ of input channels the exceeding channels are truncated.
 .PD 0
 .RSs
 .IPs <nch>
-number of output channels (1\-6)
+number of output channels (1\-8)
 .IPs "<nr>\ "
-number of routes (1\-6)
+number of routes (1\-8)
 .IPs <from1:to1:from2:to2:from3:to3:...>
-Pairs of numbers between 0 and 5 that define where to route each channel.
+Pairs of numbers between 0 and 7 that define where to route each channel.
 .RE
 .sp 1
 .RS
@@ -5272,7 +5337,7 @@ this filter can be found in the examples section near the end.
 .PD 0
 .RSs
 .IPs "<n>\ \ "
-number of output channels (1\-6)
+number of output channels (1\-8)
 .IPs <Lij>
 How much of input channel i is mixed into output channel j (0\-1).
 So in principle you first have n numbers saying what to do with the
@@ -5315,7 +5380,7 @@ For the best result try setting the cutoff frequency as low as possible.
 This will improve the stereo or surround sound experience.
 .IPs "<ch>\ "
 Determines the channel number in which to insert the sub-channel audio.
-Channel number can be between 0 and 5 (default: 5).
+Channel number can be between 0 and 7 (default: 5).
 Observe that the number of channels will automatically
 be increased to <ch> if necessary.
 .RE
@@ -5340,7 +5405,7 @@ halves the channels instead.
 .RSs
 .IPs "<ch>\ "
 Determines the channel number in which to insert the center channel.
-Channel number can be between 0 and 5 (default: 5).
+Channel number can be between 0 and 7 (default: 5).
 Observe that the number of channels will automatically
 be increased to <ch> if necessary.
 .RE
@@ -5766,7 +5831,7 @@ Rotate by 90 degrees counterclockwise and flip.
 .RE
 .
 .TP
-.B scale[=w:h[:ilaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
+.B scale[=w:h[:interlaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
 Scales the image with the software scaler (slow) and performs a YUV<\->RGB
 colorspace conversion (also see \-sws).
 .RSs
@@ -5787,7 +5852,7 @@ incapable of scaling, it defaults to d_width/\:d_height!
 .br
 \-(n+8): Like \-n above, but rounding the dimension to the closest multiple of 16.
 .REss
-.IPs <ilaced>
+.IPs <interlaced>
 Toggle interlaced scaling.
 .RSss
 0: off (default)
@@ -7306,6 +7371,10 @@ Files named 'shotNNNN.png' will be saved in the working directory,
 using the first available number \- no files will be overwritten.
 The filter has no overhead when not used and accepts an arbitrary
 colorspace, so it is safe to add it to the configuration file.
+Make sure that the screenshot filter is added after all other filters
+whose effect you want to record on the saved image.
+E.g.\& it should be the last filter if you want to have an exact
+screenshot of what you see on the monitor.
 .RE
 .
 .TP
@@ -7334,6 +7403,26 @@ encountered keyframe.
 Percentage of the pixels that have to be below the threshold (default: 98).
 .IPs <threshold>
 Threshold below which a pixel value is considered black (default: 32).
+.RE
+.
+.TP
+.B gradfun[=strength[:radius]]
+Fix the banding artifacts that are sometimes introduced into nearly flat
+regions by truncation to 8bit colordepth.
+Interpolates the gradients that should go where the bands are, and
+dithers them.
+.sp 1
+This filter is designed for playback only.
+Do not use it prior to lossy compression, because compression tends
+to lose the dither and bring back the bands.
+.RSs
+.IPs <strength>
+Maximum amount by which the filter will change any one pixel.
+Also the threshold for detecting nearly flat regions (default: 1.2).
+.IPs <radius>
+Neighborhood to fit the gradient to.
+Larger radius makes for smoother gradients, but also prevents the filter
+from modifying pixels near detailed regions (default: 16).
 .RE
 .
 .
@@ -7840,10 +7929,6 @@ Adaptive PCM formats \- see the HTML documentation for details.
 Free Lossless Audio Codec (FLAC)
 .IPs "g726\ "
 G.726 ADPCM
-.IPs libamr_nb
-3GPP Adaptive Multi-Rate (AMR) narrow-band
-.IPs libamr_wb
-3GPP Adaptive Multi-Rate (AMR) wide-band
 .IPs libfaac
 Advanced Audio Coding (AAC) \- using FAAC
 .IPs libmp3lame
@@ -10299,7 +10384,6 @@ psy optimization strength (requires subq>=6) (default: 1.0)
 trellis (requires trellis, experimental) (default: 0.0)
 .RE
 .PD 1
-.
 .
 .TP
 .B deadzone_inter=<0\-32>

@@ -115,7 +115,8 @@ static int write_buffer(unsigned char* data, int len){
 static int read_buffer(unsigned char* data,int len){
   int buffered = av_fifo_size(ao->buffer);
   if (len > buffered) len = buffered;
-  return av_fifo_generic_read(ao->buffer, data, len, NULL);
+  av_fifo_generic_read(ao->buffer, data, len, NULL);
+  return len;
 }
 
 OSStatus theRenderProc(void *inRefCon, AudioUnitRenderActionFlags *inActionFlags, const AudioTimeStamp *inTimeStamp, UInt32 inBusNumber, UInt32 inNumFrames, AudioBufferList *ioData)
@@ -345,7 +346,7 @@ int b_alive;
     }
     if ((format & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_AC3) {
         // Currently ac3 input (comes from hwac3) is always in native byte-order.
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
         inDesc.mFormatFlags |= kAudioFormatFlagIsBigEndian;
 #endif
     }
@@ -669,7 +670,7 @@ static int OpenSPDIF(void)
 
     /* FIXME: If output stream is not native byte-order, we need change endian somewhere. */
     /*        Although there's no such case reported.                                     */
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     if (!(ao->stream_format.mFormatFlags & kAudioFormatFlagIsBigEndian))
 #else
     if (ao->stream_format.mFormatFlags & kAudioFormatFlagIsBigEndian)
