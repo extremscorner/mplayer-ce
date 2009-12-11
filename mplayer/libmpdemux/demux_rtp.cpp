@@ -117,6 +117,9 @@ int rtsp_transport_tcp = 0;
 #endif
 
 extern int rtsp_port;
+#ifdef CONFIG_LIBAVCODEC
+extern AVCodecContext *avcctx;
+#endif
 
 extern "C" int audio_id, video_id, dvdsub_id;
 extern "C" demuxer_t* demux_open_rtp(demuxer_t* demuxer) {
@@ -386,8 +389,11 @@ extern "C" void demux_close_rtp(demuxer_t* demuxer) {
   Medium::close(rtpState->sipClient);
   delete rtpState->audioBufferQueue;
   delete rtpState->videoBufferQueue;
-  delete rtpState->sdpDescription;
+  delete[] rtpState->sdpDescription;
   delete rtpState;
+#ifdef CONFIG_LIBAVCODEC
+  av_freep(&avcctx);
+#endif
 
   env->reclaim(); delete scheduler;
 }
@@ -561,7 +567,7 @@ static demux_packet_t* getBuffer(demuxer_t* demuxer, demux_stream_t* ds,
     }
     if (headersize == 3 && h264parserctx) { // h264
       consumed = h264parserctx->parser->parser_parse(h264parserctx,
-                               NULL,
+                               avcctx,
                                &poutbuf, &poutbuf_size,
                                dp->buffer, dp->len);
 
@@ -625,7 +631,7 @@ ReadBufferQueue::ReadBufferQueue(MediaSubsession* subsession,
 }
 
 ReadBufferQueue::~ReadBufferQueue() {
-  delete fTag;
+  free((void *)fTag);
 
   // Free any pending buffers (that never got delivered):
   demux_packet_t* dp = pendingDPHead;

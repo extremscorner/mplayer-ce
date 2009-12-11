@@ -56,6 +56,10 @@ typedef struct {
 typedef struct {
     uint32_t type;
     char *path;
+    char *dir;
+    char volume[28];
+    char filename[64];
+    int16_t nlvl_to, nlvl_from;
 } MOVDref;
 
 typedef struct {
@@ -136,5 +140,9 @@ typedef struct MOVContext {
     unsigned trex_count;
     int itunes_metadata;  ///< metadata are itunes style
 } MOVContext;
+
+int ff_mp4_read_descr_len(ByteIOContext *pb);
+int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom);
+enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
 #endif /* AVFORMAT_ISOM_H */

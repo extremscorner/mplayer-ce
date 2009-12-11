@@ -109,7 +109,7 @@ static int encode_lavc(audio_encoder_t *encoder, uint8_t *dest, void *src, int s
 			!strcmp(lavc_acodec->name,"libfaac"))) {
 		int isac3 = !strcmp(lavc_acodec->name,"ac3");
 		reorder_channel_nch(src, AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
-		                    isac3 ? AF_CHANNEL_LAYOUT_LAVC_AC3_DEFAULT
+		                    isac3 ? AF_CHANNEL_LAYOUT_LAVC_DEFAULT
 		                          : AF_CHANNEL_LAYOUT_AAC_DEFAULT,
 		                    encoder->params.channels,
 		                    size / 2, 2);
@@ -203,6 +203,8 @@ int mpae_init_lavc(audio_encoder_t *encoder)
 		return 0;
 	}
 
+	lavc_actx->codec_type = CODEC_TYPE_AUDIO;
+	lavc_actx->codec_id = lavc_acodec->id;
 	// put sample parameters
 	lavc_actx->channels = encoder->params.channels;
 	lavc_actx->sample_rate = encoder->params.sample_rate;

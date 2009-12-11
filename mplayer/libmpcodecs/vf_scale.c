@@ -68,6 +68,8 @@ static unsigned int outfmt_list[]={
     IMGFMT_RGB32,
     IMGFMT_BGR24,
     IMGFMT_RGB24,
+    IMGFMT_RGB48LE,
+    IMGFMT_RGB48BE,
     IMGFMT_BGR16,
     IMGFMT_RGB16,
     IMGFMT_BGR15,
@@ -322,7 +324,7 @@ static void start_slice(struct vf_instance_s* vf, mp_image_t *mpi){
 static void scale(struct SwsContext *sws1, struct SwsContext *sws2, uint8_t *src[MP_MAX_PLANES], int src_stride[MP_MAX_PLANES],
                   int y, int h,  uint8_t *dst[MP_MAX_PLANES], int dst_stride[MP_MAX_PLANES], int interlaced){
     uint8_t *src2[MP_MAX_PLANES]={src[0], src[1], src[2]};
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     uint32_t pal2[256];
     if (src[1] && !src[2]){
         int i;
@@ -474,6 +476,8 @@ static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     case IMGFMT_RGB8:
     case IMGFMT_BG4B:
     case IMGFMT_RG4B:
+    case IMGFMT_RGB48LE:
+    case IMGFMT_RGB48BE:
     {
 	unsigned int best=find_best_out(vf);
 	int flags;
@@ -504,25 +508,6 @@ static int open(vf_instance_t *vf, char* args){
     vf->query_format=query_format;
     vf->control= control;
     vf->uninit=uninit;
-    if(!vf->priv) {
-    vf->priv=malloc(sizeof(struct vf_priv_s));
-    // TODO: parse args ->
-    vf->priv->ctx=NULL;
-    vf->priv->ctx2=NULL;
-    vf->priv->w=
-    vf->priv->h=-1;
-    vf->priv->v_chr_drop=0;
-    vf->priv->accurate_rnd=0;
-    vf->priv->param[0]=
-    vf->priv->param[1]=SWS_PARAM_DEFAULT;
-    vf->priv->palette=NULL;
-    } // if(!vf->priv)
-    if(args) sscanf(args, "%d:%d:%d:%lf:%lf",
-    &vf->priv->w,
-    &vf->priv->h,
-    &vf->priv->v_chr_drop,
-    &vf->priv->param[0],
-    &vf->priv->param[1]);
     mp_msg(MSGT_VFILTER,MSGL_V,"SwScale params: %d x %d (-1=no scaling)\n",
     vf->priv->w,
     vf->priv->h);

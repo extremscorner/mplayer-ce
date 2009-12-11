@@ -27,44 +27,63 @@ OBJS = allcodecs.o                                                      \
 # parts needed for many different codecs
 OBJS-$(CONFIG_AANDCT)                  += aandcttab.o
 OBJS-$(CONFIG_ENCODERS)                += faandct.o jfdctfst.o jfdctint.o
-OBJS-$(CONFIG_FFT)                     += fft.o
+FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
+OBJS-$(CONFIG_FFT)                     += fft.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
+OBJS-$(CONFIG_LPC)                     += lpc.o
 OBJS-$(CONFIG_MDCT)                    += mdct.o
-OBJS-$(CONFIG_RDFT)                    += rdft.o
+RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
+OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
+OBJS-$(CONFIG_VAAPI)                   += vaapi.o
+OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 OBJS-$(CONFIG_VAAPI)                   += vaapi.o
 OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 
 # decoders/encoders/hardware accelerators
-OBJS-$(CONFIG_AAC_DECODER)             += aac.o aactab.o mpeg4audio.o aac_parser.o aac_ac3_parser.o
+OBJS-$(CONFIG_AAC_DECODER)             += aac.o aactab.o mpeg4audio.o \
+                                          aac_parser.o aac_ac3_parser.o
+OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
+                                          aacpsy.o aactab.o      \
+                                          psymodel.o iirfilter.o \
+                                          mpeg4audio.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacpsy.o aactab.o psymodel.o iirfilter.o mdct.o fft.o mpeg4audio.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
-OBJS-$(CONFIG_AC3_DECODER)             += eac3dec.o ac3dec.o ac3tab.o ac3dec_data.o ac3.o
+OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3tab.o   \
+                                          ac3dec_data.o ac3.o \
+                                          ac3_parser.o aac_ac3_parser.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
-OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o lpc.o
+OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o
+OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o
 OBJS-$(CONFIG_AMV_DECODER)             += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_APE_DECODER)             += apedec.o
 OBJS-$(CONFIG_ASV1_DECODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV1_ENCODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV2_DECODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV2_ENCODER)            += asv1.o mpeg12data.o
-OBJS-$(CONFIG_ATRAC3_DECODER)          += atrac3.o
+OBJS-$(CONFIG_ATRAC1_DECODER)          += atrac1.o atrac.o
+OBJS-$(CONFIG_ATRAC3_DECODER)          += atrac3.o atrac.o
 OBJS-$(CONFIG_AVS_DECODER)             += avs.o
 OBJS-$(CONFIG_BETHSOFTVID_DECODER)     += bethsoftvideo.o
 OBJS-$(CONFIG_BFI_DECODER)             += bfi.o
 OBJS-$(CONFIG_BMP_DECODER)             += bmp.o msrledec.o
 OBJS-$(CONFIG_BMP_ENCODER)             += bmpenc.o
 OBJS-$(CONFIG_C93_DECODER)             += c93.o
-OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdec.o cavsdsp.o mpeg12data.o mpegvideo.o
+OBJS-$(CONFIG_CAVS_DECODER)            += cavs.o cavsdec.o cavsdsp.o \
+                                          mpeg12data.o mpegvideo.o
 OBJS-$(CONFIG_CINEPAK_DECODER)         += cinepak.o
 OBJS-$(CONFIG_CLJR_DECODER)            += cljr.o
 OBJS-$(CONFIG_CLJR_ENCODER)            += cljr.o
 OBJS-$(CONFIG_COOK_DECODER)            += cook.o
 OBJS-$(CONFIG_CSCD_DECODER)            += cscd.o
 OBJS-$(CONFIG_CYUV_DECODER)            += cyuv.o
-OBJS-$(CONFIG_DCA_DECODER)             += dca.o
+OBJS-$(CONFIG_DCA_DECODER)             += dca.o synth_filter.o
 OBJS-$(CONFIG_DNXHD_DECODER)           += dnxhddec.o dnxhddata.o
-OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o dnxhddata.o mpegvideo_enc.o motion_est.o ratecontrol.o mpeg12data.o mpegvideo.o
+OBJS-$(CONFIG_DNXHD_ENCODER)           += dnxhdenc.o dnxhddata.o       \
+                                          mpegvideo_enc.o motion_est.o \
+                                          ratecontrol.o mpeg12data.o   \
+                                          mpegvideo.o
+OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
 OBJS-$(CONFIG_DPX_DECODER)             += dpx.o
 OBJS-$(CONFIG_DSICINAUDIO_DECODER)     += dsicinav.o
 OBJS-$(CONFIG_DSICINVIDEO_DECODER)     += dsicinav.o
@@ -72,15 +91,23 @@ OBJS-$(CONFIG_DVBSUB_DECODER)          += dvbsubdec.o
 OBJS-$(CONFIG_DVBSUB_ENCODER)          += dvbsub.o
 OBJS-$(CONFIG_DVDSUB_DECODER)          += dvdsubdec.o
 OBJS-$(CONFIG_DVDSUB_ENCODER)          += dvdsubenc.o
-OBJS-$(CONFIG_DVVIDEO_DECODER)         += dv.o
-OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o
+OBJS-$(CONFIG_DVVIDEO_DECODER)         += dv.o dvdata.o
+OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o dvdata.o
 OBJS-$(CONFIG_DXA_DECODER)             += dxa.o
-OBJS-$(CONFIG_EAC3_DECODER)            += eac3dec.o ac3dec.o ac3tab.o ac3dec_data.o ac3.o
+OBJS-$(CONFIG_EAC3_DECODER)            += eac3dec.o eac3dec_data.o
 OBJS-$(CONFIG_EACMV_DECODER)           += eacmv.o
+<<<<<<< .working
 OBJS-$(CONFIG_EAMAD_DECODER)           += eamad.o eaidct.o
+=======
+OBJS-$(CONFIG_EAMAD_DECODER)           += eamad.o eaidct.o mpeg12.o \
+                                          mpeg12data.o mpegvideo.o  \
+                                          error_resilience.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_EATGQ_DECODER)           += eatgq.o eaidct.o
 OBJS-$(CONFIG_EATGV_DECODER)           += eatgv.o
-OBJS-$(CONFIG_EATQI_DECODER)           += eatqi.o eaidct.o mpeg12.o mpeg12data.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_EATQI_DECODER)           += eatqi.o eaidct.o mpeg12.o \
+                                          mpeg12data.o mpegvideo.o  \
+                                          error_resilience.o
 OBJS-$(CONFIG_EIGHTBPS_DECODER)        += 8bps.o
 OBJS-$(CONFIG_EIGHTSVX_EXP_DECODER)    += 8svx.o
 OBJS-$(CONFIG_EIGHTSVX_FIB_DECODER)    += 8svx.o
@@ -90,16 +117,18 @@ OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_FFVHUFF_ENCODER)         += huffyuv.o
 OBJS-$(CONFIG_FLAC_DECODER)            += flacdec.o flacdata.o flac.o
-OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o flac.o lpc.o
+OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o flac.o
 OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
 OBJS-$(CONFIG_FLASHSV_ENCODER)         += flashsvenc.o
 OBJS-$(CONFIG_FLIC_DECODER)            += flicvideo.o
-OBJS-$(CONFIG_FLV_DECODER)             += h263dec.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_FLV_ENCODER)             += mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_FLV_DECODER)             += h263dec.o h263.o \
+                                          mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o huffman.o
+OBJS-$(CONFIG_FRWU_DECODER)            += frwu.o
 OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
 OBJS-$(CONFIG_GIF_ENCODER)             += gif.o
+<<<<<<< .working
 OBJS-$(CONFIG_H261_DECODER)            += h261dec.o h261.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261.o mpegvideo_enc.o motion_est.o ratecontrol.o mpeg12data.o mpegvideo.o
 OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o h263_parser.o mpeg12data.o mpegvideo.o error_resilience.o
@@ -108,8 +137,30 @@ OBJS-$(CONFIG_H263I_DECODER)           += h263dec.o h263.o mpeg12data.o mpegvide
 OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_H263P_ENCODER)           += mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o h264pred.o h264_parser.o cabac.o mpegvideo.o error_resilience.o
+=======
+OBJS-$(CONFIG_H261_DECODER)            += h261dec.o h261.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261.o             \
+                                          mpegvideo_enc.o motion_est.o \
+                                          ratecontrol.o mpeg12data.o   \
+                                          mpegvideo.o
+OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o h263_parser.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_H263_VAAPI_HWACCEL)      += vaapi_mpeg4.o
+OBJS-$(CONFIG_H263I_DECODER)           += h263dec.o h263.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o motion_est.o      \
+                                          ratecontrol.o h263.o mpeg12data.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_H264_DECODER)            += h264.o h264idct.o h264pred.o \
+                                          h264_parser.o cabac.o        \
+                                          mpegvideo.o error_resilience.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_H264_ENCODER)            += h264enc.o h264dspenc.o
+<<<<<<< .working
 OBJS-$(CONFIG_H264_VDPAU_DECODER)      += h264.o h264idct.o h264pred.o h264_parser.o cabac.o mpegvideo.o error_resilience.o
+=======
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_HUFFYUV_ENCODER)         += huffyuv.o
 OBJS-$(CONFIG_IDCIN_DECODER)           += idcinvideo.o
@@ -118,21 +169,30 @@ OBJS-$(CONFIG_INDEO2_DECODER)          += indeo2.o
 OBJS-$(CONFIG_INDEO3_DECODER)          += indeo3.o
 OBJS-$(CONFIG_INTERPLAY_DPCM_DECODER)  += dpcm.o
 OBJS-$(CONFIG_INTERPLAY_VIDEO_DECODER) += interplayvideo.o
-OBJS-$(CONFIG_JPEGLS_DECODER)          += jpeglsdec.o jpegls.o mjpegdec.o mjpeg.o
+OBJS-$(CONFIG_JPEGLS_DECODER)          += jpeglsdec.o jpegls.o \
+                                          mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_JPEGLS_ENCODER)          += jpeglsenc.o jpegls.o
 OBJS-$(CONFIG_KMVC_DECODER)            += kmvc.o
-OBJS-$(CONFIG_LJPEG_ENCODER)           += ljpegenc.o mjpegenc.o mjpeg.o mpegvideo_enc.o motion_est.o ratecontrol.o mpeg12data.o mpegvideo.o
+OBJS-$(CONFIG_LJPEG_ENCODER)           += ljpegenc.o mjpegenc.o mjpeg.o \
+                                          mpegvideo_enc.o motion_est.o  \
+                                          ratecontrol.o mpeg12data.o    \
+                                          mpegvideo.o
 OBJS-$(CONFIG_LOCO_DECODER)            += loco.o
 OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
 OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
-OBJS-$(CONFIG_MDEC_DECODER)            += mdec.o mpeg12.o mpeg12data.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MDEC_DECODER)            += mdec.o mpeg12.o mpeg12data.o \
+                                          mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_MIMIC_DECODER)           += mimic.o
 OBJS-$(CONFIG_MJPEG_DECODER)           += mjpegdec.o mjpeg.o
-OBJS-$(CONFIG_MJPEG_ENCODER)           += mjpegenc.o mjpeg.o mpegvideo_enc.o motion_est.o ratecontrol.o mpeg12data.o mpegvideo.o
+OBJS-$(CONFIG_MJPEG_ENCODER)           += mjpegenc.o mjpeg.o           \
+                                          mpegvideo_enc.o motion_est.o \
+                                          ratecontrol.o mpeg12data.o   \
+                                          mpegvideo.o
 OBJS-$(CONFIG_MJPEGB_DECODER)          += mjpegbdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_MLP_DECODER)             += mlpdec.o mlp_parser.o mlp.o mlpdsp.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
 OBJS-$(CONFIG_MOTIONPIXELS_DECODER)    += motionpixels.o
+<<<<<<< .working
 OBJS-$(CONFIG_MP1_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o mpegaudio.o mpegaudiodata.o
 OBJS-$(CONFIG_MP2_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o mpegaudio.o mpegaudiodata.o
 OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudioenc.o mpegaudio.o mpegaudiodata.o
@@ -159,29 +219,81 @@ OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o h263
 OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4.o msmpeg4data.o mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4data.o mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
+=======
+OBJS-$(CONFIG_MP1_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
+                                          mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_MP2_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
+                                          mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudioenc.o mpegaudio.o \
+                                          mpegaudiodata.o
+OBJS-$(CONFIG_MP3ADU_DECODER)          += mpegaudiodec.o mpegaudiodecheader.o \
+                                          mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_MP3ON4_DECODER)          += mpegaudiodec.o mpegaudiodecheader.o \
+                                          mpegaudio.o mpegaudiodata.o mpeg4audio.o
+OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec.o mpegaudiodecheader.o \
+                                          mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_MPC7_DECODER)            += mpc7.o mpc.o mpegaudiodec.o      \
+                                          mpegaudiodecheader.o mpegaudio.o \
+                                          mpegaudiodata.o
+OBJS-$(CONFIG_MPC8_DECODER)            += mpc8.o mpc.o mpegaudiodec.o      \
+                                          mpegaudiodecheader.o mpegaudio.o \
+                                          mpegaudiodata.o
+OBJS-$(CONFIG_MPEGVIDEO_DECODER)       += mpeg12.o mpeg12data.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG_XVMC_DECODER)       += mpegvideo_xvmc.o
+OBJS-$(CONFIG_MPEG1VIDEO_DECODER)      += mpeg12.o mpeg12data.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpegvideo_enc.o \
+                                          motion_est.o ratecontrol.o  \
+                                          mpeg12.o mpeg12data.o       \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG2_VAAPI_HWACCEL)     += vaapi_mpeg2.o
+OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12.o mpeg12data.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpegvideo_enc.o \
+                                          motion_est.o ratecontrol.o  \
+                                          mpeg12.o mpeg12data.o       \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG4_DECODER)           += h263dec.o h263.o mpeg4video_parser.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG4_VAAPI_HWACCEL)     += vaapi_mpeg4.o
+OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MSMPEG4V1_ENCODER)       += msmpeg4.o msmpeg4data.o
+OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4.o msmpeg4data.o
+OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
+                                          h263.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4data.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o msrledec.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcldec.o
 OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o nellymoser.o
 OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
-OBJS-$(CONFIG_PAM_DECODER)             += pnmenc.o pnm.o
-OBJS-$(CONFIG_PAM_ENCODER)             += pnmenc.o
-OBJS-$(CONFIG_PBM_DECODER)             += pnmenc.o pnm.o
-OBJS-$(CONFIG_PBM_ENCODER)             += pnmenc.o
+OBJS-$(CONFIG_PAM_DECODER)             += pnmdec.o pnm.o
+OBJS-$(CONFIG_PAM_ENCODER)             += pamenc.o pnm.o
+OBJS-$(CONFIG_PBM_DECODER)             += pnmdec.o pnm.o
+OBJS-$(CONFIG_PBM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PCX_DECODER)             += pcx.o
 OBJS-$(CONFIG_PCX_ENCODER)             += pcxenc.o
-OBJS-$(CONFIG_PGM_DECODER)             += pnmenc.o pnm.o
-OBJS-$(CONFIG_PGM_ENCODER)             += pnmenc.o
-OBJS-$(CONFIG_PGMYUV_DECODER)          += pnmenc.o pnm.o
-OBJS-$(CONFIG_PGMYUV_ENCODER)          += pnmenc.o
+OBJS-$(CONFIG_PGM_DECODER)             += pnmdec.o pnm.o
+OBJS-$(CONFIG_PGM_ENCODER)             += pnmenc.o pnm.o
+OBJS-$(CONFIG_PGMYUV_DECODER)          += pnmdec.o pnm.o
+OBJS-$(CONFIG_PGMYUV_ENCODER)          += pnmenc.o pnm.o
+OBJS-$(CONFIG_PGSSUB_DECODER)          += pgssubdec.o
 OBJS-$(CONFIG_PNG_DECODER)             += png.o pngdec.o
 OBJS-$(CONFIG_PNG_ENCODER)             += png.o pngenc.o
-OBJS-$(CONFIG_PPM_DECODER)             += pnmenc.o pnm.o
-OBJS-$(CONFIG_PPM_ENCODER)             += pnmenc.o
+OBJS-$(CONFIG_PPM_DECODER)             += pnmdec.o pnm.o
+OBJS-$(CONFIG_PPM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
-OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o qcelp_lsp.o celp_math.o celp_filters.o acelp_vectors.o
-OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o mpegaudiodec.o mpegaudiodecheader.o mpegaudio.o mpegaudiodata.o
+OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o lsp.o celp_math.o \
+                                          celp_filters.o acelp_vectors.o
+OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o mpegaudiodec.o            \
+                                          mpegaudiodecheader.o mpegaudio.o \
+                                          mpegaudiodata.o
 OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
 OBJS-$(CONFIG_QPEG_DECODER)            += qpeg.o
 OBJS-$(CONFIG_QTRLE_DECODER)           += qtrle.o
@@ -196,12 +308,16 @@ OBJS-$(CONFIG_ROQ_ENCODER)             += roqvideoenc.o roqvideo.o elbg.o
 OBJS-$(CONFIG_ROQ_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_ROQ_DPCM_ENCODER)        += roqaudioenc.o
 OBJS-$(CONFIG_RPZA_DECODER)            += rpza.o
-OBJS-$(CONFIG_RV10_DECODER)            += rv10.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_RV10_ENCODER)            += rv10.o mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_RV20_DECODER)            += rv10.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_RV20_ENCODER)            += rv10.o mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o h264pred.o rv30dsp.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o h264pred.o rv40dsp.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_RV10_DECODER)            += rv10.o h263.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_RV10_ENCODER)            += rv10enc.o
+OBJS-$(CONFIG_RV20_DECODER)            += rv10.o h263.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_RV20_ENCODER)            += rv20enc.o
+OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o h264pred.o rv30dsp.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o h264pred.o rv40dsp.o \
+                                          mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_SGI_DECODER)             += sgidec.o
 OBJS-$(CONFIG_SGI_ENCODER)             += sgienc.o rle.o
 OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o
@@ -209,19 +325,27 @@ OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
 OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
 OBJS-$(CONFIG_SMC_DECODER)             += smc.o
 OBJS-$(CONFIG_SNOW_DECODER)            += snow.o rangecoder.o
-OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o rangecoder.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o rangecoder.o motion_est.o \
+                                          ratecontrol.o h263.o             \
+                                          mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_LS_ENCODER)        += sonic.o
 OBJS-$(CONFIG_SP5X_DECODER)            += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_SUNRAST_DECODER)         += sunrast.o
-OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o motion_est.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o h264idct.o h264pred.o h264_parser.o cabac.o mpegvideo.o error_resilience.o svq1dec.o svq1.o h263.o
+OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o h263.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o    \
+                                          motion_est.o h263.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o h264idct.o h264pred.o   \
+                                          h264_parser.o cabac.o          \
+                                          mpegvideo.o error_resilience.o \
+                                          svq1dec.o svq1.o h263.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_TARGA_ENCODER)           += targaenc.o rle.o
-OBJS-$(CONFIG_THEORA_DECODER)          += vp3.o xiph.o vp3dsp.o
+OBJS-$(CONFIG_THEORA_DECODER)          += xiph.o
 OBJS-$(CONFIG_THP_DECODER)             += mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_TIERTEXSEQVIDEO_DECODER) += tiertexseqv.o
 OBJS-$(CONFIG_TIFF_DECODER)            += tiff.o lzw.o faxcompr.o
@@ -233,33 +357,47 @@ OBJS-$(CONFIG_TRUEMOTION2_DECODER)     += truemotion2.o
 OBJS-$(CONFIG_TRUESPEECH_DECODER)      += truespeech.o
 OBJS-$(CONFIG_TSCC_DECODER)            += tscc.o msrledec.o
 OBJS-$(CONFIG_TTA_DECODER)             += tta.o
+OBJS-$(CONFIG_TWINVQ_DECODER)          += twinvq.o
 OBJS-$(CONFIG_TXD_DECODER)             += txd.o s3tc.o
 OBJS-$(CONFIG_ULTI_DECODER)            += ulti.o
 OBJS-$(CONFIG_V210_DECODER)            += v210dec.o
 OBJS-$(CONFIG_V210_ENCODER)            += v210enc.o
 OBJS-$(CONFIG_V210X_DECODER)           += v210x.o
 OBJS-$(CONFIG_VB_DECODER)              += vb.o
+<<<<<<< .working
 OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1.o vc1data.o vc1dsp.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o error_resilience.o mpegvideo.o msmpeg4.o
 OBJS-$(CONFIG_VC1_VAAPI_HWACCEL)       += vc1dec.o vc1.o vc1data.o vc1dsp.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o error_resilience.o mpegvideo.o msmpeg4.o vaapi_vc1.o
 OBJS-$(CONFIG_VC1_VDPAU_DECODER)       += vc1dec.o vc1.o vc1data.o vc1dsp.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o error_resilience.o mpegvideo.o msmpeg4.o
+=======
+OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1.o vc1data.o vc1dsp.o \
+                                          msmpeg4.o msmpeg4data.o           \
+                                          h263dec.o h263.o                  \
+                                          intrax8.o intrax8dsp.o            \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_VC1_VAAPI_HWACCEL)       += vaapi_vc1.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VCR1_ENCODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdav.o
 OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdav.o
 OBJS-$(CONFIG_VMNC_DECODER)            += vmnc.o
-OBJS-$(CONFIG_VORBIS_DECODER)          += vorbis_dec.o vorbis.o vorbis_data.o xiph.o
-OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbis_enc.o vorbis.o vorbis_data.o
+OBJS-$(CONFIG_VORBIS_DECODER)          += vorbis_dec.o vorbis.o \
+                                          vorbis_data.o xiph.o
+OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbis_enc.o vorbis.o \
+                                          vorbis_data.o
 OBJS-$(CONFIG_VP3_DECODER)             += vp3.o vp3dsp.o
-OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vp3dsp.o
-OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o vp3dsp.o vp6dsp.o huffman.o
-OBJS-$(CONFIG_VP6A_DECODER)            += vp6.o vp56.o vp56data.o vp3dsp.o vp6dsp.o huffman.o
-OBJS-$(CONFIG_VP6F_DECODER)            += vp6.o vp56.o vp56data.o vp3dsp.o vp6dsp.o huffman.o
+OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o \
+                                          vp3dsp.o
+OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o \
+                                          vp3dsp.o vp6dsp.o huffman.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
 OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o
+OBJS-$(CONFIG_WMAPRO_DECODER)          += wmaprodec.o wma.o
 OBJS-$(CONFIG_WMAV1_DECODER)           += wmadec.o wma.o
 OBJS-$(CONFIG_WMAV1_ENCODER)           += wmaenc.o wma.o
 OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o wma.o
 OBJS-$(CONFIG_WMAV2_ENCODER)           += wmaenc.o wma.o
+<<<<<<< .working
 OBJS-$(CONFIG_WMV1_DECODER)            += h263dec.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_WMV1_ENCODER)            += mpegvideo_enc.o motion_est.o ratecontrol.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o msmpeg4.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o mpeg12data.o mpegvideo.o error_resilience.o
@@ -267,6 +405,17 @@ OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o msmpeg4.o msmpeg4data
 OBJS-$(CONFIG_WMV3_DECODER)            += vc1dec.o vc1.o vc1data.o vc1dsp.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o error_resilience.o mpegvideo.o msmpeg4.o
 OBJS-$(CONFIG_WMV3_VAAPI_HWACCEL)      += vc1dec.o vc1.o vc1data.o vc1dsp.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o error_resilience.o mpegvideo.o msmpeg4.o vaapi_vc1.o
 OBJS-$(CONFIG_WMV3_VDPAU_DECODER)      += vc1dec.o vc1.o vc1data.o vc1dsp.o msmpeg4data.o h263dec.o h263.o intrax8.o intrax8dsp.o error_resilience.o mpegvideo.o msmpeg4.o
+=======
+OBJS-$(CONFIG_WMV1_DECODER)            += h263dec.o h263.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \
+                                          msmpeg4.o msmpeg4data.o \
+                                          h263dec.o h263.o        \
+                                          intrax8.o intrax8dsp.o  \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o \
+                                          msmpeg4.o msmpeg4data.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
 OBJS-$(CONFIG_WS_SND1_DECODER)         += ws-snd1.o
 OBJS-$(CONFIG_XAN_DPCM_DECODER)        += dpcm.o
@@ -283,6 +432,7 @@ OBJS-$(CONFIG_ZMBV_ENCODER)            += zmbvenc.o
 # (AD)PCM decoders/encoders
 OBJS-$(CONFIG_PCM_ALAW_DECODER)           += pcm.o
 OBJS-$(CONFIG_PCM_ALAW_ENCODER)           += pcm.o
+OBJS-$(CONFIG_PCM_BLURAY_DECODER)         += pcm-mpeg.o
 OBJS-$(CONFIG_PCM_DVD_DECODER)            += pcm.o
 OBJS-$(CONFIG_PCM_DVD_ENCODER)            += pcm.o
 OBJS-$(CONFIG_PCM_F32BE_DECODER)          += pcm.o
@@ -367,22 +517,29 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcm.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
-OBJS-$(CONFIG_EAC3_DEMUXER)            += ac3_parser.o ac3tab.o aac_ac3_parser.o
+OBJS-$(CONFIG_DV_DEMUXER)              += dvdata.o
+OBJS-$(CONFIG_DV_MUXER)                += dvdata.o
+OBJS-$(CONFIG_EAC3_DEMUXER)            += ac3_parser.o ac3tab.o \
+                                          aac_ac3_parser.o
 OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
-OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o flacdec.o flacdata.o flac.o
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o \
+                                          flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
-OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o flacdec.o flacdata.o flac.o
+OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o \
+                                          flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpegvideo.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
+OBJS-$(CONFIG_SPDIF_MUXER)             += aac_parser.o aac_ac3_parser.o
 
 # external codec libraries
+<<<<<<< .working
 OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
 OBJS-$(CONFIG_LIBDIRAC_ENCODER)           += libdiracenc.o libdirac_libschro.o
 OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
@@ -403,10 +560,38 @@ OBJS-$(CONFIG_LIBTHEORA_ENCODER)          += libtheoraenc.o
 OBJS-$(CONFIG_LIBVORBIS_ENCODER)          += libvorbis.o
 OBJS-$(CONFIG_LIBX264_ENCODER)            += libx264.o
 OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvidff.o libxvid_rc.o
+=======
+OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
+OBJS-$(CONFIG_LIBDIRAC_ENCODER)           += libdiracenc.o libdirac_libschro.o
+OBJS-$(CONFIG_LIBFAAC_ENCODER)            += libfaac.o
+OBJS-$(CONFIG_LIBFAAD_DECODER)            += libfaad.o
+OBJS-$(CONFIG_LIBGSM_DECODER)             += libgsm.o
+OBJS-$(CONFIG_LIBGSM_ENCODER)             += libgsm.o
+OBJS-$(CONFIG_LIBGSM_MS_DECODER)          += libgsm.o
+OBJS-$(CONFIG_LIBGSM_MS_ENCODER)          += libgsm.o
+OBJS-$(CONFIG_LIBMP3LAME_ENCODER)         += libmp3lame.o
+OBJS-$(CONFIG_LIBOPENCORE_AMRNB_DECODER)  += libopencore-amr.o
+OBJS-$(CONFIG_LIBOPENCORE_AMRNB_ENCODER)  += libopencore-amr.o
+OBJS-$(CONFIG_LIBOPENCORE_AMRWB_ENCODER)  += libopencore-amr.o
+OBJS-$(CONFIG_LIBOPENJPEG_DECODER)        += libopenjpeg.o
+OBJS-$(CONFIG_LIBSCHROEDINGER_DECODER)    += libschroedingerdec.o \
+                                             libschroedinger.o    \
+                                             libdirac_libschro.o
+OBJS-$(CONFIG_LIBSCHROEDINGER_ENCODER)    += libschroedingerenc.o \
+                                             libschroedinger.o    \
+                                             libdirac_libschro.o
+OBJS-$(CONFIG_LIBSPEEX_DECODER)           += libspeexdec.o
+OBJS-$(CONFIG_LIBTHEORA_ENCODER)          += libtheoraenc.o
+OBJS-$(CONFIG_LIBVORBIS_ENCODER)          += libvorbis.o
+OBJS-$(CONFIG_LIBX264_ENCODER)            += libx264.o
+OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvidff.o libxvid_rc.o
+>>>>>>> .merge-right.r523
 
 # parsers
-OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o mpeg4audio.o
-OBJS-$(CONFIG_AC3_PARSER)              += ac3_parser.o ac3tab.o aac_ac3_parser.o
+OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
+                                          mpeg4audio.o
+OBJS-$(CONFIG_AC3_PARSER)              += ac3_parser.o ac3tab.o \
+                                          aac_ac3_parser.o
 OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs_parser.o
 OBJS-$(CONFIG_DCA_PARSER)              += dca_parser.o
 OBJS-$(CONFIG_DIRAC_PARSER)            += dirac_parser.o
@@ -415,25 +600,48 @@ OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsub_parser.o
 OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsub_parser.o
 OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
+<<<<<<< .working
 OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o h264idct.o h264pred.o cabac.o mpegvideo.o error_resilience.o
+=======
+OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o h264idct.o \
+                                          h264pred.o cabac.o              \
+                                          mpegvideo.o error_resilience.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg_parser.o
 OBJS-$(CONFIG_MLP_PARSER)              += mlp_parser.o mlp.o
-OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o mpeg12data.o mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o mpegaudiodecheader.o mpegaudiodata.o
-OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o mpeg12.o mpeg12data.o mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o \
+                                          mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o \
+                                          mpegaudiodecheader.o mpegaudiodata.o
+OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
+                                          mpeg12.o mpeg12data.o \
+                                          mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
+<<<<<<< .working
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o msmpeg4data.o h263dec.o h263.o error_resilience.o intrax8.o mpegvideo.o msmpeg4.o
+=======
+OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o \
+                                          msmpeg4.o msmpeg4data.o      \
+                                          h263dec.o h263.o intrax8.o   \
+                                          mpegvideo.o error_resilience.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 
 # bitstream filters
+<<<<<<< .working
 OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aac_parser.o mpeg4audio.o
+=======
+OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aac_parser.o \
+                                             aac_ac3_parser.o mpeg4audio.o
+>>>>>>> .merge-right.r523
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)       += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)        += imx_dump_header_bsf.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)     += mjpega_dump_header_bsf.o
 OBJS-$(CONFIG_MOV2TEXTSUB_BSF)            += movsub_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF)    += mp3_header_compress_bsf.o
-OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF)  += mp3_header_decompress_bsf.o mpegaudiodata.o
+OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF)  += mp3_header_decompress_bsf.o \
+                                             mpegaudiodata.o
 OBJS-$(CONFIG_NOISE_BSF)                  += noise_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
@@ -454,26 +662,32 @@ OBJS-$(ARCH_X86)                       += $(X86-OBJS-yes)
 YASM-OBJS-FFT-$(HAVE_AMD3DNOW)         += x86/fft_3dn.o
 YASM-OBJS-FFT-$(HAVE_AMD3DNOWEXT)      += x86/fft_3dn2.o
 YASM-OBJS-FFT-$(HAVE_SSE)              += x86/fft_sse.o
-YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o $(YASM-OBJS-FFT-yes)
+YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o                 \
+                                          $(YASM-OBJS-FFT-yes)
 YASM-OBJS-$(CONFIG_GPL)                += x86/h264_deblock_sse2.o       \
                                           x86/h264_idct_sse2.o          \
 
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o
-MMX-OBJS-$(CONFIG_FLAC_ENCODER)        += x86/flacdsp_mmx.o
 MMX-OBJS-$(CONFIG_GPL)                 += x86/idct_mmx.o
+<<<<<<< .working
+=======
+MMX-OBJS-$(CONFIG_LPC)                 += x86/lpc_mmx.o
+>>>>>>> .merge-right.r523
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp_mmx.o
+<<<<<<< .working
 MMX-OBJS-$(CONFIG_THEORA_DECODER)      += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
+=======
+>>>>>>> .merge-right.r523
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
-MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP6_DECODER)         += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
-                                          x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP6A_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
-                                          x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
-MMX-OBJS-$(CONFIG_VP6F_DECODER)        += x86/vp3dsp_mmx.o x86/vp3dsp_sse2.o \
-                                          x86/vp6dsp_mmx.o x86/vp6dsp_sse2.o
-MMX-OBJS-$(CONFIG_WMV3_DECODER)        += x86/vc1dsp_mmx.o
+MMX-OBJS-$(CONFIG_VP3_DECODER)         += x86/vp3dsp_mmx.o              \
+                                          x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP5_DECODER)         += x86/vp3dsp_mmx.o              \
+                                          x86/vp3dsp_sse2.o
+MMX-OBJS-$(CONFIG_VP6_DECODER)         += x86/vp3dsp_mmx.o              \
+                                          x86/vp3dsp_sse2.o             \
+                                          x86/vp6dsp_mmx.o              \
+                                          x86/vp6dsp_sse2.o
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           $(YASM-OBJS-yes)
 
@@ -481,6 +695,7 @@ OBJS-$(HAVE_MMX)                       += x86/cpuid.o                   \
                                           x86/dnxhd_mmx.o               \
                                           x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
+                                          x86/fft.o                     \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/motion_est_mmx.o          \
@@ -494,31 +709,41 @@ OBJS-$(ARCH_ALPHA)                     += alpha/dsputil_alpha.o         \
                                           alpha/mpegvideo_alpha.o       \
                                           alpha/simple_idct_alpha.o     \
 
-OBJS-$(ARCH_ARM)                       += arm/dsputil_arm.o             \
-                                          arm/dsputil_arm_s.o           \
+OBJS-$(ARCH_ARM)                       += arm/dsputil_init_arm.o        \
+                                          arm/dsputil_arm.o             \
+                                          arm/fft_init_arm.o            \
+                                          arm/h264pred_init_arm.o       \
                                           arm/jrevdct_arm.o             \
                                           arm/mpegvideo_arm.o           \
                                           arm/simple_idct_arm.o         \
 
-OBJS-$(HAVE_ARMV5TE)                   += arm/mpegvideo_armv5te.o       \
+OBJS-$(HAVE_ARMV5TE)                   += arm/dsputil_init_armv5te.o    \
+                                          arm/mpegvideo_armv5te.o       \
                                           arm/mpegvideo_armv5te_s.o     \
                                           arm/simple_idct_armv5te.o     \
 
-OBJS-$(HAVE_ARMV6)                     += arm/simple_idct_armv6.o       \
+OBJS-$(HAVE_ARMV6)                     += arm/dsputil_init_armv6.o      \
+                                          arm/dsputil_armv6.o           \
+                                          arm/simple_idct_armv6.o       \
 
 OBJS-$(HAVE_ARMVFP)                    += arm/dsputil_vfp.o             \
-                                          arm/float_arm_vfp.o           \
+                                          arm/dsputil_init_vfp.o        \
 
 OBJS-$(HAVE_IWMMXT)                    += arm/dsputil_iwmmxt.o          \
                                           arm/mpegvideo_iwmmxt.o        \
 
-NEON-OBJS-$(CONFIG_THEORA_DECODER)     += arm/vp3dsp_neon.o
+NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
+
+NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
+
+NEON-OBJS-$(CONFIG_H264_DECODER)       += arm/h264dsp_neon.o            \
+                                          arm/h264idct_neon.o           \
+                                          arm/h264pred_neon.o           \
+
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
-OBJS-$(HAVE_NEON)                      += arm/dsputil_neon.o            \
-                                          arm/dsputil_neon_s.o          \
-                                          arm/h264dsp_neon.o            \
-                                          arm/h264idct_neon.o           \
+OBJS-$(HAVE_NEON)                      += arm/dsputil_init_neon.o       \
+                                          arm/dsputil_neon.o            \
                                           arm/simple_idct_neon.o        \
                                           $(NEON-OBJS-yes)
 
@@ -535,12 +760,18 @@ OBJS-$(ARCH_PPC)                       += ppc/dsputil_ppc.o             \
 ALTIVEC-OBJS-$(CONFIG_H264_DECODER)    += ppc/h264_altivec.o
 ALTIVEC-OBJS-$(CONFIG_THEORA_DECODER)  += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VC1_DECODER)     += ppc/vc1dsp_altivec.o
+<<<<<<< .working
 ALTIVEC-OBJS-$(CONFIG_VP3_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP5_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP6_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP6A_DECODER)    += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP6F_DECODER)    += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_WMV3_DECODER)    += ppc/vc1dsp_altivec.o
+=======
+ALTIVEC-OBJS-$(CONFIG_VP3_DECODER)     += ppc/vp3dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VP5_DECODER)     += ppc/vp3dsp_altivec.o
+ALTIVEC-OBJS-$(CONFIG_VP6_DECODER)     += ppc/vp3dsp_altivec.o
+>>>>>>> .merge-right.r523
 
 OBJS-$(HAVE_ALTIVEC)                   += ppc/check_altivec.o           \
                                           ppc/dsputil_altivec.o         \
@@ -566,15 +797,49 @@ OBJS-$(HAVE_MMI)                       += ps2/dsputil_mmi.o             \
 OBJS-$(HAVE_VIS)                       += sparc/dsputil_vis.o           \
                                           sparc/simple_idct_vis.o       \
 
+SKIPHEADERS-$(CONFIG_LIBDIRAC)         += libdirac.h
+SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
+SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
+SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
+SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
 
 EXAMPLES = api
 
-TESTPROGS = cabac dct eval fft h264 rangecoder snow
+TESTPROGS = cabac dct eval fft h264 iirfilter rangecoder snow
 TESTPROGS-$(ARCH_X86) += x86/cpuid
 TESTPROGS-$(HAVE_MMX) += motion
 
+HOSTPROGS = costablegen
+
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
+
+CLEANFILES = sin_tables.c cos_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 
 include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
+
+$(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+	./$< > $@
+
+$(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+	./$< sin > $@
+
+ifdef CONFIG_MPEGAUDIO_HP
+$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=23
+$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=23
+else
+$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=15
+$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=15
+endif
+
+$(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)tableprint.c
+	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $^ $(HOSTLIBS)
+
+$(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
+	./$< > $@
+
+ifdef CONFIG_HARDCODED_TABLES
+$(SUBDIR)mpegaudiodec.o: $(SUBDIR)mpegaudio_tables.h
+$(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
+endif

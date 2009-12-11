@@ -103,6 +103,17 @@ enum CouplingPoint {
 };
 
 /**
+ * Output configuration status
+ */
+enum OCStatus {
+    OC_NONE,        //< Output unconfigured
+    OC_TRIAL_PCE,   //< Output configuration under trial specified by an inband PCE
+    OC_TRIAL_FRAME, //< Output configuration under trial specified by a frame header
+    OC_GLOBAL_HDR,  //< Output configuration set in a global header but not yet locked
+    OC_LOCKED,      //< Output configuration locked in place
+};
+
+/**
  * Predictor State
  */
 typedef struct {
@@ -257,8 +268,8 @@ typedef struct {
      * @defgroup tables   Computed / set up during initialization.
      * @{
      */
-    MDCTContext mdct;
-    MDCTContext mdct_small;
+    FFTContext mdct;
+    FFTContext mdct_small;
     DSPContext dsp;
     int random_state;
     /** @} */
@@ -274,6 +285,8 @@ typedef struct {
     /** @} */
 
     DECLARE_ALIGNED(16, float, temp[128]);
+
+    enum OCStatus output_configured;
 } AACContext;
 
 #endif /* AVCODEC_AAC_H */

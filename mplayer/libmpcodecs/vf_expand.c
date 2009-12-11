@@ -13,6 +13,7 @@
 #include "vf.h"
 
 #include "libvo/fastmemcpy.h"
+#include "libavutil/avutil.h"
 
 #ifdef OSD_SUPPORT
 #include "libvo/sub.h"
@@ -22,9 +23,14 @@
 #include "m_option.h"
 #include "m_struct.h"
 
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-
 static struct vf_priv_s {
+    // These four values are a backup of the values parsed from the command line.
+    // This is necessary so that we do not get a mess upon filter reinit due to
+    // e.g. aspect changes and with only aspect specified on the command line,
+    // where we would otherwise use the values calculated for a different aspect
+    // instead of recalculating them again.
+    int cfg_exp_w, cfg_exp_h;
+    int cfg_exp_x, cfg_exp_y;
     int exp_w,exp_h;
     int exp_x,exp_y;
     int osd;
@@ -34,6 +40,8 @@ static struct vf_priv_s {
     int passthrough;
     int first_slice;
 } const vf_priv_dflt = {
+  -1,-1,
+  -1,-1,
   -1,-1,
   -1,-1,
   0,
@@ -195,6 +203,10 @@ static int config(struct vf_instance_s* vf,
       return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
     }
     if (outfmt == IMGFMT_IF09) return 0;
+    vf->priv->exp_x = vf->priv->cfg_exp_x;
+    vf->priv->exp_y = vf->priv->cfg_exp_y;
+    vf->priv->exp_w = vf->priv->cfg_exp_w;
+    vf->priv->exp_h = vf->priv->cfg_exp_h;
     // calculate the missing parameters:
 #if 0
     if(vf->priv->exp_w<width) vf->priv->exp_w=width;
@@ -253,8 +265,8 @@ static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
 	// try full DR !
 	mpi->priv=vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
 	    mpi->type, mpi->flags,
-            MAX(vf->priv->exp_w, mpi->width +vf->priv->exp_x),
-            MAX(vf->priv->exp_h, mpi->height+vf->priv->exp_y));
+            FFMAX(vf->priv->exp_w, mpi->width +vf->priv->exp_x),
+            FFMAX(vf->priv->exp_h, mpi->height+vf->priv->exp_y));
 #if 1
 	if((vf->dmpi->flags & MP_IMGFLAG_DRAW_CALLBACK) &&
 	  !(vf->dmpi->flags & MP_IMGFLAG_DIRECT)){
@@ -296,8 +308,8 @@ static void start_slice(struct vf_instance_s* vf, mp_image_t *mpi){
 	mpi->priv=vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
 //	MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE | MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
 	    MP_IMGTYPE_TEMP, mpi->flags,
-            MAX(vf->priv->exp_w, mpi->width +vf->priv->exp_x),
-            MAX(vf->priv->exp_h, mpi->height+vf->priv->exp_y));
+            FFMAX(vf->priv->exp_w, mpi->width +vf->priv->exp_x),
+            FFMAX(vf->priv->exp_h, mpi->height+vf->priv->exp_y));
     if(!(vf->dmpi->flags&MP_IMGFLAG_DRAW_CALLBACK))
 	mp_msg(MSGT_VFILTER, MSGL_WARN, MSGTR_MPCODECS_WarnNextFilterDoesntSupportSlices); // shouldn't happen.
     vf->priv->first_slice = 1;
@@ -432,11 +444,11 @@ static int open(vf_instance_t *vf, char* args){
     vf->draw_slice=draw_slice;
     vf->get_image=get_image;
     vf->put_image=put_image;
-    mp_msg(MSGT_VFILTER, MSGL_INFO, "Expand: %d x %d, %d ; %d, osd: %d, aspect: %lf, round: %d\n",
-    vf->priv->exp_w,
-    vf->priv->exp_h,
-    vf->priv->exp_x,
-    vf->priv->exp_y,
+    mp_msg(MSGT_VFILTER, MSGL_INFO, "Expand: %d x %d, %d ; %d, osd: %d, aspect: %f, round: %d\n",
+    vf->priv->cfg_exp_w,
+    vf->priv->cfg_exp_h,
+    vf->priv->cfg_exp_x,
+    vf->priv->cfg_exp_y,
     vf->priv->osd,
     vf->priv->aspect,
     vf->priv->round);
@@ -445,10 +457,10 @@ static int open(vf_instance_t *vf, char* args){
 
 #define ST_OFF(f) M_ST_OFF(struct vf_priv_s,f)
 static m_option_t vf_opts_fields[] = {
-  {"w", ST_OFF(exp_w), CONF_TYPE_INT, 0, 0 ,0, NULL},
-  {"h", ST_OFF(exp_h), CONF_TYPE_INT, 0, 0 ,0, NULL},
-  {"x", ST_OFF(exp_x), CONF_TYPE_INT, M_OPT_MIN, -1, 0, NULL},
-  {"y", ST_OFF(exp_y), CONF_TYPE_INT, M_OPT_MIN, -1, 0, NULL},
+  {"w", ST_OFF(cfg_exp_w), CONF_TYPE_INT, 0, 0 ,0, NULL},
+  {"h", ST_OFF(cfg_exp_h), CONF_TYPE_INT, 0, 0 ,0, NULL},
+  {"x", ST_OFF(cfg_exp_x), CONF_TYPE_INT, M_OPT_MIN, -1, 0, NULL},
+  {"y", ST_OFF(cfg_exp_y), CONF_TYPE_INT, M_OPT_MIN, -1, 0, NULL},
   {"osd", ST_OFF(osd), CONF_TYPE_FLAG, 0 , 0, 1, NULL},
   {"aspect", ST_OFF(aspect), CONF_TYPE_DOUBLE, M_OPT_MIN, 0, 0, NULL},
   {"round", ST_OFF(round), CONF_TYPE_INT, M_OPT_MIN, 1, 0, NULL},

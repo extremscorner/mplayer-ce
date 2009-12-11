@@ -29,6 +29,7 @@
 static const AVCodecTag flv_video_codec_ids[] = {
     {CODEC_ID_FLV1,    FLV_CODECID_H263  },
     {CODEC_ID_FLASHSV, FLV_CODECID_SCREEN},
+    {CODEC_ID_FLASHSV2, FLV_CODECID_SCREEN2},
     {CODEC_ID_VP6F,    FLV_CODECID_VP6   },
     {CODEC_ID_VP6,     FLV_CODECID_VP6   },
     {CODEC_ID_H264,    FLV_CODECID_H264  },
@@ -43,6 +44,7 @@ static const AVCodecTag flv_audio_codec_ids[] = {
     {CODEC_ID_ADPCM_SWF, FLV_CODECID_ADPCM  >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_AAC,       FLV_CODECID_AAC    >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_NELLYMOSER, FLV_CODECID_NELLYMOSER >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_SPEEX,     FLV_CODECID_SPEEX  >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_NONE,      0}
 };
 
@@ -59,7 +61,22 @@ static int get_audio_flags(AVCodecContext *enc){
 
     if (enc->codec_id == CODEC_ID_AAC) // specs force these parameters
         return FLV_CODECID_AAC | FLV_SAMPLERATE_44100HZ | FLV_SAMPLESSIZE_16BIT | FLV_STEREO;
-    else {
+    else if (enc->codec_id == CODEC_ID_SPEEX) {
+        if (enc->sample_rate != 16000) {
+            av_log(enc, AV_LOG_ERROR, "flv only supports wideband (16kHz) Speex audio\n");
+            return -1;
+        }
+        if (enc->channels != 1) {
+            av_log(enc, AV_LOG_ERROR, "flv only supports mono Speex audio\n");
+            return -1;
+        }
+        if (enc->frame_size / 320 > 8) {
+            av_log(enc, AV_LOG_WARNING, "Warning: Speex stream has more than "
+                                        "8 frames per packet. Adobe Flash "
+                                        "Player cannot handle this!\n");
+        }
+        return FLV_CODECID_SPEEX | FLV_SAMPLERATE_11025HZ | FLV_SAMPLESSIZE_16BIT;
+    } else {
     switch (enc->sample_rate) {
         case    44100:
             flags |= FLV_SAMPLERATE_44100HZ;
@@ -399,5 +416,5 @@ AVOutputFormat flv_muxer = {
     flv_write_packet,
     flv_write_trailer,
     .codec_tag= (const AVCodecTag* const []){flv_video_codec_ids, flv_audio_codec_ids, 0},
-    .flags= AVFMT_GLOBALHEADER,
+    .flags= AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
 };

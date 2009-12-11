@@ -22,7 +22,11 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
+<<<<<<< .working
 #define LIBAVFORMAT_VERSION_MINOR 36
+=======
+#define LIBAVFORMAT_VERSION_MINOR 41
+>>>>>>> .merge-right.r523
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -39,6 +43,16 @@
  * Returns the LIBAVFORMAT_VERSION_INT constant.
  */
 unsigned avformat_version(void);
+
+/**
+ * Returns the libavformat build-time configuration.
+ */
+const char * avformat_configuration(void);
+
+/**
+ * Returns the libavformat license.
+ */
+const char * avformat_license(void);
 
 #include <time.h>
 #include <stdio.h>  /* FILE */
@@ -145,8 +159,8 @@ struct AVCodecTag;
 /** This structure contains the data a format has to probe a file. */
 typedef struct AVProbeData {
     const char *filename;
-    unsigned char *buf;
-    int buf_size;
+    unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
+    int buf_size;       /**< Size of buf except extra allocated bytes */
 } AVProbeData;
 
 #define AVPROBE_SCORE_MAX 100               ///< maximum score, half of that is used for file-extension-based detection
@@ -443,6 +457,7 @@ typedef struct AVStream {
      * AV_NOPTS_VALUE by default.
      */
     int64_t reference_dts;
+<<<<<<< .working
 
     /**
      * Number of packets to buffer for codec probing
@@ -450,6 +465,21 @@ typedef struct AVStream {
      */
 #define MAX_PROBE_PACKETS 100
     int probe_packets;
+=======
+
+    /**
+     * Number of packets to buffer for codec probing
+     * NOT PART OF PUBLIC API
+     */
+#define MAX_PROBE_PACKETS 2500
+    int probe_packets;
+
+    /**
+     * last packet in packet_buffer for this stream when muxing.
+     * used internally, NOT PART OF PUBLIC API, dont read or write from outside of libav*
+     */
+    struct AVPacketList *last_in_packet_buffer;
+>>>>>>> .merge-right.r523
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -638,6 +668,7 @@ typedef struct AVFormatContext {
     struct AVPacketList *packet_buffer_end;
 
     AVMetadata *metadata;
+<<<<<<< .working
 
     /**
      * Remaining size available for raw_packet_buffer, in bytes.
@@ -645,6 +676,15 @@ typedef struct AVFormatContext {
      */
 #define RAW_PACKET_BUFFER_SIZE 32000
     int raw_packet_buffer_remaining_size;
+=======
+
+    /**
+     * Remaining size available for raw_packet_buffer, in bytes.
+     * NOT PART OF PUBLIC API
+     */
+#define RAW_PACKET_BUFFER_SIZE 2500000
+    int raw_packet_buffer_remaining_size;
+>>>>>>> .merge-right.r523
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -968,6 +1008,7 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 #define AVSEEK_FLAG_BACKWARD 1 ///< seek backward
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
+#define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
 
 int av_find_default_stream_index(AVFormatContext *s);
 

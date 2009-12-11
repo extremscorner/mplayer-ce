@@ -140,6 +140,7 @@ static int raw_decode(AVCodecContext *avctx,
     if(context->flip)
         flip(avctx, picture);
 
+<<<<<<< .working
     if (   avctx->codec_tag == MKTAG('Y', 'V', '1', '2')
         || avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
     {
@@ -148,6 +149,11 @@ static int raw_decode(AVCodecContext *avctx,
         picture->data[1] = picture->data[2];
         picture->data[2] = tmp;
     }
+=======
+    if (   avctx->codec_tag == MKTAG('Y', 'V', '1', '2')
+        || avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
+        FFSWAP(uint8_t *, picture->data[1], picture->data[2]);
+>>>>>>> .merge-right.r523
 
     if(avctx->codec_tag == AV_RL32("yuv2") &&
        avctx->pix_fmt   == PIX_FMT_YUYV422) {

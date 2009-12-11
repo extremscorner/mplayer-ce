@@ -30,7 +30,11 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
+<<<<<<< .working
 #define LIBAVCODEC_VERSION_MINOR 32
+=======
+#define LIBAVCODEC_VERSION_MINOR 42
+>>>>>>> .merge-right.r523
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -196,8 +200,15 @@ enum CodecID {
     CODEC_ID_V210X,
     CODEC_ID_TMV,
     CODEC_ID_V210,
+<<<<<<< .working
     CODEC_ID_DPX,
     CODEC_ID_MAD,
+=======
+    CODEC_ID_DPX,
+    CODEC_ID_MAD,
+    CODEC_ID_FRWU,
+    CODEC_ID_FLASHSV2,
+>>>>>>> .merge-right.r523
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -224,6 +235,7 @@ enum CodecID {
     CODEC_ID_PCM_F32LE,
     CODEC_ID_PCM_F64BE,
     CODEC_ID_PCM_F64LE,
+    CODEC_ID_PCM_BLURAY,
 
     /* various ADPCM codecs */
     CODEC_ID_ADPCM_IMA_QT= 0x11000,
@@ -319,6 +331,7 @@ enum CodecID {
     CODEC_ID_TWINVQ,
     CODEC_ID_TRUEHD,
     CODEC_ID_MP4ALS,
+    CODEC_ID_ATRAC1,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -327,6 +340,8 @@ enum CodecID {
     CODEC_ID_XSUB,
     CODEC_ID_SSA,
     CODEC_ID_MOV_TEXT,
+    CODEC_ID_HDMV_PGS_SUBTITLE,
+    CODEC_ID_DVB_TELETEXT,
 
     /* other specific kind of codecs (generally used for attachments) */
     CODEC_ID_TTF= 0x18000,
@@ -382,6 +397,11 @@ enum SampleFormat {
 #define CH_STEREO_LEFT            0x20000000  ///< Stereo downmix.
 #define CH_STEREO_RIGHT           0x40000000  ///< See CH_STEREO_LEFT.
 
+/** Channel mask value used for AVCodecContext.request_channel_layout
+    to indicate that the user requests the channel order of the decoder output
+    to be the native codec channel order. */
+#define CH_LAYOUT_NATIVE          0x8000000000000000LL
+
 /* Audio channel convenience macros */
 #define CH_LAYOUT_MONO              (CH_FRONT_CENTER)
 #define CH_LAYOUT_STEREO            (CH_FRONT_LEFT|CH_FRONT_RIGHT)
@@ -394,6 +414,7 @@ enum SampleFormat {
 #define CH_LAYOUT_5POINT1           (CH_LAYOUT_5POINT0|CH_LOW_FREQUENCY)
 #define CH_LAYOUT_5POINT0_BACK      (CH_LAYOUT_SURROUND|CH_BACK_LEFT|CH_BACK_RIGHT)
 #define CH_LAYOUT_5POINT1_BACK      (CH_LAYOUT_5POINT0_BACK|CH_LOW_FREQUENCY)
+#define CH_LAYOUT_7POINT0           (CH_LAYOUT_5POINT0|CH_BACK_LEFT|CH_BACK_RIGHT)
 #define CH_LAYOUT_7POINT1           (CH_LAYOUT_5POINT1|CH_BACK_LEFT|CH_BACK_RIGHT)
 #define CH_LAYOUT_7POINT1_WIDE      (CH_LAYOUT_5POINT1_BACK|\
                                           CH_FRONT_LEFT_OF_CENTER|CH_FRONT_RIGHT_OF_CENTER)
@@ -601,6 +622,10 @@ typedef struct RcOverride{
  * Codec can export data for HW decoding (VDPAU).
  */
 #define CODEC_CAP_HWACCEL_VDPAU    0x0080
+/**
+ * Codec can output multiple frames per AVPacket
+ */
+#define CODEC_CAP_SUBFRAMES        0x0100
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
@@ -2517,7 +2542,37 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: Set by libavcodec
      */
-     enum AVChromaLocation chroma_sample_location;
+    enum AVChromaLocation chroma_sample_location;
+
+    /**
+     * The codec may call this to execute several independent things.
+     * It will return only after finishing all tasks.
+     * The user may replace this with some multithreaded implementation,
+     * the default implementation will execute the parts serially.
+     * Also see avcodec_thread_init and e.g. the --enable-pthread configure option.
+     * @param c context passed also to func
+     * @param count the number of things to execute
+     * @param arg2 argument passed unchanged to func
+     * @param ret return values of executed functions, must have space for "count" values. May be NULL.
+     * @param func function that will be called count times, with jobnr from 0 to count-1.
+     *             threadnr will be in the range 0 to c->thread_count-1 < MAX_THREADS and so that no
+     *             two instances of func executing at the same time will have the same threadnr.
+     * @return always 0 currently, but code should handle a future improvement where when any call to func
+     *         returns < 0 no further calls to func may be done and < 0 is returned.
+     * - encoding: Set by libavcodec, user can override.
+     * - decoding: Set by libavcodec, user can override.
+     */
+    int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
+
+    /**
+     * explicit P-frame weighted prediction analysis method
+     * 0: off
+     * 1: fast blind weighting (one reference duplicate with -1 offset)
+     * 2: smart weighting (full fade detection analysis)
+     * - encoding: Set by user.
+     * - decoding: unused
+     */
+    int weighted_p_pred;
 } AVCodecContext;
 
 /**
@@ -3032,6 +3087,16 @@ AVCodec *av_codec_next(AVCodec *c);
 unsigned avcodec_version(void);
 
 /**
+ * Returns the libavcodec build-time configuration.
+ */
+const char * avcodec_configuration(void);
+
+/**
+ * Returns the libavcodec license.
+ */
+const char * avcodec_license(void);
+
+/**
  * Initializes libavcodec.
  *
  * @warning This function must be called before any other libavcodec
@@ -3146,6 +3211,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count);
 void avcodec_thread_free(AVCodecContext *s);
 int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
+int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //FIXME func typedef
 
 /**
@@ -3199,10 +3265,17 @@ attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *s
 /**
  * Decodes the audio frame of size avpkt->size from avpkt->data into samples.
  * Some decoders may support multiple frames in a single AVPacket, such
- * decoders would then just decode the first frame.
+ * decoders would then just decode the first frame. In this case,
+ * avcodec_decode_audio3 has to be called again with an AVPacket that contains
+ * the remaining data in order to decode the second frame etc.
  * If no frame
+<<<<<<< .working
  * could be decompressed, frame_size_ptr is zero. Otherwise, it is the
  * decompressed frame size in bytes.
+=======
+ * could be outputted, frame_size_ptr is zero. Otherwise, it is the
+ * decompressed frame size in bytes.
+>>>>>>> .merge-right.r523
  *
  * @warning You must set frame_size_ptr to the allocated size of the
  * output buffer before calling avcodec_decode_audio3().
@@ -3231,7 +3304,7 @@ attribute_deprecated int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *s
  *            data and size, some decoders might in addition need other fields.
  *            All decoders are designed to use the least fields possible though.
  * @return On error a negative value is returned, otherwise the number of bytes
- * used or zero if no frame could be decompressed.
+ * used or zero if no frame data was decompressed (used) from the input AVPacket.
  */
 int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,

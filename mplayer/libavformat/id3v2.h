@@ -23,7 +23,12 @@
 #define AVFORMAT_ID3V2_H
 
 #include <stdint.h>
+<<<<<<< .working
 #include "avformat.h"
+=======
+#include "avformat.h"
+#include "metadata.h"
+>>>>>>> .merge-right.r523
 
 #define ID3v2_HEADER_SIZE 10
 
@@ -40,6 +45,7 @@ int ff_id3v2_match(const uint8_t *buf);
  */
 int ff_id3v2_tag_len(const uint8_t *buf);
 
+<<<<<<< .working
 /**
  * ID3v2 parser
  * Handles ID3v2.2, 2.3 and 2.4.
@@ -51,4 +57,25 @@ void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
  */
 void ff_id3v2_read(AVFormatContext *s);
 
+=======
+/**
+ * ID3v2 parser
+ * Handles ID3v2.2, 2.3 and 2.4.
+ */
+void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags);
+
+/**
+ * Read an ID3v2 tag
+ */
+void ff_id3v2_read(AVFormatContext *s);
+
+extern const AVMetadataConv ff_id3v2_metadata_conv[];
+
+/**
+ * A list of ID3v2.4 text information frames.
+ * http://www.id3.org/id3v2.4.0-frames
+ */
+extern const char ff_id3v2_tags[][4];
+
+>>>>>>> .merge-right.r523
 #endif /* AVFORMAT_ID3V2_H */

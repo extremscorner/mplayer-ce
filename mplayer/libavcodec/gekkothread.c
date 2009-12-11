@@ -9,7 +9,6 @@
 #include <ogc/semaphore.h>
 //#include "mp_msg.h"
 
-static lwp_t mainthread;
 typedef struct ThreadContext{
     AVCodecContext *avctx;
     lwp_t thread;
@@ -32,14 +31,11 @@ static void * thread_func(void *v){
             c->ret= c->func(c->avctx, c->arg);
         else
         {
-            //LWP_JoinThread(mainthread,NULL);
             return NULL;
         }
         //mp_msg(MSGT_VO, MSGL_ERR,"thread_func UnLock done_sem %i\n",c->thread);
         LWP_SemPost(c->done_sem);
     }
-
-    //LWP_JoinThread(mainthread,NULL);
     return NULL;
 }
 
@@ -99,7 +95,6 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     c= av_mallocz(sizeof(ThreadContext)*thread_count);
     s->thread_opaque= c;
 
-    mainthread=LWP_GetSelf();
     for(i=0; i<thread_count; i++){
         c[i].avctx= s;
 
