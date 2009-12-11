@@ -20,7 +20,7 @@ manext = 1
 mandir = $(prefix)/man/man$(manext)
 
 # The name of your C compiler:
-CC= /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc
+CC= ${DEVKITPPC}/bin/powerpc-gekko-gcc
 
 # You may need to adjust these cc options:
 CFLAGS= -mcpu=750 -O2  -I$(srcdir)
@@ -61,11 +61,11 @@ RM= rm -f
 MKDIR= mkdir
 # library (.a) file creation command
 #AR= ar rc
-AR=/c/devkitPro/devkitPPC/bin/powerpc-gekko-ar rc
+AR=${DEVKITPPC}/bin/powerpc-gekko-ar rc
 # second step in .a creation (use "touch" if not needed)
-AR2= /c/devkitPro/devkitPPC/bin/powerpc-gekko-ranlib.exe
+AR2= ${DEVKITPPC}/bin/powerpc-gekko-ranlib
 # installation program
-INSTALL= /bin/install -c
+INSTALL= /usr/bin/install -c
 INSTALL_PROGRAM= ${INSTALL}
 INSTALL_LIB= ${INSTALL} -m 644
 INSTALL_DATA= ${INSTALL} -m 644

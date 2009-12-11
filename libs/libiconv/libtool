@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # libtoolT - Provide generalized library-building support services.
 # Generated automatically by  (GNU libiconv 1.12)
@@ -78,17 +78,17 @@ build_os=mingw32
 echo="echo"
 
 # The archiver.
-AR="/c/devkitPro/devkitPPC/bin/powerpc-gekko-ar"
+AR="${DEVKITPPC}/bin/powerpc-gekko-ar"
 AR_FLAGS="cru"
 
 # A C compiler.
-LTCC="/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc"
+LTCC="${DEVKITPPC}/bin/powerpc-gekko-gcc"
 
 # LTCC compiler flags.
 LTCFLAGS="-mcpu=750"
 
 # A language-specific compiler.
-CC="/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc"
+CC="${DEVKITPPC}/bin/powerpc-gekko-gcc"
 
 # Is the compiler the GNU C compiler?
 with_gcc=yes
@@ -97,7 +97,7 @@ with_gcc=yes
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld.exe"
+LD="${DEVKITPPC}/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -199,7 +199,7 @@ library_names_spec=""
 soname_spec=""
 
 # Commands used to build and install an old-style archive.
-RANLIB="/c/devkitPro/devkitPPC/bin/powerpc-gekko-ranlib.exe"
+RANLIB="${DEVKITPPC}/bin/powerpc-gekko-ranlib"
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
 old_postuninstall_cmds=""
@@ -263,7 +263,8 @@ finish_cmds=""
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)\\{0,1\\}\$/\\1 \\2 \\2/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)
+\\{0,1\\}\$/\\1 \\2 \\2/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
@@ -322,7 +323,7 @@ variables_saved_for_relink="PATH  LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBR
 link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec="/c:/devkitpro/devkitppc/lib/gcc /c:/devkitpro/devkitppc/lib/gcc/powerpc-gekko/4.2.4 /c:/devkitpro/devkitppc/powerpc-gekko/lib"
+sys_lib_search_path_spec="${DEVKITPPC}/lib/gcc ${DEVKITPPC}/lib/gcc/powerpc-gekko/4.2.4 ${DEVKITPPC}/powerpc-gekko/lib"
 
 # Run-time system search path for libraries
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
@@ -7317,11 +7318,11 @@ build_os=mingw32
 echo="echo"
 
 # The archiver.
-AR="/c/devkitPro/devkitPPC/bin/powerpc-gekko-ar"
+AR="${DEVKITPPC}/bin/powerpc-gekko-ar"
 AR_FLAGS="cru"
 
 # A C compiler.
-LTCC="/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc"
+LTCC="${DEVKITPPC}/bin/powerpc-gekko-gcc"
 
 # LTCC compiler flags.
 LTCFLAGS="-mcpu=750"
@@ -7336,7 +7337,7 @@ with_gcc=yes
 EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
-LD="c:/devkitpro/devkitppc/powerpc-gekko/bin/ld.exe"
+LD="${DEVKITPPC}/powerpc-gekko/bin/ld"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -7438,7 +7439,7 @@ library_names_spec=""
 soname_spec=""
 
 # Commands used to build and install an old-style archive.
-RANLIB="/c/devkitPro/devkitPPC/bin/powerpc-gekko-ranlib.exe"
+RANLIB="${DEVKITPPC}/bin/powerpc-gekko-ranlib"
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
 old_postuninstall_cmds=""
@@ -7502,7 +7503,8 @@ finish_cmds=""
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)\\{0,1\\}\$/\\1 \\2 \\2/p'"
+global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)
+\\{0,1\\}\$/\\1 \\2 \\2/p'"
 
 # Transform the output of nm in a proper C declaration
 global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
@@ -7561,7 +7563,7 @@ variables_saved_for_relink="PATH  LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBR
 link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec="/c:/devkitpro/devkitppc/lib/gcc /c:/devkitpro/devkitppc/lib/gcc/powerpc-gekko/4.2.4 /c:/devkitpro/devkitppc/powerpc-gekko/lib"
+sys_lib_search_path_spec="${DEVKITPPC}/lib/gcc ${DEVKITPPC}/lib/gcc/powerpc-gekko/4.2.4 ${DEVKITPPC}/powerpc-gekko/lib"
 
 # Run-time system search path for libraries
 sys_lib_dlsearch_path_spec="/lib /usr/lib"

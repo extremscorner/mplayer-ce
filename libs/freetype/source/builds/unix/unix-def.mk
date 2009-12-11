@@ -27,7 +27,7 @@ OBJ_BUILD ?= $(BUILD_DIR)
 #
 FTSYS_SRC = $(BASE_DIR)/ftsystem.c
 
-INSTALL         := /bin/install -c
+INSTALL         := /usr/bin/install -c
 INSTALL_DATA    := ${INSTALL} -m 644
 INSTALL_PROGRAM := ${INSTALL}
 INSTALL_SCRIPT  := ${INSTALL}
