@@ -14,6 +14,10 @@
 
 #include "libvo/fastmemcpy.h"
 
+#ifdef GEKKO
+#include <gctypes.h>
+#endif
+
 #define NUM_STORED 4
 
 enum pu_field_type_t {
@@ -71,7 +75,11 @@ struct vf_priv_s {
     struct frame_stats stats[2];
     struct metrics thres;
     char chflag;
+#ifdef GEKKO
+    u64 diff_time, merge_time, decode_time, vo_time, filter_time;
+#else
     double diff_time, merge_time, decode_time, vo_time, filter_time;
+#endif    
 };
 
 #define PPZ { 2000, 2000, 0, 2000 }
@@ -909,12 +917,20 @@ static void init(struct vf_priv_s *p, mp_image_t *mpi)
     p->num_fields = 3;
 }
 
+#ifdef GEKKO
+#include <ogc/lwp_watchdog.h>
+static inline u64 get_time(void)
+{
+	return tick_microsecs(gettime());
+}
+#else
 static inline double get_time(void)
 {
     struct timeval tv;
     gettimeofday(&tv, 0);
     return tv.tv_sec + tv.tv_usec * 1e-6;
 }
+#endif
 
 static void get_image(struct vf_instance_s* vf, mp_image_t *mpi)
 {
@@ -1132,7 +1148,11 @@ static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
     int breaks, prev;
     int show_fields = 0;
     int dropped_fields = 0;
+#ifdef GEKKO    
+    u64 start_time, diff_time;
+#else
     double start_time, diff_time;
+#endif    
     char prev_chflag = p->chflag;
     int keep_rate;
 
@@ -1382,7 +1402,7 @@ static void uninit(struct vf_instance_s* vf)
 {
     struct vf_priv_s *p = vf->priv;
     mp_msg(MSGT_VFILTER, MSGL_INFO, "diff_time: %.3f, merge_time: %.3f, "
-	   "export: %lu, merge: %lu, copy: %lu\n", p->diff_time, p->merge_time,
+	   "export: %lu, merge: %lu, copy: %lu\n", (double)p->diff_time, (double)p->merge_time,
 	   p->export_count, p->merge_count, p->num_copies);
     free(p->memory_allocated);
     free(p);

@@ -49,8 +49,6 @@
 #   endif
 #endif
 
-extern const uint8_t ff_reverse[256];
-
 #if ARCH_X86
 // avoid +32 for shift optimization (gcc should do that ...)
 static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
@@ -145,7 +143,7 @@ LAST_SKIP_CACHE(name, gb, num)
     will remove the next num bits from the cache if it is needed for UPDATE_CACHE otherwise it will do nothing
 
 LAST_SKIP_BITS(name, gb, num)
-    is equivalent to SKIP_LAST_CACHE; SKIP_COUNTER
+    is equivalent to LAST_SKIP_CACHE; SKIP_COUNTER
 
 for examples see get_bits, show_bits, skip_bits, get_vlc
 */
@@ -489,6 +487,9 @@ static inline int check_marker(GetBitContext *s, const char *msg)
  * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger then the actual read bits
  * because some optimized bitstream readers read 32 or 64 bit at once and could read over the end
  * @param bit_size the size of the buffer in bits
+ *
+ * While GetBitContext stores the buffer size, for performance reasons you are
+ * responsible for checking for the buffer end yourself (take advantage of the padding)!
  */
 static inline void init_get_bits(GetBitContext *s,
                    const uint8_t *buffer, int bit_size)
@@ -535,7 +536,6 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
              const void *codes, int codes_wrap, int codes_size,
              const void *symbols, int symbols_wrap, int symbols_size,
              int flags);
-#define INIT_VLC_USE_STATIC 1 ///< VERY strongly deprecated and forbidden
 #define INIT_VLC_LE         2
 #define INIT_VLC_USE_NEW_STATIC 4
 void free_vlc(VLC *vlc);
@@ -700,6 +700,11 @@ static inline int decode210(GetBitContext *gb){
         return 0;
     else
         return 2 - get_bits1(gb);
+}
+
+static inline int get_bits_left(GetBitContext *gb)
+{
+    return gb->size_in_bits - get_bits_count(gb);
 }
 
 #endif /* AVCODEC_GET_BITS_H */

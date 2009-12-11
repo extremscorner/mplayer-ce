@@ -380,6 +380,7 @@ ogg_packet (AVFormatContext * s, int *str, int *dstart, int *dsize)
 
     if (os->header > -1 && os->seq > os->header){
         os->pflags = 0;
+        os->pduration = 0;
         if (os->codec && os->codec->packet)
             os->codec->packet (s, idx);
         if (str)
@@ -477,11 +478,16 @@ static int
 ogg_read_header (AVFormatContext * s, AVFormatParameters * ap)
 {
     struct ogg *ogg = s->priv_data;
+    int i;
     ogg->curidx = -1;
     //linear headers seek from start
     if (ogg_get_headers (s) < 0){
         return -1;
     }
+
+    for (i = 0; i < ogg->nstreams; i++)
+        if (ogg->streams[i].header < 0)
+            ogg->streams[i].codec = NULL;
 
     //linear granulepos seek from end
     ogg_get_length (s);
@@ -519,6 +525,7 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
     }
 
     pkt->flags = os->pflags;
+    pkt->duration = os->pduration;
 
     return psize;
 }

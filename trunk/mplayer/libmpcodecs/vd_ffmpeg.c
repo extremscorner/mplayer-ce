@@ -55,7 +55,7 @@ typedef struct {
 
 static int get_buffer(AVCodecContext *avctx, AVFrame *pic);
 static void release_buffer(AVCodecContext *avctx, AVFrame *pic);
-static void draw_slice(struct AVCodecContext *s, AVFrame *src, int offset[4],
+static void draw_slice(struct AVCodecContext *s, const AVFrame *src, int offset[4],
                        int y, int type, int height);
 
 static enum PixelFormat get_format(struct AVCodecContext *avctx,
@@ -159,6 +159,7 @@ void mp_msp_av_log_callback(void *ptr, int level, const char *fmt, va_list vl)
     char buf[256];
 
     switch(level){
+    case AV_LOG_VERBOSE: mp_level = MSGL_V ; break;
     case AV_LOG_DEBUG:  mp_level= MSGL_V   ; break;
     case AV_LOG_INFO :  mp_level= MSGL_INFO; break;
     case AV_LOG_ERROR:  mp_level= MSGL_ERR ; break;
@@ -257,6 +258,8 @@ static int init(sh_video_t *sh){
     ctx->avctx = avcodec_alloc_context();
     avctx = ctx->avctx;
     avctx->opaque = sh;
+    avctx->codec_type = CODEC_TYPE_VIDEO;
+    avctx->codec_id = lavc_codec->id;
 
 #if CONFIG_VDPAU
     if(lavc_codec->capabilities & CODEC_CAP_HWACCEL_VDPAU){
@@ -448,7 +451,7 @@ static void uninit(sh_video_t *sh){
 }
 
 static void draw_slice(struct AVCodecContext *s,
-                        AVFrame *src, int offset[4],
+                        const AVFrame *src, int offset[4],
                         int y, int type, int height){
     sh_video_t *sh = s->opaque;
     uint8_t *source[MP_MAX_PLANES]= {src->data[0] + offset[0], src->data[1] + offset[1], src->data[2] + offset[2]};
@@ -533,10 +536,8 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
     int type= MP_IMGTYPE_IPB;
     int width= avctx->width;
     int height= avctx->height;
-    int align=15;
+    avcodec_align_dimensions(avctx, &width, &height);
 //printf("get_buffer %d %d %d\n", pic->reference, ctx->ip_count, ctx->b_count);
-    if(avctx->pix_fmt == PIX_FMT_YUV410P)
-        align=63; //yes seriously, its really needed (16x16 chroma blocks in SVQ1 -> 64x64)
 
     if (pic->buffer_hints) {
         mp_msg(MSGT_DECVIDEO, MSGL_DBG2, "Buffer hints: %u\n", pic->buffer_hints);
@@ -574,8 +575,9 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
 
     if (IMGFMT_IS_XVMC(ctx->best_csp) || IMGFMT_IS_VDPAU(ctx->best_csp)) {
         type =  MP_IMGTYPE_NUMBERED | (0xffff << 16);
-    } else
-    if (!pic->buffer_hints) {
+    }
+    else if (!pic->buffer_hints) {
+/*
         if(ctx->b_count>1 || ctx->ip_count>2){
             mp_msg(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_DRIFailure);
 
@@ -583,17 +585,17 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
             avctx->get_buffer= avcodec_default_get_buffer;
             return avctx->get_buffer(avctx, pic);
         }
-
+*/
+/*
         if(avctx->has_b_frames){
             type= MP_IMGTYPE_IPB;
         }else{
             type= MP_IMGTYPE_IP;
         }
         mp_msg(MSGT_DECVIDEO, MSGL_DBG2, type== MP_IMGTYPE_IPB ? "using IPB\n" : "using IP\n");
+*/
     }
-
-    mpi= mpcodecs_get_image(sh, type, flags,
-                        (width+align)&(~align), (height+align)&(~align));
+    mpi= mpcodecs_get_image(sh, type, flags, width, height);
     if (!mpi) return -1;
 
     // ok, let's see what did we get:
@@ -763,6 +765,7 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
     if(len<=0) return NULL; // skipped frame
 
 //ffmpeg interlace (mpeg2) bug have been fixed. no need of -noslices
+
     if (!dr1)
     avctx->draw_horiz_band=NULL;
     if(ctx->vo_initialized && !(flags&3) && !dr1){
@@ -875,10 +878,12 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
         avctx->width, avctx->height);
     if(!mpi){        // temporary!
         mp_msg(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_CouldntAllocateImageForCodec);
+        printf(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_CouldntAllocateImageForCodec);
         return NULL;
     }
 
-    if(!dr1){
+    if(!dr1)
+	{
         mpi->planes[0]=pic->data[0];
         mpi->planes[1]=pic->data[1];
         mpi->planes[2]=pic->data[2];
@@ -896,7 +901,7 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
         mpi->stride[2]*=2;
     }
 
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
     // FIXME: this might cause problems for buffers with FF_BUFFER_HINTS_PRESERVE
     if (mpi->bpp == 8)
         swap_palette(mpi->planes[1]);

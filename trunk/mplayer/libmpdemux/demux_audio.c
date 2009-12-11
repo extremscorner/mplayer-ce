@@ -346,7 +346,7 @@ static int demux_audio_open(demuxer_t* demuxer) {
     sh_audio->i_bps = sh_audio->wf->nAvgBytesPerSec;
     free(mp3_found);
     mp3_found = NULL;
-    if(s->end_pos && (s->flags & STREAM_SEEK) == STREAM_SEEK) {
+    if(s->end_pos && (s->flags & MP_STREAM_SEEK) == MP_STREAM_SEEK) {
       char tag[4];
       stream_seek(s,s->end_pos-128);
       stream_read(s,tag,3);
@@ -528,11 +528,10 @@ static int demux_audio_open(demuxer_t* demuxer) {
 }
 
 
-static int demux_audio_fill_buffer(demuxer_t *demuxer, demux_stream_t *ds) {
+static int demux_audio_fill_buffer(demuxer_t *demux, demux_stream_t *ds) {
   int l;
   demux_packet_t* dp;
   sh_audio_t* sh_audio = ds->sh;
-  demuxer_t* demux = ds->demuxer;
   da_priv_t* priv = demux->priv;
   double this_pts = priv->next_pts;
   stream_t* s = demux->stream;

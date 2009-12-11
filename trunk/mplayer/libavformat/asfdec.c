@@ -245,7 +245,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             asf_st->stream_language_index = 128; // invalid stream index means no language info
 
             if(!(asf->hdr.flags & 0x01)) { // if we aren't streaming...
-                st->duration = asf->hdr.send_time /
+                st->duration = asf->hdr.play_time /
                     (10000000 / 1000) - start_time;
             }
             get_guid(pb, &g);
@@ -364,7 +364,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 /* This is true for all paletted codecs implemented in ffmpeg */
                 if (st->codec->extradata_size && (st->codec->bits_per_coded_sample <= 8)) {
                     st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
                     for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
                         st->codec->palctrl->palette[i] = bswap_32(((uint32_t*)st->codec->extradata)[i]);
 #else
@@ -532,6 +532,15 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (url_feof(pb)) {
             return -1;
         } else {
+            if (!s->keylen) {
+                if (!guidcmp(&g, &ff_asf_content_encryption)) {
+                    av_log(s, AV_LOG_WARNING, "DRM protected stream detected, decoding will likely fail!\n");
+                } else if (!guidcmp(&g, &ff_asf_ext_content_encryption)) {
+                    av_log(s, AV_LOG_WARNING, "Ext DRM protected stream detected, decoding will likely fail!\n");
+                } else if (!guidcmp(&g, &ff_asf_digital_signature)) {
+                    av_log(s, AV_LOG_WARNING, "Digital signature detected, decoding will likely fail!\n");
+                }
+            }
             url_fseek(pb, gsize - 24, SEEK_CUR);
         }
     }
@@ -609,6 +618,14 @@ static int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb)
     }
 
     if (c != 0x82) {
+        /**
+         * This code allows handling of -EAGAIN at packet boundaries (i.e.
+         * if the packet sync code above triggers -EAGAIN). This does not
+         * imply complete -EAGAIN handling support at random positions in
+         * the stream.
+         */
+        if (url_ferror(pb) == AVERROR(EAGAIN))
+            return AVERROR(EAGAIN);
         if (!url_feof(pb))
             av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, url_ftell(pb));
     }

@@ -142,6 +142,8 @@ typedef struct {
   off_t dpos;                // position in the demuxed stream
   int pack_no;		   // serial number of packet
   int flags;               // flags of current packet (keyframe etc)
+  int non_interleaved;     // 1 if this stream is not properly interleaved,
+                           // so e.g. subtitle handling must do explicit reads.
 //---------------
   int packs;              // number of packets in buffer
   int bytes;              // total bytes of packets in buffer
@@ -240,6 +242,9 @@ typedef struct demuxer_st {
   void* v_streams[MAX_V_STREAMS]; // video sterams (sh_video_t)
   void *s_streams[MAX_S_STREAMS];   // dvd subtitles (flag)
 
+  // pointer to teletext decoder private data, if demuxer stream contains teletext
+  void *teletext;
+
   demux_chapter_t* chapters;
   int num_chapters;
 
@@ -268,7 +273,7 @@ static inline demux_packet_t* new_demux_packet(int len){
   dp->master=NULL;
   dp->buffer=NULL;
   if (len > 0 && (dp->buffer = (unsigned char *)malloc(len + MP_INPUT_BUFFER_PADDING_SIZE)))
-    memset(dp->buffer + len, 0, 8);
+    memset(dp->buffer + len, 0, MP_INPUT_BUFFER_PADDING_SIZE);
   else
     dp->len = 0;
   return dp;
@@ -384,7 +389,7 @@ stream_t* new_ds_stream(demux_stream_t *ds);
 static inline int avi_stream_id(unsigned int id){
   unsigned char *p=(unsigned char *)&id;
   unsigned char a,b;
-#ifdef WORDS_BIGENDIAN
+#if HAVE_BIGENDIAN
   a=p[3]-'0'; b=p[2]-'0';
 #else
   a=p[0]-'0'; b=p[1]-'0';

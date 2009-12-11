@@ -49,7 +49,6 @@ extern menu_info_t menu_info_console;
 extern menu_info_t menu_info_pref;
 extern menu_info_t menu_info_dvbsel;
 
-
 menu_info_t* menu_info_list[] = {
   &menu_info_pt,
   &menu_info_cmdlist,

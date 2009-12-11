@@ -331,7 +331,7 @@ static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
     int size, i;
-    void *p;
+    char *p;
 
     mux_v->bih->biWidth=width;
     mux_v->bih->biHeight=height;
@@ -911,7 +911,8 @@ static void uninit(struct vf_instance_s* vf){
     av_freep(&lavc_venc_context->intra_matrix);
     av_freep(&lavc_venc_context->inter_matrix);
 
-    avcodec_close(lavc_venc_context);
+    if (lavc_venc_context->codec)
+        avcodec_close(lavc_venc_context);
 
     if(stats_file) fclose(stats_file);
 
@@ -1047,6 +1048,8 @@ static int vf_open(vf_instance_t *vf, char* args){
 
     vf->priv->pic = avcodec_alloc_frame();
     vf->priv->context = avcodec_alloc_context();
+    vf->priv->context->codec_type = CODEC_TYPE_VIDEO;
+    vf->priv->context->codec_id = vf->priv->codec->id;
 
     return 1;
 }

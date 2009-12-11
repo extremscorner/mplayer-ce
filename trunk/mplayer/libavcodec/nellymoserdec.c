@@ -50,7 +50,7 @@ typedef struct NellyMoserDecodeContext {
     int             add_bias;
     float           scale_bias;
     DSPContext      dsp;
-    MDCTContext     imdct_ctx;
+    FFTContext      imdct_ctx;
     DECLARE_ALIGNED_16(float,imdct_out[NELLY_BUF_LEN * 2]);
 } NellyMoserDecodeContext;
 
@@ -129,7 +129,7 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    av_lfg_init(&s->random_state, ff_random_get_seed());
+    av_lfg_init(&s->random_state, 0);
     ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
     dsputil_init(&s->dsp, avctx);

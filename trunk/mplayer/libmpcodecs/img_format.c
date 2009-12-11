@@ -15,6 +15,8 @@ const char *vo_format_name(int format)
 	case IMGFMT_RGB16: return "RGB 16-bit";
 	case IMGFMT_RGB24: return "RGB 24-bit";
 //	case IMGFMT_RGB32: return "RGB 32-bit";
+	case IMGFMT_RGB48LE: return "RGB 48-bit LE";
+	case IMGFMT_RGB48BE: return "RGB 48-bit BE";
 	case IMGFMT_BGR1: return "BGR 1-bit";
 	case IMGFMT_BGR4: return "BGR 4-bit";
 	case IMGFMT_BG4B: return "BGR 4-bit per byte";
@@ -70,6 +72,7 @@ const char *vo_format_name(int format)
 	case IMGFMT_VDPAU_MPEG1: return "MPEG1 VDPAU acceleration";
 	case IMGFMT_VDPAU_MPEG2: return "MPEG2 VDPAU acceleration";
 	case IMGFMT_VDPAU_H264: return "H.264 VDPAU acceleration";
+	case IMGFMT_VDPAU_MPEG4: return "MPEG-4 Part 2 VDPAU acceleration";
 	case IMGFMT_VDPAU_WMV3: return "WMV3 VDPAU acceleration";
 	case IMGFMT_VDPAU_VC1: return "VC1 VDPAU acceleration";
     }

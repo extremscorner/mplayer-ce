@@ -93,7 +93,7 @@ typedef struct WMACodecContext {
 //FIXME the following 3 tables should be shared between decoders
     VLC coef_vlc[2];
     uint16_t *run_table[2];
-    uint16_t *level_table[2];
+    float *level_table[2];
     uint16_t *int_table[2];
     const CoefVLCTable *coef_vlcs[2];
     /* frame info */
@@ -116,7 +116,7 @@ typedef struct WMACodecContext {
     WMACoef coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
     DECLARE_ALIGNED_16(float, coefs[MAX_CHANNELS][BLOCK_MAX_SIZE]);
     DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
-    MDCTContext mdct_ctx[BLOCK_NB_SIZES];
+    FFTContext mdct_ctx[BLOCK_NB_SIZES];
     float *windows[BLOCK_NB_SIZES];
     /* output buffer for one frame and the last for IMDCT windowing */
     DECLARE_ALIGNED_16(float, frame_out[MAX_CHANNELS][BLOCK_MAX_SIZE * 2]);
@@ -150,6 +150,7 @@ int av_cold ff_wma_get_frame_len_bits(int sample_rate, int version,
 int ff_wma_init(AVCodecContext * avctx, int flags2);
 int ff_wma_total_gain_to_bits(int total_gain);
 int ff_wma_end(AVCodecContext *avctx);
+<<<<<<< .working
 unsigned int ff_wma_get_large_val(GetBitContext* gb);
 int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                             VLC *vlc,
@@ -157,5 +158,14 @@ int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
                             int version, WMACoef *ptr, int offset,
                             int num_coefs, int block_len, int frame_len_bits,
                             int coef_nb_bits);
+=======
+unsigned int ff_wma_get_large_val(GetBitContext* gb);
+int ff_wma_run_level_decode(AVCodecContext* avctx, GetBitContext* gb,
+                            VLC *vlc,
+                            const float *level_table, const uint16_t *run_table,
+                            int version, WMACoef *ptr, int offset,
+                            int num_coefs, int block_len, int frame_len_bits,
+                            int coef_nb_bits);
+>>>>>>> .merge-right.r523
 
 #endif /* AVCODEC_WMA_H */
