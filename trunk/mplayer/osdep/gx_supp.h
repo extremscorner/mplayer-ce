@@ -35,7 +35,7 @@ extern GXRModeObj *vmode;
 
 void GX_InitVideo();
 void GX_SetCamPosZ(float f);
-void GX_SetComponentFix(bool f);
+void GX_SetOverscan(bool f);
 void StopDrawThread();
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch);
 
