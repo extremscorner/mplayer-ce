@@ -30,6 +30,8 @@
 #include <gccore.h>
 #include <ogc/lwp_watchdog.h>
 #include <wiiuse/wpad.h>
+#include <wiikeyboard/keyboard.h>
+#include <wiikeyboard/wsksymdef.h>
 
 int screen_width = 80;
 int screen_height = 24;
@@ -91,6 +93,52 @@ void reset_nunchuk_positions()
 	m_screenright_shift = 0;
 	m_screentop_shift = 0;
 	m_screenbottom_shift = 0;
+}
+
+int getch2_internal(void)
+{
+	keyboard_event ke;
+	s32 stat = KEYBOARD_GetEvent(&ke);
+	
+	if (stat && (ke.type == KEYBOARD_PRESSED))
+	{
+		switch (ke.symbol)
+		{
+			case KS_Home:
+				return KEY_HOME;
+			case KS_End:
+				return KEY_END;
+			case KS_Delete:
+				return KEY_DEL;
+			case KS_KP_Insert:
+				return KEY_INS;
+			case KS_BackSpace:
+				return KEY_BS;
+			case KS_Prior:
+				return KEY_PGUP;
+			case KS_Next:
+				return KEY_PGDWN;
+			case KS_Return:
+				return KEY_ENTER;
+			case KS_Escape:
+				return KEY_ESC;
+			case KS_Left:
+				return KEY_LEFT;
+			case KS_Up:
+				return KEY_UP;
+			case KS_Right:
+				return KEY_RIGHT;
+			case KS_Down:
+				return KEY_DOWN;
+		}
+		
+		if(KS_f20 >= ke.symbol && ke.symbol >= KS_f1)
+			return KEY_F + 1 + ke.symbol - KS_f1;
+		
+		return ke.symbol;
+	}
+	
+	return -1;
 }
 
 void getch2(void)
@@ -229,6 +277,9 @@ void getch2(void)
 		if(update)GX_UpdateSquare();
 	}
 	
+	int r = getch2_internal();
+    if (r >= 0)
+        mplayer_put_key(r);
 }
 
 #if defined(HAVE_LANGINFO) && defined(CONFIG_ICONV)

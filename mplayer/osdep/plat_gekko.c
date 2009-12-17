@@ -36,6 +36,7 @@
 #include <ogc/lwp.h>
 #include <debug.h>
 #include <wiiuse/wpad.h>
+#include <wiikeyboard/keyboard.h>
 
 #include <fat.h>
 #include <ntfs.h>
@@ -63,7 +64,7 @@
 #undef abort
 
 
-#define MPCE_VERSION "0.761 b1 10/12"
+#define MPCE_VERSION "0.761 b1 17/12"
 
 //#define DEBUG_INIT
 #define USE_NET_THREADS
@@ -298,6 +299,7 @@ static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static bool dbg_network = false;
 //static int component_fix = false;  //deprecated
+static int overscan = true;
 
 static bool usb_init=false;
 static bool exit_automount_thread=false;
@@ -856,7 +858,7 @@ static int LoadParams()
 	{
 	    //{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},  //deprecated
 	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	    //{   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
+	    //{   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},	//need to be emulated
 	    //{   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
 	    //{   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},	  
 	    //{   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
@@ -864,6 +866,7 @@ static int LoadParams()
 	    {   "restore_points", &enable_restore_points, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "watchdog", &enable_watchdog, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 		{	"video_mode", &video_mode, CONF_TYPE_INT, CONF_RANGE, 0, 4, NULL},
+		{	"overscan", &overscan, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};		
 	
@@ -1005,6 +1008,8 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_Init(NULL);
 	AUDIO_RegisterDMACallback(NULL);
 	AUDIO_StopDMA();
+	
+	KEYBOARD_Init(NULL);
 
 
 	if (!DetectValidPath())
@@ -1026,10 +1031,11 @@ void plat_init (int *argc, char **argv[]) {
 	printf_debug("Loading params\n");
 	LoadParams();
 	//GX_SetComponentFix(component_fix); //deprecated
+	GX_SetOverscan(overscan);
 	//GX_SetCamPosZ(gxzoom);
 	//GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
 
-	if(video_mode>0)
+	if ((video_mode > 0) || !overscan)
 	{
 		printf_debug("Changing video mode\n");
 		ChangeVideoMode(video_mode);

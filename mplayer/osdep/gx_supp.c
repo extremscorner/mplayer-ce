@@ -70,6 +70,7 @@ extern int screenheight;
 #else
 static u32 whichfb;
 static u32 *xfb[2];
+static bool overscan = true;
 GXRModeObj *vmode = NULL;
 
 int screenwidth = 640;
@@ -128,6 +129,59 @@ static camera cam = {
 	{ 0.0f, 0.0f, -0.5f }
 };
 #ifndef WIILIB
+void AdjustVideoParams()
+{
+	int videowidth = VI_MAX_WIDTH_NTSC;
+	int videoheight = VI_MAX_HEIGHT_NTSC;
+	
+	switch(vmode->viTVMode)
+	{
+		case VI_PAL:
+			videowidth = VI_MAX_WIDTH_PAL;
+			videoheight = VI_MAX_HEIGHT_PAL;
+				break;
+		case VI_DEBUG_PAL:
+			vmode = &TVPal528IntDf;
+				break;
+	}
+	
+	if (overscan)
+	{
+		if (videoheight > VI_MAX_HEIGHT_NTSC)
+			vmode->xfbHeight *= 1.025;
+		else
+			vmode->xfbHeight *= 0.95; vmode->efbHeight *= 0.95;
+		
+		vmode->xfbHeight += fmod(vmode->xfbHeight, 2);
+		vmode->efbHeight += fmod(vmode->efbHeight, 2);
+	}
+	else
+	{
+		vmode->xfbHeight = videoheight;
+	}
+	
+	screenheight = vmode->viHeight = vmode->xfbHeight;
+	
+	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+	{
+        if (overscan) vmode->viWidth = videowidth * 0.95;
+		screenwidth = ((float)screenheight / 9) * 16;
+	}
+	else
+	{
+        if (overscan) vmode->viWidth = videowidth * 0.93;
+		screenwidth = ((float)screenheight / 3) * 4;
+	}
+	
+	screenwidth -= fmod(screenwidth, 4);
+	
+	if (!overscan)
+		vmode->viWidth = videowidth;
+	
+	vmode->viXOrigin = (videowidth - vmode->viWidth) / 2;
+	vmode->viYOrigin = (videoheight - vmode->viHeight) / 2;
+}
+
 int video_mode=0;
 void ChangeVideoMode(int video_mode)
 {
@@ -146,30 +200,10 @@ void ChangeVideoMode(int video_mode)
 			vmode = &TVEurgb60Hz480IntDf;
 				break;
 		default:
-			return;
+			vmode = VIDEO_GetPreferredMode(NULL);
 	}
 	
-	vmode->viHeight *= 0.95; vmode->viHeight += fmod(vmode->viHeight, 2);
-	screenheight = vmode->efbHeight;
-	
-	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-	{
-        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.95;
-		screenwidth = (int)(((float)screenheight / 9) * 16);
-	}
-	else
-	{
-        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.93;
-		screenwidth = (int)(((float)screenheight / 3) * 4);
-	}
-	
-	screenwidth -= fmod(screenwidth, 4);
-	
-	vmode->xfbHeight *= 0.95; vmode->xfbHeight += fmod(vmode->xfbHeight, 2);
-	vmode->efbHeight *= 0.95; vmode->efbHeight += fmod(vmode->efbHeight, 2);
-	
-	vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
-	vmode->viYOrigin = (screenheight - vmode->viHeight) / 2;
+	AdjustVideoParams();
 
 	VIDEO_Configure(vmode);
 	VIDEO_Flush();
@@ -182,7 +216,7 @@ void ChangeVideoMode(int video_mode)
 
 	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
-
+	
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_SetBlack(FALSE);
 	VIDEO_Flush();
@@ -199,28 +233,7 @@ void ChangeVideoMode(int video_mode)
 void GX_InitVideo()
 {
 	vmode = VIDEO_GetPreferredMode(NULL);
-	
-	vmode->viHeight *= 0.95; vmode->viHeight += fmod(vmode->viHeight, 2);
-	screenheight = vmode->efbHeight;
-	
-	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-	{
-        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.95;
-		screenwidth = (int)(((float)screenheight / 9) * 16);
-	}
-	else
-	{
-        vmode->viWidth = VI_MAX_WIDTH_NTSC * 0.93;
-		screenwidth = (int)(((float)screenheight / 3) * 4);
-	}
-	
-	screenwidth -= fmod(screenwidth, 4);
-	
-	vmode->xfbHeight *= 0.95; vmode->xfbHeight += fmod(vmode->xfbHeight, 2);
-	vmode->efbHeight *= 0.95; vmode->efbHeight += fmod(vmode->efbHeight, 2);
-	
-	vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - vmode->viWidth) / 2;
-	vmode->viYOrigin = (screenheight - vmode->viHeight) / 2;
+	AdjustVideoParams();
 
 	VIDEO_Configure(vmode);
 
@@ -251,7 +264,13 @@ void GX_InitVideo()
 	if (!Vtexture[0])
 		Vtexture[0] = (u8 *) memalign(32,900*700/4);
 }
+
+void GX_SetOverscan(bool f)
+{
+	overscan = f;
+}
 #endif
+
 void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch)
 {
 	hor_pos = _hor_pos;
