@@ -29,7 +29,6 @@
 #include <string.h>
 #include <malloc.h>
 #include <unistd.h>
-#include <math.h>
 #include <ogc/mutex.h>
 #include <ogc/lwp.h>
 #include "gx_supp.h"
@@ -134,33 +133,35 @@ void AdjustVideoParams()
 	int videowidth = VI_MAX_WIDTH_NTSC;
 	int videoheight = VI_MAX_HEIGHT_NTSC;
 	
-	switch(vmode->viTVMode)
+	bool european = (vmode->viTVMode >> 2) == VI_PAL;
+	
+	if (european)
 	{
-		case VI_PAL:
-			videowidth = VI_MAX_WIDTH_PAL;
-			videoheight = VI_MAX_HEIGHT_PAL;
-				break;
-		case VI_DEBUG_PAL:
-			vmode = &TVPal528IntDf;
-				break;
+		if (!overscan)
+			vmode = &TVPal574IntDfScale;
+		
+		videowidth = VI_MAX_WIDTH_PAL;
+		videoheight = VI_MAX_HEIGHT_PAL;
 	}
 	
 	if (overscan)
 	{
-		if (videoheight > VI_MAX_HEIGHT_NTSC)
+		if (european)
 			vmode->xfbHeight *= 1.025;
 		else
-			vmode->xfbHeight *= 0.95; vmode->efbHeight *= 0.95;
+			vmode->xfbHeight *= 0.95;
 		
-		vmode->xfbHeight += fmod(vmode->xfbHeight, 2);
-		vmode->efbHeight += fmod(vmode->efbHeight, 2);
+		vmode->xfbHeight -= (vmode->xfbHeight % 2);
 	}
 	else
 	{
 		vmode->xfbHeight = videoheight;
 	}
 	
-	screenheight = vmode->viHeight = vmode->xfbHeight;
+	if (!european)
+		vmode->efbHeight = vmode->xfbHeight;
+	
+	vmode->viHeight = vmode->xfbHeight;
 	
 	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
 	{
@@ -173,7 +174,7 @@ void AdjustVideoParams()
 		screenwidth = ((float)screenheight / 3) * 4;
 	}
 	
-	screenwidth -= fmod(screenwidth, 4);
+	screenwidth -= (screenwidth % 4);
 	
 	if (!overscan)
 		vmode->viWidth = videowidth;
@@ -255,7 +256,7 @@ void GX_InitVideo()
 	else
 	    while (VIDEO_GetNextField())
 	    	VIDEO_WaitVSync();
-
+	
 	//make texture memory fixed (max texture 900*700, gx can't manage more) and in mem1 (is faster)
 	if (!Ytexture[0])
 		Ytexture[0] = (u8 *) memalign(32,900*700);
@@ -713,10 +714,13 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
 	GX_SetCopyClear(gxbackground, 0x00ffffff);
 	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
-	GX_SetDispCopyYScale((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
+	
+	f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
+    u32 xfbHeight = GX_SetDispCopyYScale(yscale);
+	
 	GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
 	GX_SetDispCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
-	GX_SetDispCopyDst(vmode->fbWidth, vmode->xfbHeight);
+	GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
 	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
 	GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
 #endif
