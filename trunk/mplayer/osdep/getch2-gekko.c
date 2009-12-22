@@ -39,6 +39,7 @@ char *erase_to_end_of_line = NULL;
 
 float m_screenleft_shift=0, m_screenright_shift=0;
 float m_screentop_shift=0, m_screenbottom_shift=0;
+bool nunchuk_update=false;
 
 static int getch2_status=0;
 
@@ -85,7 +86,6 @@ void getch2_disable() {
 	getch2_status=0;
 }
 
-
 #define SENSIBILITY 20
 void reset_nunchuk_positions()
 {
@@ -99,7 +99,7 @@ int getch2_internal(void)
 {
 	keyboard_event ke;
 	s32 stat = KEYBOARD_GetEvent(&ke);
-	
+
 	if (stat && (ke.type == KEYBOARD_PRESSED))
 	{
 		switch (ke.symbol)
@@ -131,13 +131,13 @@ int getch2_internal(void)
 			case KS_Down:
 				return KEY_DOWN;
 		}
-		
+
 		if(KS_f20 >= ke.symbol && ke.symbol >= KS_f1)
 			return KEY_F + 1 + ke.symbol - KS_f1;
-		
+
 		return ke.symbol;
 	}
-	
+
 	return -1;
 }
 
@@ -274,12 +274,16 @@ void getch2(void)
 				update=true;
 			}
 		}
-		if(update)GX_UpdateSquare();
+		if(update)
+		{
+			nunchuk_update=true;
+			GX_UpdateSquare();
+		}
 	}
-	
 	int r = getch2_internal();
     if (r >= 0)
         mplayer_put_key(r);
+	
 }
 
 #if defined(HAVE_LANGINFO) && defined(CONFIG_ICONV)
