@@ -311,7 +311,13 @@ static int control(uint32_t request, void *data, ...)
 	{
 		case VOCTRL_QUERY_FORMAT:
 			return query_format(*((uint32_t*) data));
+		case VOCTRL_UPDATE_SCREENINFO:
+            vo_screenwidth = screenwidth;
+            vo_screenheight = screenheight;
+            aspect_save_screenres(vo_screenwidth, vo_screenheight);
+            return VO_TRUE;
 	}
+
 
 	return VO_NOTIMPL;
 }
