@@ -320,13 +320,6 @@ lwp_t mountthread;
 
 #define MOUNT_STACKSIZE 8*1024
 static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
-#define NET_STACKSIZE 8*1024
-static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
-#ifdef USE_NET_THREADS
-#define CONN_STACKSIZE 8*1024
-static u8 smbx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
-static u8 ftpx_Stack[5][CONN_STACKSIZE] ATTRIBUTE_ALIGN (32);	
-#endif
 
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
@@ -478,7 +471,7 @@ typedef struct
 	char* share;
 	char* user;
 	char* pass;
-
+	bool init;
 } t_smb_conf;
 
 typedef struct
@@ -488,6 +481,7 @@ typedef struct
 	char* user;
 	char* pass;
 	int passive;
+	bool init;
 } t_ftp_conf;
 static t_smb_conf smb_conf[5];
 static t_ftp_conf ftp_conf[5];
@@ -539,15 +533,13 @@ static int wait_for_network_initialisation()
 	return 0;
 }
 
-static void trysmb();
-static void tryftp();
-
-
 static bool mount_smb(int number)
 {	
 	char device[10];
 
 	sprintf(device,"smb%d",number+1);
+
+	smb_conf[number].init=true;
 
 	if(smb_conf[number].ip==NULL || smb_conf[number].share==NULL)
 	{
@@ -589,6 +581,8 @@ bool mount_ftp(int number)
 
 	sprintf(device,"ftp%i",number+1);
 
+	ftp_conf[number].init=true;
+
 	if(ftp_conf[number].ip==NULL || ftp_conf[number].share==NULL)
 	{
 		if(dbg_network) printf("FTP %s not filled\n",device);
@@ -621,19 +615,6 @@ bool mount_ftp(int number)
 	else
 	  return ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,ftp_conf[number].passive>0);
 }
-
-static void trysmb()
-{
-	int i;
-	for(i=0;i<5;i++) mount_smb(i);
-}
-
-static void tryftp()
-{	
-	int i;
-	for(i=0;i<5;i++) mount_ftp(i);
-}
-
 
 void read_net_config()
 {
@@ -695,8 +676,16 @@ void read_net_config()
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};
 
-	for(i=0;i<5;i++)smb_conf[i].ip=NULL;
-	for(i=0;i<5;i++)ftp_conf[i].ip=NULL;
+	for(i=0;i<5;i++)
+	{
+		smb_conf[i].ip=NULL;
+		smb_conf[i].init=false;
+	}
+	for(i=0;i<5;i++)
+	{
+		ftp_conf[i].ip=NULL;
+		ftp_conf[i].init=false;
+	}
 
 	/* read configuration */
 
@@ -716,88 +705,6 @@ void read_net_config()
 
 }
 
-#ifdef USE_NET_THREADS
-
-static void * smbthread (void *arg)
-{
-	int i;
-	i=*((int*)arg);	
-	mount_smb(i);
-	while(*((int*)arg) >=0) usleep(50000);
-	return NULL;
-}
-
-static void * ftpthread (void *arg)
-{
-	int i;
-	i=*((int*)arg);	
-	mount_ftp(i);
-	while(*((int*)arg) >=0) usleep(50000);
-	return NULL;
-}
-#endif
-
-static void * networkthreadfunc (void *arg)
-{
-	if(wait_for_network_initialisation()==0) return NULL;
-#ifndef USE_NET_THREADS
-	network_initied = 1;
-	trysmb();
-	tryftp();	
-#else
-	int i,x1[5],x2[5];
-	lwp_t smb_th[5],ftp_th[5];
-
-	for(i=0;i<5;i++)
-	{
-		x2[i]=i;
-		memset (smbx_Stack[i], 0, CONN_STACKSIZE);
-		LWP_CreateThread(&smb_th[i], smbthread, &x2[i], smbx_Stack[i], CONN_STACKSIZE, 64); // samba initialization
-		usleep(100);
-	}
-
-	for(i=0;i<5;i++)
-	{
-		x1[i]=i;
-		memset (ftpx_Stack[i], 0, CONN_STACKSIZE);
-		LWP_CreateThread(&ftp_th[i], ftpthread, &x1[i], ftpx_Stack[i], CONN_STACKSIZE, 64); // ftp initialization
-		usleep(100);
-	}
-
-	network_initied=1;
-	printf_debug("net initied\n");
-
-	for(i=0;i<5;i++)
-	{
-		x2[i]=-1;
-		LWP_JoinThread(smb_th[i],NULL);
-	}
-	printf_debug("smb net threads end\n");
-	for(i=0;i<5;i++)
-	{
-		x1[i]=-1;
-		LWP_JoinThread(ftp_th[i],NULL);
-	}
-	printf_debug("ftp net threads end\n");
-
-	printf_debug("Net thread Suspended\n");
-
-	usleep(500);
-	LWP_SuspendThread(LWP_GetSelf());
-	printf_debug("very strange!!!  net thread must be suspedend\n");
-
-#endif
-	return NULL;
-}
-
-static void InitNetworkThreads()
-{
-	lwp_t clientthread;
-	memset (net_Stack, 0, NET_STACKSIZE);
-
-
-	LWP_CreateThread(&clientthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
-}
 /******************************************/
 /*        END NETWORK FUNCTIONS           */
 /******************************************/
@@ -824,8 +731,6 @@ bool DVDGekkoMount()
 	dvd_mounted=false;
 	return false;
 }
-
-
 
 #include <sys/iosupport.h>
 bool DeviceMounted(const char *device)
@@ -1087,8 +992,9 @@ void plat_init (int *argc, char **argv[]) {
 		printf("\nDebugging Network\n");
 		if(wait_for_network_initialisation()) 
 		{
-			trysmb();
-			tryftp();
+			int i;
+			for(i=0;i<5;i++) mount_smb(i);
+	        for(i=0;i<5;i++) mount_ftp(i);
 		}
 		network_initied=1;
 		printf("Pause for reading (10 seconds)...");
@@ -1097,8 +1003,8 @@ void plat_init (int *argc, char **argv[]) {
 	}
 	else 
 	{
-		printf_debug("Initiating network thread\n");
-		InitNetworkThreads();
+		//printf_debug("Initiating network thread\n");
+		//InitNetworkThreads();
 	}
 
 	chdir(MPLAYER_DATADIR);
@@ -1110,48 +1016,37 @@ void plat_init (int *argc, char **argv[]) {
 
 	printf_debug("Set env params (%s)\n",MPLAYER_DATADIR);
 
-if(*argc<3)
-{
-	default_args[2]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
-	strcpy(default_args[2],MPLAYER_DATADIR);
-	default_args[4]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
-	strcpy(default_args[4],MPLAYER_DATADIR);
-
-	if (CONF_GetAspectRatio()) 
-	{ //16:9
-		strcat(default_args[2],"/loop-wide.avi");
-		strcat(default_args[4],"/loop-wide.avi");
-	}		
-	else
-	{  // 4:3
-		strcat(default_args[2],"/loop.avi");
-		strcat(default_args[4],"/loop.avi");
-	}
-	
-	*argv = default_args;
-	*argc = sizeof(default_args) / sizeof(char *);
-
-}
-else
-{	
-	if(usb->isInserted()) 
+	if(*argc<3)
 	{
-		usb_init=true;
-		fatMount("usb",usb,0,3,256);
-		mount_usb_ntfs();
+		default_args[2]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
+		strcpy(default_args[2],MPLAYER_DATADIR);
+		default_args[4]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
+		strcpy(default_args[4],MPLAYER_DATADIR);
+
+		if (CONF_GetAspectRatio())
+		{ //16:9
+			strcat(default_args[2],"/loop-wide.avi");
+			strcat(default_args[4],"/loop-wide.avi");
+		}
+		else
+		{  // 4:3
+			strcat(default_args[2],"/loop.avi");
+			strcat(default_args[4],"/loop.avi");
+		}
+
+		*argv = default_args;
+		*argc = sizeof(default_args) / sizeof(char *);
+
 	}
-}
-/*
-	*argv = default_args;
-	*argc = sizeof(default_args) / sizeof(char *);
-if(usb->isInserted())
-{
-	usb_init=true;
-	fatMount("usb",usb,0,3,256);
-	mount_usb_ntfs();
-	LWP_CreateThread(&mountthread, exithreadfunc, NULL, NULL, 0, 64);
-}
-*/
+	else
+	{
+		if(usb->isInserted())
+		{
+			usb_init=true;
+			fatMount("usb",usb,0,3,256);
+			mount_usb_ntfs();
+		}
+	}
 
 	if(enable_watchdog)
 	{
@@ -1168,10 +1063,7 @@ if(usb->isInserted())
 	printf_debug("Initiating mem2 cache\n");
 	InitMem2Manager((stream_cache_size*1024)+(8*1024));
 
-	//if (!*((u32*)0x80001800)) sp();
-	//log_console_enable_video(false);
 	printf_debug("Launching mplayer\n");
-	usleep(200);
 
 }
 
@@ -1265,5 +1157,24 @@ void save_screen_params()
 	fwrite( buff, sizeof(char), strlen(buff), f );
 	fclose(f);
 }
+
+bool smbConnect(char *device)
+{
+	int number;
+	if(network_initied==0) return false;
+	number=device[3]-'0';
+	if(!smb_conf[number].init) return mount_smb(number);
+	return smbCheckConnection(device);
+}
+
+bool ftpConnect(char *device)
+{
+	int number;
+	if(network_initied==0) return false;
+	number=device[3]-'0';
+	if(!ftp_conf[number].init) return mount_ftp(number);
+	return CheckFTPConnection(device);
+}
+
 
 #endif
