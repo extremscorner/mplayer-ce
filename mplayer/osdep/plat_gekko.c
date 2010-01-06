@@ -64,10 +64,9 @@ MPlayer Wii port
 #undef abort
 
 
-#define MPCE_VERSION "0.761 b1 23/12"
+#define MPCE_VERSION "0.761 b1 06/01"
 
 //#define DEBUG_INIT
-//#define USE_NET_THREADS
 
 #ifdef DEBUG_INIT
 #define printf_debug(fmt, args...) \
@@ -218,6 +217,8 @@ bool power_pressed = false;
 
 #define WATCHDOG_STACKSIZE 8*1024
 static u8 watchdog_Stack[WATCHDOG_STACKSIZE] ATTRIBUTE_ALIGN (32);
+
+
 
 mutex_t watchdogmutex=LWP_MUTEX_NULL;
 int watchdogcounter=-1;
@@ -465,6 +466,11 @@ static void sp(){sleep(5);}
 /******************************************/
 /*           NETWORK FUNCTIONS            */
 /******************************************/
+#define NET_STACKSIZE 8*1024
+static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
+
+lwp_t netthread;
+
 typedef struct
 {
 	char* ip;
@@ -517,6 +523,7 @@ static int wait_for_network_initialisation()
 			}
 	        else
 			{
+	          network_initied=1;
 			  if(dbg_network) printf("Network initialized. IP: %s\n",myIP);
 			  usleep(1000);
 			  return 1;
@@ -703,6 +710,16 @@ void read_net_config()
 	m_config_parse_config_file(conf, file);
 	m_config_free(conf);
 
+}
+
+static void * networkthreadfunc (void *arg)
+{
+	while(1)
+	{
+		wait_for_network_initialisation();
+		LWP_SuspendThread(LWP_GetSelf());
+	}
+    return NULL;
 }
 
 /******************************************/
@@ -1003,7 +1020,9 @@ void plat_init (int *argc, char **argv[]) {
 	}
 	else 
 	{
-		//printf_debug("Initiating network thread\n");
+		printf_debug("Initiating network thread\n");
+		LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
+
 		//InitNetworkThreads();
 	}
 
@@ -1163,6 +1182,7 @@ bool smbConnect(char *device)
 	int number;
 	if(network_initied==0) return false;
 	number=device[3]-'0';
+	number=number-1;
 	if(!smb_conf[number].init) return mount_smb(number);
 	return smbCheckConnection(device);
 }
@@ -1172,6 +1192,7 @@ bool ftpConnect(char *device)
 	int number;
 	if(network_initied==0) return false;
 	number=device[3]-'0';
+	number=number-1;
 	if(!ftp_conf[number].init) return mount_ftp(number);
 	return CheckFTPConnection(device);
 }
