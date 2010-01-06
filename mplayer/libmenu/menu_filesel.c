@@ -354,6 +354,7 @@ fast_pause();
     free(mpriv->p.title);
   p = strstr(mpriv->title,"%p");
 strcpy(menu_dir,mpriv->dir);
+#define GEKKO
 #ifdef GEKKO
 #ifndef WIILIB
   if(!strcmp(mpriv->dir,"sd:/"))
@@ -444,9 +445,9 @@ strcpy(menu_dir,mpriv->dir);
 	  }
 	  	  
 	  device[3]=mpriv->dir[3];
-	  if(!smbCheckConnection(device)) 
+	  if(!smbConnect(device))
 	  {
-		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Error reconnecting to %s ",device);
+		  set_osd_msg(OSD_MSG_TEXT,1,2000,"Error connecting to %s ",device);
 		  update_osd_msg();
 		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		  goto error_exit;	  
@@ -466,12 +467,12 @@ strcpy(menu_dir,mpriv->dir);
 	  	  
 	  device[3]=mpriv->dir[3];
 		set_osd_msg(124,1,2000,"Connecting to %s ",device);
-	  if(!CheckFTPConnection(device)) 
+	  if(!ftpConnect(device))
 	  {
-		  set_osd_msg(124,1,2000,"Error reconnecting to %s ",device);
+		  set_osd_msg(124,1,2000,"Error connecting to %s ",device);
 		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		  goto error_exit;
-	  } else rm_osd_msg(124);
+	  }
   } 
 #endif
 #endif
