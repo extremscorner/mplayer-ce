@@ -33,8 +33,9 @@
 #include "faandct.h"
 #include "faanidct.h"
 #include "mathops.h"
-#include "h263.h"
 #include "snow.h"
+#include "mpegvideo.h"
+#include "config.h"
 
 /* snow.c */
 void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
@@ -2874,7 +2875,7 @@ static void put_mspel8_mc22_c(uint8_t *dst, uint8_t *src, int stride){
 }
 
 static void h263_v_loop_filter_c(uint8_t *src, int stride, int qscale){
-    if(CONFIG_ANY_H263) {
+    if(CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
     int x;
     const int strength= ff_h263_loop_filter_strength[qscale];
 
@@ -2911,7 +2912,7 @@ static void h263_v_loop_filter_c(uint8_t *src, int stride, int qscale){
 }
 
 static void h263_h_loop_filter_c(uint8_t *src, int stride, int qscale){
-    if(CONFIG_ANY_H263) {
+    if(CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
     int y;
     const int strength= ff_h263_loop_filter_strength[qscale];
 
@@ -4805,7 +4806,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_c;
     c->h264_loop_filter_strength= NULL;
 
-    if (CONFIG_ANY_H263) {
+    if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
         c->h263_h_loop_filter= h263_h_loop_filter_c;
         c->h263_v_loop_filter= h263_v_loop_filter_c;
     }

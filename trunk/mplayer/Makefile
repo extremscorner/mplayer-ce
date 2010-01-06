@@ -543,9 +543,10 @@ SRCS_MPLAYER-$(ESD)          += libao2/ao_esd.c
 SRCS_MPLAYER-$(FBDEV)        += libvo/vo_fbdev.c libvo/vo_fbdev2.c
 SRCS_MPLAYER-$(GGI)          += libvo/vo_ggi.c
 SRCS_MPLAYER-$(GIF)          += libvo/vo_gif89a.c
-SRCS_MPLAYER-$(GL)           += libvo/gl_common.c libvo/vo_gl.c libvo/vo_gl2.c
+SRCS_MPLAYER-$(GL)           += libvo/gl_common.c libvo/vo_gl.c libvo/vo_gl2.c libvo/csputils.c
 SRCS_MPLAYER-$(GL_WIN32)     += libvo/w32_common.c
 SRCS_MPLAYER-$(GL_X11)       += libvo/x11_common.c
+SRCS_MPLAYER-$(MATRIXVIEW)   += libvo/vo_matrixview.c libvo/matrixview.c
 SRCS_MPLAYER-$(GUI)          += gui/bitmap.c
 SRCS_MPLAYER-$(GUI_GTK)      += gui/app.c \
                                 gui/cfg.c \
@@ -587,6 +588,7 @@ SRCS_MPLAYER-$(JACK)         += libao2/ao_jack.c
 SRCS_MPLAYER-$(JOYSTICK)     += input/joystick.c
 SRCS_MPLAYER-$(JPEG)         += libvo/vo_jpeg.c
 SRCS_MPLAYER-$(KVA)          += libvo/vo_kva.c
+SRCS_MPLAYER-$(LIBAVCODEC)   += libvo/vo_png.c
 SRCS_MPLAYER-$(LIBMENU)      += libmenu/menu.c \
                                 libmenu/menu_chapsel.c \
                                 libmenu/menu_cmdlist.c  \
@@ -606,7 +608,6 @@ SRCS_MPLAYER-$(MGA)           += libvo/vo_mga.c
 SRCS_MPLAYER-$(NAS)           += libao2/ao_nas.c
 SRCS_MPLAYER-$(OPENAL)        += libao2/ao_openal.c
 SRCS_MPLAYER-$(OSS)           += libao2/ao_oss.c
-SRCS_MPLAYER-$(PNG)           += libvo/vo_png.c
 SRCS_MPLAYER-$(PNM)           += libvo/vo_pnm.c
 SRCS_MPLAYER-$(PULSE)         += libao2/ao_pulse.c
 SRCS_MPLAYER-$(QUARTZ)        += libvo/vo_quartz.c libvo/osx_common.c
@@ -795,6 +796,7 @@ DIRS =  . \
         loader \
         loader/dshow \
         loader/dmo \
+        loader/wine \
         mp3lib \
         osdep \
         stream \
@@ -946,7 +948,7 @@ libdvdnav/%:   CFLAGS := -Ilibdvdnav -D__USE_UNIX98 -D_GNU_SOURCE -DHAVE_CONFIG_
 libdvdread4/%: CFLAGS := -Ilibdvdread4 -D__USE_UNIX98 -D_GNU_SOURCE $(CFLAGS_LIBDVDCSS_DVDREAD) $(CFLAGS)
 libfaad2/%:    CFLAGS := -Ilibfaad2 -D_GNU_SOURCE -DHAVE_CONFIG_H $(CFLAGS_FAAD_FIXED) $(CFLAGS)
 
-loader/%: CFLAGS += -Iloader -fno-omit-frame-pointer $(CFLAGS_NO_OMIT_LEAF_FRAME_POINTER)
+loader/%: CFLAGS += -fno-omit-frame-pointer $(CFLAGS_NO_OMIT_LEAF_FRAME_POINTER)
 #loader/%: CFLAGS += -Ddbg_printf=__vprintf -DTRACE=__vprintf -DDETAILED_OUT
 loader/win32%: CFLAGS += $(CFLAGS_STACKREALIGN)
 
@@ -958,11 +960,11 @@ tremor/%: CFLAGS += $(CFLAGS_TREMOR_LOW)
 
 vidix/%: CFLAGS += $(CFLAGS_DHAHELPER) $(CFLAGS_SVGALIB_HELPER)
 
-VIDIX_PCI_FILES = vidix/pci_dev_ids.c vidix/pci_ids.h vidix/pci_vendor_ids.h \
+VIDIX_PCI_FILES = vidix/pci_dev_ids.c vidix/pci_ids.h vidix/pci_names.c \
                   vidix/pci_vendors.h
 
 $(VIDIX_PCI_FILES): vidix/pci_db2c.awk vidix/pci.db
-	$^ $(VIDIX_PCIDB)
+	awk -f $^ $(VIDIX_PCIDB)
 
 VIDIX_DEPS = $(filter vidix/%,$(SRCS_MPLAYER:.c=.d))
 VIDIX_OBJS = $(filter vidix/%,$(SRCS_MPLAYER:.c=.o))
