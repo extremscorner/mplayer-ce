@@ -36,7 +36,7 @@ MPlayer Wii port
 #include <ogc/lwp.h>
 #include <debug.h>
 #include <wiiuse/wpad.h>
-#include <wiikeyboard/keyboard.h>
+//#include <wiikeyboard/keyboard.h>
 
 #include <fat.h>
 #include <ntfs.h>
@@ -64,7 +64,7 @@ MPlayer Wii port
 #undef abort
 
 
-#define MPCE_VERSION "0.761 b1 21/12"
+#define MPCE_VERSION "0.761 b1 23/12"
 
 //#define DEBUG_INIT
 //#define USE_NET_THREADS
@@ -80,6 +80,7 @@ MPlayer Wii port
 extern char appPath[1024];
 extern int stream_cache_size;
 extern int enable_restore_points;
+extern int use_keyboard;
 
 static float gxzoom=348;
 static float hor_pos=3;
@@ -221,15 +222,24 @@ static u8 watchdog_Stack[WATCHDOG_STACKSIZE] ATTRIBUTE_ALIGN (32);
 mutex_t watchdogmutex=LWP_MUTEX_NULL;
 int watchdogcounter=-1;
 static int enable_watchdog=0;
+static bool exit_watchdog_thread=false;
 
 static void * watchdogthreadfunc (void *arg)
 {
-	while(true)
+	while(!exit_watchdog_thread)
 	{
 		sleep(1);
+		if(exit_watchdog_thread)break;
 		if(reset_pressed || power_pressed)
 		{
-			sleep(4);
+			sleep(1);
+			if(exit_watchdog_thread)break;
+			sleep(1);
+			if(exit_watchdog_thread)break;
+			sleep(1);
+			if(exit_watchdog_thread)break;
+			sleep(1);
+			if(exit_watchdog_thread)break;
 			if(reset_pressed)
 			{
 				printf("reset\n");
@@ -870,6 +880,7 @@ static int LoadParams()
 		{	"video_mode", &video_mode, CONF_TYPE_INT, CONF_RANGE, 0, 4, NULL},
 		{	"amplify_volume", &amplify_volume, CONF_TYPE_FLOAT, CONF_RANGE, 0, 100, NULL},
 		{	"overscan", &overscan, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+		{	"keyboard", &use_keyboard, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};		
 	
@@ -982,7 +993,7 @@ static void * exithreadfunc (void *arg)
 void plat_init (int *argc, char **argv[]) {	
 	int mload=-1;
 	char cad[10]={127,130,158,147,171,151,164,117,119,0};
-	__exception_setreload(1);
+
 	VIDEO_Init();
 	GX_InitVideo();
 	log_console_init(vmode, 0);
@@ -1035,7 +1046,7 @@ void plat_init (int *argc, char **argv[]) {
 	AUDIO_Init(NULL);
 	AUDIO_RegisterDMACallback(NULL);
 	AUDIO_StopDMA();
-	KEYBOARD_Init(NULL);
+	//KEYBOARD_Init(NULL);
 
 
 	if (!DetectValidPath())
@@ -1166,10 +1177,15 @@ if(usb->isInserted())
 
 void plat_deinit (int rc) 
 {
-//	exit_automount_thread=true;
-//	LWP_JoinThread(mountthread,NULL);
+	exit_automount_thread=true;
+	LWP_JoinThread(mountthread,NULL);
+	exit_automount_thread=true;
+	LWP_JoinThread(mountthread,NULL);
+	if(watchdogmutex==LWP_MUTEX_NULL)LWP_MutexDestroy(watchdogmutex);
 	save_screen_params();
 	
+	if(use_keyboard) KEYBOARD_Deinit();  // not needed
+
 	if (power_pressed) {
 		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);

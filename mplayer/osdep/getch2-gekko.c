@@ -30,9 +30,11 @@
 #include <gccore.h>
 #include <ogc/lwp_watchdog.h>
 #include <wiiuse/wpad.h>
+
 #include <wiikeyboard/keyboard.h>
 #include <wiikeyboard/wsksymdef.h>
 
+int use_keyboard = 0;
 int screen_width = 80;
 int screen_height = 24;
 char *erase_to_end_of_line = NULL;
@@ -79,6 +81,14 @@ void get_screen_size() {
 }
 
 void getch2_enable() {
+	static bool keyb_init=false;
+
+	if(!keyb_init && use_keyboard)
+	{
+		keyb_init=true;
+		KEYBOARD_Init(NULL);
+	}
+
 	getch2_status=1;
 }
 
@@ -280,10 +290,12 @@ void getch2(void)
 			GX_UpdateSquare();
 		}
 	}
-	int r = getch2_internal();
-    if (r >= 0)
-        mplayer_put_key(r);
-	
+	if(use_keyboard)
+	{
+		int r = getch2_internal();
+		if (r >= 0)
+			mplayer_put_key(r);
+	}
 }
 
 #if defined(HAVE_LANGINFO) && defined(CONFIG_ICONV)

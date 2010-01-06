@@ -36,7 +36,7 @@ OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 EXTRA_INC = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
 EXTRAXX_INC = $(EXTRA_INC)
 
-COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O4 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 #COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS = $(EXTRA_INC) $(COMMONFLAGS) 
 OPTFLAGS =  $(EXTRA_INC) $(COMMONFLAGS)
@@ -56,7 +56,7 @@ YASMFLAGS =
 EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii
 #EXTRA_LIB = -static $(COMMONFLAGS) -ldvdread -ldvdnav -lwiiuse -lbte -lfat -ldi -ltinysmb -logc -ldb -lm
 #EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
-EXTRA_LIB = -static $(COMMONFLAGS) -lwiikeyboard -lfreetype -liconv -lfribidi -lz -ljpeg -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -lm
+EXTRA_LIB = -static $(COMMONFLAGS) -lopenjpeg -lfreetype -liconv -lfribidi -lz -ljpeg -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -lm
 #EXTRALIBS = 
 #EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
 EXTRALIBS += $(EXTRA_LIB)
@@ -133,6 +133,7 @@ GIF = no
 GGI = no
 GL = no
 GL_WIN32 = 
+MATRIXVIEW = no
 GUI = no
 GUI_GTK = 
 GUI_WIN32 = 
@@ -294,6 +295,7 @@ CONFIG_LIBMP3LAME_ENCODER=auto
 CONFIG_LIBOPENCORE_AMRNB_DECODER=no
 CONFIG_LIBOPENCORE_AMRNB_ENCODER=no
 CONFIG_LIBOPENCORE_AMRWB_DECODER=no
+CONFIG_LIBOPENJPEG_DECODER=yes
 CONFIG_LIBSCHROEDINGER_DECODER=no
 CONFIG_LIBSCHROEDINGER_ENCODER=no
 CONFIG_LIBVORBIS_ENCODER=no
@@ -317,6 +319,8 @@ CONFIG_AASC_DECODER=yes
 CONFIG_AMV_DECODER=yes
 CONFIG_ASV1_DECODER=yes
 CONFIG_ASV2_DECODER=yes
+CONFIG_AURA_DECODER=yes
+CONFIG_AURA2_DECODER=yes
 CONFIG_AVS_DECODER=yes
 CONFIG_BETHSOFTVID_DECODER=yes
 CONFIG_BFI_DECODER=yes
