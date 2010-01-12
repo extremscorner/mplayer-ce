@@ -620,8 +620,7 @@ typedef struct CONTEXT
 #endif  /* __sparc__ */
 
 #if !defined(CONTEXT_FULL) && !defined(RC_INVOKED)
-#warning You need to define a CONTEXT for your CPU
-typedef void CONTEXT;
+#error You need to define a CONTEXT for your CPU
 #endif
 
 typedef CONTEXT *PCONTEXT;
@@ -748,7 +747,7 @@ typedef HANDLE *PHANDLE;
 #endif /* __sparc__ */
 
 #ifndef DEFINE_REGS_ENTRYPOINT_0
-#warning You need to define DEFINE_REGS_ENTRYPOINT macros for your CPU
+#error You need to define DEFINE_REGS_ENTRYPOINT macros for your CPU
 #endif
 
 #ifdef __i386__
@@ -759,7 +758,7 @@ typedef HANDLE *PHANDLE;
 #endif
 
 #if !defined(GET_IP) && !defined(RC_INVOKED)
-#warning You must define GET_IP for this CPU
+# error You must define GET_IP for this CPU
 #endif
 
 /*

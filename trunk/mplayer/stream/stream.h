@@ -1,7 +1,6 @@
 #ifndef MPLAYER_STREAM_H
 #define MPLAYER_STREAM_H
 
-#include "config.h"
 #include "mp_msg.h"
 #include <string.h>
 #include <inttypes.h>

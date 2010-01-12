@@ -41,6 +41,7 @@
 #include "subreader.h"
 #include "libvo/sub.h"
 
+#include "libass/ass.h"
 #include "libass/ass_mp.h"
 
 #include "libavutil/common.h"

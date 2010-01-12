@@ -10,8 +10,6 @@
 extern "C" {
 #endif
 
-#include "windef.h"
-
 typedef struct __attribute__((__packed__))
 {
     short    bfType;

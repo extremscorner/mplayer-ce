@@ -5,12 +5,12 @@
 
 #include "config.h"
 #include "DS_Filter.h"
-#include "loader/drv.h"
-#include "loader/com.h"
+#include "drv.h"
+#include "com.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "loader/win32.h" // printf macro
+#include "win32.h" // printf macro
 
 typedef long STDCALL (*GETCLASS) (const GUID*, const GUID*, void**);
 

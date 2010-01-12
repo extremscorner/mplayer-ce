@@ -4,7 +4,7 @@
 
 #include "qtxsdk/components.h"
 #include "qtxsdk/select.h"
-#include "loader/ldt_keeper.h"
+#include "ldt_keeper.h"
 #include "mp_msg.h"
 
 /* this is what a plain component looks like */
