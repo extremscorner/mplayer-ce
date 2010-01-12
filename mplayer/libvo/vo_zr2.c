@@ -20,7 +20,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/* $Id: vo_zr2.c 30164 2010-01-01 13:18:49Z reimar $ */
+/* $Id: vo_zr2.c 29305 2009-05-13 02:58:57Z diego $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -192,16 +192,14 @@ static int get_norm(const char *n) {
 	return -1; /* invalid */
 }
 
-static int nc(void *normp) {
-	const char **norm = normp;
+static int nc(const char **norm) {
 	if (get_norm(*norm) == -1) {
 		ERROR("norm \"%s\" is not supported, choose from PAL, NTSC, SECAM and auto\n", *norm);
 		return 0;
 	} else return 1;
 }
 
-static int pbc(void *prebufp) {
-	int *prebuf = prebufp;
+static int pbc(int *prebuf) {
 	if (*prebuf) WARNING("prebuffering is not yet supported\n");
 	return 1;
 }
@@ -213,8 +211,8 @@ static int preinit(const char *arg) {
 	int norm = VIDEO_MODE_AUTO, prebuf = 0;
 	const opt_t subopts[] = { /* don't want warnings with -Wall... */
 		{ "dev",    OPT_ARG_MSTRZ, &dev_arg,   NULL 	       },
-		{ "prebuf", OPT_ARG_BOOL,  &prebuf,    pbc },
-		{ "norm",   OPT_ARG_MSTRZ, &norm_arg,  nc  },
+		{ "prebuf", OPT_ARG_BOOL,  &prebuf,    (opt_test_f)pbc },
+		{ "norm",   OPT_ARG_MSTRZ, &norm_arg,  (opt_test_f)nc  },
 		{ NULL,     0, 		   NULL,       NULL 	       }
 	};
 

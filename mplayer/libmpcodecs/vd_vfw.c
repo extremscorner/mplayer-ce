@@ -333,6 +333,7 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
 	if (priv->palette)
 	{
 	    mpi->planes[1] = priv->palette;
+	    mpi->flags |= MP_IMGFLAG_RGB_PALETTE;
 	    mp_dbg(MSGT_DECVIDEO, MSGL_DBG2, "Found and copied palette\n");
 	}
 	else

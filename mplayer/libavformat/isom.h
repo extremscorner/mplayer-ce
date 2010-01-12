@@ -64,6 +64,7 @@ typedef struct {
 
 typedef struct {
     uint32_t type;
+    int64_t offset;
     int64_t size; /* total size (excluding the size and type fields) */
 } MOVAtom;
 

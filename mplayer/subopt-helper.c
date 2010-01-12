@@ -300,16 +300,18 @@ static char const * parse_str( char const * str, strarg_t * const valp )
 /*** common test functions ***/
 
 /** \brief Test if i is not negative */
-int int_non_neg(void *iptr)
+int int_non_neg( int * i )
 {
-  int *i = iptr;
-  return *i >= 0;
+  if ( *i < 0 ) { return 0; }
+
+  return 1;
 }
 /** \brief Test if i is positive. */
-int int_pos(void *iptr)
+int int_pos( int * i )
 {
-  int *i = iptr;
-  return *i > 0;
+  if ( *i > 0 ) { return 1; }
+
+  return 0;
 }
 
 /*** little helpers */

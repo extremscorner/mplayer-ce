@@ -6,10 +6,10 @@
 #include <inttypes.h>
 
 //#define FATAL(a)  // you don't need exception - if you want - just fill more code
-#include "loader/wine/mmreg.h"
-#include "loader/wine/winreg.h"
-#include "loader/wine/vfw.h"
-#include "loader/com.h"
+#include "wine/mmreg.h"
+#include "wine/winreg.h"
+#include "wine/vfw.h"
+#include "com.h"
 
 typedef uint32_t fourcc_t;
 

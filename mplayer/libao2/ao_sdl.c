@@ -31,11 +31,7 @@
 #include "audio_out.h"
 #include "audio_out_internal.h"
 #include "libaf/af_format.h"
-#ifdef CONFIG_SDL_SDL_H
-#include <SDL/SDL.h>
-#else
 #include <SDL.h>
-#endif
 #include "osdep/timer.h"
 
 #include "libavutil/fifo.h"

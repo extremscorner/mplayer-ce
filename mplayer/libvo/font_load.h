@@ -19,8 +19,6 @@
 #ifndef MPLAYER_FONT_LOAD_H
 #define MPLAYER_FONT_LOAD_H
 
-#include "config.h"
-
 #ifdef CONFIG_FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H

@@ -1,13 +1,8 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: l2tables.h 30209 2010-01-04 19:36:18Z diego $
+ * $Id: l2tables.h 29305 2009-05-13 02:58:57Z diego $
  */
-
-#ifndef MPLAYER_MP3LIB_L2TABLES_H
-#define MPLAYER_MP3LIB_L2TABLES_H
-
-#include "mpg123.h"
 
 /*
  * Layer 2 Alloc tables ..
@@ -163,4 +158,3 @@ static struct al_table alloc_4[] = {
     {2,0},{5,3},{7,5},{10,9},
     {2,0},{5,3},{7,5},{10,9}  };
 
-#endif /* MPLAYER_MP3LIB_L2TABLES_H */

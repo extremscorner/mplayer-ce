@@ -5,9 +5,9 @@
 
 *********************************************************/
 #include "config.h"
-#include "loader/dshow/libwin32.h"
+#include "dshow/libwin32.h"
 #ifdef WIN32_LOADER
-#include "loader/ldt_keeper.h"
+#include "ldt_keeper.h"
 #endif
 
 #include "DMO_Filter.h"

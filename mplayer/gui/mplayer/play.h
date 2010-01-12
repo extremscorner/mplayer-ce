@@ -19,6 +19,8 @@
 #ifndef MPLAYER_GUI_PLAY_H
 #define MPLAYER_GUI_PLAY_H
 
+#include "config.h"
+
 extern int mplGotoTheNext;
 
 void mplEnd( void );

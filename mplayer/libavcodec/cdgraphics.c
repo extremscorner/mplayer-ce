@@ -71,9 +71,8 @@ typedef struct CDGraphicsContext {
 static void cdg_init_frame(AVFrame *frame)
 {
     avcodec_get_frame_defaults(frame);
-    frame->reference = 3;
+    frame->reference = 1;
     frame->buffer_hints = FF_BUFFER_HINTS_VALID    |
-                          FF_BUFFER_HINTS_READABLE |
                           FF_BUFFER_HINTS_PRESERVE |
                           FF_BUFFER_HINTS_REUSABLE;
 }
