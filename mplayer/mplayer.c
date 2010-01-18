@@ -2622,7 +2622,7 @@ int reinit_video_chain(void) {
 #ifdef GEKKO
 //rodries patch for big resolution on wii
 
-if(sh_video->disp_w>=900)
+if (sh_video->disp_w > 1024)
  {
 		char *arg_scale[]={"w","xxxx","h","-2",NULL};
 		sprintf(arg_scale[1],"%i",(int)sh_video->disp_w/2);
@@ -3603,7 +3603,7 @@ setwatchdogcounter(-1);
 
 //m_config_set_option(mconfig,"framedrop",NULL);
 m_config_set_option(mconfig,"sws","4");
-m_config_set_option(mconfig,"lavdopts","lowres=1,900");
+m_config_set_option(mconfig,"lavdopts","lowres=1,1025");
 if(amplify_volume!=0.0){
 char cad[25];
 sprintf(cad,"volume=%f:0",amplify_volume);
@@ -4572,7 +4572,7 @@ if(mpctx->sh_video)
 	int w,h;
 	w=mpctx->sh_video->disp_w;
 	h=mpctx->sh_video->disp_h;
-	if(w>=900)
+	if(w>1024)
 	{
 		w=w/2;
 		h=h/2;

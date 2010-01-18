@@ -667,7 +667,9 @@ SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
 							 osdep/libdvdiso.c \
 							 osdep/plat_gekko.c \
 							 osdep/mem2_manager.c \
+							 osdep/wiilight.c \
 							 libao2/ao_gekko.c \
+							 libaf/af_wiilight.c \
 							 libvo/vo_gekko.c \
 							 osdep/mload.c \
 

@@ -299,7 +299,7 @@ static void check_events(void)
 
 static int preinit(const char *arg)
 {
-	log_console_enable_video(false);
+	//log_console_enable_video(false);
 	//reset_nunchuk_positions();
 
 	return 0;
@@ -311,11 +311,6 @@ static int control(uint32_t request, void *data, ...)
 	{
 		case VOCTRL_QUERY_FORMAT:
 			return query_format(*((uint32_t*) data));
-		case VOCTRL_UPDATE_SCREENINFO:
-            vo_screenwidth = screenwidth;
-            vo_screenheight = screenheight;
-            aspect_save_screenres(vo_screenwidth, vo_screenheight);
-            return VO_TRUE;
 	}
 
 
