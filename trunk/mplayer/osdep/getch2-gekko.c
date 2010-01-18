@@ -34,7 +34,6 @@
 #include <wiikeyboard/keyboard.h>
 #include <wiikeyboard/wsksymdef.h>
 
-int use_keyboard = 0;
 int screen_width = 80;
 int screen_height = 24;
 char *erase_to_end_of_line = NULL;
@@ -55,7 +54,7 @@ static const pad_map pad_maps[] = {
 	{ PAD_BUTTON_A,		WPAD_BUTTON_A,		'a' },
 	{ PAD_BUTTON_B,		WPAD_BUTTON_B,		'b' },
 	{ PAD_BUTTON_X,		WPAD_BUTTON_1,		'x' },
-	{ PAD_TRIGGER_Z,	WPAD_BUTTON_HOME,	'z' },
+	{ PAD_BUTTON_START,	WPAD_BUTTON_HOME,	'z' },
 	{ PAD_TRIGGER_L,	WPAD_BUTTON_MINUS,	'l' },
 	{ PAD_TRIGGER_R,	WPAD_BUTTON_PLUS,	'r' },
 	{ PAD_BUTTON_LEFT,	WPAD_BUTTON_LEFT,	KEY_LEFT },
@@ -68,7 +67,7 @@ static const pad_map pad_maps_mod[] = {
 	{ PAD_BUTTON_A,		WPAD_BUTTON_A,		'A' },
 	{ PAD_BUTTON_B,		WPAD_BUTTON_B,		'B' },
 	{ PAD_BUTTON_X,		WPAD_BUTTON_1,		'X' },
-	{ PAD_TRIGGER_Z,	WPAD_BUTTON_HOME,	'Z' },
+	{ PAD_BUTTON_START,	WPAD_BUTTON_HOME,	'Z' },
 	{ PAD_TRIGGER_L,	WPAD_BUTTON_MINUS,	'L' },
 	{ PAD_TRIGGER_R,	WPAD_BUTTON_PLUS,	'R' },
 	{ PAD_BUTTON_LEFT,	WPAD_BUTTON_LEFT,	KEY_KP4 },
@@ -81,18 +80,12 @@ void get_screen_size() {
 }
 
 void getch2_enable() {
-	static bool keyb_init=false;
-
-	if(!keyb_init && use_keyboard)
-	{
-		keyb_init=true;
-		KEYBOARD_Init(NULL);
-	}
-
+	KEYBOARD_Init(NULL);
 	getch2_status=1;
 }
 
 void getch2_disable() {
+	KEYBOARD_Deinit();
 	getch2_status=0;
 }
 
@@ -191,6 +184,7 @@ void getch2(void)
 	wpad = 0;
 	if (WPAD_Probe (0, NULL) == WPAD_ERR_NONE) {
 		wpad = WPAD_ButtonsDown(0);
+		WPAD_SetIdleTimeout(WPAD_BatteryLevel(0) + 60);
 		//if(wpad == WPAD_BUTTON_2) log_console_change_state_video();
 			
 		if (WPAD_ButtonsHeld(0) & WPAD_BUTTON_2)
@@ -238,10 +232,7 @@ void getch2(void)
 
 			if(exp.nunchuk.btns_held & NUNCHUK_BUTTON_C) 
 			{
-				m_screenleft_shift = 0;
-				m_screenright_shift = 0;
-				m_screentop_shift = 0;
-				m_screenbottom_shift = 0;
+				reset_nunchuk_positions();
 				update=true;
 			}
 		}
@@ -277,10 +268,7 @@ void getch2(void)
 			}
 			if(exp.classic.btns_held & CLASSIC_CTRL_BUTTON_B) 
 			{
-				m_screenleft_shift = 0;
-				m_screenright_shift = 0;
-				m_screentop_shift = 0;
-				m_screenbottom_shift = 0;
+				reset_nunchuk_positions();
 				update=true;
 			}
 		}
@@ -290,12 +278,10 @@ void getch2(void)
 			GX_UpdateSquare();
 		}
 	}
-	if(use_keyboard)
-	{
-		int r = getch2_internal();
-		if (r >= 0)
-			mplayer_put_key(r);
-	}
+	
+	int r = getch2_internal();
+	if (r >= 0)
+		mplayer_put_key(r);
 }
 
 #if defined(HAVE_LANGINFO) && defined(CONFIG_ICONV)

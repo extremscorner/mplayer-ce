@@ -48,6 +48,7 @@ MPlayer Wii port
 #include "libdvdiso.h"
 #include "mp_osd.h"
 #include "timer.h"
+#include "version.h"
 
 #include "ftp_devoptab.h"
 #include "log_console.h"
@@ -64,7 +65,7 @@ MPlayer Wii port
 #undef abort
 
 
-#define MPCE_VERSION "0.761 b1 06/01"
+#define MPCE_VERSION "0.77"
 
 //#define DEBUG_INIT
 
@@ -79,10 +80,9 @@ MPlayer Wii port
 extern char appPath[1024];
 extern int stream_cache_size;
 extern int enable_restore_points;
-extern int use_keyboard;
 
 static float gxzoom=348;
-static float hor_pos=3;
+static float hor_pos=0;
 static float vert_pos=0;
 static float stretch=0;
 extern float amplify_volume;
@@ -430,7 +430,7 @@ static char *default_args[] = {
 	"-bgvideo", NULL,
 	"-idle", NULL,
 #ifndef DEBUG_INIT
-	"-really-quiet",
+//	"-really-quiet",
 #endif	
 	"-vo","gekko","-ao","gekko",
 //	"ntfs_usb:/test.avi"
@@ -802,7 +802,6 @@ static int LoadParams()
 		{	"video_mode", &video_mode, CONF_TYPE_INT, CONF_RANGE, 0, 4, NULL},
 		{	"amplify_volume", &amplify_volume, CONF_TYPE_FLOAT, CONF_RANGE, 0, 100, NULL},
 		{	"overscan", &overscan, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-		{	"keyboard", &use_keyboard, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};		
 	
@@ -912,51 +911,50 @@ static void * exithreadfunc (void *arg)
 	while(1){sleep(1);}
 }
 
-void plat_init (int *argc, char **argv[]) {	
-	int mload=-1;
-	char cad[10]={127,130,158,147,171,151,164,117,119,0};
-
-	VIDEO_Init();
+void plat_init (int *argc, char **argv[])
+{
 	GX_InitVideo();
 	log_console_init(vmode, 0);
 
-
-	printf("Loading ");
-  
-	__dec(cad);
-	printf("\x1b[32m%s v.%s ....\x1b[37m\n\n",cad,MPCE_VERSION);	
+	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);	
 	
-	VIDEO_WaitVSync();
-
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-
-	if(FindIOS(202))
+	bool badstuff = FindIOS(202);	// Don't rename.
+	
+	if (badstuff)
 	{
-		printf_debug("IOS 202 found, reloading IOS\n");
+		printf(" Found IOS202, reloading.\n");
 		IOS_ReloadIOS(202);
-		WIIDVD_Init(false);
-		printf_debug("DVD initiated\n");
-		mload=mload_init();
 	}
+	
+	printf(" Enabling DVD access... ");
+	
+	if (WIIDVD_Init(!badstuff))
+		printf("\x1b[32;1mSUCCESS.");
 	else
-	{
-		printf_debug("IOS 202 NOT found, using DVDx\n");
-		WIIDVD_Init(true);
-		printf_debug("DVD initiated\n");
-	}
-
+		printf("\x1b[31;1mFAILED!");
+	
+	printf("\x1b[39;0m\n");
 	USB2Enable(false);
-	if(mload>=0)
+	
+	if (badstuff)
 	{
-		printf_debug("Loading ehci module\n");
-		//usleep(5000);
-		if(load_ehci_module())
+		if (mload_init())
 		{
-			USB2Enable(true);
-			printf_debug("enabled usb2 support\n");
+			printf(" Loading EHCI module... ");
+			
+			if(load_ehci_module())
+			{
+				USB2Enable(true);
+				printf("\x1b[32;1mSUCCESS.");
+			}
+			else
+				printf("\x1b[31;1mFAILED!");
+			
+			printf("\x1b[39;0m\n");
 		}
 	}
+	
+	printf("\n");
 
 	PAD_Init();
 	WPAD_Init();
@@ -964,17 +962,12 @@ void plat_init (int *argc, char **argv[]) {
 	WPAD_SetIdleTimeout(60);
 
 	WPAD_SetPowerButtonCallback(wpad_power_cb);
-	
-	AUDIO_Init(NULL);
-	AUDIO_RegisterDMACallback(NULL);
-	AUDIO_StopDMA();
-	//KEYBOARD_Init(NULL);
 
 
 	if (!DetectValidPath())
 	{
 		printf("\nSD/USB access failed\n");
-		printf("Please check that you have installed MPlayerCE in the right folder\n");
+		printf("Please check that you have installed MPlayer CE in the right folder\n");
 		printf("Valid folders:\n");
 		printf(" sd:/apps/mplayer_ce\n sd:/mplayer\n usb:/apps/mplayer_ce\n usb:/mplayer\n");
 				
@@ -983,11 +976,12 @@ void plat_init (int *argc, char **argv[]) {
 		if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 		exit(0);
 	}
+	
 	SYS_SetPowerCallback (power_cb);
 	SYS_SetResetCallback (reset_cb);
 
 	stream_cache_size=8*1024; //default cache size (8MB)
-	printf_debug("Loading params\n");
+	printf(" Reading configuration.\n");
 	
 	LoadParams();
 	read_net_config();
@@ -999,7 +993,7 @@ void plat_init (int *argc, char **argv[]) {
 
 	if ((video_mode > 0) || !overscan)
 	{
-		printf_debug("Changing video mode\n");
+		printf(" Changing video mode.\n");
 		ChangeVideoMode(video_mode);
 		CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
 	}
@@ -1020,7 +1014,7 @@ void plat_init (int *argc, char **argv[]) {
 	}
 	else 
 	{
-		printf_debug("Initiating network thread\n");
+		printf(" Creating network thread.\n");
 		LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
 
 		//InitNetworkThreads();
@@ -1033,7 +1027,7 @@ void plat_init (int *argc, char **argv[]) {
 	setenv("DVDREAD_VERBOSE", "0", 1);
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
 
-	printf_debug("Set env params (%s)\n",MPLAYER_DATADIR);
+	printf(" Set environment variables.\n\t\x1b[37m%s\x1b[39;0m\n", MPLAYER_DATADIR);
 
 	if(*argc<3)
 	{
@@ -1069,21 +1063,27 @@ void plat_init (int *argc, char **argv[]) {
 
 	if(enable_watchdog)
 	{
-		printf_debug("watchdog thread enabled\n");
+		printf(" Watchdog thread enabled.\n");
 		LWP_MutexInit(&watchdogmutex, false);
 	}
 	LWP_CreateThread(&mountthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
 
-	printf_debug("Initiating mount thread\n");
+	printf(" Starting mount thread.\n");
 	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
 
 
 	// only used for cache_mem at now  (stream_cache_size + 8kb(paranoid)
-	printf_debug("Initiating mem2 cache\n");
-	InitMem2Manager((stream_cache_size*1024)+(8*1024));
-
-	printf_debug("Launching mplayer\n");
-
+	u32 uppermem = (stream_cache_size * 1024) + (8 * 1024);
+	printf(" Allocating upper memory.\n\t\x1b[37m%u bytes\x1b[39;0m\n", uppermem);
+	InitMem2Manager(uppermem);
+	
+	VIDEO_WaitVSync();
+	
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	
+	log_console_enable_video(false);
+	printf("\n\n");
 }
 
 void plat_deinit (int rc) 
@@ -1094,8 +1094,6 @@ void plat_deinit (int rc)
 	LWP_JoinThread(mountthread,NULL);
 	if(watchdogmutex==LWP_MUTEX_NULL)LWP_MutexDestroy(watchdogmutex);
 	save_screen_params();
-	
-	if(use_keyboard) KEYBOARD_Deinit();  // not needed
 
 	if (power_pressed) {
 		//printf("shutting down\n");
