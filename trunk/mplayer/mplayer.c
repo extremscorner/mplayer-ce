@@ -308,6 +308,13 @@ static bool InternetStream()
 	return false;
 }
 
+static bool low_cache=false;
+static char* fileplaying=NULL;
+static bool restore_points_changed=false;
+int enable_restore_points=1;
+
+#define MAX_RESTORE_POINTS 10
+
 #ifdef WIILIB
 bool IsLoopAvi(char *_file)
 {
@@ -317,7 +324,7 @@ bool IsLoopAvi(char *_file)
 bool IsLoopAvi(char *_file)
 {
 	int i,j;
-	if(_file==NULL)_file=filename;
+	if(_file==NULL)_file=fileplaying;
 	j=strlen(_file);
 	for(i=j-1;i>=0;i--)
 	{
@@ -336,12 +343,6 @@ extern bool playing_usb;
 extern bool playing_dvd;
 #endif
 
-static bool low_cache=false;
-static char* fileplaying=NULL;
-static bool restore_points_changed=false;
-int enable_restore_points=1;
-
-#define MAX_RESTORE_POINTS 10
 
 typedef struct st_restore_points restore_points_t;
 struct st_restore_points{
@@ -533,10 +534,7 @@ char *vobsub_name=NULL;
 int   subcc_enabled=0;
 int suboverlap_enabled = 1;
 
-#ifdef CONFIG_ASS
-#include "libass/ass.h"
 #include "libass/ass_mp.h"
-#endif
 
 char* current_module=NULL; // for debugging
 
@@ -949,6 +947,7 @@ void exit_player_with_rc(exit_reason_t how, int rc){
 
 #ifdef CONFIG_ASS
   ass_library_done(ass_library);
+  ass_library = NULL;
 #endif
 
   current_module="exit_player";
@@ -956,12 +955,18 @@ void exit_player_with_rc(exit_reason_t how, int rc){
 // free mplayer config
   if(mconfig)
     m_config_free(mconfig);
+  mconfig = NULL;
 
+  if(mpctx->playtree_iter)
+    play_tree_iter_free(mpctx->playtree_iter);
+  mpctx->playtree_iter = NULL;
   if(mpctx->playtree)
     play_tree_free(mpctx->playtree, 1);
+  mpctx->playtree = NULL;
 
 
   if(edl_records != NULL) free(edl_records); // free mem allocated for EDL
+  edl_records = NULL;
   switch(how) {
   case EXIT_QUIT:
     mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_ExitingHow,MSGTR_Exit_quit);
@@ -1418,7 +1423,11 @@ void init_vo_spudec(void) {
  * will be done automatically by replacing our main() if we include SDL.h.
  */
 #if defined(__APPLE__) && defined(CONFIG_SDL)
+#ifdef CONFIG_SDL_SDL_H
+#include <SDL/SDL.h>
+#else
 #include <SDL.h>
+#endif
 #endif
 
 /**
@@ -2622,7 +2631,7 @@ int reinit_video_chain(void) {
 #ifdef GEKKO
 //rodries patch for big resolution on wii
 
-if (sh_video->disp_w > 1024)
+if(sh_video->disp_w>=1024)
  {
 		char *arg_scale[]={"w","xxxx","h","-2",NULL};
 		sprintf(arg_scale[1],"%i",(int)sh_video->disp_w/2);
@@ -3603,7 +3612,7 @@ setwatchdogcounter(-1);
 
 //m_config_set_option(mconfig,"framedrop",NULL);
 m_config_set_option(mconfig,"sws","4");
-m_config_set_option(mconfig,"lavdopts","lowres=1,1025");
+m_config_set_option(mconfig,"lavdopts","lowres=1,1024");
 if(amplify_volume!=0.0){
 char cad[25];
 sprintf(cad,"volume=%f:0",amplify_volume);
@@ -4572,7 +4581,7 @@ if(mpctx->sh_video)
 	int w,h;
 	w=mpctx->sh_video->disp_w;
 	h=mpctx->sh_video->disp_h;
-	if(w>1024)
+	if(w > 1024)
 	{
 		w=w/2;
 		h=h/2;
@@ -4681,8 +4690,9 @@ if(!mpctx->sh_video) {
       if (frame_time < 0)
       #ifndef WIILIB
       //geexbox bgvideo patch
-       if(mpctx->bg_demuxer) {
-          if(!demux_seek(mpctx->bg_demuxer,0,0,1))
+       if (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh) {
+    	   demux_seek(mpctx->bg_demuxer,0,0,1);
+    	   if(IsLoopAvi(NULL))
             mpctx->eof = PT_NEXT_ENTRY;
         }
         else
@@ -5024,7 +5034,7 @@ if(ass_library)
 #ifdef GEKKO
 if (mpctx->sh_audio) mpctx->audio_out->reset();
 
-if(mpctx->eof == PT_NEXT_SRC || mpctx->eof == PT_STOP /*|| mpctx->eof == PT_NEXT_ENTRY*/)
+if(mpctx->eof == PT_NEXT_SRC || mpctx->eof == PT_STOP /*|| mpctx->eof == PT_NEXT_ENTRY*/ || error_playing)
 {
 	save_restore_point(fileplaying,demuxer_get_current_time(mpctx->demuxer));
 }else delete_restore_point(fileplaying);

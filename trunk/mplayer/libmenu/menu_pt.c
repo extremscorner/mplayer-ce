@@ -155,7 +155,6 @@ static int op(menu_t* menu, char* args) {
     /* NOP */;
   for( ; i != NULL ; i = i->next ) {
     e = calloc(1,sizeof(list_entry_t));
-	
     if(i->files) {
       e->p.txt = mp_basename(i->files[0]);
 	  

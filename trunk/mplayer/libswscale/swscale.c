@@ -85,12 +85,12 @@ unsigned swscale_version(void)
     return LIBSWSCALE_VERSION_INT;
 }
 
-const char * swscale_configuration(void)
+const char *swscale_configuration(void)
 {
     return FFMPEG_CONFIGURATION;
 }
 
-const char * swscale_license(void)
+const char *swscale_license(void)
 {
 #define LICENSE_PREFIX "libswscale license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
@@ -188,13 +188,7 @@ const char * swscale_license(void)
         || isRGB(x)                 \
         || isBGR(x)                 \
     )
-#define usePal(x)           (       \
-           (x)==PIX_FMT_PAL8        \
-        || (x)==PIX_FMT_BGR4_BYTE   \
-        || (x)==PIX_FMT_RGB4_BYTE   \
-        || (x)==PIX_FMT_BGR8        \
-        || (x)==PIX_FMT_RGB8        \
-    )
+#define usePal(x) (av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL)
 
 #define RGB2YUV_SHIFT 15
 #define BY ( (int)(0.114*219/255*(1<<RGB2YUV_SHIFT)+0.5))
@@ -2278,55 +2272,10 @@ static int planarCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 }
 
 
-static void getSubSampleFactors(int *h, int *v, int format)
+static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
 {
-    switch(format) {
-    case PIX_FMT_UYVY422:
-    case PIX_FMT_YUYV422:
-        *h=1;
-        *v=0;
-        break;
-    case PIX_FMT_YUV420P:
-    case PIX_FMT_YUV420P16LE:
-    case PIX_FMT_YUV420P16BE:
-    case PIX_FMT_YUVA420P:
-    case PIX_FMT_GRAY16BE:
-    case PIX_FMT_GRAY16LE:
-    case PIX_FMT_GRAY8: //FIXME remove after different subsamplings are fully implemented
-    case PIX_FMT_NV12:
-    case PIX_FMT_NV21:
-        *h=1;
-        *v=1;
-        break;
-    case PIX_FMT_YUV440P:
-        *h=0;
-        *v=1;
-        break;
-    case PIX_FMT_YUV410P:
-        *h=2;
-        *v=2;
-        break;
-    case PIX_FMT_YUV444P:
-    case PIX_FMT_YUV444P16LE:
-    case PIX_FMT_YUV444P16BE:
-        *h=0;
-        *v=0;
-        break;
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV422P16LE:
-    case PIX_FMT_YUV422P16BE:
-        *h=1;
-        *v=0;
-        break;
-    case PIX_FMT_YUV411P:
-        *h=2;
-        *v=0;
-        break;
-    default:
-        *h=0;
-        *v=0;
-        break;
-    }
+    *h = av_pix_fmt_descriptors[format].log2_chroma_w;
+    *v = av_pix_fmt_descriptors[format].log2_chroma_h;
 }
 
 static uint16_t roundToInt16(int64_t f)

@@ -394,7 +394,6 @@ static play_tree_t*
 parse_m3u(play_tree_parser_t* p) {
   char *line, *title = NULL;
   
-  
   play_tree_t *list = NULL, *entry = NULL, *last_entry = NULL;
 
   mp_msg(MSGT_PLAYTREE,MSGL_V,"Trying extended m3u playlist...\n");
@@ -423,7 +422,7 @@ parse_m3u(play_tree_parser_t* p) {
           strtol(line+8,&line,10), line+2);
       }
 #endif
-	  /// start denper's changes
+ 	  /// start denper's changes
 	  // Get the title of .m3u entry
 	  title = realloc(title, strlen(mp_pretty_title(line))+1);
 	  strcpy(title, mp_pretty_title(line));
@@ -558,8 +557,8 @@ parse_smil(play_tree_parser_t* p) {
      }
     }
     if (entrymode) { //Entry found but not yet filled
-	
-	  /// start denper's changes
+    
+	  /// start denper's changes	  
 	  // Get the title of .smi entry
 	  exists_title = 0;
 	  pos1 = strstr(pos,"title=");
@@ -586,8 +585,8 @@ parse_smil(play_tree_parser_t* p) {
 		}
 		
       }
-	  /// end denper's changes
-	  
+	  /// end denper's changes   
+	   
       pos = strstr(pos,"src=");   // Is source present on this line
       if (pos != NULL) {
         entrymode=0;
@@ -609,13 +608,13 @@ parse_smil(play_tree_parser_t* p) {
         source[(s_end-s_start)]='\0'; // Null terminate
         entry = play_tree_new();
         play_tree_add_file(entry,source);
-		
+
 		/// start denper's changes
 		// Add the title parameter if it exists
 		if(exists_title)
 			play_tree_set_param(entry, PLAY_TREE_PARAM_PRETTYFORMAT_TITLE, title);
 		/// end denper's changes
-		
+
         if(!list)  //Insert new entry
           list = entry;
         else
