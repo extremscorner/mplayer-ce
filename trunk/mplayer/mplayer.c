@@ -2630,7 +2630,7 @@ int reinit_video_chain(void) {
 #ifdef GEKKO
 //rodries patch for big resolution on wii
 
-if(sh_video->disp_w>=1024)
+if (sh_video->disp_w > 1024)
  {
 		char *arg_scale[]={"w","xxxx","h","-2",NULL};
 		sprintf(arg_scale[1],"%i",(int)sh_video->disp_w/2);
