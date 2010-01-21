@@ -17,6 +17,7 @@ char * mixer_device=NULL;
 char * mixer_channel=NULL;
 int soft_vol = 0;
 float soft_vol_max = 110.0;
+extern float mplayer_volume;
 
 void mixer_getvolume(mixer_t *mixer, float *l, float *r)
 {
@@ -40,6 +41,7 @@ void mixer_getvolume(mixer_t *mixer, float *l, float *r)
     }
     *r=vol.right;
     *l=vol.left;
+    mplayer_volume=vol.right;
   }
 }
 

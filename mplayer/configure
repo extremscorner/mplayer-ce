@@ -167,7 +167,7 @@ alpha() {
 
 arm() {
   case "$host_arch" in
-    arm) return 0;;
+    arm*) return 0;;
     *) return 1;;
   esac
 }
@@ -338,7 +338,7 @@ Codecs:
   --enable-libdca           enable libdca support [autodetect]
   --disable-mp3lib          disable builtin mp3lib [autodetect]
   --disable-liba52          disable liba52 [autodetect]
-  --disable-liba52-internal disable builtin liba52 [autodetect]
+  --enable-liba52-internal  enable builtin liba52 [disabled]
   --disable-libmpeg2        disable builtin libmpeg2 [autodetect]
   --disable-musepack        disable musepack support [autodetect]
   --disable-libopencore_amrnb disable libopencore_amr narrowband [autodetect]
@@ -475,6 +475,7 @@ Advanced options:
   --enable-neon             enable NEON (ARM) [autodetect]
   --enable-iwmmxt           enable iWMMXt (ARM) [autodetect]
   --disable-fastmemcpy      disable 3DNow!/SSE/MMX optimized memcpy [enable]
+  --enable-hardcoded-tables put tables in binary instead of calculating them at startup [disable]
   --enable-big-endian       force byte order to big-endian [autodetect]
   --enable-debug[=1-3]      compile-in debugging information [disable]
   --enable-profile          compile-in profiling information [disable]
@@ -518,6 +519,7 @@ _sse2=auto
 _ssse3=auto
 _cmov=auto
 _fast_cmov=auto
+_fast_clz=auto
 _armv5te=auto
 _armv6=auto
 _armv6t2=auto
@@ -552,6 +554,9 @@ _libavparsers_all=$(sed -n 's/^[^#]*PARSER.*(.*, *\(.*\)).*/\1_parser/p' libavco
 _libavparsers=$_libavparsers_all
 _libavbsfs_all=$(sed -n 's/^[^#]*BSF.*(.*, *\(.*\)).*/\1_bsf/p' libavcodec/allcodecs.c | tr '[a-z]' '[A-Z]')
 _libavbsfs=$_libavbsfs_all
+_libavhwaccels_all=$(sed -n 's/^[^#]*HWACCEL.*(.*, *\(.*\)).*/\1_hwaccel/p' libavcodec/allcodecs.c | tr '[a-z]' '[A-Z]')
+# Disable all hardware accelerators for now.
+_libavhwaccels=
 _libavdemuxers_all=$(sed -n 's/^[^#]*DEMUX.*(.*, *\(.*\)).*/\1_demuxer/p' libavformat/allformats.c | tr '[a-z]' '[A-Z]')
 _libavdemuxers=$(echo $_libavdemuxers_all | sed -e 's/ LIB[A-Z0-9_]*_DEMUXER//g' -e s/REDIR_DEMUXER// -e s/RTSP_DEMUXER// -e s/SDP_DEMUXER// -e s/AVISYNTH_DEMUXER//)
 _libavmuxers_all=$(sed -n 's/^[^#]*_MUX.*(.*, *\(.*\)).*/\1_muxer/p' libavformat/allformats.c | tr '[a-z]' '[A-Z]')
@@ -629,7 +634,7 @@ _speex=auto
 _theora=auto
 _mp3lib=auto
 _liba52=auto
-_liba52_internal=auto
+_liba52_internal=no
 _libdca=auto
 _libmpeg2=auto
 _faad=auto
@@ -662,6 +667,7 @@ _sgiaudio=auto
 _sunaudio=auto
 _alsa=auto
 _fastmemcpy=yes
+hardcoded_tables=no
 _unrar_exec=auto
 _win32dll=auto
 _select=yes
@@ -678,6 +684,9 @@ _tv_dshow=auto
 _pvr=auto
 _network=yes
 _winsock2_h=auto
+_struct_addrinfo=auto
+_getaddrinfo=auto
+_struct_sockaddr_storage=auto
 _smb=auto
 _vidix=auto
 _vidix_pcidb=yes
@@ -1117,6 +1126,8 @@ for ac_option do
   --disable-pvr)        _pvr=no         ;;
   --enable-fastmemcpy)  _fastmemcpy=yes ;;
   --disable-fastmemcpy) _fastmemcpy=no  ;;
+  --enable-hardcoded-tables)  hardcoded_tables=yes ;;
+  --disable-hardcoded-tables) hardcoded_tables=no  ;;
   --enable-network)     _network=yes    ;;
   --disable-network)    _network=no     ;;
   --enable-winsock2_h)  _winsock2_h=yes ;;
@@ -1326,6 +1337,8 @@ for ac_option do
   --disable-cmov) _cmov=no ;;
   --enable-fast-cmov) _fast_cmov=yes ;;
   --disable-fast-cmov) _fast_cmov=no ;;
+  --enable-fast-clz) _fast_clz=yes ;;
+  --disable-fast-clz) _fast_clz=no ;;
   --enable-altivec) _altivec=yes ;;
   --disable-altivec) _altivec=no ;;
   --enable-armv5te) _armv5te=yes ;;
@@ -1481,6 +1494,7 @@ fi
 
 if win32 ; then
   _exesuf=".exe"
+  extra_cflags="$extra_cflags -fno-common"
   # -lwinmm is always needed for osdep/timer-win2.c
   extra_ldflags="$extra_ldflags -lwinmm"
   _pe_executable=yes
@@ -1563,7 +1577,7 @@ if test "$(basename $_cc)" = "icc" || test "$(basename $_cc)" = "ecc"; then
   esac
   echores "$cc_version"
 else
-  for _cc in "$_cc" cc gcc ; do
+  for _cc in "$_cc" gcc cc ; do
     cc_name_tmp=$($_cc -v 2>&1 | tail -n 1 | cut -d ' ' -f 1)
     if test "$cc_name_tmp" = "gcc"; then
     cc_name=$cc_name_tmp
@@ -1582,6 +1596,15 @@ else
     esac
     echores "$cc_version"
     break
+    fi
+    cc_name_tmp=$($_cc -V 2>&1 | head -n 1 | cut -d ' ' -f 2,3)
+    if test "$cc_name_tmp" = "Sun C"; then
+      echocheck "$_cc version"
+      cc_vendor=sun
+      cc_version=$($_cc -V 2>&1 | head -n 1 | cut -d ' ' -f 4)
+      _res_comment="experimental support only"
+      echores "Sun C $cc_version"
+      break
     fi
   done
 fi # icc
@@ -1644,9 +1667,10 @@ if test "$_runtime_cpudetection" = no ; then
 if test -r /proc/cpuinfo && ! cygwin; then
   # Linux with /proc mounted, extract CPU information from it
   _cpuinfo="cat /proc/cpuinfo"
-elif test -r /compat/linux/proc/cpuinfo && ! x86_32 ; then
+elif test -r /compat/linux/proc/cpuinfo && ! x86 ; then
   # FreeBSD with Linux emulation /proc mounted,
   # extract CPU information from it
+  # Don't use it on x86 though, it never reports 3Dnow
   _cpuinfo="cat /compat/linux/proc/cpuinfo"
 elif darwin && ! x86 ; then
   # use hostinfo on Darwin
@@ -1800,7 +1824,9 @@ case "$host_arch" in
         proc=k8
         ;;
 
-    *) proc=k8 iproc=686 ;;
+    *) proc=amdfam10 iproc=686
+        test $_fast_clz = "auto" && _fast_clz=yes
+        ;;
     esac
     ;;
   GenuineIntel)
@@ -1826,6 +1852,7 @@ case "$host_arch" in
         else
             proc=i686
         fi
+        test $_fast_clz = "auto" && _fast_clz=yes
         ;;
     15) iproc=686
         # A nocona in 32-bit mode has no more capabilities than a prescott.
@@ -1833,6 +1860,7 @@ case "$host_arch" in
             proc=prescott
         else
             proc=pentium4
+            test $_fast_clz = "auto" && _fast_clz=yes
         fi
         test $_fast_cmov = "auto" && _fast_cmov=no
         ;;
@@ -1871,6 +1899,7 @@ case "$host_arch" in
   *)
     proc=i586 iproc=586 ;;
   esac
+  test $_fast_clz = "auto" && _fast_clz=no
   fi # test "$_runtime_cpudetection" = no
 
 
@@ -1982,6 +2011,7 @@ EOF
     else
         _fast_cmov="no"
     fi
+    test $_fast_clz = "auto" && _fast_clz=yes
 
     echores "$proc"
     ;;
@@ -2007,11 +2037,16 @@ EOF
     else
         cpuopt=-mcpu
     fi
-    test $_fast_cmov = "auto" && _fast_cmov=yes
     if test "$_runtime_cpudetection" = no ; then
       case "$pvendor" in
       AuthenticAMD)
-        proc=k8;;
+        case "$pfamily" in
+        15) proc=k8
+          test $_fast_clz = "auto" && _fast_clz=no
+          ;;
+        *) proc=amdfam10;;
+        esac
+        ;;
       GenuineIntel)
         case "$pfamily" in
         6) proc=core2;;
@@ -2019,6 +2054,8 @@ EOF
           # 64-bit prescotts exist, but as far as GCC is concerned they
           # have the same capabilities as a nocona.
           proc=nocona
+          test $_fast_cmov = "auto" && _fast_cmov=no
+          test $_fast_clz = "auto" && _fast_clz=no
           ;;
         esac
         ;;
@@ -2046,6 +2083,9 @@ EOF
       fi
       # --- Intel processors ---
       if test "$proc" = "core2"; then
+        cc_check -march=$proc $cpuopt=$proc || proc=x86-64
+      fi
+      if test "$proc" = "x86-64"; then
         cc_check -march=$proc $cpuopt=$proc || proc=nocona
       fi
       if test "$proc" = "nocona"; then
@@ -2071,7 +2111,9 @@ EOF
       cc_check $_march $_mcpu || _march=""
     fi
 
-    _optimizing=""
+    _optimizing="$proc"
+    test $_fast_cmov = "auto" && _fast_cmov=yes
+    test $_fast_clz = "auto" && _fast_clz=yes
 
     echores "$proc"
     ;;
@@ -2104,7 +2146,7 @@ EOF
     _optimizing="$proc"
     ;;
 
-  arm|armv4l|armv5tel)
+  arm*)
     _arch='ARM'
     _target_arch='ARCH_ARM = yes'
     iproc='arm'
@@ -2115,6 +2157,7 @@ EOF
     _target_arch='ARCH_AVR32 = yes'
     def_fast_unaligned='#define HAVE_FAST_UNALIGNED 1'
     iproc='avr32'
+    test $_fast_clz = "auto" && _fast_clz=yes
     ;;
 
   sh|sh4)
@@ -2235,6 +2278,8 @@ EOF
         echores "none"
     fi
 
+    test $_fast_clz = "auto" && _fast_clz=yes
+
     ;;
 
   alpha*)
@@ -2275,6 +2320,8 @@ EOF
     _mcpu="-mcpu=$proc"
     echores "$proc"
 
+    test $_fast_clz = "auto" && _fast_clz=yes
+
     _optimizing="$proc"
     ;;
 
@@ -2300,6 +2347,8 @@ EOF
         fi
         echores "$proc"
     fi
+
+    test $_fast_clz = "auto" && _fast_clz=yes
 
     ;;
 
@@ -2386,10 +2435,12 @@ if test "$_big_endian" = yes ; then
   _byte_order='big-endian'
   def_words_endian='#define WORDS_BIGENDIAN 1'
   def_bigendian='#define HAVE_BIGENDIAN 1'
+  def_av_bigendian='#define AV_HAVE_BIGENDIAN 1'
 else
   _byte_order='little-endian'
   def_words_endian='#undef WORDS_BIGENDIAN'
   def_bigendian='#define HAVE_BIGENDIAN 0'
+  def_av_bigendian='#define AV_HAVE_BIGENDIAN 0'
 fi
 echores "$_byte_order"
 
@@ -2410,7 +2461,8 @@ echocheck "assembler support of -pipe option"
 cat > $TMPC << EOF
 int main(void) { return 0; }
 EOF
-cc_check -pipe && _pipe="-pipe" && echores "yes" || echores "no"
+# -I. helps to detect compilers that just misunderstand -pipe like Sun C
+cc_check -pipe -I. && _pipe="-pipe" && echores "yes" || echores "no"
 
 
 echocheck "compiler support of named assembler arguments"
@@ -2451,6 +2503,8 @@ if test "$_profile" != "" || test "$_debug" != "" ; then
 elif test -z "$CFLAGS" ; then
   if test "$cc_vendor" = "intel" ; then
     CFLAGS="-O2 $_march $_mcpu $_pipe -fomit-frame-pointer -wd167 -wd556 -wd144"
+  elif test "$cc_vendor" = "sun" ; then
+    CFLAGS="-O2 $_march $_mcpu $_pipe -xc99 -xregs=frameptr"
   elif test "$cc_vendor" != "gnu" ; then
     CFLAGS="-O2 $_march $_mcpu $_pipe"
   else
@@ -2732,6 +2786,8 @@ EOF
   fi
   echores "$_armv5te"
 
+  test $_armv5te = "yes" && test $_fast_clz = "auto" && _fast_clz=yes
+
   echocheck "ARMv6 (SIMD instructions)"
   if test $_armv6 = "auto" ; then
     cat > $TMPC << EOF
@@ -2783,7 +2839,7 @@ EOF
   echores "$_iwmmxt"
 fi
 
-_cpuexts_all='ALTIVEC MMX MMX2 AMD3DNOW AMD3DNOWEXT SSE SSE2 SSSE3 FAST_CMOV CMOV PLD ARMV5TE ARMV6 ARMV6T2 ARMVFP NEON IWMMXT MMI VIS MVI'
+_cpuexts_all='ALTIVEC MMX MMX2 AMD3DNOW AMD3DNOWEXT SSE SSE2 SSSE3 FAST_CMOV CMOV FAST_CLZ PLD ARMV5TE ARMV6 ARMV6T2 ARMVFP NEON IWMMXT MMI VIS MVI'
 test "$_altivec"   = yes && _cpuexts="ALTIVEC $_cpuexts"
 test "$_mmx"       = yes && _cpuexts="MMX $_cpuexts"
 test "$_mmxext"    = yes && _cpuexts="MMX2 $_cpuexts"
@@ -2794,6 +2850,7 @@ test "$_sse2"      = yes && _cpuexts="SSE2 $_cpuexts"
 test "$_ssse3"     = yes && _cpuexts="SSSE3 $_cpuexts"
 test "$_cmov"      = yes && _cpuexts="CMOV $_cpuexts"
 test "$_fast_cmov" = yes && _cpuexts="FAST_CMOV $_cpuexts"
+test "$_fast_clz"  = yes && _cpuexts="FAST_CLZ $_cpuexts"
 test "$pld"        = yes && _cpuexts="PLD $_cpuexts"
 test "$_armv5te"   = yes && _cpuexts="ARMV5TE $_cpuexts"
 test "$_armv6"     = yes && _cpuexts="ARMV6 $_cpuexts"
@@ -3001,7 +3058,7 @@ if test "$_posix4" = yes ; then
 fi
 echores "$_posix4"
 
-for func in llrint log2 lrint1 log3 lrintf round roundf truncf; do
+for func in exp2 exp2f llrint log2 log2f lrint lrintf round roundf truncf; do
 echocheck $func
 cat > $TMPC << EOF
 #include <math.h>
@@ -3078,8 +3135,80 @@ echores "$_socklib"
 if test $_winsock2_h = yes ; then
   _ld_sock="-lws2_32"
   def_winsock2_h='#define HAVE_WINSOCK2_H 1'
+  cc_check_winsock2_h='-DHAVE_WINSOCK2_H=1'
 else
   def_winsock2_h='#define HAVE_WINSOCK2_H 0'
+  cc_check_winsock2_h='-DHAVE_WINSOCK2_H=0'
+fi
+
+
+echocheck "netdb.h, struct addrinfo"
+if test "$_struct_addrinfo" = auto; then
+  _struct_addrinfo=no
+  cat > $TMPC << EOF
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
+int main(void) { struct addrinfo *ai; return 0; }
+EOF
+  cc_check $cc_check_winsock2_h && _struct_addrinfo=yes
+fi
+echores "$_struct_addrinfo"
+
+if test "$_struct_addrinfo" = yes; then
+  def_addrinfo="#define HAVE_STRUCT_ADDRINFO 1"
+else
+  def_addrinfo="#define HAVE_STRUCT_ADDRINFO 0"
+fi
+
+
+echocheck "netdb.h, getaddrinfo()"
+if test "$_getaddrinfo" = auto; then
+  _getaddrinfo=no
+  cat > $TMPC << EOF
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
+int main(void) { (void) getaddrinfo(0, 0, 0, 0); return 0; }
+EOF
+  cc_check $cc_check_winsock2_h && _getaddrinfo=yes
+fi
+echores "$_getaddrinfo"
+
+if test "$_getaddrinfo" = yes; then
+  def_getaddrinfo="#define HAVE_GETADDRINFO 1"
+else
+  def_getaddrinfo="#define HAVE_GETADDRINFO 0"
+fi
+
+
+echocheck "sockaddr_storage"
+if test "$_struct_sockaddr_storage" = auto; then
+  _struct_sockaddr_storage=no
+  cat > $TMPC << EOF
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
+#include <sys/socket.h>
+#endif
+int main(void) { struct sockaddr_storage sas; return 0; }
+EOF
+  cc_check $cc_check_winsock2_h && _struct_sockaddr_storage=yes
+fi
+echores "$_struct_sockaddr_storage"
+
+if test "$_struct_sockaddr_storage" = yes; then
+  def_sockaddr_storage="#define HAVE_STRUCT_SOCKADDR_STORAGE 1"
+else
+  def_sockaddr_storage="#define HAVE_STRUCT_SOCKADDR_STORAGE 0"
 fi
 
 
@@ -3107,7 +3236,7 @@ for _ld_tmp in "$_ld_sock" "$_ld_sock -lresolv" ; do
   cc_check $_ld_tmp && inet_pton=yes && break
 done
 if test $inet_pton = yes ; then
-  test $_ld_tmp && _res_comment="using $_ld_tmp"
+  test "$_ld_tmp" && _res_comment="using $_ld_tmp"
   def_inet_pton='#define HAVE_INET_PTON 1'
 fi
 echores "$inet_pton"
@@ -3126,7 +3255,7 @@ for _ld_tmp in "$_ld_sock" "$_ld_sock -lresolv" ; do
   cc_check $_ld_tmp && inet_aton=yes && break
 done
 if test $inet_aton = yes ; then
-  test $_ld_tmp && _res_comment="using $_ld_tmp"
+  test "$_ld_tmp" && _res_comment="using $_ld_tmp"
   def_inet_aton='#define HAVE_INET_ATON 1'
 fi
 echores "$inet_aton"
@@ -3344,6 +3473,16 @@ fi
 echores "$_fastmemcpy"
 
 
+echocheck "hard-coded tables"
+if test "$hardcoded_tables" = yes ; then
+  def_hardcoded_tables='#define CONFIG_HARDCODED_TABLES 1'
+  mak_hardcoded_tables='CONFIG_HARDCODED_TABLES = yes'
+else
+  def_hardcoded_tables='#define CONFIG_HARDCODED_TABLES 0'
+fi
+echores "$hardcoded_tables"
+
+
 echocheck "mman.h"
 cat > $TMPC << EOF
 #include <sys/types.h>
@@ -3377,7 +3516,7 @@ echocheck "dynamic loader"
 cat > $TMPC << EOF
 #include <stddef.h>
 #include <dlfcn.h>
-int main(void) { dlopen(NULL, 0); dlclose(NULL); dlsym(NULL, NULL); return 0; }
+int main(void) { dlopen("", 0); dlclose(NULL); dlsym(NULL, ""); return 0; }
 EOF
 _dl=no
 for _ld_tmp in "" "-ldl" ; do
@@ -3745,7 +3884,7 @@ cat > $TMPC << EOF
 #define _ISOC99_SOURCE
 #include <stdarg.h>
 #include <stdio.h>
-int main(void) { vsscanf(0, 0, 0); return 0; }
+int main(void) { va_list ap; vsscanf("foo", "bar", ap); return 0; }
 EOF
 _vsscanf=no
 cc_check && _vsscanf=yes
@@ -4138,7 +4277,7 @@ if test "$_directfb" = auto ; then
   _directfb=no
   cat > $TMPC <<EOF
 #include <directfb.h>
-int main(void) { IDirectFB *foo; DirectFBInit(0,0); return 0; }
+int main(void) { DirectFBInit(0, 0); return 0; }
 EOF
   for _inc_tmp in "" -I/usr/local/include/directfb \
       -I/usr/include/directfb -I/usr/local/include; do
@@ -4208,7 +4347,7 @@ echocheck "X11 headers presence"
     fi
   done
   if test $_cross_compile = no; then
-    for I in /usr/X11/include /usr/X11R7/include /usr/X11R6/include \
+    for I in /usr/X11/include /usr/X11R7/include /usr/local/include /usr/X11R6/include \
              /usr/include/X11R6 /usr/openwin/include ; do
       if test -f "$I/X11/Xlib.h" ; then
         extra_cflags="$extra_cflags -I$I"
@@ -4228,8 +4367,8 @@ if test "$_x11" = auto && test "$_x11_headers" = yes ; then
 #include <X11/Xutil.h>
 int main(void) { (void) XCreateWindow(0,0,0,0,0,0,0,0,0,0,0,0); return 0; }
 EOF
-  for I in "" -L/usr/X11R7/lib -L/usr/X11R6/lib -L/usr/lib/X11R6 \
-           -L/usr/X11/lib -L/usr/lib32 -L/usr/openwin/lib -L/usr/X11R6/lib64 \
+  for I in "" -L/usr/X11R7/lib -L/usr/local/lib -L/usr/X11R6/lib -L/usr/lib/X11R6 \
+           -L/usr/X11/lib -L/usr/lib32 -L/usr/openwin/lib -L/usr/local/lib64 -L/usr/X11R6/lib64 \
            -L/usr/lib ; do
     if netbsd; then
       _ld_tmp="$I -lXext -lX11 $_ld_pthread -Wl,-R$(echo $I | sed s/^-L//)"
@@ -4607,19 +4746,6 @@ else
 fi
 echores "$_mga"
 
-echocheck "MatrixView"
-if test "$_gl" = no ; then
-  matrixview=no
-fi
-if test "$matrixview" = yes ; then
-  _vomodules="matrixview $_vomodules"
-  def_matrixview='#define CONFIG_MATRIXVIEW 1'
-else
-  _novomodules="matrixview $_novomodules"
-  def_matrixview='#undef CONFIG_MATRIXVIEW'
-fi
-echores "$matrixview"
-
 echocheck "xmga"
 if test "$_xmga" = auto ; then
   _xmga=no
@@ -4945,15 +5071,14 @@ int main(void) {
 }
 EOF
   _gl=no
-  if cc_check -lGL $_ld_lm ; then
-    _gl=yes
-    _gl_x11=yes
-    libs_mplayer="$libs_mplayer -lGL $_ld_dl"
-  elif cc_check -lGL $_ld_lm $_ld_pthread ; then
-    _gl=yes
-    _gl_x11=yes
-    libs_mplayer="$libs_mplayer -lGL $_ld_pthread $_ld_dl"
-  fi
+  for _ld_tmp in -lGL "-lGL -lXdamage" "-lGL $_ld_pthread" ; do
+    if cc_check $_ld_tmp $_ld_lm ; then
+      _gl=yes
+      _gl_x11=yes
+      libs_mplayer="$libs_mplayer $_ld_tmp $_ld_dl"
+      break
+    fi
+  done
   if cc_check -DGL_WIN32 -lopengl32 ; then
     _gl=yes
     _gl_win32=yes
@@ -4981,6 +5106,20 @@ else
   _novomodules="opengl $_novomodules"
 fi
 echores "$_gl"
+
+
+echocheck "MatrixView"
+if test "$_gl" = no ; then
+  matrixview=no
+fi
+if test "$matrixview" = yes ; then
+  _vomodules="matrixview $_vomodules"
+  def_matrixview='#define CONFIG_MATRIXVIEW 1'
+else
+  _novomodules="matrixview $_novomodules"
+  def_matrixview='#undef CONFIG_MATRIXVIEW'
+fi
+echores "$matrixview"
 
 
 echocheck "PNG support"
@@ -5235,7 +5374,7 @@ int main(int argc, char *argv[]) {
 }
 EOF
   _sdl=no
-  for _ld_tmp in "-lSDL" "-lSDL -lpthread" "-lSDL -lwinmm -lgdi32" ; do
+  for _ld_tmp in "-lSDL" "-lSDL -lpthread" "-lSDL -lwinmm -lgdi32" "-lSDL -lwinmm -lgdi32 -ldxguid" ; do
     if cc_check -DCONFIG_SDL_SDL_H $_inc_tmp $_ld_tmp ; then
       _sdl=yes
       def_sdl_sdl_h="#define CONFIG_SDL_SDL_H 1"
@@ -5243,6 +5382,7 @@ EOF
     fi
   done
   if test "$_sdl" = no && "$_sdlconfig" --version >>"$TMPLOG" 2>&1 ; then
+    _res_comment="using $_sdlconfig"
     if cygwin ; then
       _inc_tmp="$($_sdlconfig --cflags | cut -d " " -f 1,5,6 | sed s/no-cygwin/cygwin/)"
       _ld_tmp="$($_sdlconfig --libs | cut -d " " -f 1,4,6 | sed s/no-cygwin/cygwin/)"
@@ -5272,7 +5412,6 @@ if test "$_sdl" = yes ; then
   libs_mplayer="$libs_mplayer $_ld_tmp"
   _vomodules="sdl $_vomodules"
   _aomodules="sdl $_aomodules"
-  _res_comment="using $_sdlconfig"
 else
   def_sdl='#undef CONFIG_SDL'
   _novomodules="sdl $_novomodules"
@@ -6222,8 +6361,8 @@ if test "$_ass" = auto ; then
     cat > $TMPC << EOF
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#if ((FREETYPE_MAJOR < 2) || (FREETYPE_MINOR < 1) || ((FREETYPE_MINOR == 1) && (FREETYPE_PATCH < 8)))
-#error "Need FreeType 2.1.8 or newer"
+#if ((FREETYPE_MAJOR < 2) || (FREETYPE_MINOR < 2) || ((FREETYPE_MINOR == 2) && (FREETYPE_PATCH < 1)))
+#error "Need FreeType 2.2.1 or newer"
 #endif
 int main(void) { return 0; }
 EOF
@@ -6231,7 +6370,7 @@ EOF
     cc_check $($_freetypeconfig --cflags) $($_freetypeconfig --libs) && _ass=yes
     if test "$_ass" = no ; then
         ass_internal=no
-        _res_comment="FreeType >= 2.1.8 needed"
+        _res_comment="FreeType >= 2.2.1 needed"
     elif test "$ass_internal" = no ; then
         _res_comment="external"
         extra_ldflags="$extra_ldflags -lass"
@@ -6256,6 +6395,7 @@ _ld_tmp=""
 if test "$_fribidi" = auto ; then
     cat > $TMPC << EOF
 #include <stdio.h>
+#include <stdlib.h>
 /* workaround for fribidi 0.10.4 and below */
 #define FRIBIDI_CHARSET_UTF8 FRIBIDI_CHAR_SET_UTF8
 #include <fribidi/fribidi.h>
@@ -6657,7 +6797,7 @@ if test "$_libdca" = auto ; then
 #include <dts.h>
 int main(void) { dts_init(0); return 0; }
 EOF
-  for _ld_dca in -ldts -ldca ; do
+  for _ld_dca in -ldca -ldts ; do
     cc_check $_ld_dca $_ld_lm && extra_ldflags="$extra_ldflags $_ld_dca" \
       && _libdca=yes && break
   done
@@ -7098,7 +7238,8 @@ test "$_libavcodec"    = yes && def_libavcodec='#define CONFIG_LIBAVCODEC 1'
 test "$_libavcodec_a"  = yes && def_libavcodec_a='#define CONFIG_LIBAVCODEC_A 1'
 test "$_libavcodec_so" = yes && def_libavcodec_so='#define CONFIG_LIBAVCODEC_SO 1'
 test "$_libavcodec_mpegaudio_hp" = yes \
-  && def_libavcodec_mpegaudio_hp='#define CONFIG_MPEGAUDIO_HP 1'
+  && def_libavcodec_mpegaudio_hp='#define CONFIG_MPEGAUDIO_HP 1' \
+  && mak_libavcodec_mpegaudio_hp='CONFIG_MPEGAUDIO_HP = yes'
 if test "$_libavcodec_a" = yes ; then
   _codecmodules="libavcodec(internal) $_codecmodules"
 elif test "$_libavcodec_so" = yes ; then
@@ -7327,7 +7468,7 @@ if test "$_x264" = auto ; then
   cat > $TMPC << EOF
 #include <inttypes.h>
 #include <x264.h>
-#if X264_BUILD < 79
+#if X264_BUILD < 83
 #error We do not support old versions of x264. Get the latest from git.
 #endif
 int main(void) { x264_encoder_open((void*)0); return 0; }
@@ -7489,7 +7630,7 @@ if test "$_mp3lame" = auto ; then
   cat > $TMPC <<EOF
 #include <lame/lame.h>
 int main(void) { lame_version_t lv; (void) lame_init();
-    get_lame_version_numerical(&lv);  printf("%d%d\n",lv.major,lv.minor);
+    get_lame_version_numerical(&lv);
     return 0; }
 EOF
   cc_check -lmp3lame $_ld_lm && _mp3lame=yes
@@ -8080,6 +8221,14 @@ else
   echores "no"
 fi
 
+echocheck "linker support for --nxcompat --no-seh --dynamicbase"
+if cc_check "-Wl,--nxcompat -Wl,--no-seh -Wl,--dynamicbase" ; then
+  extra_ldflags="-Wl,--nxcompat -Wl,--no-seh -Wl,--dynamicbase $extra_ldflags"
+  echores "yes"
+else
+  echores "no"
+fi
+
 
 # Dynamic linking flags
 # (FIXME: 'echocheck "dynamic linking"' above and modify here accordingly)
@@ -8282,6 +8431,7 @@ RANLIB = $_ranlib
 WINDRES = $_windres
 
 CFLAGS = $CFLAGS $extra_cflags
+ASFLAGS = $CFLAGS $extra_cflags
 OPTFLAGS = $CFLAGS $extra_cflags
 CXXFLAGS = $CXXFLAGS $extra_cflags $extra_cxxflags
 CFLAGS_DHAHELPER = $cflags_dhahelper
@@ -8362,6 +8512,8 @@ FAAC=$_faac
 FAAD = $_faad
 FAAD_INTERNAL = $_faad_internal
 FASTMEMCPY = $_fastmemcpy
+$mak_hardcoded_tables
+$mak_libavcodec_mpegaudio_hp
 FBDEV = $_fbdev
 FREETYPE = $_freetype
 FTP = $_ftp
@@ -8504,6 +8656,9 @@ LIBSWSCALE = $_libswscale
 LIBSWSCALE_A = $_libswscale_a
 LIBSWSCALE_SO = $_libswscale_so
 
+HOSTCC=\$(HOST_CC)
+HOSTCFLAGS=-D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112 -O3
+HOSTLIBS=-lm
 CC_O=-o \$@
 LD=gcc
 CONFIG_STATIC=yes
@@ -8512,6 +8667,7 @@ BUILD_ROOT=..
 LIBPREF=lib
 LIBSUF=.a
 LIBNAME=\$(LIBPREF)\$(NAME)\$(LIBSUF)
+FULLNAME=\$(NAME)\$(BUILDSUF)
 
 # Some FFmpeg codecs depend on these. Enable them unconditionally for now.
 CONFIG_AANDCT=yes
@@ -8560,6 +8716,7 @@ $(echo $_libavdemuxers | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 $(echo $_libavmuxers | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 $(echo $_libavprotocols | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 $(echo $_libavbsfs | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
+$(echo $_libavhwaccels | tr '[a-z] ' '[A-Z]\n' | sed 's/^/CONFIG_/;s/$/=yes/')
 EOF
 
 #############################################################################
@@ -8659,12 +8816,15 @@ $def_winsock2_h
 
 
 /* system functions */
+$def_exp2
+$def_exp2f
 $def_gethostbyname2
 $def_gettimeofday
 $def_glob
 $def_langinfo
 $def_llrint
 $def_log2
+$def_log2f
 $def_lrint
 $def_lrintf
 $def_map_memalign
@@ -8711,6 +8871,7 @@ $def_crash_debug
 $def_debug
 $def_dynamic_plugins
 $def_fastmemcpy
+$def_hardcoded_tables
 $def_menu
 $def_runtime_cpudetection
 $def_sighandler
@@ -8868,6 +9029,9 @@ $def_network
 $def_smb
 $def_socklen_t
 $def_vstream
+$def_addrinfo
+$def_getaddrinfo
+$def_sockaddr_storage
 
 
 /* libvo options */
@@ -8993,14 +9157,13 @@ $def_yasm
 #define CONFIG_FFSERVER 0
 #define CONFIG_GPL 1
 #define CONFIG_GRAY 0
-#define CONFIG_HARDCODED_TABLES 0
 #define CONFIG_LIBVORBIS 0
 #define CONFIG_POWERPC_PERF 0
 #define CONFIG_SMALL 0
 #define CONFIG_SWSCALE 1
 #define CONFIG_SWSCALE_ALPHA 1
 
-#ifdef HAVE_AF_INET6
+#if defined(HAVE_AF_INET6) && (!defined(_WIN32) || defined(__CYGWIN__))
 #define CONFIG_IPV6 1
 #else
 #define CONFIG_IPV6 0
@@ -9008,12 +9171,13 @@ $def_yasm
 
 #define HAVE_ATTRIBUTE_PACKED 1
 #define HAVE_GETHRTIME 0
-#define HAVE_INLINE_ASM 0
+#define HAVE_INLINE_ASM 1
 #define HAVE_LDBRX 0
 #define HAVE_POLL_H 1
 #define HAVE_PPC4XX 0
 #define HAVE_SETMODE 0
 #define HAVE_SYS_SELECT_H 0
+#define HAVE_VFP_ARGS 1
 #define HAVE_VIRTUALALLOC 0
 
 /* Some FFmpeg codecs depend on these. Enable them unconditionally for now. */
@@ -9053,19 +9217,27 @@ $(ff_config_enable "$_libavdemuxers_all" "$_libavdemuxers")
 $(ff_config_enable "$_libavmuxers_all"   "$_libavmuxers")
 $(ff_config_enable "$_libavprotocols_all" "$_libavprotocols")
 $(ff_config_enable "$_libavbsfs_all" "$_libavbsfs")
-
-#define CONFIG_H263_VAAPI_HWACCEL 0
-#define CONFIG_MPEG2_VAAPI_HWACCEL 0
-#define CONFIG_MPEG4_VAAPI_HWACCEL 0
-#define CONFIG_H264_VAAPI_HWACCEL 0
-#define CONFIG_VC1_VAAPI_HWACCEL 0
-#define CONFIG_WMV3_VAAPI_HWACCEL 0
+$(ff_config_enable "$_libavhwaccels_all"  "$_libavhwaccels")
 
 #endif /* MPLAYER_CONFIG_H */
 EOF
 
 # Do not overwrite an unchanged config.h to avoid superfluous rebuilds.
 cmp -s "$TMPH" config.h || mv -f "$TMPH" config.h
+
+############################################################################
+
+# Create avconfig.h for FFmpeg.
+cat > "$TMPH" << EOF
+/* Generated by mpconfigure */
+#ifndef AVUTIL_AVCONFIG_H
+#define AVUTIL_AVCONFIG_H
+$def_av_bigendian
+#endif /* AVUTIL_AVCONFIG_H */
+EOF
+
+# Do not overwrite an unchanged avconfig.h to avoid superfluous rebuilds.
+cmp -s "$TMPH" libavutil/avconfig.h || mv -f "$TMPH" libavutil/avconfig.h
 
 #############################################################################
 
