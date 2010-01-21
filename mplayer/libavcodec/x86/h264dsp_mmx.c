@@ -617,7 +617,7 @@ static void ff_h264_idct_add8_sse2(uint8_t **dest, const int *block_offset, DCTE
         "pavgb    %%mm2,  "#tmp"   \n\t"\
         "pavgb    "#tmp", "#q2"    \n\t" /* avg(p2,avg(p0,q0)) */\
         "pxor   "q2addr", "#tmp"   \n\t"\
-        "pand     %8,     "#tmp"   \n\t" /* (p2^avg(p0,q0))&1 */\
+        "pand     %9,     "#tmp"   \n\t" /* (p2^avg(p0,q0))&1 */\
         "psubusb  "#tmp", "#q2"    \n\t" /* (p2+((p0+q0+1)>>1))>>1 */\
         "movq     "#p1",  "#tmp"   \n\t"\
         "psubusb  "#tc0", "#tmp"   \n\t"\
@@ -631,48 +631,48 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
     DECLARE_ALIGNED_8(uint64_t, tmp0[2]);
 
     __asm__ volatile(
-        "movq    (%1,%3), %%mm0    \n\t" //p1
-        "movq    (%1,%3,2), %%mm1  \n\t" //p0
-        "movq    (%2),    %%mm2    \n\t" //q0
-        "movq    (%2,%3), %%mm3    \n\t" //q1
-        H264_DEBLOCK_MASK(%6, %7)
+        "movq    (%2,%4), %%mm0    \n\t" //p1
+        "movq    (%2,%4,2), %%mm1  \n\t" //p0
+        "movq    (%3),    %%mm2    \n\t" //q0
+        "movq    (%3,%4), %%mm3    \n\t" //q1
+        H264_DEBLOCK_MASK(%7, %8)
 
-        "movd      %5,    %%mm4    \n\t"
+        "movd      %6,    %%mm4    \n\t"
         "punpcklbw %%mm4, %%mm4    \n\t"
         "punpcklwd %%mm4, %%mm4    \n\t"
         "pcmpeqb   %%mm3, %%mm3    \n\t"
         "movq      %%mm4, %%mm6    \n\t"
         "pcmpgtb   %%mm3, %%mm4    \n\t"
-        "movq      %%mm6, 8+%0     \n\t"
+        "movq      %%mm6, %1       \n\t"
         "pand      %%mm4, %%mm7    \n\t"
         "movq      %%mm7, %0       \n\t"
 
         /* filter p1 */
-        "movq     (%1),   %%mm3    \n\t" //p2
+        "movq     (%2),   %%mm3    \n\t" //p2
         DIFF_GT2_MMX(%%mm1, %%mm3, %%mm5, %%mm6, %%mm4) // |p2-p0|>beta-1
         "pand     %%mm7,  %%mm6    \n\t" // mask & |p2-p0|<beta
-        "pand     8+%0,   %%mm7    \n\t" // mask & tc0
+        "pand     %1,     %%mm7    \n\t" // mask & tc0
         "movq     %%mm7,  %%mm4    \n\t"
         "psubb    %%mm6,  %%mm7    \n\t"
         "pand     %%mm4,  %%mm6    \n\t" // mask & |p2-p0|<beta & tc0
-        H264_DEBLOCK_Q1(%%mm0, %%mm3, "(%1)", "(%1,%3)", %%mm6, %%mm4)
+        H264_DEBLOCK_Q1(%%mm0, %%mm3, "(%2)", "(%2,%4)", %%mm6, %%mm4)
 
         /* filter q1 */
-        "movq    (%2,%3,2), %%mm4  \n\t" //q2
+        "movq    (%3,%4,2), %%mm4  \n\t" //q2
         DIFF_GT2_MMX(%%mm2, %%mm4, %%mm5, %%mm6, %%mm3) // |q2-q0|>beta-1
         "pand     %0,     %%mm6    \n\t"
-        "movq     8+%0,   %%mm5    \n\t" // can be merged with the and below but is slower then
+        "movq     %1,     %%mm5    \n\t" // can be merged with the and below but is slower then
         "pand     %%mm6,  %%mm5    \n\t"
         "psubb    %%mm6,  %%mm7    \n\t"
-        "movq    (%2,%3), %%mm3    \n\t"
-        H264_DEBLOCK_Q1(%%mm3, %%mm4, "(%2,%3,2)", "(%2,%3)", %%mm5, %%mm6)
+        "movq    (%3,%4), %%mm3    \n\t"
+        H264_DEBLOCK_Q1(%%mm3, %%mm4, "(%3,%4,2)", "(%3,%4)", %%mm5, %%mm6)
 
         /* filter p0, q0 */
-        H264_DEBLOCK_P0_Q0(%8, unused)
-        "movq      %%mm1, (%1,%3,2) \n\t"
-        "movq      %%mm2, (%2)      \n\t"
+        H264_DEBLOCK_P0_Q0(%9, unused)
+        "movq      %%mm1, (%2,%4,2) \n\t"
+        "movq      %%mm2, (%3)      \n\t"
 
-        : "=m"(*tmp0)
+        : "=m"(tmp0[0]), "=m"(tmp0[1])
         : "r"(pix-3*stride), "r"(pix), "r"((x86_reg)stride),
           "m"(*tmp0/*unused*/), "m"(*(uint32_t*)tc0), "m"(alpha1), "m"(beta1),
           "m"(ff_bone)
@@ -812,7 +812,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
     // could do a special case for dir==0 && edges==1, but it only reduces the
     // average filter time by 1.2%
     for( dir=1; dir>=0; dir-- ) {
-        const int d_idx = dir ? -8 : -1;
+        const x86_reg d_idx = dir ? -8 : -1;
         const int mask_mv = dir ? mask_mv1 : mask_mv0;
         DECLARE_ALIGNED_8(const uint64_t, mask_dir) = dir ? 0 : 0xffffffffffffffffULL;
         int b_idx, edge, l;
@@ -825,34 +825,59 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
                 __asm__ volatile("pxor %%mm0, %%mm0 \n\t":);
                 for( l = bidir; l >= 0; l-- ) {
                     __asm__ volatile(
-                        "movd %0, %%mm1 \n\t"
-                        "punpckldq %1, %%mm1 \n\t"
-                        "movq %%mm1, %%mm2 \n\t"
-                        "psrlw $7, %%mm2 \n\t"
-                        "pand %%mm6, %%mm2 \n\t"
-                        "por %%mm2, %%mm1 \n\t" // ref_cache with -2 mapped to -1
+                        "movd (%0), %%mm1 \n\t"
+                        "punpckldq (%0,%1), %%mm1 \n\t"
                         "punpckldq %%mm1, %%mm2 \n\t"
                         "pcmpeqb %%mm2, %%mm1 \n\t"
                         "paddb %%mm6, %%mm1 \n\t"
                         "punpckhbw %%mm7, %%mm1 \n\t" // ref[b] != ref[bn]
                         "por %%mm1, %%mm0 \n\t"
 
-                        "movq %2, %%mm1 \n\t"
-                        "movq %3, %%mm2 \n\t"
-                        "psubw %4, %%mm1 \n\t"
-                        "psubw %5, %%mm2 \n\t"
+                        "movq (%2), %%mm1 \n\t"
+                        "movq 8(%2), %%mm2 \n\t"
+                        "psubw (%2,%1,4), %%mm1 \n\t"
+                        "psubw 8(%2,%1,4), %%mm2 \n\t"
                         "packsswb %%mm2, %%mm1 \n\t"
                         "paddb %%mm5, %%mm1 \n\t"
                         "pminub %%mm4, %%mm1 \n\t"
                         "pcmpeqb %%mm4, %%mm1 \n\t" // abs(mv[b] - mv[bn]) >= limit
                         "por %%mm1, %%mm0 \n\t"
-                        ::"m"(ref[l][b_idx]),
-                          "m"(ref[l][b_idx+d_idx]),
-                          "m"(mv[l][b_idx][0]),
-                          "m"(mv[l][b_idx+2][0]),
-                          "m"(mv[l][b_idx+d_idx][0]),
-                          "m"(mv[l][b_idx+d_idx+2][0])
+                        ::"r"(ref[l]+b_idx),
+                          "r"(d_idx),
+                          "r"(mv[l]+b_idx)
                     );
+                }
+                if(bidir==1){
+                    __asm__ volatile("pxor %%mm3, %%mm3 \n\t":);
+                    for( l = bidir; l >= 0; l-- ) {
+                    __asm__ volatile(
+                        "movd (%0), %%mm1 \n\t"
+                        "punpckldq (%1), %%mm1 \n\t"
+                        "punpckldq %%mm1, %%mm2 \n\t"
+                        "pcmpeqb %%mm2, %%mm1 \n\t"
+                        "paddb %%mm6, %%mm1 \n\t"
+                        "punpckhbw %%mm7, %%mm1 \n\t" // ref[b] != ref[bn]
+                        "por %%mm1, %%mm3 \n\t"
+
+                        "movq (%2), %%mm1 \n\t"
+                        "movq 8(%2), %%mm2 \n\t"
+                        "psubw (%3), %%mm1 \n\t"
+                        "psubw 8(%3), %%mm2 \n\t"
+                        "packsswb %%mm2, %%mm1 \n\t"
+                        "paddb %%mm5, %%mm1 \n\t"
+                        "pminub %%mm4, %%mm1 \n\t"
+                        "pcmpeqb %%mm4, %%mm1 \n\t" // abs(mv[b] - mv[bn]) >= limit
+                        "por %%mm1, %%mm3 \n\t"
+                        ::"r"(ref[l]+b_idx),
+                          "r"(ref[1-l]+b_idx+d_idx),
+                          "r"(mv[l][b_idx]),
+                          "r"(mv[1-l][b_idx+d_idx])
+                    );
+                    }
+                    __asm__ volatile(
+                        "pcmpeqw %%mm7, %%mm3 \n\t"
+                        "psubusw %%mm3, %%mm0 \n\t"
+                    :);
                 }
             }
             __asm__ volatile(

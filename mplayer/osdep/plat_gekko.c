@@ -330,7 +330,10 @@ const static DISC_INTERFACE* sd = &__io_wiisd;
 const static DISC_INTERFACE* usb = &__io_usbstorage;
 
 bool mount_sd_ntfs()
-{
+{ // at now sd can be mounted only once
+	static bool mounted=false;
+
+	if(mounted) return true;
 	//only mount the first ntfs partition
 	int partition_count = 0;
 	sec_t *partitions = NULL;
@@ -370,7 +373,6 @@ static void * mountthreadfunc (void *arg)
 //todo: add sd automount
 	usleep(400000);
 	//sleep(1);
-	mount_sd_ntfs(); //only once now
 		
 	usb_inserted=usb_init;
 	

@@ -263,10 +263,9 @@ static void print_help (void)
            MSGTR_AO_ALSA_CommandlineHelp);
 }
 
-static int str_maxlen(strarg_t *str) {
-  if (str->len > ALSA_DEVICE_SIZE)
-    return 0;
-  return 1;
+static int str_maxlen(void *strp) {
+  strarg_t *str = strp;
+  return str->len <= ALSA_DEVICE_SIZE;
 }
 
 static int try_open_device(const char *device, int open_mode, int try_ac3)
@@ -328,7 +327,7 @@ static int init(int rate_hz, int channels, int format, int flags)
     snd_pcm_uframes_t boundary;
     const opt_t subopts[] = {
       {"block", OPT_ARG_BOOL, &block, NULL},
-      {"device", OPT_ARG_STR, &device, (opt_test_f)str_maxlen},
+      {"device", OPT_ARG_STR, &device, str_maxlen},
       {NULL}
     };
 
