@@ -2,7 +2,7 @@
 
 # libtool - Provide generalized library-building support services.
 # Generated automatically by config.status (opencore-amr) 0.1.2
-# Libtool was configured on host whiite:
+# Libtool was configured on host CENTRAL:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
 #   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2004, 2005,
@@ -43,7 +43,7 @@ macro_version=2.2.6
 macro_revision=1.3012
 
 # Whether or not to build shared libraries.
-build_libtool_libs=yes
+build_libtool_libs=no
 
 # Whether or not to build static libraries.
 build_old_libs=yes
@@ -55,14 +55,14 @@ pic_mode=default
 fast_install=yes
 
 # The host system.
-host_alias=
-host=powerpc-unknown-linux-gnu
-host_os=linux-gnu
+host_alias=ppc
+host=powerpc-unknown-none
+host_os=none
 
 # The build system.
 build_alias=
-build=powerpc-unknown-linux-gnu
-build_os=linux-gnu
+build=i686-pc-mingw32
+build_os=mingw32
 
 # A sed program that does not truncate output.
 SED="/bin/sed"
@@ -117,22 +117,22 @@ deplibs_check_method="pass_all"
 file_magic_cmd="\$MAGIC_CMD"
 
 # The archiver.
-AR="ar"
+AR="\${DEVKITPPC}/bin/powerpc-eabi-ar"
 AR_FLAGS="cru"
 
 # A symbol stripping program.
-STRIP="strip"
+STRIP="\${DEVKITPPC}/bin/powerpc-eabi-strip"
 
 # Commands used to install an old-style archive.
-RANLIB="ranlib"
+RANLIB="\${DEVKITPPC}/bin/powerpc-eabi-ranlib"
 old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
 old_postuninstall_cmds=""
 
 # A C compiler.
-LTCC="gcc"
+LTCC="\${DEVKITPPC}/bin/powerpc-eabi-gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="-g -O2"
+LTCFLAGS="-mcpu=750 -O2"
 
 # Take the output of nm and produce a listing of raw symbols and C names.
 global_symbol_pipe="sed -n -e 's/^.*[	 ]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[	 ][	 ]*\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2 \\2/p'"
@@ -190,32 +190,32 @@ extract_expsyms_cmds=""
 variables_saved_for_relink="PATH LD_LIBRARY_PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
 
 # Do we need the "lib" prefix for modules?
-need_lib_prefix=no
+need_lib_prefix=unknown
 
 # Do we need a version for libraries?
-need_version=no
+need_version=unknown
 
 # Library versioning type.
-version_type=linux
+version_type=none
 
 # Shared library runtime path variable.
 runpath_var=LD_RUN_PATH
 
 # Shared library path variable.
-shlibpath_var=LD_LIBRARY_PATH
+shlibpath_var=
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=unknown
 
 # Format of library name prefix.
 libname_spec="lib\$name"
 
 # List of archive names.  First name is the real one, the rest are links.
 # The last name is the one that the linker finds with -lNAME
-library_names_spec="\${libname}\${release}\${shared_ext}\$versuffix \${libname}\${release}\${shared_ext}\$major \$libname\${shared_ext}"
+library_names_spec=""
 
 # The coded name of the library, if different from the real name.
-soname_spec="\${libname}\${release}\${shared_ext}\$major"
+soname_spec=""
 
 # Command to use after installation of a shared archive.
 postinstall_cmds=""
@@ -231,13 +231,13 @@ finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
 finish_eval=""
 
 # Whether we should hardcode library paths into libraries.
-hardcode_into_libs=yes
+hardcode_into_libs=no
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/usr/lib/gcc/powerpc-linux-gnu/4.3.2 /usr/lib /lib"
+sys_lib_search_path_spec="\${DEVKITPPC}/lib/gcc \${DEVKITPPC}/powerpc-eabi/lib"
 
 # Run-time system search path for libraries.
-sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/local/lib /lib/powerpc-linux-gnu /usr/lib/powerpc-linux-gnu "
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
 
 # Whether dlopen is supported.
 dlopen_support=unknown
@@ -249,18 +249,18 @@ dlopen_self=unknown
 dlopen_self_static=unknown
 
 # Commands to strip libraries.
-old_striplib="strip --strip-debug"
-striplib="strip --strip-unneeded"
+old_striplib="\${DEVKITPPC}/bin/powerpc-eabi-strip --strip-debug"
+striplib="\${DEVKITPPC}/bin/powerpc-eabi-strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="\${DEVKITPPC}/bin/powerpc-eabi-ld"
 
 # Commands used to build an old-style archive.
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 
 # A language specific compiler.
-CC="gcc"
+CC="\${DEVKITPPC}/bin/powerpc-eabi-gcc"
 
 # Is the compiler the GNU compiler?
 with_gcc=yes
@@ -361,7 +361,7 @@ hardcode_automatic=no
 inherit_rpath=no
 
 # Whether libtool must link a program against all its dependency libraries.
-link_all_deplibs=no
+link_all_deplibs=unknown
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
@@ -8916,13 +8916,13 @@ build_old_libs=`case $build_libtool_libs in yes) echo no;; *) echo yes;; esac`
 # ### BEGIN LIBTOOL TAG CONFIG: CXX
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="\${DEVKITPPC}/bin/powerpc-eabi-ld"
 
 # Commands used to build an old-style archive.
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
 
 # A language specific compiler.
-CC="g++"
+CC="\${DEVKITPPC}/bin/powerpc-eabi-g++"
 
 # Is the compiler the GNU compiler?
 with_gcc=yes
@@ -9047,17 +9047,17 @@ file_list_spec=""
 hardcode_action=immediate
 
 # The directories searched by this compiler when creating a shared library.
-compiler_lib_search_dirs="/usr/lib/gcc/powerpc-linux-gnu/4.3.2 /usr/lib/gcc/powerpc-linux-gnu/4.3.2 /usr/lib/gcc/powerpc-linux-gnu/4.3.2/../../../../lib /lib/../lib /usr/lib/../lib /usr/lib/gcc/powerpc-linux-gnu/4.3.2/../../.."
+compiler_lib_search_dirs="\${DEVKITPPC}/lib/gcc \${DEVKITPPC}/powerpc-eabi/lib"
 
 # Dependencies to place before and after the objects being linked to
 # create a shared library.
-predep_objects="/usr/lib/gcc/powerpc-linux-gnu/4.3.2/../../../../lib/crti.o /usr/lib/gcc/powerpc-linux-gnu/4.3.2/crtbeginS.o"
-postdep_objects="/usr/lib/gcc/powerpc-linux-gnu/4.3.2/crtsavres.o /usr/lib/gcc/powerpc-linux-gnu/4.3.2/crtendS.o /usr/lib/gcc/powerpc-linux-gnu/4.3.2/../../../../lib/crtn.o"
+predep_objects="\${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.2/ecrti.o \${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.22/crtbeginS.o"
+postdep_objects="\${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.2/crtendS.o \${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.2/ecrtn.o"
 predeps=""
 postdeps="-lstdc++ -lm -lgcc_s -lc -lgcc_s"
 
 # The library search path used internally by the compiler when linking
 # a shared library.
-compiler_lib_search_path="-L/usr/lib/gcc/powerpc-linux-gnu/4.3.2 -L/usr/lib/gcc/powerpc-linux-gnu/4.3.2 -L/usr/lib/gcc/powerpc-linux-gnu/4.3.2/../../../../lib -L/lib/../lib -L/usr/lib/../lib -L/usr/lib/gcc/powerpc-linux-gnu/4.3.2/../../.."
+compiler_lib_search_path="-L\${DEVKITPPC}/lib/gcc -L\${DEVKITPPC}/powerpc-eabi/lib"
 
 # ### END LIBTOOL TAG CONFIG: CXX

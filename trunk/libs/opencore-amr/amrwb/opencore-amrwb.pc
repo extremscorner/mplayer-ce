@@ -1,6 +1,6 @@
-prefix=/usr/local
+prefix=${DEVKITPRO}/libogc
 exec_prefix=${prefix}
-libdir=${exec_prefix}/lib
+libdir=${DEVKITPRO}/libogc/lib/wii
 includedir=${prefix}/include/opencore-amrwb
 
 Name: OpenCORE AMR-WB

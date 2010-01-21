@@ -85,7 +85,6 @@ static float gxzoom=348;
 static float hor_pos=0;
 static float vert_pos=0;
 static float stretch=0;
-extern float amplify_volume;
 
 static off_t get_filesize(char *FileName)
 {
@@ -802,7 +801,6 @@ static int LoadParams()
 	    {   "watchdog", &enable_watchdog, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 		{	"video_mode", &video_mode, CONF_TYPE_INT, CONF_RANGE, 0, 4, NULL},
-		{	"amplify_volume", &amplify_volume, CONF_TYPE_FLOAT, CONF_RANGE, 0, 100, NULL},
 		{	"overscan", &overscan, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};		
