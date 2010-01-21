@@ -1,4 +1,4 @@
-.\" $Revision: 30197 $
+.\" $Revision: 30336 $
 .\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .
@@ -3889,13 +3889,23 @@ Speed depends more on GPU memory bandwidth than other methods.
 Select the color space for YUV to RGB conversion.
 .RSss
 .IPs 0
-Use the formula used normally by MPlayer (default)
+Use the formula used normally by MPlayer (default).
 .IPs 1
 Use ITU-R BT.601 color space.
 .IPs 2
 Use ITU-R BT.709 color space.
 .IPs 3
 Use SMPTE-240M color space.
+.RE
+.IPs levelconv=<n>
+Select the brightness level conversion to use for the YUV to RGB conversion
+.RSss
+.IPs 0
+Convert TV to PC levels (default).
+.IPs 1
+Convert PC to TV levels.
+.IPs 2
+Do not do any conversion.
 .RE
 .IPs lscale=<n>
 Select the scaling function to use for luminance scaling.

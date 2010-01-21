@@ -269,7 +269,7 @@ const vo_functions_t* const video_out_drivers[] =
 #ifdef CONFIG_YUV4MPEG
         &video_out_yuv4mpeg,
 #endif
-#ifdef CONFIG_PNG
+#ifdef CONFIG_LIBAVCODEC
         &video_out_png,
 #endif
 #ifdef CONFIG_JPEG
