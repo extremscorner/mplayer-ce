@@ -177,7 +177,7 @@ void AdjustVideoParams()
 	vmode->viXOrigin = (videowidth - vmode->viWidth) / 2;
 	vmode->viYOrigin = (videoheight - vmode->viHeight) / 2;
 	
-	vmode->xfbMode = VI_XFBMODE_DF;
+	vmode->xfbMode = !(CONF_GetProgressiveScan() > 0);
 	vmode->field_rendering = GX_FALSE;
 	vmode->aa = GX_TRUE;
 }
