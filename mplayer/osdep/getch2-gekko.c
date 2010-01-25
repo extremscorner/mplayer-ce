@@ -19,7 +19,9 @@
    Boston, MA 02110-1301 USA.
 */
 
+
 #include <math.h>
+#include <limits.h>
 
 #include "config.h"
 #include "keycodes.h"
@@ -34,21 +36,33 @@
 #include <wiikeyboard/keyboard.h>
 #include <wiikeyboard/wsksymdef.h>
 
-int screen_width = 80;
-int screen_height = 24;
-char *erase_to_end_of_line = NULL;
+#include <ogc/usbmouse.h>
 
-float m_screenleft_shift=0, m_screenright_shift=0;
-float m_screentop_shift=0, m_screenbottom_shift=0;
-bool nunchuk_update=false;
 
-static int getch2_status=0;
+#define PAD_DEADZONE 18
+#define PAD_MODIFIER 16
+
+#define IR_OFFSET 96
 
 typedef struct {
 	u16 pad;
 	u32 wpad;
 	int key;
 } pad_map;
+
+
+extern int screenwidth;
+extern int screenheight;
+
+int screen_width = 80;
+int screen_height = 24;
+char *erase_to_end_of_line = NULL;
+
+float m_screenleft_shift = 0.0, m_screenright_shift = 0.0;
+float m_screentop_shift = 0.0, m_screenbottom_shift = 0.0;
+bool nunchuk_update = false;
+
+static int getch2_status = false;
 
 static const pad_map pad_maps[] = {
 	{ PAD_BUTTON_A,		WPAD_BUTTON_A,		'a' },
@@ -76,36 +90,67 @@ static const pad_map pad_maps_mod[] = {
 	{ PAD_BUTTON_DOWN,	WPAD_BUTTON_DOWN,	KEY_KP2 }
 };
 
-void get_screen_size() {
-}
 
-void getch2_enable() {
-	KEYBOARD_Init(NULL);
-	getch2_status=1;
-}
-
-void getch2_disable() {
-	KEYBOARD_Deinit();
-	getch2_status=0;
-}
-
-#define SENSIBILITY 20
-void reset_nunchuk_positions()
+void get_screen_size()
 {
-	m_screenleft_shift = 0;
-	m_screenright_shift = 0;
-	m_screentop_shift = 0;
-	m_screenbottom_shift = 0;
+	int new_width, new_height;
+	CON_GetMetrics(&new_width, &new_height);
+	
+	if (new_width > 0)
+		screen_width = new_width;
+	
+	if (new_height > 0)
+		screen_height = new_height;
+}
+
+void reset_screen_position()
+{
+	m_screenleft_shift = 0.0;
+	m_screenright_shift = 0.0;
+	m_screentop_shift = 0.0;
+	m_screenbottom_shift = 0.0;
+}
+
+void getch2_enable()
+{
+	if (!getch2_status)
+	{
+		PAD_Init();
+		
+		WPAD_Init();
+		WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth + (IR_OFFSET * 2), screenheight + (IR_OFFSET * 2));
+		WPAD_SetDataFormat(WPAD_CHAN_ALL, WPAD_FMT_BTNS_ACC_IR);
+		WPAD_SetIdleTimeout(60);
+		
+		KEYBOARD_Init(NULL);
+		//MOUSE_Init();
+	}
+	
+	getch2_status = true;
+}
+
+void getch2_disable()
+{
+	if (getch2_status)
+	{
+		WPAD_Disconnect(WPAD_CHAN_ALL);
+		WPAD_Shutdown();
+		
+		KEYBOARD_Deinit();
+		//MOUSE_Deinit();
+	}
+	
+	getch2_status = false;
 }
 
 int getch2_internal(void)
 {
-	keyboard_event ke;
-	s32 stat = KEYBOARD_GetEvent(&ke);
+	keyboard_event event;
+	s32 result = KEYBOARD_GetEvent(&event);
 
-	if (stat && (ke.type == KEYBOARD_PRESSED))
+	if (result && (event.type == KEYBOARD_PRESSED))
 	{
-		switch (ke.symbol)
+		switch (event.symbol)
 		{
 			case KS_Home:
 				return KEY_HOME;
@@ -135,10 +180,10 @@ int getch2_internal(void)
 				return KEY_DOWN;
 		}
 
-		if(KS_f20 >= ke.symbol && ke.symbol >= KS_f1)
-			return KEY_F + 1 + ke.symbol - KS_f1;
+		if(KS_f20 >= event.symbol && event.symbol >= KS_f1)
+			return KEY_F + 1 + event.symbol - KS_f1;
 
-		return ke.symbol;
+		return event.symbol;
 	}
 
 	return -1;
@@ -146,142 +191,193 @@ int getch2_internal(void)
 
 void getch2(void)
 {
-	#ifdef WIILIB
-	return;
-	#endif
-
-	static s64 lt = 0;
-	s64 tt;
-	u16 pad, i;
-	u32 wpad;
-	bool mod,update;
-
-	if (!getch2_status)
-		return;
-
-#ifndef WIILIB
-	if (reset_pressed || power_pressed) {
+	if (reset_pressed || power_pressed)
+	{
 		mplayer_put_key(KEY_CLOSE_WIN);
 		return;
 	}
-#endif
-
-	tt = gettime();
-	if (ticks_to_millisecs(tt - lt) < (TB_MSPERSEC / 60))
-		return;
-
-	lt = tt;
-	mod = false;
-
-	PAD_ScanPads();
-
-	pad = PAD_ButtonsDown(0);
-	if (PAD_ButtonsHeld(0) & PAD_BUTTON_Y)
-		mod = true;
-
-	WPAD_ScanPads();
-
-	wpad = 0;
-	if (WPAD_Probe (0, NULL) == WPAD_ERR_NONE) {
-		wpad = WPAD_ButtonsDown(0);
-		WPAD_SetIdleTimeout(WPAD_BatteryLevel(0) + 60);
-		//if(wpad == WPAD_BUTTON_2) log_console_change_state_video();
-			
-		if (WPAD_ButtonsHeld(0) & WPAD_BUTTON_2)
-			mod = true;
-	}
-
-	if (mod) {
-		for (i = 0; i < sizeof (pad_maps_mod) / sizeof (pad_map); ++i)
-			if ((pad & pad_maps_mod[i].pad) || (wpad & pad_maps_mod[i].wpad)) {
-				mplayer_put_key(pad_maps_mod[i].key);
-				return;
-			}
-	} else {
-		for (i = 0; i < sizeof (pad_maps) / sizeof (pad_map); ++i)
-			if ((pad & pad_maps[i].pad) || (wpad & pad_maps[i].wpad)) {
-				mplayer_put_key(pad_maps[i].key);
-				return;
-			}
-	}
 	
-	update=false;
-	//check nunchuk activity
+	if (getch2_status)
 	{
-		expansion_t exp={0,};
-		WPAD_Expansion(0, &exp);
-		const float div = 3000.0f;
-		if(exp.type == EXP_NUNCHUK)
+		float _m_screenleft_shift = m_screenleft_shift;
+		float _m_screenright_shift = m_screenright_shift;
+		float _m_screentop_shift = m_screentop_shift;
+		float _m_screenbottom_shift = m_screenbottom_shift;
+		
+		static s64 lasttime = 0;
+        s64 curtime = gettime();
+		
+		if (ticks_to_millisecs(curtime - lasttime) > (TB_MSPERSEC / 60))	// Controls are jumpy otherwise.
 		{
-			float diffx = exp.nunchuk.js.pos.x - exp.nunchuk.js.center.x;
-			float diffy = exp.nunchuk.js.pos.y - exp.nunchuk.js.center.y;
-			if(fabs(diffx)>SENSIBILITY) 
+			PAD_ScanPads();
+			
+			for (int controller = 0; controller < PAD_CHANMAX; controller++)
 			{
-				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z)) 
-					m_screenleft_shift -= diffx/div;
-				m_screenright_shift -= diffx/div;
-				update=true;
+				u16 held = PAD_ButtonsHeld(controller);
+				pad_map *mapping = pad_maps;
+				
+				if (held & PAD_BUTTON_Y)
+					mapping = pad_maps_mod;
+				
+				u16 down = PAD_ButtonsDown(controller);
+				int counts = sizeof(pad_maps) / sizeof(pad_map);
+				
+				for (int counter = 0; counter < counts; counter++)
+				{
+					if (down & mapping[counter].pad)
+						mplayer_put_key(mapping[counter].key);
+				}
+				
+				if (down & PAD_TRIGGER_Z)
+					reset_screen_position();
+				
+				float joy_x, joy_y;
+				
+				joy_x = PAD_StickX(controller);
+				joy_y = PAD_StickY(controller);
+				
+				if (fabs(joy_x) > PAD_DEADZONE)
+				{
+					m_screenleft_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
+					m_screenright_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
+				}
+				
+				if (fabs(joy_y) > PAD_DEADZONE)
+				{
+					m_screentop_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
+					m_screenbottom_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
+				}
+				
+				joy_x = PAD_SubStickX(controller);
+				joy_y = PAD_SubStickY(controller);
+				
+				if (fabs(joy_x) > PAD_DEADZONE)
+					m_screenright_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
+				
+				if (fabs(joy_y) > PAD_DEADZONE)
+					m_screenbottom_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
 			}
-			if(fabs(diffy)>SENSIBILITY) 
+			
+			lasttime = curtime;
+		}
+		
+		u8 battery = 0;
+		WPAD_ScanPads();
+		
+		for (int channel = 0; channel < WPAD_MAX_WIIMOTES; channel++)
+		{
+			u32 expansion = WPAD_EXP_NONE;
+			s32 result = WPAD_Probe(channel, &expansion);
+			
+			if (result == WPAD_ERR_NONE)
 			{
-				if(!(exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z)) 
-					m_screentop_shift -= diffy/div;
-				m_screenbottom_shift -= diffy/div;
-				update=true;
-			}
-
-			if(exp.nunchuk.btns_held & NUNCHUK_BUTTON_C) 
-			{
-				reset_nunchuk_positions();
-				update=true;
+				WPADData *pointer = WPAD_Data(channel);
+				WPADData data = *pointer;		// Wait, what?
+				
+				if (battery > 0)
+					battery = (battery + data.battery_level) / 2;
+				else
+					battery = data.battery_level;
+				
+				WPAD_IR(channel, &data.ir);
+				
+				if (data.ir.valid)
+				{
+					//char command[40];			// Not final implementation.
+					//snprintf(command, sizeof(command), "set_mouse_pos %i %i", (int)data.ir.x - IR_OFFSET, (int)data.ir.y - IR_OFFSET);
+					//mp_input_queue_cmd(mp_input_parse_cmd(command));
+				}
+				
+				u32 held = WPAD_ButtonsHeld(channel);
+				pad_map *mapping = pad_maps;
+				
+				if (held & WPAD_BUTTON_2)
+					mapping = pad_maps_mod;
+				
+				u32 down = WPAD_ButtonsDown(channel);
+				int counts = sizeof(pad_maps) / sizeof(pad_map);
+				
+				for (int counter = 0; counter < counts; counter++)
+				{
+					if (down & mapping[counter].wpad)
+						mplayer_put_key(mapping[counter].key);
+				}
+				
+				WPAD_Expansion(channel, &data.exp);
+				float joy_x, joy_y;
+				
+				switch (expansion)
+				{
+					case EXP_NUNCHUK:
+						if (data.exp.nunchuk.btns_last & NUNCHUK_BUTTON_C)
+							reset_screen_position();
+						
+						bool stretch = data.exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z;
+						
+						joy_x = data.exp.nunchuk.js.pos.x - data.exp.nunchuk.js.center.x;
+						joy_y = data.exp.nunchuk.js.pos.y - data.exp.nunchuk.js.center.y;
+						
+						if (fabs(joy_x) > PAD_DEADZONE)
+						{
+							if (!stretch)
+								m_screenleft_shift -= (joy_x / data.exp.nunchuk.js.center.x) / PAD_MODIFIER;
+							
+							m_screenright_shift -= (joy_x / data.exp.nunchuk.js.center.x) / PAD_MODIFIER;
+						}
+						
+						if (fabs(joy_y) > PAD_DEADZONE)
+						{
+							if (!stretch)
+								m_screentop_shift -= (joy_y / data.exp.nunchuk.js.center.y) / PAD_MODIFIER;
+							
+							m_screenbottom_shift -= (joy_y / data.exp.nunchuk.js.center.y) / PAD_MODIFIER;
+						}
+						
+						break;
+					case EXP_CLASSIC:			// Incomplete.
+						if (data.exp.classic.btns_held & CLASSIC_CTRL_BUTTON_B)
+							reset_screen_position();
+						
+						joy_x = data.exp.classic.rjs.pos.x - data.exp.classic.rjs.center.x;
+						joy_y = data.exp.classic.rjs.pos.y - data.exp.classic.rjs.center.y;
+						
+						if (fabs(joy_x) > PAD_DEADZONE)
+							m_screenright_shift -= (joy_x / data.exp.classic.rjs.center.x) / PAD_MODIFIER;
+						
+						if (fabs(joy_y) > PAD_DEADZONE)
+							m_screenbottom_shift -= (joy_y / data.exp.classic.rjs.center.y) / PAD_MODIFIER;
+						
+						joy_x = data.exp.classic.ljs.pos.x - data.exp.classic.ljs.center.x;
+						joy_y = data.exp.classic.ljs.pos.y - data.exp.classic.ljs.center.y;
+						
+						if (fabs(joy_x) > PAD_DEADZONE)
+							m_screenleft_shift -= (joy_x / data.exp.classic.ljs.center.x) / PAD_MODIFIER;
+						
+						if (fabs(joy_y) > PAD_DEADZONE)
+							m_screentop_shift -= (joy_y / data.exp.classic.ljs.center.y) / PAD_MODIFIER;
+						
+						break;
+				}
 			}
 		}
-		else if(exp.type == EXP_CLASSIC)
+		
+		double scale = (pow((double)battery, 2) / UCHAR_MAX) / UCHAR_MAX;
+		WPAD_SetIdleTimeout((scale * 240) + 60);
+		
+		if ((m_screenleft_shift != _m_screenleft_shift) ||
+			(m_screenright_shift != _m_screenright_shift) ||
+			(m_screentop_shift != _m_screentop_shift) ||
+			(m_screenbottom_shift != _m_screenbottom_shift))
 		{
-			{
-				float diffx = exp.classic.rjs.pos.x - exp.classic.rjs.center.x;
-				float diffy = exp.classic.rjs.pos.y - exp.classic.rjs.center.y;
-				if(fabs(diffx)>SENSIBILITY) 
-				{
-					m_screenright_shift -= diffx/div;
-					update=true;
-				}
-				if(fabs(diffy)>SENSIBILITY) 
-				{
-					m_screenbottom_shift -= diffy/div;
-					update=true;
-				}
-			}
-			{
-				float diffx = exp.classic.ljs.pos.x - exp.classic.ljs.center.x;
-				float diffy = exp.classic.ljs.pos.y - exp.classic.ljs.center.y;
-				if(fabs(diffx)>SENSIBILITY) 
-				{
-					m_screenleft_shift -= diffx/div;
-					update=true;
-				}
-				if(fabs(diffy)>SENSIBILITY) 
-				{
-					m_screentop_shift -= diffy/div;
-					update=true;
-				}
-			}
-			if(exp.classic.btns_held & CLASSIC_CTRL_BUTTON_B) 
-			{
-				reset_nunchuk_positions();
-				update=true;
-			}
-		}
-		if(update)
-		{
-			nunchuk_update=true;
+			nunchuk_update = true;
 			GX_UpdateSquare();
 		}
+		
+		int kb_get = getch2_internal();
+		
+		if (kb_get >= 0)
+			mplayer_put_key(kb_get);
 	}
-	
-	int r = getch2_internal();
-	if (r >= 0)
-		mplayer_put_key(r);
 }
 
 #if defined(HAVE_LANGINFO) && defined(CONFIG_ICONV)
@@ -290,8 +386,8 @@ void getch2(void)
 #endif
 
 #ifdef CONFIG_ICONV
-char* get_term_charset(void) {
-
+char* get_term_charset(void)
+{
 #ifdef HAVE_LANGINFO
   	static const char *charset_aux = "ASCII";
     char *charset = NULL; 

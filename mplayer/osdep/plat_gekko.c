@@ -446,10 +446,6 @@ static void power_cb (void) {
 	power_pressed = true;
 }
 
-static void wpad_power_cb (s32 chan) {
-	power_pressed = true;
-}
-
 #include <sys/time.h>
 #include <sys/timeb.h>
 
@@ -955,14 +951,6 @@ void plat_init (int *argc, char **argv[])
 	}
 	
 	printf("\n");
-
-	PAD_Init();
-	WPAD_Init();
-	WPAD_SetDataFormat(WPAD_CHAN_0, WPAD_FMT_BTNS);
-	WPAD_SetIdleTimeout(60);
-
-	WPAD_SetPowerButtonCallback(wpad_power_cb);
-
 
 	if (!DetectValidPath())
 	{

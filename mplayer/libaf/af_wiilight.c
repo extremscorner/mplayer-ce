@@ -76,20 +76,20 @@ static void uninit(struct af_instance_s *af)
 
 static af_data_t *play(struct af_instance_s *af, af_data_t *data)
 {
-	float average = 0.0;	// Probably precise enough.
+	double average = 0.0;
 	int samples = data->len / af->data->bps;
 	
 	for (int counter = 0; counter < samples; counter++)
 	{
-		float value = 0.0;
+		double value = 0.0;
 		
 		switch(af->data->format)
 		{
 			case AF_FORMAT_S16_NE:
-				value = (float)(((short *)data->audio)[counter]) / SHRT_MAX;
+				value = (double)(((short *)data->audio)[counter]) / SHRT_MAX;
 				break;
 			case AF_FORMAT_S8:
-				value = (float)(((char *)data->audio)[counter]) / SCHAR_MAX;
+				value = (double)(((char *)data->audio)[counter]) / SCHAR_MAX;
 				break;
 		}
 		
