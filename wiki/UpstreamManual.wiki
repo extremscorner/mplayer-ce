@@ -1,0 +1,4 @@
+#summary MPlayer's man pages
+#labels Restrict-AddWikiComment-Commit
+
+<wiki:gadget url="http://pentium.extremscorner.co.cc:8080/gadgettest3.xml" width="100%" height="100%"/>
