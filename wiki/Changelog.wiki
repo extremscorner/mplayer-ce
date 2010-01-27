@@ -1,34 +1,30 @@
-#summary Changelog to MPlayerCE
-#labels Featured
-
-= Changelog to MPlayerCE =
-
-== 0.76 ==
+#labels Featured,Restrict-AddWikiComment-Commit
+=== 0.76 - November 26, 2009 ===
 
  * Fixes for 4.2 update
  * Stability fixes (hopefully freezing is gone forever now)
  * Network (LAN and WAN) speeds increased
  * Added directory play feature
- * YouTube section entirely revamped
+ * !YouTube section entirely revamped
  * Added Nintendo Channel content (quality may not yet be optimal) (thanks to yellowstar6 for his work on ninchdl-listext)
  * `[`blip.tv was planned but couldn't make it on time`]`
  * Many, many more bugs fixed
 
-== 0.75 ==
+=== 0.75 - August 19, 2009 ===
 
  * FTP support added (thanks to hax)
  * NTFS support added for USB and SD (thanks to Shareese)
  * SMB speed improved
  * Hopefully finally eradicated the freezing bug
 
-== 0.72 ==
+=== 0.72 - August 3, 2009 ===
 
  * Fix playlist bug
  * More SMB servers detected (thanks to hax)
  * SMB now supports user-level share security (thanks to hax)
  * SMB now supports plain text passwords (thanks to hax)
 
-== 0.71 ==
+=== 0.71 - August 2, 2009 ===
 
  * Autoload implemented. If the next file has a very similar name (using a Levenshtein distance of 2) it will be autoloaded. For example:
    * film.part1.avi > film.part2.avi (1 change)
@@ -49,7 +45,7 @@
  * New USB test:
     * If http://mplayer-ce.googlecode.com/files/USB%20Test.rar says USB device is compatible but a device is not working then there is no FAT partition on the device.  Check if you are using NTFS or exFat instead.
 
-== 0.7 ==
+=== 0.7 - July 9, 2009 ===
 
  * Use small cache if opening an internet stream (audio and video).
  * Optimized memory access (thanks to a suggestion from Shagkur); cache thread is now more stable.
@@ -69,15 +65,15 @@
     * Installs IOS202 using base IOS60 automatically for greater WiFi support.
     * Ability to select the IOS to use so you can select an IOS with the fakesign bug.
 
-== 0.62 ==
+=== 0.62 - June 3, 2009 ===
 
- * USB LAN Adaptor support fixed (again).  Thanks to CountZ3ro for testing. Please note that you will need to install the USB 2.0 cIOS.
+ * USB LAN Adaptor support fixed (again).  Thanks to !CountZ3ro for testing. Please note that you will need to install the USB 2.0 cIOS.
  * cIOS improved to stop conflicts with other homebrew. Please note that now only port0 has usb2 support. All other USB devices (including the USB LAN adaptor) must go in port1.  See here for details: `http://mplayer-ce.googlecode.com/files/usb.jpg`
  * Horizontal stretch parameter added (see mplayer.conf)
- * YouTube options added to menu.conf (thanks to Extrems)
+ * !YouTube options added to menu.conf (thanks to Extrems)
  * Many small bug fixes
 
-== 0.61 ==
+=== 0.61 - June 3, 2009 ===
 
  * New screen size variables actually work now.
  * Better usb device detection
@@ -85,7 +81,7 @@
  * Subtitle wraparound bug fixed
  * Released Spanish Edition
 
-== 0.6 ==
+=== 0.6 - May 23, 2009 ===
 
  * No more maximum cache limit
  * Introduced new variables into mplayer.conf to adjust screen size and position, please see mplayer.conf for details (component-fix is now deprecated)
@@ -102,7 +98,7 @@
  * Many small bug fixes
  * Updated to latest MPlayer svn
 
-== v0.5 ==
+=== 0.5 - April 22, 2009 ===
 
  * SMB now much more robust - thanks to DennisLKJ for smb.c fix
  * libfat cache improved for speed and stability
@@ -113,7 +109,7 @@
  * Merged widescreen and 4:3 pack - now MPlayer will use the appropriate loop.avi automatically
  * Improved Modchip compatibility for DVD
 
-== v0.4 ==
+=== 0.4 - March 28, 2009 ===
 
  * USB 2.0 support (see docs for info)
  * TTF font support (see docs for info)
@@ -124,17 +120,17 @@
  * Updated to latest MPlayer revision
  * Many small fixes
 
-== v0.3a ==
+=== 0.3a - March 2, 2009 ===
 
  * Fixed a little bug in keepalive issue that hangs the wii
 
-== v0.3 ==
+=== 0.3 - February 27, 2009 ===
 
  * Fixed code to play videos with incompatible size; we now support many video formats and unorthodox resolutions
  * Fixed keepalive issue in samba (thanks to Ludovic Orban)
  * New loop.avi and widescreen version (thanks to Blue_K)
 
-== v0.21e ==
+=== 0.21e - February 24, 2009 ===
      
  * Fixed apostrophies in filenames
  * Improved DVD and USB mounting devices
@@ -142,28 +138,28 @@
  * Improved samba reconnection
  * Debugging help for SMB Shares at bootup, debug_network=yes (Review mplayer.conf)
 
-== v0.21d ==
+=== 0.21d - February 22, 2009 ===
 
  * Updated menu.conf to allow selecting playlist
  * Fix rodries' loop patch
 
-== V0.21c ==
+=== 0.21c - February 21, 2009 ===
 
  * Updated menu.conf to allow selecting subtitles
 
-== V0.21b ==
+=== 0.21b - February 21, 2009 ===
 
  * New mplayer.conf option: component_fix=yes to fix side bars on some problematic TVs (Now fixed) Review your configs.
  * Stop Looping Video/Audio file.
  * Fixed hang when you access dvdnav
 
-== V0.21 ==
+=== 0.21 - February 20, 2009 ===
 
  * Reduced font size
  * New Readme
  * New mplayer.conf option: component_fix=yes to fix side bars on some problematic TVs
  
-== V0.2 ==
+=== 0.2 - February 17, 2009 ===
 
  * SD/USB Mount bugs fixed
  * DVD Mount/Stop/Motor/Pause problems fixed, now mounts, only when you select DVD
@@ -174,14 +170,10 @@
  * Same directory kept open when you open/close the menu
  * Menu closes on file load
 
-== V0.1 ==
+=== 0.1 - February 14, 2009 ===
 
  * SMB fixes
  * DVD cache bug fixed
  * Small USB fixes
  * Modified Libogc & Libfat
  * 2.35:1 videos now scale correctly
-
-== V0.1 Christmas Edition ==
-
- * Initial project
