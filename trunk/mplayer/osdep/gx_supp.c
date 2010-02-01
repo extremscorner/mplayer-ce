@@ -32,6 +32,7 @@
 #include <ogc/mutex.h>
 #include <ogc/lwp.h>
 #include "gx_supp.h"
+#include "ave-rvl.h"
 
 #ifdef WIILIB
 #include <wiiuse/wpad.h>
@@ -176,6 +177,14 @@ void AdjustVideoParams()
 	
 	vmode->viXOrigin = (videowidth - vmode->viWidth) / 2;
 	vmode->viYOrigin = (videoheight - vmode->viHeight) / 2;
+	
+	if (overscan)
+	{
+		s8 hor_offset = 0;
+		
+		if (CONF_GetDisplayOffsetH(&hor_offset) > 0)
+			vmode->viXOrigin += hor_offset;
+	}
 	
 	vmode->xfbMode = !(CONF_GetProgressiveScan() > 0);
 	vmode->field_rendering = GX_FALSE;

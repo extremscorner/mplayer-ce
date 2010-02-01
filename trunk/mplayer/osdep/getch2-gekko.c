@@ -197,68 +197,63 @@ void getch2(void)
 		return;
 	}
 	
-	if (getch2_status)
+	static s64 lasttime = 0;
+	s64 curtime = gettime();
+	
+	if (getch2_status && (ticks_to_millisecs(curtime - lasttime) > (TB_MSPERSEC / 60)))
 	{
 		float _m_screenleft_shift = m_screenleft_shift;
 		float _m_screenright_shift = m_screenright_shift;
 		float _m_screentop_shift = m_screentop_shift;
 		float _m_screenbottom_shift = m_screenbottom_shift;
 		
-		static s64 lasttime = 0;
-        s64 curtime = gettime();
+		PAD_ScanPads();
 		
-		if (ticks_to_millisecs(curtime - lasttime) > (TB_MSPERSEC / 60))	// Controls are jumpy otherwise.
+		for (int controller = 0; controller < PAD_CHANMAX; controller++)
 		{
-			PAD_ScanPads();
+			u16 held = PAD_ButtonsHeld(controller);
+			pad_map *mapping = pad_maps;
 			
-			for (int controller = 0; controller < PAD_CHANMAX; controller++)
+			if (held & PAD_BUTTON_Y)
+				mapping = pad_maps_mod;
+			
+			u16 down = PAD_ButtonsDown(controller);
+			int counts = sizeof(pad_maps) / sizeof(pad_map);
+			
+			for (int counter = 0; counter < counts; counter++)
 			{
-				u16 held = PAD_ButtonsHeld(controller);
-				pad_map *mapping = pad_maps;
-				
-				if (held & PAD_BUTTON_Y)
-					mapping = pad_maps_mod;
-				
-				u16 down = PAD_ButtonsDown(controller);
-				int counts = sizeof(pad_maps) / sizeof(pad_map);
-				
-				for (int counter = 0; counter < counts; counter++)
-				{
-					if (down & mapping[counter].pad)
-						mplayer_put_key(mapping[counter].key);
-				}
-				
-				if (down & PAD_TRIGGER_Z)
-					reset_screen_position();
-				
-				float joy_x, joy_y;
-				
-				joy_x = PAD_StickX(controller);
-				joy_y = PAD_StickY(controller);
-				
-				if (fabs(joy_x) > PAD_DEADZONE)
-				{
-					m_screenleft_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
-					m_screenright_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
-				}
-				
-				if (fabs(joy_y) > PAD_DEADZONE)
-				{
-					m_screentop_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
-					m_screenbottom_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
-				}
-				
-				joy_x = PAD_SubStickX(controller);
-				joy_y = PAD_SubStickY(controller);
-				
-				if (fabs(joy_x) > PAD_DEADZONE)
-					m_screenright_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
-				
-				if (fabs(joy_y) > PAD_DEADZONE)
-					m_screenbottom_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
+				if (down & mapping[counter].pad)
+					mplayer_put_key(mapping[counter].key);
 			}
 			
-			lasttime = curtime;
+			if (held & PAD_TRIGGER_Z)
+				reset_screen_position();
+			
+			float joy_x, joy_y;
+			
+			joy_x = PAD_StickX(controller);
+			joy_y = PAD_StickY(controller);
+			
+			if (fabs(joy_x) > PAD_DEADZONE)
+			{
+				m_screenleft_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
+				m_screenright_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
+			}
+			
+			if (fabs(joy_y) > PAD_DEADZONE)
+			{
+				m_screentop_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
+				m_screenbottom_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
+			}
+			
+			joy_x = PAD_SubStickX(controller);
+			joy_y = PAD_SubStickY(controller);
+			
+			if (fabs(joy_x) > PAD_DEADZONE)
+				m_screenright_shift -= (joy_x / SCHAR_MAX) / PAD_MODIFIER;
+			
+			if (fabs(joy_y) > PAD_DEADZONE)
+				m_screenbottom_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
 		}
 		
 		u8 battery = 0;
@@ -309,7 +304,7 @@ void getch2(void)
 				switch (expansion)
 				{
 					case EXP_NUNCHUK:
-						if (data.exp.nunchuk.btns_last & NUNCHUK_BUTTON_C)
+						if (data.exp.nunchuk.btns_held & NUNCHUK_BUTTON_C)
 							reset_screen_position();
 						
 						bool stretch = data.exp.nunchuk.btns_held & NUNCHUK_BUTTON_Z;
@@ -377,6 +372,8 @@ void getch2(void)
 		
 		if (kb_get >= 0)
 			mplayer_put_key(kb_get);
+		
+		lasttime = curtime;
 	}
 }
 

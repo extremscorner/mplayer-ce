@@ -663,6 +663,7 @@ SRCS_MPLAYER-$(YUV4MPEG)      += libvo/vo_yuv4mpeg.c
 SRCS_MPLAYER-$(ZR)            += libvo/jpeg_enc.c libvo/vo_zr.c libvo/vo_zr2.c
 
 SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
+							 osdep/ave-rvl.c \
 							 osdep/di2.c \
 							 osdep/usb2storage.c \
 							 osdep/ftp_devoptab.c \

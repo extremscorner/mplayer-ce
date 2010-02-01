@@ -86,9 +86,9 @@ void mixer_incvolume(mixer_t *mixer)
  float mixer_l, mixer_r;
  mixer_getvolume(mixer, &mixer_l, &mixer_r);
  mixer_l += mixer->volstep;
- if ( mixer_l > 100 ) mixer_l = 100;
+ if ( mixer_l > 200 ) mixer_l = 200;
  mixer_r += mixer->volstep;
- if ( mixer_r > 100 ) mixer_r = 100;
+ if ( mixer_r > 200 ) mixer_r = 200;
  mixer_setvolume(mixer, mixer_l, mixer_r);
 }
 
