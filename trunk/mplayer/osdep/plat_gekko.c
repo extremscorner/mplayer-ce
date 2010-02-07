@@ -81,11 +81,6 @@ extern char appPath[1024];
 extern int stream_cache_size;
 extern int enable_restore_points;
 
-static float gxzoom=348;
-static float hor_pos=0;
-static float vert_pos=0;
-static float stretch=0;
-
 static off_t get_filesize(char *FileName)
 {
     struct stat file;
@@ -309,7 +304,6 @@ int mounting_usb=0;
 static bool dvd_mounted = false;
 static bool dvd_mounting = false;
 static int dbg_network = false;
-//static int component_fix = false;  //deprecated
 static int overscan = true;
 
 static bool usb_init=false;
@@ -430,12 +424,9 @@ static char *default_args[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-#ifndef DEBUG_INIT
-//	"-really-quiet",
-#endif	
 	"-vo","gekko","-ao","gekko",
-//	"ntfs_usb:/test.avi"
-	"-menu","-menu-startup"
+	"-menu","-menu-startup",
+	"-quiet"
 }; 
 
 static void reset_cb (void) {
@@ -787,11 +778,6 @@ static int LoadParams()
 	m_config_t *comp_conf;
 	m_option_t comp_opts[] =
 	{
-	    //{   "component_fix", &component_fix, CONF_TYPE_FLAG, 0, 0, 1, NULL},  //deprecated
-	    //{   "gxzoom", &gxzoom, CONF_TYPE_FLOAT, CONF_RANGE, 200, 500, NULL},
-	    //{   "hor_pos", &hor_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	    //{   "vert_pos", &vert_pos, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
-	    //{   "horizontal_stretch", &stretch, CONF_TYPE_FLOAT, CONF_RANGE, -400, 400, NULL},
 		{	"cache", &stream_cache_size, CONF_TYPE_INT, CONF_RANGE, 32, 1048576, NULL},	 
 	    {   "restore_points", &enable_restore_points, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "watchdog", &enable_watchdog, CONF_TYPE_FLAG, 0, 0, 1, NULL},
@@ -909,7 +895,7 @@ static void * exithreadfunc (void *arg)
 
 void plat_init (int *argc, char **argv[])
 {
-	GX_InitVideo();
+	GX_InitVideo(0, true);
 	log_console_init(vmode, 0);
 
 	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);	
@@ -974,17 +960,6 @@ void plat_init (int *argc, char **argv[])
 	LoadParams();
 	read_net_config();
 	load_screen_params();
-	GX_SetOverscan(overscan);
-	//GX_SetComponentFix(component_fix); //deprecated
-	//GX_SetCamPosZ(gxzoom);
-	//GX_SetScreenPos((int)hor_pos,(int)vert_pos,(int)stretch);
-
-	if ((video_mode > 0) || !overscan)
-	{
-		printf(" Changing video mode.\n");
-		ChangeVideoMode(video_mode);
-		CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
-	}
 	
 	if(dbg_network)
 	{
@@ -1010,7 +985,6 @@ void plat_init (int *argc, char **argv[])
 
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
-	setenv("DVDCSS_CACHE", "off", 1);
 	setenv("DVDCSS_VERBOSE", "0", 1);
 	setenv("DVDREAD_VERBOSE", "0", 1);
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
@@ -1072,6 +1046,15 @@ void plat_init (int *argc, char **argv[])
 	
 	log_console_enable_video(false);
 	printf("\n\n");
+	
+	if ((video_mode > 0) || !overscan)
+	{
+		log_console_deinit();
+		// Need to deinit video here.
+		GX_InitVideo(video_mode, overscan);
+		log_console_init(vmode, 0);
+		log_console_enable_video(false);
+	}
 }
 
 void plat_deinit (int rc) 

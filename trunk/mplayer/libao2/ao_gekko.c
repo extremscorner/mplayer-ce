@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <math.h>
 
 #include "config.h"
 #include "libaf/af.h"
@@ -36,6 +38,7 @@
 #include <ogcsys.h>
 #include "osdep/plat_gekko.h"
 #include "osdep/ave-rvl.h"
+#include "osdep/wiilight.h"
 
 
 #define BUFFER_SIZE (4 * 1024)
@@ -58,6 +61,7 @@ static u8 buffer_play = 0;
 static int buffered = 0;
 
 static bool playing = false;
+static s32 led_mode = CONF_LED_OFF;
 
 static ao_control_vol_t volume = { 0x8E, 0x8E };
 
@@ -135,6 +139,13 @@ static int init(int rate, int channels, int format, int flags)
 	buffered = 0;
 	
 	playing = false;
+	led_mode = CONF_GetIdleLedMode();
+	
+	if (led_mode > 0)
+	{
+		WIILIGHT_Init();
+		WIILIGHT_TurnOn();
+	}
 	
 	return CONTROL_TRUE;
 }
@@ -172,6 +183,9 @@ static void uninit(int immed)
 {
 	reset();
 	AUDIO_RegisterDMACallback(NULL);
+	
+	if (led_mode > 0)
+		WIILIGHT_TurnOff();
 }
 
 static void audio_pause(void)
@@ -231,7 +245,37 @@ static int play(void *data, int len, int flags)
 static float get_delay(void)
 {
 	if (playing)
+	{
+		if (led_mode > 0)
+		{
+			short *data = (short *)buffers[buffer_play];
+			
+			static u32 last = 0;
+			u32 current = BUFFER_SIZE - AUDIO_GetDMABytesLeft();
+			
+			if (last > current)
+				last = 0;
+			
+			double average = 0.0;
+			
+			for (int counter = last; counter < current; counter += 2)
+			{
+				float value = (float)data[counter / 2] / SHRT_MAX;
+				
+				if (!counter)
+					average = value;
+				else
+					average = (average + value) / 2;
+			}
+			
+			double level = (fabs(average) * (((volume.left + volume.right) / 2) / 0x80)) * ((float)led_mode / 2);
+			WIILIGHT_SetLevel(clamp(level * UCHAR_MAX, 0x00, 0xFF));
+			
+			last = current;
+		}
+		
 		return (float)(buffered + AUDIO_GetDMABytesLeft()) / ao_data.bps;
+	}
 	else
 		return (float)buffered / ao_data.bps;
 }
