@@ -21,6 +21,7 @@
    Boston, MA 02110-1301 USA.
 */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +44,6 @@
 
 #include <gccore.h>
 
-extern int osd_level;
 
 static const vo_info_t info = {
 	"gekko video output",
@@ -53,6 +53,7 @@ static const vo_info_t info = {
 };
 
 const LIBVO_EXTERN (gekko)
+
 static	u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
 
@@ -62,8 +63,7 @@ extern int screenwidth;
 extern int screenheight;
 
 
-void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca,
-		int srcstride, unsigned char* dstbase, int dststride, int x0)
+void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca, int srcstride, unsigned char* dstbase, int dststride, int x0)
 {
 	// can be optimized
 	int x,y;
@@ -166,42 +166,32 @@ void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca,
 	free(bufa);
 }
 
-static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
-		unsigned char *srca, int stride)
+static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
 {
-	int p;
-
-	//p=pitch[0];
-	p = image_width;
-	p = (p / 16);
-	if (p % 2)
-		p++;
-	p = p * 16;
-	y0 = ((int) (y0 / 8.0)) * 8;
-	y0-=8;
-
-	vo_draw_alpha_gekko(w, h, src, srca, stride, GetYtexture() + (y0 * p),
-			pitch[0], x0);
+	int rowpitch = ceil((float)image_width / 8) * 8;
+	int lines = (floor((float)y0 / 8) * 8) - 8;			// Ok...
+	
+	vo_draw_alpha_gekko(w, h, src, srca, stride, GetYtexture() + (lines * rowpitch), pitch[0], x0);
 }
 
-static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
-		int y)
+static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x, int y)
 {
 	if (y == 0)
 	{
 		GX_ResetTextureYUVPointers();
+		
 		if (stride[0] != pitch[0])
 		{
-			//printf("w: %i  h: %i  st0: %i  iw: %i ih: %i\n",w,h,stride[0],image_width , image_height);
 			pitch[0] = stride[0];
 			pitch[1] = stride[1];
 			pitch[2] = stride[2];
-			GX_UpdatePitch(image_width, pitch);
+			
+			GX_UpdatePitch(pitch);
 		}
-
 	}
+	
 	GX_FillTextureYUV(h, image);
-	return 0;
+	return VO_FALSE;
 }
 
 static void draw_osd(void)
@@ -209,88 +199,60 @@ static void draw_osd(void)
 	vo_draw_text(image_width, image_height, draw_alpha);
 }
 
-//void wii_draw_osd()
-//{
-	// this is not the best test - 'OSD: Disabled' message will not show up!
-//	if(osd_level >= 1)
-//		vo_draw_text(image_width, image_height, draw_alpha);
-//}
-
 static void flip_page(void)
 {
-	GX_RenderTexture();
+	GX_RenderTexture(vo_vsync);
 }
 
 static int draw_frame(uint8_t *src[])
 {
-	return 0;
+	return VO_ERROR;
 }
 
 static int inline query_format(uint32_t format)
 {
-
 	switch (format)
 	{
 		case IMGFMT_YV12:
-			return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW
-					| VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN
-					| VFCAP_ACCEPT_STRIDE;
+			return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_OSD | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_ACCEPT_STRIDE;
 		default:
-			return 0;
+			return VO_FALSE;
 	}
 }
 
-void reinit_video()
+static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uint32_t flags, char *title, uint32_t format)
 {
-	GX_StartYUV(image_width, image_height, gx_width / 2, gx_height / 2 ); 
-	GX_ConfigTextureYUV(image_width, image_height, pitch);	
-} 
-
-static int config(uint32_t width, uint32_t height, uint32_t d_width,
-          uint32_t d_height, uint32_t flags, char *title,
-          uint32_t format)
-{
-	float sar, iar;
-
 	image_width = width;
-	image_height = ((int) ((height / 8.0))) * 8;
+	image_height = height;
 
 	pitch[0] = 0;
 	pitch[1] = 0;
 	pitch[2] = 0;
 	
-	sar = (float)screenwidth / (float)screenheight;
-	iar = (float)d_width / (float)d_height;
+	float screen_aspect = (float)screenwidth / (float)screenheight;
+	float image_aspect = (float)d_width / (float)d_height;
 
-	if (iar > sar)
+	if (image_aspect > screen_aspect)
 	{
-		width = screenwidth;
-		height = d_height * ((float)screenwidth / (float)d_width);
+		gx_width = screenwidth;
+		gx_height = d_height * ((float)screenwidth / (float)d_width);
 	}
 	else
 	{
-		width = d_width * ((float)screenheight / (float)d_height);
-		height = screenheight;
+		gx_width = d_width * ((float)screenheight / (float)d_height);
+		gx_height = screenheight;
 	}
 
-	gx_width = width;
-	gx_height = height;
-
-	/*moved to mplayer.c after cache end (reinit_video) */
-	//  GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
-	//  GX_ConfigTextureYUV(image_width, image_height, pitch);	
-
-	//  image_height = orig_height;
-	reinit_video();
-	//printf("mplayer video inited\n");
-	return 0;
+	GX_StartYUV(image_width, image_height, gx_width / 2, gx_height / 2);
+	GX_ConfigTextureYUV(image_width, image_height, pitch);
+	
+	return VO_FALSE;
 }
 
 static void uninit(void)
 {
 	image_width = 0;
 	image_height = 0;
-	//reset_nunchuk_positions();
 }
 
 static void check_events(void)
@@ -299,10 +261,7 @@ static void check_events(void)
 
 static int preinit(const char *arg)
 {
-	//log_console_enable_video(false);
-	//reset_nunchuk_positions();
-
-	return 0;
+	return VO_FALSE;
 }
 
 static int control(uint32_t request, void *data, ...)
@@ -310,14 +269,13 @@ static int control(uint32_t request, void *data, ...)
 	switch (request)
 	{
 		case VOCTRL_QUERY_FORMAT:
-			return query_format(*((uint32_t*) data));
+			return query_format(*((uint32_t *)data));
 		case VOCTRL_UPDATE_SCREENINFO:
             vo_screenwidth = screenwidth;
             vo_screenheight = screenheight;
             aspect_save_screenres(vo_screenwidth, vo_screenheight);
             return VO_TRUE;
+		default:
+			return VO_NOTIMPL;
 	}
-
-
-	return VO_NOTIMPL;
 }

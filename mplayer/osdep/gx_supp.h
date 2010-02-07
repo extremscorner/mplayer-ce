@@ -33,20 +33,16 @@ extern "C" {
 
 extern GXRModeObj *vmode;
 
-void GX_InitVideo();
-void GX_SetCamPosZ(float f);
-void GX_SetOverscan(bool f);
-void StopDrawThread();
-void GX_SetScreenPos(int _hor_pos,int _vert_pos, int _stretch);
+void GX_InitVideo(int video_mode, bool overscan);
 
 void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect);
-void GX_RenderTexture();
-void GX_UpdatePitch(int width,u16 *pitch);
+void GX_RenderTexture(bool vsync);
+void GX_UpdatePitch(u16 *pitch);
 void GX_ResetTextureYUVPointers();
-void GX_FillTextureYUV(u16 height,u8 *buffer[3]);
+void GX_FillTextureYUV(u16 height, u8 *buffer[3]);
 void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch);
-void getStrideInfo(int *_w1,int *_df1,int *_Yrowpitch);
-u8* GetYtexture();
+void getStrideInfo(int *_w1, int *_df1, int *_Yrowpitch);
+u8 *GetYtexture();
 
 #ifdef __cplusplus
 }
