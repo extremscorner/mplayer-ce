@@ -86,6 +86,8 @@ typedef struct SwsContext {
     int lumYInc, chrYInc;
     enum PixelFormat dstFormat;   ///< Destination pixel format.
     enum PixelFormat srcFormat;   ///< Source      pixel format.
+    int dstFormatBpp;             ///< Number of bits per pixel of the destination pixel format.
+    int srcFormatBpp;             ///< Number of bits per pixel of the source      pixel format.
     int chrSrcHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in source      image.
     int chrSrcVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in source      image.
     int chrDstHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in destination image.
@@ -245,7 +247,7 @@ typedef struct SwsContext {
 #endif
 
 #if HAVE_VIS
-    DECLARE_ALIGNED(8, uint64_t, sparc_coeffs[10]);
+    DECLARE_ALIGNED(8, uint64_t, sparc_coeffs)[10];
 #endif
 
     /* function pointers for swScale() */
@@ -383,7 +385,7 @@ const char *sws_format_name(enum PixelFormat format);
            (x)==PIX_FMT_GRAY16BE    \
         || (x)==PIX_FMT_GRAY16LE    \
     )
-#define isRGB(x)        (           \
+#define isRGBinInt(x)   (           \
            (x)==PIX_FMT_RGB48BE     \
         || (x)==PIX_FMT_RGB48LE     \
         || (x)==PIX_FMT_RGB32       \
@@ -397,7 +399,7 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_MONOBLACK   \
         || (x)==PIX_FMT_MONOWHITE   \
     )
-#define isBGR(x)        (           \
+#define isBGRinInt(x)   (           \
            (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
         || (x)==PIX_FMT_BGR24       \
@@ -409,6 +411,22 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_MONOBLACK   \
         || (x)==PIX_FMT_MONOWHITE   \
     )
+#define isRGBinBytes(x) (           \
+           (x)==PIX_FMT_RGB48BE     \
+        || (x)==PIX_FMT_RGB48LE     \
+        || (x)==PIX_FMT_RGBA        \
+        || (x)==PIX_FMT_ARGB        \
+        || (x)==PIX_FMT_RGB24       \
+    )
+#define isBGRinBytes(x) (           \
+           (x)==PIX_FMT_BGRA        \
+        || (x)==PIX_FMT_ABGR        \
+        || (x)==PIX_FMT_BGR24       \
+    )
+#define isAnyRGB(x)     (           \
+            isRGBinInt(x)           \
+        ||  isBGRinInt(x)           \
+    )
 #define isALPHA(x)      (           \
            (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
@@ -417,47 +435,26 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUVA420P    \
     )
 
-static inline int fmt_depth(enum PixelFormat fmt)
-{
-    switch(fmt) {
-    case PIX_FMT_RGB48BE:
-    case PIX_FMT_RGB48LE:
-        return 48;
-    case PIX_FMT_BGRA:
-    case PIX_FMT_ABGR:
-    case PIX_FMT_RGBA:
-    case PIX_FMT_ARGB:
-        return 32;
-    case PIX_FMT_BGR24:
-    case PIX_FMT_RGB24:
-        return 24;
-    case PIX_FMT_BGR565:
-    case PIX_FMT_RGB565:
-    case PIX_FMT_GRAY16BE:
-    case PIX_FMT_GRAY16LE:
-        return 16;
-    case PIX_FMT_BGR555:
-    case PIX_FMT_RGB555:
-        return 15;
-    case PIX_FMT_BGR8:
-    case PIX_FMT_RGB8:
-        return 8;
-    case PIX_FMT_BGR4:
-    case PIX_FMT_RGB4:
-    case PIX_FMT_BGR4_BYTE:
-    case PIX_FMT_RGB4_BYTE:
-        return 4;
-    case PIX_FMT_MONOBLACK:
-    case PIX_FMT_MONOWHITE:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
 
 extern const AVClass sws_context_class;
+
+/**
+ * Sets c->swScale to an unscaled converter if one exists for the specific
+ * source and destination formats, bit depths, flags, etc.
+ */
+void ff_get_unscaled_swscale(SwsContext *c);
+
+/**
+ * Returns the SWS_CPU_CAPS for the optimized code compiled into swscale.
+ */
+int ff_hardcodedcpuflags(void);
+
+/**
+ * Returns function pointer to fastest main scaler path function depending
+ * on architecture and available optimizations.
+ */
+SwsFunc ff_getSwsFunc(SwsContext *c);
 
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */

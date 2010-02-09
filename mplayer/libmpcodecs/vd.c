@@ -1,3 +1,21 @@
+/*
+ * This file is part of MPlayer.
+ *
+ * MPlayer is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * MPlayer is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with MPlayer; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -206,7 +224,7 @@ csp_again:
 	    goto csp_again;
 	} else
 	{ // sws failed, if the last filter (vf_vo) support MPEGPES try to append vf_lavc
-	     vf_instance_t* vo, *vp = NULL, *ve;
+	     vf_instance_t* vo, *vp = NULL, *ve, *vpp = NULL;
 	     // Remove the scale filter if we added it ourself
 	     if(vf == sc) {
 	       ve = vf;
@@ -214,13 +232,20 @@ csp_again:
 	       vf_uninit_filter(ve);
 	     }
 	     // Find the last filter (vf_vo)
-	     for(vo = vf ; vo->next ; vo = vo->next)
+	     for(vo = vf ; vo->next ; vo = vo->next) {
+               vpp = vp;
 	       vp = vo;
+             }
 	     if(vo->query_format(vo,IMGFMT_MPEGPES) && (!vp || (vp && strcmp(vp->info->name,"lavc")))) {
 	       ve = vf_open_filter(vo,"lavc",NULL);
 	       if(vp) vp->next = ve;
 		 else vf = ve;
 	       goto csp_again;
+	     }
+	     if (vp && !strcmp(vp->info->name,"lavc")) {
+		if (vpp) vpp->next = vo;
+		else vf = vo;
+		vf_uninit_filter(vp);
 	     }
 	}
 	mp_msg(MSGT_CPLAYER,MSGL_WARN,MSGTR_VOincompCodec);

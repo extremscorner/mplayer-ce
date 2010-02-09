@@ -1,7 +1,23 @@
 /*
  * HTTP Helper
- * by Bertrand Baudet <bertrand_baudet@yahoo.com>
- * (C) 2001, MPlayer team.
+ *
+ * Copyright (C) 2001 Bertrand Baudet <bertrand_baudet@yahoo.com>
+ *
+ * This file is part of MPlayer.
+ *
+ * MPlayer is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * MPlayer is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with MPlayer; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include "config.h"
@@ -743,6 +759,7 @@ static int http_streaming_start(stream_t *stream, int* file_format) {
 	int auth_retry=0;
 	int seekable=0;
 	char *content_type;
+	const char *content_length;
 	char *next_url;
 	URL_t *url = stream->streaming_ctrl->url;
 
@@ -816,15 +833,15 @@ static int http_streaming_start(stream_t *stream, int* file_format) {
 		// Assume standard http if not ICY
 		switch( http_hdr->status_code ) {
 			case 200: // OK
+				content_length = http_get_field(http_hdr, "Content-Length");
+				if (content_length) {
+					mp_msg(MSGT_NETWORK,MSGL_V,"Content-Length: [%s]\n", content_length);
+					stream->end_pos = atoll(content_length);
+				}
 				// Look if we can use the Content-Type
 				content_type = http_get_field( http_hdr, "Content-Type" );
 				if( content_type!=NULL ) {
-					char *content_length = NULL;
 					mp_msg(MSGT_NETWORK,MSGL_V,"Content-Type: [%s]\n", content_type );
-					if( (content_length = http_get_field(http_hdr, "Content-Length")) != NULL) {
-						mp_msg(MSGT_NETWORK,MSGL_V,"Content-Length: [%s]\n", http_get_field(http_hdr, "Content-Length"));
-						stream->end_pos = atoi(content_length);
-					}
 					// Check in the mime type table for a demuxer type
 					i = 0;
 					while(mime_type_table[i].mime_type != NULL) {

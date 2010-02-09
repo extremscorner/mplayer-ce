@@ -18,7 +18,7 @@ test $version || version=$svn_revision
 NEW_HEAD="#define VERSION \"${version}${extra}\"
 #define BUILD_DATE \"$(date +%d/%m/%g)\""
 OLD_HEAD=$(head -n 2 version.h 2> /dev/null)
-TITLE='#define MP_TITLE "%s "VERSION" (C) 2000-2009 MPlayer Team\n"'
+TITLE='#define MP_TITLE "%s "VERSION" (C) 2000-2010 MPlayer Team\n"'
 
 # Update version.h only on revision or date changes to avoid spurious rebuilds
 if test "$NEW_HEAD" != "$OLD_HEAD"; then

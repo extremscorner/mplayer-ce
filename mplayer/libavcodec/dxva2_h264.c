@@ -20,10 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dxva2.h"
-#include "avcodec.h"
-
-#include "mpegvideo.h"
+#include "dxva2_internal.h"
 #include "h264.h"
 #include "h264data.h"
 
@@ -36,24 +33,6 @@ struct dxva2_picture_context {
     const uint8_t         *bitstream;
     unsigned              bitstream_size;
 };
-
-static void *get_surface(const Picture *picture)
-{
-    return picture->data[3];
-}
-static unsigned get_surface_index(const struct dxva_context *ctx,
-                                  const Picture *picture)
-{
-    void *surface = get_surface(picture);
-    unsigned i;
-
-    for (i = 0; i < ctx->surface_count; i++)
-        if (ctx->surface[i] == surface)
-            return i;
-
-    assert(0);
-    return 0;
-}
 
 static void fill_picture_entry(DXVA_PicEntry_H264 *pic,
                                unsigned index, unsigned flag)
@@ -72,7 +51,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     memset(pp, 0, sizeof(*pp));
     /* Configure current picture */
     fill_picture_entry(&pp->CurrPic,
-                       get_surface_index(ctx, current_picture),
+                       ff_dxva2_get_surface_index(ctx, current_picture),
                        s->picture_structure == PICT_BOTTOM_FIELD);
     /* Configure the set of references */
     pp->UsedForReferenceFlags  = 0;
@@ -88,7 +67,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
                 assert(r->long_ref);
             }
             fill_picture_entry(&pp->RefFrameList[i],
-                               get_surface_index(ctx, r),
+                               ff_dxva2_get_surface_index(ctx, r),
                                r->long_ref != 0);
 
             if ((r->reference & PICT_TOP_FIELD) && r->field_poc[0] != INT_MAX)
@@ -203,9 +182,9 @@ static void fill_slice_short(DXVA_Slice_H264_Short *slice,
 static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                             unsigned position, unsigned size)
 {
-    H264Context *h = avctx->priv_data; /* FIXME Can't use const because of get_bits_count */
+    const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    MpegEncContext *s = &h->s;
+    const MpegEncContext *s = &h->s;
     unsigned list;
 
     memset(slice, 0, sizeof(*slice));
@@ -225,8 +204,8 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
         slice->num_ref_idx_l0_active_minus1 = h->ref_count[0] - 1;
     if (h->list_count > 1)
         slice->num_ref_idx_l1_active_minus1 = h->ref_count[1] - 1;
-    slice->slice_alpha_c0_offset_div2   = h->slice_alpha_c0_offset / 2;
-    slice->slice_beta_offset_div2       = h->slice_beta_offset / 2;
+    slice->slice_alpha_c0_offset_div2   = h->slice_alpha_c0_offset / 2 - 26;
+    slice->slice_beta_offset_div2       = h->slice_beta_offset     / 2 - 26;
     slice->Reserved8Bits                = 0;
 
     for (list = 0; list < 2; list++) {
@@ -236,7 +215,7 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                 const Picture *r = &h->ref_list[list][i];
                 unsigned plane;
                 fill_picture_entry(&slice->RefPicList[list][i],
-                                   get_surface_index(ctx, r),
+                                   ff_dxva2_get_surface_index(ctx, r),
                                    r->reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
                     int w, o;
@@ -277,48 +256,16 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
     slice->slice_id = h->current_slice - 1;
 }
 
-static int commit_buffer(AVCodecContext *avctx,
-                         struct dxva_context *ctx,
-                         DXVA2_DecodeBufferDesc *dsc,
-                         unsigned type, const void *data, unsigned size,
-                         unsigned mb_count)
-{
-    void     *dxva_data;
-    unsigned dxva_size;
-    int      result;
-
-    if (FAILED(IDirectXVideoDecoder_GetBuffer(ctx->decoder, type,
-                                              &dxva_data, &dxva_size))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %d\n", type);
-        return -1;
-    }
-    if (size <= dxva_size) {
-        memcpy(dxva_data, data, size);
-
-        memset(dsc, 0, sizeof(*dsc));
-        dsc->CompressedBufferType = type;
-        dsc->DataSize             = size;
-        dsc->NumMBsInBuffer       = mb_count;
-
-        result = 0;
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "Buffer for type %d was too small\n", type);
-        result = -1;
-    }
-    if (FAILED(IDirectXVideoDecoder_ReleaseBuffer(ctx->decoder, type))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to release buffer type %d\n", type);
-        result = -1;
-    }
-    return result;
-}
-
 static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
-                                             struct dxva_context *ctx,
-                                             struct dxva2_picture_context *ctx_pic,
                                              DXVA2_DecodeBufferDesc *bs,
-                                             DXVA2_DecodeBufferDesc *sc,
-                                             unsigned mb_count)
+                                             DXVA2_DecodeBufferDesc *sc)
 {
+    const H264Context *h = avctx->priv_data;
+    const MpegEncContext *s = &h->s;
+    const unsigned mb_count = s->mb_width * s->mb_height;
+    struct dxva_context *ctx = avctx->hwaccel_context;
+    const Picture *current_picture = h->s.current_picture_ptr;
+    struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_H264_Short *slice = NULL;
     uint8_t  *dxva_data, *current, *end;
     unsigned dxva_size;
@@ -401,9 +348,9 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         slice_size = ctx_pic->slice_count * sizeof(*ctx_pic->slice_long);
     }
     assert((bs->DataSize & 127) == 0);
-    return commit_buffer(avctx, ctx, sc,
-                         DXVA2_SliceControlBufferType,
-                         slice_data, slice_size, mb_count);
+    return ff_dxva2_commit_buffer(avctx, ctx, sc,
+                                  DXVA2_SliceControlBufferType,
+                                  slice_data, slice_size, mb_count);
 }
 
 
@@ -434,7 +381,7 @@ static int start_frame(AVCodecContext *avctx,
 static int decode_slice(AVCodecContext *avctx,
                         const uint8_t *buffer, uint32_t size)
 {
-    H264Context *h = avctx->priv_data; /* FIXME Can't use const because of get_bits_count */
+    const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
     const Picture *current_picture = h->s.current_picture_ptr;
     struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
@@ -465,78 +412,15 @@ static int end_frame(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
-    const unsigned mb_count = s->mb_width * s->mb_height;
-    struct dxva_context *ctx = avctx->hwaccel_context;
-    const Picture *current_picture = h->s.current_picture_ptr;
-    struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
-    unsigned               buffer_count = 0;
-    DXVA2_DecodeBufferDesc buffer[4];
-    DXVA2_DecodeExecuteParams exec;
-    int      result;
+    struct dxva2_picture_context *ctx_pic =
+        h->s.current_picture_ptr->hwaccel_picture_private;
 
     if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
         return -1;
-
-    if (FAILED(IDirectXVideoDecoder_BeginFrame(ctx->decoder,
-                                               get_surface(current_picture),
-                                               NULL))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame\n");
-        return -1;
-    }
-
-    result = commit_buffer(avctx, ctx, &buffer[buffer_count],
-                           DXVA2_PictureParametersBufferType,
-                           &ctx_pic->pp, sizeof(ctx_pic->pp), 0);
-    if (result) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Failed to add picture parameter buffer\n");
-        goto end;
-    }
-    buffer_count++;
-
-    result = commit_buffer(avctx, ctx, &buffer[buffer_count],
-                           DXVA2_InverseQuantizationMatrixBufferType,
-                           &ctx_pic->qm, sizeof(ctx_pic->qm), 0);
-    if (result) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Failed to add inverse quantization matrix buffer\n");
-        goto end;
-    }
-    buffer_count++;
-
-    result = commit_bitstream_and_slice_buffer(avctx, ctx, ctx_pic,
-                                               &buffer[buffer_count + 0],
-                                               &buffer[buffer_count + 1],
-                                               mb_count);
-    if (result) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Failed to add bitstream or slice control buffer\n");
-        goto end;
-    }
-    buffer_count += 2;
-
-    /* TODO Film Grain when possible */
-
-    assert(buffer_count == 4);
-
-    memset(&exec, 0, sizeof(exec));
-    exec.NumCompBuffers      = buffer_count;
-    exec.pCompressedBuffers  = buffer;
-    exec.pExtensionData      = NULL;
-    if (FAILED(IDirectXVideoDecoder_Execute(ctx->decoder, &exec))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to execute\n");
-        result = -1;
-    }
-
-end:
-    if (FAILED(IDirectXVideoDecoder_EndFrame(ctx->decoder, NULL))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to end frame\n");
-        result = -1;
-    }
-
-    if (!result)
-        ff_draw_horiz_band(s, 0, s->avctx->height);
-    return result;
+    return ff_dxva2_common_end_frame(avctx, s,
+                                     &ctx_pic->pp, sizeof(ctx_pic->pp),
+                                     &ctx_pic->qm, sizeof(ctx_pic->qm),
+                                     commit_bitstream_and_slice_buffer);
 }
 
 AVHWAccel h264_dxva2_hwaccel = {

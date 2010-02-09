@@ -33,11 +33,11 @@ WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
 #EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
-EXTRA_INC = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
+EXTRA_INC = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
 EXTRAXX_INC = $(EXTRA_INC)
 
-COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O4 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
-#COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float
+#COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float
 CFLAGS = $(EXTRA_INC) $(COMMONFLAGS) 
 OPTFLAGS =  $(EXTRA_INC) $(COMMONFLAGS)
 CXXFLAGS = $(COMMONFLAGS) -D__STDC_LIMIT_MACROS $(EXTRAXX_INC)
@@ -53,10 +53,10 @@ CFLAGS_TREMOR_LOW =
 YASMFLAGS =
 
 #EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/3rd/wii/lib
-EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib
+EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii
 #EXTRA_LIB = -static $(COMMONFLAGS) -ldvdread -ldvdnav -lwiiuse -lbte -lfat -ldi -ltinysmb -logc -ldb -lm
-#EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
-EXTRA_LIB = -static $(COMMONFLAGS) -lopencore-amrnb -lopencore-amrwb -lopenjpeg -lfreetype -liconv -lfribidi -lz -ljpeg -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -lm
+#EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -lfontconfig -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
+EXTRA_LIB = -static $(COMMONFLAGS) -lopencore-amrnb -lopencore-amrwb -lopenjpeg -lfreetype -lfontconfig -lexpat -liconv -lfribidi -lz -ljpeg -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -lm
 #EXTRALIBS = 
 #EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
 EXTRALIBS += $(EXTRA_LIB)
@@ -128,6 +128,7 @@ FAAD_INTERNAL = yes
 FASTMEMCPY = yes
 FBDEV = no
 FREETYPE = yes
+FONTCONFIG = yes
 FTP = yes
 GIF = no
 GGI = no
@@ -304,6 +305,7 @@ CONFIG_LIBXVID_ENCODER=no
 CONFIG_MLIB = no
 CONFIG_MUXERS=no
 CONFIG_POSTPROC = yes
+CONFIG_DCT=yes
 # Prevent building libavcodec/imgresample.c with conflicting symbols
 CONFIG_SWSCALE=yes
 CONFIG_VDPAU=no
@@ -362,8 +364,11 @@ CONFIG_H263I_DECODER=yes
 CONFIG_H264_DECODER=yes
 CONFIG_HUFFYUV_DECODER=yes
 CONFIG_IDCIN_DECODER=yes
+CONFIG_IFF_BYTERUN1_DECODER=yes
+CONFIG_IFF_ILBM_DECODER=yes
 CONFIG_INDEO2_DECODER=yes
 CONFIG_INDEO3_DECODER=yes
+CONFIG_INDEO5_DECODER=yes
 CONFIG_INTERPLAY_VIDEO_DECODER=yes
 CONFIG_JPEGLS_DECODER=yes
 CONFIG_KMVC_DECODER=yes
@@ -452,6 +457,8 @@ CONFIG_ALS_DECODER=yes
 CONFIG_APE_DECODER=yes
 CONFIG_ATRAC1_DECODER=yes
 CONFIG_ATRAC3_DECODER=yes
+CONFIG_BINKAUDIO_DCT_DECODER=yes
+CONFIG_BINKAUDIO_RDFT_DECODER=yes
 CONFIG_COOK_DECODER=yes
 CONFIG_DCA_DECODER=yes
 CONFIG_DSICINAUDIO_DECODER=yes
@@ -586,6 +593,7 @@ CONFIG_AVI_DEMUXER=yes
 CONFIG_AVS_DEMUXER=yes
 CONFIG_BETHSOFTVID_DEMUXER=yes
 CONFIG_BFI_DEMUXER=yes
+CONFIG_BINK_DEMUXER=yes
 CONFIG_C93_DEMUXER=yes
 CONFIG_CAF_DEMUXER=yes
 CONFIG_CDG_DEMUXER=yes

@@ -406,7 +406,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
 				qp= p->qp;
 			else{
 				qp= qp_store[ (XMIN(x, width-1)>>qps) + (XMIN(y, height-1)>>qps) * qp_stride];
-				if(p->mpeg2) qp = FFMAX(1, qp>>1);
+				qp = FFMAX(1, norm_qscale(qp, p->mpeg2));
 			}
 			for(i=0; i<count; i++){
 				const int x1= x + offset[i+count-1][0];
@@ -480,9 +480,15 @@ static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 
         vf->priv->mpeg2= mpi->qscale_type;
         if(mpi->pict_type != 3 && mpi->qscale && !vf->priv->qp){
+            int w = mpi->qstride;
+            int h = (mpi->h + 15) >> 4;
+            if (!w) {
+                w = (mpi->w + 15) >> 4;
+                h = 1;
+            }
             if(!vf->priv->non_b_qp)
-                vf->priv->non_b_qp= malloc(mpi->qstride * ((mpi->h + 15) >> 4));
-            fast_memcpy(vf->priv->non_b_qp, mpi->qscale, mpi->qstride * ((mpi->h + 15) >> 4));
+                vf->priv->non_b_qp= malloc(w*h);
+            fast_memcpy(vf->priv->non_b_qp, mpi->qscale, w*h);
         }
 	if(vf->priv->log2_count || !(mpi->flags&MP_IMGFLAG_DIRECT)){
             char *qp_tab= vf->priv->non_b_qp;

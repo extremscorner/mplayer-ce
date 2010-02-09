@@ -107,13 +107,15 @@ SRCS_COMMON-$(HAVE_SYS_MMAN_H)       += libaf/af_export.c osdep/mmap_anon.c
 SRCS_COMMON-$(JPEG)                  += libmpcodecs/vd_ijpg.c
 SRCS_COMMON-$(LADSPA)                += libaf/af_ladspa.c
 SRCS_COMMON-$(LIBA52)                += libmpcodecs/ad_liba52.c
-SRCS_COMMON-$(LIBA52_INTERNAL)       += liba52/crc.c \
+SRCS_LIBA52_INTERNAL                 += liba52/crc.c \
                                         liba52/resample.c \
                                         liba52/bit_allocate.c \
                                         liba52/bitstream.c \
                                         liba52/downmix.c \
                                         liba52/imdct.c \
                                         liba52/parse.c \
+
+SRCS_COMMON-$(LIBA52_INTERNAL)       += $(SRCS_LIBA52_INTERNAL)
 
 SRCS_COMMON-$(LIBASS)                += libmpcodecs/vf_ass.c \
                                         libass/ass_mp.c \
@@ -205,8 +207,10 @@ SRCS_MP3LIB-$(ARCH_X86_32)           += mp3lib/decode_i586.c \
 SRCS_MP3LIB-$(HAVE_ALTIVEC)          += mp3lib/dct64_altivec.c
 SRCS_MP3LIB-$(HAVE_MMX)              += mp3lib/decode_mmx.c
 SRCS_MP3LIB-$(HAVE_SSE)              += mp3lib/dct64_sse.c
-SRCS_COMMON-$(MP3LIB)                += libmpcodecs/ad_mp3lib.c mp3lib/sr1.c \
+SRCS_MP3LIB                          += mp3lib/sr1.c \
                                         $(SRCS_MP3LIB-yes)
+SRCS_COMMON-$(MP3LIB)                += libmpcodecs/ad_mp3lib.c \
+                                        $(SRCS_MP3LIB)
 
 SRCS_COMMON-$(MUSEPACK)              += libmpcodecs/ad_mpc.c \
                                         libmpdemux/demux_mpc.c
@@ -590,6 +594,7 @@ SRCS_MPLAYER-$(IVTV)         += libao2/ao_ivtv.c libvo/vo_ivtv.c
 SRCS_MPLAYER-$(JACK)         += libao2/ao_jack.c
 SRCS_MPLAYER-$(JOYSTICK)     += input/joystick.c
 SRCS_MPLAYER-$(JPEG)         += libvo/vo_jpeg.c
+SRCS_MPLAYER-$(KAI)          += libao2/ao_kai.c
 SRCS_MPLAYER-$(KVA)          += libvo/vo_kva.c
 SRCS_MPLAYER-$(LIBAVCODEC)   += libvo/vo_png.c
 SRCS_MPLAYER-$(LIBMENU)      += libmenu/menu.c \
@@ -1070,7 +1075,7 @@ codec-cfg-test$(EXESUF): codec-cfg.c codecs.conf.h help_mp.h $(TEST_OBJS)
 codecs2html$(EXESUF): codec-cfg.c help_mp.h $(TEST_OBJS)
 	$(CC) -I. -DCODECS2HTML -o $@ $^
 
-liba52/test$(EXESUF): cpudetect.o $(filter liba52/%,$(SRCS_COMMON:.c=.o)) -lm
+liba52/test$(EXESUF): cpudetect.o $(SRCS_LIBA52_INTERNAL:.c=.o) -lm
 
 libvo/aspecttest$(EXESUF): libvo/aspect.o libvo/geometry.o $(TEST_OBJS)
 
@@ -1079,7 +1084,7 @@ LOADER_TEST_OBJS = $(filter loader/%,$(SRCS_COMMON:.c=.o)) libmpdemux/aviprint.o
 loader/qtx/list$(EXESUF) loader/qtx/qtxload$(EXESUF): CFLAGS += -g
 loader/qtx/list$(EXESUF) loader/qtx/qtxload$(EXESUF): $(LOADER_TEST_OBJS)
 
-mp3lib/test$(EXESUF) mp3lib/test2$(EXESUF): $(filter mp3lib/%,$(SRCS_COMMON:.c=.o)) libvo/aclib.o cpudetect.o $(TEST_OBJS)
+mp3lib/test$(EXESUF) mp3lib/test2$(EXESUF): $(SRCS_MP3LIB:.c=.o) libvo/aclib.o cpudetect.o $(TEST_OBJS)
 
 TESTS = codecs2html codec-cfg-test liba52/test libvo/aspecttest \
         mp3lib/test mp3lib/test2

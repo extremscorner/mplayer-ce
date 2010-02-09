@@ -1,3 +1,21 @@
+/*
+ * This file is part of MPlayer.
+ *
+ * MPlayer is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * MPlayer is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with MPlayer; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #define VCODEC_COPY 0
 #define VCODEC_FRAMENO 1
 // real codecs:
@@ -1708,7 +1726,6 @@ static int edl_seek(edl_record_ptr next_edl_record, demuxer_t* demuxer, demux_st
         if(demux_seek(demuxer, next_edl_record->stop_sec - sh_video->pts, audio_delay, 0)){
             sh_video->pts = demuxer->video->pts;
             //if (vo_vobsub) vobsub_seek(vo_vobsub,sh_video->pts);
-            resync_video_stream(sh_video);
             //if(vo_spudec) spudec_reset(vo_spudec);
             if (audio_delay != 0.0) fixdelay(demuxer->video, d_audio, mux_a, frame_data, framecopy);
             return 1;
