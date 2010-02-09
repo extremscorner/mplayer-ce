@@ -408,7 +408,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
     if(trailing_ones<total_coeff) {
         int mask, prefix;
-        int suffix_length = total_coeff > 10 && trailing_ones < 3;
+        int suffix_length = total_coeff > 10 & trailing_ones < 3;
         int bitsi= show_bits(gb, LEVEL_TAB_BITS);
         int level_code= cavlc_level_tab[suffix_length][bitsi][0];
 
@@ -441,11 +441,9 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             mask= -(level_code&1);
             level[trailing_ones]= (((2+level_code)>>1) ^ mask) - mask;
         }else{
-            if(trailing_ones < 3) level_code += (level_code>>31)|1;
+            level_code += ((level_code>>31)|1) & -(trailing_ones < 3);
 
-            suffix_length = 1;
-            if(level_code + 3U > 6U)
-                suffix_length++;
+            suffix_length = 1 + (level_code + 3U > 6U);
             level[trailing_ones]= level_code;
         }
 
@@ -472,9 +470,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
                 level_code= (((2+level_code)>>1) ^ mask) - mask;
             }
             level[i]= level_code;
-
-            if(suffix_limit[suffix_length] + level_code > 2U*suffix_limit[suffix_length])
-                suffix_length++;
+            suffix_length+= suffix_limit[suffix_length] + level_code > 2U*suffix_limit[suffix_length];
         }
     }
 
@@ -482,9 +478,9 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
         zeros_left=0;
     else{
         if(n == CHROMA_DC_BLOCK_INDEX)
-            zeros_left= get_vlc2(gb, chroma_dc_total_zeros_vlc[ total_coeff-1 ].table, CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 1);
+            zeros_left= get_vlc2(gb, (chroma_dc_total_zeros_vlc-1)[ total_coeff ].table, CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 1);
         else
-            zeros_left= get_vlc2(gb, total_zeros_vlc[ total_coeff-1 ].table, TOTAL_ZEROS_VLC_BITS, 1);
+            zeros_left= get_vlc2(gb, (total_zeros_vlc-1)[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
     }
 
     coeff_num = zeros_left + total_coeff - 1;
@@ -495,7 +491,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             if(zeros_left <= 0)
                 run_before = 0;
             else if(zeros_left < 7){
-                run_before= get_vlc2(gb, run_vlc[zeros_left-1].table, RUN_VLC_BITS, 1);
+                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1);
             }else{
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2);
             }
@@ -511,7 +507,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
             if(zeros_left <= 0)
                 run_before = 0;
             else if(zeros_left < 7){
-                run_before= get_vlc2(gb, run_vlc[zeros_left-1].table, RUN_VLC_BITS, 1);
+                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1);
             }else{
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2);
             }
@@ -908,9 +904,7 @@ decode_intra_mb:
     }
 
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){
-        if(get_bits1(&s->gb)){
-            mb_type |= MB_TYPE_8x8DCT;
-        }
+        mb_type |= MB_TYPE_8x8DCT*get_bits1(&s->gb);
     }
     h->cbp=
     h->cbp_table[mb_xy]= cbp;
@@ -921,8 +915,6 @@ decode_intra_mb:
         int dquant;
         GetBitContext *gb= IS_INTRA(mb_type) ? h->intra_gb_ptr : h->inter_gb_ptr;
         const uint8_t *scan, *scan8x8, *dc_scan;
-
-//        fill_non_zero_count_cache(h);
 
         if(IS_INTERLACED(mb_type)){
             scan8x8= s->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;

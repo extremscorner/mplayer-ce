@@ -1122,11 +1122,11 @@ static int CrackDiscKey( dvdcss_t dvdcss, uint8_t *p_disc_key )
 
     /* initialize lookup tables for k[1] */
     K1table = malloc( 65536 * K1TABLEWIDTH );
-    memset( K1table, 0 , 65536 * K1TABLEWIDTH );
     if( K1table == NULL )
     {
         return -1;
     }
+    memset( K1table, 0 , 65536 * K1TABLEWIDTH );
 
     tmp = p_disc_key[0] ^ p_css_tab1[ p_disc_key[1] ];
     for( i = 0 ; i < 256 ; i++ ) /* k[1] */
@@ -1154,11 +1154,12 @@ static int CrackDiscKey( dvdcss_t dvdcss, uint8_t *p_disc_key )
 
     /* Initing our Really big table */
     BigTable = malloc( 16777216 * sizeof(int) );
-    memset( BigTable, 0 , 16777216 * sizeof(int) );
     if( BigTable == NULL )
     {
+    	free(K1table);
         return -1;
     }
+    memset( BigTable, 0 , 16777216 * sizeof(int) );
 
     tmp3 = 0;
 

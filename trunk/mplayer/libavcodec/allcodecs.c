@@ -59,7 +59,9 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL (H264_VAAPI, h264_vaapi);
     REGISTER_HWACCEL (MPEG2_VAAPI, mpeg2_vaapi);
     REGISTER_HWACCEL (MPEG4_VAAPI, mpeg4_vaapi);
+    REGISTER_HWACCEL (VC1_DXVA2, vc1_dxva2);
     REGISTER_HWACCEL (VC1_VAAPI, vc1_vaapi);
+    REGISTER_HWACCEL (WMV3_DXVA2, wmv3_dxva2);
     REGISTER_HWACCEL (WMV3_VAAPI, wmv3_vaapi);
 
     /* video codecs */
@@ -112,8 +114,11 @@ void avcodec_register_all(void)
     REGISTER_DECODER (H264_VDPAU, h264_vdpau);
     REGISTER_ENCDEC  (HUFFYUV, huffyuv);
     REGISTER_DECODER (IDCIN, idcin);
+    REGISTER_DECODER (IFF_BYTERUN1, iff_byterun1);
+    REGISTER_DECODER (IFF_ILBM, iff_ilbm);
     REGISTER_DECODER (INDEO2, indeo2);
     REGISTER_DECODER (INDEO3, indeo3);
+    REGISTER_DECODER (INDEO5, indeo5);
     REGISTER_DECODER (INTERPLAY_VIDEO, interplay_video);
     REGISTER_ENCDEC  (JPEGLS, jpegls);
     REGISTER_DECODER (KMVC, kmvc);
@@ -211,6 +216,8 @@ void avcodec_register_all(void)
     REGISTER_DECODER (APE, ape);
     REGISTER_DECODER (ATRAC1, atrac1);
     REGISTER_DECODER (ATRAC3, atrac3);
+    REGISTER_DECODER (BINKAUDIO_DCT, binkaudio_dct);
+    REGISTER_DECODER (BINKAUDIO_RDFT, binkaudio_rdft);
     REGISTER_DECODER (COOK, cook);
     REGISTER_DECODER (DCA, dca);
     REGISTER_DECODER (DSICINAUDIO, dsicinaudio);

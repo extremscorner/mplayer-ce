@@ -454,7 +454,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src,
 		    t=x+x0-2; //correct t=x+x0-2-(y&1), but its the same
 		    if (t<0) t=0;//t always < width-2
 		    t=qp_store[qy+(t>>qps)];
-		    if(p->mpeg2) t>>=1; //copy p->mpeg2,prev_q to locals?
+		    t=norm_qscale(t, p->mpeg2);
 		    if (t!=p->prev_q) p->prev_q=t, mul_thrmat_s(p, t);
 		    column_fidct_s((int16_t*)(&p->threshold_mtx[0]), block+x*8, block3+x*8, 8); //yes, this is a HOTSPOT
 		}
@@ -533,9 +533,15 @@ static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 
     vf->priv->mpeg2= mpi->qscale_type;
     if(mpi->pict_type != 3 && mpi->qscale && !vf->priv->qp){
-	if(!vf->priv->non_b_qp)
-	    vf->priv->non_b_qp= malloc(mpi->qstride * ((mpi->h + 15) >> 4));
-	fast_memcpy(vf->priv->non_b_qp, mpi->qscale, mpi->qstride * ((mpi->h + 15) >> 4));
+        int w = mpi->qstride;
+        int h = (mpi->h + 15) >> 4;
+        if (!w) {
+            w = (mpi->w + 15) >> 4;
+            h = 1;
+        }
+        if(!vf->priv->non_b_qp)
+            vf->priv->non_b_qp= malloc(w*h);
+        fast_memcpy(vf->priv->non_b_qp, mpi->qscale, w*h);
     }
     if(vf->priv->log2_count || !(mpi->flags&MP_IMGFLAG_DIRECT)){
 	char *qp_tab= vf->priv->non_b_qp;

@@ -1,3 +1,21 @@
+/*
+ * This file is part of MPlayer.
+ *
+ * MPlayer is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * MPlayer is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with MPlayer; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 /// \file
 /// \ingroup Properties Command2Property OSDMsgStack
 #include <stdio.h>
@@ -84,6 +102,7 @@ int quiet=0;
 int enable_mouse_movements=0;
 float start_volume = -1;
 float mplayer_volume = -1;
+float amplify_volume = 0.0;
 
 #include "osdep/priority.h"
 
@@ -1324,9 +1343,9 @@ void add_subtitles(char *filename, float fps, int noerr)
 #ifdef CONFIG_ASS
     if (ass_enabled)
 #ifdef CONFIG_ICONV
-        asst = ass_read_file(ass_library, filename, sub_cp);
+        asst = ass_read_stream(ass_library, filename, sub_cp);
 #else
-        asst = ass_read_file(ass_library, filename, 0);
+        asst = ass_read_stream(ass_library, filename, 0);
 #endif
     if (ass_enabled && subd && !asst)
         asst = ass_read_subdata(ass_library, subd, fps);
@@ -3135,15 +3154,11 @@ static int seek(MPContext *mpctx, double amount, int style)
     mpctx->startup_decode_retry = DEFAULT_STARTUP_DECODE_RETRY;
     if (mpctx->sh_video) {
 	current_module = "seek_video_reset";
-	resync_video_stream(mpctx->sh_video);
 	if (vo_config_count)
 	    mpctx->video_out->control(VOCTRL_RESET, NULL);
-	mpctx->sh_video->next_frame_time = 0;  // rodries: check
-	mpctx->sh_video->num_buffered_pts = 0;
-	mpctx->sh_video->last_pts = MP_NOPTS_VALUE;
 	mpctx->num_buffered_frames = 0;
 	mpctx->delay = 0;
-	mpctx->time_frame = 0;  // rodries: check
+	mpctx->time_frame = 0;  
 	// Not all demuxers set d_video->pts during seek, so this value
 	// (which is used by at least vobsub and edl code below) may
 	// be completely wrong (probably 0).
@@ -3155,8 +3170,6 @@ static int seek(MPContext *mpctx, double amount, int style)
     if (mpctx->sh_audio) {
 	current_module = "seek_audio_reset";
 	mpctx->audio_out->reset(); // stop audio, throwing away buffered data
-	mpctx->sh_audio->a_buffer_len = 0;
-	mpctx->sh_audio->a_out_buffer_len = 0;
 	if (!mpctx->sh_video)
 	    update_subtitles(NULL, mpctx->sh_audio->pts, mpctx->d_sub, 1);
     }
@@ -3616,6 +3629,11 @@ setwatchdogcounter(-1);
 //m_config_set_option(mconfig,"framedrop",NULL);
 m_config_set_option(mconfig,"sws","4");
 m_config_set_option(mconfig,"lavdopts","lowres=1,1025");
+if(amplify_volume!=0.0){
+char cad[25];
+sprintf(cad,"volume=%f:0",amplify_volume);
+m_config_set_option(mconfig,"af",cad);
+}
 
 if (filename) {
     load_per_protocol_config (mconfig, filename);
@@ -4004,11 +4022,15 @@ if(mpctx->stream->type==STREAMTYPE_DVDNAV){
 goto_enable_cache:
 
 if(stream_cache_size>0){
+  int res;
   current_module="enable_cache";
 stream_cache_min_percent=1.0;  
-  if(!stream_enable_cache(mpctx->stream,stream_cache_size*1024,
+  res = stream_enable_cache(mpctx->stream,stream_cache_size*1024,
                           stream_cache_size*1024*(stream_cache_min_percent / 100.0),
-                          stream_cache_size*1024*(stream_cache_seek_min_percent / 100.0)))
+                          stream_cache_size*1024*(stream_cache_seek_min_percent / 100.0));
+  if(res < 0) printf("error cache_init\n");
+if(mpctx->stream->cache_data==NULL) printf("no cache generated?\n");// review
+  if(res == 0)
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
 	if(!IsLoopAvi(NULL))

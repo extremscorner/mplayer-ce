@@ -1,3 +1,21 @@
+/*
+ * This file is part of MPlayer.
+ *
+ * MPlayer is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * MPlayer is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with MPlayer; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 #include "config.h"
 
 // Initial draft of my new cache system...
@@ -15,6 +33,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "input/input.h"
 #include "osdep/shmem.h"
@@ -348,7 +367,7 @@ static int cache_execute_control(cache_vars_t *s) {
   return res;
 }
 
-cache_vars_t* cache_init(int size,int sector){
+static cache_vars_t* cache_init(int size,int sector){
   int num;
 #if !defined(__MINGW32__) && !defined(PTHREAD_CACHE) && !defined(__OS2__) && !defined(GEKKO)
   cache_vars_t* s=shmem_alloc(sizeof(cache_vars_t));
@@ -376,6 +395,7 @@ cache_vars_t* cache_init(int size,int sector){
 #if !defined(__MINGW32__) && !defined(PTHREAD_CACHE) && !defined(__OS2__) && !defined(GEKKO)
     shmem_free(s,sizeof(cache_vars_t));
 #else
+    printf("error creating mem2 cache\n");
     free(s);
 #endif
     return NULL;
@@ -392,44 +412,59 @@ cache_vars_t* cache_init(int size,int sector){
 
 void cache_uninit(stream_t *s) {
   cache_vars_t* c = s->cache_data;
-  if(!s->cache_pid) return; 
   
 #if defined(GEKKO)
+  if(!s->cache_pid) return; 
   cache_do_control(s, -2, NULL);
   c->thread_active = 0;
   while(!c->exited) usleep(1000);
   LWP_JoinThread(s->cache_pid, NULL);  
+  s->cache_pid = 0;
 #else  
+  if(s->cache_pid) {
 #if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__)
-  cache_do_control(s, -2, NULL);
+    cache_do_control(s, -2, NULL);
 #else
-  kill(s->cache_pid,SIGKILL);
-  waitpid(s->cache_pid,NULL,0);
+    kill(s->cache_pid,SIGKILL);
+    waitpid(s->cache_pid,NULL,0);
 #endif
+	s->cache_pid = 0;
+  }
 #endif //GEKKO
 
-  //if(!c) return;
-#if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__) || defined(GEKKO)
-  //free(c->stream);
-  //free(c->buffer); //using global var
-  //c->stream=NULL;
+if(!c) return;
+#if defined(GEKKO)
   c->buffer=NULL;
   free(s->cache_data);
   s->cache_data=NULL;
   s->cache_pid=0;
 #else
+#if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__)
+  free(c->stream);
+  free(c->buffer);
+  c->buffer = NULL;
+  free(s->cache_data);
+#else
   shmem_free(c->buffer,c->buffer_size);
+  c->buffer = NULL;
   shmem_free(s->cache_data,sizeof(cache_vars_t));
 #endif
+  s->cache_data = NULL;
+#endif //GEKKO
 }
+
 
 static void exit_sighandler(int x){
   // close stream
   exit(0);
 }
 
+/**
+ * \return 1 on success, 0 if the function was interrupted and -1 on error
+ */
 int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
   int ss = stream->sector_size ? stream->sector_size : STREAM_BUFFER_SIZE;
+  int res = -1;
   cache_vars_t* s;
 
 	cache_fill_status=-1;
@@ -450,7 +485,7 @@ if(size>CACHE_LIMIT)
 }
 */
   s=cache_init(size,ss);
-  if(s == NULL) return 0;
+  if(s == NULL) return -1;
   stream->cache_data=s;
   s->stream=stream; // callback
   s->seek_limit=seek_limit;
@@ -468,6 +503,8 @@ if(size>CACHE_LIMIT)
 
 #if !defined(__MINGW32__) && !defined(PTHREAD_CACHE) && !defined(__OS2__) && !defined(GEKKO)
   if((stream->cache_pid=fork())){
+    if ((pid_t)stream->cache_pid == -1)
+      stream->cache_pid = 0;
 #else
   {
     stream_t* stream2=malloc(sizeof(stream_t));
@@ -491,6 +528,11 @@ if(size>CACHE_LIMIT)
     }
 #endif
 #endif
+    if (!stream->cache_pid) {
+        mp_msg(MSGT_CACHE, MSGL_ERR,
+               "Starting cache process/thread failed: %s.\n", strerror(errno));
+        goto err_out;
+    }
     // wait until cache is filled at least prefill_init %
     mp_msg(MSGT_CACHE,MSGL_V,"CACHE_PRE_INIT: %"PRId64" [%"PRId64"] %"PRId64"  pre:%d  eof:%d  \n",
 	(int64_t)s->min_filepos,(int64_t)s->read_filepos,(int64_t)s->max_filepos,min,s->eof);
@@ -506,11 +548,17 @@ if(size>CACHE_LIMIT)
 	}
 	
 	if(s->eof) break; // file is smaller than prefill size
-	if(stream_check_interrupt(PREFILL_SLEEP_TIME))
-	  return 0;
+	if(stream_check_interrupt(PREFILL_SLEEP_TIME)) {
+	  res = 0;
+	  goto err_out;
+        }
     }
     mp_msg(MSGT_CACHE,MSGL_STATUS,"\n");
     return 1; // parent exits
+
+err_out:
+    cache_uninit(stream);
+    return res;
   }
 
 #if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__)
@@ -546,6 +594,8 @@ static void ThreadProc( void *s ){
 #if defined(PTHREAD_CACHE) || defined(GEKKO) 
   return NULL;
 #endif
+  // make sure forked code never leaves this function
+  exit(0);
 }
 
 int cache_stream_fill_buffer(stream_t *s){

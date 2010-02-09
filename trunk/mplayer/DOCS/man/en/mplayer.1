@@ -1,5 +1,5 @@
-.\" $Revision: 30336 $
-.\" MPlayer (C) 2000-2009 MPlayer Team
+.\" $Revision: 30503 $
+.\" MPlayer (C) 2000-2010 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .
 .\" --------------------------------------------------------------------------
@@ -443,8 +443,6 @@ Switch teletext on/\:off.
 Go to next/\:prev teletext page.
 .RE
 .PD 1
-.PP
-.RS
 .
 .TP
 .B mouse control
@@ -2860,6 +2858,22 @@ Playing a file with \-v will show a list of available devices.
 .PD 1
 .
 .TP
+.B kai (OS/2 only)
+OS/2 KAI audio output driver
+.PD 0
+.RSs
+.IPs uniaud
+Force UNIAUD mode
+.IPs dart
+Force DART mode
+.IPs (no)share
+Open audio in shareable or exclusive mode.
+.IPs bufsize=<size>
+Set buffer size to <size> in samples (default: 2048).
+.RE
+.PD 1
+.
+.TP
 .B dart (OS/2 only)
 OS/2 DART audio output driver
 .PD 0
@@ -3514,7 +3528,9 @@ Makes temporal deinterlacers operate both on luma and chroma (default).
 Use nochroma\-deint to solely use luma and speed up advanced deinterlacing.
 Useful with slow video memory.
 .IPs pullup
-Try to apply inverse telecine, needs motion adaptive temporal deinterlacing.
+Try to skip deinterlacing for progressive frames, useful for watching
+telecined content, needs fast video hardware for high resolutions.
+Only works with motion adaptive temporal deinterlacing.
 .IPs colorspace
 Select the color space for YUV to RGB conversion.
 In general BT.601 should be used for standard definition (SD) content and
@@ -3844,8 +3860,9 @@ Use the GL_MESA_ycbcr_texture extension to convert YUV to RGB.
 In most cases this is probably slower than doing software conversion to RGB.
 .IPs yuv=<n>
 Select the type of YUV to RGB conversion.
+The default is auto-detection deciding between values 0 and 2.
 .RSss
-0: Use software conversion (default).
+0: Use software conversion.
 Compatible with all OpenGL versions.
 Provides brightness, contrast and saturation control.
 .br
@@ -4496,7 +4513,7 @@ Specify advanced audio filter options:
 .IPs force=<0\-7>
 Forces the insertion of audio filters to one of the following:
 .RSss
-0: Use completely automatic filter insertion.
+0: Use completely automatic filter insertion (currently identical to 1).
 .br
 1: Optimize for accuracy (default).
 .br
@@ -5775,7 +5792,7 @@ Position of the cropped picture, defaults to center.
 .PD 1
 .
 .TP
-.B cropdetect[=limit:round]
+.B cropdetect[=limit:round[:reset]]
 Calculates necessary cropping parameters and prints the recommended parameters
 to stdout.
 .PD 0
@@ -5789,6 +5806,13 @@ Value which the width/\:height should be divisible by (default: 16).
 The offset is automatically adjusted to center the video.
 Use 2 to get only even dimensions (needed for 4:2:2 video).
 16 is best when encoding to most video codecs.
+.br
+.IPs <reset>
+Counter that determines after how many frames cropdetect will reset
+the previously detected largest video area and start over to detect
+the current optimal crop area.  This can be useful when channel
+logos distort the video area.  0 indicates never reset and return
+the largest area encountered during playback. (default: 0).
 .RE
 .PD 1
 .
@@ -7070,8 +7094,8 @@ Height unchanged at half framerate.
 .B tfields[=mode[:field_dominance]]
 Temporal field separation \- split fields into frames, doubling the
 output framerate.
-Like the telecine filter, tfields will only work properly with
-MEncoder, and only if both \-fps and \-ofps are set to the
+Like the telecine filter, tfields might not work completely right unless
+used with MEncoder and both \-fps and \-ofps set to the
 desired (double) framerate!
 .PD 0
 .RSs

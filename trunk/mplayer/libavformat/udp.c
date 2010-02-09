@@ -59,7 +59,9 @@ typedef struct {
 #define UDP_TX_BUF_SIZE 32768
 #define UDP_MAX_PKT_SIZE 65536
 
-static int udp_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) {
+static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
+                                 struct sockaddr *addr)
+{
 #ifdef IP_MULTICAST_TTL
     if (addr->sa_family == AF_INET) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
@@ -79,7 +81,8 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr
     return 0;
 }
 
-static int udp_join_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_join_multicast_group(int sockfd, struct sockaddr *addr)
+{
 #ifdef IP_ADD_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
@@ -107,7 +110,8 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr) {
     return 0;
 }
 
-static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr)
+{
 #ifdef IP_DROP_MEMBERSHIP
     if (addr->sa_family == AF_INET) {
         struct ip_mreq mreq;
@@ -135,7 +139,9 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr) {
     return 0;
 }
 
-static struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, int type, int family, int flags) {
+static struct addrinfo* udp_resolve_host(const char *hostname, int port,
+                                         int type, int family, int flags)
+{
     struct addrinfo hints, *res = 0;
     int error;
     char sport[16];
@@ -153,17 +159,19 @@ static struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, in
     hints.ai_family   = family;
     hints.ai_flags = flags;
     if ((error = getaddrinfo(node, service, &hints, &res))) {
-        av_log(NULL, AV_LOG_ERROR, "udp_ipv6_resolve_host: %s\n", gai_strerror(error));
+        av_log(NULL, AV_LOG_ERROR, "udp_resolve_host: %s\n", gai_strerror(error));
     }
 
     return res;
 }
 
-static int udp_set_url(struct sockaddr_storage *addr, const char *hostname, int port) {
+static int udp_set_url(struct sockaddr_storage *addr,
+                       const char *hostname, int port)
+{
     struct addrinfo *res0;
     int addr_len;
 
-    res0 = udp_ipv6_resolve_host(hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
+    res0 = udp_resolve_host(hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
     if (res0 == 0) return AVERROR(EIO);
     memcpy(addr, res0->ai_addr, res0->ai_addrlen);
     addr_len = res0->ai_addrlen;
@@ -186,7 +194,8 @@ static int is_multicast_address(struct sockaddr_storage *addr)
     return 0;
 }
 
-static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr, int *addr_len)
+static int udp_socket_create(UDPContext *s,
+                             struct sockaddr_storage *addr, int *addr_len)
 {
     int udp_fd = -1;
     struct addrinfo *res0 = NULL, *res = NULL;
@@ -194,7 +203,7 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr, int *
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
         family = ((struct sockaddr *) &s->dest_addr)->sa_family;
-    res0 = udp_ipv6_resolve_host(0, s->local_port, SOCK_DGRAM, family, AI_PASSIVE);
+    res0 = udp_resolve_host(0, s->local_port, SOCK_DGRAM, family, AI_PASSIVE);
     if (res0 == 0)
         goto fail;
     for (res = res0; res; res=res->ai_next) {

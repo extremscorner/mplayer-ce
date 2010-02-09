@@ -60,6 +60,7 @@
 // just be removed again.
 #define PARSE_ON_ADD 0
 
+static void clear_parser(sh_common_t *sh);
 void resync_video_stream(sh_video_t *sh_video);
 void resync_audio_stream(sh_audio_t *sh_audio);
 
@@ -286,8 +287,7 @@ void free_sh_sub(sh_sub_t *sh)
 #endif
     free(sh->lang);
 #ifdef CONFIG_LIBAVCODEC
-    av_parser_close(sh->parser);
-    av_freep(&sh->avctx);
+    clear_parser((sh_common_t *)sh);
 #endif
     free(sh);
 }
@@ -327,8 +327,7 @@ void free_sh_audio(demuxer_t *demuxer, int id)
     free(sh->codecdata);
     free(sh->lang);
 #ifdef CONFIG_LIBAVCODEC
-    av_parser_close(sh->parser);
-    av_freep(&sh->avctx);
+    clear_parser((sh_common_t *)sh);
 #endif
     free(sh);
 }
@@ -359,8 +358,7 @@ void free_sh_video(sh_video_t *sh)
     mp_msg(MSGT_DEMUXER, MSGL_DBG2, "DEMUXER: freeing sh_video at %p\n", sh);
     free(sh->bih);
 #ifdef CONFIG_LIBAVCODEC
-    av_parser_close(sh->parser);
-    av_freep(&sh->avctx);
+    clear_parser((sh_common_t *)sh);
 #endif
     free(sh);
 }
@@ -461,6 +459,9 @@ static void allocate_parser(AVCodecContext **avctx, AVCodecParserContext **parse
     case 0x86:
         codec_id = CODEC_ID_DTS;
         break;
+    case MKTAG('M', 'L', 'P', ' '):
+        codec_id = CODEC_ID_MLP;
+        break;
     case 0x55:
     case 0x5500736d:
     case MKTAG('.', 'm', 'p', '3'):
@@ -472,6 +473,9 @@ static void allocate_parser(AVCodecContext **avctx, AVCodecParserContext **parse
     case MKTAG('.', 'm', 'p', '2'):
     case MKTAG('.', 'm', 'p', '1'):
         codec_id = CODEC_ID_MP2;
+        break;
+    case MKTAG('T', 'R', 'H', 'D'):
+        codec_id = CODEC_ID_TRUEHD;
         break;
     }
     if (codec_id != CODEC_ID_NONE) {
@@ -510,6 +514,20 @@ int ds_parse(demux_stream_t *ds, uint8_t **buffer, int *len, double pts, off_t p
     if (!parser)
         return *len;
     return av_parser_parse2(parser, avctx, buffer, len, *buffer, *len, pts, pts, pos);
+}
+
+static void clear_parser(sh_common_t *sh)
+{
+    av_parser_close(sh->parser);
+    sh->parser = NULL;
+    av_freep(&sh->avctx);
+}
+
+void ds_clear_parser(demux_stream_t *ds)
+{
+    if (!ds->sh)
+        return;
+    clear_parser(ds->sh);
 }
 #endif
 
@@ -1195,9 +1213,31 @@ demuxer_t *demux_open(stream_t *vs, int file_format, int audio_id,
     return res;
 }
 
+/**
+ * Do necessary reinitialization after e.g. a seek.
+ * Do _not_ call ds_fill_buffer between the seek and this, it breaks at least
+ * seeking with ASF demuxer.
+ */
+static void demux_resync(demuxer_t *demuxer)
+{
+    sh_video_t *sh_video = demuxer->video->sh;
+    sh_audio_t *sh_audio = demuxer->audio->sh;
+    demux_control(demuxer, DEMUXER_CTRL_RESYNC, NULL);
+    if (sh_video) {
+        resync_video_stream(sh_video);
+    }
+    if (sh_audio) {
+        resync_audio_stream(sh_audio);
+    }
+}
 
 void demux_flush(demuxer_t *demuxer)
 {
+#if PARSE_ON_ADD
+    ds_clear_parser(demuxer->video);
+    ds_clear_parser(demuxer->audio);
+    ds_clear_parser(demuxer->sub);
+#endif
     ds_free_packs(demuxer->video);
     ds_free_packs(demuxer->audio);
     ds_free_packs(demuxer->sub);
@@ -1206,10 +1246,6 @@ void demux_flush(demuxer_t *demuxer)
 int demux_seek(demuxer_t *demuxer, float rel_seek_secs, float audio_delay,
                int flags)
 {
-    demux_stream_t *d_audio = demuxer->audio;
-    demux_stream_t *d_video = demuxer->video;
-    sh_audio_t *sh_audio = d_audio->sh;
-    sh_video_t *sh_video = d_video->sh;
     double tmp = 0;
     double pts;
 
@@ -1225,16 +1261,11 @@ int demux_seek(demuxer_t *demuxer, float rel_seek_secs, float audio_delay,
         return 0;
     }
     demux_flush(demuxer);
-    // clear demux buffers:
-    if (sh_audio)
-        sh_audio->a_buffer_len = 0;
 
     demuxer->stream->eof = 0;
     demuxer->video->eof = 0;
     demuxer->audio->eof = 0;
 
-    if (sh_video)
-        sh_video->timer = 0;    // !!!!!!
     if (flags & SEEK_ABSOLUTE)
     {
         pts = 0.0f;
@@ -1255,19 +1286,14 @@ int demux_seek(demuxer_t *demuxer, float rel_seek_secs, float audio_delay,
         pts += rel_seek_secs;
     if (stream_control(demuxer->stream, STREAM_CTRL_SEEK_TO_TIME, &pts) !=
         STREAM_UNSUPPORTED) {
-        demux_control(demuxer, DEMUXER_CTRL_RESYNC, NULL);
+        demux_resync(demuxer);
         return 1;
     }
   dmx_seek:
     if (demuxer->desc->seek)
-    {
-
         demuxer->desc->seek(demuxer, rel_seek_secs, audio_delay, flags);
-	}
-    if (sh_audio)
-    {
-        resync_audio_stream(sh_audio);
-    }
+
+    demux_resync(demuxer);
 
     return 1;
 }
@@ -1490,8 +1516,6 @@ int demuxer_seek_chapter(demuxer_t *demuxer, int chapter, int mode,
 {
     int ris;
     int current, total;
-    sh_video_t *sh_video = demuxer->video->sh;
-    sh_audio_t *sh_audio = demuxer->audio->sh;
 
     if (!demuxer->num_chapters || !demuxer->chapters) {
         if (!mode) {
@@ -1506,17 +1530,9 @@ int demuxer_seek_chapter(demuxer_t *demuxer, int chapter, int mode,
 
         ris = stream_control(demuxer->stream, STREAM_CTRL_SEEK_TO_CHAPTER,
                              &chapter);
-        if (ris != STREAM_UNSUPPORTED)
-            demux_control(demuxer, DEMUXER_CTRL_RESYNC, NULL);
-        if (sh_video) {
-            ds_fill_buffer(demuxer->video);
-            resync_video_stream(sh_video);
-        }
 
-        if (sh_audio) {
-            ds_fill_buffer(demuxer->audio);
-            resync_audio_stream(sh_audio);
-        }
+        demux_resync(demuxer);
+
         // exit status may be ok, but main() doesn't have to seek itself
         // (because e.g. dvds depend on sectors, not on pts)
         *seek_pts = -1.0;
@@ -1540,6 +1556,9 @@ int demuxer_seek_chapter(demuxer_t *demuxer, int chapter, int mode,
 
         return ris != STREAM_UNSUPPORTED ? chapter : -1;
     } else {  // chapters structure is set in the demuxer
+        sh_video_t *sh_video = demuxer->video->sh;
+        sh_audio_t *sh_audio = demuxer->audio->sh;
+
         total = demuxer->num_chapters;
 
         if (mode == 1)  //absolute seeking
@@ -1674,8 +1693,6 @@ int demuxer_get_current_angle(demuxer_t *demuxer)
 int demuxer_set_angle(demuxer_t *demuxer, int angle)
 {
     int ris, angles = -1;
-    sh_video_t *sh_video = demuxer->video->sh;
-    sh_audio_t *sh_audio = demuxer->audio->sh;
 
     angles = demuxer_angles_count(demuxer);
     if ((angles < 1) || (angle > angles))
@@ -1687,16 +1704,7 @@ int demuxer_set_angle(demuxer_t *demuxer, int angle)
     if (ris == STREAM_UNSUPPORTED)
         return -1;
 
-    demux_control(demuxer, DEMUXER_CTRL_RESYNC, NULL);
-    if (sh_video) {
-        ds_fill_buffer(demuxer->video);
-        resync_video_stream(sh_video);
-    }
-
-    if (sh_audio) {
-        ds_fill_buffer(demuxer->audio);
-        resync_audio_stream(sh_audio);
-    }
+    demux_resync(demuxer);
 
     return angle;
 }
