@@ -979,8 +979,6 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
 
 static inline void xchg_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int xchg, int simple){
     MpegEncContext * const s = &h->s;
-    int temp8, i;
-    uint64_t temp64;
     int deblock_left;
     int deblock_top;
     int mb_xy;
@@ -1283,18 +1281,6 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple){
     }
     if(h->cbp || IS_INTRA(mb_type))
         s->dsp.clear_blocks(h->mb);
-
-    if(h->deblocking_filter && 0) {
-        backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, simple);
-        fill_filter_caches(h, mb_type); //FIXME don't fill stuff which isn't used by filter_mb
-        h->chroma_qp[0] = get_chroma_qp(h, 0, s->current_picture.qscale_table[mb_xy]);
-        h->chroma_qp[1] = get_chroma_qp(h, 1, s->current_picture.qscale_table[mb_xy]);
-        if (!simple && FRAME_MBAFF) {
-            ff_h264_filter_mb     (h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
-        } else {
-            ff_h264_filter_mb_fast(h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
-        }
-    }
 }
 
 /**
@@ -1715,11 +1701,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->slice_type_nos= slice_type & 3;
 
     s->pict_type= h->slice_type; // to make a few old functions happy, it's wrong though
-    if (s->pict_type == FF_B_TYPE && s0->last_picture_ptr == NULL) {
-        av_log(h->s.avctx, AV_LOG_ERROR,
-               "B picture before any references, skipping\n");
-        return -1;
-    }
 
     pps_id= get_ue_golomb(&s->gb);
     if(pps_id>=MAX_PPS_COUNT){
@@ -2170,7 +2151,7 @@ static void loop_filter(H264Context *h){
     if(h->deblocking_filter) {
         for(mb_x= 0; mb_x<s->mb_width; mb_x++){
             for(mb_y=end_mb_y - FRAME_MBAFF; mb_y<= end_mb_y; mb_y++){
-                int list, mb_xy, mb_type;
+                int mb_xy, mb_type;
                 mb_xy = h->mb_xy = mb_x + mb_y*s->mb_stride;
                 h->slice_num= h->slice_table[mb_xy];
                 mb_type= s->current_picture.mb_type[mb_xy];
@@ -2215,6 +2196,8 @@ static void loop_filter(H264Context *h){
     h->slice_type= old_slice_type;
     s->mb_x= 0;
     s->mb_y= end_mb_y - FRAME_MBAFF;
+    h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
+    h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
 }
 
 static int decode_slice(struct AVCodecContext *avctx, void *arg){
@@ -2257,6 +2240,10 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             }
             eos = get_cabac_terminate( &h->cabac );
 
+            if((s->workaround_bugs & FF_BUG_TRUNCATED) && h->cabac.bytestream > h->cabac.bytestream_end + 2){
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                return 0;
+            }
             if( ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 2) {
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d, bytestream (%td)\n", s->mb_x, s->mb_y, h->cabac.bytestream_end - h->cabac.bytestream);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
@@ -2492,8 +2479,15 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         if (ptr==NULL || dst_length < 0){
             return -1;
         }
+        i= buf_index + consumed;
+        if((s->workaround_bugs & FF_BUG_AUTODETECT) && i+3<next_avc &&
+           buf[i]==0x00 && buf[i+1]==0x00 && buf[i+2]==0x01 && buf[i+3]==0xE0)
+            s->workaround_bugs |= FF_BUG_TRUNCATED;
+
+        if(!(s->workaround_bugs & FF_BUG_TRUNCATED)){
         while(ptr[dst_length - 1] == 0 && dst_length > 0)
             dst_length--;
+        }
         bit_length= !dst_length ? 0 : (8*dst_length - ff_h264_decode_rbsp_trailing(h, ptr + dst_length - 1));
 
         if(s->avctx->debug&FF_DEBUG_STARTCODE){

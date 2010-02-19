@@ -50,7 +50,7 @@ OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3dec_data.o ac3.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o
-OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o
+OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o bgmc.o
 OBJS-$(CONFIG_AMV_DECODER)             += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_ANM_DECODER)             += anm.o
 OBJS-$(CONFIG_APE_DECODER)             += apedec.o
@@ -343,6 +343,9 @@ OBJS-$(CONFIG_WMAV1_DECODER)           += wmadec.o wma.o
 OBJS-$(CONFIG_WMAV1_ENCODER)           += wmaenc.o wma.o
 OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o wma.o
 OBJS-$(CONFIG_WMAV2_ENCODER)           += wmaenc.o wma.o
+OBJS-$(CONFIG_WMAVOICE_DECODER)        += wmavoice.o \
+                                          celp_math.o celp_filters.o \
+                                          acelp_vectors.o acelp_filters.o
 OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o        \
                                           msmpeg4.o msmpeg4data.o \
                                           intrax8.o intrax8dsp.o

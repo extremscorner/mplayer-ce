@@ -182,7 +182,7 @@ void GX_InitVideo(int video_mode, bool overscan)
 		if (CONF_GetDisplayOffsetH(&hor_offset) > 0)
 			vmode->viXOrigin += hor_offset;
 	}
-	
+
 	VIDEO_Configure(vmode);
 	
 	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));

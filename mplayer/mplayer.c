@@ -102,7 +102,6 @@ int quiet=0;
 int enable_mouse_movements=0;
 float start_volume = -1;
 float mplayer_volume = -1;
-float amplify_volume = 0.0;
 
 #include "osdep/priority.h"
 
@@ -148,9 +147,6 @@ void SetStatus(const char * txt);
 #include "playtree.h"
 #include "playtreeparser.h"
 
-int import_playtree_playlist_into_gui(play_tree_t* my_playtree, m_config_t* config);
-int import_initial_playtree_into_gui(play_tree_t* my_playtree, m_config_t* config, int enqueue);
-
 //**************************************************************************//
 //             Config
 //**************************************************************************//
@@ -170,12 +166,6 @@ static int cfg_include(m_option_t *conf, char *filename){
 }
 
 #include "get_path.h"
-
-//**************************************************************************//
-//             XScreensaver
-//**************************************************************************//
-
-void xscreensaver_heartbeat(void);
 
 //**************************************************************************//
 //**************************************************************************//
@@ -512,7 +502,7 @@ int get_restore_point(char *_filename)
 	return 0;
 }
 
-static char next_filename[1024];
+static char next_filename[MAXPATHLEN];
 
 #endif
 
@@ -563,7 +553,6 @@ char* current_module=NULL; // for debugging
 #ifdef CONFIG_MENU
 #include "m_struct.h"
 #include "libmenu/menu.h"
-void vf_menu_pause_update(struct vf_instance_s* vf);
 extern vf_info_t vf_info_menu;
 static vf_info_t* libmenu_vfs[] = {
   &vf_info_menu,
@@ -937,7 +926,8 @@ void uninit_player(unsigned int mask){
   current_module=NULL;
 }
 
-void exit_player_with_rc(exit_reason_t how, int rc){
+void exit_player_with_rc(enum exit_reason how, int rc)
+{
 #ifdef GEKKO
   if(mpctx->sh_video && how==EXIT_QUIT) save_restore_point(fileplaying,demuxer_get_current_time(mpctx->demuxer));
 #endif
@@ -1015,7 +1005,8 @@ void exit_player_with_rc(exit_reason_t how, int rc){
 #endif
 }
 
-void exit_player(exit_reason_t how){
+void exit_player(enum exit_reason how)
+{
   exit_player_with_rc(how, 1);
 }
 
@@ -1101,8 +1092,6 @@ static void exit_sighandler(int x){
   getch2_disable();
   exit(1);
 }
-
-void mp_input_register_options(m_config_t* cfg);
 
 #include "cfg-mplayer.h"
 
@@ -1399,6 +1388,11 @@ void init_vo_spudec(void) {
     spudec_free(vo_spudec);
   initialized_flags &= ~INITIALIZED_SPUDEC;
   vo_spudec = NULL;
+
+  // we currently can't work without video stream
+  if (!mpctx->sh_video)
+    return;
+
   if (spudec_ifo) {
     unsigned int palette[16], width, height;
     current_module="spudec_init_vobsub";
@@ -1653,7 +1647,7 @@ static mp_osd_msg_t* osd_msg_stack = NULL;
  *
  */
 
-void set_osd_msg(int id, int level, u64 time, const char* fmt, ...) {
+void set_osd_msg(int id, int level, unsigned long time, const char* fmt, ...) {
     mp_osd_msg_t *msg,*last=NULL;
     va_list va;
     int r;
@@ -3629,11 +3623,6 @@ setwatchdogcounter(-1);
 //m_config_set_option(mconfig,"framedrop",NULL);
 m_config_set_option(mconfig,"sws","4");
 m_config_set_option(mconfig,"lavdopts","lowres=1,1025");
-if(amplify_volume!=0.0){
-char cad[25];
-sprintf(cad,"volume=%f:0",amplify_volume);
-m_config_set_option(mconfig,"af",cad);
-}
 
 if (filename) {
     load_per_protocol_config (mconfig, filename);
@@ -3650,10 +3639,12 @@ if (filename) {
 // or cache filling
 if(!noconsolecontrols && !slave_mode){
   if(initialized_flags&INITIALIZED_GETCH2)
-    mp_msg(MSGT_CPLAYER,MSGL_WARN,MSGTR_Getch2InitializedTwice);
+  {}//mp_msg(MSGT_CPLAYER,MSGL_WARN,MSGTR_Getch2InitializedTwice);
   else
+  {
     getch2_enable();  // prepare stdin for hotkeys...
-  initialized_flags|=INITIALIZED_GETCH2;
+    initialized_flags|=INITIALIZED_GETCH2;
+  }
   mp_msg(MSGT_CPLAYER,MSGL_DBG2,"\n[[[init getch2]]]\n");
 }
 
@@ -4303,7 +4294,7 @@ if(!mpctx->sh_video && !mpctx->sh_audio){
 /* display clip info */
 demux_info_print(mpctx->demuxer);
 //================== Read SUBTITLES (DVD & TEXT) ==========================
-if(vo_spudec==NULL && mpctx->sh_video &&
+if(vo_spudec==NULL &&
      (mpctx->stream->type==STREAMTYPE_DVD || mpctx->stream->type == STREAMTYPE_DVDNAV)){
   init_vo_spudec();
 }
@@ -5040,7 +5031,7 @@ if(benchmark){
 
 // time to uninit all, except global stuff:
 //rodries: INITIALIZED_DEMUXER+INITIALIZED_VCODEC  review (added for testing)
-uninit_player(INITIALIZED_ALL-(INITIALIZED_DEMUXER+INITIALIZED_INPUT+INITIALIZED_VCODEC+INITIALIZED_GUI+(fixed_vo?INITIALIZED_VO:0)));
+uninit_player(INITIALIZED_ALL-(INITIALIZED_DEMUXER+INITIALIZED_INPUT+INITIALIZED_VCODEC+INITIALIZED_GETCH2+INITIALIZED_GUI+(fixed_vo?INITIALIZED_VO:0)));
 if(mpctx->set_of_sub_size > 0) {
     current_module="sub_free";
     for(i = 0; i < mpctx->set_of_sub_size; ++i) {
@@ -5078,16 +5069,16 @@ if( mpctx->eof == PT_NEXT_ENTRY)
 		vo_osd_changed(OSDTYPE_SUBTITLE);
 		vo_osd_changed(OSDTYPE_PROGBAR);
 		vo_osd_changed(OSDTYPE_OSD);
-		
-		mpctx->osd_function = OSD_PAUSE;			
+
+		mpctx->osd_function = OSD_PAUSE;
 		clear_pause_mpi();
 		vf_menu_pause_update(vf_menu);
 		mpctx->osd_function = OSD_PLAY;
-		
+
 		filename = next_filename;
-	    mpctx->eof = 1;
-	    rel_seek_secs=seek_to_sec=0;
-	    goto play_next_file;	
+		mpctx->eof = 1;
+		rel_seek_secs=seek_to_sec=0;
+		goto play_next_file;
 	}
 	else mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 } 	

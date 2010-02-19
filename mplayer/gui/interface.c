@@ -37,6 +37,8 @@
 #include "cfg.h"
 #include "help_mp.h"
 #include "get_path.h"
+#include "mp_core.h"
+#include "mplayer.h"
 #include "libvo/x11_common.h"
 #include "libvo/video_out.h"
 #include "libvo/font_load.h"
@@ -72,7 +74,7 @@ int vcd_seek_to_track(void *vcd, int track);
 guiInterface_t guiIntfStruct;
 int guiWinID=-1;
 
-char * gstrcat( char ** dest,const char * src )
+static char * gstrcat( char ** dest, const char * src )
 {
  char * tmp = NULL;
 
@@ -100,7 +102,7 @@ int gstrcmp( const char * a,const char * b )
  return strcmp( a,b );
 }
 
-int gstrncmp( const char * a,const char * b,int size )
+static int gstrncmp( const char * a, const char * b, int size )
 {
  if ( !a && !b ) return 0;
  if ( !a || !b ) return -1;
@@ -125,7 +127,7 @@ void gfree( void ** p )
  free( *p ); *p=NULL;
 }
 
-void gset( char ** str, const char * what )
+static void gset( char ** str, const char * what )
 {
  if ( *str ) { if ( !strstr( *str,what ) ) { gstrcat( str,"," ); gstrcat( str,what ); }}
    else gstrcat( str,what );
@@ -153,7 +155,7 @@ void gaddlist( char *** list,const char * entry )
  * \brief this replaces a string starting with search by replace.
  * If not found, replace is appended.
  */
-void greplace(char ***list, const char *search, const char *replace)
+static void greplace(char ***list, const char *search, const char *replace)
 {
  int i = 0;
  int len = (search) ? strlen(search) : 0;
@@ -781,7 +783,7 @@ int guiGetEvent( int type,char * arg )
 	     }
 	 }
 
-	if ( !video_driver_list && !video_driver_list[0] ) { gtkMessageBox( GTK_MB_FATAL,MSGTR_IDFGCVD ); exit_player( "gui init" ); }
+	if ( !video_driver_list && !video_driver_list[0] ) { gtkMessageBox( GTK_MB_FATAL,MSGTR_IDFGCVD ); exit_player(EXIT_ERROR); }
 
 	{
 	 int i = 0;
@@ -1196,7 +1198,7 @@ void * gtkSet( int cmd,float fparam, void * vparam )
 
 //This function adds/inserts one file into the gui playlist
 
-int import_file_into_gui(char* temp, int insert)
+static int import_file_into_gui(char* temp, int insert)
 {
   char *filename, *pathname;
   plItem * item;

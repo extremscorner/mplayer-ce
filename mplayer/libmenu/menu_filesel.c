@@ -114,10 +114,10 @@ static m_option_t cfg_fields[] = {
 #define mpriv (menu->priv)
 
 
-static list_entry_t* actual_list;
+static list_entry_t* current_list;
 static char *next_file=NULL;
-static char file_dir[1024];
-static char menu_dir[1024];
+static char file_dir[MAXPATHLEN];
+static char menu_dir[MAXPATHLEN];
 
 
 
@@ -662,13 +662,16 @@ static void read_cmd(menu_t* menu,int cmd) {
 	  	strcpy(file_dir,mpriv->dir);
 	  	if(mpriv->p.current->p.next!=NULL)
 	  	{
-		  	actual_list=mpriv->p.current->p.next;
-		  	next_file=actual_list->p.txt;
+		  	current_list=mpriv->p.current->p.next;
+		  	if(current_list!=NULL)
+		  		next_file=current_list->p.txt;
+		  	else
+		  		next_file=NULL;
 		}
 		else
 		{
 			next_file=NULL;
-			actual_list=NULL;
+			current_list=NULL;
 		}
 	  }
       if (str != action)
@@ -801,15 +804,20 @@ static int open_fs(menu_t* menu, char* args) {
 
 bool check_play_next_file(char *fileplaying,char *next_filename)
 {
-	if(next_file==NULL || dir_play==false) return false;
+	if(next_file==NULL || dir_play==false || file_dir==NULL) return false;
 	
-	if(menu_dir[0]=='\0') return false;
+	if(menu_dir==NULL || menu_dir[0]=='\0') return false;
 	if(strcmp(file_dir,menu_dir)!=0) return false;
 	
+	if(strlen(file_dir)+strlen(next_file)>MAXPATHLEN) return false;
+
 	sprintf(next_filename,"%s%s",file_dir,next_file);
-	actual_list=actual_list->p.next;
-	if(!actual_list) next_file=NULL;
-	else next_file=actual_list->p.txt;
+	next_file=NULL;
+	if(current_list!=NULL)
+	{
+		current_list=current_list->p.next;
+		if(current_list!=NULL) next_file=current_list->p.txt;
+	}
 	return true;
 }
 
