@@ -37,6 +37,7 @@
 #include "cfg.h"
 #include "app.h"
 #include "interface.h"
+#include "mplayer/gmplayer.h"
 #include "mplayer/play.h"
 
 // --- params
@@ -218,7 +219,7 @@ static const m_option_t gui_opts[] =
  { NULL, NULL, 0, 0, 0, 0, NULL }
 };
 
-char * gfgets( char * str, int size, FILE * f )
+static char * gfgets( char * str, int size, FILE * f )
 {
  char * s = fgets( str,size,f );
  char   c;

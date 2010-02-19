@@ -131,42 +131,38 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     if (c && c->name)
         c_name = c->name;
     else
-        c_name = (char *) NULL;
+        c_name = "(null)";
 
-    if (c_name) {
-        get_word_sep(buf, sizeof(buf), "/", &p);
-        i = atoi(buf);
-        switch (codec->codec_type) {
-        case CODEC_TYPE_AUDIO:
-            av_log(s, AV_LOG_DEBUG, "audio codec set to: %s\n", c_name);
-            codec->sample_rate = RTSP_DEFAULT_AUDIO_SAMPLERATE;
-            codec->channels = RTSP_DEFAULT_NB_AUDIO_CHANNELS;
-            if (i > 0) {
-                codec->sample_rate = i;
-                get_word_sep(buf, sizeof(buf), "/", &p);
-                i = atoi(buf);
-                if (i > 0)
-                    codec->channels = i;
-                // TODO: there is a bug here; if it is a mono stream, and
-                // less than 22000Hz, faad upconverts to stereo and twice
-                // the frequency.  No problem, but the sample rate is being
-                // set here by the sdp line. Patch on its way. (rdm)
-            }
-            av_log(s, AV_LOG_DEBUG, "audio samplerate set to: %i\n",
-                   codec->sample_rate);
-            av_log(s, AV_LOG_DEBUG, "audio channels set to: %i\n",
-                   codec->channels);
-            break;
-        case CODEC_TYPE_VIDEO:
-            av_log(s, AV_LOG_DEBUG, "video codec set to: %s\n", c_name);
-            break;
-        default:
-            break;
+    get_word_sep(buf, sizeof(buf), "/", &p);
+    i = atoi(buf);
+    switch (codec->codec_type) {
+    case CODEC_TYPE_AUDIO:
+        av_log(s, AV_LOG_DEBUG, "audio codec set to: %s\n", c_name);
+        codec->sample_rate = RTSP_DEFAULT_AUDIO_SAMPLERATE;
+        codec->channels = RTSP_DEFAULT_NB_AUDIO_CHANNELS;
+        if (i > 0) {
+            codec->sample_rate = i;
+            get_word_sep(buf, sizeof(buf), "/", &p);
+            i = atoi(buf);
+            if (i > 0)
+                codec->channels = i;
+            // TODO: there is a bug here; if it is a mono stream, and
+            // less than 22000Hz, faad upconverts to stereo and twice
+            // the frequency.  No problem, but the sample rate is being
+            // set here by the sdp line. Patch on its way. (rdm)
         }
-        return 0;
+        av_log(s, AV_LOG_DEBUG, "audio samplerate set to: %i\n",
+               codec->sample_rate);
+        av_log(s, AV_LOG_DEBUG, "audio channels set to: %i\n",
+               codec->channels);
+        break;
+    case CODEC_TYPE_VIDEO:
+        av_log(s, AV_LOG_DEBUG, "video codec set to: %s\n", c_name);
+        break;
+    default:
+        break;
     }
-
-    return -1;
+    return 0;
 }
 
 /* return the length and optionally the data */

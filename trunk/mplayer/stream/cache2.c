@@ -107,7 +107,6 @@ typedef struct {
   volatile double stream_time_length;
 #ifdef GEKKO
   int thread_active;
-  int exited;
 #endif
 } cache_vars_t;
 
@@ -417,7 +416,6 @@ void cache_uninit(stream_t *s) {
   if(!s->cache_pid) return; 
   cache_do_control(s, -2, NULL);
   c->thread_active = 0;
-  while(!c->exited) usleep(1000);
   LWP_JoinThread(s->cache_pid, NULL);  
   s->cache_pid = 0;
 #else  
@@ -513,7 +511,6 @@ if(size>CACHE_LIMIT)
 #if defined(__MINGW32__)
     stream->cache_pid = _beginthread( ThreadProc, 0, s );
 #elif defined(GEKKO)
-	s->exited=0;
 	s->thread_active = 1;
 	memset(&gekko_stack, 0, GEKKO_THREAD_STACKSIZE);
 	LWP_CreateThread(&stream->cache_pid, ThreadProc, s, gekko_stack,
@@ -586,7 +583,6 @@ static void ThreadProc( void *s ){
   } while (cache_execute_control(s));
 #else
   } while (cache_execute_control(s) && ((cache_vars_t*)s)->thread_active);
-  ((cache_vars_t*)s)->exited=1;
 #endif  
 #if defined(__MINGW32__) || defined(__OS2__)
   _endthread();

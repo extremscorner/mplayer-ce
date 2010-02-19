@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 51
+#define LIBAVFORMAT_VERSION_MINOR 52
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -242,6 +242,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_GENERIC_INDEX 0x0100 /**< Use generic index building code. */
 #define AVFMT_TS_DISCONT    0x0200 /**< Format allows timestamp discontinuities. */
 #define AVFMT_VARIABLE_FPS  0x0400 /**< Format allows variable fps. */
+#define AVFMT_NODIMENSIONS  0x0800 /**< Format does not need width/height */
 
 typedef struct AVOutputFormat {
     const char *name;

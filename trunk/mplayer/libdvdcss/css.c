@@ -1119,11 +1119,14 @@ static int CrackDiscKey( dvdcss_t dvdcss, uint8_t *p_disc_key )
     /*
      * Prepare tables for hash reversal
      */
-
+#ifdef GEKKO
+    return -1;
+#endif
     /* initialize lookup tables for k[1] */
     K1table = malloc( 65536 * K1TABLEWIDTH );
     if( K1table == NULL )
     {
+    	printf("css.c: error creating K1table\n");
         return -1;
     }
     memset( K1table, 0 , 65536 * K1TABLEWIDTH );
@@ -1153,9 +1156,10 @@ static int CrackDiscKey( dvdcss_t dvdcss, uint8_t *p_disc_key )
     }
 
     /* Initing our Really big table */
-    BigTable = malloc( 16777216 * sizeof(int) );
+    BigTable = malloc( 16777216 * sizeof(int) ); // 64MB (not enoug mem for the wii)
     if( BigTable == NULL )
     {
+    	printf("css.c: error creating BigTable\n");
     	free(K1table);
         return -1;
     }

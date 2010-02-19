@@ -140,7 +140,246 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
     }
 }
 
-void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
+static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
+    MpegEncContext * const s = &h->s;
+    int b8_stride = h->b8_stride;
+    int b4_stride = h->b_stride;
+    int mb_xy = h->mb_xy;
+    int mb_type_col[2];
+    const int16_t (*l1mv0)[2], (*l1mv1)[2];
+    const int8_t *l1ref0, *l1ref1;
+    const int is_b8x8 = IS_8X8(*mb_type);
+    unsigned int sub_mb_type= MB_TYPE_L0L1;
+    int i8, i4;
+    int ref[2];
+    int mv[2];
+    int list;
+
+    assert(h->ref_list[1][0].reference&3);
+
+#define MB_TYPE_16x16_OR_INTRA (MB_TYPE_16x16|MB_TYPE_INTRA4x4|MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM)
+
+
+    /* ref = min(neighbors) */
+    for(list=0; list<2; list++){
+        int left_ref = h->ref_cache[list][scan8[0] - 1];
+        int top_ref  = h->ref_cache[list][scan8[0] - 8];
+        int refc = h->ref_cache[list][scan8[0] - 8 + 4];
+        const int16_t *C= h->mv_cache[list][ scan8[0] - 8 + 4];
+        if(refc == PART_NOT_AVAILABLE){
+            refc = h->ref_cache[list][scan8[0] - 8 - 1];
+            C    = h-> mv_cache[list][scan8[0] - 8 - 1];
+        }
+        ref[list] = FFMIN3((unsigned)left_ref, (unsigned)top_ref, (unsigned)refc);
+        if(ref[list] >= 0){
+            //this is just pred_motion() but with the cases removed that cannot happen for direct blocks
+            const int16_t * const A= h->mv_cache[list][ scan8[0] - 1 ];
+            const int16_t * const B= h->mv_cache[list][ scan8[0] - 8 ];
+
+            int match_count= (left_ref==ref[list]) + (top_ref==ref[list]) + (refc==ref[list]);
+            if(match_count > 1){ //most common
+                mv[list]= pack16to32(mid_pred(A[0], B[0], C[0]),
+                                     mid_pred(A[1], B[1], C[1]) );
+            }else {
+                assert(match_count==1);
+                if(left_ref==ref[list]){
+                    mv[list]= *(uint32_t*)A;
+                }else if(top_ref==ref[list]){
+                    mv[list]= *(uint32_t*)B;
+                }else{
+                    mv[list]= *(uint32_t*)C;
+                }
+            }
+        }else{
+            int mask= ~(MB_TYPE_L0 << (2*list));
+            mv[list] = 0;
+            ref[list] = -1;
+            if(!is_b8x8)
+                *mb_type &= mask;
+            sub_mb_type &= mask;
+        }
+    }
+    if(ref[0] < 0 && ref[1] < 0){
+        ref[0] = ref[1] = 0;
+        if(!is_b8x8)
+            *mb_type |= MB_TYPE_L0L1;
+        sub_mb_type |= MB_TYPE_L0L1;
+    }
+
+    if(!(is_b8x8|mv[0]|mv[1])){
+        fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
+        fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
+        fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
+        fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, 0, 4);
+        *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
+        return;
+    }
+
+    if(IS_INTERLACED(h->ref_list[1][0].mb_type[mb_xy])){ // AFL/AFR/FR/FL -> AFL/FL
+        if(!IS_INTERLACED(*mb_type)){                    //     AFR/FR    -> AFL/FL
+            mb_xy= s->mb_x + ((s->mb_y&~1) + h->col_parity)*s->mb_stride;
+            b8_stride = 0;
+        }else{
+            mb_xy += h->col_fieldoff; // non zero for FL -> FL & differ parity
+        }
+        goto single_col;
+    }else{                                               // AFL/AFR/FR/FL -> AFR/FR
+        if(IS_INTERLACED(*mb_type)){                     // AFL       /FL -> AFR/FR
+            mb_xy= s->mb_x + (s->mb_y&~1)*s->mb_stride;
+            mb_type_col[0] = h->ref_list[1][0].mb_type[mb_xy];
+            mb_type_col[1] = h->ref_list[1][0].mb_type[mb_xy + s->mb_stride];
+            b8_stride *= 3;
+            b4_stride *= 6;
+
+            sub_mb_type |= MB_TYPE_16x16|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+            if(    (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)
+                && (mb_type_col[1] & MB_TYPE_16x16_OR_INTRA)
+                && !is_b8x8){
+                *mb_type   |= MB_TYPE_16x8 |MB_TYPE_DIRECT2; /* B_16x8 */
+            }else{
+                *mb_type   |= MB_TYPE_8x8;
+            }
+        }else{                                           //     AFR/FR    -> AFR/FR
+single_col:
+            mb_type_col[0] =
+            mb_type_col[1] = h->ref_list[1][0].mb_type[mb_xy];
+
+            sub_mb_type |= MB_TYPE_16x16|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+            if(!is_b8x8 && (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)){
+                *mb_type   |= MB_TYPE_16x16|MB_TYPE_DIRECT2; /* B_16x16 */
+            }else if(!is_b8x8 && (mb_type_col[0] & (MB_TYPE_16x8|MB_TYPE_8x16))){
+                *mb_type   |= MB_TYPE_DIRECT2 | (mb_type_col[0] & (MB_TYPE_16x8|MB_TYPE_8x16));
+            }else{
+                if(!h->sps.direct_8x8_inference_flag){
+                    /* FIXME save sub mb types from previous frames (or derive from MVs)
+                    * so we know exactly what block size to use */
+                    sub_mb_type += (MB_TYPE_8x8-MB_TYPE_16x16); /* B_SUB_4x4 */
+                }
+                *mb_type   |= MB_TYPE_8x8;
+            }
+        }
+    }
+
+    l1mv0  = &h->ref_list[1][0].motion_val[0][h->mb2b_xy [mb_xy]];
+    l1mv1  = &h->ref_list[1][0].motion_val[1][h->mb2b_xy [mb_xy]];
+    l1ref0 = &h->ref_list[1][0].ref_index [0][h->mb2b8_xy[mb_xy]];
+    l1ref1 = &h->ref_list[1][0].ref_index [1][h->mb2b8_xy[mb_xy]];
+    if(!b8_stride){
+        if(s->mb_y&1){
+            l1ref0 += h->b8_stride;
+            l1ref1 += h->b8_stride;
+            l1mv0  +=  2*b4_stride;
+            l1mv1  +=  2*b4_stride;
+        }
+    }
+
+
+        if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
+            int n=0;
+            for(i8=0; i8<4; i8++){
+                int x8 = i8&1;
+                int y8 = i8>>1;
+                int xy8 = x8+y8*b8_stride;
+                int xy4 = 3*x8+y8*b4_stride;
+                int a,b;
+
+                if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+                    continue;
+                h->sub_mb_type[i8] = sub_mb_type;
+
+                fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[0], 1);
+                fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[1], 1);
+                if(!IS_INTRA(mb_type_col[y8]) && !h->ref_list[1][0].long_ref
+                   && (   (l1ref0[xy8] == 0 && FFABS(l1mv0[xy4][0]) <= 1 && FFABS(l1mv0[xy4][1]) <= 1)
+                       || (l1ref0[xy8]  < 0 && l1ref1[xy8] == 0 && FFABS(l1mv1[xy4][0]) <= 1 && FFABS(l1mv1[xy4][1]) <= 1))){
+                    a=b=0;
+                    if(ref[0] > 0)
+                        a= mv[0];
+                    if(ref[1] > 0)
+                        b= mv[1];
+                    n++;
+                }else{
+                    a= mv[0];
+                    b= mv[1];
+                }
+                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, a, 4);
+                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, b, 4);
+            }
+            if(!is_b8x8 && !(n&3))
+                *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
+        }else if(IS_16X16(*mb_type)){
+            int a,b;
+
+            fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
+            fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
+            if(!IS_INTRA(mb_type_col[0]) && !h->ref_list[1][0].long_ref
+               && (   (l1ref0[0] == 0 && FFABS(l1mv0[0][0]) <= 1 && FFABS(l1mv0[0][1]) <= 1)
+                   || (l1ref0[0]  < 0 && l1ref1[0] == 0 && FFABS(l1mv1[0][0]) <= 1 && FFABS(l1mv1[0][1]) <= 1
+                       && h->x264_build>33U))){
+                a=b=0;
+                if(ref[0] > 0)
+                    a= mv[0];
+                if(ref[1] > 0)
+                    b= mv[1];
+            }else{
+                a= mv[0];
+                b= mv[1];
+            }
+            fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, a, 4);
+            fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, b, 4);
+        }else{
+            int n=0;
+            for(i8=0; i8<4; i8++){
+                const int x8 = i8&1;
+                const int y8 = i8>>1;
+
+                if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
+                    continue;
+                h->sub_mb_type[i8] = sub_mb_type;
+
+                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, mv[0], 4);
+                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, mv[1], 4);
+                fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[0], 1);
+                fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[1], 1);
+
+                /* col_zero_flag */
+                if(!IS_INTRA(mb_type_col[0]) && !h->ref_list[1][0].long_ref && (   l1ref0[x8 + y8*b8_stride] == 0
+                                              || (l1ref0[x8 + y8*b8_stride] < 0 && l1ref1[x8 + y8*b8_stride] == 0
+                                                  && h->x264_build>33U))){
+                    const int16_t (*l1mv)[2]= l1ref0[x8 + y8*b8_stride] == 0 ? l1mv0 : l1mv1;
+                    if(IS_SUB_8X8(sub_mb_type)){
+                        const int16_t *mv_col = l1mv[x8*3 + y8*3*b4_stride];
+                        if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
+                            if(ref[0] == 0)
+                                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
+                            if(ref[1] == 0)
+                                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, 0, 4);
+                            n+=4;
+                        }
+                    }else{
+                        int m=0;
+                    for(i4=0; i4<4; i4++){
+                        const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*b4_stride];
+                        if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
+                            if(ref[0] == 0)
+                                *(uint32_t*)h->mv_cache[0][scan8[i8*4+i4]] = 0;
+                            if(ref[1] == 0)
+                                *(uint32_t*)h->mv_cache[1][scan8[i8*4+i4]] = 0;
+                            m++;
+                        }
+                    }
+                    if(!(m&3))
+                        h->sub_mb_type[i8]+= MB_TYPE_16x16 - MB_TYPE_8x8;
+                    n+=m;
+                    }
+                }
+            }
+            if(!is_b8x8 && !(n&15))
+                *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
+        }
+}
+
+static void pred_temp_direct_motion(H264Context * const h, int *mb_type){
     MpegEncContext * const s = &h->s;
     int b8_stride = h->b8_stride;
     int b4_stride = h->b_stride;
@@ -153,8 +392,6 @@ void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
     int i8, i4;
 
     assert(h->ref_list[1][0].reference&3);
-
-#define MB_TYPE_16x16_OR_INTRA (MB_TYPE_16x16|MB_TYPE_INTRA4x4|MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM)
 
     if(IS_INTERLACED(h->ref_list[1][0].mb_type[mb_xy])){ // AFL/AFR/FR/FL -> AFL/FL
         if(!IS_INTERLACED(*mb_type)){                    //     AFR/FR    -> AFL/FL
@@ -173,6 +410,7 @@ void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
             b4_stride *= 6;
 
             sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
+
             if(    (mb_type_col[0] & MB_TYPE_16x16_OR_INTRA)
                 && (mb_type_col[1] & MB_TYPE_16x16_OR_INTRA)
                 && !is_b8x8){
@@ -214,164 +452,7 @@ single_col:
         }
     }
 
-    if(h->direct_spatial_mv_pred){
-        int ref[2];
-        int mv[2][2];
-        int list;
-
-        /* ref = min(neighbors) */
-        for(list=0; list<2; list++){
-            int left_ref = h->ref_cache[list][scan8[0] - 1];
-            int top_ref  = h->ref_cache[list][scan8[0] - 8];
-            int refc = h->ref_cache[list][scan8[0] - 8 + 4];
-            const int16_t *C= h->mv_cache[list][ scan8[0] - 8 + 4];
-            if(refc == PART_NOT_AVAILABLE){
-                refc = h->ref_cache[list][scan8[0] - 8 - 1];
-                C    = h-> mv_cache[list][scan8[0] - 8 - 1];
-            }
-            ref[list] = FFMIN3((unsigned)left_ref, (unsigned)top_ref, (unsigned)refc);
-            if(ref[list] >= 0){
-                //this is just pred_motion() but with the cases removed that cannot happen for direct blocks
-                const int16_t * const A= h->mv_cache[list][ scan8[0] - 1 ];
-                const int16_t * const B= h->mv_cache[list][ scan8[0] - 8 ];
-
-                int match_count= (left_ref==ref[list]) + (top_ref==ref[list]) + (refc==ref[list]);
-                if(match_count > 1){ //most common
-                    mv[list][0]= mid_pred(A[0], B[0], C[0]);
-                    mv[list][1]= mid_pred(A[1], B[1], C[1]);
-                }else {
-                    assert(match_count==1);
-                    if(left_ref==ref[list]){
-                        mv[list][0]= A[0];
-                        mv[list][1]= A[1];
-                    }else if(top_ref==ref[list]){
-                        mv[list][0]= B[0];
-                        mv[list][1]= B[1];
-                    }else{
-                        mv[list][0]= C[0];
-                        mv[list][1]= C[1];
-                    }
-                }
-            }else{
-                int mask= ~(MB_TYPE_L0 << (2*list));
-                mv[list][0] = mv[list][1] = 0;
-                ref[list] = -1;
-                if(!is_b8x8)
-                    *mb_type &= mask;
-                sub_mb_type &= mask;
-            }
-        }
-        if(ref[0] < 0 && ref[1] < 0){
-            ref[0] = ref[1] = 0;
-            if(!is_b8x8)
-                *mb_type |= MB_TYPE_L0L1;
-            sub_mb_type |= MB_TYPE_L0L1;
-        }
-
-        if(IS_INTERLACED(*mb_type) != IS_INTERLACED(mb_type_col[0])){
-            int n=0;
-            for(i8=0; i8<4; i8++){
-                int x8 = i8&1;
-                int y8 = i8>>1;
-                int xy8 = x8+y8*b8_stride;
-                int xy4 = 3*x8+y8*b4_stride;
-                int a,b;
-
-                if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
-                    continue;
-                h->sub_mb_type[i8] = sub_mb_type;
-
-                fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[0], 1);
-                fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[1], 1);
-                if(!IS_INTRA(mb_type_col[y8]) && !h->ref_list[1][0].long_ref
-                   && (   (l1ref0[xy8] == 0 && FFABS(l1mv0[xy4][0]) <= 1 && FFABS(l1mv0[xy4][1]) <= 1)
-                       || (l1ref0[xy8]  < 0 && l1ref1[xy8] == 0 && FFABS(l1mv1[xy4][0]) <= 1 && FFABS(l1mv1[xy4][1]) <= 1))){
-                    a=b=0;
-                    if(ref[0] > 0)
-                        a= pack16to32(mv[0][0],mv[0][1]);
-                    if(ref[1] > 0)
-                        b= pack16to32(mv[1][0],mv[1][1]);
-                    n++;
-                }else{
-                    a= pack16to32(mv[0][0],mv[0][1]);
-                    b= pack16to32(mv[1][0],mv[1][1]);
-                }
-                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, a, 4);
-                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, b, 4);
-            }
-            if(!is_b8x8 && !(n&3))
-                *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
-        }else if(IS_16X16(*mb_type)){
-            int a,b;
-
-            fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
-            fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
-            if(!IS_INTRA(mb_type_col[0]) && !h->ref_list[1][0].long_ref
-               && (   (l1ref0[0] == 0 && FFABS(l1mv0[0][0]) <= 1 && FFABS(l1mv0[0][1]) <= 1)
-                   || (l1ref0[0]  < 0 && l1ref1[0] == 0 && FFABS(l1mv1[0][0]) <= 1 && FFABS(l1mv1[0][1]) <= 1
-                       && h->x264_build>33U))){
-                a=b=0;
-                if(ref[0] > 0)
-                    a= pack16to32(mv[0][0],mv[0][1]);
-                if(ref[1] > 0)
-                    b= pack16to32(mv[1][0],mv[1][1]);
-            }else{
-                a= pack16to32(mv[0][0],mv[0][1]);
-                b= pack16to32(mv[1][0],mv[1][1]);
-            }
-            fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, a, 4);
-            fill_rectangle(&h->mv_cache[1][scan8[0]], 4, 4, 8, b, 4);
-        }else{
-            int n=0;
-            for(i8=0; i8<4; i8++){
-                const int x8 = i8&1;
-                const int y8 = i8>>1;
-
-                if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
-                    continue;
-                h->sub_mb_type[i8] = sub_mb_type;
-
-                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, pack16to32(mv[0][0],mv[0][1]), 4);
-                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, pack16to32(mv[1][0],mv[1][1]), 4);
-                fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[0], 1);
-                fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, (uint8_t)ref[1], 1);
-
-                /* col_zero_flag */
-                if(!IS_INTRA(mb_type_col[0]) && !h->ref_list[1][0].long_ref && (   l1ref0[x8 + y8*b8_stride] == 0
-                                              || (l1ref0[x8 + y8*b8_stride] < 0 && l1ref1[x8 + y8*b8_stride] == 0
-                                                  && h->x264_build>33U))){
-                    const int16_t (*l1mv)[2]= l1ref0[x8 + y8*b8_stride] == 0 ? l1mv0 : l1mv1;
-                    if(IS_SUB_8X8(sub_mb_type)){
-                        const int16_t *mv_col = l1mv[x8*3 + y8*3*b4_stride];
-                        if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
-                            if(ref[0] == 0)
-                                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
-                            if(ref[1] == 0)
-                                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, 0, 4);
-                            n+=4;
-                        }
-                    }else{
-                        int m=0;
-                    for(i4=0; i4<4; i4++){
-                        const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*b4_stride];
-                        if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
-                            if(ref[0] == 0)
-                                *(uint32_t*)h->mv_cache[0][scan8[i8*4+i4]] = 0;
-                            if(ref[1] == 0)
-                                *(uint32_t*)h->mv_cache[1][scan8[i8*4+i4]] = 0;
-                            m++;
-                        }
-                    }
-                    if(!(m&3))
-                        h->sub_mb_type[i8]+= MB_TYPE_16x16 - MB_TYPE_8x8;
-                    n+=m;
-                    }
-                }
-            }
-            if(!is_b8x8 && !(n&15))
-                *mb_type= (*mb_type & ~(MB_TYPE_8x8|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_P1L0|MB_TYPE_P1L1))|MB_TYPE_16x16|MB_TYPE_DIRECT2;
-        }
-    }else{ /* direct temporal mv pred */
+    {
         const int *map_col_to_list0[2] = {h->map_col_to_list0[0], h->map_col_to_list0[1]};
         const int *dist_scale_factor = h->dist_scale_factor;
         int ref_offset;
@@ -495,5 +576,13 @@ single_col:
                 }
             }
         }
+    }
+}
+
+void ff_h264_pred_direct_motion(H264Context * const h, int *mb_type){
+    if(h->direct_spatial_mv_pred){
+        pred_spatial_direct_motion(h, mb_type);
+    }else{
+        pred_temp_direct_motion(h, mb_type);
     }
 }

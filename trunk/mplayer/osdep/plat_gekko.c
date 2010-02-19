@@ -211,7 +211,7 @@ bool power_pressed = false;
 
 #define WATCHDOG_STACKSIZE 8*1024
 static u8 watchdog_Stack[WATCHDOG_STACKSIZE] ATTRIBUTE_ALIGN (32);
-
+lwp_t watchdogthread;
 
 
 mutex_t watchdogmutex=LWP_MUTEX_NULL;
@@ -221,20 +221,30 @@ static bool exit_watchdog_thread=false;
 
 static void * watchdogthreadfunc (void *arg)
 {
+	long sleeptime;
 	while(!exit_watchdog_thread)
 	{
-		sleep(1);
+		sleeptime = 1000*1000; // 1 sec
+		while(sleeptime > 0)
+		{
+			if(exit_watchdog_thread)
+				return NULL;
+			usleep(100);
+			sleeptime -= 100;
+		}
+
 		if(exit_watchdog_thread)break;
 		if(reset_pressed || power_pressed)
 		{
-			sleep(1);
-			if(exit_watchdog_thread)break;
-			sleep(1);
-			if(exit_watchdog_thread)break;
-			sleep(1);
-			if(exit_watchdog_thread)break;
-			sleep(1);
-			if(exit_watchdog_thread)break;
+			sleeptime = 5*1000*1000; //mplayer has 5 secs to do a clean exit
+			while(sleeptime > 0)
+			{
+				if(exit_watchdog_thread)
+					return NULL;
+				usleep(100);
+				sleeptime -= 100;
+			}
+
 			if(reset_pressed)
 			{
 				printf("reset\n");
@@ -253,7 +263,7 @@ static void * watchdogthreadfunc (void *arg)
 			if(watchdogcounter==0)
 			{
 				printf("timeout: return to loader\n");
-				if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+				if (!hbc_stub()) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 				exit(0);
 			}
 			if(watchdogmutex!=LWP_MUTEX_NULL)
@@ -264,6 +274,7 @@ static void * watchdogthreadfunc (void *arg)
 			}
 		}
 	}
+	return NULL;
 }
 
 #ifdef WIILIB
@@ -447,17 +458,13 @@ void gekko_abort(void) {
 	exit(-1);
 }
 
-static void __dec(char *cad){int i;for(i=0;cad[i]!='\0';i++)cad[i]=cad[i]-50;}
-static void sp(){sleep(5);}
-
-
 /******************************************/
 /*           NETWORK FUNCTIONS            */
 /******************************************/
 #define NET_STACKSIZE 8*1024
 static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
 
-lwp_t netthread;
+lwp_t netthread=LWP_THREAD_NULL;
 
 typedef struct
 {
@@ -705,7 +712,8 @@ static void * networkthreadfunc (void *arg)
 	while(1)
 	{
 		wait_for_network_initialisation();
-		LWP_SuspendThread(LWP_GetSelf());
+		LWP_SuspendThread(netthread);
+		net_deinit();
 	}
     return NULL;
 }
@@ -729,7 +737,11 @@ bool DVDGekkoMount()
 		ret = WIIDVD_Mount();
 		dvd_mounted=true;
 		dvd_mounting=false;
-		if(ret==-1) return false;
+		if(ret==-1)
+		{
+			dvd_mounted=false;
+			return false;
+		}
 		return true;		
 	}
 	dvd_mounting=false;
@@ -895,30 +907,23 @@ static void * exithreadfunc (void *arg)
 
 void plat_init (int *argc, char **argv[])
 {
+	IOS_ReloadIOS(202);
 	GX_InitVideo(0, true);
 	log_console_init(vmode, 0);
 
 	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);	
-	
-	bool badstuff = FindIOS(202);	// Don't rename.
-	
-	if (badstuff)
-	{
-		printf(" Found IOS202, reloading.\n");
-		IOS_ReloadIOS(202);
-	}
-	
+
 	printf(" Enabling DVD access... ");
 	
-	if (WIIDVD_Init(!badstuff))
+	if (WIIDVD_Init(IOS_GetVersion()!=202))
 		printf("\x1b[32;1mSUCCESS.");
 	else
 		printf("\x1b[31;1mFAILED!");
 	
 	printf("\x1b[39;0m\n");
 	USB2Enable(false);
-	
-	if (badstuff)
+
+	if (IOS_GetVersion()==202)
 	{
 		if (mload_init())
 		{
@@ -947,7 +952,7 @@ void plat_init (int *argc, char **argv[])
 				
 		VIDEO_WaitVSync();
 		sleep(6);
-		if (!*((u32*)0x80001800)) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+		if (!hbc_stub()) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 		exit(0);
 	}
 	
@@ -1028,7 +1033,7 @@ void plat_init (int *argc, char **argv[])
 		printf(" Watchdog thread enabled.\n");
 		LWP_MutexInit(&watchdogmutex, false);
 	}
-	LWP_CreateThread(&mountthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
+	LWP_CreateThread(&watchdogthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
 
 	printf(" Starting mount thread.\n");
 	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
@@ -1061,9 +1066,9 @@ void plat_deinit (int rc)
 {
 	exit_automount_thread=true;
 	LWP_JoinThread(mountthread,NULL);
-	exit_automount_thread=true;
-	LWP_JoinThread(mountthread,NULL);
-	if(watchdogmutex==LWP_MUTEX_NULL)LWP_MutexDestroy(watchdogmutex);
+	exit_watchdog_thread=true;
+	LWP_JoinThread(watchdogthread,NULL);
+	if(watchdogmutex!=LWP_MUTEX_NULL)LWP_MutexDestroy(watchdogmutex);
 	save_screen_params();
 
 	if (power_pressed) {

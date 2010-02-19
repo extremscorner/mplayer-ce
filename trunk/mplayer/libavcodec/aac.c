@@ -169,7 +169,7 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int che_configure(AACContext *ac,
+static av_cold int che_configure(AACContext *ac,
                          enum ChannelPosition che_pos[4][MAX_ELEM_ID],
                          int type, int id,
                          int *channels)
@@ -196,7 +196,7 @@ static int che_configure(AACContext *ac,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int output_configure(AACContext *ac,
+static av_cold int output_configure(AACContext *ac,
                             enum ChannelPosition che_pos[4][MAX_ELEM_ID],
                             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
                             int channel_config, enum OCStatus oc_type)
@@ -324,7 +324,7 @@ static int decode_pce(AACContext *ac, enum ChannelPosition new_che_pos[4][MAX_EL
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int set_default_channel_config(AACContext *ac,
+static av_cold int set_default_channel_config(AACContext *ac,
                                       enum ChannelPosition new_che_pos[4][MAX_ELEM_ID],
                                       int channel_config)
 {
@@ -2007,12 +2007,6 @@ static int aac_decode_frame(AVCodecContext *avccontext, void *data,
     }
 
     spectral_to_sample(ac);
-
-    if (!ac->is_saved) {
-        ac->is_saved = 1;
-        *data_size = 0;
-        return buf_size;
-    }
 
     data_size_tmp = 1024 * avccontext->channels * sizeof(int16_t);
     if (*data_size < data_size_tmp) {
