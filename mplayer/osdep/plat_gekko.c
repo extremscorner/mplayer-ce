@@ -907,15 +907,21 @@ static void * exithreadfunc (void *arg)
 
 void plat_init (int *argc, char **argv[])
 {
-	IOS_ReloadIOS(202);
 	GX_InitVideo(0, true);
 	log_console_init(vmode, 0);
 
-	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);	
-
+	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);
+	
+	if (FindIOS(202))
+	{
+		printf(" Found IOS202, reloading.\n");
+		IOS_ReloadIOS(202);
+	}
+	
+	bool badstuff = (IOS_GetVersion() == 202);
 	printf(" Enabling DVD access... ");
 	
-	if (WIIDVD_Init(IOS_GetVersion()!=202))
+	if (WIIDVD_Init(!badstuff))
 		printf("\x1b[32;1mSUCCESS.");
 	else
 		printf("\x1b[31;1mFAILED!");
@@ -923,7 +929,7 @@ void plat_init (int *argc, char **argv[])
 	printf("\x1b[39;0m\n");
 	USB2Enable(false);
 
-	if (IOS_GetVersion()==202)
+	if (badstuff)
 	{
 		if (mload_init())
 		{

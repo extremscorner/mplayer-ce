@@ -57,7 +57,7 @@ const LIBVO_EXTERN (gekko)
 static	u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
 
-static u32 gx_width, gx_height;
+static f32 gx_width, gx_height;
 
 extern int screenwidth;
 extern int screenheight;
@@ -235,11 +235,11 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 	if (image_aspect > screen_aspect)
 	{
 		gx_width = screenwidth;
-		gx_height = d_height * ((float)screenwidth / (float)d_width);
+		gx_height = (f32)d_height * ((f32)screenwidth / (f32)d_width);
 	}
 	else
 	{
-		gx_width = d_width * ((float)screenheight / (float)d_height);
+		gx_width = (f32)d_width * ((f32)screenheight / (f32)d_height);
 		gx_height = screenheight;
 	}
 
