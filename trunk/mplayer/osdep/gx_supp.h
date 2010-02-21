@@ -35,7 +35,7 @@ extern GXRModeObj *vmode;
 
 void GX_InitVideo(int video_mode, bool overscan);
 
-void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect);
+void GX_StartYUV(u16 width, u16 height, f32 haspect, f32 vaspect);
 void GX_RenderTexture(bool vsync);
 void GX_UpdatePitch(u16 *pitch);
 void GX_ResetTextureYUVPointers();

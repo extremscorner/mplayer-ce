@@ -32,9 +32,12 @@
 #include <unistd.h>
 #include <ogc/mutex.h>
 #include <ogc/lwp.h>
+
 #include "gx_supp.h"
 #include "ave-rvl.h"
 
+
+#define max(a, b) ((a > b) ? b : a)
 
 #define DEFAULT_FIFO_SIZE (256 * 1024)
 
@@ -65,11 +68,11 @@ static u16 vwidth, vheight;
 static u16 Ywidth, Yheight, UVwidth, UVheight;
 
 /* New texture based scaler */
-static s16 square[] ATTRIBUTE_ALIGN(32) = {
-	-HASPECT, VASPECT, 0,
-	HASPECT, VASPECT, 0,
-	HASPECT, -VASPECT, 0,
-	-HASPECT, -VASPECT, 0,
+static f32 square[] ATTRIBUTE_ALIGN(32) = {
+	-HASPECT, VASPECT,
+	HASPECT, VASPECT,
+	HASPECT, -VASPECT,
+	-HASPECT, -VASPECT,
 };
 
 static GXColor colors[] ATTRIBUTE_ALIGN(32) = {
@@ -89,15 +92,6 @@ static f32 UVtexcoords[] ATTRIBUTE_ALIGN(32) = {
 	1.0, 1.0,
 	0.0, 1.0,
 };
-
-static u8 sample_pattern[12][2] = {		// Not perfect, but it's a start. libogc's default introduces aliasing. (!)
-	{3, 3}, {9, 6}, {3, 9},
-	{3, 3}, {9, 6}, {3, 9},
-	{9, 3}, {3, 6}, {9, 9},
-	{9, 3}, {3, 6}, {9, 9}
-};
-
-static u8 vfilter[7] = {4, 8, 12, 16, 12, 8, 4};
 
 
 void GX_InitVideo(int video_mode, bool overscan)
@@ -122,36 +116,22 @@ void GX_InitVideo(int video_mode, bool overscan)
 			vmode = VIDEO_GetPreferredMode(NULL);
 	}
 	
-	vmode->xfbMode = !((CONF_GetProgressiveScan() > 0) && VIDEO_HaveComponentCable());
-	vmode->field_rendering = GX_FALSE;
-	vmode->aa = GX_TRUE;
-	
-	if (vmode->aa)
-	{
-		**vmode->sample_pattern = *sample_pattern;
-		*vmode->vfilter = *vfilter;
-	}
-	
 	int videowidth = VI_MAX_WIDTH_NTSC;
 	int videoheight = VI_MAX_HEIGHT_NTSC;
 	
-	bool european = (vmode->viTVMode >> 2) == VI_PAL;
-	
-	if (european)
+	if ((vmode->viTVMode >> 2) == VI_PAL)
 	{
 		videowidth = VI_MAX_WIDTH_PAL;
 		videoheight = VI_MAX_HEIGHT_PAL;
 	}
 	
 	if (overscan)
-		vmode->xfbHeight = ceil((float)(videoheight * 0.95) / 8) * 8;
+		vmode->viHeight = ceil((float)(videoheight * 0.95) / 8) * 8;
 	else
-		vmode->xfbHeight = videoheight;
+		vmode->viHeight = videoheight;
 	
-	if (!european || !vmode->aa)
-		vmode->efbHeight = vmode->xfbHeight;
-	
-	vmode->viHeight = vmode->xfbHeight;
+	vmode->xfbHeight = vmode->viHeight;
+	vmode->efbHeight = max(vmode->xfbHeight, 528);
 	
 	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
 	{
@@ -169,7 +149,6 @@ void GX_InitVideo(int video_mode, bool overscan)
 	else
 		vmode->viWidth = videowidth;
 	
-	// This will kill the exception screen!
 	vmode->fbWidth = vmode->viWidth;
 	
 	vmode->viXOrigin = (videowidth - vmode->viWidth) / 2;
@@ -182,11 +161,11 @@ void GX_InitVideo(int video_mode, bool overscan)
 		if (CONF_GetDisplayOffsetH(&hor_offset) > 0)
 			vmode->viXOrigin += hor_offset;
 	}
-
+	
 	VIDEO_Configure(vmode);
 	
-	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
-	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer(vmode));
+	xfb[0] = (u32 *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+	xfb[1] = (u32 *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 	
 	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
@@ -223,119 +202,116 @@ static void draw_initYUV(void)
 	
 	//Y'UV->RGB formulation 2
 	GX_SetNumTevStages(12);
-	GX_SetTevKColor(GX_KCOLOR0, (GXColor) { 255,      0,        0,    18.624});	//R {1, 0, 0, 16*1.164}
-	GX_SetTevKColor(GX_KCOLOR1, (GXColor) {  0,       0,       255,   41.82});	//B {0, 0, 1, 0.164}
-	GX_SetTevKColor(GX_KCOLOR2, (GXColor) {203.745, 103.6575,   0,     255});	// {1.598/2, 0.813/2, 0}
-	GX_SetTevKColor(GX_KCOLOR3, (GXColor) {  0,     24.92625, 128.52,  255});	// {0, 0.391/4, 2.016/4}
+	GX_SetTevKColor(GX_KCOLOR0, (GXColor){ 255,      0,        0,    18.624});	//R {1, 0, 0, 16*1.164}
+	GX_SetTevKColor(GX_KCOLOR1, (GXColor){  0,       0,       255,   41.82});	//B {0, 0, 1, 0.164}
+	GX_SetTevKColor(GX_KCOLOR2, (GXColor){203.745, 103.6575,   0,     255});	// {1.598/2, 0.813/2, 0}
+	GX_SetTevKColor(GX_KCOLOR3, (GXColor){  0,     24.92625, 128.52,  255});	// {0, 0.391/4, 2.016/4}
 	//Stage 0: TEVREG0 <- { 0, 2Um, 2Up }; TEVREG0A <- {16*1.164}
-	GX_SetTevKColorSel(GX_TEVSTAGE0,GX_TEV_KCSEL_K1);
+	GX_SetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K1);
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1,GX_COLOR0A0);
-	GX_SetTevColorIn (GX_TEVSTAGE0, GX_CC_RASC, GX_CC_KONST, GX_CC_TEXC, GX_CC_ZERO);
-	GX_SetTevColorOp (GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_2, GX_ENABLE, GX_TEVREG0);
-	GX_SetTevKAlphaSel(GX_TEVSTAGE0,GX_TEV_KASEL_K0_A);
+	GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_RASC, GX_CC_KONST, GX_CC_TEXC, GX_CC_ZERO);
+	GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_2, GX_ENABLE, GX_TEVREG0);
+	GX_SetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
 	GX_SetTevAlphaIn (GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_KONST, GX_CA_ZERO);
 	GX_SetTevAlphaOp (GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG0);
 	//Stage 1: TEVREG1 <- { 0, 2Up, 2Um };
-	GX_SetTevKColorSel(GX_TEVSTAGE1,GX_TEV_KCSEL_K1);
+	GX_SetTevKColorSel(GX_TEVSTAGE1, GX_TEV_KCSEL_K1);
 	GX_SetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1,GX_COLOR0A0);
-	GX_SetTevColorIn (GX_TEVSTAGE1, GX_CC_KONST, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
-	GX_SetTevColorOp (GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_2, GX_ENABLE, GX_TEVREG1);
-	GX_SetTevAlphaIn (GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_KONST, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
+	GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_2, GX_ENABLE, GX_TEVREG1);
+	GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 2: TEVREG2 <- { Vp, Vm, 0 }
-	GX_SetTevKColorSel(GX_TEVSTAGE2,GX_TEV_KCSEL_K0);
+	GX_SetTevKColorSel(GX_TEVSTAGE2, GX_TEV_KCSEL_K0);
 	GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD1, GX_TEXMAP2,GX_COLOR0A0);
-	GX_SetTevColorIn (GX_TEVSTAGE2, GX_CC_RASC, GX_CC_KONST, GX_CC_TEXC, GX_CC_ZERO);
-	GX_SetTevColorOp (GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG2);
-	GX_SetTevAlphaIn (GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_RASC, GX_CC_KONST, GX_CC_TEXC, GX_CC_ZERO);
+	GX_SetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG2);
+	GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 3: TEVPREV <- { (Vm), (Vp), 0 }
-	GX_SetTevKColorSel(GX_TEVSTAGE3,GX_TEV_KCSEL_K0);
+	GX_SetTevKColorSel(GX_TEVSTAGE3, GX_TEV_KCSEL_K0);
 	GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD1, GX_TEXMAP2,GX_COLOR0A0);
-	GX_SetTevColorIn (GX_TEVSTAGE3, GX_CC_KONST, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
-	GX_SetTevColorOp (GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
-	GX_SetTevAlphaIn (GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_KONST, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
+	GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 4: TEVPREV <- { (-1.598Vm), (-0.813Vp), 0 }; TEVPREVA <- {Y' - 16*1.164}
-	GX_SetTevKColorSel(GX_TEVSTAGE4,GX_TEV_KCSEL_K2);
+	GX_SetTevKColorSel(GX_TEVSTAGE4, GX_TEV_KCSEL_K2);
 	GX_SetTevOrder(GX_TEVSTAGE4, GX_TEXCOORD0, GX_TEXMAP0,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE4, GX_CC_ZERO, GX_CC_KONST, GX_CC_CPREV, GX_CC_ZERO);
-	GX_SetTevColorOp (GX_TEVSTAGE4, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_2, GX_DISABLE, GX_TEVPREV);
-	GX_SetTevKAlphaSel(GX_TEVSTAGE4,GX_TEV_KASEL_1);
-	GX_SetTevAlphaIn (GX_TEVSTAGE4, GX_CA_ZERO, GX_CA_KONST, GX_CA_A0, GX_CA_TEXA);
-	GX_SetTevAlphaOp (GX_TEVSTAGE4, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE4, GX_CC_ZERO, GX_CC_KONST, GX_CC_CPREV, GX_CC_ZERO);
+	GX_SetTevColorOp(GX_TEVSTAGE4, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_2, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevKAlphaSel(GX_TEVSTAGE4, GX_TEV_KASEL_1);
+	GX_SetTevAlphaIn(GX_TEVSTAGE4, GX_CA_ZERO, GX_CA_KONST, GX_CA_A0, GX_CA_TEXA);
+	GX_SetTevAlphaOp(GX_TEVSTAGE4, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
 	//Stage 5: TEVPREV <- { -1.598Vm (+1.139/2Vp), -0.813Vp +0.813/2Vm), 0 }; TEVREG1A <- {Y' -16*1.164 - Y'*0.164} = {(Y'-16)*1.164}
-	GX_SetTevKColorSel(GX_TEVSTAGE5,GX_TEV_KCSEL_K2);
+	GX_SetTevKColorSel(GX_TEVSTAGE5, GX_TEV_KCSEL_K2);
 	GX_SetTevOrder(GX_TEVSTAGE5, GX_TEXCOORD0, GX_TEXMAP0,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE5, GX_CC_ZERO, GX_CC_KONST, GX_CC_C2, GX_CC_CPREV);
-	GX_SetTevColorOp (GX_TEVSTAGE5, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
-	GX_SetTevKAlphaSel(GX_TEVSTAGE5,GX_TEV_KASEL_K1_A);
-	GX_SetTevAlphaIn (GX_TEVSTAGE5, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_APREV);
-	GX_SetTevAlphaOp (GX_TEVSTAGE5, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG1);
+	GX_SetTevColorIn(GX_TEVSTAGE5, GX_CC_ZERO, GX_CC_KONST, GX_CC_C2, GX_CC_CPREV);
+	GX_SetTevColorOp(GX_TEVSTAGE5, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevKAlphaSel(GX_TEVSTAGE5, GX_TEV_KASEL_K1_A);
+	GX_SetTevAlphaIn(GX_TEVSTAGE5, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_APREV);
+	GX_SetTevAlphaOp(GX_TEVSTAGE5, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG1);
 	//Stage 6: TEVPREV <- {	-1.598Vm (+1.598Vp), -0.813Vp (+0.813Vm), 0 } = {	(+1.598V), (-0.813V), 0 }
-	GX_SetTevKColorSel(GX_TEVSTAGE6,GX_TEV_KCSEL_K2);
+	GX_SetTevKColorSel(GX_TEVSTAGE6, GX_TEV_KCSEL_K2);
 	GX_SetTevOrder(GX_TEVSTAGE6, GX_TEXCOORDNULL, GX_TEXMAP_NULL,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE6, GX_CC_ZERO, GX_CC_KONST, GX_CC_C2, GX_CC_CPREV);
-	GX_SetTevColorOp (GX_TEVSTAGE6, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
-	GX_SetTevAlphaIn (GX_TEVSTAGE6, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE6, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE6, GX_CC_ZERO, GX_CC_KONST, GX_CC_C2, GX_CC_CPREV);
+	GX_SetTevColorOp(GX_TEVSTAGE6, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevAlphaIn(GX_TEVSTAGE6, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE6, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 7: TEVPREV <- {	((Y'-16)*1.164) +1.598V, ((Y'-16)*1.164) -0.813V, ((Y'-16)*1.164) }
-	GX_SetTevKColorSel(GX_TEVSTAGE7,GX_TEV_KCSEL_1);
+	GX_SetTevKColorSel(GX_TEVSTAGE7, GX_TEV_KCSEL_1);
 	GX_SetTevOrder(GX_TEVSTAGE7, GX_TEXCOORDNULL, GX_TEXMAP_NULL,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE7, GX_CC_ZERO, GX_CC_ONE, GX_CC_A1, GX_CC_CPREV);
-	GX_SetTevColorOp (GX_TEVSTAGE7, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
-	GX_SetTevAlphaIn (GX_TEVSTAGE7, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE7, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE7, GX_CC_ZERO, GX_CC_ONE, GX_CC_A1, GX_CC_CPREV);
+	GX_SetTevColorOp(GX_TEVSTAGE7, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevAlphaIn(GX_TEVSTAGE7, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE7, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 8: TEVPREV <- {	(Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V (-.394/2Up), (Y'-16)*1.164 (-2.032/2Um)}
-	GX_SetTevKColorSel(GX_TEVSTAGE8,GX_TEV_KCSEL_K3);
+	GX_SetTevKColorSel(GX_TEVSTAGE8, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE8, GX_TEXCOORDNULL, GX_TEXMAP_NULL,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE8, GX_CC_ZERO, GX_CC_KONST, GX_CC_C1, GX_CC_CPREV);
-	GX_SetTevColorOp (GX_TEVSTAGE8, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
-	GX_SetTevAlphaIn (GX_TEVSTAGE8, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE8, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE8, GX_CC_ZERO, GX_CC_KONST, GX_CC_C1, GX_CC_CPREV);
+	GX_SetTevColorOp(GX_TEVSTAGE8, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevAlphaIn(GX_TEVSTAGE8, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE8, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 9: TEVPREV <- { (Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V (-.394Up), (Y'-16)*1.164 (-2.032Um)}
-	GX_SetTevKColorSel(GX_TEVSTAGE9,GX_TEV_KCSEL_K3);
+	GX_SetTevKColorSel(GX_TEVSTAGE9, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE9, GX_TEXCOORDNULL, GX_TEXMAP_NULL,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE9, GX_CC_ZERO, GX_CC_KONST, GX_CC_C1, GX_CC_CPREV);
-	GX_SetTevColorOp (GX_TEVSTAGE9, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
-	GX_SetTevAlphaIn (GX_TEVSTAGE9, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE9, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE9, GX_CC_ZERO, GX_CC_KONST, GX_CC_C1, GX_CC_CPREV);
+	GX_SetTevColorOp(GX_TEVSTAGE9, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevAlphaIn(GX_TEVSTAGE9, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE9, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 10: TEVPREV <- { (Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V -.394Up (+.394/2Um), (Y'-16)*1.164 -2.032Um (+2.032/2Up)}
-	GX_SetTevKColorSel(GX_TEVSTAGE10,GX_TEV_KCSEL_K3);
+	GX_SetTevKColorSel(GX_TEVSTAGE10, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE10, GX_TEXCOORDNULL, GX_TEXMAP_NULL,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE10, GX_CC_ZERO, GX_CC_KONST, GX_CC_C0, GX_CC_CPREV);
-	GX_SetTevColorOp (GX_TEVSTAGE10, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
-	GX_SetTevAlphaIn (GX_TEVSTAGE10, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE10, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevColorIn(GX_TEVSTAGE10, GX_CC_ZERO, GX_CC_KONST, GX_CC_C0, GX_CC_CPREV);
+	GX_SetTevColorOp(GX_TEVSTAGE10, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	GX_SetTevAlphaIn(GX_TEVSTAGE10, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE10, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	//Stage 11: TEVPREV <- { (Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V -.394Up (+.394Um), (Y'-16)*1.164 -2.032Um (+2.032Up)} = { (Y'-16)*1.164 +1.139V, (Y'-16)*1.164 -0.58V -.394U, (Y'-16)*1.164 +2.032U}
-	GX_SetTevKColorSel(GX_TEVSTAGE11,GX_TEV_KCSEL_K3);
+	GX_SetTevKColorSel(GX_TEVSTAGE11, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE11, GX_TEXCOORDNULL, GX_TEXMAP_NULL,GX_COLORNULL);
-	GX_SetTevColorIn (GX_TEVSTAGE11, GX_CC_ZERO, GX_CC_KONST, GX_CC_C0, GX_CC_CPREV);
-	GX_SetTevColorOp (GX_TEVSTAGE11, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
-	GX_SetTevKAlphaSel(GX_TEVSTAGE11,GX_TEV_KASEL_1);
-	GX_SetTevAlphaIn (GX_TEVSTAGE11, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_KONST);
-	GX_SetTevAlphaOp (GX_TEVSTAGE11, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
-	
-	//Setup blending
-	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR); //Fix src alpha
-	GX_SetColorUpdate(GX_ENABLE);
-	GX_SetAlphaUpdate(GX_ENABLE);
+	GX_SetTevColorIn(GX_TEVSTAGE11, GX_CC_ZERO, GX_CC_KONST, GX_CC_C0, GX_CC_CPREV);
+	GX_SetTevColorOp(GX_TEVSTAGE11, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	GX_SetTevKAlphaSel(GX_TEVSTAGE11, GX_TEV_KASEL_1);
+	GX_SetTevAlphaIn(GX_TEVSTAGE11, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_KONST);
+	GX_SetTevAlphaOp(GX_TEVSTAGE11, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	
 	//Setup vertex description/format
 	GX_ClearVtxDesc();
+	
 	GX_SetVtxDesc(GX_VA_POS, GX_INDEX8);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 	GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GX_SetVtxDesc(GX_VA_TEX1, GX_INDEX8);
-	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+	
+	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_F32, 0);
 	
-	GX_SetArray(GX_VA_POS, square, 3 * sizeof(s16));
+	GX_SetArray(GX_VA_POS, square, sizeof(f32) * 2);
 	GX_SetArray(GX_VA_CLR0, colors, sizeof(GXColor));
-	GX_SetArray(GX_VA_TEX0, Ytexcoords, 2 * sizeof(f32));
-	GX_SetArray(GX_VA_TEX1, UVtexcoords, 2 * sizeof(f32));
+	GX_SetArray(GX_VA_TEX0, Ytexcoords, sizeof(f32) * 2);
+	GX_SetArray(GX_VA_TEX1, UVtexcoords, sizeof(f32) * 2);
 	
 	//init YUV texture objects
 	GX_InitTexObj(&YtexObj, Ytexture, Ywidth, Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -437,28 +413,28 @@ void GX_UpdatePitch(u16 *pitch)
 extern float m_screenleft_shift, m_screenright_shift;
 extern float m_screentop_shift, m_screenbottom_shift;
 
-static s16 mysquare[12] ATTRIBUTE_ALIGN(32);
+static f32 mysquare[12] ATTRIBUTE_ALIGN(32);
 
 void GX_UpdateSquare()
 {
 	memcpy(mysquare, square, sizeof(square));
 	
 	mysquare[0] -= m_screenleft_shift * 100;
-	mysquare[9] -= m_screenleft_shift * 100;
-	mysquare[3] -= m_screenright_shift * 100;
-	mysquare[6] -= m_screenright_shift * 100;
+	mysquare[6] -= m_screenleft_shift * 100;
+	mysquare[2] -= m_screenright_shift * 100;
+	mysquare[4] -= m_screenright_shift * 100;
 	mysquare[1] -= m_screentop_shift * 100;
-	mysquare[4] -= m_screentop_shift * 100;
+	mysquare[3] -= m_screentop_shift * 100;
+	mysquare[5] -= m_screenbottom_shift * 100;
 	mysquare[7] -= m_screenbottom_shift * 100;
-	mysquare[10] -= m_screenbottom_shift * 100;
 	
-	GX_SetArray(GX_VA_POS, mysquare, 3 * sizeof(s16));
+	GX_SetArray(GX_VA_POS, mysquare, sizeof(f32) * 2);
 }
 
 /****************************************************************************
  * GX_StartYUV - Initialize GX for given width/height.
  ****************************************************************************/
-void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
+void GX_StartYUV(u16 width, u16 height, f32 haspect, f32 vaspect)
 {
 	static bool inited = false;
 	
@@ -466,10 +442,10 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 	Mtx44 perspective;
 	
 	/*** Set new aspect ***/
-	square[0] = square[9] = -haspect;
-	square[3] = square[6] = haspect;
-	square[1] = square[4] = vaspect;
-	square[7] = square[10] = -vaspect;
+	square[0] = square[6] = -haspect;
+	square[2] = square[4] = haspect;
+	square[1] = square[3] = vaspect;
+	square[5] = square[7] = -vaspect;
 	
 	Ywidth = ceil((float)width / 8) * 8;
 	Yheight = ceil((float)height / 4) * 4;
@@ -499,25 +475,17 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 		f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
 		u32 xfbHeight = GX_SetDispCopyYScale(yscale);
 		
-		GX_SetScissor(0, 0, vmode->fbWidth / 2, vmode->efbHeight / 2);
-		GX_SetDispCopySrc(0, 0, vmode->fbWidth / 2, vmode->efbHeight / 2);
+		GX_SetScissor(0, 0, max(vmode->fbWidth, 640), vmode->efbHeight);
+		GX_SetDispCopySrc(0, 0, max(vmode->fbWidth, 640), vmode->efbHeight);
 		GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
 		GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
 		GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
-		
-		if (vmode->aa)
-		{
-			GX_SetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
-			GX_SetDither(GX_TRUE);
-		}
-		else
-		{
-			GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-		}
+		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 		
 		GX_SetCullMode(GX_CULL_NONE);
 		GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
 		GX_SetDispCopyGamma(GX_GM_1_0);
+		GX_SetZMode(GX_FALSE, GX_LEQUAL, GX_TRUE);
 		
 		guMtxIdentity(GXmodelView2D);
 		guMtxTransApply(GXmodelView2D, GXmodelView2D, 0.0, 0.0, -100.0f);
@@ -525,6 +493,11 @@ void GX_StartYUV(u16 width, u16 height, u16 haspect, u16 vaspect)
 		
 		guOrtho(perspective, screenheight / 2, -(screenheight / 2), -(screenwidth / 2), screenwidth / 2, 0, 1000.0f);
 		GX_LoadProjectionMtx(perspective, GX_ORTHOGRAPHIC);
+		
+		GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+		GX_SetAlphaUpdate(GX_ENABLE);
+		GX_SetAlphaCompare(GX_GREATER, 0, GX_AOP_AND, GX_ALWAYS, 0);
+		GX_SetColorUpdate(GX_ENABLE);
 
 		GX_Flush();
 		GX_UpdateSquare();
@@ -621,36 +594,32 @@ void GX_RenderTexture(bool vsync)
 	GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
 	GX_LoadTexObj(&VtexObj, GX_TEXMAP2);	// MAP2 <- V
 	
-	int half_ht = vmode->efbHeight / 2;
-	int half_wh = vmode->fbWidth / 2;
+	u16 xfb_copypt = vmode->fbWidth / 2;
+	u16 efb_drawpt = ceil((float)xfb_copypt / 16) * 16;
+	int difference = efb_drawpt - xfb_copypt;
 	
-	bool pad_wh = (half_wh / 8) % 2;
-	int corr_wh = half_wh + (8 * pad_wh);
+	GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+	GX_SetColorUpdate(GX_TRUE);
 	
 	whichfb ^= 1;
 	
-	for (int y = 0; y < 2; y++)
+	for (int x = 0; x < 2; x++)
 	{
-		for (int x = 0; x < 2; x++)
-		{
-			int hor_offset = (half_wh - (8 * pad_wh)) * x;
-			
-			GX_SetScissor(hor_offset, half_ht * y, corr_wh + ((8 * pad_wh) * x), half_ht);
-			GX_SetScissorBoxOffset(hor_offset, half_ht * y);
-			GX_SetDispCopySrc(0, 0, corr_wh, half_ht);
-			
-			GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-				GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
-				GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
-				GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
-				GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
-			GX_End();
-			
-			GX_SetColorUpdate(GX_TRUE);
-			
-			u32 xfb_offset = (((vmode->fbWidth * VI_DISPLAY_PIX_SZ) * (vmode->xfbHeight / 2)) * y) + ((half_wh * VI_DISPLAY_PIX_SZ) * x);
-			GX_CopyDisp((void *)((u32)xfb[whichfb] + xfb_offset), GX_TRUE);
-		}
+		u16 efb_offset = (xfb_copypt - difference) * x;
+		
+		GX_SetScissor(efb_offset, 0, efb_drawpt + (difference * x), vmode->efbHeight);
+		GX_SetScissorBoxOffset(efb_offset, 0);
+		GX_SetDispCopySrc(0, 0, efb_drawpt, vmode->efbHeight);
+		
+		GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+			GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
+			GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
+			GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
+			GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
+		GX_End();
+		
+		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * x;
+		GX_CopyDisp((void *)((u32)xfb[whichfb] + xfb_offset), GX_TRUE);
 	}
 	
 	GX_DrawDone();
