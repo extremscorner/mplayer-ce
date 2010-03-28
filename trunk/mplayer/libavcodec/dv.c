@@ -44,6 +44,7 @@
 #include "put_bits.h"
 #include "simple_idct.h"
 #include "dvdata.h"
+#include "dv_tablegen.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -64,21 +65,8 @@ typedef struct DVVideoContext {
 
 #define TEX_VLC_BITS 9
 
-#if CONFIG_SMALL
-#define DV_VLC_MAP_RUN_SIZE 15
-#define DV_VLC_MAP_LEV_SIZE 23
-#else
-#define DV_VLC_MAP_RUN_SIZE  64
-#define DV_VLC_MAP_LEV_SIZE 512 //FIXME sign was removed so this should be /2 but needs check
-#endif
-
 /* XXX: also include quantization */
 static RL_VLC_ELEM dv_rl_vlc[1184];
-/* VLC encoding lookup table */
-static struct dv_vlc_pair {
-   uint32_t vlc;
-   uint8_t  size;
-} dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE];
 
 static inline int dv_work_pool_size(const DVprofile *d)
 {
@@ -325,47 +313,7 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
         }
         free_vlc(&dv_vlc);
 
-        for (i = 0; i < NB_DV_VLC - 1; i++) {
-           if (dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE)
-               continue;
-#if CONFIG_SMALL
-           if (dv_vlc_level[i] >= DV_VLC_MAP_LEV_SIZE)
-               continue;
-#endif
-
-           if (dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].size != 0)
-               continue;
-
-           dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].vlc  =
-               dv_vlc_bits[i] << (!!dv_vlc_level[i]);
-           dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].size =
-               dv_vlc_len[i] + (!!dv_vlc_level[i]);
-        }
-        for (i = 0; i < DV_VLC_MAP_RUN_SIZE; i++) {
-#if CONFIG_SMALL
-           for (j = 1; j < DV_VLC_MAP_LEV_SIZE; j++) {
-              if (dv_vlc_map[i][j].size == 0) {
-                  dv_vlc_map[i][j].vlc = dv_vlc_map[0][j].vlc |
-                            (dv_vlc_map[i-1][0].vlc << (dv_vlc_map[0][j].size));
-                  dv_vlc_map[i][j].size = dv_vlc_map[i-1][0].size +
-                                          dv_vlc_map[0][j].size;
-              }
-           }
-#else
-           for (j = 1; j < DV_VLC_MAP_LEV_SIZE/2; j++) {
-              if (dv_vlc_map[i][j].size == 0) {
-                  dv_vlc_map[i][j].vlc = dv_vlc_map[0][j].vlc |
-                            (dv_vlc_map[i-1][0].vlc << (dv_vlc_map[0][j].size));
-                  dv_vlc_map[i][j].size = dv_vlc_map[i-1][0].size +
-                                          dv_vlc_map[0][j].size;
-              }
-              dv_vlc_map[i][((uint16_t)(-j))&0x1ff].vlc =
-                                            dv_vlc_map[i][j].vlc | 1;
-              dv_vlc_map[i][((uint16_t)(-j))&0x1ff].size =
-                                            dv_vlc_map[i][j].size;
-           }
-#endif
-        }
+        dv_vlc_map_tableinit();
     }
 
     /* Generic DSP setup */
@@ -532,16 +480,16 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     PutBitContext pb, vs_pb;
     GetBitContext gb;
     BlockInfo mb_data[5 * DV_MAX_BPM], *mb, *mb1;
-    DECLARE_ALIGNED_16(DCTELEM, sblock)[5*DV_MAX_BPM][64];
-    DECLARE_ALIGNED_16(uint8_t, mb_bit_buffer)[80 + 4]; /* allow some slack */
-    DECLARE_ALIGNED_16(uint8_t, vs_bit_buffer)[5 * 80 + 4]; /* allow some slack */
+    LOCAL_ALIGNED_16(DCTELEM, sblock, [5*DV_MAX_BPM], [64]);
+    LOCAL_ALIGNED_16(uint8_t, mb_bit_buffer, [80 + 4]); /* allow some slack */
+    LOCAL_ALIGNED_16(uint8_t, vs_bit_buffer, [5 * 80 + 4]); /* allow some slack */
     const int log2_blocksize = 3-s->avctx->lowres;
     int is_field_mode[5];
 
     assert((((int)mb_bit_buffer) & 7) == 0);
     assert((((int)vs_bit_buffer) & 7) == 0);
 
-    memset(sblock, 0, sizeof(sblock));
+    memset(sblock, 0, 5*DV_MAX_BPM*sizeof(*sblock));
 
     /* pass 1 : read DC and AC coefficients in blocks */
     buf_ptr = &s->buf[work_chunk->buf_offset*80];
@@ -833,7 +781,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
 {
     const int *weight;
     const uint8_t* zigzag_scan;
-    DECLARE_ALIGNED_16(DCTELEM, blk)[64];
+    LOCAL_ALIGNED_16(DCTELEM, blk, [64]);
     int i, area;
     /* We offer two different methods for class number assignment: the
        method suggested in SMPTE 314M Table 22, and an improved
@@ -866,7 +814,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
     } else {
         /* We rely on the fact that encoding all zeros leads to an immediate EOB,
            which is precisely what the spec calls for in the "dummy" blocks. */
-        memset(blk, 0, sizeof(blk));
+        memset(blk, 0, 64*sizeof(*blk));
         bi->dct_mode = 0;
     }
     bi->mb[0] = blk[0];

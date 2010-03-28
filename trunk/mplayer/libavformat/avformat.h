@@ -22,8 +22,8 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 52
-#define LIBAVFORMAT_VERSION_MICRO  0
+#define LIBAVFORMAT_VERSION_MINOR 57
+#define LIBAVFORMAT_VERSION_MICRO  1
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -63,7 +63,9 @@ struct AVFormatContext;
 /*
  * Public Metadata API.
  * The metadata API allows libavformat to export metadata tags to a client
- * application using a sequence of key/value pairs.
+ * application using a sequence of key/value pairs. Like all strings in FFmpeg,
+ * metadata must be stored as UTF-8 encoded Unicode. Note that metadata
+ * exported by demuxers isn't checked to be valid UTF-8 in most cases.
  * Important concepts to keep in mind:
  * 1. Keys are unique; there can never be 2 tags with the same key. This is
  *    also meant semantically, i.e., a demuxer should not knowingly produce
@@ -129,6 +131,7 @@ typedef struct AVMetadataConv AVMetadataConv;
 /**
  * Gets a metadata element with matching key.
  * @param prev Set to the previous matching element to find the next.
+ *             If set to NULL the first matching element is returned.
  * @param flags Allows case as well as suffix-insensitive comparisons.
  * @return Found tag or NULL, changing key or value leads to undefined behavior.
  */
@@ -519,6 +522,11 @@ typedef struct AVStream {
      * Average framerate
      */
     AVRational avg_frame_rate;
+
+    /**
+     * Number of frames that have been demuxed during av_find_stream_info()
+     */
+    int codec_info_nb_frames;
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
@@ -719,6 +727,15 @@ typedef struct AVFormatContext {
      */
 #define RAW_PACKET_BUFFER_SIZE 2500000
     int raw_packet_buffer_remaining_size;
+
+    /**
+     * Start time of the stream in real world time, in microseconds
+     * since the unix epoch (00:00 1st January 1970). That is, pts=0
+     * in the stream was captured at this real world time.
+     * - encoding: Set by user.
+     * - decoding: Unused.
+     */
+    int64_t start_time_realtime;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -1331,24 +1348,6 @@ time_t mktimegm(struct tm *tm);
 struct tm *brktimegm(time_t secs, struct tm *tm);
 const char *small_strptime(const char *p, const char *fmt,
                            struct tm *dt);
-
-struct in_addr;
-/* Deprecated, use getaddrinfo instead. */
-attribute_deprecated int resolve_host(struct in_addr *sin_addr, const char *hostname);
-
-void url_split(char *proto, int proto_size,
-               char *authorization, int authorization_size,
-               char *hostname, int hostname_size,
-               int *port_ptr,
-               char *path, int path_size,
-               const char *url);
-
-#if LIBAVFORMAT_VERSION_MAJOR < 53
-/**
- * @deprecated Use av_match_ext() instead.
- */
-attribute_deprecated int match_ext(const char *filename, const char *extensions);
-#endif
 
 /**
  * Returns a positive value if the given filename has one of the given

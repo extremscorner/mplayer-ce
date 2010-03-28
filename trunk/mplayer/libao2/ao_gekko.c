@@ -26,6 +26,7 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <ogcsys.h>
 
 #include "config.h"
 #include "libaf/af.h"
@@ -35,15 +36,22 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 
-#include <ogcsys.h>
 #include "osdep/plat_gekko.h"
 #include "osdep/ave-rvl.h"
 #include "osdep/wiilight.h"
 
 
-#define BUFFER_SIZE (4 * 1024)
-#define BUFFER_COUNT 64
-#define PREBUFFER 32768
+#define BUFFER_SIZE 8192
+#define BUFFER_COUNT 32
+
+#define HW_CHANNELS 2
+
+#define PAN_CENTER 0.7071067811865475		// sqrt(1/2)
+#define PAN_SIDE 0.816496580927726			// sqrt(2/3)
+#define PAN_SIDE_INV 0.5773502691896258		// sqrt(1/3)
+
+#define PHASE_SHF 0.25						// "90 degrees"
+#define PHASE_SHF_INV 0.75
 
 
 static ao_info_t info = {
@@ -60,7 +68,13 @@ static u8 buffer_fill = 0;
 static u8 buffer_play = 0;
 static int buffered = 0;
 
+static float request_mult = 1.0;
+static int request_size = BUFFER_SIZE;
+
+static u32 dma_lastpt = 0;
 static bool playing = false;
+
+static s32 snd_mode = CONF_SOUND_STEREO;
 static s32 led_mode = CONF_LED_OFF;
 
 static ao_control_vol_t volume = { 0x8E, 0x8E };
@@ -78,8 +92,8 @@ static void switch_buffers()
 	}
 	else
 	{
-		playing = false;
 		AUDIO_StopDMA();
+		playing = false;
 	}
 }
 
@@ -98,6 +112,9 @@ static int control(int cmd, void *arg)
 			{
 				volume.left = (vol->left / 100.0) * 0x80;
 				volume.right = (vol->right / 100.0) * 0x80;
+				
+				if (snd_mode == CONF_SOUND_MONO)
+					volume.left = volume.right = (volume.left + volume.right) / 2;
 				
 				VIWriteI2CRegister8(AVE_AI_VOLUME, clamp(volume.left, 0x00, 0xFF));
 				VIWriteI2CRegister8(AVE_AI_VOLUME + 1, clamp(volume.right, 0x00, 0xFF));
@@ -118,15 +135,19 @@ static int init(int rate, int channels, int format, int flags)
 	bool quality = rate > 32000;
 	
 	AUDIO_Init(NULL);
-	AUDIO_SetDSPSampleRate(quality);
+	AUDIO_SetDSPSampleRate(quality ? AI_SAMPLERATE_48KHZ : AI_SAMPLERATE_32KHZ);
 	AUDIO_RegisterDMACallback(switch_buffers);
 	
-	ao_data.channels = 2;
+	ao_data.channels = clamp(channels, (rate < 32000) ? 2 : 1, 6);
+	
+	request_mult = (float)ao_data.channels / HW_CHANNELS;
+	request_size = BUFFER_SIZE * request_mult;
+	
 	ao_data.samplerate = quality ? 48000 : 32000;
 	ao_data.format = AF_FORMAT_S16_NE;
-	ao_data.bps = ao_data.channels * ao_data.samplerate * 2;
-	ao_data.buffersize = BUFFER_SIZE * BUFFER_COUNT;
-	ao_data.outburst = BUFFER_SIZE;
+	ao_data.bps = ao_data.channels * ao_data.samplerate * sizeof(s16);
+	ao_data.buffersize = request_size * BUFFER_COUNT;
+	ao_data.outburst = request_size;
 	
 	for (int counter = 0; counter < BUFFER_COUNT; counter++)
 	{
@@ -138,7 +159,10 @@ static int init(int rate, int channels, int format, int flags)
 	buffer_play = 0;
 	buffered = 0;
 	
+	dma_lastpt = 0;
 	playing = false;
+	
+	snd_mode = CONF_GetSoundMode();
 	led_mode = CONF_GetIdleLedMode();
 	
 	if (led_mode > 0)
@@ -161,7 +185,7 @@ static void reset(void)
 	}
 	
 	AUDIO_RegisterDMACallback(NULL);
-	AUDIO_InitDMA((u32)buffers[0], 32);
+	AUDIO_InitDMA((u32)buffers[buffer_play], 32);
 	AUDIO_StartDMA();
 	
 	usleep(100);
@@ -176,6 +200,7 @@ static void reset(void)
 	buffer_play = 0;
 	buffered = 0;
 	
+	dma_lastpt = 0;
 	playing = false;
 }
 
@@ -190,6 +215,8 @@ static void uninit(int immed)
 
 static void audio_pause(void)
 {
+	dma_lastpt = AUDIO_GetDMABytesLeft();
+	
 	AUDIO_StopDMA();
 	playing = false;
 }
@@ -197,70 +224,123 @@ static void audio_pause(void)
 static void audio_resume(void)
 {
 	playing = true;
-	switch_buffers();
+	
+	AUDIO_InitDMA((u32)buffers[buffer_play] + (BUFFER_SIZE - dma_lastpt), dma_lastpt);
+	AUDIO_StartDMA();
 }
 
 static int get_space(void)
 {
-	return (BUFFER_SIZE * (BUFFER_COUNT - 1)) - buffered;
-}
-
-#define SWAP(x) ((x >> 16) | (x << 16))
-#define SWAP_LEN (BUFFER_SIZE / 4)
-
-static void copy_swap_channels(u32 *destination, u32 *source)
-{
-	for (int counter = 0; counter < SWAP_LEN; counter++)
-		destination[counter] = SWAP(source[counter]);
+	return ((BUFFER_SIZE * (BUFFER_COUNT - 1)) - buffered) * request_mult;
 }
 
 static int play(void *data, int len, int flags)
 {
-	int result = 0;
-	u8 *source = (u8 *)data;
+	int processed = 0;
+	int remaining = len;
 	
-	while ((len >= BUFFER_SIZE)	&& (get_space() >= BUFFER_SIZE))
+	s16 *source = (s16 *)data;
+	
+	while ((remaining >= request_size) && (get_space() >= request_size))
 	{
-		copy_swap_channels((u32 *)buffers[buffer_fill], (u32 *)source);
-		DCFlushRange(buffers[buffer_play], BUFFER_SIZE);
-
+		int samples = BUFFER_SIZE / (sizeof(s16) * HW_CHANNELS);
+		s16 *destination = (s16 *)buffers[buffer_fill];
+		
+		for (int counter = 0; counter < samples; counter++)
+		{
+			int prs = max((counter - 1), -(processed / (sizeof(s16) * ao_data.channels))) * ao_data.channels;
+			int crs = counter * ao_data.channels;	// "I'm surrounded!"
+			int nrs = min((counter + 1), (remaining / (sizeof(s16) * ao_data.channels))) * ao_data.channels;
+			
+			s32 left, right;
+			
+			if (ao_data.channels > 1)
+			{
+				left = source[crs];
+				right = source[crs + 1];
+			}
+			else
+			{
+				left = right = source[crs];
+			}
+			
+			switch (ao_data.channels)
+			{
+				case 6:
+				case 5:
+					// Left rear
+					left += ((source[crs + 2] * PHASE_SHF_INV) + (source[nrs + 2] * PHASE_SHF)) * PAN_SIDE;
+					right += ((source[crs + 2] * PHASE_SHF_INV) + (source[prs + 2] * PHASE_SHF)) * PAN_SIDE_INV;
+					
+					// Right rear
+					left += ((source[crs + 3] * PHASE_SHF_INV) + (source[nrs + 3] * PHASE_SHF)) * PAN_SIDE_INV;
+					right += ((source[crs + 3] * PHASE_SHF_INV) + (source[prs + 3] * PHASE_SHF)) * PAN_SIDE;
+					
+					// Center front
+					left += source[crs + 4] * PAN_CENTER;
+					right += source[crs + 4] * PAN_CENTER;
+					break;
+				case 4:
+					// Center rear
+					left += ((source[crs + 2] * PHASE_SHF_INV) + (source[nrs + 2] * PHASE_SHF)) * PAN_CENTER;
+					right += ((source[crs + 2] * PHASE_SHF_INV) + (source[prs + 2] * PHASE_SHF)) * PAN_CENTER;
+					
+					// Center front
+					left += source[crs + 3] * PAN_CENTER;
+					right += source[crs + 3] * PAN_CENTER;
+					break;
+			}
+			
+			if (snd_mode == CONF_SOUND_MONO)
+				left = right = (left + right) / 2;
+			
+			int cws = counter * HW_CHANNELS;
+			
+			destination[cws] = clamp(right, SHRT_MIN, SHRT_MAX);
+			destination[cws + 1] = clamp(left, SHRT_MIN, SHRT_MAX);
+		}
+		
+		DCFlushRange(buffers[buffer_fill], BUFFER_SIZE);
 		buffer_fill = (buffer_fill + 1) % BUFFER_COUNT;
 		
-		result += BUFFER_SIZE;
-		source += BUFFER_SIZE;
-		buffered += BUFFER_SIZE;
+		processed += request_size;
+		remaining -= request_size;
 		
-		len -= BUFFER_SIZE;
+		source += request_size / sizeof(s16);
+		buffered += BUFFER_SIZE;
 	}
 	
-	if (!playing && (buffered >= PREBUFFER))
+	if (!playing && (buffered > BUFFER_SIZE))
 	{
 		playing = true;
 		switch_buffers();
 	}
 	
-	return result;
+	return processed;
 }
 
 static float get_delay(void)
 {
 	if (playing)
 	{
+		dma_lastpt = AUDIO_GetDMABytesLeft();
+		
 		if (led_mode > 0)
 		{
-			short *data = (short *)buffers[buffer_play];
+			s16 *source = (s16 *)buffers[buffer_play];
 			
 			static u32 last = 0;
-			u32 current = BUFFER_SIZE - AUDIO_GetDMABytesLeft();
+			u32 current = (BUFFER_SIZE - dma_lastpt) / sizeof(s16);
 			
 			if (last > current)
 				last = 0;
 			
+			static double reference = 0.0;
 			double average = 0.0;
 			
-			for (int counter = last; counter < current; counter += 2)
+			for (int counter = last; counter < current; counter++)
 			{
-				float value = (float)data[counter / 2] / SHRT_MAX;
+				float value = (float)source[counter] / SHRT_MAX;
 				
 				if (!counter)
 					average = value;
@@ -268,14 +348,13 @@ static float get_delay(void)
 					average = (average + value) / 2;
 			}
 			
-			double level = (fabs(average) * (((volume.left + volume.right) / 2) / 0x80)) * ((float)led_mode / 2);
+			double level = (fabs((average + reference) / 2) * (((volume.left + volume.right) / 2) / 0x80)) * ((float)led_mode / 2);
 			WIILIGHT_SetLevel(clamp(level * UCHAR_MAX, 0x00, 0xFF));
 			
 			last = current;
+			reference = average;
 		}
-		
-		return (float)(buffered + AUDIO_GetDMABytesLeft()) / ao_data.bps;
 	}
-	else
-		return (float)buffered / ao_data.bps;
+	
+	return ((float)(buffered + dma_lastpt) * request_mult) / ao_data.bps;
 }

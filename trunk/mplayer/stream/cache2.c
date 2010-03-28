@@ -67,9 +67,6 @@ static void *ThreadProc(void *s);
 #include "cache2.h"
 extern int use_gui;
 
-int stream_fill_buffer(stream_t *s);
-int stream_seek_long(stream_t *s,off_t pos);
-
 #ifdef GEKKO
 //#define GEKKO_THREAD_STACKSIZE (32 * 1024)
 #define GEKKO_THREAD_STACKSIZE (512 * 1024)
@@ -78,6 +75,9 @@ static u8 gekko_stack[GEKKO_THREAD_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #include <ogc/mutex.h>
 static mutex_t cache_mutex = LWP_MUTEX_NULL;
 #endif
+
+int stream_fill_buffer(stream_t *s);
+int stream_seek_long(stream_t *s,off_t pos);
 
 typedef struct {
   // constats:
@@ -114,13 +114,15 @@ static int min_fill=0;
 
 float cache_fill_status=0;
 
-void cache_stats(cache_vars_t* s){
+static void cache_stats(cache_vars_t *s)
+{
   int newb=s->max_filepos-s->read_filepos; // new bytes in the buffer
   //mp_msg(MSGT_CACHE,MSGL_INFO,"0x%06X  [0x%06X]  0x%06X   ",(int)s->min_filepos,(int)s->read_filepos,(int)s->max_filepos);
   //mp_msg(MSGT_CACHE,MSGL_INFO,"%3d %%  (%3d%%)\n",100*newb/s->buffer_size,100*min_fill/s->buffer_size);
 }
 
-int cache_read(cache_vars_t* s,unsigned char* buf,int size){
+static int cache_read(cache_vars_t *s, unsigned char *buf, int size)
+{
   int total=0;
   
   while(size>0 ){
@@ -183,7 +185,8 @@ int cache_read(cache_vars_t* s,unsigned char* buf,int size){
   return total;
 }
 
-int cache_fill(cache_vars_t* s){
+static int cache_fill(cache_vars_t *s)
+{
   int back,back2,newb,space,len,pos;
   off_t read;
 
@@ -316,17 +319,17 @@ retry:
 }
 
 static int cache_execute_control(cache_vars_t *s) {
-  int res = 1;
-  //static unsigned last;
-  //unsigned now;
   static u64 last;
   u64 now;
-  if (!s->stream->control) {
+  int res = 1;
+
+  int quit = s->control == -2;
+  if (quit || !s->stream->control) {
     s->stream_time_length = 0;
     s->control_new_pos = 0;
     s->control_res = STREAM_UNSUPPORTED;
     s->control = -1;
-    return res;
+    return !quit;
   }
   //if(s->stream->type==STREAMTYPE_DVD || s->stream->type==STREAMTYPE_DVDNAV)
   {
@@ -340,7 +343,7 @@ static int cache_execute_control(cache_vars_t *s) {
 	    last = now;
 	  }
   }
-  if (s->control == -1) return res;
+  if (s->control == -1) return 1;
   switch (s->control) {
     case STREAM_CTRL_GET_CURRENT_TIME:
     case STREAM_CTRL_SEEK_TO_TIME:
@@ -355,15 +358,13 @@ static int cache_execute_control(cache_vars_t *s) {
     case STREAM_CTRL_SET_ANGLE:
       s->control_res = s->stream->control(s->stream, s->control, &s->control_uint_arg);
       break;
-    case -2:
-      res = 0;
     default:
       s->control_res = STREAM_UNSUPPORTED;
       break;
   }
   s->control_new_pos = s->stream->pos;
   s->control = -1;
-  return res;
+  return 1;
 }
 
 static cache_vars_t* cache_init(int size,int sector){
@@ -438,9 +439,9 @@ if(!c) return;
   s->cache_pid=0;
 #else
 #if defined(__MINGW32__) || defined(PTHREAD_CACHE) || defined(__OS2__)
-  free(c->stream);
   free(c->buffer);
   c->buffer = NULL;
+  c->stream = NULL;
   free(s->cache_data);
 #else
   shmem_free(c->buffer,c->buffer_size);
@@ -586,12 +587,12 @@ static void ThreadProc( void *s ){
 #endif  
 #if defined(__MINGW32__) || defined(__OS2__)
   _endthread();
-#endif
-#if defined(PTHREAD_CACHE) || defined(GEKKO) 
+#elif defined(PTHREAD_CACHE) || defined(GEKKO)
   return NULL;
-#endif
+#else
   // make sure forked code never leaves this function
   exit(0);
+#endif
 }
 
 int cache_stream_fill_buffer(stream_t *s){
@@ -810,8 +811,10 @@ void refillcache(stream_t *stream,float min)
 }
 int stream_error(stream_t *stream)
 {
-	//cache_vars_t* s;
-
-	//s=stream->cache_data;
-  	return ((cache_vars_t*)stream->cache_data)->stream->error;
+	cache_vars_t *vars = (cache_vars_t *)stream->cache_data;
+	
+	if (!vars)
+		return 0;
+	
+  	return vars->stream->error;
 }

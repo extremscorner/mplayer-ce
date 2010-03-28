@@ -186,7 +186,7 @@ int getch2_internal(void)
 		return event.symbol;
 	}
 
-	return -1;
+	return 0;
 }
 
 void getch2(void)
@@ -370,7 +370,7 @@ void getch2(void)
 		
 		int kb_get = getch2_internal();
 		
-		if (kb_get >= 0)
+		if (kb_get > 0)
 			mplayer_put_key(kb_get);
 		
 		lasttime = curtime;

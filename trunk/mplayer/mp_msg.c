@@ -22,18 +22,11 @@
 #include <string.h>
 
 #include "config.h"
+#include "osdep/getch2.h"
 
 #ifdef CONFIG_ICONV
 #include <iconv.h>
 #include <errno.h>
-/**
- * \brief gets the name of the system's terminal character set
- * \return a malloced string indicating the system charset
- *
- * Be warned that this function on many systems is in no way thread-safe
- * since it modifies global data
- */
-char* get_term_charset(void);
 #endif
 
 #if defined(FOR_MENCODER)
@@ -252,6 +245,8 @@ void mp_msg(int mod, int lev, const char *format, ... ){
 		log_console_enable_log(false);
 #endif
     fprintf(stream, "%s", tmp);
+    if (mp_msg_color)
+        fprintf(stream, "\033[0m");
     fflush(stream);
     
 #ifdef GEKKO

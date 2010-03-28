@@ -30,7 +30,7 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 52
-#define LIBAVCODEC_VERSION_MINOR 54
+#define LIBAVCODEC_VERSION_MINOR 61
 #define LIBAVCODEC_VERSION_MICRO  0
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
@@ -125,7 +125,9 @@ enum CodecID {
     CODEC_ID_QDRAW,
     CODEC_ID_VIXL,
     CODEC_ID_QPEG,
+#if LIBAVCODEC_VERSION_MAJOR < 53
     CODEC_ID_XVID,
+#endif
     CODEC_ID_PNG,
     CODEC_ID_PPM,
     CODEC_ID_PBM,
@@ -206,6 +208,7 @@ enum CodecID {
     CODEC_ID_BINKVIDEO,
     CODEC_ID_IFF_ILBM,
     CODEC_ID_IFF_BYTERUN1,
+    CODEC_ID_KGV1,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -589,6 +592,8 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_NON_LINEAR_QUANT 0x00010000 ///< Use MPEG-2 nonlinear quantizer.
 #define CODEC_FLAG2_BIT_RESERVOIR 0x00020000 ///< Use a bit reservoir when encoding if possible
 #define CODEC_FLAG2_MBTREE        0x00040000 ///< Use macroblock tree ratecontrol (x264 only)
+#define CODEC_FLAG2_PSY           0x00080000 ///< Use psycho visual optimizations.
+#define CODEC_FLAG2_SSIM          0x00100000 ///< Compute SSIM during encoding, error[] values are undefined.
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
@@ -599,8 +604,9 @@ typedef struct RcOverride{
 
 #define CODEC_CAP_DRAW_HORIZ_BAND 0x0001 ///< Decoder can use draw_horiz_band callback.
 /**
- * Codec uses get_buffer() for allocating buffers.
- * direct rendering method 1
+ * Codec uses get_buffer() for allocating buffers and supports custom allocators.
+ * If not set, it might not use get_buffer() at all or use operations that
+ * assume the buffer was allocated by avcodec_default_get_buffer.
  */
 #define CODEC_CAP_DR1             0x0002
 /* If 'parse_only' field is true, then avcodec_parse_frame() can be used. */
@@ -893,7 +899,8 @@ typedef struct AVPanScan{
     short *dct_coeff;\
 \
     /**\
-     * motion referece frame index\
+     * motion reference frame index\
+     * the order in which these are stored can depend on the codec.\
      * - encoding: Set by user.\
      * - decoding: Set by libavcodec.\
      */\
@@ -1366,7 +1373,7 @@ typedef struct AVCodecContext {
     /**
      * Called at the beginning of each frame to get a buffer for it.
      * If pic.reference is set then the frame will be read later by libavcodec.
-     * avcodec_align_dimensions() should be used to find the required width and
+     * avcodec_align_dimensions2() should be used to find the required width and
      * height, as they normally need to be rounded up to the next multiple of 16.
      * if CODEC_CAP_DR1 is not set then get_buffer() must call
      * avcodec_default_get_buffer() instead of providing buffers allocated by
@@ -1575,6 +1582,7 @@ typedef struct AVCodecContext {
 #define FF_IDCT_EA            21
 #define FF_IDCT_SIMPLENEON    22
 #define FF_IDCT_SIMPLEALPHA   23
+#define FF_IDCT_BINK          24
 
     /**
      * slice count
@@ -2593,6 +2601,48 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int weighted_p_pred;
+
+    /**
+     * AQ mode
+     * 0: Disabled
+     * 1: Variance AQ (complexity mask)
+     * 2: Auto-variance AQ (experimental)
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    int aq_mode;
+
+    /**
+     * AQ strength
+     * Reduces blocking and blurring in flat and textured areas.
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    float aq_strength;
+
+    /**
+     * PSY RD
+     * Strength of psychovisual optimization
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    float psy_rd;
+
+    /**
+     * PSY trellis
+     * Strength of psychovisual optimization
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    float psy_trellis;
+
+    /**
+     * RC lookahead
+     * Number of frames for frametype and ratecontrol lookahead
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    int rc_lookahead;
 } AVCodecContext;
 
 /**
@@ -3224,7 +3274,19 @@ AVFrame *avcodec_alloc_frame(void);
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic);
+/**
+ * Modifies width and height values so that they will result in a memory
+ * buffer that is acceptable for the codec if you do not use any horizontal
+ * padding.
+ */
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
+/**
+ * Modifies width and height values so that they will result in a memory
+ * buffer that is acceptable for the codec if you also ensure that all
+ * line sizes are a multiple of the respective linesize_align[i].
+ */
+void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
+                               int linesize_align[4]);
 
 /**
  * Checks if the given dimension of a picture is valid, meaning that all
@@ -3239,7 +3301,6 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum
 
 int avcodec_thread_init(AVCodecContext *s, int thread_count);
 void avcodec_thread_free(AVCodecContext *s);
-int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //FIXME func typedef
@@ -3768,6 +3829,13 @@ int av_picture_crop(AVPicture *dst, const AVPicture *src,
 int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, enum PixelFormat pix_fmt,
             int padtop, int padbottom, int padleft, int padright, int *color);
 
+/**
+ * Encodes extradata length to a buffer. Used by xiph codecs.
+ *
+ * @param s buffer to write to; must be at least (v/255+1) bytes long
+ * @param v size of extradata in bytes
+ * @return number of bytes written to the buffer.
+ */
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 
 /**
@@ -3793,26 +3861,6 @@ int av_parse_video_frame_size(int *width_ptr, int *height_ptr, const char *str);
  * frame rate
  */
 int av_parse_video_frame_rate(AVRational *frame_rate, const char *str);
-
-/* error handling */
-#if EINVAL > 0
-#define AVERROR(e) (-(e)) /**< Returns a negative error code from a POSIX error code, to return from library functions. */
-#define AVUNERROR(e) (-(e)) /**< Returns a POSIX error code from a library function error return value. */
-#else
-/* Some platforms have E* and errno already negated. */
-#define AVERROR(e) (e)
-#define AVUNERROR(e) (e)
-#endif
-#define AVERROR_UNKNOWN     AVERROR(EINVAL)  /**< unknown error */
-#define AVERROR_IO          AVERROR(EIO)     /**< I/O error */
-#define AVERROR_NUMEXPECTED AVERROR(EDOM)    /**< Number syntax expected in filename. */
-#define AVERROR_INVALIDDATA AVERROR(EINVAL)  /**< invalid data found */
-#define AVERROR_NOMEM       AVERROR(ENOMEM)  /**< not enough memory */
-#define AVERROR_NOFMT       AVERROR(EILSEQ)  /**< unknown format */
-#define AVERROR_NOTSUPP     AVERROR(ENOSYS)  /**< Operation not supported. */
-#define AVERROR_NOENT       AVERROR(ENOENT)  /**< No such file or directory. */
-#define AVERROR_EOF         AVERROR(EPIPE)   /**< End of file. */
-#define AVERROR_PATCHWELCOME    -MKTAG('P','A','W','E') /**< Not yet implemented in FFmpeg. Patches welcome. */
 
 /**
  * Logs a generic warning message about a missing feature. This function is

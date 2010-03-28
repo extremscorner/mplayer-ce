@@ -109,7 +109,7 @@ static int sdp_get_address(char *dest_addr, int size, int *ttl, const char *url)
     const char *p;
     char proto[32];
 
-    url_split(proto, sizeof(proto), NULL, 0, dest_addr, size, &port, NULL, 0, url);
+    ff_url_split(proto, sizeof(proto), NULL, 0, dest_addr, size, &port, NULL, 0, url);
 
     *ttl = 0;
 
@@ -201,7 +201,7 @@ static char *extradata2config(AVCodecContext *c)
         return NULL;
     }
     memcpy(config, "; config=", 9);
-    ff_data_to_hex(config + 9, c->extradata, c->extradata_size);
+    ff_data_to_hex(config + 9, c->extradata, c->extradata_size, 0);
     config[9 + c->extradata_size * 2] = 0;
 
     return config;

@@ -103,7 +103,7 @@ typedef struct MPContext {
     // by the audio CPU usage meter.
     double delay;
 
-    float begin_skip; ///< start time of the current skip while on edlout mode
+    double begin_skip; ///< start time of the current skip while on edlout mode
     // audio is muted if either EDL or user activates mute
     short edl_muted; ///< Stores whether EDL is currently in muted mode.
     short user_muted; ///< Stores whether user wanted muted mode.

@@ -28,6 +28,7 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 #include "mpbswap.h"
+#include "path.h"
 
 #include "vd_internal.h"
 #include "loader/wine/windef.h"
@@ -82,26 +83,6 @@ static uint8_t *buffer = NULL;
 static int bufsz = 0;
 #ifdef CONFIG_WIN32DLL
 static int dll_type = 0; /* 0 = unix dlopen, 1 = win32 dll */
-#endif
-
-void *__builtin_vec_new(unsigned long size) {
-	return malloc(size);
-}
-
-void __builtin_vec_delete(void *mem) {
-	free(mem);
-}
-
-void __pure_virtual(void) {
-	printf("FATAL: __pure_virtual() called!\n");
-//	exit(1);
-}
-
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-void ___brk_addr(void) {exit(0);}
-char **__environ={NULL};
-#undef stderr
-FILE *stderr=NULL;
 #endif
 
 // to set/get/query special features/parameters
@@ -293,9 +274,9 @@ static int init(sh_video_t *sh){
 
 	mp_msg(MSGT_DECVIDEO,MSGL_V,"realvideo codec id: 0x%08X  sub-id: 0x%08X\n",be2me_32(((unsigned int*)extrahdr)[1]),be2me_32(((unsigned int*)extrahdr)[0]));
 
-	path = malloc(strlen(REALCODEC_PATH)+strlen(sh->codec->dll)+2);
+	path = malloc(strlen(codec_path) + strlen(sh->codec->dll) + 2);
 	if (!path) return 0;
-	sprintf(path, REALCODEC_PATH "/%s", sh->codec->dll);
+	sprintf(path, "%s/%s", codec_path, sh->codec->dll);
 
 	/* first try to load linux dlls, if failed and we're supporting win32 dlls,
 	   then try to load the windows ones */

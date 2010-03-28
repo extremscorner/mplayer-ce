@@ -18,6 +18,7 @@
 #include "wine/debugtools.h"
 #include "wine/winerror.h"
 #include "debug.h"
+#include "path.h"
 
 //DEFAULT_DEBUG_CHANNEL(elfdll)
 
@@ -36,9 +37,6 @@ extern modref_list* local_wm;
 DWORD fixup_imports(WINE_MODREF *wm);
 void dump_exports(HMODULE hModule);
 /*---------------- END HACKS ---------------*/
-
-//char *extra_ld_library_path = "/usr/lib/win32";
-extern char* def_path;
 
 struct elfdll_image
 {
@@ -68,7 +66,7 @@ void *ELFDLL_dlopen(const char *libname, int flags)
 
 	/* Now try to construct searches through our extra search-path */
 	namelen = strlen(libname);
-	ldpath = def_path;
+	ldpath = codec_path;
 	while(ldpath && *ldpath)
 	{
 		int len;
@@ -197,7 +195,7 @@ static WINE_MODREF *ELFDLL_CreateModref(HMODULE hModule, LPCSTR path)
 //		wm->binfmt.pe.pe_resource = (PIMAGE_RESOURCE_DIRECTORY)RVA(hModule, dir->VirtualAddress);
 
 
-	wm->filename = (char*) malloc(strlen(path)+1);
+	wm->filename = malloc(strlen(path)+1);
 	strcpy(wm->filename, path);
 	wm->modname = strrchr( wm->filename, '\\' );
 	if (!wm->modname) wm->modname = wm->filename;
@@ -216,7 +214,7 @@ static WINE_MODREF *ELFDLL_CreateModref(HMODULE hModule, LPCSTR path)
 
 	if(local_wm)
         {
-    	    local_wm->next = (modref_list*) malloc(sizeof(modref_list));
+    	    local_wm->next = malloc(sizeof(modref_list));
     	    local_wm->next->prev=local_wm;
     	    local_wm->next->next=NULL;
             local_wm->next->wm=wm;
@@ -224,7 +222,7 @@ static WINE_MODREF *ELFDLL_CreateModref(HMODULE hModule, LPCSTR path)
 	}
 	else
         {
-	    local_wm = (modref_list*) malloc(sizeof(modref_list));
+	    local_wm = malloc(sizeof(modref_list));
 	    local_wm->next=local_wm->prev=NULL;
     	    local_wm->wm=wm;
 	}

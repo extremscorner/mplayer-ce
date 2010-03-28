@@ -788,6 +788,7 @@ void vo_x11_uninit(void)
                 XEvent xev;
 
                 XUnmapWindow(mDisplay, vo_window);
+                XSelectInput(mDisplay, vo_window, StructureNotifyMask);
                 XDestroyWindow(mDisplay, vo_window);
                 do
                 {
@@ -2122,7 +2123,7 @@ void vo_xv_get_max_img_dim( uint32_t * width, uint32_t * height )
  * Outputs the content of |ck_handling| as a readable message.
  *
  */
-void vo_xv_print_ck_info(void)
+static void vo_xv_print_ck_info(void)
 {
   mp_msg( MSGT_VO, MSGL_V, "[xv common] " );
 

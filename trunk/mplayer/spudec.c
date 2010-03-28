@@ -767,8 +767,9 @@ static void scale_image(int x, int y, scale_pixel* table_x, scale_pixel* table_y
   }
 }
 
-void sws_spu_image(unsigned char *d1, unsigned char *d2, int dw, int dh, int ds,
-	unsigned char *s1, unsigned char *s2, int sw, int sh, int ss)
+static void sws_spu_image(unsigned char *d1, unsigned char *d2, int dw, int dh,
+                          int ds, unsigned char *s1, unsigned char *s2, int sw,
+                          int sh, int ss)
 {
 	struct SwsContext *ctx;
 	static SwsFilter filter;
@@ -798,7 +799,10 @@ void spudec_draw_scaled(void *me, unsigned int dxs, unsigned int dys, void (*dra
   spudec_handle_t *spu = (spudec_handle_t *)me;
   scale_pixel *table_x;
   scale_pixel *table_y;
-
+  
+  if (!spu)
+    return;
+  
   if (spu->start_pts <= spu->now_pts && spu->now_pts < spu->end_pts) {
 
     // check if only forced subtitles are requested

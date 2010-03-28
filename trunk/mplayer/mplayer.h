@@ -27,10 +27,10 @@ extern char ** video_driver_list;
 extern char ** audio_driver_list;
 extern char * video_driver;
 extern char * audio_driver;
-extern float  audio_delay;
+extern double  audio_delay;
 
 extern int osd_level;
-extern unsigned int osd_visible;
+extern unsigned long long osd_visible;
 
 extern char * font_name;
 extern char * sub_font_name;

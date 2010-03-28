@@ -25,12 +25,7 @@
 #ifndef __MINGW32__
 #include "ext.h"
 #endif
-
-#ifndef WIN32_LOADER
-char* def_path=WIN32_PATH;
-#else
-extern char* def_path;
-#endif
+#include "path.h"
 
 #if 1
 
@@ -64,21 +59,6 @@ extern char* def_path;
     "pop %%ecx\n\t" \
     "pop %%ebx\n\t"::)
 #endif
-
-static int needs_free=0;
-void SetCodecPath(const char* path)
-{
-    if(needs_free)free(def_path);
-    if(path==0)
-    {
-	def_path=WIN32_PATH;
-	needs_free=0;
-	return;
-    }
-    def_path = (char*) malloc(strlen(path)+1);
-    strcpy(def_path, path);
-    needs_free=1;
-}
 
 static DWORD dwDrvID = 0;
 
@@ -153,7 +133,7 @@ HDRVR DrvOpen(LPARAM lParam2)
 #endif
     printf("Loading codec DLL: '%s'\n",filename);
 
-    hDriver = (NPDRVR) malloc(sizeof(DRVR));
+    hDriver = malloc(sizeof(DRVR));
     if (!hDriver)
 	return (HDRVR) 0;
     memset((void*)hDriver, 0, sizeof(DRVR));
