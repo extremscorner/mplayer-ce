@@ -83,9 +83,10 @@
 #include "codec-cfg.h"
 
 #include "edl.h"
-
+#include "mplayer.h"
 #include "spudec.h"
 #include "vobsub.h"
+#include "access_mpcontext.h"
 
 #include "osdep/getch2.h"
 #include "osdep/timer.h"
@@ -165,7 +166,7 @@ static int cfg_include(m_option_t *conf, char *filename){
 	return m_config_parse_config_file(mconfig, filename);
 }
 
-#include "get_path.h"
+#include "path.h"
 
 //**************************************************************************//
 //**************************************************************************//
@@ -248,7 +249,7 @@ static int list_properties = 0;
 
 int osd_level=1;
 // if nonzero, hide current OSD contents when GetTimerMS() reaches this
-u64 osd_visible;
+unsigned long long osd_visible;
 int osd_duration = 1000;
 
 int term_osd = 1;
@@ -346,7 +347,6 @@ extern bool playing_usb;
 extern bool playing_dvd;
 
 
-
 typedef struct st_restore_points restore_points_t;
 struct st_restore_points{
     char filename[MAXPATHLEN];
@@ -421,9 +421,7 @@ void delete_restore_point(char *_filename)
 {
 	int i;
 	if(!enable_restore_points)return;
-
 	if(IsLoopAvi(filename))return;
-
 	for(i=0;i<MAX_RESTORE_POINTS;i++)
 	{
 		if(!strcmp(_filename,restore_points[i].filename))
@@ -508,7 +506,7 @@ static char *stream_dump_name="stream.dump";
 static float default_max_pts_correction=-1;//0.01f;
 static float max_pts_correction=0;//default_max_pts_correction;
 static float c_total=0;
-       float audio_delay=0;
+       double audio_delay=0;
 static int ignore_start=0;
 
 static int softsleep=0;
@@ -628,10 +626,8 @@ static int is_valid_metadata_type (metadata_t type) {
   case META_VIDEO_BITRATE:
   case META_VIDEO_RESOLUTION:
   {
-
     //geexbox bgvideo patch
     if (!mpctx->sh_video || (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh))
-
       return 0;
     break;
   }
@@ -835,7 +831,6 @@ void uninit_player(unsigned int mask){
 	free_demuxer(mpctx->demuxer);
     }
     mpctx->demuxer=NULL;
-
     //geexbox bgvideo patch
     current_module="free_bg_demuxer";
     if(mpctx->bg_demuxer) {
@@ -845,7 +840,6 @@ void uninit_player(unsigned int mask){
       free_stream(bg_s);
     }
     //
-
   }
 
   // kill the cache process:
@@ -986,7 +980,6 @@ void exit_player_with_rc(enum exit_reason how, int rc)
   }
   mp_msg(MSGT_CPLAYER,MSGL_DBG2,"max framesize was %d bytes\n",max_framesize);
 
-
 #ifdef GEKKO
   //if(mpctx->sh_video)
   	save_restore_points_file();
@@ -994,7 +987,6 @@ void exit_player_with_rc(enum exit_reason how, int rc)
   	plat_deinit (rc);
 #endif  
   exit(rc);
-
 }
 
 void exit_player(enum exit_reason how)
@@ -1462,7 +1454,7 @@ static void saddf(char *buf, unsigned *pos, int len, const char *format, ...)
  * \param time time value to convert/append
  */
 static void sadd_hhmmssf(char *buf, unsigned *pos, int len, float time) {
-  long tenths = 10 * time;
+  int64_t tenths = 10 * time;
   int f1 = tenths % 10;
   int ss = (tenths /  10) % 60;
   int mm = (tenths / 600) % 60;
@@ -1845,12 +1837,10 @@ void update_osd_msg(void) {
             char percentage_text[10];
             int pts = demuxer_get_current_time(mpctx->demuxer);
 
-
             //geexbox bgvideo patch
             //printf("bg patch");
             if (mpctx->bg_demuxer && mpctx->sh_audio) pts = playing_audio_pts(mpctx->sh_audio, mpctx->d_audio, mpctx->audio_out);
             //if (mpctx->bg_demuxer)pts = demuxer_get_current_time(mpctx->bg_demuxer);
-
 
             if (mpctx->osd_show_percentage)
                 percentage = demuxer_get_percent_pos(mpctx->demuxer);
@@ -1932,7 +1922,6 @@ void reinit_audio_chain(void) {
     ao_data.samplerate=force_srate;
     ao_data.channels=0;
     ao_data.format=audio_output_format;
-#if 1
     // first init to detect best values
     if(!init_audio_filters(mpctx->sh_audio,   // preliminary init
                            // input:
@@ -1942,7 +1931,6 @@ void reinit_audio_chain(void) {
         mp_msg(MSGT_CPLAYER,MSGL_ERR,MSGTR_AudioFilterChainPreinitError);
         exit_player(EXIT_ERROR);
     }
-#endif
     current_module="ao2_init";
     mpctx->audio_out = init_best_audio_out(audio_driver_list,
                                            0, // plugin flag
@@ -1964,13 +1952,11 @@ void reinit_audio_chain(void) {
     if(strlen(mpctx->audio_out->info->comment) > 0)
         mp_msg(MSGT_CPLAYER,MSGL_V,"AO: Comment: %s\n", mpctx->audio_out->info->comment);
     // init audio filters:
-#if 1
     current_module="af_init";
     if(!build_afilter_chain(mpctx->sh_audio, &ao_data)) {
         mp_msg(MSGT_CPLAYER,MSGL_ERR,MSGTR_NoMatchingFilter);
         goto init_error;
     }
-#endif
     mpctx->mixer.audio_out = mpctx->audio_out;
     mpctx->mixer.volstep = volstep;
     return;
@@ -2085,7 +2071,6 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
 	current_module = "video_read_frame";
 	in_size = ds_get_packet_pts(d_video, &start, &pts);
 	if (in_size < 0) {
-
 	  //geexbox bgvideo patch
 	  if(mpctx->bg_demuxer) {
 	    if(!demux_seek(mpctx->bg_demuxer,0,0,1)) hit_eof = 1;
@@ -2099,7 +2084,6 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
 	    hit_eof = 1;
 
 	    } //geexbox bgvideo patch
-
 	}
 	if (in_size > max_framesize)
 	    max_framesize = in_size;
@@ -2356,7 +2340,6 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
     current_module="av_sync";
 
     if(mpctx->sh_audio){
-
     //geexbox bgvideo patch
       if(mpctx->bg_demuxer) {
       	if(!quiet) mp_msg(MSGT_AVSYNC,MSGL_STATUS,"A:%6.1f %4.1f%% %d%%   \r"
@@ -2366,7 +2349,6 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
  		       );
      } else {
     //
-
 	double a_pts, v_pts;
 
 	if (autosync)
@@ -2417,9 +2399,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
 	    if(!quiet)
 		print_status(a_pts - audio_delay, AV_delay, c_total);
 	}
-
     } //geexbox bgvideo patch
-
     } else {
 	// No audio:
 
@@ -2810,7 +2790,6 @@ static void low_cache_loop(void)
 	   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) cfs:%2.2f  p:%2.2f",(int)(cache_fill_status*100.0/percent),cache_fill_status,percent);
 	   	set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) ",(int)(cache_fill_status*100.0/percent));
     	force_osd();
-
     	//percent=0.0;
 
 	if (mpctx->sh_video && mpctx->video_out && vo_config_count)
@@ -2881,7 +2860,6 @@ void fast_continue()
 static void pause_loop(void)
 {
     mp_cmd_t* cmd=NULL;
-
 	if(IsLoopAvi(NULL))
 	{
 		mpctx->osd_function=OSD_PLAY;
@@ -3084,9 +3062,7 @@ static int error_playing;
 /* This preprocessor directive is a hack to generate a mplayer-nomain.o object
  * file for some tools to link against. */
 #ifndef DISABLE_MAIN
-
 int main(int argc,char* argv[]){
-
 char * mem_ptr;
 
 // movie info:
@@ -3201,6 +3177,9 @@ int gui_no_filename=0;
 #ifdef CONFIG_PRIORITY
     set_priority();
 #endif
+
+  if (codec_path)
+    set_codec_path(codec_path);
 
 #ifndef CONFIG_GUI
     if(use_gui){
@@ -3578,12 +3557,14 @@ while (player_idle_mode && !filename) {
     play_tree_t * entry = NULL;
     mp_cmd_t * cmd;
 
+    if (mpctx->video_out && vo_config_count)
+        mpctx->video_out->control(VOCTRL_PAUSE, NULL);
+
     //AgentX idle hack to make loop.avi constantly play
     while(cmd = mp_input_get_cmd(0,1,0))
     {
       if (mpctx->video_out && vo_config_count) mpctx->video_out->check_events();
-
-    switch (cmd->id) {
+	  switch (cmd->id) {
         case MP_CMD_LOADFILE:
             // prepare a tree entry with the new filename
             entry = play_tree_new();
@@ -3605,7 +3586,6 @@ while (player_idle_mode && !filename) {
     }
 
     mp_cmd_free(cmd);
-
     }
    	entry = play_tree_new();
    	filename=bg_video;
@@ -3636,6 +3616,9 @@ while (player_idle_mode && !filename) {
     //mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 }
 //---------------------------------------------------------------------------
+
+    if (mpctx->video_out && vo_config_count)
+        mpctx->video_out->control(VOCTRL_RESUME, NULL);
 
     if(filename) {
 	mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_Playing,
@@ -3749,7 +3732,6 @@ int vob_sub_auto = 1; //scip
   	stream_cache_size=-1;
   else
   	stream_cache_size=orig_stream_cache_size;
-
 
   playing_usb=false;
   playing_dvd=false;
@@ -4094,7 +4076,6 @@ mpctx->sh_audio=mpctx->d_audio->sh;
 mpctx->sh_video=mpctx->d_video->sh;
 
 
-
 //geexbox bgvideo patch
 while(mpctx->sh_audio && !mpctx->sh_video && bg_video) {
   int bg_file_format = 0;
@@ -4123,7 +4104,6 @@ while(mpctx->sh_audio && !mpctx->sh_video && bg_video) {
   mp_msg(MSGT_DEMUXER,MSGL_INFO,"Background video should work ;)\n");
   break;
 }
-
 
 //
 if(mpctx->sh_video){
@@ -4339,7 +4319,6 @@ if(!mpctx->sh_audio){
 }
 
 if(!mpctx->sh_video){
-
    mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_Video_NoVideo);
    mp_msg(MSGT_CPLAYER,MSGL_V,"Freeing %d unused video chunks.\n",mpctx->d_video->packs);
    ds_free_packs(mpctx->d_video);
@@ -4563,7 +4542,7 @@ if(!mpctx->sh_video) {
 
   if (!mpctx->num_buffered_frames) {
 	  double frame_time = update_video(&blit_frame);
-	  if (!(mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh)) {
+	  if (mpctx->startup_decode_retry > 0 && !(mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh)) {
       while (!blit_frame && mpctx->startup_decode_retry > 0) {
           double delay = mpctx->delay;
           // these initial decode failures are probably due to codec delay,
@@ -4580,7 +4559,6 @@ if(!mpctx->sh_video) {
 	  mpctx->eof = 1; goto goto_next_file;
       }
       if (frame_time < 0)
-
       //geexbox bgvideo patch
        if (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh) {
     	   demux_seek(mpctx->bg_demuxer,0,0,1);
@@ -4588,7 +4566,6 @@ if(!mpctx->sh_video) {
             mpctx->eof = PT_NEXT_ENTRY;
         }
         else
-
 	  mpctx->eof = 1;
       else {
 	  // might return with !eof && !blit_frame if !correct_pts
@@ -4769,7 +4746,7 @@ if(step_sec>0) {
 }
   
   mpctx->was_paused = 0;
-
+    
    if (mpctx->eof==1 && IsLoopAvi(NULL))
    {
     play_n_frames=play_n_frames_mf;
@@ -4835,7 +4812,6 @@ if(rel_seek_secs || abs_seek_pos){
 
 } // while(!mpctx->eof)
 setwatchdogcounter(-1);
-
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);
 error_playing=stream_error(mpctx->stream);
 

@@ -40,6 +40,11 @@ void* mem2_malloc(u32 size)
 	else return malloc(size);
 }
 
+void* mem2_malign(u8 align, u32 size)
+{
+	return (void *)((u32)(ceil((float)((u32)mem2_malloc(size + (align - 1))) / align) * align));	// Hah, haha, hah... ha...
+}
+
 BOOL mem2_free(void *ptr)
 {
 	if(mem2_initied) return __lwp_heap_free(&mem2_heap, ptr);

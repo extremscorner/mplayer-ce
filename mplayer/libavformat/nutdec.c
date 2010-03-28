@@ -391,8 +391,8 @@ static void set_disposition_bits(AVFormatContext* avf, char* value, int stream_i
 static int decode_info_header(NUTContext *nut){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = s->pb;
-    uint64_t tmp;
-    unsigned int stream_id_plus1, chapter_start, chapter_len, count;
+    uint64_t tmp, chapter_start, chapter_len;
+    unsigned int stream_id_plus1, count;
     int chapter_id, i;
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
@@ -861,7 +861,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         pos2= st->index_entries[index].pos;
         ts  = st->index_entries[index].timestamp;
     }else{
-        av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pts_cmp, next_node);
+        av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pts_cmp, (void **) next_node);
         av_log(s, AV_LOG_DEBUG, "%"PRIu64"-%"PRIu64" %"PRId64"-%"PRId64"\n", next_node[0]->pos, next_node[1]->pos,
                                                     next_node[0]->ts , next_node[1]->ts);
         pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
@@ -870,7 +870,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         if(!(flags & AVSEEK_FLAG_BACKWARD)){
             dummy.pos= pos+16;
             next_node[1]= &nopts_sp;
-            av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, next_node);
+            av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, (void **) next_node);
             pos2= av_gen_search(s, -2, dummy.pos, next_node[0]->pos     , next_node[1]->pos, next_node[1]->pos,
                                                 next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
             if(pos2>=0)
@@ -899,9 +899,13 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
 static int nut_read_close(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
+    int i;
 
     av_freep(&nut->time_base);
     av_freep(&nut->stream);
+    ff_nut_free_sp(nut);
+    for(i = 1; i < nut->header_count; i++)
+        av_freep(&nut->header[i]);
 
     return 0;
 }
@@ -917,5 +921,6 @@ AVInputFormat nut_demuxer = {
     nut_read_close,
     read_seek,
     .extensions = "nut",
+    .metadata_conv = ff_nut_metadata_conv,
 };
 #endif

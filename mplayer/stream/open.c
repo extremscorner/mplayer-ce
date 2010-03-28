@@ -50,7 +50,7 @@ int dvd_title=0;
 
 // Open a new stream  (stdin/file/vcd/url)
 
-stream_t* open_stream(char* filename,char** options, int* file_format){
+stream_t* open_stream(const char* filename,char** options, int* file_format){
    stream_t* ret;
    extern fsysloc_table_t *fsysloc_table;
    char *locale_changed = NULL ;
@@ -82,4 +82,3 @@ if(!filename) {
   }
   return ret;
 }
-

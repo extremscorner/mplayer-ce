@@ -60,7 +60,7 @@ MPlayer Wii port
 
 #include "../m_option.h"
 #include "../parser-cfg.h"
-#include "../get_path.h"
+#include "../path.h"
 
 #undef abort
 
@@ -601,7 +601,7 @@ bool mount_ftp(int number)
 		printf("Mounting FTP : '%s' host:%s  share:'%s'\n",device,ftp_conf[number].ip,ftp_conf[number].share);
 		u64 t1,t2;
 		t1=GetTimerMS();
-		if(!ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,ftp_conf[number].passive>0))
+		if(!ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,21,ftp_conf[number].passive>0))
 		{
 			t2=GetTimerMS()-t1;
 			printf("error mounting '%s' (%u ms)\n",device,(unsigned)(t2));
@@ -615,7 +615,7 @@ bool mount_ftp(int number)
 		}
 	}
 	else
-	  return ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,ftp_conf[number].passive>0);
+	  return ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,21,ftp_conf[number].passive>0);
 }
 
 void read_net_config()
@@ -914,11 +914,18 @@ void plat_init (int *argc, char **argv[])
 	
 	if (FindIOS(202))
 	{
-		printf(" Found IOS202, reloading.\n");
+		printf(" Found cIOS 202, reloading.\n");
 		IOS_ReloadIOS(202);
 	}
 	
-	bool badstuff = (IOS_GetVersion() == 202);
+	s32 ios_version = IOS_GetVersion();
+	if (ios_version < 0) ios_version = 0;
+	s32 ios_revision = IOS_GetRevision();
+	if (ios_revision < 0) ios_revision = 0;
+	
+	printf(" Using IOS %i v%i (%i.%i)\n", ios_version, ios_revision, (ios_revision >> 8) & 0xFF, ios_revision & 0xFF);
+	
+	bool badstuff = (ios_version == 202);
 	printf(" Enabling DVD access... ");
 	
 	if (WIIDVD_Init(!badstuff))
@@ -1045,8 +1052,8 @@ void plat_init (int *argc, char **argv[])
 	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
 
 
-	// only used for cache_mem at now  (stream_cache_size + 8kb(paranoid)
-	u32 uppermem = (stream_cache_size * 1024) + (8 * 1024);
+	// only used for cache_mem at now  (stream_cache_size + 32kb(paranoid)
+	u32 uppermem = (stream_cache_size * 1024) + (((1024 * 1024) + (512 * 512) + (512 * 512)) * 2) + (32 * 1024);
 	printf(" Allocating upper memory.\n\t\x1b[37m%u bytes\x1b[39;0m\n", uppermem);
 	InitMem2Manager(uppermem);
 	

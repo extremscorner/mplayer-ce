@@ -25,7 +25,7 @@
 #include <stdlib.h>
 
 #include "mp_msg.h"
-#include "get_path.h"
+#include "path.h"
 
 #include "ass_mp.h"
 #include "help_mp.h"
@@ -218,7 +218,7 @@ ass_track_t* ass_read_subdata(ass_library_t* library, sub_data* subdata, double 
 	return track;
 }
 
-ass_track_t* ass_read_stream(ass_library_t* library, char *fname, char *charset) {
+ass_track_t* ass_read_stream(ass_library_t* library, const char *fname, char *charset) {
 	int i;
 	char *buf = NULL;
 	ass_track_t *track;

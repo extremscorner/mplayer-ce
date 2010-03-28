@@ -27,6 +27,7 @@
 #include <dlfcn.h>
 #endif
 #include "help_mp.h"
+#include "path.h"
 
 #include "ad_internal.h"
 #include "loader/wine/windef.h"
@@ -41,16 +42,46 @@ static const ad_info_t info =  {
 
 LIBAD_EXTERN(realaud)
 
-void *__builtin_new(unsigned long size) {
+/* These functions are required for loading Real binary libs.
+ * Add forward declarations to avoid warnings with -Wmissing-prototypes. */
+void *__builtin_new(unsigned long size);
+void  __builtin_delete(void *ize);
+void *__builtin_vec_new(unsigned long size);
+void  __builtin_vec_delete(void *mem);
+void  __pure_virtual(void);
+
+void *__builtin_new(unsigned long size)
+{
 	return malloc(size);
 }
 
-// required for cook's uninit:
-void __builtin_delete(void* ize) {
+void __builtin_delete(void* ize)
+{
 	free(ize);
 }
 
+void *__builtin_vec_new(unsigned long size)
+{
+	return malloc(size);
+}
+
+void __builtin_vec_delete(void *mem)
+{
+	free(mem);
+}
+
+void __pure_virtual(void)
+{
+	printf("FATAL: __pure_virtual() called!\n");
+//	exit(1);
+}
+
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+void ___brk_addr(void);
+void ___brk_addr(void) {exit(0);}
+char **__environ={NULL};
+#undef stderr
+FILE *stderr=NULL;
 void *__ctype_b=NULL;
 #endif
 
@@ -221,9 +252,9 @@ static int preinit(sh_audio_t *sh){
   unsigned int result;
   char *path;
 
-  path = malloc(strlen(REALCODEC_PATH)+strlen(sh->codec->dll)+2);
+  path = malloc(strlen(codec_path) + strlen(sh->codec->dll) + 2);
   if (!path) return 0;
-  sprintf(path, REALCODEC_PATH "/%s", sh->codec->dll);
+  sprintf(path, "%s/%s", codec_path, sh->codec->dll);
 
     /* first try to load linux dlls, if failed and we're supporting win32 dlls,
        then try to load the windows ones */
@@ -247,8 +278,8 @@ static int preinit(sh_audio_t *sh){
   if(raSetDLLAccessPath){
 #endif
       // used by 'SIPR'
-      path = realloc(path, strlen(REALCODEC_PATH) + 13);
-      sprintf(path, "DT_Codecs=" REALCODEC_PATH);
+      path = realloc(path, strlen(codec_path) + 13);
+      sprintf(path, "DT_Codecs=%s", codec_path);
       if(path[strlen(path)-1]!='/'){
         path[strlen(path)+1]=0;
         path[strlen(path)]='/';
@@ -269,15 +300,17 @@ static int preinit(sh_audio_t *sh){
 
 #ifdef CONFIG_WIN32DLL
     if (dll_type == 1){
-      if(wraOpenCodec2)
-	result=wraOpenCodec2(&sh->context,REALCODEC_PATH "\\");
-      else
+      if (wraOpenCodec2) {
+        sprintf(path, "%s\\", codec_path);
+        result = wraOpenCodec2(&sh->context, path);
+      } else
 	result=wraOpenCodec(&sh->context);
     } else
 #endif
-    if(raOpenCodec2)
-      result=raOpenCodec2(&sh->context,REALCODEC_PATH "/");
-    else
+    if (raOpenCodec2) {
+      sprintf(path, "%s/", codec_path);
+      result = raOpenCodec2(&sh->context, path);
+    } else
       result=raOpenCodec(&sh->context);
     if(result){
       mp_msg(MSGT_DECAUDIO,MSGL_WARN,"Decoder open failed, error code: 0x%X\n",result);

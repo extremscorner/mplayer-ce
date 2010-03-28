@@ -20,7 +20,7 @@
 #define MPLAYER_CFG_COMMON_OPTS_H
 
 #include "config.h"
-
+#include "libmpcodecs/vd.h"
 #include "osdep/priority.h"
 
 // ------------------------- common options --------------------
@@ -40,6 +40,7 @@
 #ifdef CONFIG_PRIORITY
 	{"priority", &proc_priority, CONF_TYPE_STRING, 0, 0, 0, NULL},
 #endif
+	{"codecpath", &codec_path, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"noconfig", noconfig_opts, CONF_TYPE_SUBCONFIG, CONF_GLOBAL|CONF_NOCFG|CONF_PRE_PARSE, 0, 0, NULL},
 
 // ------------------------- stream options --------------------

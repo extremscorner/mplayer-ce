@@ -46,7 +46,7 @@
 #include "libmpcodecs/dec_teletext.h"
 #include "vobsub.h"
 #include "spudec.h"
-#include "get_path.h"
+#include "path.h"
 #include "stream/tv.h"
 #include "stream/stream_radio.h"
 #include "stream/pvr.h"
@@ -2522,7 +2522,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 
 	case MP_CMD_EDL_MARK:
 	    if (edl_fd) {
-		float v = sh_video ? sh_video->pts :
+		double v = sh_video ? sh_video->pts :
 		    playing_audio_pts(sh_audio, mpctx->d_audio,
 				      mpctx->audio_out);
 

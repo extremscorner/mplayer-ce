@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 #include <math.h>
-#include "common.h"
+#include "attributes.h"
 #include "rational.h"
 
 #ifndef M_E
@@ -34,6 +34,9 @@
 #endif
 #ifndef M_LN10
 #define M_LN10         2.30258509299404568402  /* log_e 10 */
+#endif
+#ifndef M_LOG2_10
+#define M_LOG2_10      3.32192809488736234787  /* log_2 10 */
 #endif
 #ifndef M_PI
 #define M_PI           3.14159265358979323846  /* pi */

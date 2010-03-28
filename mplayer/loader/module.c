@@ -46,6 +46,7 @@
 #endif
 #include "win32.h"
 #include "drv.h"
+#include "path.h"
 
 #ifdef EMU_QTX_API
 #include "wrapper.h"
@@ -241,7 +242,7 @@ static WIN_BOOL MODULE_DllProcessAttach( WINE_MODREF *wm, LPVOID lpReserved )
     //local_wm=wm;
     if(local_wm)
     {
-	local_wm->next = (modref_list*) malloc(sizeof(modref_list));
+        local_wm->next = malloc(sizeof(modref_list));
         local_wm->next->prev=local_wm;
         local_wm->next->next=NULL;
         local_wm->next->wm=wm;
@@ -365,8 +366,7 @@ static WIN_BOOL MODULE_FreeLibrary( WINE_MODREF *wm )
 HMODULE WINAPI LoadLibraryExA(LPCSTR libname, HANDLE hfile, DWORD flags)
 {
 	WINE_MODREF *wm = 0;
-	char* listpath[] = { "", "", "/usr/lib/win32", "/usr/local/lib/win32", 0 };
-	extern char* def_path;
+	char* listpath[] = { "", "", 0 };
 	char path[512];
 	char checked[2000];
         int i = -1;
@@ -393,9 +393,9 @@ HMODULE WINAPI LoadLibraryExA(LPCSTR libname, HANDLE hfile, DWORD flags)
 		    strncpy(path, libname, 511);
                 else
 		    /* check default user path */
-		    strncpy(path, def_path, 300);
+		    strncpy(path, codec_path, 300);
 	    }
-	    else if (strcmp(def_path, listpath[i]))
+	    else if (strcmp(codec_path, listpath[i]))
                 /* path from the list */
 		strncpy(path, listpath[i], 300);
 	    else
@@ -849,13 +849,12 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
 
 #endif
 
-#if 1
   // emulate some functions:
   switch(reg->eax){
   // memory management:
   case 0x150011: //NewPtrClear
   case 0x150012: //NewPtrSysClear
-      reg->eax=(uint32_t)malloc(((uint32_t *)stack_base)[1]);
+      reg->eax = malloc(((uint32_t *)stack_base)[1]);
       memset((void *)reg->eax,0,((uint32_t *)stack_base)[1]);
 #ifdef DEBUG_QTX_API
       printf("%*sLEAVE(%d): EMULATED! 0x%X\n",ret_i*2,"",ret_i, reg->eax);
@@ -863,7 +862,7 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
       return 1;
   case 0x15000F: //NewPtr
   case 0x150010: //NewPtrSys
-      reg->eax=(uint32_t)malloc(((uint32_t *)stack_base)[1]);
+      reg->eax = malloc(((uint32_t *)stack_base)[1]);
 #ifdef DEBUG_QTX_API
       printf("%*sLEAVE(%d): EMULATED! 0x%X\n",ret_i*2,"",ret_i, reg->eax);
 #endif
@@ -895,7 +894,6 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
 #endif
       return 1;
   }
-#endif
 
 #if 0
   switch(reg->eax){

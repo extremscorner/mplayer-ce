@@ -7,6 +7,7 @@ extern "C" {
 
 u32 InitMem2Manager ();
 void* mem2_malloc(u32 size);
+void* mem2_malign(u8 align, u32 size);
 BOOL mem2_free(void *ptr);
 
 #ifdef __cplusplus

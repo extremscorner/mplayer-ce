@@ -193,7 +193,7 @@ void free_demuxer_stream(demux_stream_t *ds)
     free(ds);
 }
 
-demux_stream_t *new_demuxer_stream(struct demuxer_st *demuxer, int id)
+demux_stream_t *new_demuxer_stream(struct demuxer *demuxer, int id)
 {
     demux_stream_t *ds = malloc(sizeof(demux_stream_t));
     *ds = (demux_stream_t){
@@ -247,7 +247,7 @@ demuxer_t *new_demuxer(stream_t *stream, int type, int a_id, int v_id,
                    "big troubles ahead.");
     if (filename) // Filename hack for avs_check_file
         d->filename = strdup(filename);
-    stream_reset(stream);
+    stream->eof = 0;
     stream_seek(stream, stream->start_pos);
     return d;
 }
@@ -277,7 +277,7 @@ sh_sub_t *new_sh_sub_sid(demuxer_t *demuxer, int id, int sid)
     return demuxer->s_streams[id];
 }
 
-void free_sh_sub(sh_sub_t *sh)
+static void free_sh_sub(sh_sub_t *sh)
 {
     mp_msg(MSGT_DEMUXER, MSGL_DBG2, "DEMUXER: freeing sh_sub at %p\n", sh);
     free(sh->extradata);
@@ -366,9 +366,10 @@ void free_sh_video(sh_video_t *sh)
 void free_demuxer(demuxer_t *demuxer)
 {
     int i;
+
     if(!demuxer) return;
-    mp_msg(MSGT_DEMUXER, MSGL_DBG2, "DEMUXER: freeing demuxer at %p\n",
-           demuxer);
+    mp_msg(MSGT_DEMUXER, MSGL_DBG2, "DEMUXER: freeing %s demuxer at %p\n",
+           demuxer->desc->shortdesc, demuxer);
     if (demuxer->desc && demuxer->desc->close)
         demuxer->desc->close(demuxer);
     // Very ugly hack to make it behave like old implementation
@@ -1318,8 +1319,7 @@ int demux_info_add(demuxer_t *demuxer, const char *opt, const char *param)
         }
     }
 
-    info = demuxer->info = (char **) realloc(info,
-                                             (2 * (n + 2)) * sizeof(char *));
+    info = demuxer->info = realloc(info, (2 * (n + 2)) * sizeof(char *));
     info[2 * n] = strdup(opt);
     info[2 * n + 1] = strdup(param);
     memset(&info[2 * (n + 1)], 0, 2 * sizeof(char *));

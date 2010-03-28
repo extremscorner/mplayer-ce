@@ -245,14 +245,14 @@ static int mylstat(const fsysloc_t *fsysloc, char *dir, char *file,struct stat* 
     char *slash;
     l -= 3;
     strcpy(s, dir);
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if HAVE_DOS_PATHS
     if (s[l] == '/' || s[l] == '\\')
 #else
     if (s[l] == '/')
 #endif
       s[l] = '\0';
     slash = strrchr(s, '/');
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if HAVE_DOS_PATHS
     if (!slash)
       slash = strrchr(s,'\\');
 #endif
@@ -292,7 +292,7 @@ static char **get_extensions(menu_t *menu){
   if(!fp)
     return NULL;
 
-  extensions = (char **) malloc(sizeof(*extensions));
+  extensions = malloc(sizeof(*extensions));
   *extensions = NULL;
 
   while(fgets(ext,sizeof(ext),fp)) {
@@ -303,9 +303,9 @@ static char **get_extensions(menu_t *menu){
       ext[s-1] = '\0';
       s--;
     }
-    e = (char *) malloc(s+1);
-    extensions = (char **) realloc(extensions, ++n * sizeof(*extensions));
-    extensions = (char **) realloc(extensions, ++n * sizeof(*extensions));
+    e = malloc(s+1);
+    extensions = realloc(extensions, ++n * sizeof(*extensions));
+    extensions = realloc(extensions, ++n * sizeof(*extensions));
     strcpy (e, ext);
     for (l=extensions; *l; l++);
     *l++ = e;
@@ -508,7 +508,7 @@ strcpy(menu_dir,mpriv->dir);
     }
   }
 
-  namelist = (char **) malloc(sizeof(char *));
+  namelist = malloc(sizeof(char *));
   extensions = get_extensions(menu);
   if(extensions != NULL && *extensions == NULL)
   {
@@ -548,7 +548,7 @@ strcpy(menu_dir,mpriv->dir);
         continue;
     }
     if(n%20 == 0){ // Get some more mem
-      if((tp = (char **) realloc(namelist, (n+20) * sizeof (char *)))
+      if((tp = realloc(namelist, (n+20) * sizeof (char *)))
          == NULL) {
         mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_LIBMENU_ReallocError, strerror(errno));
 	n--;
@@ -631,7 +631,7 @@ static void read_cmd(menu_t* menu,int cmd) {
 	  if(l <= 1) break;
 	  mpriv->dir[l-1] = '\0';
 	  slash = strrchr(mpriv->dir,'/');
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if HAVE_DOS_PATHS
 	  if (!slash)
 	    slash = strrchr(mpriv->dir,'\\');
 #endif
@@ -754,7 +754,7 @@ static int open_fs(menu_t* menu, char* args) {
     char *slash = NULL;
     if (filename && !strstr(filename, "://") && (path=realpath(filename, b))) {
       slash = strrchr(path, '/');
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if HAVE_DOS_PATHS
       // FIXME: Do we need and can convert all '\\' in path to '/' on win32?
       if (!slash)
         slash = strrchr(path, '\\');

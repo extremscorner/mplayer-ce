@@ -32,6 +32,8 @@
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "dsputil.h"
+#include "fft.h"
+
 extern const uint16_t ff_wma_critical_freqs[25];
 
 #define MAX_CHANNELS 2
@@ -49,8 +51,8 @@ typedef struct {
     int num_bands;
     unsigned int *bands;
     float root;
-    DECLARE_ALIGNED_16(FFTSample, coeffs)[BINK_BLOCK_MAX_SIZE];
-    DECLARE_ALIGNED_16(short, previous)[BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
+    DECLARE_ALIGNED(16, FFTSample, coeffs)[BINK_BLOCK_MAX_SIZE];
+    DECLARE_ALIGNED(16, short, previous)[BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
     float *coeffs_ptr[MAX_CHANNELS]; ///< pointers to the coeffs arrays for float_to_int16_interleave
     union {
         RDFTContext rdft;
@@ -122,10 +124,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     for (i = 0; i < s->channels; i++)
         s->coeffs_ptr[i] = s->coeffs + i * s->frame_len;
 
-    if (avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
-        ff_rdft_init(&s->trans.rdft, frame_len_bits, IRIDFT);
+    if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
+        ff_rdft_init(&s->trans.rdft, frame_len_bits, DFT_C2R);
+    else if (CONFIG_BINKAUDIO_DCT_DECODER)
+        ff_dct_init(&s->trans.dct, frame_len_bits, 1);
     else
-        ff_dct_init(&s->trans.dct, frame_len_bits, 0);
+        return -1;
 
     return 0;
 }
@@ -209,12 +213,20 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
             }
         }
 
-        if (use_dct)
+        if (CONFIG_BINKAUDIO_DCT_DECODER && use_dct) {
+            coeffs[0] /= 0.5;
             ff_dct_calc (&s->trans.dct,  coeffs);
-        else
+            s->dsp.vector_fmul_scalar(coeffs, coeffs, s->frame_len / 2, s->frame_len);
+        }
+        else if (CONFIG_BINKAUDIO_RDFT_DECODER)
             ff_rdft_calc(&s->trans.rdft, coeffs);
     }
 
+    if (s->dsp.float_to_int16_interleave == ff_float_to_int16_interleave_c) {
+        for (i = 0; i < s->channels; i++)
+            for (j = 0; j < s->frame_len; j++)
+                s->coeffs_ptr[i][j] = 385.0 + s->coeffs_ptr[i][j]*(1.0/32767.0);
+    }
     s->dsp.float_to_int16_interleave(out, (const float **)s->coeffs_ptr, s->frame_len, s->channels);
 
     if (!s->first) {
@@ -235,9 +247,9 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     BinkAudioContext * s = avctx->priv_data;
     av_freep(&s->bands);
-    if (avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
+    if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
         ff_rdft_end(&s->trans.rdft);
-    else
+    else if (CONFIG_BINKAUDIO_DCT_DECODER)
         ff_dct_end(&s->trans.dct);
     return 0;
 }
@@ -270,11 +282,7 @@ static int decode_frame(AVCodecContext *avctx,
         get_bits_align32(gb);
     }
 
-    *data_size = (uint8_t*)samples - (uint8_t*)data;
-    if (reported_size != *data_size) {
-        av_log(avctx, AV_LOG_WARNING, "reported data size (%d) does not match output data size (%d)\n",
-             reported_size, *data_size);
-    }
+    *data_size = FFMIN(reported_size, (uint8_t*)samples - (uint8_t*)data);
     return buf_size;
 }
 

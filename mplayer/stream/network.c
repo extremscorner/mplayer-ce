@@ -71,7 +71,11 @@ const mime_struct_t mime_type_table[] = {
 #ifdef CONFIG_LIBAVFORMAT
 	// Flash Video
 	{ "video/x-flv", DEMUXER_TYPE_LAVF_PREFERRED},
-	{ "video/quicktime", DEMUXER_TYPE_LAVF_PREFERRED },
+	// do not force any demuxer in this case!
+	// we want the lavf demuxer to be tried first (happens automatically anyway),
+	// but for mov reference files to work we must also try
+	// the native demuxer if lavf fails.
+	{ "video/quicktime", 0 },
 #endif
 	// MP3 streaming, some MP3 streaming server answer with audio/mpeg
 	{ "audio/mpeg", DEMUXER_TYPE_AUDIO },
@@ -295,7 +299,10 @@ http_read_response( int fd ) {
 		}
 		http_response_append( http_hdr, response, i );
 	} while( !http_is_header_entire( http_hdr ) );
-	http_response_parse( http_hdr );
+	if (http_response_parse( http_hdr ) < 0) {
+		http_free( http_hdr );
+		return NULL;
+	}
 	return http_hdr;
 }
 
@@ -364,6 +371,9 @@ http_seek( stream_t *stream, off_t pos ) {
 
 	if( http_hdr==NULL ) return 0;
 
+	if( mp_msg_test(MSGT_NETWORK,MSGL_V) )
+		http_debug_hdr( http_hdr );
+
 	switch( http_hdr->status_code ) {
 		case 200:
 		case 206: // OK
@@ -378,7 +388,7 @@ http_seek( stream_t *stream, off_t pos ) {
 			break;
 		default:
 			mp_msg(MSGT_NETWORK,MSGL_ERR,MSGTR_MPDEMUX_NW_ErrServerReturned, http_hdr->status_code, http_hdr->reason_phrase );
-			close( fd );
+			closesocket( fd );
 			fd = -1;
 	}
 	stream->fd = fd;
@@ -463,9 +473,3 @@ void fixup_network_stream_cache(stream_t *stream) {
   }
 }
 
-
-int
-streaming_stop( stream_t *stream ) {
-	stream->streaming_ctrl->status = streaming_stopped_e;
-	return 0;
-}

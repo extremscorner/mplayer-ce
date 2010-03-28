@@ -24,6 +24,8 @@
  */
 
 #include "cfg-common.h"
+#include "libmpcodecs/vd.h"
+#include "libvo/vo_zr.h"
 
 extern int key_fifo_size;
 extern unsigned doubleclick_time;
@@ -37,11 +39,6 @@ extern char *lirc_configfile;
 extern float vo_panscanrange;
 /* only used at startup (setting these values from configfile) */
 extern char *vo_geometry;
-
-extern int opt_screen_size_x;
-extern int opt_screen_size_y;
-extern int fullscreen;
-extern int vidmode;
 
 extern char *ao_outputfilename;
 extern int ao_pcm_waveheader;
@@ -59,9 +56,6 @@ extern int dir_play;
 
 extern char *unrar_executable;
 
-int vo_zr_parseoption(const m_option_t* conf, char *opt, char * param);
-void vo_zr_revertoption(const m_option_t* opt,char* pram);
-
 extern m_option_t dxr2_opts[];
 
 extern char * skinName;
@@ -73,8 +67,6 @@ extern float force_monitor_aspect;
 extern float monitor_pixel_aspect;
 
 extern int sws_flags;
-int readPPOpt(void *conf, char *arg);
-void revertPPOpt(void *conf, char* opt);
 extern char* pp_help;
 
 const m_option_t vd_conf[]={
@@ -393,4 +385,3 @@ const m_option_t mplayer_opts[]={
 };
 
 #endif /* MPLAYER_CFG_MPLAYER_H */
-
