@@ -9051,8 +9051,8 @@ compiler_lib_search_dirs="\${DEVKITPPC}/lib/gcc \${DEVKITPPC}/powerpc-eabi/lib"
 
 # Dependencies to place before and after the objects being linked to
 # create a shared library.
-predep_objects="\${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.2/ecrti.o \${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.22/crtbeginS.o"
-postdep_objects="\${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.2/crtendS.o \${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.2/ecrtn.o"
+predep_objects="\${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.3/ecrti.o \${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.3/crtbeginS.o"
+postdep_objects="\${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.3/crtendS.o \${DEVKITPPC}/lib/gcc/powerpc-eabi/4.4.3/ecrtn.o"
 predeps=""
 postdeps="-lstdc++ -lm -lgcc_s -lc -lgcc_s"
 
