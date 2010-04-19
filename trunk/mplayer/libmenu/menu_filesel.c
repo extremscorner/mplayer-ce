@@ -329,7 +329,7 @@ extern int network_initied;
 extern int mounting_usb;
 #endif
 static int open_dir(menu_t* menu,char* args) {
-  char **namelist, **tp;
+  char **namelist=NULL, **tp;
   struct dirent *dp;
   struct stat st;
   int n;
@@ -354,7 +354,7 @@ fast_pause();
     free(mpriv->p.title);
   p = strstr(mpriv->title,"%p");
 strcpy(menu_dir,mpriv->dir);
-#define GEKKO
+
 #ifdef GEKKO
 #ifndef WIILIB
   if(!strcmp(mpriv->dir,"sd:/"))
@@ -478,6 +478,8 @@ strcpy(menu_dir,mpriv->dir);
 #endif
 #endif
 
+bool firsttry=true;
+retry:  
 
   if ( !fsysloc_table_init_flag) {
      char cad[100];
@@ -507,6 +509,7 @@ strcpy(menu_dir,mpriv->dir);
       close (path_fp);
     }
   }
+  
 
   namelist = malloc(sizeof(char *));
   extensions = get_extensions(menu);
@@ -578,9 +581,20 @@ bailout:
     fsysloc_restorelocale( fsysloc, locale_changed);
   free_extensions (extensions);
   closedir(dirp);
+  
+  if(firsttry && n==0 && mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')
+  { //ugly hack to fix airport problem
+  	firsttry=false;
+    if ( d_name_iconv!=NULL && d_name_iconv!=d_name_save) free( d_name_iconv);
+    if(namelist!=NULL) free(namelist);
+    namelist=NULL;
+    d_name_iconv=NULL ;
 
+  	goto retry;
+  	
+  }
 
-  if (n < 0) {
+  if (n <= 0) {
     mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_LIBMENU_ReaddirError,strerror(errno));
     goto error_exit;
   }
@@ -597,7 +611,7 @@ bailout:
     }
     free(namelist[n]);
   }
-  free(namelist);
+  if(namelist!=NULL) free(namelist);
   if(!strcmp(mpriv->dir,"usb:/"))mounting_usb=0;
   fast_continue();
   return 1;
@@ -607,6 +621,7 @@ error_exit:
         free( d_name_iconv);
     }
     fsysloc_restorelocale( fsysloc, locale_changed);
+    if(namelist!=NULL) free(namelist);
 
     if(!strcmp(mpriv->dir,"usb:/"))mounting_usb=0;
     fast_continue();
