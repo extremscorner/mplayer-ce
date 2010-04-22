@@ -100,7 +100,7 @@ static struct menu_priv_s cfg_dflt = {
 
 #define ST_OFF(m) M_ST_OFF(struct menu_priv_s,m)
 
-static m_option_t cfg_fields[] = {
+static const m_option_t cfg_fields[] = {
   MENU_LIST_PRIV_FIELDS,
   { "path", ST_OFF(path),  CONF_TYPE_STRING, 0, 0, 0, NULL },
   { "title", ST_OFF(title),  CONF_TYPE_STRING, 0, 0, 0, NULL },
@@ -479,7 +479,7 @@ strcpy(menu_dir,mpriv->dir);
 #endif
 
 bool firsttry=true;
-retry:  
+retry:
 
   if ( !fsysloc_table_init_flag) {
      char cad[100];
@@ -509,7 +509,7 @@ retry:
       close (path_fp);
     }
   }
-  
+
 
   namelist = malloc(sizeof(char *));
   extensions = get_extensions(menu);

@@ -433,6 +433,8 @@ void cache_uninit(stream_t *s) {
 
 if(!c) return;
 #if defined(GEKKO)
+  if(c->stream)
+    free(c->stream);
   c->buffer=NULL;
   free(s->cache_data);
   s->cache_data=NULL;
@@ -811,10 +813,10 @@ void refillcache(stream_t *stream,float min)
 }
 int stream_error(stream_t *stream)
 {
-	cache_vars_t *vars = (cache_vars_t *)stream->cache_data;
-	
-	if (!vars)
+	if (!stream || !stream->cache_data)
 		return 0;
+	
+	cache_vars_t *vars = (cache_vars_t *)stream->cache_data;
 	
   	return vars->stream->error;
 }

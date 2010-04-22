@@ -256,12 +256,12 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
 static void uninit(vf_instance_t *vf) {
      vf->priv=NULL;
-     /*
+	 /*
      if(pause_mpi) {
        free_mp_image(pause_mpi);
        pause_mpi = NULL;
      }
-     */
+	 */
 }
 static int config(struct vf_instance *vf, int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt) {

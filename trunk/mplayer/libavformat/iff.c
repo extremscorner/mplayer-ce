@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavformat/iff.c
+ * @file
  * IFF file demuxer
  * by Jaikrishnan Menon
  * for more information on the .iff file format, visit:
@@ -60,8 +60,16 @@
 
 #define PACKET_SIZE 1024
 
-typedef enum {COMP_NONE, COMP_FIB, COMP_EXP} svx8_compression_type;
-typedef enum {BITMAP_RAW, BITMAP_BYTERUN1} bitmap_compression_type;
+typedef enum {
+    COMP_NONE,
+    COMP_FIB,
+    COMP_EXP
+} svx8_compression_type;
+
+typedef enum {
+    BITMAP_RAW,
+    BITMAP_BYTERUN1
+} bitmap_compression_type;
 
 typedef struct {
     uint32_t  body_size;
@@ -119,7 +127,7 @@ static int iff_read_header(AVFormatContext *s,
 
         switch(chunk_id) {
         case ID_VHDR:
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             url_fskip(pb, 12);
             st->codec->sample_rate = get_be16(pb);
             url_fskip(pb, 1);
@@ -146,7 +154,7 @@ static int iff_read_header(AVFormatContext *s,
             break;
 
         case ID_BMHD:
-            st->codec->codec_type            = CODEC_TYPE_VIDEO;
+            st->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
             st->codec->width                 = get_be16(pb);
             st->codec->height                = get_be16(pb);
             url_fskip(pb, 4); // x, y offset
@@ -175,30 +183,30 @@ static int iff_read_header(AVFormatContext *s,
     }
 
     switch(st->codec->codec_type) {
-    case CODEC_TYPE_AUDIO:
-    av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+    case AVMEDIA_TYPE_AUDIO:
+        av_set_pts_info(st, 32, 1, st->codec->sample_rate);
 
-    switch(compression) {
-    case COMP_NONE:
-        st->codec->codec_id = CODEC_ID_PCM_S8;
-        break;
-    case COMP_FIB:
-        st->codec->codec_id = CODEC_ID_8SVX_FIB;
-        break;
-    case COMP_EXP:
-        st->codec->codec_id = CODEC_ID_8SVX_EXP;
-        break;
-    default:
-        av_log(s, AV_LOG_ERROR, "iff: unknown compression method\n");
-        return -1;
-    }
+        switch(compression) {
+        case COMP_NONE:
+            st->codec->codec_id = CODEC_ID_PCM_S8;
+            break;
+        case COMP_FIB:
+            st->codec->codec_id = CODEC_ID_8SVX_FIB;
+            break;
+        case COMP_EXP:
+            st->codec->codec_id = CODEC_ID_8SVX_EXP;
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR, "iff: unknown compression method\n");
+            return -1;
+        }
 
-    st->codec->bits_per_coded_sample = 8;
-    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * st->codec->bits_per_coded_sample;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
-    break;
+        st->codec->bits_per_coded_sample = 8;
+        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * st->codec->bits_per_coded_sample;
+        st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
+        break;
 
-    case CODEC_TYPE_VIDEO:
+    case AVMEDIA_TYPE_VIDEO:
         switch (compression) {
         case BITMAP_RAW:
             if (st->codec->codec_tag == ID_ILBM) {
@@ -256,22 +264,22 @@ static int iff_read_packet(AVFormatContext *s,
         st->codec->extradata_size = 0;
 
         ret = get_buffer(pb, pkt->data, iff->body_size);
-    } else if (s->streams[0]->codec->codec_type == CODEC_TYPE_VIDEO) {
+    } else if (s->streams[0]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = av_get_packet(pb, pkt, iff->body_size);
     } else {
         ret = av_get_packet(pb, pkt, PACKET_SIZE);
     }
 
     if(iff->sent_bytes == 0)
-        pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= AV_PKT_FLAG_KEY;
 
-    if(s->streams[0]->codec->codec_type == CODEC_TYPE_AUDIO) {
+    if(s->streams[0]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         iff->sent_bytes += PACKET_SIZE;
     } else {
         iff->sent_bytes = iff->body_size;
     }
     pkt->stream_index = 0;
-    if(s->streams[0]->codec->codec_type == CODEC_TYPE_AUDIO) {
+    if(s->streams[0]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         pkt->pts = iff->audio_frame_count;
         iff->audio_frame_count += ret / s->streams[0]->codec->channels;
     }

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/aac.c
+ * @file
  * AAC decoder
  * @author Oded Shimon  ( ods15 ods15 dyndns org )
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
@@ -2091,7 +2091,7 @@ static av_cold int aac_decode_close(AVCodecContext *avccontext)
 
 AVCodec aac_decoder = {
     "aac",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_AAC,
     sizeof(AACContext),
     aac_decode_init,

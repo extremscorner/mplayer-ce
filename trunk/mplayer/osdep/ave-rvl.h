@@ -5,7 +5,9 @@
 
 #define AVE_VI_COMB 0x03
 #define AVE_VI_GAMMA 0x10
+#define AVE_VI_TEST 0x67
 
+#define AVE_AI_MUTE 0x6D
 #define AVE_AI_VOLUME 0x71
 
 

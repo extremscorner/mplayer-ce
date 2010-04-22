@@ -9,6 +9,7 @@
 #include <ogc/ipc.h>
 #include <gccore.h>
 #include <ogc/mutex.h>
+#include <ogc/lwp_watchdog.h>
 #endif
 #include "libdvdiso.h"
 #include "di2.h"
@@ -23,14 +24,14 @@
 static mutex_t _DVD_mutex=LWP_MUTEX_NULL;
 static bool dvd_initied=false;
 
-int totalsectors;
-int totalentries;
+static int totalsectors;
+static int totalentries;
 
-char currentpath[MAXPATH];
+static char currentpath[MAXPATH];
 
-void freedirentrieslist(void);
-void dotab_dvd_add(void);
-int DVD_ScanContent(void);
+static void freedirentrieslist(void);
+static void dotab_dvd_add(void);
+static int DVD_ScanContent(void);
 
 struct DIRENTRY
 {
@@ -47,7 +48,7 @@ struct DIRENTRY
 	uint32_t fake_inode;
 };
 
-struct DIRENTRY *direntriesptr;
+static struct DIRENTRY *direntriesptr;
 
 struct FILESTATE
 {
@@ -89,15 +90,14 @@ typedef struct
 	void *ptr;
 } cache_page;
 
-cache_page *ReadAheadCache=NULL;
-uint32_t RA_pages=0;
-uint32_t RA_sectors=0;
-uint32_t gettick();
+static cache_page *ReadAheadCache=NULL;
+static uint32_t RA_pages=0;
+static uint32_t RA_sectors=0;
 #define SECTOR_SIZE 0x800
 
-void DestroyReadAheadCache();
-int ReadSectorFromCache(void *buf, uint32_t sector);
-void DVDEnableReadAhead(uint32_t pages,uint32_t sectors);
+static void DestroyReadAheadCache();
+static int ReadSectorFromCache(void *buf, uint32_t sector);
+static void DVDEnableReadAhead(uint32_t pages,uint32_t sectors);
 
 ///////////////////////////////////////////
 //    END CACHE FUNCTION DEFINITIONS     //
@@ -159,7 +159,6 @@ void WIIDVD_Close()
 	LWP_MutexDestroy(_DVD_mutex);
 }
 
-#include <ogc/lwp_watchdog.h>
 int WIIDVD_Mount()
 {
 #ifndef DEBUG
@@ -214,7 +213,7 @@ int WIIDVD_DiscPresent()
 #endif
 }
 
-struct DIRENTRY * name_to_dentry(char *filename,uint8_t file_permitted, uint8_t dir_permitted)//filename must be absolute, without dvd: at beginning
+static struct DIRENTRY * name_to_dentry(char *filename,uint8_t file_permitted, uint8_t dir_permitted)//filename must be absolute, without dvd: at beginning
 {
 	//int done=0;
 	struct DIRENTRY * dentryptr;
@@ -286,7 +285,7 @@ struct DIRENTRY * name_to_dentry(char *filename,uint8_t file_permitted, uint8_t 
 	return NULL;
 }
 
-char *absolute_path_without_device(const char *srcpath, char *destpath)
+static char *absolute_path_without_device(const char *srcpath, char *destpath)
 {
 	//Thanks to Chishm (libfat)
 	// Move the path pointer to the start of the actual path
@@ -342,7 +341,7 @@ int dentrystat(struct DIRENTRY *dentry,struct stat *st)
 #endif
 
 #ifndef DEBUG
-int _DVD_dirclose_r (struct _reent *r, DIR_ITER *dirState)
+static int _DVD_dirclose_r (struct _reent *r, DIR_ITER *dirState)
 {
 	struct DIR_STATE * mydirstate= (struct DIR_STATE *)dirState->dirStruct;
 	
@@ -358,7 +357,7 @@ int _DVD_dirclose_r (struct _reent *r, DIR_ITER *dirState)
 	return 0;
 }
 
-int _DVD_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct stat *filestat)
+static int _DVD_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct stat *filestat)
 {
 	struct DIR_STATE * mydirstate= (struct DIR_STATE *)dirState->dirStruct;
 	
@@ -376,6 +375,18 @@ int _DVD_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
 		return -1;
 	}
 	
+	// skip .. at root
+	if(mydirstate->curdentry->fake_inode == 4 && strcmp(mydirstate->curdentry->name, "..") == 0)
+	{
+		mydirstate->curdentry=mydirstate->curdentry->next;
+
+		if(mydirstate->curdentry==NULL)
+		{
+			r->_errno = ENOENT;
+			return -1;
+		}
+	}
+	
 	strncpy(filename,mydirstate->curdentry->name,MAXNAMELEN);
 	
 	if (filestat != NULL)
@@ -388,7 +399,7 @@ int _DVD_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct
 	return 0;
 }
 
-int _DVD_dirreset_r (struct _reent *r, DIR_ITER *dirState)
+static int _DVD_dirreset_r (struct _reent *r, DIR_ITER *dirState)
 {
 	struct DIR_STATE * mydirstate= (struct DIR_STATE *)dirState->dirStruct;
 	
@@ -402,7 +413,7 @@ int _DVD_dirreset_r (struct _reent *r, DIR_ITER *dirState)
 	return 0;
 }
 
-DIR_ITER* _DVD_diropen_r(struct _reent *r, DIR_ITER *dirState, const char *path)
+static DIR_ITER* _DVD_diropen_r(struct _reent *r, DIR_ITER *dirState, const char *path)
 {
 	char path_absolute[MAXPATH];
 	struct DIR_STATE * mydirstate= (struct DIR_STATE *)dirState->dirStruct;
@@ -437,7 +448,7 @@ DIR_ITER* _DVD_diropen_r(struct _reent *r, DIR_ITER *dirState, const char *path)
 	return dirState;
 }
 
-int _DVD_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf) 
+static int _DVD_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf) 
 {
 //	printf("DVD_statvfs\n");
 
@@ -466,7 +477,7 @@ int _DVD_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
 }
 #endif
 
-int _DVD_chdir_r (struct _reent *r, const char *path)
+static int _DVD_chdir_r (struct _reent *r, const char *path)
 {
 	char path_absolute[MAXPATH];
 	struct DIRENTRY * dentry;	
@@ -501,7 +512,7 @@ int _DVD_chdir_r (struct _reent *r, const char *path)
 }
 
 #ifndef DEBUG
-int _DVD_stat_r (struct _reent *r, const char *path, struct stat *st)
+static int _DVD_stat_r (struct _reent *r, const char *path, struct stat *st)
 {
 	char path_absolute[MAXPATH];
 	struct DIRENTRY * dentry;
@@ -663,7 +674,7 @@ static ssize_t _DVD_read_r (struct _reent *r, int fd, char *ptr, size_t len)
 	return bytesread;
 }
 
-int _DVD_close_r (struct _reent *r, int fd)
+static int _DVD_close_r (struct _reent *r, int fd)
 {
 	struct FILESTATE *filestate=(struct FILESTATE *)fd;
 //	printf("DVD_close\n");
@@ -675,6 +686,7 @@ int _DVD_close_r (struct _reent *r, int fd)
 	}
 
 	if(filestate->localsectbuf)free(filestate->localsectbuf);
+	
 	return 0;
 }
 
@@ -730,7 +742,7 @@ int _DVD_open_r (struct _reent *r, void *fileStruct, const char *path, int flags
 	return (int)filestate;
 }
 
-uint32_t bothendian32_to_uint32(uint8_t *buff)
+static uint32_t bothendian32_to_uint32(uint8_t *buff)
 {
 	uint32_t val;
 	val=((uint32_t)buff[4])<<24;
@@ -740,7 +752,7 @@ uint32_t bothendian32_to_uint32(uint8_t *buff)
 	return val;
 }
 
-uint32_t bigendian32_to_uint32(uint8_t *buff)
+static uint32_t bigendian32_to_uint32(uint8_t *buff)
 {
 	uint32_t val;
 	val=((uint32_t)buff[0])<<24;
@@ -750,7 +762,7 @@ uint32_t bigendian32_to_uint32(uint8_t *buff)
 	return val;
 }
 
-uint16_t bigendian16_to_uint16(uint8_t *buff)
+static uint16_t bigendian16_to_uint16(uint8_t *buff)
 {
 	uint16_t val;
 	val=((uint16_t)buff[0])<<8;
@@ -758,7 +770,7 @@ uint16_t bigendian16_to_uint16(uint8_t *buff)
 	return val;
 }
 
-void freedirentryandchilds(struct DIRENTRY *dentry)
+static void freedirentryandchilds(struct DIRENTRY *dentry)
 {
 	struct DIRENTRY *dentrynext;
 	if(!dentry)return;
@@ -773,13 +785,13 @@ void freedirentryandchilds(struct DIRENTRY *dentry)
 
 }
 
-void freedirentrieslist()
+static void freedirentrieslist()
 {
 	freedirentryandchilds(direntriesptr);
 	direntriesptr=0;
 }
 
-void debug_dump_direntry(int tablevel,struct DIRENTRY *dentry)
+static void debug_dump_direntry(int tablevel,struct DIRENTRY *dentry)
 {
 	char spaces[33]="                                ";
 	spaces[tablevel*2]=0;
@@ -793,7 +805,7 @@ void debug_dump_direntry(int tablevel,struct DIRENTRY *dentry)
 
 }
 
-void debug_dump_tree_recurse(int level, struct DIRENTRY *dentry, char *path_parent)
+static void debug_dump_tree_recurse(int level, struct DIRENTRY *dentry, char *path_parent)
 {
 	char path[MAXPATH];
 	char spaces[33]="                                ";
@@ -823,12 +835,12 @@ void debug_dump_tree_recurse(int level, struct DIRENTRY *dentry, char *path_pare
 
 }
 
-void debug_dump_tree()
+static void debug_dump_tree()
 {
 	if(direntriesptr)debug_dump_tree_recurse(0,direntriesptr,"dvd:/");
 }
 
-int DVD_ScanContent_recurse(int jolietmode, struct DIRENTRY * parent, uint8_t level, uint32_t sectnum, uint32_t dirlen, int *fake_inodecounter)
+static int DVD_ScanContent_recurse(int jolietmode, struct DIRENTRY * parent, uint8_t level, uint32_t sectnum, uint32_t dirlen, int *fake_inodecounter)
 {
 	int retval,i;
 	uint8_t * ptr,avoid_recursion;
@@ -1030,7 +1042,7 @@ int DVD_ScanContent_recurse(int jolietmode, struct DIRENTRY * parent, uint8_t le
 	return 0;
 }
 
-int DVD_ScanContent()
+static int DVD_ScanContent()
 {
 	int retval,currsect,done;
 	uint32_t rootsect=0;
@@ -1166,7 +1178,7 @@ const devoptab_t dotab_dvd = {
 };
 
 
-void dotab_dvd_add(void)
+static void dotab_dvd_add(void)
 {
 	AddDevice(&dotab_dvd);
 }
@@ -1200,7 +1212,7 @@ static inline void _DVD_unlock()
 	LWP_MutexUnlock(_DVD_mutex);
 }
 
-void DestroyReadAheadCache()
+static void DestroyReadAheadCache()
 {
 	int i;
 	if(ReadAheadCache==NULL) 
@@ -1220,7 +1232,7 @@ void DestroyReadAheadCache()
 	RA_sectors=0;
 }
 
-void DVDEnableReadAhead(uint32_t pages,uint32_t sectors)
+static void DVDEnableReadAhead(uint32_t pages,uint32_t sectors)
 {
  	int i,j;
   
@@ -1251,7 +1263,7 @@ void DVDEnableReadAhead(uint32_t pages,uint32_t sectors)
 	}
 }
 
-int ReadSectorFromCache(void *buf, uint32_t sector)
+static int ReadSectorFromCache(void *buf, uint32_t sector)
 {
 	int retval;
 	int i,leastUsed;

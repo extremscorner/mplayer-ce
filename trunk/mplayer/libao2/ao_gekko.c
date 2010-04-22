@@ -54,7 +54,7 @@
 #define PHASE_SHF_INV 0.75
 
 
-static ao_info_t info = {
+static const ao_info_t info = {
 	"gekko audio output",
 	"gekko",
 	"Team Twiizers",
@@ -88,11 +88,12 @@ static void switch_buffers()
 		buffer_play = (buffer_play + 1) % BUFFER_COUNT;
 		
 		AUDIO_InitDMA((u32)buffers[buffer_play], BUFFER_SIZE);
-		AUDIO_StartDMA();
 	}
 	else
 	{
 		AUDIO_StopDMA();
+		
+		dma_lastpt = 0;
 		playing = false;
 	}
 }
@@ -151,7 +152,7 @@ static int init(int rate, int channels, int format, int flags)
 	
 	for (int counter = 0; counter < BUFFER_COUNT; counter++)
 	{
-		memset(buffers[counter], 0, BUFFER_SIZE);
+		memset(buffers[counter], 0x00, BUFFER_SIZE);
 		DCFlushRange(buffers[counter], BUFFER_SIZE);
 	}
 	
@@ -180,21 +181,9 @@ static void reset(void)
 	
 	for (int counter = 0; counter < BUFFER_COUNT; counter++)
 	{
-		memset(buffers[counter], 0, BUFFER_SIZE);
+		memset(buffers[counter], 0x00, BUFFER_SIZE);
 		DCFlushRange(buffers[counter], BUFFER_SIZE);
 	}
-	
-	AUDIO_RegisterDMACallback(NULL);
-	AUDIO_InitDMA((u32)buffers[buffer_play], 32);
-	AUDIO_StartDMA();
-	
-	usleep(100);
-	
-	while (AUDIO_GetDMABytesLeft() > 0)
-		usleep(100);
-	
-	AUDIO_StopDMA();
-	AUDIO_RegisterDMACallback(switch_buffers);
 	
 	buffer_fill = 0;
 	buffer_play = 0;
@@ -206,7 +195,7 @@ static void reset(void)
 
 static void uninit(int immed)
 {
-	reset();
+	AUDIO_StopDMA();
 	AUDIO_RegisterDMACallback(NULL);
 	
 	if (led_mode > 0)
@@ -310,10 +299,11 @@ static int play(void *data, int len, int flags)
 		buffered += BUFFER_SIZE;
 	}
 	
-	if (!playing && (buffered > BUFFER_SIZE))
+	if (!playing && (buffered > request_size))
 	{
 		playing = true;
 		switch_buffers();
+		AUDIO_StartDMA();
 	}
 	
 	return processed;
@@ -323,14 +313,12 @@ static float get_delay(void)
 {
 	if (playing)
 	{
-		dma_lastpt = AUDIO_GetDMABytesLeft();
-		
 		if (led_mode > 0)
 		{
 			s16 *source = (s16 *)buffers[buffer_play];
 			
 			static u32 last = 0;
-			u32 current = (BUFFER_SIZE - dma_lastpt) / sizeof(s16);
+			u32 current = (BUFFER_SIZE - AUDIO_GetDMABytesLeft()) / sizeof(s16);
 			
 			if (last > current)
 				last = 0;
@@ -354,6 +342,8 @@ static float get_delay(void)
 			last = current;
 			reference = average;
 		}
+		
+		dma_lastpt = AUDIO_GetDMABytesLeft();
 	}
 	
 	return ((float)(buffered + dma_lastpt) * request_mult) / ao_data.bps;

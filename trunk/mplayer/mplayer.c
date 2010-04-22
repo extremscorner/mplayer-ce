@@ -445,8 +445,10 @@ void save_restore_point(char *_filename,int position)
 	if(!enable_restore_points)return;
 	if(_filename==NULL || IsLoopAvi(_filename))return;
 	
-	if(!strncmp(_filename,"dvd://",6) || !strncmp(_filename,"dvdnav",6 )
-		|| !strncmp(_filename,"http:/",6))return;
+	if(strncmp(_filename,"dvd:",4) == 0 ||
+		strncmp(_filename,"dvdnav:",7) == 0 ||
+		strncmp(_filename,"http:",5) == 0)
+		return;
 		
 	if(position <= 8 || !( mpctx->demuxer->seekable)) 
 	{
@@ -2609,17 +2611,35 @@ int reinit_video_chain(void) {
   sh_video->vfilter=(void*)append_filters(sh_video->vfilter);
 
 #ifdef GEKKO
-//rodries patch for big resolution on wii
-
-if(sh_video->disp_w>1024)
- {
-		char *arg_scale[]={"w","xxxx","h","-2",NULL};
-		sprintf(arg_scale[1],"%i",(int)sh_video->disp_w/2);
-		sh_video->vfilter = vf_open_filter(sh_video->vfilter,"scale",arg_scale);
-}
-
+  codecs_t *expected = find_video_codec(sh_video->format, sh_video->bih ? ((unsigned int *)&sh_video->bih->biCompression) : NULL, sh_video->codec, 0);
+  int dominant_axis = sh_video->disp_w > sh_video->disp_h ? sh_video->disp_w : sh_video->disp_h;
+  
+  if (dominant_axis > 1024)
+  {
+    if ((strncmp(expected->name, "ffmpeg", 6) == 0) || (expected->name == "ffodivx"))
+    {
+      if (dominant_axis > 4096)
+        m_config_set_option(mconfig, "lavdopts", "lowres=3");
+      else if (dominant_axis > 2048)
+        m_config_set_option(mconfig, "lavdopts", "lowres=2");
+      else
+        m_config_set_option(mconfig, "lavdopts", "lowres=1");
+	  
+      frame_dropping = 1;
+    }
+    else
+    {
+      m_config_set_option(mconfig, "lavdopts", "fast:skipframe=nonref:skiploopfilter=all");
+      frame_dropping = 0;
+    }
+  }
+  
+  if (strncmp(expected->name, "ffvp6", 5) == 0)
+  {
+    m_config_set_option(mconfig, "lavdopts", "fast:skiploopfilter=all");
+    frame_dropping = 2;
+  }
 #endif
-
 
 #ifdef CONFIG_ASS
   if (ass_enabled)
@@ -2751,81 +2771,79 @@ static double update_video(int *blit_frame)
 static void low_cache_loop(void)
 {
     float percent;
+	int progress;
 	int brk_cmd ;
     mp_cmd_t* cmd;
         
     setwatchdogcounter(-1);
-    //this values can be improved
-	if(!strncmp(fileplaying,"usb:",4) || !strncmp(fileplaying,"ntfs_usb:",9) ||
-	   !strncmp(fileplaying,"ntfs_sd:",8) || !strncmp(fileplaying,"sd:",3)) percent=stream_cache_min_percent/6;
-	else if(!strncmp(fileplaying,"smb:",4)) percent=stream_cache_min_percent/2;
-	else percent=stream_cache_min_percent;
-		
-   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) cfs:%2.2f  p:%2.2f",(int)(cache_fill_status*100.0/percent),cache_fill_status,percent);
-   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) ",(int)(cache_fill_status*100.0/percent));
-    //force_osd();
+	if(stream_cache_min_percent < 10 || stream_cache_min_percent > 100)
+		stream_cache_min_percent = 50; // reset to a sane number
+
+	if(!strncmp(fileplaying,"usb",3) || !strncmp(fileplaying,"sd",2))
+		percent=stream_cache_min_percent/6;
+	else if(!strncmp(fileplaying,"smb",3))
+		percent=stream_cache_min_percent/2;
+	else
+		percent=stream_cache_min_percent;
 
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
-	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
+		mpctx->video_out->control(VOCTRL_PAUSE, NULL);
 
     if (mpctx->audio_out && mpctx->sh_audio)
-	mpctx->audio_out->pause();	// pause audio, keep data if possible
+		mpctx->audio_out->pause();	// pause audio, keep data if possible
 
-    while ( cache_fill_status < percent  && cache_fill_status>=0) {
-    
+    while (cache_fill_status < percent && cache_fill_status >= 0 && percent < 100)
+	{
 		cmd = mp_input_get_cmd(20, 1, 1);
-		if (cmd) {
+		if (cmd)
+		{
 	  		cmd = mp_input_get_cmd(0,1,0);
 	  		brk_cmd = run_command(mpctx, cmd);
 	  		if(cmd->pausing != 4)brk_cmd=1;
-	    	if (cmd->id == MP_CMD_PAUSE) {
+	    	if (cmd->id == MP_CMD_PAUSE)
+			{
 	    		mp_cmd_free(cmd);
 				cmd = mp_input_get_cmd(0,1,0);				
 	  		}
 	  		mp_cmd_free(cmd);
 	  		if(brk_cmd > 0) break;
-	  		//continue;
 		}
 		
-	   	//set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) cfs:%2.2f  p:%2.2f",(int)(cache_fill_status*100.0/percent),cache_fill_status,percent);
-	   	set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%) ",(int)(cache_fill_status*100.0/percent));
-    	force_osd();
-    	//percent=0.0;
+		progress = (int)(cache_fill_status*100.0/percent);
 
-	if (mpctx->sh_video && mpctx->video_out && vo_config_count)
-	    mpctx->video_out->check_events();
+		if(progress >= 100 || progress <= 0)
+			break; // let's get out of here!
+		
+	   	set_osd_msg(OSD_MSG_PAUSE, 1, 1000, "Buffering (%02d%%)", progress);
+    	force_osd();
+
+		if (mpctx->sh_video && mpctx->video_out && vo_config_count)
+			mpctx->video_out->check_events();
 
 #ifdef CONFIG_MENU
-	if (vf_menu)
-	    vf_menu_pause_update(vf_menu);
+		if (vf_menu)
+			vf_menu_pause_update(vf_menu);
 #endif
 		usec_sleep(50000);		
     }
 	rm_osd_msg(OSD_MSG_PAUSE);
 
-	if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
+	if(strncmp(filename,"dvd:",4) == 0 || strncmp(filename,"dvdnav:",7) == 0)
 	{
-		//DI2_StartMotor();
-		//printf("start motor\n");
-		void *ptr=memalign(32, 0x800*2);
-		//printf("read sector 1\n");
+		void *ptr=(void *)memalign(32, 0x800*2);
 		DI2_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
-		//printf("read sector 5000\n");
 		DI2_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
 		free(ptr);
 	}
-	/*
-    if (cmd && cmd->id == MP_CMD_PAUSE) {
-	cmd = mp_input_get_cmd(0,1,0);
-	mp_cmd_free(cmd);
-    }
-    */
     mpctx->osd_function=OSD_PLAY;
+	
     if (mpctx->audio_out && mpctx->sh_audio)
         mpctx->audio_out->resume();	// resume audio
+	
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
-    (void)GetRelativeTime();	// ignore time that passed during pause
+	
+    GetRelativeTime();	// ignore time that passed during pause
     setwatchdogcounter(WATCH_TIMEOUT);
 #ifdef CONFIG_GUI
     if (use_gui)
@@ -2921,7 +2939,7 @@ static void pause_loop(void)
 	else
 	{    
     	    
-		if((!strncmp(filename,"dvd:",4)) ||  (!strncmp(filename,"dvdnav:",7)))
+		if(strncmp(filename,"dvd:",4) == 0 || strncmp(filename,"dvdnav:",7) == 0)
 		{
 			//DI_StartMotor();
 			//printf("start motor\n");
@@ -3484,10 +3502,6 @@ setwatchdogcounter(-1);
   mpctx->global_sub_size = 0;
   { int i; for (i = 0; i < SUB_SOURCES; i++) mpctx->global_sub_indices[i] = -1; }
 
-//m_config_set_option(mconfig,"framedrop",NULL);
-m_config_set_option(mconfig,"sws","4");
-m_config_set_option(mconfig,"lavdopts","lowres=1,1025");
-
 if (filename) {
     load_per_protocol_config (mconfig, filename);
     load_per_extension_config (mconfig, filename);
@@ -3728,7 +3742,7 @@ int vob_sub_auto = 1; //scip
     stream_cache_min_percent=orig_stream_cache_min_percent;
     stream_cache_seek_min_percent=orig_stream_cache_seek_min_percent;
   }
-  if(!strncmp(filename,"dvdnav://",9))
+  if(strncmp(filename,"dvdnav:",7) == 0)
   	stream_cache_size=-1;
   else
   	stream_cache_size=orig_stream_cache_size;
@@ -3770,7 +3784,7 @@ int vob_sub_auto = 1; //scip
 	}
 
 
-    if(!strncmp(filename,"http:",5))
+    if(strncmp(filename,"http:",5) == 0)
     {
 	   stream_cache_min_percent=1;
 	   stream_cache_seek_min_percent=5;
@@ -4418,7 +4432,7 @@ if(!mpctx->sh_video || !strncmp(filename,"dvd",3))first_frame=true;
 */
 seek_to_sec=restore_seek;
 {
- if(seek_to_sec && strncmp(fileplaying,"dvd://",6) && strncmp(fileplaying,"dvdnav",6 ) /*&& hasvideo*/)
+ if(seek_to_sec && strncmp(fileplaying,"dvd:",4) != 0 && strncmp(fileplaying,"dvdnav:",7) != 0)
  {
  	//printf("seek\n");
     seek(mpctx, seek_to_sec, SEEK_ABSOLUTE);
@@ -4438,45 +4452,58 @@ mpctx->osd_function=OSD_PLAY;
 mpctx->set_of_sub_size=aux;
 }
 
-if(mpctx->sh_video)
+if (mpctx->sh_video)
 {
-	int w,h;
-	w=mpctx->sh_video->disp_w;
-	h=mpctx->sh_video->disp_h;
-	if(w > 1024)
+	int width = mpctx->sh_video->disp_w;
+	int height = mpctx->sh_video->disp_h;
+	
+	if ((strncmp(mpctx->sh_video->codec->name, "ffmpeg", 6) == 0) ||
+		(mpctx->sh_video->codec->name == "ffodivx"))
 	{
-		w=w/2;
-		h=h/2;
+		int dominant_axis = width > height ? width : height;
+		
+		if (dominant_axis > 4096)
+		{
+			width /= 8;
+			height /= 8;
+		}
+		else if (dominant_axis > 2048)
+		{
+			width /= 4;
+			height /= 4;
+		}
+		else if (dominant_axis > 1024)
+		{
+			width /= 2;
+			height /= 2;
+		}
 	}
-	  if (!vo_font || prev_dxs!=w || prev_dys!=h) {
+	
+	if (!vo_font || prev_dxs != width || prev_dys != height)
+	{
 	    force_load_font = 0;
 
-		if(!IsLoopAvi(NULL))
+		if (!IsLoopAvi(NULL))
 		{
-		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Loading Fonts...");
-		force_osd();
+			set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Loading Fonts...");
+			force_osd();
 		}
+		
 	    ReInitTTFLib();
-	    //printf("force_ refill: load_font_ft(%s) w: %i  h: %i  sc: %f\n",font_name,w, h,osd_font_scale_factor);
-	    load_font_ft(w,h,&vo_font,font_name,osd_font_scale_factor);
-	    prev_dxs = w; prev_dys=h;
-	    if(osd_font_scale_factor==text_font_scale_factor && (!sub_font_name || sub_font_name==font_name))
-	    	sub_font=vo_font;
-	    
-    	else
-    	{
-			if(mpctx->set_of_sub_size>0)
-			{
-	       	if (!sub_font) {
-	           if (sub_font_name)
-	               load_font_ft(prev_dxs, prev_dys, &sub_font, sub_font_name, text_font_scale_factor);
-	           else
-	               load_font_ft(prev_dxs, prev_dys, &sub_font, font_name, text_font_scale_factor);
-	       }
-	       }
-        }
-
-	  }
+		
+		load_font_ft(width, height, &vo_font, font_name, osd_font_scale_factor);
+		prev_dxs = width; prev_dys = height;
+		
+		if (mpctx->set_of_sub_size > 0)
+		{
+			if (sub_font_name)
+				load_font_ft(prev_dxs, prev_dys, &sub_font, sub_font_name, text_font_scale_factor);
+			else
+				load_font_ft(prev_dxs, prev_dys, &sub_font, font_name, text_font_scale_factor);
+		}
+		else
+			sub_font = vo_font;
+	}
 }
 
 vo_osd_changed(OSDTYPE_SUBTITLE);
