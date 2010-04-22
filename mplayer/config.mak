@@ -28,16 +28,10 @@ INSTALLSTRIP = -s
 WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-#EXTRA_INC = -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
-EXTRA_INC = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -Ilibdvdread4 -Ilibdvdnav -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/portlibs/ppc/include/freetype2 -I$(DEVKITPRO)/libogc/include/ogc/machine -I$(DEVKITPPC)/../buildscripts/powerpc-eabi/gcc/gcc/include
-EXTRAXX_INC = $(EXTRA_INC)
+CFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float -mpaired -ffast-math -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I.  -D_REENTRANT
+ASFLAGS = $(CFLAGS)
+CXXFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float -mpaired -ffast-math -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I.  -D_REENTRANT
 
-COMMONFLAGS = -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -mpaired -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float
-#COMMONFLAGS = -ffast-math -Wdisabled-optimization -Wno-pointer-sign -I. -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float
-CFLAGS = $(EXTRA_INC) $(COMMONFLAGS) 
-OPTFLAGS =  $(EXTRA_INC) $(COMMONFLAGS)
-CXXFLAGS = $(COMMONFLAGS) -D__STDC_LIMIT_MACROS $(EXTRAXX_INC)
-  
 CFLAGS_DHAHELPER = 
 CFLAGS_FAAD_FIXED = 
 CFLAGS_LIBDVDCSS = 
@@ -48,21 +42,9 @@ CFLAGS_STACKREALIGN =
 CFLAGS_SVGALIB_HELPER = 
 CFLAGS_TREMOR_LOW = 
 
-#EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/3rd/wii/lib
-EXTRALIBS = -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii
-#EXTRA_LIB = -static $(COMMONFLAGS) -ldvdread -ldvdnav -lwiiuse -lbte -lfat -ldi -ltinysmb -logc -ldb -lm
-#EXTRA_LIB = -static $(COMMONFLAGS) -liconv -lfreetype -lfontconfig -ljpeg -lz -ldb -ldi -ltinysmb -lwiiuse -lbte -lfat -logc -lm
-EXTRA_LIB = -static $(COMMONFLAGS) -lopencore-amrnb -lopencore-amrwb -lopenjpeg -lfreetype -liconv -lfribidi -lz -ljpeg -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -lm
-#EXTRALIBS = 
-#EXTRA_LIB =  -lwinmm -ffast-math  -liconv -lfreetype -lz -lfontconfig  -lz -ladvapi32 -lole32 -lole32 -luuid     -lm
-EXTRALIBS += $(EXTRA_LIB)
-EXTRALIBS_MPLAYER =  -specs=mplayer.spec 
+EXTRALIBS = -Wl,-z,noexecstack  -g -mrvl -ffast-math   -lopencore-amrnb -lopencore-amrwb -lopenjpeg -lfreetype -liconv -lfribidi -lz -ljpeg -lwiikeyboard -lasnd -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii  -lm
+EXTRALIBS_MPLAYER = -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
-
-DEPEND_CMD   = $(CC) -MM $(CFLAGS) $(filter-out %.h,$^) | sed "s,[0-9a-z._-]*: \($(SRC_DIR)/\)*\([a-z0-9]*/\)[^/]* ,\2&,"
-
-MPDEPEND_CMD     = $(CC) -MM $(CFLAGS)   $(filter-out %.xpm,$(filter-out %.h,$^)) | sed -e "s,[0-9a-z._-]*: \([a-z0-9/]*/\)[^/]* ,\1&," -e "s,\(.*\)\.o: ,\1.d &,"
-MPDEPEND_CMD_CXX = $(CC) -MM $(CXXFLAGS) $(filter-out %.hh,$(filter-out %.h,$^))  | sed -e "s,[0-9a-z._-]*: \([a-z0-9/]*/\)[^/]* ,\1&," -e "s,\(.*\)\.o: ,\1.d &,"
 
 GETCH = getch2-gekko.c
 HELP_FILE = help/help_mp-en.h
@@ -297,6 +279,7 @@ CONFIG_RDFT=yes
 
 
 CONFIG_MPEGAUDIO_HP = yes
+!CONFIG_LIBRTMP=yes
 
 CONFIG_BZLIB=no
 CONFIG_ENCODERS=yes
@@ -318,8 +301,6 @@ CONFIG_LIBXVID_ENCODER=no
 CONFIG_MLIB = no
 CONFIG_MUXERS=no
 CONFIG_POSTPROC = yes
-# Prevent building libavcodec/imgresample.c with conflicting symbols
-CONFIG_SWSCALE=yes
 CONFIG_VDPAU=no
 CONFIG_XVMC=no
 CONFIG_ZLIB=yes
@@ -463,6 +444,7 @@ CONFIG_WMV3_DECODER=yes
 CONFIG_WNV1_DECODER=yes
 CONFIG_XAN_WC3_DECODER=yes
 CONFIG_XL_DECODER=yes
+CONFIG_YOP_DECODER=yes
 CONFIG_ZLIB_DECODER=yes
 CONFIG_ZMBV_DECODER=yes
 CONFIG_AAC_DECODER=yes
@@ -811,6 +793,7 @@ CONFIG_WSAUD_DEMUXER=yes
 CONFIG_WSVQA_DEMUXER=yes
 CONFIG_WV_DEMUXER=yes
 CONFIG_XA_DEMUXER=yes
+CONFIG_YOP_DEMUXER=yes
 CONFIG_YUV4MPEGPIPE_DEMUXER=yes
 CONFIG_AC3_MUXER=no
 CONFIG_ADTS_MUXER=no

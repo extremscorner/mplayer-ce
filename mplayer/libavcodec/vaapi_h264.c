@@ -136,7 +136,7 @@ static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
             return -1;
     }
 
-    for (i = 0; i < h->long_ref_count; i++) {
+    for (i = 0; i < 16; i++) {
         Picture * const pic = h->long_ref[i];
         if (pic && pic->reference && dpb_add(&dpb, pic) < 0)
             return -1;
@@ -336,7 +336,7 @@ static int decode_slice(AVCodecContext *avctx,
 
 AVHWAccel h264_vaapi_hwaccel = {
     .name           = "h264_vaapi",
-    .type           = CODEC_TYPE_VIDEO,
+    .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_H264,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .capabilities   = 0,

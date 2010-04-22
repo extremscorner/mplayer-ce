@@ -884,7 +884,7 @@ void free_font_desc(font_desc_t *desc)
 
 //don't uncoment, needed because the face is cached
 //    for(i = 0; i < desc->face_cnt; i++) {
-//	FT_Done_Face(desc->faces[i]);
+//      FT_Done_Face(desc->faces[i]);
 //    }
 
     free(desc);
@@ -1003,10 +1003,10 @@ font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_widt
 //    t=GetTimer();
 
     /* generate the subtitle font */
-    if(!face_cached)
+    if (!face_cached)
     {	//rodries: need to be improved, (detect fname change)
     	err = load_sub_face(fname, face_index, &cache_face);
-    	if (!err)face_cached=1;
+		if (!err)face_cached=1;
     }
 
     if (!err) face=cache_face;

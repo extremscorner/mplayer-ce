@@ -22,8 +22,8 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 57
-#define LIBAVFORMAT_VERSION_MICRO  1
+#define LIBAVFORMAT_VERSION_MINOR 61
+#define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -119,6 +119,7 @@ struct AVFormatContext;
 #define AV_METADATA_IGNORE_SUFFIX   2
 #define AV_METADATA_DONT_STRDUP_KEY 4
 #define AV_METADATA_DONT_STRDUP_VAL 8
+#define AV_METADATA_DONT_OVERWRITE 16   ///< Don't overwrite existing tags.
 
 typedef struct {
     char *key;
@@ -611,8 +612,9 @@ typedef struct AVFormatContext {
        It is deduced from the AVStream values.  */
     int64_t start_time;
     /** Decoding: duration of the stream, in AV_TIME_BASE fractional
-       seconds. NEVER set this value directly: it is deduced from the
-       AVStream values.  */
+       seconds. Only set this value if you know none of the individual stream
+       durations and also dont set any of them. This is deduced from the
+       AVStream values if not set.  */
     int64_t duration;
     /** decoding: total file size, 0 if unknown */
     int64_t file_size;
@@ -648,6 +650,8 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_IGNIDX       0x0002 ///< Ignore index.
 #define AVFMT_FLAG_NONBLOCK     0x0004 ///< Do not block when reading packets from input.
 #define AVFMT_FLAG_IGNDTS       0x0008 ///< Ignore DTS on frames that contain both DTS & PTS
+#define AVFMT_FLAG_NOFILLIN     0x0010 ///< Do not infer any values from other values, just return what is stored in the container
+#define AVFMT_FLAG_NOPARSE      0x0020 ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
 
     int loop_input;
     /** decoding: size of data to probe; encoding: unused. */
@@ -804,7 +808,7 @@ AVOutputFormat *av_guess_format(const char *short_name,
  */
 enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type,
-                            enum CodecType type);
+                            enum AVMediaType type);
 
 /**
  * Sends a nice hexadecimal dump of a buffer to the specified file stream.
@@ -1003,7 +1007,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * @param ts target timestamp
  * @param max_ts largest acceptable timestamp
  * @param flags flags
- * @returns >=0 on success, error code otherwise
+ * @return >=0 on success, error code otherwise
  *
  * @NOTE This is part of the new seek API which is still under construction.
  *       Thus do not use this yet. It may change at any time, do not expect
@@ -1325,30 +1329,6 @@ int av_filename_number_test(const char *filename);
  */
 int avf_sdp_create(AVFormatContext *ac[], int n_files, char *buff, int size);
 
-#ifdef HAVE_AV_CONFIG_H
-
-void ff_dynarray_add(intptr_t **tab_ptr, int *nb_ptr, intptr_t elem);
-
-#ifdef __GNUC__
-#define dynarray_add(tab, nb_ptr, elem)\
-do {\
-    __typeof__(tab) _tab = (tab);\
-    __typeof__(elem) _elem = (elem);\
-    (void)sizeof(**_tab == _elem); /* check that types are compatible */\
-    ff_dynarray_add((intptr_t **)_tab, nb_ptr, (intptr_t)_elem);\
-} while(0)
-#else
-#define dynarray_add(tab, nb_ptr, elem)\
-do {\
-    ff_dynarray_add((intptr_t **)(tab), nb_ptr, (intptr_t)(elem));\
-} while(0)
-#endif
-
-time_t mktimegm(struct tm *tm);
-struct tm *brktimegm(time_t secs, struct tm *tm);
-const char *small_strptime(const char *p, const char *fmt,
-                           struct tm *dt);
-
 /**
  * Returns a positive value if the given filename has one of the given
  * extensions, 0 otherwise.
@@ -1356,7 +1336,5 @@ const char *small_strptime(const char *p, const char *fmt,
  * @param extensions a comma-separated list of filename extensions
  */
 int av_match_ext(const char *filename, const char *extensions);
-
-#endif /* HAVE_AV_CONFIG_H */
 
 #endif /* AVFORMAT_AVFORMAT_H */

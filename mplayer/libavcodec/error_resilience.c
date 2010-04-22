@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/error_resilience.c
+ * @file
  * Error resilience / concealment.
  */
 
@@ -31,6 +31,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "h264.h"
+#include "rectangle.h"
 
 /*
  * H264 redefines mb_intra so it is not mistakely used (its uninitialized in h264)
@@ -627,6 +628,12 @@ static int is_intra_more_likely(MpegEncContext *s){
         const int error= s->error_status_table[mb_xy];
         if(!((error&DC_ERROR) && (error&MV_ERROR)))
             undamaged_count++;
+    }
+
+    if(s->codec_id == CODEC_ID_H264){
+        H264Context *h= (void*)s;
+        if(h->ref_count[0] <= 0 || !h->ref_list[0][0].data[0])
+            return 1;
     }
 
     if(undamaged_count < 5) return 0; //almost all MBs damaged -> use temporal prediction

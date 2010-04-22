@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/vorbis_enc.c
+ * @file
  * Native Vorbis encoder.
  * @author Oded Shimon <ods15@ods15.dyndns.org>
  */
@@ -1093,7 +1093,7 @@ static av_cold int vorbis_encode_close(AVCodecContext *avccontext)
 
 AVCodec vorbis_encoder = {
     "vorbis",
-    CODEC_TYPE_AUDIO,
+    AVMEDIA_TYPE_AUDIO,
     CODEC_ID_VORBIS,
     sizeof(vorbis_enc_context),
     vorbis_encode_init,

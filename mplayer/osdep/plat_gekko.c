@@ -838,16 +838,17 @@ static bool CheckPath(char *path)
 
 static bool DetectValidPath()
 {
-	
 	if(sd->startup()) 
 	{
 		if(fatMount("sd",sd,0,3,256))
-		{	
+		{
+			if(CheckPath("sd:/apps/mplayer-ce")) return true;	
 			if(CheckPath("sd:/apps/mplayer_ce")) return true;	
 			if(CheckPath("sd:/mplayer")) return true;
 		}
 		else if(mount_sd_ntfs())
 		{
+			if(CheckPath("ntfs_sd:/apps/mplayer-ce")) return true;	
 			if(CheckPath("ntfs_sd:/apps/mplayer_ce")) return true;	
 			if(CheckPath("ntfs_sd:/mplayer")) return true;
 		}
@@ -862,12 +863,14 @@ static bool DetectValidPath()
 		if(fatMount("usb",usb,0,3,256))
 		{
 			usb_init=true;
+			if(CheckPath("usb:/apps/mplayer-ce")) return true;
 			if(CheckPath("usb:/apps/mplayer_ce")) return true;
 			if(CheckPath("usb:/mplayer")) return true;
 		}
 		else if(mount_usb_ntfs())
 		{
 			usb_init=true;
+			if(CheckPath("ntfs_usb:/apps/mplayer-ce")) return true;	
 			if(CheckPath("ntfs_usb:/apps/mplayer_ce")) return true;	
 			if(CheckPath("ntfs_usb:/mplayer")) return true;
 		}
@@ -961,7 +964,7 @@ void plat_init (int *argc, char **argv[])
 		printf("\nSD/USB access failed\n");
 		printf("Please check that you have installed MPlayer CE in the right folder\n");
 		printf("Valid folders:\n");
-		printf(" sd:/apps/mplayer_ce\n sd:/mplayer\n usb:/apps/mplayer_ce\n usb:/mplayer\n");
+		printf(" sd:/apps/mplayer-ce\n sd:/mplayer\n usb:/apps/mplayer-ce\n usb:/mplayer\n");
 				
 		VIDEO_WaitVSync();
 		sleep(6);

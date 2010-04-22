@@ -198,9 +198,9 @@ static void draw_initYUV(void)
 	//Y'UV->RGB formulation 2
 	GX_SetNumTevStages(12);
 	GX_SetTevKColor(GX_KCOLOR0, (GXColor){ 255,      0,        0,    18.624});	//R {1, 0, 0, 16*1.164}
-	GX_SetTevKColor(GX_KCOLOR1, (GXColor){  0,       0,       255,   41.82});	//B {0, 0, 1, 0.164}
-	GX_SetTevKColor(GX_KCOLOR2, (GXColor){203.745, 103.6575,   0,     255});	// {1.598/2, 0.813/2, 0}
-	GX_SetTevKColor(GX_KCOLOR3, (GXColor){  0,     24.92625, 128.52,  255});	// {0, 0.391/4, 2.016/4}
+	GX_SetTevKColor(GX_KCOLOR1, (GXColor){  0,       0,       255,   41.82 });	//B {0, 0, 1, 0.164}
+	GX_SetTevKColor(GX_KCOLOR2, (GXColor){203.745, 103.6575,   0,     255  });	// {1.598/2, 0.813/2, 0}
+	GX_SetTevKColor(GX_KCOLOR3, (GXColor){  0,     24.92625, 128.52,  255  });	// {0, 0.391/4, 2.016/4}
 	//Stage 0: TEVREG0 <- { 0, 2Um, 2Up }; TEVREG0A <- {16*1.164}
 	GX_SetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K1);
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR0A0);
@@ -324,8 +324,7 @@ static void draw_initYUV(void)
 //------- rodries change: to avoid image_buffer intermediate ------
 static int w1,w2,h1,h2,df1,df2,old_h1_2=-1;
 static int p01,p02,p03,p11,p12,p13;
-static u16 Yrowpitch;
-static u16 UVrowpitch;
+static u16 Yrowpitch, UVrowpitch;
 static u64 *Ydst, *Udst, *Vdst;
 
 void getStrideInfo(int *_w1, int *_df1, int *_Yrowpitch)  // for subtitle info
@@ -342,8 +341,8 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 	int half_wd = width / 2;
 	int half_ht = height / 2;
 	
-	Ywidth = ceil((float)width / 8) * 8;
-	UVwidth = ceil((float)half_wd / 8) * 8;
+	Ywidth = max(ceil((float)width / 8) * 8, 1024);
+	UVwidth = max(ceil((float)half_wd / 8) * 8, 1024);
 
     w1 = pitch[0] / 8;
     w2 = pitch[1] / 8;
@@ -354,29 +353,18 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
     Yrowpitch = (pitch[0] / 2) - w1;
 	UVrowpitch = (pitch[1] / 2) - w2;
 	
-	Yheight = ceil((float)height / 4) * 4;
-	UVheight = ceil((float)half_ht / 4) * 4;
+	Yheight = max(ceil((float)height / 4) * 4, 1024);
+	UVheight = max(ceil((float)half_ht / 4) * 4, 1024);
 	
-	f32 YtexcoordS = (f32)width / (f32)Ywidth;
-	f32 UVtexcoordS = (f32)(half_wd - (half_wd % 2)) / (f32)UVwidth;
-	
-	if (YtexcoordS < 1.0)
-		YtexcoordS -= 0.001f / Ywidth;
-	
-	if (UVtexcoordS < 1.0)
-		UVtexcoordS -= 0.001f / UVwidth;
+	// Dodging nasty optimizations.
+	f32 YtexcoordS = (double)width / (double)Ywidth;
+	f32 UVtexcoordS = (double)half_wd / (double)UVwidth;
 	
 	Ytexcoords[2] = Ytexcoords[4] = YtexcoordS;
 	UVtexcoords[2] = UVtexcoords[4] = UVtexcoordS;
 	
-	f32 YtexcoordT = (f32)height / (f32)Yheight;
-	f32 UVtexcoordT = (f32)(half_ht - (half_ht % 2)) / (f32)UVheight;
-	
-	if (YtexcoordT < 1.0)
-		YtexcoordT -= 0.001f / Yheight;
-	
-	if (UVtexcoordT < 1.0)
-		UVtexcoordT -= 0.001f / UVheight;
+	f32 YtexcoordT = (double)height / (double)Yheight;
+	f32 UVtexcoordT = (double)half_ht / (double)UVheight;
 	
 	Ytexcoords[5] = Ytexcoords[7] = YtexcoordT;
 	UVtexcoords[5] = UVtexcoords[7] = UVtexcoordT;
@@ -401,7 +389,7 @@ void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
 void GX_UpdatePitch(u16 *pitch)
 {
 	//black
-    memset(Ytexture[whichfb ^ 1], 0, Ytexsize);
+    memset(Ytexture[whichfb ^ 1], 0x00, Ytexsize);
 	memset(Utexture[whichfb ^ 1], 0x80, UVtexsize);
 	memset(Vtexture[whichfb ^ 1], 0x80, UVtexsize);
 	clear_next = true;
@@ -413,7 +401,7 @@ void GX_UpdatePitch(u16 *pitch)
 extern float m_screenleft_shift, m_screenright_shift;
 extern float m_screentop_shift, m_screenbottom_shift;
 
-static f32 mysquare[12] ATTRIBUTE_ALIGN(32);
+static f32 mysquare[8] ATTRIBUTE_ALIGN(32);
 
 void GX_UpdateSquare()
 {
@@ -439,9 +427,6 @@ void GX_StartYUV(u16 width, u16 height, f32 haspect, f32 vaspect)
 {
 	static bool inited = false;
 	
-	Mtx GXmodelView2D;
-	Mtx44 perspective;
-	
 	/*** Set new aspect ***/
 	square[0] = square[6] = -haspect;
 	square[2] = square[4] = haspect;
@@ -449,36 +434,39 @@ void GX_StartYUV(u16 width, u16 height, f32 haspect, f32 vaspect)
 	square[5] = square[7] = -vaspect;
 	
 	if (!Ytexture[0])
-		Ytexture[0] = (u8 *)mem2_malign(32, 1024 * 1024);
+		Ytexture[0] = (u8 *)mem2_malign(64, 1024 * 1024);
 	if (!Utexture[0])
-		Utexture[0] = (u8 *)mem2_malign(32, 512 * 512);
+		Utexture[0] = (u8 *)mem2_malign(64, 512 * 512);
 	if (!Vtexture[0])
-		Vtexture[0] = (u8 *)mem2_malign(32, 512 * 512);
+		Vtexture[0] = (u8 *)mem2_malign(64, 512 * 512);
 	
 	if (!Ytexture[1])
-		Ytexture[1] = (u8 *)mem2_malign(32, 1024 * 1024);
+		Ytexture[1] = (u8 *)mem2_malign(64, 1024 * 1024);
 	if (!Utexture[1])
-		Utexture[1] = (u8 *)mem2_malign(32, 512 * 512);
+		Utexture[1] = (u8 *)mem2_malign(64, 512 * 512);
 	if (!Vtexture[1])
-		Vtexture[1] = (u8 *)mem2_malign(32, 512 * 512);
+		Vtexture[1] = (u8 *)mem2_malign(64, 512 * 512);
 	
-	Ywidth = ceil((float)width / 8) * 8;
-	Yheight = ceil((float)height / 4) * 4;
+	Ywidth = max(ceil((float)width / 8) * 8, 1024);
+	Yheight = max(ceil((float)height / 4) * 4, 1024);
 	
 	Ytexsize = Ywidth * Yheight;
 	
-	UVwidth = ceil((float)(width / 2) / 8) * 8;
-	UVheight = ceil((float)(height / 2) / 4) * 4;
+	UVwidth = max(ceil((float)(width / 2) / 8) * 8, 1024);
+	UVheight = max(ceil((float)(height / 2) / 4) * 4, 1024);
 	
 	UVtexsize = UVwidth * UVheight;
 	
-	memset(Ytexture[whichfb ^ 1], 0, Ytexsize);
+	memset(Ytexture[whichfb ^ 1], 0x00, Ytexsize);
 	memset(Utexture[whichfb ^ 1], 0x80, UVtexsize);
 	memset(Vtexture[whichfb ^ 1], 0x80, UVtexsize);
 	clear_next = true;
 	
 	if (!inited)
 	{
+		Mtx GXmodelView2D;
+		Mtx44 perspective;
+		
 		/*** Clear out FIFO area ***/
 		gp_fifo = (u8 *)memalign(32, DEFAULT_FIFO_SIZE);
 		memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
@@ -526,76 +514,94 @@ void GX_StartYUV(u16 width, u16 height, f32 haspect, f32 vaspect)
 
 void GX_FillTextureYUV(u16 height, u8 *buffer[3])
 {
+	int rows = 0;
+	
+	--Ydst;
 	u64 *Ysrc1 = (u64 *)buffer[0];
 	u64 *Ysrc2 = (u64 *)(buffer[0] + p01);
 	u64 *Ysrc3 = (u64 *)(buffer[0] + p02);
 	u64 *Ysrc4 = (u64 *)(buffer[0] + p03);
 	
+	--Udst;
 	u64 *Usrc1 = (u64 *)buffer[1];
 	u64 *Usrc2 = (u64 *)(buffer[1] + p11);
 	u64 *Usrc3 = (u64 *)(buffer[1] + p12);
 	u64 *Usrc4 = (u64 *)(buffer[1] + p13);
 	
+	--Vdst;
 	u64 *Vsrc1 = (u64 *)buffer[2];
 	u64 *Vsrc2 = (u64 *)(buffer[2] + p11);
 	u64 *Vsrc3 = (u64 *)(buffer[2] + p12);
 	u64 *Vsrc4 = (u64 *)(buffer[2] + p13);
-
+	
 	if (height != old_h1_2)
 	{
 		old_h1_2 = height;
 		h1 = ceil((float)height / 4);
     	h2 = ceil((float)(height / 2) / 4);
 	}
-
-	// Copy strides into plain texture data.
+	
+	rows = Yheight / 4;
+	
+	// Copy strides into 8x4 tiles.
 	// Luminance (Y) plane.
-	for (int h = 0; h < h1; h++)
+	for (int row = 1; row <= rows; row++)
 	{
-		for (int w = 0; w < w1; w++)
+		--Ysrc1;
+		--Ysrc2;
+		--Ysrc3;
+		--Ysrc4;
+		
+		int tiles = Ywidth / 8;
+		
+		while (tiles--)
 		{
-			*Ydst++ = *Ysrc1++;
-			*Ydst++ = *Ysrc2++;
-			*Ydst++ = *Ysrc3++;
-			*Ydst++ = *Ysrc4++;
+			*++Ydst = *++Ysrc1;
+			*++Ydst = *++Ysrc2;
+			*++Ydst = *++Ysrc3;
+			*++Ydst = *++Ysrc4;
 		}
 		
-		Ydst += df1;
-		
-		Ysrc1 += Yrowpitch;
-		Ysrc2 += Yrowpitch;
-		Ysrc3 += Yrowpitch;
-		Ysrc4 += Yrowpitch;
+		Ysrc1 = (u64 *)(buffer[0] + ((p01 * 4) * row));
+		Ysrc2 = (u64 *)(buffer[0] + ((p01 * 4) * row) + p01);
+		Ysrc3 = (u64 *)(buffer[0] + ((p01 * 4) * row) + p02);
+		Ysrc4 = (u64 *)(buffer[0] + ((p01 * 4) * row) + p03);
 	}
-
+	
+	rows = UVheight / 4;
+	
 	// Chrominance (U&V) planes.
-	for (int h = 0; h < h2; h++)
+	for (int row = 1; row <= rows; row++)
 	{
-		for (int w = 0; w < w2; w++)
+		--Usrc1; --Vsrc1;
+		--Usrc2; --Vsrc2;
+		--Usrc3; --Vsrc3;
+		--Usrc4; --Vsrc4;
+		
+		int tiles = UVwidth / 8;
+		
+		while (tiles--)
 		{
-			*Udst++ = *Usrc1++;
-			*Udst++ = *Usrc2++;
-			*Udst++ = *Usrc3++;
-			*Udst++ = *Usrc4++;
+			*++Udst = *++Usrc1;
+			*++Udst = *++Usrc2;
+			*++Udst = *++Usrc3;
+			*++Udst = *++Usrc4;
 			
-			*Vdst++ = *Vsrc1++;
-			*Vdst++ = *Vsrc2++;
-			*Vdst++ = *Vsrc3++;
-			*Vdst++ = *Vsrc4++;
+			*++Vdst = *++Vsrc1;
+			*++Vdst = *++Vsrc2;
+			*++Vdst = *++Vsrc3;
+			*++Vdst = *++Vsrc4;
 		}
 		
-		Udst += df2;
-		Vdst += df2;
+		Usrc1 = (u64 *)(buffer[1] + ((p11 * 4) * row));
+		Usrc2 = (u64 *)(buffer[1] + ((p11 * 4) * row) + p11);
+		Usrc3 = (u64 *)(buffer[1] + ((p11 * 4) * row) + p12);
+		Usrc4 = (u64 *)(buffer[1] + ((p11 * 4) * row) + p13);
 		
-		Usrc1 += UVrowpitch;
-		Usrc2 += UVrowpitch;
-		Usrc3 += UVrowpitch;
-		Usrc4 += UVrowpitch;
-		
-		Vsrc1 += UVrowpitch;
-		Vsrc2 += UVrowpitch;
-		Vsrc3 += UVrowpitch;
-		Vsrc4 += UVrowpitch;
+		Vsrc1 = (u64 *)(buffer[2] + ((p11 * 4) * row));
+		Vsrc2 = (u64 *)(buffer[2] + ((p11 * 4) * row) + p11);
+		Vsrc3 = (u64 *)(buffer[2] + ((p11 * 4) * row) + p12);
+		Vsrc4 = (u64 *)(buffer[2] + ((p11 * 4) * row) + p13);
 	}
 }
 
@@ -617,7 +623,7 @@ void GX_RenderTexture(bool vsync)
 		
 		if (clear_next)
 		{
-			memset(Ytexture[whichfb], 0, Ytexsize);
+			memset(Ytexture[whichfb], 0x00, Ytexsize);
 			memset(Utexture[whichfb], 0x80, UVtexsize);
 			memset(Vtexture[whichfb], 0x80, UVtexsize);
 			clear_next = false;

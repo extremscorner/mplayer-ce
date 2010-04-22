@@ -54,7 +54,7 @@ static const vo_info_t info = {
 
 const LIBVO_EXTERN (gekko)
 
-static	u16 pitch[3];
+static u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
 
 static f32 gx_width, gx_height;
@@ -63,7 +63,7 @@ extern int screenwidth;
 extern int screenheight;
 
 
-void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca, int srcstride, unsigned char* dstbase, int dststride, int x0)
+void vo_draw_alpha_gekko(int w, int h, unsigned char *src, unsigned char *srca, int srcstride, unsigned char *dstbase, int dststride, int x0)
 {
 	// can be optimized
 	int x,y;
@@ -168,7 +168,7 @@ void vo_draw_alpha_gekko(int w, int h, unsigned char* src, unsigned char *srca, 
 
 static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
 {
-	int rowpitch = ceil((float)image_width / 8) * 8;
+	int rowpitch = MIN(ceil((float)image_width / 8) * 8, 1024);
 	int lines = (floor((float)y0 / 8) * 8) - 8;			// Ok...
 	
 	vo_draw_alpha_gekko(w, h, src, srca, stride, GetYtexture() + (lines * rowpitch), pitch[0], x0);
