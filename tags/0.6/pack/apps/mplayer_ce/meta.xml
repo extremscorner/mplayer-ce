@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+  <name>MPlayer CE</name>
+  <coder>Mplayer CE Team</coder>
+  <version>0.6</version>
+  <release_date>20090523</release_date>
+  <short_description>Wii Media Player</short_description>
+  <long_description>Homebrew media player for Nintendo Wii.	
+
+Mplayer-CE Team
+rodries, AgentX, DJDynamite123, 
+Tantric, Scip
+
+http://mplayer-ce.googlecode.com
+
+MPlayer Wii port © Team Twiizers,
+used code © MPlayerWii[rOn], GeeXboX,
+tipolosko, Ludovic Orban, DennisLKJ, etc.
+background video © Blue_K
+</long_description>
+</app>
