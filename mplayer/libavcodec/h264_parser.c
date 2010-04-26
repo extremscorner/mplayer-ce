@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/h264_parser.c
  * H.264 / AVC / MPEG4 part10 parser.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
@@ -114,7 +114,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     const uint8_t *buf_end = buf + buf_size;
     unsigned int pps_id;
     unsigned int slice_type;
-    int state = -1;
+    int state;
     const uint8_t *ptr;
 
     /* set some sane default values */
@@ -184,9 +184,6 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             h->sps = *h->sps_buffers[h->pps.sps_id];
             h->frame_num = get_bits(&h->s.gb, h->sps.log2_max_frame_num);
-
-            avctx->profile = h->sps.profile_idc;
-            avctx->level   = h->sps.level_idc;
 
             if(h->sps.frame_mbs_only_flag){
                 h->s.picture_structure= PICT_FRAME;
@@ -309,20 +306,13 @@ static void close(AVCodecParserContext *s)
     ParseContext *pc = &h->s.parse_context;
 
     av_free(pc->buffer);
-    ff_h264_free_context(h);
 }
 
-static int init(AVCodecParserContext *s)
-{
-    H264Context *h = s->priv_data;
-    h->thread_context[0] = h;
-    return 0;
-}
 
 AVCodecParser h264_parser = {
     { CODEC_ID_H264 },
     sizeof(H264Context),
-    init,
+    NULL,
     h264_parse,
     close,
     h264_split,

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,7 +71,7 @@ static void pack_nn_MMX(unsigned char *dst, unsigned char *y,
 		"punpcklbw %%mm6, %%mm4 \n\t"
 		"punpcklbw %%mm4, %%mm1 \n\t"
 		"punpckhbw %%mm4, %%mm2 \n\t"
-
+		
 		"add $8, %0 \n\t"
 		"add $4, %1 \n\t"
 		"add $4, %2 \n\t"
@@ -99,14 +81,13 @@ static void pack_nn_MMX(unsigned char *dst, unsigned char *y,
 		"decl %4 \n\t"
 		"jnz 1b \n\t"
 		"emms \n\t"
-		:
+		: 
 		: "r" (y), "r" (u), "r" (v), "r" (dst), "r" (w/8)
 		: "memory"
 		);
 	pack_nn_C(dst, y, u, v, (w&7));
 }
 
-#if HAVE_EBX_AVAILABLE
 static void pack_li_0_MMX(unsigned char *dst, unsigned char *y,
 	unsigned char *u, unsigned char *v, int w, int us, int vs)
 {
@@ -119,12 +100,12 @@ static void pack_li_0_MMX(unsigned char *dst, unsigned char *y,
 		"movl (%%"REG_d"), %%"REG_d" \n\t"
 #endif
 		"pxor %%mm0, %%mm0 \n\t"
-
+		
 		ASMALIGN(4)
 		".Lli0: \n\t"
 		"movq (%%"REG_S"), %%mm1 \n\t"
 		"movq (%%"REG_S"), %%mm2 \n\t"
-
+		
 		"movq (%%"REG_a",%%"REG_d",2), %%mm4 \n\t"
 		"movq (%%"REG_b",%%"REG_BP",2), %%mm6 \n\t"
 		"punpcklbw %%mm0, %%mm4 \n\t"
@@ -154,13 +135,13 @@ static void pack_li_0_MMX(unsigned char *dst, unsigned char *y,
 		"punpcklbw %%mm6, %%mm4 \n\t"
 		"punpcklbw %%mm4, %%mm1 \n\t"
 		"punpckhbw %%mm4, %%mm2 \n\t"
-
+		
 		"movq %%mm1, (%%"REG_D") \n\t"
 		"movq %%mm2, 8(%%"REG_D") \n\t"
-
+		
 		"movq 8(%%"REG_S"), %%mm1 \n\t"
 		"movq 8(%%"REG_S"), %%mm2 \n\t"
-
+		
 		"movq (%%"REG_a",%%"REG_d",2), %%mm4 \n\t"
 		"movq (%%"REG_b",%%"REG_BP",2), %%mm6 \n\t"
 		"punpckhbw %%mm0, %%mm4 \n\t"
@@ -190,20 +171,20 @@ static void pack_li_0_MMX(unsigned char *dst, unsigned char *y,
 		"punpcklbw %%mm6, %%mm4 \n\t"
 		"punpcklbw %%mm4, %%mm1 \n\t"
 		"punpckhbw %%mm4, %%mm2 \n\t"
-
+		
 		"add $16, %%"REG_S" \n\t"
 		"add $8, %%"REG_a" \n\t"
 		"add $8, %%"REG_b" \n\t"
-
+		
 		"movq %%mm1, 16(%%"REG_D") \n\t"
 		"movq %%mm2, 24(%%"REG_D") \n\t"
 		"add $32, %%"REG_D" \n\t"
-
+		
 		"decl %%ecx \n\t"
 		"jnz .Lli0 \n\t"
 		"emms \n\t"
 		"pop %%"REG_BP" \n\t"
-		:
+		: 
 		: "S" (y), "D" (dst), "a" (u), "b" (v), "c" (w/16),
 #if ARCH_X86_64
 		"d" ((x86_reg)us), "r" ((x86_reg)vs)
@@ -227,12 +208,12 @@ static void pack_li_1_MMX(unsigned char *dst, unsigned char *y,
 		"movl (%%"REG_d"), %%"REG_d" \n\t"
 #endif
 		"pxor %%mm0, %%mm0 \n\t"
-
+		
 		ASMALIGN(4)
 		".Lli1: \n\t"
 		"movq (%%"REG_S"), %%mm1 \n\t"
 		"movq (%%"REG_S"), %%mm2 \n\t"
-
+		
 		"movq (%%"REG_a",%%"REG_d",2), %%mm4 \n\t"
 		"movq (%%"REG_b",%%"REG_BP",2), %%mm6 \n\t"
 		"punpcklbw %%mm0, %%mm4 \n\t"
@@ -264,13 +245,13 @@ static void pack_li_1_MMX(unsigned char *dst, unsigned char *y,
 		"punpcklbw %%mm6, %%mm4 \n\t"
 		"punpcklbw %%mm4, %%mm1 \n\t"
 		"punpckhbw %%mm4, %%mm2 \n\t"
-
+		
 		"movq %%mm1, (%%"REG_D") \n\t"
 		"movq %%mm2, 8(%%"REG_D") \n\t"
-
+		
 		"movq 8(%%"REG_S"), %%mm1 \n\t"
 		"movq 8(%%"REG_S"), %%mm2 \n\t"
-
+		
 		"movq (%%"REG_a",%%"REG_d",2), %%mm4 \n\t"
 		"movq (%%"REG_b",%%"REG_BP",2), %%mm6 \n\t"
 		"punpckhbw %%mm0, %%mm4 \n\t"
@@ -302,20 +283,20 @@ static void pack_li_1_MMX(unsigned char *dst, unsigned char *y,
 		"punpcklbw %%mm6, %%mm4 \n\t"
 		"punpcklbw %%mm4, %%mm1 \n\t"
 		"punpckhbw %%mm4, %%mm2 \n\t"
-
+		
 		"add $16, %%"REG_S" \n\t"
 		"add $8, %%"REG_a" \n\t"
 		"add $8, %%"REG_b" \n\t"
-
+		
 		"movq %%mm1, 16(%%"REG_D") \n\t"
 		"movq %%mm2, 24(%%"REG_D") \n\t"
 		"add $32, %%"REG_D" \n\t"
-
+		
 		"decl %%ecx \n\t"
 		"jnz .Lli1 \n\t"
 		"emms \n\t"
 		"pop %%"REG_BP" \n\t"
-		:
+		: 
 		: "S" (y), "D" (dst), "a" (u), "b" (v), "c" (w/16),
 #if ARCH_X86_64
 		"d" ((x86_reg)us), "r" ((x86_reg)vs)
@@ -326,7 +307,6 @@ static void pack_li_1_MMX(unsigned char *dst, unsigned char *y,
 		);
 	pack_li_1_C(dst, y, u, v, (w&15), us, vs);
 }
-#endif /* HAVE_EBX_AVAILABLE */
 #endif
 
 static pack_func_t *pack_nn;
@@ -369,7 +349,7 @@ static void ilpack(unsigned char *dst, unsigned char *src[3],
 }
 
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
 	mp_image_t *dmpi;
 
@@ -383,7 +363,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
 		  int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt)
 {
@@ -392,7 +372,7 @@ static int config(struct vf_instance *vf,
 }
 
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
 	/* FIXME - really any YUV 4:2:0 input format should work */
 	switch (fmt) {
@@ -404,7 +384,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
 	return 0;
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
 	vf->config=config;
 	vf->query_format=query_format;
@@ -412,17 +392,15 @@ static int vf_open(vf_instance_t *vf, char *args)
 	vf->priv = calloc(1, sizeof(struct vf_priv_s));
 	vf->priv->mode = 1;
 	if (args) sscanf(args, "%d", &vf->priv->mode);
-
+	
 	pack_nn = (pack_func_t *)pack_nn_C;
 	pack_li_0 = pack_li_0_C;
 	pack_li_1 = pack_li_1_C;
 #if HAVE_MMX
 	if(gCpuCaps.hasMMX) {
 		pack_nn = (pack_func_t *)pack_nn_MMX;
-#if HAVE_EBX_AVAILABLE
 		pack_li_0 = pack_li_0_MMX;
 		pack_li_1 = pack_li_1_MMX;
-#endif
 	}
 #endif
 
@@ -439,7 +417,7 @@ static int vf_open(vf_instance_t *vf, char *args)
 		vf->priv->pack[1] = pack_li_1;
 		break;
 	}
-
+	
 	return 1;
 }
 
@@ -448,6 +426,7 @@ const vf_info_t vf_info_ilpack = {
 	"ilpack",
 	"Richard Felker",
 	"",
-	vf_open,
+	open,
 	NULL
 };
+

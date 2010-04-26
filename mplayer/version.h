@@ -1,3 +1,2 @@
-#define VERSION "SVN-r31057-4.4.3"
-#define BUILD_DATE "22/04/10"
-#define MP_TITLE "%s "VERSION" (C) 2000-2010 MPlayer Team\n"
+#define VERSION "SVN-r29081-4.2.4"
+#define MP_TITLE "%s "VERSION" (C) 2000-2009 MPlayer Team\n"

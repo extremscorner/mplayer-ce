@@ -21,7 +21,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/libfaad.c
  * AAC decoder.
  *
  * still a bit unfinished - but it plays something
@@ -149,10 +149,8 @@ static av_cold int faac_init_mp4(AVCodecContext *avctx)
 
 static int faac_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             AVPacket *avpkt)
+                             uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     FAACContext *s = avctx->priv_data;
 #ifndef FAAD2_VERSION
     unsigned long bytesconsumed;
@@ -183,7 +181,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
         unsigned char channels;
         int r = s->faacDecInit(s->faac_handle, buf, buf_size, &srate, &channels);
         if(r < 0){
-            av_log(avctx, AV_LOG_ERROR, "libfaad: codec init failed.\n");
+            av_log(avctx, AV_LOG_ERROR, "faac: codec init failed.\n");
             return -1;
         }
         avctx->sample_rate = srate;
@@ -195,7 +193,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
     out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf, (unsigned long)buf_size);
 
     if (frame_info.error > 0) {
-        av_log(avctx, AV_LOG_ERROR, "libfaad: frame decoding failed: %s\n",
+        av_log(avctx, AV_LOG_ERROR, "faac: frame decoding failed: %s\n",
                s->faacDecGetErrorMessage(frame_info.error));
         return -1;
     }
@@ -322,7 +320,7 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
 
 AVCodec libfaad_decoder = {
     "libfaad",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_AAC,
     sizeof(FAACContext),
     faac_decode_init,

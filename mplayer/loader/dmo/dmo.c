@@ -5,14 +5,14 @@
 
 #include "config.h"
 #include "DMO_Filter.h"
-#include "loader/drv.h"
-#include "loader/com.h"
+#include "drv.h"
+#include "com.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "loader/win32.h" // printf macro
+#include "win32.h" // printf macro
 
-void trapbug(void);
+void trapbug();
 typedef long STDCALL (*GETCLASS) (const GUID*, const GUID*, void**);
 
 void DMO_Filter_Destroy(DMO_Filter* This)
@@ -36,7 +36,7 @@ DMO_Filter* DMO_FilterCreate(const char* dllname, const GUID* id,
 {
     HRESULT hr = 0;
     const char* em = NULL;
-    DMO_Filter* This = malloc(sizeof(DMO_Filter));
+    DMO_Filter* This = (DMO_Filter*) malloc(sizeof(DMO_Filter));
     if (!This)
 	return NULL;
 

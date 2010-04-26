@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/rv34vlc.h
  * RV30/40 VLC tables
  */
 

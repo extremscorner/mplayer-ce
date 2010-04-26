@@ -72,6 +72,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "Броя кадри в секунда не е указан или е невалиден, ползвайте опцията -fps .\n"
 #define MSGTR_TryForceAudioFmtStr "Опит за ползване на фамилия аудио кодеци %s...\n"
 #define MSGTR_CantFindAudioCodec "Не може да бъде намерен кодек за този аудио формат 0x%X.\n"
+#define MSGTR_RTFMCodecs "Прочетете DOCS/HTML/en/codecs.html!\n"
 #define MSGTR_TryForceVideoFmtStr "Опит за ползване на фамилия видео кодеци %s...\n"
 #define MSGTR_CantFindVideoCodec "Няма подходящ кодек за указаните -vo и видео формат 0x%X.\n"
 #define MSGTR_CannotInitVO "ФАТАЛНО: Видео драйвера не може да бъде инициализиран.\n"
@@ -199,7 +200,7 @@ static const char help_text[]=
 #define MSGTR_ForcingOutputFourcc "Налагане на изходния fourcc код да бъде %x [%.4s]\n"
 #define MSGTR_DuplicateFrames "\n%d дублиращи се кадъра!\n"
 #define MSGTR_SkipFrame "\nПрескочен кадър!\n"
-#define MSGTR_ResolutionDoesntMatch "\nНовият видео файл има различна резолюция или цветови формат от предишния.\n"
+#define MSGTR_ResolutionDoesntMatch "\nНовият видео файл има различна резолюция или цветови формат от предишния.\n" 
 #define MSGTR_FrameCopyFileMismatch "\nВсички видео файлове трябва да имат идентични резолюции, кадрови честоти и кодеци за -ovc copy.\n"
 #define MSGTR_AudioCopyFileMismatch "\nВсички файлове трябва да имат идентични аудио кодеци и формати за -oac copy.\n"
 #define MSGTR_NoSpeedWithFrameCopy "ПРЕДУПРЕЖДЕНИЕ: -speed не работи гарантирано правилно с -oac copy!\n"\
@@ -458,14 +459,14 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nTвърде много аудио пакети в буфера: (%d в %d байта).\n"
 #define MSGTR_TooManyVideoInBuffer "\nТвърде много видео пакети в буфера: (%d в %d байта).\n"
 #define MSGTR_MaybeNI "Може би възпроизвеждате non-interleaved поток/файл или кодекът не се е справил?\n" \
-                      "За AVI файлове, опитайте да наложите non-interleaved режим със опцията -ni.\n"
+		      "За AVI файлове, опитайте да наложите non-interleaved режим със опцията -ni.\n"
 #define MSGTR_SwitchToNi "\nЗле структуриран AVI файл - превключване към -ni режим...\n"
 #define MSGTR_Detected_XXX_FileFormat "%s формат.\n"
 #define MSGTR_DetectedAudiofile "Аудио файл.\n"
 #define MSGTR_NotSystemStream "Не е MPEG System Stream... (може би Transport Stream?)\n"
 #define MSGTR_InvalidMPEGES "Невалиден MPEG-ES поток??? Свържете се с автора, може да е бъг :(\n"
 #define MSGTR_FormatNotRecognized "============ За съжаление, този формат не се разпознава/поддържа =============\n"\
-                                  "=== Ако този файл е AVI, ASF или MPEG поток, моля уведомете автора! ===\n"
+				  "=== Ако този файл е AVI, ASF или MPEG поток, моля уведомете автора! ===\n"
 #define MSGTR_MissingVideoStream "Не е открит видео поток.\n"
 #define MSGTR_MissingAudioStream "Не е открит аудио поток -> няма звук.\n"
 #define MSGTR_MissingVideoStreamBug "Липсва видео поток!? Свържете се с автора, може да е бъг :(\n"
@@ -546,6 +547,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Кодекът не е указал sh->disp_w и sh->disp_h, опит за решение.\n"
+#define MSGTR_VoConfigRequest "VDec: заявка на vo config - %d x %d (preferred csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Не е открит подходящ цветови формат - повторен опит с -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Пропорциите на филма са %.2f:1 - мащабиране до правилните пропорции .\n"
 #define MSGTR_MovieAspectUndefined "Не са дефинирани пропорции - без предварително мащабиране.\n"
@@ -869,7 +871,7 @@ static const char help_text[]=
 "  osdcolor    задава цвят за osd\n  subcolor    задава цвета на субтитрите\n" \
 "        параметрите за цвят са:\n           0 : нормален\n" \
 "           1 : dim\n           2 : удебелен\n           3 : удебелен шрифт\n" \
-"           4 : обърнат\n           5 : специален\n\n\n"
+"           4 : обърнат\n           5 : специален\n\n\n" 
 
 
 // vo_jpeg.c

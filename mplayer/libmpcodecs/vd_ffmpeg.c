@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -33,7 +15,7 @@
 
 #include "vd_internal.h"
 
-static const vd_info_t info = {
+static vd_info_t info = {
     "FFmpeg's libavcodec codec family",
     "ffmpeg",
     "A'rpi",
@@ -44,10 +26,6 @@ static const vd_info_t info = {
 LIBVD_EXTERN(ffmpeg)
 
 #include "libavcodec/avcodec.h"
-
-#if AVPALETTE_SIZE > 1024
-#error palette too large, adapt libmpcodecs/vf.c:vf_get_image
-#endif
 
 #if CONFIG_XVMC
 #include "libavcodec/xvmc.h"
@@ -77,7 +55,7 @@ typedef struct {
 
 static int get_buffer(AVCodecContext *avctx, AVFrame *pic);
 static void release_buffer(AVCodecContext *avctx, AVFrame *pic);
-static void draw_slice(struct AVCodecContext *s, const AVFrame *src, int offset[4],
+static void draw_slice(struct AVCodecContext *s, AVFrame *src, int offset[4],
                        int y, int type, int height);
 
 static enum PixelFormat get_format(struct AVCodecContext *avctx,
@@ -172,8 +150,7 @@ static int control(sh_video_t *sh, int cmd, void *arg, ...){
     return CONTROL_UNKNOWN;
 }
 
-static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
-                                   va_list vl)
+void mp_msp_av_log_callback(void *ptr, int level, const char *fmt, va_list vl)
 {
     static int print_prefix=1;
     AVClass *avc= ptr ? *(AVClass **)ptr : NULL;
@@ -182,7 +159,6 @@ static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
     char buf[256];
 
     switch(level){
-    case AV_LOG_VERBOSE: mp_level = MSGL_V ; break;
     case AV_LOG_DEBUG:  mp_level= MSGL_V   ; break;
     case AV_LOG_INFO :  mp_level= MSGL_INFO; break;
     case AV_LOG_ERROR:  mp_level= MSGL_ERR ; break;
@@ -226,8 +202,6 @@ static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
 
 static void set_format_params(struct AVCodecContext *avctx, enum PixelFormat fmt){
     int imgfmt;
-    if (fmt == PIX_FMT_NONE)
-        return;
     imgfmt = pixfmt2imgfmt(fmt);
     if (IMGFMT_IS_XVMC(imgfmt) || IMGFMT_IS_VDPAU(imgfmt)) {
         sh_video_t *sh     = avctx->opaque;
@@ -283,8 +257,6 @@ static int init(sh_video_t *sh){
     ctx->avctx = avcodec_alloc_context();
     avctx = ctx->avctx;
     avctx->opaque = sh;
-    avctx->codec_type = CODEC_TYPE_VIDEO;
-    avctx->codec_id = lavc_codec->id;
 
 #if CONFIG_VDPAU
     if(lavc_codec->capabilities & CODEC_CAP_HWACCEL_VDPAU){
@@ -476,11 +448,10 @@ static void uninit(sh_video_t *sh){
 }
 
 static void draw_slice(struct AVCodecContext *s,
-                        const AVFrame *src, int offset[4],
+                        AVFrame *src, int offset[4],
                         int y, int type, int height){
     sh_video_t *sh = s->opaque;
-    uint8_t *source[MP_MAX_PLANES]= {src->data[0] + offset[0], src->data[1] + offset[1], src->data[2] + offset[2]};
-    int strides[MP_MAX_PLANES] = {src->linesize[0], src->linesize[1], src->linesize[2]};
+    uint8_t *source[3]= {src->data[0] + offset[0], src->data[1] + offset[1], src->data[2] + offset[2]};
 #if 0
     int start=0, i;
     int width= s->width;
@@ -503,19 +474,8 @@ static void draw_slice(struct AVCodecContext *s,
         }
     }else
 #endif
-    if (height < 0)
-    {
-        int i;
-        height = -height;
-        y -= height;
-        for (i = 0; i < MP_MAX_PLANES; i++)
-        {
-            strides[i] = -strides[i];
-            source[i] -= strides[i];
-        }
-    }
     if (y < sh->disp_h) {
-        mpcodecs_draw_slice (sh, source, strides, sh->disp_w, (y+height)<=sh->disp_h?height:sh->disp_h-y, 0, y);
+        mpcodecs_draw_slice (sh, source, src->linesize, sh->disp_w, (y+height)<=sh->disp_h?height:sh->disp_h-y, 0, y);
     }
 }
 
@@ -573,8 +533,10 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
     int type= MP_IMGTYPE_IPB;
     int width= avctx->width;
     int height= avctx->height;
-    avcodec_align_dimensions(avctx, &width, &height);
+    int align=15;
 //printf("get_buffer %d %d %d\n", pic->reference, ctx->ip_count, ctx->b_count);
+    if(avctx->pix_fmt == PIX_FMT_YUV410P)
+        align=63; //yes seriously, its really needed (16x16 chroma blocks in SVQ1 -> 64x64)
 
     if (pic->buffer_hints) {
         mp_msg(MSGT_DECVIDEO, MSGL_DBG2, "Buffer hints: %u\n", pic->buffer_hints);
@@ -612,9 +574,8 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
 
     if (IMGFMT_IS_XVMC(ctx->best_csp) || IMGFMT_IS_VDPAU(ctx->best_csp)) {
         type =  MP_IMGTYPE_NUMBERED | (0xffff << 16);
-    }
-    else if (!pic->buffer_hints) {
-/*
+    } else
+    if (!pic->buffer_hints) {
         if(ctx->b_count>1 || ctx->ip_count>2){
             mp_msg(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_DRIFailure);
 
@@ -622,19 +583,17 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
             avctx->get_buffer= avcodec_default_get_buffer;
             return avctx->get_buffer(avctx, pic);
         }
-*/
-/*
+
         if(avctx->has_b_frames){
             type= MP_IMGTYPE_IPB;
         }else{
             type= MP_IMGTYPE_IP;
         }
         mp_msg(MSGT_DECVIDEO, MSGL_DBG2, type== MP_IMGTYPE_IPB ? "using IPB\n" : "using IP\n");
-*/
     }
-    if (ctx->best_csp == IMGFMT_RGB8 || ctx->best_csp == IMGFMT_BGR8)
-        flags |= MP_IMGFLAG_RGB_PALETTE;
-    mpi= mpcodecs_get_image(sh, type, flags, width, height);
+
+    mpi= mpcodecs_get_image(sh, type, flags,
+                        (width+align)&(~align), (height+align)&(~align));
     if (!mpi) return -1;
 
     // ok, let's see what did we get:
@@ -671,10 +630,13 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
     }
 #endif
 
+    // Palette support: libavcodec copies palette to *data[1]
+    if (mpi->bpp == 8)
+        mpi->planes[1] = av_malloc(AVPALETTE_SIZE);
+
     pic->data[0]= mpi->planes[0];
     pic->data[1]= mpi->planes[1];
     pic->data[2]= mpi->planes[2];
-    pic->data[3]= mpi->planes[3];
 
 #if 0
     assert(mpi->width >= ((width +align)&(~align)));
@@ -699,7 +661,6 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
     pic->linesize[0]= mpi->stride[0];
     pic->linesize[1]= mpi->stride[1];
     pic->linesize[2]= mpi->stride[2];
-    pic->linesize[3]= mpi->stride[3];
 
     pic->opaque = mpi;
 //printf("%X\n", (int)mpi->planes[0]);
@@ -781,8 +742,7 @@ typedef struct dp_hdr_s {
     uint32_t chunktab;        // offset to chunk offset array
 } dp_hdr_t;
 
-static void swap_palette(void *pal)
-{
+void swap_palette(void *pal) {
     int i;
     uint32_t *p = pal;
     for (i = 0; i < AVPALETTE_COUNT; i++)
@@ -798,12 +758,10 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
     AVCodecContext *avctx = ctx->avctx;
     mp_image_t *mpi=NULL;
     int dr1= ctx->do_dr1;
-    AVPacket pkt;
 
     if(len<=0) return NULL; // skipped frame
 
 //ffmpeg interlace (mpeg2) bug have been fixed. no need of -noslices
-
     if (!dr1)
     avctx->draw_horiz_band=NULL;
     if(ctx->vo_initialized && !(flags&3) && !dr1){
@@ -820,12 +778,8 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
 
     mp_msg(MSGT_DECVIDEO, MSGL_DBG2, "vd_ffmpeg data: %04x, %04x, %04x, %04x\n",
            ((int *)data)[0], ((int *)data)[1], ((int *)data)[2], ((int *)data)[3]);
-    av_init_packet(&pkt);
-    pkt.data = data;
-    pkt.size = len;
-    // HACK: make PNGs decode normally instead of as CorePNG delta frames
-    pkt.flags = PKT_FLAG_KEY;
-    ret = avcodec_decode_video2(avctx, pic, &got_picture, &pkt);
+    ret = avcodec_decode_video(avctx, pic,
+             &got_picture, data, len);
 
     dr1= ctx->do_dr1;
     if(ret<0) mp_msg(MSGT_DECVIDEO, MSGL_WARN, "Error while decoding frame!\n");
@@ -916,20 +870,16 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
         avctx->width, avctx->height);
     if(!mpi){        // temporary!
         mp_msg(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_CouldntAllocateImageForCodec);
-        printf(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_CouldntAllocateImageForCodec);
         return NULL;
     }
 
-    if(!dr1)
-	{
+    if(!dr1){
         mpi->planes[0]=pic->data[0];
         mpi->planes[1]=pic->data[1];
         mpi->planes[2]=pic->data[2];
-        mpi->planes[3]=pic->data[3];
         mpi->stride[0]=pic->linesize[0];
         mpi->stride[1]=pic->linesize[1];
         mpi->stride[2]=pic->linesize[2];
-        mpi->stride[3]=pic->linesize[3];
     }
 
     if (!mpi->planes[0])
@@ -941,7 +891,7 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
         mpi->stride[2]*=2;
     }
 
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     // FIXME: this might cause problems for buffers with FF_BUFFER_HINTS_PRESERVE
     if (mpi->bpp == 8)
         swap_palette(mpi->planes[1]);

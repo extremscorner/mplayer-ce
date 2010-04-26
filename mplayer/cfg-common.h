@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_CFG_COMMON_H
 #define MPLAYER_CFG_COMMON_H
 
@@ -27,6 +9,12 @@
 extern char *mp_msg_charset;
 extern int mp_msg_color;
 extern int mp_msg_module;
+
+// codec/filter opts: (defined at libmpcodecs/vd.c)
+extern float screen_size_xy;
+extern float movie_aspect;
+extern int softzoom;
+extern int flip;
 
 /* defined in codec-cfg.c */
 extern char * codecs_file;
@@ -137,10 +125,12 @@ const m_option_t tvopts_conf[]={
 #endif /* CONFIG_ALSA */
 #endif /* defined(CONFIG_TV_V4L) || defined(CONFIG_TV_V4L2) */
 	{"adevice", &stream_tv_defaults.adevice, CONF_TYPE_STRING, 0, 0, 0, NULL},
-	{"tdevice", &stream_tv_defaults.teletext.device, CONF_TYPE_STRING, 0, 0, 0, NULL},
-	{"tpage", &stream_tv_defaults.teletext.page, CONF_TYPE_INT, CONF_RANGE, 100, 899, NULL},
-	{"tformat", &stream_tv_defaults.teletext.format, CONF_TYPE_INT, CONF_RANGE, 0, 3, NULL},
-	{"tlang", &stream_tv_defaults.teletext.lang, CONF_TYPE_INT, CONF_RANGE, -1, 0x7f, NULL},
+#ifdef CONFIG_TV_TELETEXT
+	{"tdevice", &stream_tv_defaults.tdevice, CONF_TYPE_STRING, 0, 0, 0, NULL},
+	{"tpage", &stream_tv_defaults.tpage, CONF_TYPE_INT, CONF_RANGE, 100, 899, NULL},
+	{"tformat", &stream_tv_defaults.tformat, CONF_TYPE_INT, CONF_RANGE, 0, 3, NULL},
+	{"tlang", &stream_tv_defaults.tlang, CONF_TYPE_INT, CONF_RANGE, -1, 0x7f, NULL},
+#endif /* CONFIG_TV_TELETEXT */
 	{"audioid", &stream_tv_defaults.audio_id, CONF_TYPE_INT, CONF_RANGE, 0, 9, NULL},
 #ifdef CONFIG_TV_DSHOW
 	{"hidden_video_renderer", &stream_tv_defaults.hidden_video_renderer, CONF_TYPE_FLAG, 0, 0, 1, NULL},
@@ -253,7 +243,7 @@ const m_option_t mfopts_conf[]={
 
 #include "libaf/af.h"
 extern af_cfg_t af_cfg; // Audio filter configuration, defined in libmpcodecs/dec_audio.c
-const m_option_t audio_filter_conf[]={
+const m_option_t audio_filter_conf[]={       
 	{"list", &af_cfg.list, CONF_TYPE_STRING_LIST, 0, 0, 0, NULL},
         {"force", &af_cfg.force, CONF_TYPE_INT, CONF_RANGE, 0, 7, NULL},
 	{NULL, NULL, 0, 0, 0, 0, NULL}
@@ -364,5 +354,7 @@ extern const m_option_t noconfig_opts[];
 
 extern const m_option_t lavc_decode_opts_conf[];
 extern const m_option_t xvid_dec_opts[];
+
+int dvd_parse_chapter_range(const m_option_t*, const char*);
 
 #endif /* MPLAYER_CFG_COMMON_H */

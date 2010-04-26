@@ -19,8 +19,6 @@
 #ifndef MPLAYER_INPUT_H
 #define MPLAYER_INPUT_H
 
-#include "m_config.h"
-
 // All command IDs
 typedef enum {
   MP_CMD_SEEK,
@@ -94,7 +92,6 @@ typedef enum {
   MP_CMD_SET_PROPERTY,
   MP_CMD_GET_PROPERTY,
   MP_CMD_OSD_SHOW_PROPERTY_TEXT,
-  MP_CMD_OSD_SHOW_PROGRESSION,
   MP_CMD_SEEK_CHAPTER,
   MP_CMD_FILE_FILTER,
   MP_CMD_GET_FILENAME,
@@ -142,7 +139,7 @@ typedef enum {
   MP_CMD_DVDNAV_SELECT,
   MP_CMD_DVDNAV_PREVMENU,
   MP_CMD_DVDNAV_MOUSECLICK,
-
+  
   /// GUI commands
   MP_CMD_GUI_EVENTS = 5000,
   MP_CMD_GUI_LOADFILE,
@@ -162,13 +159,6 @@ typedef enum {
   MP_CMD_CHELP = 7000,
   MP_CMD_CEXIT,
   MP_CMD_CHIDE,
-
-  /// Audio Filter commands
-  MP_CMD_AF_SWITCH,
-  MP_CMD_AF_ADD,
-  MP_CMD_AF_DEL,
-  MP_CMD_AF_CLR,
-
 } mp_command_type;
 
 // The arg types
@@ -193,7 +183,7 @@ typedef enum {
 #define MP_INPUT_RETRY -4
 
 // For the key's drivers, if possible you can send key up and key down
-// events. Key up is the default, to send a key down you must use the
+// events. Key up is the default, to send a key down you must use the 
 // OR operator between the key code and MP_KEY_DOWN.
 #define MP_KEY_DOWN (1<<29)
 // Use this when the key shouldn't be auto-repeated (like mouse buttons)
@@ -327,8 +317,6 @@ mp_input_init(int use_gui);
 
 void
 mp_input_uninit(void);
-
-void mp_input_register_options(m_config_t* cfg);
 
 // Interruptible usleep:  (used by libmpdemux)
 int

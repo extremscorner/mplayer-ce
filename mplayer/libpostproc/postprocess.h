@@ -22,7 +22,7 @@
 #define POSTPROC_POSTPROCESS_H
 
 /**
- * @file
+ * @file libpostproc/postprocess.h
  * @brief
  *     external postprocessing API
  */
@@ -47,16 +47,6 @@
  * Returns the LIBPOSTPROC_VERSION_INT constant.
  */
 unsigned postproc_version(void);
-
-/**
- * Returns the libpostproc build-time configuration.
- */
-const char *postproc_configuration(void);
-
-/**
- * Returns the libpostproc license.
- */
-const char *postproc_license(void);
 
 #define PP_QUALITY_MAX 6
 

@@ -1,5 +1,5 @@
 /**
- * @file
+ * @file libavcodec/huffman.c
  * huffman tree builder and VLC generator
  * Copyright (c) 2006 Konstantin Shishkov
  *
@@ -21,7 +21,7 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "huffman.h"
 
 /* symbol for Huffman tree node */

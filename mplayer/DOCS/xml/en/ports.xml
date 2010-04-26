@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 31032 $ -->
+<!-- $Revision: 28432 $ -->
 <chapter id="ports" xreflabel="Ports">
 <title>Ports</title>
 
@@ -253,7 +253,7 @@ use GNU as:
 % gmake
 ...
 gcc -c -Iloader -Ilibvo -O4 -march=i686 -mcpu=i686 -pipe -ffast-math
-    -fomit-frame-pointer  -I/usr/local/include   -o mplayer.o mplayer.c
+     -fomit-frame-pointer  -I/usr/local/include   -o mplayer.o mplayer.c
 Assembler: mplayer.c
 "(stdin)", line 3567 : Illegal mnemonic
 "(stdin)", line 3567 : Syntax error
@@ -694,7 +694,7 @@ GCC 3.x or later.
 You can get the basic compilation environment by installing Apple's
 <ulink url="http://developer.apple.com/tools/download/">Xcode</ulink>.
 If you have Mac OS X 10.3.9 or later and QuickTime 7
-you can use the <option>corevideo</option> video output driver.
+you can use the <option>macosx</option> video output driver.
 </para>
 
 <para>

@@ -66,7 +66,7 @@
 
 extern unsigned char *ioBase;
 
-static __inline__ volatile void eieio(void)
+static __inline__ volatile void eieio()
 {
 	__asm__ volatile ("eieio");
 }

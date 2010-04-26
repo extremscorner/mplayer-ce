@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include "config.h"
 
 #include <stdio.h>
@@ -58,7 +40,7 @@ struct vf_priv_s {
 
 //===========================================================================//
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
                   int width, int height, int d_width, int d_height,
                   unsigned int flags, unsigned int outfmt)
 {
@@ -126,43 +108,47 @@ static void gen_fname(struct vf_priv_s* priv)
 
 static void scale_image(struct vf_priv_s* priv, mp_image_t *mpi)
 {
-    uint8_t *dst[MP_MAX_PLANES] = {NULL};
-    int dst_stride[MP_MAX_PLANES] = {0};
+    uint8_t *dst[3];
+    int dst_stride[3];
 
     dst_stride[0] = priv->stride;
+    dst_stride[1] = dst_stride[2] = 0;
     if (!priv->buffer)
-        priv->buffer = av_malloc(dst_stride[0]*priv->dh);
+        priv->buffer = memalign(16, dst_stride[0]*priv->dh);
 
     dst[0] = priv->buffer;
-    sws_scale(priv->ctx, mpi->planes, mpi->stride, 0, priv->dh, dst, dst_stride);
+    dst[1] = dst[2] = 0;
+    sws_scale_ordered(priv->ctx, mpi->planes, mpi->stride, 0, priv->dh, dst, dst_stride);
 }
 
-static void start_slice(struct vf_instance *vf, mp_image_t *mpi)
+static void start_slice(struct vf_instance_s* vf, mp_image_t *mpi)
 {
     vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags, mpi->width, mpi->height);
     if (vf->priv->shot) {
         vf->priv->store_slices = 1;
         if (!vf->priv->buffer)
-            vf->priv->buffer = av_malloc(vf->priv->stride*vf->priv->dh);
+            vf->priv->buffer = memalign(16, vf->priv->stride*vf->priv->dh);
     }
 
 }
 
-static void draw_slice(struct vf_instance *vf, unsigned char** src,
+static void draw_slice(struct vf_instance_s* vf, unsigned char** src,
                        int* stride, int w,int h, int x, int y)
 {
     if (vf->priv->store_slices) {
-        uint8_t *dst[MP_MAX_PLANES] = {NULL};
-        int dst_stride[MP_MAX_PLANES] = {0};
+        uint8_t *dst[3];
+        int dst_stride[3];
         dst_stride[0] = vf->priv->stride;
+        dst_stride[1] = dst_stride[2] = 0;
         dst[0] = vf->priv->buffer;
-        sws_scale(vf->priv->ctx, src, stride, y, h, dst, dst_stride);
+        dst[1] = dst[2] = 0;
+        sws_scale_ordered(vf->priv->ctx, src, stride, y, h, dst, dst_stride);
     }
     vf_next_draw_slice(vf,src,stride,w,h,x,y);
 }
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi)
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi)
 {
     // FIXME: should vf.c really call get_image when using slices??
     if (mpi->flags & MP_IMGFLAG_DRAW_CALLBACK)
@@ -185,7 +171,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi)
     mpi->priv=(void*)vf->dmpi;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
     mp_image_t *dmpi = (mp_image_t *)mpi->priv;
 
@@ -222,7 +208,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     return vf_next_put_image(vf, dmpi, pts);
 }
 
-static int control (vf_instance_t *vf, int request, void *data)
+int control (vf_instance_t *vf, int request, void *data)
 {
     /** data contains an integer argument
      * 0: take screenshot with the next frame
@@ -246,7 +232,7 @@ static int control (vf_instance_t *vf, int request, void *data)
 
 //===========================================================================//
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
     switch(fmt){
     case IMGFMT_YV12:
@@ -274,15 +260,15 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
 
 static void uninit(vf_instance_t *vf)
 {
-    avcodec_close(vf->priv->avctx);
     av_freep(&vf->priv->avctx);
     if(vf->priv->ctx) sws_freeContext(vf->priv->ctx);
-    if (vf->priv->buffer) av_free(vf->priv->buffer);
+    if (vf->priv->buffer) free(vf->priv->buffer);
     free(vf->priv->outbuffer);
     free(vf->priv);
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+// open conflicts with stdio.h at least under MinGW
+static int screenshot_open(vf_instance_t *vf, char* args)
 {
     vf->config=config;
     vf->control=control;
@@ -314,7 +300,7 @@ const vf_info_t vf_info_screenshot = {
     "screenshot",
     "A'rpi, Jindrich Makovicka",
     "",
-    vf_open,
+    screenshot_open,
     NULL
 };
 

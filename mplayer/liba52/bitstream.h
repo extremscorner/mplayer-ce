@@ -8,7 +8,7 @@
  *
  * Modified for use with MPlayer, changes contained in liba52_changes.diff.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: bitstream.h 29443 2009-07-26 19:53:00Z diego $
+ * $Id: bitstream.h 28394 2009-01-30 22:27:04Z diego $
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@ static inline uint32_t unaligned32(const void *v) {
 #endif
 
 /* (stolen from the kernel) */
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 
 #	define swab32(x) (x)
 
@@ -104,11 +104,11 @@ static inline uint32_t bitstream_get (a52_state_t * state, uint32_t num_bits)
     result<<= (indx&0x07);
     result>>= 32 - num_bits;
     indx+= num_bits;
-
+    
     return result;
 #else
     uint32_t result;
-
+	
     if (num_bits < state->bits_left) {
 	result = (state->current_word << (32 - state->bits_left)) >> (32 - num_bits);
 	state->bits_left -= num_bits;
@@ -136,11 +136,11 @@ static inline int32_t bitstream_get_2 (a52_state_t * state, uint32_t num_bits)
     result<<= (indx&0x07);
     result>>= 32 - num_bits;
     indx+= num_bits;
-
+        
     return result;
 #else
     int32_t result;
-
+	
     if (num_bits < state->bits_left) {
 	result = (((int32_t)state->current_word) << (32 - state->bits_left)) >> (32 - num_bits);
 	state->bits_left -= num_bits;

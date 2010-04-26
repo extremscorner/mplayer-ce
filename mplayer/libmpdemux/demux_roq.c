@@ -1,25 +1,9 @@
 /*
- * RoQ file demuxer
- * copyright (c) 2002 Mike Melanson
- * based on Dr. Tim Ferguson's RoQ document found at:
- * http://www.csse.monash.edu.au/~timf/videocodec.html
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+        RoQ file demuxer for the MPlayer program
+        by Mike Melanson
+	based on Dr. Tim Ferguson's RoQ document found at:
+	  http://www.csse.monash.edu.au/~timf/videocodec.html
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -191,10 +175,10 @@ static demuxer_t* demux_open_roq(demuxer_t* demuxer)
       }
 
       // index the chunk
-      roq_data->chunks = realloc(roq_data->chunks,
+      roq_data->chunks = (roq_chunk_t *)realloc(roq_data->chunks,
         (roq_data->total_chunks + 1) * sizeof (roq_chunk_t));
       roq_data->chunks[roq_data->total_chunks].chunk_type = CHUNK_TYPE_AUDIO;
-      roq_data->chunks[roq_data->total_chunks].chunk_offset =
+      roq_data->chunks[roq_data->total_chunks].chunk_offset = 
         stream_tell(demuxer->stream) - 8;
       roq_data->chunks[roq_data->total_chunks].chunk_size = chunk_size + 8;
       roq_data->chunks[roq_data->total_chunks].running_audio_sample_count =
@@ -203,7 +187,7 @@ static demuxer_t* demux_open_roq(demuxer_t* demuxer)
       // audio housekeeping
       if (chunk_size > largest_audio_chunk)
         largest_audio_chunk = chunk_size;
-      roq_data->total_audio_sample_count +=
+      roq_data->total_audio_sample_count += 
         (chunk_size / sh_audio->wf->nChannels);
 
       stream_skip(demuxer->stream, chunk_size);
@@ -214,13 +198,13 @@ static demuxer_t* demux_open_roq(demuxer_t* demuxer)
     {
       // index a new chunk if it's a codebook or quad VQ not following a
       // codebook
-      roq_data->chunks = realloc(roq_data->chunks,
+      roq_data->chunks = (roq_chunk_t *)realloc(roq_data->chunks,
         (roq_data->total_chunks + 1) * sizeof (roq_chunk_t));
       roq_data->chunks[roq_data->total_chunks].chunk_type = CHUNK_TYPE_VIDEO;
-      roq_data->chunks[roq_data->total_chunks].chunk_offset =
+      roq_data->chunks[roq_data->total_chunks].chunk_offset = 
         stream_tell(demuxer->stream) - 8;
       roq_data->chunks[roq_data->total_chunks].chunk_size = chunk_size + 8;
-      roq_data->chunks[roq_data->total_chunks].video_chunk_number =
+      roq_data->chunks[roq_data->total_chunks].video_chunk_number = 
         roq_data->total_video_chunks++;
 
       stream_skip(demuxer->stream, chunk_size);
@@ -264,7 +248,7 @@ static void demux_close_roq(demuxer_t* demuxer) {
     return;
   free(roq_data);
 }
-
+  
 
 const demuxer_desc_t demuxer_desc_roq = {
   "RoQ demuxer",

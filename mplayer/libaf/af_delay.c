@@ -37,7 +37,7 @@ typedef struct af_delay_s
   void* q[AF_NCH];   	// Circular queues used for delaying audio signal
   int 	wi[AF_NCH];  	// Write index
   int 	ri;		// Read index
-  float	d[AF_NCH];   	// Delay [ms]
+  float	d[AF_NCH];   	// Delay [ms] 	
 }af_delay_t;
 
 // Initialization and runtime control
@@ -63,7 +63,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     for(i=0;i<af->data->nch;i++){
       s->q[i] = calloc(L,af->data->bps);
       if(NULL == s->q[i])
-	mp_msg(MSGT_AFILTER, MSGL_FATAL, "[delay] Out of memory\n");
+	af_msg(AF_MSG_FATAL,"[delay] Out of memory\n");
     }
 
     return control(af,AF_CONTROL_DELAY_LEN | AF_CONTROL_SET,s->d);
@@ -87,9 +87,9 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       return AF_ERROR;
     s->ri = 0;
     for(i=0;i<AF_NCH;i++){
-      mp_msg(MSGT_AFILTER, MSGL_DBG2, "[delay] Channel %i delayed by %0.3fms\n",
+      af_msg(AF_MSG_DEBUG0,"[delay] Channel %i delayed by %0.3fms\n",
 	     i,clamp(s->d[i],0.0,1000.0));
-      mp_msg(MSGT_AFILTER, MSGL_DBG3, "[delay] Channel %i delayed by %i samples\n",
+      af_msg(AF_MSG_DEBUG1,"[delay] Channel %i delayed by %i samples\n",
 	     i,s->wi[i]);
     }
     return AF_OK;
@@ -108,7 +108,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   return AF_UNKNOWN;
 }
 
-// Deallocate memory
+// Deallocate memory 
 static void uninit(struct af_instance_s* af)
 {
   int i;
@@ -134,7 +134,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     switch(c->bps){
     case 1:{
       int8_t* a = c->audio;
-      int8_t* q = s->q[ch];
+      int8_t* q = s->q[ch]; 
       int wi = s->wi[ch];
       ri = s->ri;
       for(i=ch;i<len;i+=nch){
@@ -148,7 +148,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     }
     case 2:{
       int16_t* a = c->audio;
-      int16_t* q = s->q[ch];
+      int16_t* q = s->q[ch]; 
       int wi = s->wi[ch];
       ri = s->ri;
       for(i=ch;i<len;i+=nch){
@@ -162,7 +162,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     }
     case 4:{
       int32_t* a = c->audio;
-      int32_t* q = s->q[ch];
+      int32_t* q = s->q[ch]; 
       int wi = s->wi[ch];
       ri = s->ri;
       for(i=ch;i<len;i+=nch){
@@ -202,3 +202,5 @@ af_info_t af_info_delay = {
     AF_FLAGS_REENTRANT,
     af_open
 };
+
+

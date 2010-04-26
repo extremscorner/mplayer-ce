@@ -17,7 +17,7 @@
  */
 
 /**
- * @file
+ * @file libavutil/fifo.h
  * a very simple circular buffer FIFO implementation
  */
 
@@ -25,6 +25,8 @@
 #define AVUTIL_FIFO_H
 
 #include <stdint.h>
+#include "avutil.h"
+#include "common.h"
 
 typedef struct AVFifoBuffer {
     uint8_t *buffer;
@@ -35,7 +37,7 @@ typedef struct AVFifoBuffer {
 /**
  * Initializes an AVFifoBuffer.
  * @param size of FIFO
- * @return AVFifoBuffer or NULL in case of memory allocation failure
+ * @return AVFifoBuffer or NULL if mem allocation failure
  */
 AVFifoBuffer *av_fifo_alloc(unsigned int size);
 
@@ -60,14 +62,6 @@ void av_fifo_reset(AVFifoBuffer *f);
 int av_fifo_size(AVFifoBuffer *f);
 
 /**
- * Returns the amount of space in bytes in the AVFifoBuffer, that is the
- * amount of data you can write into it.
- * @param *f AVFifoBuffer to write into
- * @return size
- */
-int av_fifo_space(AVFifoBuffer *f);
-
-/**
  * Feeds data from an AVFifoBuffer to a user-supplied callback.
  * @param *f AVFifoBuffer to read from
  * @param buf_size number of bytes to read
@@ -79,8 +73,7 @@ int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size, void (*func)
 /**
  * Feeds data from a user-supplied callback to an AVFifoBuffer.
  * @param *f AVFifoBuffer to write to
- * @param *src data source; non-const since it may be used as a
- * modifiable context by the function defined in func
+ * @param *src data source
  * @param size number of bytes to write
  * @param *func generic write function; the first parameter is src,
  * the second is dest_buf, the third is dest_buf_size.

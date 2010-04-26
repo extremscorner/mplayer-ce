@@ -24,7 +24,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <string.h>
-#include "path.h"
+#include <get_path.h>
 #include "mplayer.h"
 #include "mp_msg.h"
 #include "help_mp.h"
@@ -32,7 +32,6 @@
 #include "m_option.h"
 #include "libvo/video_out.h"
 #include "mixer.h"
-#include "gui/mplayer/gmplayer.h"
 #include "gui/interface.h"
 #include "gui.h"
 

@@ -1,5 +1,5 @@
 /**
- * @file
+ * @file libavcodec/huffman.h
  * huffman tree builder and VLC generator
  * Copyright (C) 2007  Aurelien Jacobs <aurel@gnuage.org>
  *
@@ -24,7 +24,7 @@
 #define AVCODEC_HUFFMAN_H
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 
 typedef struct {
     int16_t  sym;

@@ -28,6 +28,11 @@
 #include "cpudetect.h"
 
 #include "mp_msg.h"
+
+#if HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
@@ -363,7 +368,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst[3], int dst_stride[3], int 
 #endif
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
         int i, j;
@@ -381,10 +386,10 @@ static int config(struct vf_instance *vf,
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static int continue_buffered_image(struct vf_instance *vf);
+static int continue_buffered_image(struct vf_instance_s *vf);
 extern int correct_pts;
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     int tff;
 
     if(vf->priv->parity < 0) {
@@ -411,7 +416,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
         return continue_buffered_image(vf);
 }
 
-static int continue_buffered_image(struct vf_instance *vf)
+static int continue_buffered_image(struct vf_instance_s *vf)
 {
     mp_image_t *mpi = vf->priv->buffered_mpi;
     int tff = vf->priv->buffered_tff;
@@ -441,7 +446,7 @@ static int continue_buffered_image(struct vf_instance *vf)
     return ret;
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
     int i;
     if(!vf->priv) return;
 
@@ -455,7 +460,7 @@ static void uninit(struct vf_instance *vf){
 }
 
 //===========================================================================//
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt){
 	case IMGFMT_YV12:
 	case IMGFMT_I420:
@@ -467,7 +472,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     return 0;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
     switch (request){
       case VFCTRL_GET_DEINTERLACE:
         *(int*)data = vf->priv->do_deinterlace;
@@ -479,7 +484,7 @@ static int control(struct vf_instance *vf, int request, void* data){
     return vf_next_control (vf, request, data);
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
 
     vf->config=config;
     vf->put_image=put_image;
@@ -508,6 +513,6 @@ const vf_info_t vf_info_yadif = {
     "yadif",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };

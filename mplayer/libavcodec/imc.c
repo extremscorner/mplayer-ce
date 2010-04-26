@@ -22,8 +22,7 @@
  */
 
 /**
- *  @file
- *  IMC - Intel Music Coder
+ *  @file libavcodec/imc.c IMC - Intel Music Coder
  *  A mdct based codec using a 256 points large transform
  *  divied into 32 bands with some mix of scale factors.
  *  Only mono is supported.
@@ -37,9 +36,8 @@
 
 #define ALT_BITSTREAM_READER
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "dsputil.h"
-#include "fft.h"
 
 #include "imcdata.h"
 
@@ -86,8 +84,8 @@ typedef struct {
 
     DSPContext dsp;
     FFTContext fft;
-    DECLARE_ALIGNED(16, FFTComplex, samples)[COEFFS/2];
-    DECLARE_ALIGNED(16, float, out_samples)[COEFFS];
+    DECLARE_ALIGNED_16(FFTComplex, samples[COEFFS/2]);
+    DECLARE_ALIGNED_16(float, out_samples[COEFFS]);
 } IMCContext;
 
 static VLC huffman_vlc[4][4];
@@ -641,10 +639,8 @@ static int imc_get_coeffs (IMCContext* q) {
 
 static int imc_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            AVPacket *avpkt)
+                            const uint8_t * buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
 
     IMCContext *q = avctx->priv_data;
 
@@ -824,7 +820,7 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
 
 AVCodec imc_decoder = {
     .name = "imc",
-    .type = AVMEDIA_TYPE_AUDIO,
+    .type = CODEC_TYPE_AUDIO,
     .id = CODEC_ID_IMC,
     .priv_data_size = sizeof(IMCContext),
     .init = imc_decode_init,

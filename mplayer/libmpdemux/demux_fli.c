@@ -1,23 +1,7 @@
 /*
- * FLI file parser
- * copyright (c) 2001 Mike Melanson
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+	FLI file parser for the MPlayer program
+	by Mike Melanson
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,7 +54,7 @@ static int demux_fli_fill_buffer(demuxer_t *demuxer, demux_stream_t *ds){
   // seem to do it, even though it takes a file offset as a parameter
   stream_seek(demuxer->stream, frames->filepos[frames->current_frame]);
   ds_read_packet(demuxer->video,
-    demuxer->stream,
+    demuxer->stream, 
     frames->frame_size[frames->current_frame],
     frames->current_frame/sh_video->fps,
     frames->filepos[frames->current_frame],
@@ -104,7 +88,7 @@ static demuxer_t* demux_open_fli(demuxer_t* demuxer){
   demuxer->movi_end = stream_read_dword_le(demuxer->stream);
 
   magic_number = stream_read_word_le(demuxer->stream);
-
+  
   if ((magic_number != 0xAF11) && (magic_number != 0xAF12))
   {
     mp_msg(MSGT_DEMUX, MSGL_ERR, "Bad/unknown magic number (%04x)\n",
@@ -146,7 +130,7 @@ static demuxer_t* demux_open_fli(demuxer_t* demuxer){
   sh_video->bih->biSize = sizeof(BITMAPINFOHEADER) + 128;
   sh_video->bih->biWidth = sh_video->disp_w;
   sh_video->bih->biHeight = sh_video->disp_h;
-
+    
   // skip the video depth and flags
   stream_skip(demuxer->stream, 4);
 

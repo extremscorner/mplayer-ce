@@ -1,0 +1,335 @@
+mp_msg.c:24: error: expected '=', ',', ';', 'asm' or '__attribute__' before numeric constant
+In file included from c:/devkitPro/libogc/include/ogc/dsp.h:39,
+                 from c:/devkitPro/libogc/include/gccore.h:39,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/gctypes.h:53: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'bool'
+In file included from c:/devkitPro/libogc/include/gccore.h:43,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/audio.h:110: error: expected ')' before '*' token
+c:/devkitPro/libogc/include/ogc/audio.h:121: error: expected ')' before 'vol'
+c:/devkitPro/libogc/include/ogc/audio.h:130: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'AUDIO_GetStreamVolLeft'
+c:/devkitPro/libogc/include/ogc/audio.h:141: error: expected ')' before 'vol'
+c:/devkitPro/libogc/include/ogc/audio.h:150: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'AUDIO_GetStreamVolRight'
+c:/devkitPro/libogc/include/ogc/audio.h:284: error: expected ')' before 'rate'
+In file included from c:/devkitPro/libogc/include/gccore.h:45,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/card.h:152: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/card.h:177: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/card.h:463: error: expected declaration specifiers or '...' before 'bool'
+c:/devkitPro/libogc/include/ogc/card.h:484: error: expected declaration specifiers or '...' before 'bool'
+c:/devkitPro/libogc/include/ogc/card.h:549: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/card.h:560: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/card.h:572: error: expected declaration specifiers or '...' before 'u8'
+In file included from c:/devkitPro/libogc/include/gccore.h:46,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/cast.h:95: warning: type defaults to 'int' in declaration of 'u8'
+c:/devkitPro/libogc/include/ogc/cast.h:95: error: expected ';', ',' or ')' before '*' token
+c:/devkitPro/libogc/include/ogc/cast.h:131: warning: type defaults to 'int' in declaration of 'u8'
+c:/devkitPro/libogc/include/ogc/cast.h:131: error: expected ';', ',' or ')' before '*' token
+c:/devkitPro/libogc/include/ogc/cast.h:157: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__castf32u8'
+c:/devkitPro/libogc/include/ogc/cast.h:213: warning: type defaults to 'int' in declaration of 'u8'
+c:/devkitPro/libogc/include/ogc/cast.h:213: error: expected ';', ',' or ')' before '*' token
+In file included from c:/devkitPro/libogc/include/ogc/consol.h:10,
+                 from c:/devkitPro/libogc/include/gccore.h:48,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/gx_struct.h:68: error: expected specifier-qualifier-list before 'u8'
+In file included from c:/devkitPro/libogc/include/gccore.h:49,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/dvd.h:130: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/dvd.h:193: error: expected specifier-qualifier-list before 'u8'
+In file included from c:/devkitPro/libogc/include/ogc/gx.h:11,
+                 from c:/devkitPro/libogc/include/gccore.h:52,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/lwp.h:81: error: expected declaration specifiers or '...' before 'u8'
+In file included from c:/devkitPro/libogc/include/gccore.h:52,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/gx.h:953: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:993: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1005: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1009: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1029: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1103: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1106: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1106: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1106: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1106: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1106: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1106: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1109: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1125: error: expected ')' before 'vtxfmt'
+c:/devkitPro/libogc/include/ogc/gx.h:1126: error: expected ')' before 'vtxfmt'
+c:/devkitPro/libogc/include/ogc/gx.h:1127: error: expected ')' before 'attr'
+c:/devkitPro/libogc/include/ogc/gx.h:1131: error: expected ')' before 'primitve'
+c:/devkitPro/libogc/include/ogc/gx.h:1160: error: expected ')' before 'x'
+c:/devkitPro/libogc/include/ogc/gx.h:1192: error: expected ')' before 'x'
+c:/devkitPro/libogc/include/ogc/gx.h:1204: error: expected ')' before 'index'
+c:/devkitPro/libogc/include/ogc/gx.h:1235: error: expected ')' before 'index'
+c:/devkitPro/libogc/include/ogc/gx.h:1245: error: expected ')' before 'r'
+c:/devkitPro/libogc/include/ogc/gx.h:1253: error: expected ')' before 'r'
+c:/devkitPro/libogc/include/ogc/gx.h: In function 'GX_Color3f32':
+c:/devkitPro/libogc/include/ogc/gx.h:1263: error: 'u8' undeclared (first use in this function)
+c:/devkitPro/libogc/include/ogc/gx.h:1263: error: (Each undeclared identifier is reported only once
+c:/devkitPro/libogc/include/ogc/gx.h:1263: error: for each function it appears in.)
+c:/devkitPro/libogc/include/ogc/gx.h: At top level:
+c:/devkitPro/libogc/include/ogc/gx.h:1280: error: expected ')' before 'index'
+c:/devkitPro/libogc/include/ogc/gx.h:1308: error: expected ')' before 's'
+c:/devkitPro/libogc/include/ogc/gx.h:1335: error: expected ')' before 's'
+c:/devkitPro/libogc/include/ogc/gx.h:1345: error: expected ')' before 'index'
+c:/devkitPro/libogc/include/ogc/gx.h:1355: error: expected ')' before 'index'
+c:/devkitPro/libogc/include/ogc/gx.h:1366: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1367: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1380: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1391: error: expected ')' before 'tev_regid'
+c:/devkitPro/libogc/include/ogc/gx.h:1402: error: expected ')' before 'tev_regid'
+c:/devkitPro/libogc/include/ogc/gx.h:1419: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1435: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1454: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1474: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1489: error: expected ')' before 'op'
+c:/devkitPro/libogc/include/ogc/gx.h:1490: error: expected ')' before 'enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1491: error: expected ')' before 'before_tex'
+c:/devkitPro/libogc/include/ogc/gx.h:1492: error: expected ')' before 'width'
+c:/devkitPro/libogc/include/ogc/gx.h:1493: error: expected ')' before 'width'
+c:/devkitPro/libogc/include/ogc/gx.h:1495: error: expected ')' before 'type'
+c:/devkitPro/libogc/include/ogc/gx.h:1496: error: expected ')' before 'mode'
+c:/devkitPro/libogc/include/ogc/gx.h:1497: error: expected ')' before 'enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1498: error: expected ')' before 'coord'
+c:/devkitPro/libogc/include/ogc/gx.h:1499: error: expected ')' before 'mode'
+c:/devkitPro/libogc/include/ogc/gx.h:1502: error: expected ')' before 'num'
+c:/devkitPro/libogc/include/ogc/gx.h:1504: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1505: error: expected ')' before 'num'
+c:/devkitPro/libogc/include/ogc/gx.h:1507: error: expected ')' before 'comp0'
+c:/devkitPro/libogc/include/ogc/gx.h:1508: error: expected ')' before 'sel'
+c:/devkitPro/libogc/include/ogc/gx.h:1509: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1510: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1511: error: expected ')' before 'sel'
+c:/devkitPro/libogc/include/ogc/gx.h:1526: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1541: error: expected ')' before 'swapid'
+c:/devkitPro/libogc/include/ogc/gx.h:1542: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1543: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1544: error: expected ')' before 'nstages'
+c:/devkitPro/libogc/include/ogc/gx.h:1545: error: expected ')' before 'indtexstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1546: error: expected ')' before 'indtexid'
+c:/devkitPro/libogc/include/ogc/gx.h:1547: error: expected ')' before 'type'
+c:/devkitPro/libogc/include/ogc/gx.h:1548: error: expected ')' before 'enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1549: error: expected ')' before 'indtexmtx'
+c:/devkitPro/libogc/include/ogc/gx.h:1550: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1551: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1552: error: expected ')' before 'tevstage'
+c:/devkitPro/libogc/include/ogc/gx.h:1554: error: expected ')' before 'enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1555: error: expected ')' before 'enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1556: error: expected ')' before 'pix_fmt'
+c:/devkitPro/libogc/include/ogc/gx.h:1557: error: expected ')' before 'dither'
+c:/devkitPro/libogc/include/ogc/gx.h:1558: error: expected ')' before 'enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1559: error: expected ')' before 'even_mask'
+c:/devkitPro/libogc/include/ogc/gx.h:1560: error: expected ')' before 'field_mode'
+c:/devkitPro/libogc/include/ogc/gx.h:1620: error: expected ')' before 'clamp'
+c:/devkitPro/libogc/include/ogc/gx.h:1630: error: expected ')' before 'gamma'
+c:/devkitPro/libogc/include/ogc/gx.h:1632: error: expected ')' before 'aa'
+c:/devkitPro/libogc/include/ogc/gx.h:1633: error: expected ')' before 'mode'
+c:/devkitPro/libogc/include/ogc/gx.h:1661: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1679: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1693: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1713: error: expected ')' before 'func'
+c:/devkitPro/libogc/include/ogc/gx.h:1714: error: expected ')' before 'update_enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1715: error: expected ')' before 'update_enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1716: error: expected ')' before 'dither'
+c:/devkitPro/libogc/include/ogc/gx.h:1717: error: expected ')' before 'type'
+c:/devkitPro/libogc/include/ogc/gx.h:1718: error: expected ')' before 'mode'
+c:/devkitPro/libogc/include/ogc/gx.h:1719: error: expected ')' before 'enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1722: error: expected ')' before 'comp_enable'
+c:/devkitPro/libogc/include/ogc/gx.h:1727: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'GX_GetTexFmt'
+c:/devkitPro/libogc/include/ogc/gx.h:1728: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1728: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1731: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1731: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1731: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1733: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1733: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1733: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1733: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1734: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1734: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1734: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1734: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1736: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1738: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1740: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1741: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1742: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1742: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1742: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1742: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1742: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1743: error: expected ')' before 'texcoord'
+c:/devkitPro/libogc/include/ogc/gx.h:1744: error: expected ')' before 'texcoord'
+c:/devkitPro/libogc/include/ogc/gx.h:1751: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1752: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1753: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1759: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/gx.h:1774: error: expected ')' before '*' token
+In file included from c:/devkitPro/libogc/include/gccore.h:57,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/mutex.h:61: error: expected declaration specifiers or '...' before 'u8'
+In file included from c:/devkitPro/libogc/include/gccore.h:60,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/pad.h:52: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/pad.h:85: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'PAD_TriggerL'
+c:/devkitPro/libogc/include/ogc/pad.h:86: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'PAD_TriggerR'
+In file included from c:/devkitPro/libogc/include/gccore.h:61,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/tpl.h:23: error: expected declaration specifiers or '...' before 'u8'
+In file included from c:/devkitPro/libogc/include/gccore.h:62,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/system.h:159: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/system.h:179: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/system.h:212: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/system.h:318: warning: redundant redeclaration of 'SYS_GetArena1Size'
+c:/devkitPro/libogc/include/ogc/system.h:311: warning: previous declaration of 'SYS_GetArena1Size' was here
+In file included from c:/devkitPro/libogc/include/gccore.h:63,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/video.h:88: error: expected ')' before 'black'
+In file included from c:/devkitPro/libogc/include/gccore.h:70,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/es.h:63: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'sha1'
+c:/devkitPro/libogc/include/ogc/es.h:64: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'aeskey'
+c:/devkitPro/libogc/include/ogc/es.h:68: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:74: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:91: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:99: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:117: error: expected specifier-qualifier-list before 'sha1'
+c:/devkitPro/libogc/include/ogc/es.h:122: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:156: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:166: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:221: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:223: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:225: error: expected ')' before '*' token
+c:/devkitPro/libogc/include/ogc/es.h:234: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:238: warning: type defaults to 'int' in declaration of 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:238: error: expected ';', ',' or ')' before '*' token
+c:/devkitPro/libogc/include/ogc/es.h:241: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:246: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:246: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:246: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:247: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:247: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:247: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/es.h:248: error: expected ')' before '*' token
+c:/devkitPro/libogc/include/ogc/es.h:249: error: expected ')' before '*' token
+In file included from c:/devkitPro/libogc/include/gccore.h:73,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/usb.h:66: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:76: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:92: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:105: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:140: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:141: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:143: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:144: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:146: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:146: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:147: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:147: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:149: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:150: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:152: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:153: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:155: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:155: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:156: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:156: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:158: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:159: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:160: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:160: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:161: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:162: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:162: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usb.h:162: error: expected declaration specifiers or '...' before 'u8'
+In file included from c:/devkitPro/libogc/include/gccore.h:74,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/isfs.h:33: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:34: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:41: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:41: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:41: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:41: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:42: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:42: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:42: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:42: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:49: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:49: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:49: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:49: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:50: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:50: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:50: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:50: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:55: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:55: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:55: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:55: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:56: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:56: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:56: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:56: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:59: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:59: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:59: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:59: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:60: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:60: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:60: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/isfs.h:60: error: expected declaration specifiers or '...' before 'u8'
+In file included from c:/devkitPro/libogc/include/gccore.h:75,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/conf.h:135: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/conf.h:142: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/conf.h:167: error: expected ')' before '*' token
+In file included from c:/devkitPro/libogc/include/ogc/usbstorage.h:12,
+                 from c:/devkitPro/libogc/include/gccore.h:76,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/disc_io.h:46: error: expected declaration specifiers or '...' before '*' token
+c:/devkitPro/libogc/include/ogc/disc_io.h:46: warning: type defaults to 'int' in declaration of 'bool'
+c:/devkitPro/libogc/include/ogc/disc_io.h:46: error: 'bool' declared as function returning a function
+c:/devkitPro/libogc/include/ogc/disc_io.h:47: error: 'FN_MEDIUM_ISINSERTED' declared as function returning a function
+c:/devkitPro/libogc/include/ogc/disc_io.h:48: error: 'FN_MEDIUM_READSECTORS' declared as function returning a function
+c:/devkitPro/libogc/include/ogc/disc_io.h:49: error: 'FN_MEDIUM_WRITESECTORS' declared as function returning a function
+c:/devkitPro/libogc/include/ogc/disc_io.h:50: error: 'FN_MEDIUM_CLEARSTATUS' declared as function returning a function
+c:/devkitPro/libogc/include/ogc/disc_io.h:51: error: 'FN_MEDIUM_SHUTDOWN' declared as function returning a function
+c:/devkitPro/libogc/include/ogc/disc_io.h:56: error: expected specifier-qualifier-list before 'FN_MEDIUM_STARTUP'
+In file included from c:/devkitPro/libogc/include/gccore.h:76,
+                 from osdep/log_console.h:29,
+                 from mp_msg.c:25:
+c:/devkitPro/libogc/include/ogc/usbstorage.h:28: error: expected specifier-qualifier-list before 'u8'
+c:/devkitPro/libogc/include/ogc/usbstorage.h:57: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usbstorage.h:60: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usbstorage.h:61: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usbstorage.h:61: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usbstorage.h:62: error: expected declaration specifiers or '...' before 'u8'
+c:/devkitPro/libogc/include/ogc/usbstorage.h:62: warning: type defaults to 'int' in declaration of 'u8'
+c:/devkitPro/libogc/include/ogc/usbstorage.h:62: error: expected ';', ',' or ')' before '*' token
+mp_msg.c:26:2: error: #endif without #if
+mp_msg.c: In function 'mp_msg':
+mp_msg.c:209: warning: passing argument 2 of 'iconv' from incompatible pointer type
+mp_msg.c:236: warning: passing argument 1 of 'log_console_enable_log' makes pointer from integer without a cast
+make: *** [mp_msg.o] Error 1

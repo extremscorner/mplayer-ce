@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mace.c
  * MACE decoder.
  */
 
@@ -236,10 +236,8 @@ static av_cold int mace_decode_init(AVCodecContext * avctx)
 
 static int mace_decode_frame(AVCodecContext *avctx,
                               void *data, int *data_size,
-                              AVPacket *avpkt)
+                              const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     int16_t *samples = data;
     MACEContext *ctx = avctx->priv_data;
     int i, j, k, l;
@@ -281,7 +279,7 @@ static int mace_decode_frame(AVCodecContext *avctx,
 
 AVCodec mace3_decoder = {
     "mace3",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MACE3,
     sizeof(MACEContext),
     mace_decode_init,
@@ -293,7 +291,7 @@ AVCodec mace3_decoder = {
 
 AVCodec mace6_decoder = {
     "mace6",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MACE6,
     sizeof(MACEContext),
     mace_decode_init,

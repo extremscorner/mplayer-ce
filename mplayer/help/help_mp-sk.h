@@ -5,7 +5,7 @@
 // ========================= MPlayer help ===========================
 
 #ifdef HELP_MP_DEFINE_STATIC
-// Preklad do slovenčiny
+// Preklad do slovenčiny 
 
 static const char help_text[]=
 "Použitie:   mplayer [prepínače] [url|cesta/]menosúboru\n"
@@ -71,6 +71,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "V hlavičke súboru nie je udané (alebo je zlé) FPS! Použite voľbu -fps!\n"
 #define MSGTR_TryForceAudioFmtStr "Pokúšam sa vynútiť rodinu audiokodeku %s...\n"
 #define MSGTR_CantFindAudioCodec "Nemôžem nájsť kodek pre audio formát 0x%X!\n"
+#define MSGTR_RTFMCodecs "Prečítajte si DOCS/HTML/en/codecs.html!\n"
 #define MSGTR_TryForceVideoFmtStr "Pokúšam se vnútiť rodinu videokodeku %s...\n"
 #define MSGTR_CantFindVideoCodec "Nemôžem najsť kodek pre video formát 0x%X!\n"
 #define MSGTR_CannotInitVO "FATAL: Nemôžem inicializovať video driver!\n"
@@ -540,14 +541,14 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nDEMUXER: Príliš mnoho (%d v %d bajtoch) audio paketov v bufferi!\n"
 #define MSGTR_TooManyVideoInBuffer "\nDEMUXER: Príliš mnoho (%d v %d bajtoch) video paketov v bufferi!\n"
 #define MSGTR_MaybeNI "(možno prehrávate neprekladaný prúd/súbor alebo kodek zlyhal)\n" \
-                      "Pre .AVI súbory skúste vynútiť neprekladaný mód voľbou -ni\n"
+		      "Pre .AVI súbory skúste vynútiť neprekladaný mód voľbou -ni\n"
 #define MSGTR_SwitchToNi "\nDetekovaný zle prekladaný .AVI - prepnite -ni mód!\n"
 #define MSGTR_Detected_XXX_FileFormat "Detekovaný %s formát súboru!\n"
 #define MSGTR_DetectedAudiofile "Detekovaný audio súbor!\n"
 #define MSGTR_NotSystemStream "Nie je to MPEG System Stream formát... (možno Transport Stream?)\n"
 #define MSGTR_InvalidMPEGES "Neplatný MPEG-ES prúd??? kontaktujte autora, možno je to chyba (bug) :(\n"
 #define MSGTR_FormatNotRecognized "========== Žiaľ, tento formát súboru nie je rozpoznaný/podporovaný =======\n"\
-                                  "==== Pokiaľ je tento súbor AVI, ASF alebo MPEG prúd, kontaktujte autora! ====\n"
+				  "==== Pokiaľ je tento súbor AVI, ASF alebo MPEG prúd, kontaktujte autora! ====\n"
 #define MSGTR_MissingVideoStream "Žiadny video prúd nenájdený!\n"
 #define MSGTR_MissingAudioStream "Žiadny audio prúd nenájdený...  -> bez zvuku\n"
 #define MSGTR_MissingVideoStreamBug "Chýbajúci video prúd!? Kontaktujte autora, možno to je chyba (bug) :(\n"
@@ -558,7 +559,7 @@ static const char help_text[]=
 #define MSGTR_NI_Detected "Detekovaný"
 #define MSGTR_NI_Message "%s NEPREKLADANÝ formát súboru AVI!\n"
 
-#define MSGTR_UsingNINI "Používam NEPREKLADANÝ poškodený formát súboru AVI!\n"
+#define MSGTR_UsingNINI "Používam NEPREKLADANÝ poškodený formát súboru AVI!\n" 
 #define MSGTR_CouldntDetFNo "Nemôžem určiť počet snímkov (pre absolútny posun)  \n"
 #define MSGTR_CantSeekRawAVI "Nemôžem sa posúvať v surových (raw) .AVI prúdoch! (Potrebujem index, zkuste použíť voľbu -idx!)  \n"
 #define MSGTR_CantSeekFile "Nemôžem sa posúvať v tomto súbore!  \n"
@@ -621,7 +622,7 @@ static const char help_text[]=
 #define MSGTR_ADecoderPreinitFailed "ADecoder preinit zlyhal :(\n"
 #define MSGTR_AllocatingBytesForInputBuffer "dec_audio: Alokujem %d bytov pre vstupný buffer\n"
 #define MSGTR_AllocatingBytesForOutputBuffer "dec_audio: Alokujem %d + %d = %d bytov pre výstupný buffer\n"
-
+			 
 // LIRC:
 #define MSGTR_SettingUpLIRC "Zapínam podporu LIRC...\n"
 #define MSGTR_LIRCopenfailed "Zlyhal pokus o otvorenie podpory LIRC!\n"
@@ -635,6 +636,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: kodek nenastavil sh->disp_w a sh->disp_h, skúšam to obísť!\n"
+#define MSGTR_VoConfigRequest "VDec: vo konfiguračná požiadavka - %d x %d (preferovaný csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Nemôžem nájsť zhodný priestor farieb - skúšam znova s -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Movie-Aspect je %.2f:1 - mením rozmery na správne.\n"
 #define MSGTR_MovieAspectUndefined "Movie-Aspect je nedefinovný - nemenia sa rozmery.\n"
@@ -910,3 +912,4 @@ static const char help_text[]=
 #define MSGTR_MSGBOX_LABEL_Warning "Upozornenie!"
 
 #endif
+

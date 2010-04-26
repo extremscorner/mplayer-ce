@@ -50,6 +50,7 @@
 #define HAVE_AV_CONFIG_H
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mjpegenc.h"
+//#include "jpeg_enc.h" /* this file is not present yet */
 
 #undef malloc
 #undef free
@@ -504,8 +505,6 @@ static jpeg_enc_t *jpeg_enc_init(int w, int h, int y_rsize,
 	// Which DCT method to use. AUTO will select the fastest one
 	j->s->avctx->dct_algo = FF_DCT_AUTO;
 	j->s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
-	// indicate we 'decode' to jpeg 4:2:2
-	j->s->avctx->pix_fmt = PIX_FMT_YUVJ422P;
 
 	j->s->avctx->thread_count = 1;
 
@@ -621,7 +620,7 @@ static int jpeg_enc_frame(jpeg_enc_t *j, uint8_t *y_data,
 	//if (j->s->mjpeg_write_tables == 1)
 	//	j->s->mjpeg_write_tables = 0;
 
-	return put_bits_ptr(&(j->s->pb)) - j->s->pb.buf;
+	return pbBufPtr(&(j->s->pb)) - j->s->pb.buf;
 }
 
 /// the real uninit routine
@@ -667,7 +666,7 @@ struct vf_priv_s {
  * arrange to dispatch to the config() entry pointer for the one
  * selected.
  */
-static int config(struct vf_instance *vf, int width, int height, int d_width,
+static int config(struct vf_instance_s* vf, int width, int height, int d_width,
 		int d_height, unsigned int flags, unsigned int outfmt){
 	struct vf_priv_s *priv = vf->priv;
 	float aspect_decision;
@@ -827,7 +826,7 @@ static int config(struct vf_instance *vf, int width, int height, int d_width,
  * \param mpi pointer to mp_image_t structure
  * \param pts
  */
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	struct vf_priv_s *priv = vf->priv;
 	int size = 0;
 	int i;
@@ -856,7 +855,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
  * Given the image format specified by \a fmt, this routine is called
  * to ask if the format is supported or not.
  */
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
 	VERBOSE("query_format() called\n");
 
 	switch (fmt) {
@@ -893,9 +892,9 @@ static void uninit(vf_instance_t *vf) {
  * This routine will do some basic initialization of local structures etc.,
  * and then parse the command line arguments specific for the ZRMJPEG filter.
  */
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
 	struct vf_priv_s *priv;
-	VERBOSE("vf_open() called: args=\"%s\"\n", args);
+	VERBOSE("open() called: args=\"%s\"\n", args);
 
 	vf->config = config;
 	vf->put_image = put_image;
@@ -1062,6 +1061,7 @@ const vf_info_t vf_info_zrmjpeg = {
     "zrmjpeg",
     "Rik Snel",
     "",
-    vf_open,
+    open,
     NULL
 };
+

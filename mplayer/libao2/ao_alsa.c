@@ -57,7 +57,7 @@
 #include "audio_out_internal.h"
 #include "libaf/af_format.h"
 
-static const ao_info_t info =
+static const ao_info_t info = 
 {
     "ALSA-0.9.x-1.x audio output",
     "alsa",
@@ -72,11 +72,23 @@ static snd_pcm_format_t alsa_format;
 static snd_pcm_hw_params_t *alsa_hwparams;
 static snd_pcm_sw_params_t *alsa_swparams;
 
+/* 16 sets buffersize to 16 * chunksize is as default 1024
+ * which seems to be good avarge for most situations 
+ * so buffersize is 16384 frames by default */
+static int alsa_fragcount = 16;
+static snd_pcm_uframes_t chunk_size = 1024;
+
 static size_t bytes_per_sample;
 
-static int alsa_can_pause;
+static int ao_noblock = 0;
+
+static int open_mode;
+static int alsa_can_pause = 0;
 
 #define ALSA_DEVICE_SIZE 256
+
+#undef BUFFERTIME
+#define SET_CHUNKSIZE
 
 static void alsa_error_handler(const char *file, int line, const char *function,
 			       int err, const char *format, ...)
@@ -113,15 +125,15 @@ static int control(int cmd, void *arg)
       snd_mixer_elem_t *elem;
       snd_mixer_selem_id_t *sid;
 
-      char *mix_name = "PCM";
-      char *card = "default";
-      int mix_index = 0;
+      static char *mix_name = "PCM";
+      static char *card = "default";
+      static int mix_index = 0;
 
       long pmin, pmax;
       long get_vol, set_vol;
       float f_multi;
 
-      if(AF_FORMAT_IS_AC3(ao_data.format))
+      if(ao_data.format == AF_FORMAT_AC3)
 	return CONTROL_TRUE;
 
       if(mixer_channel) {
@@ -144,7 +156,7 @@ static int control(int cmd, void *arg)
 
       //allocate simple id
       snd_mixer_selem_id_alloca(&sid);
-
+	
       //sets simple-mixer index and name
       snd_mixer_selem_id_set_index(sid, mix_index);
       snd_mixer_selem_id_set_name(sid, mix_name);
@@ -160,7 +172,7 @@ static int control(int cmd, void *arg)
       }
 
       if ((err = snd_mixer_attach(handle, card)) < 0) {
-	mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_MixerAttachError,
+	mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_MixerAttachError, 
 	       card, snd_strerror(err));
 	snd_mixer_close(handle);
 	return CONTROL_ERROR;
@@ -195,9 +207,8 @@ static int control(int cmd, void *arg)
 
 	//setting channels
 	if ((err = snd_mixer_selem_set_playback_volume(elem, SND_MIXER_SCHN_FRONT_LEFT, set_vol)) < 0) {
-	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_ErrorSettingLeftChannel,
+	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_ErrorSettingLeftChannel, 
 		 snd_strerror(err));
-	  snd_mixer_close(handle);
 	  return CONTROL_ERROR;
 	}
 	mp_msg(MSGT_AO,MSGL_DBG2,"left=%li, ", set_vol);
@@ -205,12 +216,11 @@ static int control(int cmd, void *arg)
 	set_vol = vol->right / f_multi + pmin + 0.5;
 
 	if ((err = snd_mixer_selem_set_playback_volume(elem, SND_MIXER_SCHN_FRONT_RIGHT, set_vol)) < 0) {
-	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_ErrorSettingRightChannel,
+	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_ErrorSettingRightChannel, 
 		 snd_strerror(err));
-	  snd_mixer_close(handle);
 	  return CONTROL_ERROR;
 	}
-	mp_msg(MSGT_AO,MSGL_DBG2,"right=%li, pmin=%li, pmax=%li, mult=%f\n",
+	mp_msg(MSGT_AO,MSGL_DBG2,"right=%li, pmin=%li, pmax=%li, mult=%f\n", 
 	       set_vol, pmin, pmax, f_multi);
 
 	if (snd_mixer_selem_has_playback_switch(elem)) {
@@ -235,7 +245,7 @@ static int control(int cmd, void *arg)
       snd_mixer_close(handle);
       return CONTROL_OK;
     }
-
+    
   } //end switch
   return CONTROL_UNKNOWN;
 }
@@ -257,9 +267,10 @@ static void print_help (void)
            MSGTR_AO_ALSA_CommandlineHelp);
 }
 
-static int str_maxlen(void *strp) {
-  strarg_t *str = strp;
-  return str->len <= ALSA_DEVICE_SIZE;
+static int str_maxlen(strarg_t *str) {
+  if (str->len > ALSA_DEVICE_SIZE)
+    return 0;
+  return 1;
 }
 
 static int try_open_device(const char *device, int open_mode, int try_ac3)
@@ -313,17 +324,14 @@ static int try_open_device(const char *device, int open_mode, int try_ac3)
 */
 static int init(int rate_hz, int channels, int format, int flags)
 {
-    unsigned int alsa_buffer_time = 500000; /* 0.5 s */
-    unsigned int alsa_fragcount = 16;
     int err;
     int block;
     strarg_t device;
-    snd_pcm_uframes_t chunk_size;
     snd_pcm_uframes_t bufsize;
     snd_pcm_uframes_t boundary;
-    const opt_t subopts[] = {
+    opt_t subopts[] = {
       {"block", OPT_ARG_BOOL, &block, NULL},
-      {"device", OPT_ARG_STR, &device, str_maxlen},
+      {"device", OPT_ARG_STR, &device, (opt_test_f)str_maxlen},
       {NULL}
     };
 
@@ -341,7 +349,7 @@ static int init(int rate_hz, int channels, int format, int flags)
 #endif
 
     snd_lib_error_set_handler(alsa_error_handler);
-
+    
     ao_data.samplerate = rate_hz;
     ao_data.format = format;
     ao_data.channels = channels;
@@ -360,11 +368,15 @@ static int init(int rate_hz, int channels, int format, int flags)
       case AF_FORMAT_U16_BE:
 	alsa_format = SND_PCM_FORMAT_U16_BE;
 	break;
-      case AF_FORMAT_AC3_LE:
+#ifndef WORDS_BIGENDIAN
+      case AF_FORMAT_AC3:
+#endif
       case AF_FORMAT_S16_LE:
 	alsa_format = SND_PCM_FORMAT_S16_LE;
 	break;
-      case AF_FORMAT_AC3_BE:
+#ifdef WORDS_BIGENDIAN
+      case AF_FORMAT_AC3:
+#endif
       case AF_FORMAT_S16_BE:
 	alsa_format = SND_PCM_FORMAT_S16_BE;
 	break;
@@ -379,18 +391,6 @@ static int init(int rate_hz, int channels, int format, int flags)
 	break;
       case AF_FORMAT_S32_BE:
 	alsa_format = SND_PCM_FORMAT_S32_BE;
-	break;
-      case AF_FORMAT_U24_LE:
-	alsa_format = SND_PCM_FORMAT_U24_3LE;
-	break;
-      case AF_FORMAT_U24_BE:
-	alsa_format = SND_PCM_FORMAT_U24_3BE;
-	break;
-      case AF_FORMAT_S24_LE:
-	alsa_format = SND_PCM_FORMAT_S24_3LE;
-	break;
-      case AF_FORMAT_S24_BE:
-	alsa_format = SND_PCM_FORMAT_S24_3BE;
 	break;
       case AF_FORMAT_FLOAT_LE:
 	alsa_format = SND_PCM_FORMAT_FLOAT_LE;
@@ -409,7 +409,7 @@ static int init(int rate_hz, int channels, int format, int flags)
 	alsa_format = SND_PCM_FORMAT_MPEG; //? default should be -1
 	break;
       }
-
+    
     //subdevice parsing
     // set defaults
     block = 1;
@@ -419,7 +419,7 @@ static int init(int rate_hz, int channels, int format, int flags)
      * while opening the abstract alias for the spdif subdevice
      * 'iec958'
      */
-    if (AF_FORMAT_IS_AC3(format)) {
+    if (format == AF_FORMAT_AC3) {
 	device.str = "iec958";
 	mp_msg(MSGT_AO,MSGL_V,"alsa-spdif-init: playing AC3, %i channels\n", channels);
     }
@@ -448,13 +448,6 @@ static int init(int rate_hz, int channels, int format, int flags)
 	    device.str = "surround51";
 	  mp_msg(MSGT_AO,MSGL_V,"alsa-init: device set to surround51\n");
 	  break;
-	case 8:
-	  if (alsa_format == SND_PCM_FORMAT_FLOAT_LE)
-	    device.str = "plug:surround71";
-	  else
-	    device.str = "surround71";
-	  mp_msg(MSGT_AO,MSGL_V,"alsa-init: device set to surround71\n");
-	  break;
 	default:
 	  device.str = "default";
 	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_ChannelsNotSupported,channels);
@@ -464,19 +457,61 @@ static int init(int rate_hz, int channels, int format, int flags)
         print_help();
         return 0;
     }
+    ao_noblock = !block;
     parse_device(alsa_device, device.str, device.len);
 
     mp_msg(MSGT_AO,MSGL_V,"alsa-init: using device %s\n", alsa_device);
 
-    if (!alsa_handler) {
-      int open_mode = block ? 0 : SND_PCM_NONBLOCK;
-      int isac3 =  AF_FORMAT_IS_AC3(format);
-      //modes = 0, SND_PCM_NONBLOCK, SND_PCM_ASYNC
-      if ((err = try_open_device(alsa_device, open_mode, isac3)) < 0)
+    //setting modes for block or nonblock-mode
+    if (ao_noblock) {
+      open_mode = SND_PCM_NONBLOCK;
+    }
+    else {
+      open_mode = 0;
+    }
+
+    //sets buff/chunksize if its set manually
+    if (ao_data.buffersize) {
+      switch (ao_data.buffersize)
 	{
-	  if (err != -EBUSY && !block) {
+	case 1:
+	  alsa_fragcount = 16;
+	  chunk_size = 512;
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: buffersize set manually to 8192\n");
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: chunksize set manually to 512\n");
+	  break;
+	case 2:
+	  alsa_fragcount = 8;
+	  chunk_size = 1024;
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: buffersize set manually to 8192\n");
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: chunksize set manually to 1024\n");
+	  break;
+	case 3:
+	  alsa_fragcount = 32;
+	  chunk_size = 512;
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: buffersize set manually to 16384\n");
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: chunksize set manually to 512\n");
+	  break;
+	case 4:
+	  alsa_fragcount = 16;
+	  chunk_size = 1024;
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: buffersize set manually to 16384\n");
+	    mp_msg(MSGT_AO,MSGL_V,"alsa-init: chunksize set manually to 1024\n");
+	  break;
+	default:
+	  alsa_fragcount = 16;
+	  chunk_size = 1024;
+	  break;
+	}
+    }
+
+    if (!alsa_handler) {
+      //modes = 0, SND_PCM_NONBLOCK, SND_PCM_ASYNC
+      if ((err = try_open_device(alsa_device, open_mode, format == AF_FORMAT_AC3)) < 0)
+	{
+	  if (err != -EBUSY && ao_noblock) {
 	    mp_msg(MSGT_AO,MSGL_INFO,MSGTR_AO_ALSA_OpenInNonblockModeFailed);
-	    if ((err = try_open_device(alsa_device, 0, isac3)) < 0) {
+	    if ((err = try_open_device(alsa_device, 0, format == AF_FORMAT_AC3)) < 0) {
 	      mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_PlaybackOpenError, snd_strerror(err));
 	      return 0;
 	    }
@@ -502,11 +537,11 @@ static int init(int rate_hz, int channels, int format, int flags)
 		 snd_strerror(err));
 	  return 0;
 	}
-
+    
       err = snd_pcm_hw_params_set_access(alsa_handler, alsa_hwparams,
 					 SND_PCM_ACCESS_RW_INTERLEAVED);
       if (err < 0) {
-	mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetAccessType,
+	mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetAccessType, 
 	       snd_strerror(err));
 	return 0;
       }
@@ -519,9 +554,6 @@ static int init(int rate_hz, int channels, int format, int flags)
          mp_msg(MSGT_AO,MSGL_INFO,
 		MSGTR_AO_ALSA_FormatNotSupportedByHardware, af_fmt2str_short(format));
          alsa_format = SND_PCM_FORMAT_S16_LE;
-         if (AF_FORMAT_IS_AC3(ao_data.format))
-           ao_data.format = AF_FORMAT_AC3_LE;
-         else
          ao_data.format = AF_FORMAT_S16_LE;
       }
 
@@ -542,8 +574,7 @@ static int init(int rate_hz, int channels, int format, int flags)
 	}
 
       /* workaround for buggy rate plugin (should be fixed in ALSA 1.0.11)
-         prefer our own resampler, since that allows users to choose the resampler,
-         even per file if desired */
+         prefer our own resampler */
 #if SND_LIB_VERSION >= 0x010009
       if ((err = snd_pcm_hw_params_set_rate_resample(alsa_handler, alsa_hwparams,
 						     0)) < 0)
@@ -554,32 +585,69 @@ static int init(int rate_hz, int channels, int format, int flags)
 	}
 #endif
 
-      if ((err = snd_pcm_hw_params_set_rate_near(alsa_handler, alsa_hwparams,
-						 &ao_data.samplerate, NULL)) < 0)
+      if ((err = snd_pcm_hw_params_set_rate_near(alsa_handler, alsa_hwparams, 
+						 &ao_data.samplerate, NULL)) < 0) 
         {
 	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetSamplerate2,
 		 snd_strerror(err));
 	  return 0;
         }
 
-      bytes_per_sample = af_fmt2bits(ao_data.format) / 8;
+      bytes_per_sample = snd_pcm_format_physical_width(alsa_format) / 8;
       bytes_per_sample *= ao_data.channels;
       ao_data.bps = ao_data.samplerate * bytes_per_sample;
 
-	if ((err = snd_pcm_hw_params_set_buffer_time_near(alsa_handler, alsa_hwparams,
+#ifdef BUFFERTIME
+      {
+	int alsa_buffer_time = 500000; /* original 60 */
+	int alsa_period_time;
+	alsa_period_time = alsa_buffer_time/4;
+	if ((err = snd_pcm_hw_params_set_buffer_time_near(alsa_handler, alsa_hwparams, 
 							  &alsa_buffer_time, NULL)) < 0)
 	  {
 	    mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetBufferTimeNear,
 		   snd_strerror(err));
 	    return 0;
-	  }
+	  } else
+	    alsa_buffer_time = err;
 
+	if ((err = snd_pcm_hw_params_set_period_time_near(alsa_handler, alsa_hwparams, 
+							  &alsa_period_time, NULL)) < 0)
+	  /* original: alsa_buffer_time/ao_data.bps */
+	  {
+	    mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetPeriodTime,
+		   snd_strerror(err));
+	    return 0;
+	  }
+	mp_msg(MSGT_AO,MSGL_INFO,MSGTR_AO_ALSA_BufferTimePeriodTime,
+	       alsa_buffer_time, err);
+      } 
+#endif//end SET_BUFFERTIME
+
+#ifdef SET_CHUNKSIZE
+      {
+	//set chunksize
+	if ((err = snd_pcm_hw_params_set_period_size_near(alsa_handler, alsa_hwparams, 
+							  &chunk_size, NULL)) < 0)
+	  {
+	    mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetPeriodSize,
+			    chunk_size, snd_strerror(err));
+	    return 0;
+	  }
+	else {
+	  mp_msg(MSGT_AO,MSGL_V,"alsa-init: chunksize set to %li\n", chunk_size);
+	}
 	if ((err = snd_pcm_hw_params_set_periods_near(alsa_handler, alsa_hwparams,
 						      &alsa_fragcount, NULL)) < 0) {
-	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetPeriods,
+	  mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_UnableToSetPeriods, 
 		 snd_strerror(err));
 	  return 0;
 	}
+	else {
+	  mp_msg(MSGT_AO,MSGL_V,"alsa-init: fragcount=%i\n", alsa_fragcount);
+	}
+      }
+#endif//end SET_CHUNKSIZE
 
       /* finally install hardware parameters */
       if ((err = snd_pcm_hw_params(alsa_handler, alsa_hwparams)) < 0)
@@ -758,11 +826,8 @@ static void reset(void)
 
 static int play(void* data, int len, int flags)
 {
-  int num_frames;
+  int num_frames = len / bytes_per_sample;
   snd_pcm_sframes_t res = 0;
-  if (!(flags & AOPLAY_FINAL_CHUNK))
-      len = len / ao_data.outburst * ao_data.outburst;
-  num_frames = len / bytes_per_sample;
 
   //mp_msg(MSGT_AO,MSGL_ERR,"alsa-play: frames=%i, len=%i\n",num_frames,len);
 
@@ -805,15 +870,15 @@ static int get_space(void)
 {
     snd_pcm_status_t *status;
     int ret;
-
+    
     snd_pcm_status_alloca(&status);
-
+    
     if ((ret = snd_pcm_status(alsa_handler, status)) < 0)
     {
 	mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_ALSA_CannotGetPcmStatus, snd_strerror(ret));
 	return 0;
     }
-
+    
     ret = snd_pcm_status_get_avail(status) * bytes_per_sample;
     if (ret > ao_data.buffersize)  // Buffer underrun?
 	ret = ao_data.buffersize;
@@ -825,10 +890,10 @@ static float get_delay(void)
 {
   if (alsa_handler) {
     snd_pcm_sframes_t delay;
-
+    
     if (snd_pcm_delay(alsa_handler, &delay) < 0)
       return 0;
-
+    
     if (delay < 0) {
       /* underrun - move the application pointer forward to catch up */
 #if SND_LIB_VERSION >= 0x000901 /* snd_pcm_forward() exists since 0.9.0rc8 */

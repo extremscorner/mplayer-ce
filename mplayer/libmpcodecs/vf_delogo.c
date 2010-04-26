@@ -26,8 +26,14 @@
 #include <inttypes.h>
 #include <math.h>
 
+#include "config.h"
 #include "mp_msg.h"
 #include "cpudetect.h"
+
+#if HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
@@ -54,11 +60,11 @@ static void delogo(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int
     int y, x;
     int interp, dist;
     uint8_t *xdst, *xsrc;
-
+    
     uint8_t *topleft, *botleft, *topright;
     int xclipl, xclipr, yclipt, yclipb;
     int logo_x1, logo_x2, logo_y1, logo_y2;
-
+    
     xclipl = MAX(-logo_x, 0);
     xclipr = MAX(logo_x+logo_w-width, 0);
     yclipt = MAX(-logo_y, 0);
@@ -77,7 +83,7 @@ static void delogo(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int
 
     dst += (logo_y1+1)*dstStride;
     src += (logo_y1+1)*srcStride;
-
+    
     for(y = logo_y1+1; y < logo_y2-1; y++)
     {
 	for (x = logo_x1+1, xdst = dst+logo_x1+1, xsrc = src+logo_x1+1; x < logo_x2-1; x++, xdst++, xsrc++) {
@@ -117,7 +123,7 @@ static void delogo(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int
     }
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
 		  int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt){
 
@@ -125,7 +131,7 @@ static int config(struct vf_instance *vf,
 }
 
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi){
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     if(mpi->imgfmt!=vf->priv->outfmt) return; // colorspace differ
     // ok, we can do pp in-place (or pp disabled):
@@ -143,7 +149,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     mpi->flags|=MP_IMGFLAG_DIRECT;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     mp_image_t *dmpi;
 
     if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
@@ -169,7 +175,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     return vf_next_put_image(vf,dmpi, pts);
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
     if(!vf->priv) return;
 
     free(vf->priv);
@@ -178,7 +184,7 @@ static void uninit(struct vf_instance *vf){
 
 //===========================================================================//
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt)
     {
     case IMGFMT_YV12:
@@ -189,19 +195,35 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     return 0;
 }
 
-static const unsigned int fmt_list[]={
+static unsigned int fmt_list[]={
     IMGFMT_YV12,
     IMGFMT_I420,
     IMGFMT_IYUV,
     0
 };
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
+    int res;
+    
     vf->config=config;
     vf->put_image=put_image;
     vf->get_image=get_image;
     vf->query_format=query_format;
     vf->uninit=uninit;
+    if (!vf->priv)
+    {
+        vf->priv=malloc(sizeof(struct vf_priv_s));
+	memset(vf->priv, 0, sizeof(struct vf_priv_s));
+    }
+
+    if (args) res = sscanf(args, "%d:%d:%d:%d:%d",
+			   &vf->priv->xoff, &vf->priv->yoff,
+			   &vf->priv->lw, &vf->priv->lh,
+			   &vf->priv->band);
+    if (args && (res != 5)) {
+	uninit(vf);
+	return 0; // bad syntax
+    }
 
     mp_msg(MSGT_VFILTER, MSGL_V, "delogo: %d x %d, %d x %d, band = %d\n",
 	   vf->priv->xoff, vf->priv->yoff,
@@ -214,7 +236,7 @@ static int vf_open(vf_instance_t *vf, char *args){
 	vf->priv->band = 4;
 	vf->priv->show = 1;
     }
-
+    
 
     vf->priv->lw += vf->priv->band*2;
     vf->priv->lh += vf->priv->band*2;
@@ -233,7 +255,7 @@ static int vf_open(vf_instance_t *vf, char *args){
 }
 
 #define ST_OFF(f) M_ST_OFF(struct vf_priv_s,f)
-static const m_option_t vf_opts_fields[] = {
+static m_option_t vf_opts_fields[] = {
     { "x", ST_OFF(xoff), CONF_TYPE_INT, 0, 0, 0, NULL },
     { "y", ST_OFF(yoff), CONF_TYPE_INT, 0, 0, 0, NULL },
     { "w", ST_OFF(lw), CONF_TYPE_INT, 0, 0, 0, NULL },
@@ -243,7 +265,7 @@ static const m_option_t vf_opts_fields[] = {
     { NULL, NULL, 0, 0, 0, 0, NULL }
 };
 
-static const m_struct_t vf_opts = {
+static m_struct_t vf_opts = {
     "delogo",
     sizeof(struct vf_priv_s),
     &vf_priv_dflt,
@@ -255,7 +277,7 @@ const vf_info_t vf_info_delogo = {
     "delogo",
     "Jindrich Makovicka, Alex Beregszaszi",
     "",
-    vf_open,
+    open,
     &vf_opts
 };
 

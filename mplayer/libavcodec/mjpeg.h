@@ -26,7 +26,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mjpeg.h
  * MJPEG encoder and decoder.
  */
 
@@ -34,7 +34,7 @@
 #define AVCODEC_MJPEG_H
 
 #include "avcodec.h"
-#include "put_bits.h"
+#include "bitstream.h"
 
 
 /* JPEG marker codes */

@@ -21,30 +21,27 @@
 /*
  * NOTE: This code is based on GPL code from the libmpeg2 project.  The
  * author, Michel Lespinasses, has given explicit permission to release
- * under LGPL as part of FFmpeg.
+ * under LGPL as part of ffmpeg.
  */
 
 /*
- * FFmpeg integration by Dieter Shirley
+ * FFMpeg integration by Dieter Shirley
  *
- * This file is a direct copy of the AltiVec IDCT module from the libmpeg2
- * project.  I've deleted all of the libmpeg2-specific code, renamed the
- * functions and reordered the function parameters.  The only change to the
- * IDCT function itself was to factor out the partial transposition, and to
- * perform a full transpose at the end of the function.
+ * This file is a direct copy of the altivec idct module from the libmpeg2
+ * project.  I've deleted all of the libmpeg2 specific code, renamed the functions and
+ * re-ordered the function parameters.  The only change to the IDCT function
+ * itself was to factor out the partial transposition, and to perform a full
+ * transpose at the end of the function.
  */
 
 
 #include <stdlib.h>                                      /* malloc(), free() */
 #include <string.h>
-#include "config.h"
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
 #include "libavcodec/dsputil.h"
+
+#include "gcc_fixes.h"
 #include "types_altivec.h"
 #include "dsputil_ppc.h"
-#include "dsputil_altivec.h"
 
 #define IDCT_HALF                                       \
     /* 1st stage */                                     \
@@ -159,10 +156,9 @@ static const vec_s16 constants[5] = {
     {19266, 26722, 25172, 22654,  19266,  22654, 25172, 26722}
 };
 
-void idct_put_altivec(uint8_t* dest, int stride, int16_t *blk)
+void idct_put_altivec(uint8_t* dest, int stride, vec_s16* block)
 {
 POWERPC_PERF_DECLARE(altivec_idct_put_num, 1);
-    vec_s16 *block = (vec_s16*)blk;
     vec_u8 tmp;
 
 #if CONFIG_POWERPC_PERF
@@ -187,10 +183,9 @@ POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
 POWERPC_PERF_STOP_COUNT(altivec_idct_put_num, 1);
 }
 
-void idct_add_altivec(uint8_t* dest, int stride, int16_t *blk)
+void idct_add_altivec(uint8_t* dest, int stride, vec_s16* block)
 {
 POWERPC_PERF_DECLARE(altivec_idct_add_num, 1);
-    vec_s16 *block = (vec_s16*)blk;
     vec_u8 tmp;
     vec_s16 tmp2, tmp3;
     vec_u8 perm0;

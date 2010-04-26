@@ -168,7 +168,7 @@ Bunkus, Moritz (Mosu) <moritz@bunkus.org>
 
 Christiansen, Dan Villiom Podlaski (danchr) <danchr@daimi.au.dk>
     * timer-darwin.c
-    * CoreAudio audio output driver for Mac OS X
+    * ao_macosx
     * build system cleanups for Darwin
 
 Clagg, Jeff (snacky) <snacky@ikaruga.co.uk>
@@ -384,9 +384,6 @@ Hug, Hampa <hhug@student.ethz.ch>
 Hůrka, Tomáš <tom@hukatronic.cz>
     * Darwin DVD support (mpdvdkit2)
     * various fixes
-
-Hysseo, Jehan <hysseo@zemarmot.net>
-    * af_add, af_switch, af_del, af_clr commands.
 
 Isani, Sidik <lksi@cfht.hawaii.edu>
     * get_delay() smoothing code (-autosync)
@@ -640,7 +637,7 @@ Pietrzak, Dariusz (Eyck) <eyck@ghost.anime.pl>
 
 Plourde, Nicolas <nicolas.plourde@gmail.com>
     * quartz video output driver for Mac OS X
-    * CoreVideo video output driver for Mac OS X
+    * macosx CoreVideo output driver for Mac OS X
     * Darwin VCD/SVCD support
 
 Poettering, Lennart <mzzcynlre@0pointer.de>
@@ -771,11 +768,8 @@ Syrjälä, Ville <syrjala@sci.fi>
 Szecsi, Gabor <deje@miki.hu>
     * directsound AO driver
 
-Tackaberry, Jason <tack@urandom.ca>
+Tackaberry, Jason <tack@sault.org>
     * second DVD ripping guide
-    * multichannel audio fixes
-    * support for 8 channel audio
-    * various minor features and bug fixes
 
 Tam, Howell (Pigeon) <pigeon@pigeond.net>
     * native libcaca driver (-vo caca)
@@ -800,7 +794,6 @@ Togni, Roberto (rxt) <r_togni@tiscali.it>
 
 Tresoldi, Paolo "PaulTT" (ptt) <mplayer@paultt.org>
     * mplayer -endpos option
-    * -name, -title and -use-filename-title options
     * Italian man page and console messages translations
     * Italian documentation translation
 

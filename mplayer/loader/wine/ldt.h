@@ -26,6 +26,10 @@ typedef struct
     int           limit_in_pages;  /* is the limit in pages or bytes? */
     enum seg_type type;            /* segment type */
 } ldt_entry;
+#ifdef __cplusplus
+extern "C" 
+{
+#endif
 void LDT_BytesToEntry( const unsigned long *buffer, ldt_entry *content );
 void LDT_EntryToBytes( unsigned long *buffer, const ldt_entry *content );
 int LDT_GetEntry( int entry, ldt_entry *content );
@@ -88,5 +92,8 @@ extern unsigned char ldt_flags_copy[LDT_SIZE];
    (!((sel) & 4) || (SELECTOR_TO_ENTRY(sel) < FIRST_LDT_ENTRY_TO_ALLOC))
 #define IS_SELECTOR_32BIT(sel) \
    (IS_SELECTOR_SYSTEM(sel) || (GET_SEL_FLAGS(sel) & LDT_FLAGS_32BIT))
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MPLAYER_LDT_H */

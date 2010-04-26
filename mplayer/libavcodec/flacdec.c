@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/flacdec.c
  * FLAC (Free Lossless Audio Codec) decoder
  * @author Alex Beregszaszi
  *
@@ -38,7 +38,7 @@
 #include "libavutil/crc.h"
 #include "avcodec.h"
 #include "internal.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "bytestream.h"
 #include "golomb.h"
 #include "flac.h"
@@ -125,10 +125,6 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
 
     /* initialize based on the demuxer-supplied streamdata header */
     ff_flac_parse_streaminfo(avctx, (FLACStreaminfo *)s, streaminfo);
-    if (s->bps > 16)
-        avctx->sample_fmt = SAMPLE_FMT_S32;
-    else
-        avctx->sample_fmt = SAMPLE_FMT_S16;
     allocate_buffers(s);
     s->got_streaminfo = 1;
 
@@ -190,6 +186,10 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
     avctx->bits_per_raw_sample = s->bps;
+    if (s->bps > 16)
+        avctx->sample_fmt = SAMPLE_FMT_S32;
+    else
+        avctx->sample_fmt = SAMPLE_FMT_S16;
 
     s->samples  = get_bits_long(&gb, 32) << 4;
     s->samples |= get_bits(&gb, 4);
@@ -358,7 +358,7 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 {
     int i, j;
     int coeff_prec, qlevel;
-    int coeffs[32];
+    int coeffs[pred_order];
     int32_t *decoded = s->decoded[channel];
 
     /* warm up samples */
@@ -448,7 +448,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
         s->curr_bps -= wasted;
     }
     if (s->curr_bps > 32) {
-        av_log_missing_feature(s->avctx, "decorrelated bit depth > 32", 0);
+        ff_log_missing_feature(s->avctx, "decorrelated bit depth > 32", 0);
         return -1;
     }
 
@@ -636,10 +636,8 @@ static int decode_frame(FLACContext *s)
 
 static int flac_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            AVPacket *avpkt)
+                            const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     FLACContext *s = avctx->priv_data;
     int i, j = 0, input_buf_size = 0, bytes_read = 0;
     int16_t *samples_16 = data;
@@ -799,16 +797,14 @@ static void flac_flush(AVCodecContext *avctx)
 
 AVCodec flac_decoder = {
     "flac",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_FLAC,
     sizeof(FLACContext),
     flac_decode_init,
     NULL,
     flac_decode_close,
     flac_decode_frame,
-    CODEC_CAP_DELAY | CODEC_CAP_SUBFRAMES, /* FIXME: add a FLAC parser so that
-                                              we will not need to use either
-                                              of these capabilities */
+    CODEC_CAP_DELAY,
     .flush= flac_flush,
     .long_name= NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };

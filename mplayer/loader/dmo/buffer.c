@@ -1,7 +1,7 @@
 #include "DMO_Filter.h"
 
-#include "loader/wine/winerror.h"
-#include "loader/wine/windef.h"
+#include "wine/winerror.h"
+#include "wine/windef.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -69,12 +69,12 @@ IMPLEMENT_IUNKNOWN(CMediaBuffer)
 CMediaBuffer* CMediaBufferCreate(unsigned long maxlen, void* mem,
 				 unsigned long len, int copy)
 {
-    CMediaBuffer* This = malloc(sizeof(CMediaBuffer));
+    CMediaBuffer* This = (CMediaBuffer*) malloc(sizeof(CMediaBuffer));
 
     if (!This)
         return NULL;
 
-    This->vt = malloc(sizeof(IMediaBuffer_vt));
+    This->vt = (IMediaBuffer_vt*) malloc(sizeof(IMediaBuffer_vt));
     if (!This->vt)
     {
         CMediaBuffer_Destroy(This);

@@ -1,5 +1,5 @@
 /**
- * @file
+ * @file libavcodec/vp5.c
  * VP5 compatible video decoder
  *
  * Copyright (C) 2006  Aurelien Jacobs <aurel@gnuage.org>
@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "get_bits.h"
+#include "bitstream.h"
 
 #include "vp56.h"
 #include "vp56data.h"
@@ -286,7 +286,7 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
 
 AVCodec vp5_decoder = {
     "vp5",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_VP5,
     sizeof(VP56Context),
     vp5_decode_init,

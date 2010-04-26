@@ -76,12 +76,9 @@ double ff_timefilter_update(TimeFilter *self, double system_time, double period)
 }
 
 #ifdef TEST
-#include "libavutil/lfg.h"
-#define LFG_MAX ((1LL << 32) - 1)
-
+#undef rand
 int main(void)
 {
-    AVLFG prng;
     double n0,n1;
 #define SAMPLES 1000
     double ideal[SAMPLES];
@@ -99,11 +96,10 @@ int main(void)
             double bestpar1=0.001;
             int better, i;
 
-            av_lfg_init(&prng, 123);
+            srandom(123);
             for(i=0; i<SAMPLES; i++){
                 ideal[i]  = 10 + i + n1*i/(1000);
-                samples[i] = ideal[i] + n0 * (av_lfg_get(&prng) - LFG_MAX / 2)
-                                           / (LFG_MAX * 10LL);
+                samples[i]= ideal[i] + n0*(rand()-RAND_MAX/2)/(RAND_MAX*10LL);
             }
 
             do{
@@ -139,7 +135,7 @@ int main(void)
             }
             ff_timefilter_destroy(tf);
 #else
-            printf(" [%f %f %9f]", bestpar0, bestpar1, best_error);
+            printf(" [%f %f %f]", bestpar0, bestpar1, best_error);
 #endif
         }
         printf("\n");

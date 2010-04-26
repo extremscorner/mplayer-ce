@@ -49,6 +49,7 @@ extern menu_info_t menu_info_console;
 extern menu_info_t menu_info_pref;
 extern menu_info_t menu_info_dvbsel;
 
+
 menu_info_t* menu_info_list[] = {
   &menu_info_pt,
   &menu_info_cmdlist,
@@ -58,7 +59,7 @@ menu_info_t* menu_info_list[] = {
   &menu_info_console,
 #ifdef CONFIG_DVBIN
   &menu_info_dvbsel,
-#endif
+#endif  
   &menu_info_pref,
   NULL
 };
@@ -93,8 +94,7 @@ static menu_cmd_bindings_t *cmd_bindings = NULL;
 static int cmd_bindings_num = 0;
 
 
-static menu_cmd_bindings_t *get_cmd_bindings(const char *name)
-{
+menu_cmd_bindings_t *get_cmd_bindings(const char *name) {
   int i;
   for (i = 0; i < cmd_bindings_num; ++i)
     if (!strcasecmp(cmd_bindings[i].name, name))
@@ -222,7 +222,7 @@ static int menu_parse_config(char* buffer) {
   }
 
 }
-
+      
 
 /// This will build the menu_defs list from the cfg file
 #define BUF_STEP 1024
@@ -548,10 +548,11 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
 
   // How many space do we need to draw this ?
   menu_text_size(txt,w,vspace,warp,&need_w,&need_h);
+
   // Find the first line
   if(align & MENU_TEXT_VCENTER)
     sy = ymin + ((h - need_h)/2);
-  else if(align & MENU_TEXT_BOT)
+  else if(align & MENU_TEXT_BOT) 
     sy = ymax - need_h - 1;
   else
     sy = y;
@@ -563,7 +564,7 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
   else if(align & MENU_TEXT_RIGHT)
     sx = xmax - need_w;
 #endif
-
+  
   xmid = xmin + (xmax - xmin) / 2;
   xrmin = xmin;
   // Clamp the bb to the mpi size
@@ -571,7 +572,7 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
   if(xmin < 0) xmin = 0;
   if(ymax > mpi->h) ymax = mpi->h;
   if(xmax > mpi->w) xmax = mpi->w;
-
+  
   // Jump some the beginnig text if needed
   while(sy < ymin && *txt) {
     int c=utf8_get_char((const char**)&txt);
@@ -595,20 +596,6 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
       continue;
     }
 
-
-    // Get the length and end of this line
-    char* txt1=txt;
-    char* last;
-    for(n = 0, ll = 0 ;   ; n++) {
-      int c=utf8_get_char((const char**)&txt1);
-      if(c == '\0' || c == '\n') break;
-      last=txt1;
-      if(warp && ll + vo_font->width[c]  > w)  break;
-      ll += vo_font->width[c]+vo_font->charspace;
-    }
-    line_end = last;
-
-/*
     // Get the length and end of this line
     for(n = 0, ll = 0 ; txt[n] != '\0' && txt[n] != '\n'  ; n++) {
       unsigned char c = txt[n];
@@ -616,7 +603,6 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
       ll += vo_font->width[c]+vo_font->charspace;
     }
     line_end = &txt[n];
-*/
     ll -= vo_font->charspace;
 
 
@@ -686,7 +672,7 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
     sy += vo_font->height + vspace;
   }
 }
-
+	  
 int menu_text_length(char* txt) {
   int l = 0;
   render_txt(txt);
@@ -718,7 +704,7 @@ void menu_text_size(char* txt,int max_width, int vspace, int warp, int* _w, int*
     i -= vo_font->charspace;
     if (i > w) w = i;
   }
-
+  
   *_w = w;
   *_h = (l-1) * (vo_font->height + vspace) + vo_font->height;
 }
@@ -738,9 +724,8 @@ int menu_text_num_lines(char* txt, int max_width) {
   }
   return l;
 }
-
-static char* menu_text_get_next_line(char* txt, int max_width)
-{
+  
+char* menu_text_get_next_line(char* txt, int max_width) {
   int i = 0;
   render_txt(txt);
   while (*txt) {
@@ -761,22 +746,22 @@ static char* menu_text_get_next_line(char* txt, int max_width)
 void menu_draw_box(mp_image_t* mpi,unsigned char grey,unsigned char alpha, int x, int y, int w, int h) {
   draw_alpha_f draw_alpha = get_draw_alpha(mpi->imgfmt);
   int g;
-
+  
   if(!draw_alpha) {
     mp_msg(MSGT_GLOBAL,MSGL_WARN,MSGTR_LIBMENU_UnsupportedOutformat);
     return;
   }
-
+  
   if(x > mpi->w || y > mpi->h) return;
-
+  
   if(x < 0) w += x, x = 0;
   if(x+w > mpi->w) w = mpi->w-x;
   if(y < 0) h += y, y = 0;
   if(y+h > mpi->h) h = mpi->h-y;
-
+    
   g = ((256-alpha)*grey)>>8;
   if(g < 1) g = 1;
-
+    
   {
     int stride = (w+7)&(~7); // round to 8
     char pic[stride*h],pic_alpha[stride*h];
@@ -786,5 +771,5 @@ void menu_draw_box(mp_image_t* mpi,unsigned char grey,unsigned char alpha, int x
                mpi->planes[0] + y * mpi->stride[0] + x * (mpi->bpp>>3),
                mpi->stride[0]);
   }
-
+  
 }

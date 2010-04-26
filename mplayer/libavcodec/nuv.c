@@ -128,9 +128,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                        AVPacket *avpkt) {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+                        const uint8_t *buf, int buf_size) {
     NuvContext *c = avctx->priv_data;
     AVFrame *picture = data;
     int orig_size = buf_size;
@@ -202,7 +200,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
                           FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    result = avctx->reget_buffer(avctx, &c->pic);
+    result = keyframe ? avctx->get_buffer(avctx, &c->pic) : avctx->reget_buffer(avctx, &c->pic);
     if (result < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
@@ -274,7 +272,7 @@ static av_cold int decode_end(AVCodecContext *avctx) {
 
 AVCodec nuv_decoder = {
     "nuv",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_NUV,
     sizeof(NuvContext),
     decode_init,

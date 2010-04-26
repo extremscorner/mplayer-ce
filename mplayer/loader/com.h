@@ -18,6 +18,10 @@
  * Internal functions and structures for COM emulation code.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef GUID_TYPE
 #define GUID_TYPE
 typedef struct
@@ -67,7 +71,7 @@ struct IClassFactory
     struct IClassFactory_vt* vt;
 };
 
-#ifdef WIN32_LOADER
+#ifdef WIN32_LOADER 
 long CoCreateInstance(GUID* rclsid, struct IUnknown* pUnkOuter,
  		      long dwClsContext, const GUID* riid, void** ppv);
 void* CoTaskMemAlloc(unsigned long cb);
@@ -78,5 +82,9 @@ long STDCALL CoCreateInstance(GUID* rclsid, struct IUnknown* pUnkOuter,
 void* STDCALL  CoTaskMemAlloc(unsigned long);
 void  STDCALL  CoTaskMemFree(void*);
 #endif
+
+#ifdef __cplusplus
+};
+#endif /* __cplusplus */
 
 #endif /* MPLAYER_COM_H */

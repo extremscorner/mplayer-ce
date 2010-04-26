@@ -21,12 +21,12 @@
  */
 
 /**
- * @file
+ * @file libavcodec/jpeglsdec.c
  * JPEG-LS decoder.
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "golomb.h"
 #include "mathops.h"
 #include "mjpeg.h"
@@ -365,7 +365,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
 
 AVCodec jpegls_decoder = {
     "jpegls",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_JPEGLS,
     sizeof(MJpegDecodeContext),
     ff_mjpeg_decode_init,

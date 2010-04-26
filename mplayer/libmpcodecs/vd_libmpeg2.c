@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -27,7 +9,7 @@
 
 //#undef MPEG12_POSTPROC
 
-static const vd_info_t info =
+static vd_info_t info = 
 {
 	"libmpeg2 MPEG 1/2 Video decoder",
 	"libmpeg2",
@@ -74,7 +56,7 @@ static int control(sh_video_t *sh,int cmd,void* arg,...){
 	    return CONTROL_TRUE;
 	return CONTROL_FALSE;
     }
-
+    
     return CONTROL_UNKNOWN;
 }
 
@@ -138,17 +120,19 @@ static void uninit(sh_video_t *sh){
     free(sh->context);
 }
 
-static void draw_slice (void * _sh, uint8_t * const * src, unsigned int y){
+static void draw_slice (void * _sh, uint8_t * const * src, unsigned int y){ 
     sh_video_t* sh = (sh_video_t*) _sh;
     vd_libmpeg2_ctx_t *context = sh->context;
     mpeg2dec_t* mpeg2dec = context->mpeg2dec;
     const mpeg2_info_t * info = mpeg2_info (mpeg2dec);
-    int stride[MP_MAX_PLANES] = {mpeg2dec->decoder.stride, mpeg2dec->decoder.uv_stride, mpeg2dec->decoder.uv_stride};
-    uint8_t *srcs[MP_MAX_PLANES] = {src[0], src[1], src[2]};
+    int stride[3];
 
 //  printf("draw_slice() y=%d  \n",y);
 
-    mpcodecs_draw_slice(sh, srcs,
+    stride[0]=mpeg2dec->decoder.stride;
+    stride[1]=stride[2]=mpeg2dec->decoder.uv_stride;
+
+    mpcodecs_draw_slice(sh, (uint8_t **)src,
 		stride, info->sequence->picture_width,
 		(y+16<=info->sequence->picture_height) ? 16 :
 		    info->sequence->picture_height-y,
@@ -165,9 +149,9 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
     // MPlayer registers its own draw_slice callback, prevent libmpeg2 from freeing the context
     mpeg2dec->decoder.convert=NULL;
     mpeg2dec->decoder.convert_id=NULL;
-
+    
     if(len<=0) return NULL; // skipped null frame
-
+    
     // append extra 'end of frame' code:
     ((char*)data+len)[0]=0;
     ((char*)data+len)[1]=0;
@@ -180,14 +164,14 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
     } else {
         mpeg2_buffer (mpeg2dec, data, (uint8_t *)data+len);
     }
-
+    
     while(1){
 	int state=mpeg2_parse (mpeg2dec);
 	int type, use_callback;
 	mp_image_t* mpi_new;
 	unsigned long pw, ph;
 	int imgfmt;
-
+	
 	switch(state){
 	case STATE_BUFFER:
 	    if (mpeg2dec->pending_length) {
@@ -227,7 +211,7 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
 	    break;
 	case STATE_PICTURE:
 	    type=info->current_picture->flags&PIC_MASK_CODING_TYPE;
-
+	    
 	    drop_frame = framedrop && (mpeg2dec->decoder.coding_type == B_TYPE);
             drop_frame |= framedrop>=2; // hard drop
             if (drop_frame) {
@@ -286,7 +270,7 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
 	        mpeg2dec->decoder.convert=NULL;
 	        mpeg2dec->decoder.convert_id=NULL;
 	    }
-
+	    
 	    break;
 	case STATE_SLICE:
 	case STATE_END:

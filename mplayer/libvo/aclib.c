@@ -23,11 +23,9 @@
 
 #include "config.h"
 #include <stddef.h>
-#include <stdint.h>
 #include <string.h>
 #include "cpudetect.h"
 #include "fastmemcpy.h"
-#include "libavutil/x86_cpu.h"
 #undef memcpy
 
 #define BLOCK_SIZE 4096
@@ -38,25 +36,25 @@
 
 //Note: we have MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
-//#if !HAVE_MMX || CONFIG_RUNTIME_CPUDETECT
+//#if !HAVE_MMX || defined (RUNTIME_CPUDETECT)
 //#define COMPILE_C
 //#endif
 
 #if ARCH_X86
 
-#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
+#if (HAVE_MMX && !HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX
 #endif
 
-#if (HAVE_MMX2 && !HAVE_SSE2) || CONFIG_RUNTIME_CPUDETECT
+#if (HAVE_MMX2 && !HAVE_SSE2) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX2
 #endif
 
-#if (HAVE_AMD3DNOW && !HAVE_MMX2) || CONFIG_RUNTIME_CPUDETECT
+#if (HAVE_AMD3DNOW && !HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_3DNOW
 #endif
 
-#if HAVE_SSE2 || CONFIG_RUNTIME_CPUDETECT
+#if HAVE_SSE2 || defined (RUNTIME_CPUDETECT)
 #define COMPILE_SSE
 #endif
 
@@ -160,7 +158,7 @@
 #undef fast_memcpy
 void * fast_memcpy(void * to, const void * from, size_t len)
 {
-#if CONFIG_RUNTIME_CPUDETECT
+#ifdef RUNTIME_CPUDETECT
 #if ARCH_X86
 	// ordered per speed fasterst first
 	if(gCpuCaps.hasSSE2)
@@ -187,14 +185,14 @@ void * fast_memcpy(void * to, const void * from, size_t len)
 		memcpy(to, from, len); // prior to mmx we use the standart memcpy
 #endif
 
-#endif //!CONFIG_RUNTIME_CPUDETECT
+#endif //!RUNTIME_CPUDETECT
 	return to;
 }
 
 #undef	mem2agpcpy
 void * mem2agpcpy(void * to, const void * from, size_t len)
 {
-#if CONFIG_RUNTIME_CPUDETECT
+#ifdef RUNTIME_CPUDETECT
 #if ARCH_X86
 	// ordered per speed fasterst first
 	if(gCpuCaps.hasSSE2)
@@ -221,6 +219,6 @@ void * mem2agpcpy(void * to, const void * from, size_t len)
 		memcpy(to, from, len); // prior to mmx we use the standart memcpy
 #endif
 
-#endif //!CONFIG_RUNTIME_CPUDETECT
+#endif //!RUNTIME_CPUDETECT
 	return to;
 }

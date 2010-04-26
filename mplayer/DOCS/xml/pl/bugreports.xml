@@ -72,7 +72,7 @@ dla przeciętnego użytkownika.
 
 <para>
 Najpierw należy pobrać źródła MPlayera z SVN.
-Więcej szczegółów na ten temat znajduje się w
+Więcej szczegółów na ten temat znajduje się w 
 <ulink url="http://www.mplayerhq.hu/design7/dload.html#svn">sekcji o Subversion strony pobierania</ulink>.
 </para>
 
@@ -134,7 +134,7 @@ To pomoże ci łatwo znaleźć łatkę, która jest winowajcą.
 Jeżeli znajdziesz łatkę, która jest źródłem problemu, to znaczy, że już
 prawie osiągnąłeś sukces; wyślij informację o niej na
 <ulink url="http://bugzilla.mplayerhq.hu/">MPlayer Bugzilla</ulink>
-lub zapisz się na listę
+lub zapisz się na listę 
 <ulink url="http://lists.mplayerhq.hu/mailman/listinfo/mplayer-users">MPlayer-users</ulink>
 i tam wyślij raport.
 Istnieje szansa, że autor łatki zasugeruje w jaki sposób rozwiązać problem.
@@ -233,7 +233,7 @@ Językiem obowiązującym na tej liście jest
 i <emphasis role="bold">nie wysyłać listów w HTML-u</emphasis> na żadną z naszych
 list. W przeciwnym wypadku zostaniesz zignorowany lub wyrzucony z listy. Jeżeli
 nie wiesz czym jest list w HTML-u albo dlaczego jest on zły, przeczytaj ten
-<ulink url="http://efn.no/html-bad.html">świetny dokument</ulink> (znów tylko
+<ulink url="http://expita.com/nomime.html">świetny dokument</ulink> (znów tylko
 po angielsku - przyp. tłum.). Wyjaśnia on wszystkie szczegóły i zawiera
 instrukcje wyłączania HTML-u. Zauważ również, że nie wysyłamy kopii listów do
 użytkowników, więc dobrym pomysłem jest zapisanie się na listę w celu uzyskania
@@ -485,7 +485,7 @@ info all-registers
 </screen>
 A następnie uruchomić następujące polecenie:
 <screen>
-gdb mplayer --core=core -batch --command=<replaceable>plik_z_poleceniami</replaceable> &gt; mplayer.bug
+gdb mplayer --core=core -batch 	--command=<replaceable>plik_z_poleceniami</replaceable> &gt; mplayer.bug
 </screen>
 </para>
 </sect3>

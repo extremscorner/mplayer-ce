@@ -20,7 +20,7 @@
  */
 
 /**
-* @file
+* @file libavcodec/libopenjpeg.c
 * JPEG 2000 decoder using libopenjpeg
 */
 
@@ -39,12 +39,12 @@ typedef struct {
 
 static int check_image_attributes(opj_image_t *image)
 {
-    return image->comps[0].dx == image->comps[1].dx &&
+    return(image->comps[0].dx == image->comps[1].dx &&
            image->comps[1].dx == image->comps[2].dx &&
            image->comps[0].dy == image->comps[1].dy &&
            image->comps[1].dy == image->comps[2].dy &&
            image->comps[0].prec == image->comps[1].prec &&
-           image->comps[1].prec == image->comps[2].prec;
+           image->comps[1].prec == image->comps[2].prec);
 }
 
 static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
@@ -58,10 +58,8 @@ static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
 
 static int libopenjpeg_decode_frame(AVCodecContext *avctx,
                                     void *data, int *data_size,
-                                    AVPacket *avpkt)
+                                    const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     LibOpenJPEGContext *ctx = avctx->priv_data;
     AVFrame *picture = &ctx->image, *output = data;
     opj_dinfo_t *dec;
@@ -78,13 +76,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     if((AV_RB32(buf) == 12) &&
        (AV_RB32(buf + 4) == JP2_SIG_TYPE) &&
        (AV_RB32(buf + 8) == JP2_SIG_VALUE)) {
-        dec = opj_create_decompress(CODEC_JP2);
+         dec = opj_create_decompress(CODEC_JP2);
     } else {
-        // If the AVPacket contains a jp2c box, then skip to
-        // the starting byte of the codestream.
-        if (AV_RB32(buf + 4) == AV_RB32("jp2c"))
-            buf += 8;
-        dec = opj_create_decompress(CODEC_J2K);
+         dec = opj_create_decompress(CODEC_J2K);
     }
 
     if(!dec) {
@@ -93,7 +87,6 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
     opj_set_event_mgr((opj_common_ptr)dec, NULL, NULL);
 
-    ctx->dec_params.cp_reduce = avctx->lowres;
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
@@ -105,15 +98,14 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
     // Decode the codestream
     image = opj_decode_with_info(dec, stream, NULL);
-    //image = opj_decode(dec, stream);
     opj_cio_close(stream);
     if(!image) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding codestream.\n");
         opj_destroy_decompress(dec);
         return -1;
     }
-    width  = image->comps[0].w << avctx->lowres;
-    height = image->comps[0].h << avctx->lowres;
+    width  = image->comps[0].w;
+    height = image->comps[0].h;
     if(avcodec_check_dimensions(avctx, width, height) < 0) {
         av_log(avctx, AV_LOG_ERROR, "%dx%d dimension invalid.\n", width, height);
         goto done;
@@ -132,7 +124,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
                  }
                  break;
         case 4:  has_alpha = 1;
-                 avctx->pix_fmt = PIX_FMT_RGBA;
+                 avctx->pix_fmt = PIX_FMT_RGB32;
                  break;
         default: av_log(avctx, AV_LOG_ERROR, "%d components unsupported.\n", image->numcomps);
                  goto done;
@@ -150,10 +142,10 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         adjust[x] = FFMAX(image->comps[x].prec - 8, 0);
     }
 
-    for(y = 0; y < avctx->height; y++) {
-        index = y*avctx->width;
+    for(y = 0; y < height; y++) {
+        index = y*width;
         img_ptr = picture->data[0] + y*picture->linesize[0];
-        for(x = 0; x < avctx->width; x++, index++) {
+        for(x = 0; x < width; x++, index++) {
             *img_ptr++ = image->comps[0].data[index] >> adjust[0];
             if(image->numcomps > 2 && check_image_attributes(image)) {
                 *img_ptr++ = image->comps[1].data[index] >> adjust[1];
@@ -186,13 +178,13 @@ static av_cold int libopenjpeg_decode_close(AVCodecContext *avctx)
 
 AVCodec libopenjpeg_decoder = {
     "libopenjpeg",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_JPEG2000,
     sizeof(LibOpenJPEGContext),
     libopenjpeg_decode_init,
     NULL,
     libopenjpeg_decode_close,
     libopenjpeg_decode_frame,
-    CODEC_CAP_DR1,
+    NULL,
     .long_name = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 decoder"),
 } ;

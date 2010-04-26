@@ -68,6 +68,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "FPS(Frames Per Second) не се специфицирани во хедерот или се невалидни, користете ја -fps опцијата.\n"
 #define MSGTR_TryForceAudioFmtStr "Проба да го присили драјверот на аудио кодекот %s ...\n"
 #define MSGTR_CantFindAudioCodec "Не може да го пронајде кодекот за аудио форматот 0x%X.\n"
+#define MSGTR_RTFMCodecs "Прочитај DOCS/HTML/en/codecs.html!\n"
 #define MSGTR_TryForceVideoFmtStr "Пробува да го присили драјверот на видео кодекот %s ...\n"
 #define MSGTR_CantFindVideoCodec "Не може да го пронајде кодекот кој одговара избран со -vo и видео форматот 0x%X.\n"
 #define MSGTR_VOincompCodec "Избраниот излезен видео уред не е соодветен со овој кодек.\n"
@@ -237,14 +238,14 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nПремногу аудио пакети во баферот: (%d во %d бајти).\n"
 #define MSGTR_TooManyVideoInBuffer "\nПремногу видео пакети во баферот: (%d во %d бајти).\n"
 #define MSGTR_MaybeNI "Можеби вие пуштате непреклопувачки стрим/датотека или кодекот не работи?\n" \
-                      "За AVI датотеки, обиди се да го присилиш непреклопувачкиот мод со опцијата -ni.\n"
+		      "За AVI датотеки, обиди се да го присилиш непреклопувачкиот мод со опцијата -ni.\n"
 #define MSGTR_SwitchToNi "\nОткриена е лошо преклопена AVI датотека - се префрла на модот -ni...\n"
 #define MSGTR_Detected_XXX_FileFormat "Пронајден е %s формат на датотеката.\n"
 #define MSGTR_DetectedAudiofile "Пронајдена е аудио датотека.\n"
 #define MSGTR_NotSystemStream "Не е формат на MPEG системски проток... (можеби е транспортен проток?)\n"
 #define MSGTR_InvalidMPEGES "Невалиден MPEG-ES проток??? Контактирајте со авторот, можеби е баг :(\n"
 #define MSGTR_FormatNotRecognized "============ Извинете, овој формат на датотеката не е пропознат/подржан =============\n"\
-                                  "=== Ако оваа датотека е AVI, ASF или MPEG проток, ве молиме контактирајте со авторот! ===\n"
+				  "=== Ако оваа датотека е AVI, ASF или MPEG проток, ве молиме контактирајте со авторот! ===\n"
 #define MSGTR_MissingVideoStream "Не е пронајден видео проток.\n"
 #define MSGTR_MissingAudioStream "Не е пронајден аудио проток -> нема звук.\n"
 #define MSGTR_MissingVideoStreamBug "Недостига видео проток!? Контактирајте со авторот, можеби е баг :(\n"
@@ -325,6 +326,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Кодекот не ги подеси sh->disp_w и sh->disp_h, се обидува да заобиколи.\n"
+#define MSGTR_VoConfigRequest "VDec: се бара vo конфигурирање - %d x %d (преферирано csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Не може да се пронајде соодветен простор за боја - се обидува повторно со -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Аспектот на Филмот е %.2f:1 - се преместува на точниот аспект на филмот.\n"
 #define MSGTR_MovieAspectUndefined "Аспектот на филмот не е дефиниран - не е применето преместување.\n"

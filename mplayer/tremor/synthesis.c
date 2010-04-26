@@ -12,7 +12,7 @@
  ********************************************************************
 
  function: single-block PCM synthesis
- last mod: $Id: synthesis.c 29306 2009-05-13 15:22:13Z bircoph $
+ last mod: $Id: synthesis.c 24824 2007-10-20 22:41:24Z diego $
 
  ********************************************************************/
 
@@ -32,7 +32,7 @@ int vorbis_synthesis(vorbis_block *vb,ogg_packet *op){
   codec_setup_info     *ci=(codec_setup_info *)vi->codec_setup;
   oggpack_buffer       *opb=&vb->opb;
   int                   type,mode,i;
-
+ 
   /* first things first.  Make sure decode is ready */
   _vorbis_block_ripcord(vb);
   oggpack_readinit(opb,op->packet,op->bytes);
@@ -46,7 +46,7 @@ int vorbis_synthesis(vorbis_block *vb,ogg_packet *op){
   /* read our mode and pre/post windowsize */
   mode=oggpack_read(opb,b->modebits);
   if(mode==-1)return(OV_EBADPACKET);
-
+  
   vb->mode=mode;
   vb->W=ci->mode_param[mode]->blockflag;
   if(vb->W){
@@ -57,7 +57,7 @@ int vorbis_synthesis(vorbis_block *vb,ogg_packet *op){
     vb->lW=0;
     vb->nW=0;
   }
-
+  
   /* more setup */
   vb->granulepos=op->granulepos;
   vb->sequence=op->packetno-3; /* first block is third packet */
@@ -79,7 +79,7 @@ long vorbis_packet_blocksize(vorbis_info *vi,ogg_packet *op){
   codec_setup_info     *ci=(codec_setup_info *)vi->codec_setup;
   oggpack_buffer       opb;
   int                  mode;
-
+ 
   oggpack_readinit(&opb,op->packet,op->bytes);
 
   /* Check the packet type */

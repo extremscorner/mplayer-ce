@@ -1,8 +1,6 @@
 #ifndef MPLAYER_QT_FV_H
 #define MPLAYER_QT_FV_H
 
-#include <stddef.h>
-
 typedef struct qt_fv_s {
     unsigned int id;
     char* name;

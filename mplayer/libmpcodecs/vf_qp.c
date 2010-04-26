@@ -24,6 +24,8 @@
 #include <math.h>
 #include <inttypes.h>
 
+#include "config.h"
+
 #include "mp_msg.h"
 #include "cpudetect.h"
 #include "img_format.h"
@@ -34,6 +36,10 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/eval.h"
 
+#if HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 
 struct vf_priv_s {
 	char eq[200];
@@ -42,7 +48,7 @@ struct vf_priv_s {
 	int qp_stride;
 };
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 	int h= (height+15)>>4;
@@ -50,7 +56,7 @@ static int config(struct vf_instance *vf,
 
 	vf->priv->qp_stride= (width+15)>>4;
         vf->priv->qp= av_malloc(vf->priv->qp_stride*h*sizeof(int8_t));
-
+        
         for(i=-129; i<128; i++){
             double const_values[]={
                 M_PI,
@@ -68,7 +74,7 @@ static int config(struct vf_instance *vf,
             };
 
             const char *error = NULL;
-            vf->priv->lut[i+129]= lrintf(ff_parse_and_eval_expr(vf->priv->eq, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error));
+            vf->priv->lut[i+129]= lrintf(ff_eval2(vf->priv->eq, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error));
             if (error)
                 mp_msg(MSGT_VFILTER, MSGL_ERR, "qp: Error evaluating \"%s\": %s\n", vf->priv->eq, error);
         }
@@ -76,7 +82,7 @@ static int config(struct vf_instance *vf,
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi){
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
     vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
@@ -93,7 +99,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     mpi->flags|=MP_IMGFLAG_DIRECT;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	mp_image_t *dmpi;
         int x,y;
 
@@ -105,7 +111,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	}
 
 	dmpi= vf->dmpi;
-
+        
 	if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
 		memcpy_pic(dmpi->planes[0], mpi->planes[0], mpi->w, mpi->h, dmpi->stride[0], mpi->stride[0]);
     		if(mpi->flags&MP_IMGFLAG_PLANAR){
@@ -114,13 +120,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 		}
 	}
         vf_clone_mpi_attributes(dmpi, mpi);
-
+        
         dmpi->qscale = vf->priv->qp;
         dmpi->qstride= vf->priv->qp_stride;
         if(mpi->qscale){
             for(y=0; y<((dmpi->h+15)>>4); y++){
                 for(x=0; x<vf->priv->qp_stride; x++){
-                    dmpi->qscale[x + dmpi->qstride*y]=
+                    dmpi->qscale[x + dmpi->qstride*y]= 
                         vf->priv->lut[ 129 + ((int8_t)mpi->qscale[x + mpi->qstride*y]) ];
                 }
             }
@@ -136,29 +142,29 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 	if(!vf->priv) return;
 
 	if(vf->priv->qp) av_free(vf->priv->qp);
 	vf->priv->qp= NULL;
-
+	
 	av_free(vf->priv);
 	vf->priv=NULL;
 }
 
 //===========================================================================//
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
     vf->config=config;
     vf->put_image=put_image;
     vf->get_image=get_image;
     vf->uninit=uninit;
     vf->priv=av_malloc(sizeof(struct vf_priv_s));
     memset(vf->priv, 0, sizeof(struct vf_priv_s));
-
+    
 //    avcodec_init();
 
     if (args) strncpy(vf->priv->eq, args, 199);
-
+	
     return 1;
 }
 
@@ -167,6 +173,6 @@ const vf_info_t vf_info_qp = {
     "qp",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };

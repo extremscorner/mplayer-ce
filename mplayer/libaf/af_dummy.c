@@ -31,14 +31,14 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   switch(cmd){
   case AF_CONTROL_REINIT:
     memcpy(af->data,(af_data_t*)arg,sizeof(af_data_t));
-    mp_msg(MSGT_AFILTER, MSGL_V, "[dummy] Was reinitialized: %iHz/%ich/%s\n",
+    af_msg(AF_MSG_VERBOSE,"[dummy] Was reinitialized: %iHz/%ich/%s\n",
 	af->data->rate,af->data->nch,af_fmt2str_short(af->data->format));
     return AF_OK;
   }
   return AF_UNKNOWN;
 }
 
-// Deallocate memory
+// Deallocate memory 
 static void uninit(struct af_instance_s* af)
 {
   if(af->data)
@@ -50,7 +50,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
 {
   // Do something necessary to get rid of annoying warning during compile
   if(!af)
-    mp_msg(MSGT_AFILTER, MSGL_ERR, "EEEK: Argument af == NULL in af_dummy.c play().");
+    af_msg(AF_MSG_ERROR,"EEEK: Argument af == NULL in af_dummy.c play().");
   return data;
 }
 

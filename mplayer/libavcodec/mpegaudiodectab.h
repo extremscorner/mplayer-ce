@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mpegaudiodectab.h
  * mpeg audio layer decoder tables.
  */
 

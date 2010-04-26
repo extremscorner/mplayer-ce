@@ -68,8 +68,8 @@ aa_context *c;
 aa_renderparams *p;
 static int fast =0;
 /* used for the sws */
-static uint8_t * image[MP_MAX_PLANES];
-static int image_stride[MP_MAX_PLANES];
+static uint8_t * image[3];
+static int image_stride[3];
 
 /* image infos */
 static int image_format;
@@ -96,9 +96,9 @@ static struct SwsContext *sws=NULL;
 int aaopt_osdcolor = AA_SPECIAL;
 int aaopt_subcolor = AA_SPECIAL;
 
-static void
+void
 resize(void){
-    /*
+    /* 
      * this function is called by aa lib if windows resizes
      * further during init, because here we have to calculate
      * a little bit
@@ -118,16 +118,18 @@ resize(void){
     screen_h = image_height * aa_scrheight(c) / aa_imgheight(c);
     screen_x = (aa_scrwidth(c) - screen_w) / 2;
     screen_y = (aa_scrheight(c) - screen_h) / 2;
-
+    
     if(sws) sws_freeContext(sws);
     sws = sws_getContextFromCmdLine(src_width,src_height,image_format,
 				   image_width,image_height,IMGFMT_Y8);
 
-    memset(image, 0, sizeof(image));
     image[0] = aa_image(c) + image_y * aa_imgwidth(c) + image_x;
+    image[1] = NULL;
+    image[2] = NULL;
 
-    memset(image_stride, 0, sizeof(image_stride));
     image_stride[0] = aa_imgwidth(c);
+    image_stride[1] = 0; 
+    image_stride[2] = 0;
 
     showosdmessage=0;
 
@@ -170,7 +172,7 @@ osdpercent(int duration, int deko, int min, int max, int val, const char * desc,
     int where;
     int i;
 
-
+    
     step=(float)aa_scrwidth(c) /(float)(max-min);
     where=(val-min)*step;
     osdmessage(duration,deko,"%s: %i%s",desc, val, unit);
@@ -184,7 +186,7 @@ osdpercent(int duration, int deko, int min, int max, int val, const char * desc,
     if (where!=(aa_scrwidth(c)-1) ) posbar[aa_scrwidth(c)-1]='|';
 
     posbar[aa_scrwidth(c)]='\0';
-
+ 
 }
 
 static void
@@ -195,7 +197,7 @@ printosdtext(void)
     memset(c->attrbuffer,0,osd_text_length);
     osd_text_length = 0;
   }
-    /*
+    /* 
      * places the mplayer status osd
      */
   if (vo_osd_text && vo_osd_text[0] != 0) {
@@ -213,7 +215,7 @@ printosdtext(void)
       memset(c->attrbuffer + len,0,osd_text_length - len);
     }
     osd_text_length = len;
-
+    
   }
 }
 
@@ -226,7 +228,7 @@ printosdprogbar(void){
 }
 static int
 config(uint32_t width, uint32_t height, uint32_t d_width,
-	    uint32_t d_height, uint32_t flags, char *title,
+	    uint32_t d_height, uint32_t flags, char *title, 
 	    uint32_t format) {
     /*
      * main init
@@ -278,7 +280,7 @@ config(uint32_t width, uint32_t height, uint32_t d_width,
     }
 
     /* say hello */
-    osdmessage(5, 1, "Welcome to ASCII ART MPlayer");
+    osdmessage(5, 1, "Welcome to ASCII ART MPlayer");  
 
     mp_msg(MSGT_VO,MSGL_V,"VO: [aa] screendriver:   %s\n", c->driver->name);
     mp_msg(MSGT_VO,MSGL_V,"VO: [aa] keyboarddriver: %s\n", c->kbddriver->name);
@@ -310,7 +312,7 @@ config(uint32_t width, uint32_t height, uint32_t d_width,
     return 0;
 }
 
-static int
+static int 
 query_format(uint32_t format) {
     /*
      * ...are we able to... ?
@@ -335,9 +337,9 @@ query_format(uint32_t format) {
     return 0;
 }
 
-static int
+static int 
 draw_frame(uint8_t *src[]) {
-  int stride[MP_MAX_PLANES] = {0};
+  int stride[3] = { 0 , 0 , 0 };
 
   switch(image_format) {
   case IMGFMT_BGR15:
@@ -353,9 +355,9 @@ draw_frame(uint8_t *src[]) {
     break;
   }
 
-  sws_scale(sws,src,stride,0,src_height,image,image_stride);
+  sws_scale_ordered(sws,src,stride,0,src_height,image,image_stride);
 
-   /* Now 'ASCIInate' the image */
+   /* Now 'ASCIInate' the image */ 
   if (fast)
     aa_fastrender(c, screen_x, screen_y, screen_w + screen_x, screen_h + screen_y );
   else
@@ -364,8 +366,8 @@ draw_frame(uint8_t *src[]) {
   return 0;
 }
 
-static int
-draw_slice(uint8_t *src[], int stride[],
+static int 
+draw_slice(uint8_t *src[], int stride[], 
 	    int w, int h, int x, int y) {
 
   int dx1 = screen_x + (x * screen_w / src_width);
@@ -373,19 +375,19 @@ draw_slice(uint8_t *src[], int stride[],
   int dx2 = screen_x + ((x+w) * screen_w / src_width);
   int dy2 = screen_y + ((y+h) * screen_h / src_height);
 
-  sws_scale(sws,src,stride,y,h,image,image_stride);
+  sws_scale_ordered(sws,src,stride,y,h,image,image_stride);
 
-  /* Now 'ASCIInate' the image */
+  /* Now 'ASCIInate' the image */ 
   if (fast)
     aa_fastrender(c, dx1, dy1, dx2, dy2 );
   else
     aa_render(c, p,dx1, dy1, dx2, dy2 );
 
-
+  
   return 0;
 }
 
-static void
+static void 
 flip_page(void) {
 
    /* do we have to put *our* (messages, progbar) osd to aa's txtbuf ? */
@@ -418,9 +420,9 @@ flip_page(void) {
     aa_flush(c);
 }
 
-static void
+static void 
 check_events(void) {
-    /*
+    /* 
      * any events?
      * called by show_image and mplayer
      */
@@ -497,7 +499,7 @@ check_events(void) {
     }
 }
 
-static void
+static void 
 uninit(void) {
     /*
      * THE END
@@ -670,15 +672,15 @@ static int preinit(const char *arg)
     FILE * fp;
     char fname[12];
 
-    if(arg)
+    if(arg) 
     {
         if (parse_suboptions(arg) != 0)
 	return ENOSYS;
     }
 
         /* initializing of aalib */
-
-    hidis=aa_getfirst(&aa_displayrecommended);
+    
+    hidis=aa_getfirst(&aa_displayrecommended); 
     if ( hidis==NULL ){
 	/* check /dev/vcsa<vt> */
 	/* check only, if no driver is explicit set */
@@ -702,7 +704,7 @@ static int preinit(const char *arg)
     if (c == NULL) {
 	mp_msg(MSGT_VO,MSGL_ERR,"Cannot initialize aalib\n");
 	return VO_ERROR;
-    }
+    }   
     if (!aa_autoinitkbd(c,0)) {
 	mp_msg(MSGT_VO,MSGL_ERR,"Cannot initialize keyboard\n");
 	aa_close(c);

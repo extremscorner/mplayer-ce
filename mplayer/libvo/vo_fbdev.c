@@ -46,7 +46,6 @@
 #endif
 #include "aspect.h"
 #include "mp_msg.h"
-#include "libavutil/common.h"
 
 static const vo_info_t info = {
     "Framebuffer Device",
@@ -186,7 +185,7 @@ static int parse_fbmode_cfg(char *cfgfile)
         return -1;
     }
 
-    if ((line = malloc(MAX_LINE_LEN + 1)) == NULL) {
+    if ((line = (char *) malloc(MAX_LINE_LEN + 1)) == NULL) {
         mp_msg(MSGT_VO, MSGL_V, "can't get memory for 'line': %s\n", strerror(errno));
         return -2;
     }
@@ -213,7 +212,7 @@ static int parse_fbmode_cfg(char *cfgfile)
             if (!validate_mode(mode))
                 goto err_out_not_valid;
         loop_enter:
-            if (!(fb_modes =
+            if (!(fb_modes = (fb_mode_t *)
                   realloc(fb_modes, sizeof(fb_mode_t) * (nr_modes + 1)))) {
                 mp_msg(MSGT_VO, MSGL_V, "can't realloc 'fb_modes' (nr_modes = %d):"
                        " %s\n", nr_modes, strerror(errno));
@@ -492,7 +491,7 @@ static fb_mode_t *find_best_mode(int xres, int yres, range_t *hfreq,
 
 static void set_bpp(struct fb_var_screeninfo *p, int bpp)
 {
-    p->bits_per_pixel = FFALIGN(bpp, 2);
+    p->bits_per_pixel = (bpp + 1) & ~1;
     p->red.msb_right  = p->green.msb_right = p->blue.msb_right = p->transp.msb_right = 0;
     p->transp.offset  = p->transp.length = 0;
     p->blue.offset    = 0;
@@ -554,6 +553,10 @@ char *fb_mode_name = NULL;
 
 static fb_mode_t *fb_mode = NULL;
 
+/* vt related variables */
+static FILE *vt_fp = NULL;
+static int vt_doit = 1;
+
 /* vo_fbdev related variables */
 static int fb_dev_fd;
 static int fb_tty_fd = -1;
@@ -572,7 +575,6 @@ static int fb_bpp_we_want;      // 32: 32  24: 24  16: 16  15: 15
 static int fb_line_len;
 static int fb_xres;
 static int fb_yres;
-static int fb_page;
 static void (*draw_alpha_p)(int w, int h, unsigned char *src,
                             unsigned char *srca, int stride,
                             unsigned char *dst, int dstride);
@@ -608,7 +610,8 @@ static struct fb_cmap *make_directcolor_cmap(struct fb_var_screeninfo *var)
     bcols = 1 << var->blue.length;
 
     /* Make our palette the length of the deepest color */
-    cols = FFMAX3(rcols, gcols, bcols);
+    cols = (rcols > gcols ? rcols : gcols);
+    cols = (cols  > bcols ? cols  : bcols);
 
     red = malloc(cols * sizeof(red[0]));
     if (!red) {
@@ -670,8 +673,6 @@ static int fb_preinit(int reset)
     if (fb_preinit_done)
         return fb_works;
 
-    fb_dev_fd = fb_tty_fd = -1;
-
     if (!fb_dev_name && !(fb_dev_name = getenv("FRAMEBUFFER")))
         fb_dev_name = strdup("/dev/fb0");
     mp_msg(MSGT_VO, MSGL_V, "using %s\n", fb_dev_name);
@@ -682,7 +683,7 @@ static int fb_preinit(int reset)
     }
     if (ioctl(fb_dev_fd, FBIOGET_VSCREENINFO, &fb_vinfo)) {
         mp_msg(MSGT_VO, MSGL_ERR, "Can't get VSCREENINFO: %s\n", strerror(errno));
-        goto err_out;
+        goto err_out_fd;
     }
     fb_orig_vinfo = fb_vinfo;
 
@@ -690,19 +691,18 @@ static int fb_preinit(int reset)
         mp_msg(MSGT_VO, MSGL_ERR, "notice: Can't open /dev/tty: %s\n", strerror(errno));
     }
 
-    fb_bpp = fb_vinfo.bits_per_pixel;
-    if (fb_bpp == 16)
-        fb_bpp = fb_vinfo.red.length  + fb_vinfo.green.length + fb_vinfo.blue.length;
+    fb_bpp = fb_vinfo.red.length  + fb_vinfo.green.length +
+             fb_vinfo.blue.length + fb_vinfo.transp.length;
 
     if (fb_bpp == 8 && !vo_dbpp) {
         mp_msg(MSGT_VO, MSGL_ERR, "8 bpp output is not supported.\n");
-        goto err_out;
+        goto err_out_tty_fd;
     }
 
     if (vo_dbpp) {
         if (vo_dbpp != 15 && vo_dbpp != 16 && vo_dbpp != 24 && vo_dbpp != 32) {
             mp_msg(MSGT_VO, MSGL_ERR, "can't switch to %d bpp\n", vo_dbpp);
-            goto err_out;
+            goto err_out_fd;
         }
         fb_bpp = vo_dbpp;
     }
@@ -713,13 +713,13 @@ static int fb_preinit(int reset)
     fb_preinit_done = 1;
     fb_works = 1;
     return 1;
-err_out:
-    if (fb_tty_fd != -1)
+err_out_tty_fd:
     close(fb_tty_fd);
     fb_tty_fd = -1;
-    if (fb_dev_fd != -1)
+err_out_fd:
     close(fb_dev_fd);
     fb_dev_fd = -1;
+err_out:
     fb_preinit_done = 1;
     fb_works = 0;
     return 0;
@@ -734,11 +734,9 @@ static void vt_set_textarea(int u, int l)
     int lrow = l / 16;
 
     mp_msg(MSGT_VO, MSGL_DBG2, "vt_set_textarea(%d,%d): %d,%d\n", u, l, urow, lrow);
-    if (fb_tty_fd >= 0) {
-        char modestring[100];
-        snprintf(modestring, sizeof(modestring), "\33[%d;%dr\33[%d;%dH", urow, lrow, lrow, 0);
-        write(fb_tty_fd, modestring, strlen(modestring));
-        fsync(fb_tty_fd);
+    if (vt_fp) {
+        fprintf(vt_fp, "\33[%d;%dr\33[%d;%dH", urow, lrow, lrow, 0);
+        fflush(vt_fp);
     }
 }
 
@@ -749,6 +747,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     struct fb_cmap *cmap;
     int vm   = flags & VOFLAG_MODESWITCHING;
     int zoom = flags & VOFLAG_SWSCALE;
+    int vt_fd;
 
     fs = flags & VOFLAG_FULLSCREEN;
 
@@ -764,7 +763,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
         mp_msg(MSGT_VO, MSGL_ERR, "-fbmode can only be used with -vm\n");
         return 1;
     }
-    if (vm && parse_fbmode_cfg(fb_mode_cfgfile) < 0)
+    if (vm && (parse_fbmode_cfg(fb_mode_cfgfile) < 0))
         return 1;
     if (d_width && (fs || vm)) {
         out_width  = d_width;
@@ -805,12 +804,6 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     set_bpp(&fb_vinfo, fb_bpp);
     fb_vinfo.xres_virtual = fb_vinfo.xres;
     fb_vinfo.yres_virtual = fb_vinfo.yres;
-    fb_page = 0;
-    if (vo_doublebuffering) {
-        fb_vinfo.yres_virtual <<= 1;
-        fb_vinfo.yoffset = 0;
-        fb_page = 1; // start writing into the page we don't display
-    }
 
     if (fb_tty_fd >= 0 && ioctl(fb_tty_fd, KDSETMODE, KD_GRAPHICS) < 0) {
         mp_msg(MSGT_VO, MSGL_V, "Can't set graphics mode: %s\n", strerror(errno));
@@ -818,9 +811,6 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
         fb_tty_fd = -1;
     }
 
-    if (ioctl(fb_dev_fd, FBIOPUT_VSCREENINFO, &fb_vinfo))
-        // Intel drivers fail if we request a transparency channel
-        fb_vinfo.transp.length = fb_vinfo.transp.offset = 0;
     if (ioctl(fb_dev_fd, FBIOPUT_VSCREENINFO, &fb_vinfo)) {
         mp_msg(MSGT_VO, MSGL_ERR, "Can't put VSCREENINFO: %s\n", strerror(errno));
         if (fb_tty_fd >= 0 && ioctl(fb_tty_fd, KDSETMODE, KD_TEXT) < 0) {
@@ -830,9 +820,8 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     }
 
     fb_pixel_size = fb_vinfo.bits_per_pixel / 8;
-    fb_bpp = fb_vinfo.bits_per_pixel;
-    if (fb_bpp == 16)
-        fb_bpp = fb_vinfo.red.length  + fb_vinfo.green.length + fb_vinfo.blue.length;
+    fb_bpp = fb_vinfo.red.length + fb_vinfo.green.length +
+        fb_vinfo.blue.length + fb_vinfo.transp.length;
     if (fb_bpp_we_want != fb_bpp)
         mp_msg(MSGT_VO, MSGL_WARN, "requested %d bpp, got %d bpp!!!\n",
                fb_bpp_we_want, fb_bpp);
@@ -910,12 +899,6 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 
     fb_line_len = fb_finfo.line_length;
     fb_size     = fb_finfo.smem_len;
-    if (vo_doublebuffering && fb_size < 2 * fb_yres * fb_line_len)
-    {
-        mp_msg(MSGT_VO, MSGL_WARN, "framebuffer too small for double-buffering, disabling\n");
-        vo_doublebuffering = 0;
-        fb_page = 0;
-    }
 
 #ifdef CONFIG_VIDIX
     if (vidix_name) {
@@ -966,8 +949,8 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
         int x_offset = 0, y_offset = 0;
         geometry(&x_offset, &y_offset, &out_width, &out_height, fb_xres, fb_yres);
 
-        frame_buffer = mmap(0, fb_size, PROT_READ | PROT_WRITE,
-                            MAP_SHARED, fb_dev_fd, 0);
+        frame_buffer = (uint8_t *) mmap(0, fb_size, PROT_READ | PROT_WRITE,
+                                        MAP_SHARED, fb_dev_fd, 0);
         if (frame_buffer == (uint8_t *) -1) {
             mp_msg(MSGT_VO, MSGL_ERR, "Can't mmap %s: %s\n", fb_dev_name, strerror(errno));
             return 1;
@@ -976,22 +959,26 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
         center = frame_buffer +
                  ( (out_width  - in_width)  / 2 ) * fb_pixel_size +
                  ( (out_height - in_height) / 2 ) * fb_line_len +
-                 x_offset * fb_pixel_size + y_offset * fb_line_len +
-                 fb_page * fb_yres * fb_line_len;
+                 x_offset * fb_pixel_size + y_offset * fb_line_len;
 
         mp_msg(MSGT_VO, MSGL_DBG2, "frame_buffer @ %p\n", frame_buffer);
         mp_msg(MSGT_VO, MSGL_DBG2, "center @ %p\n", center);
         mp_msg(MSGT_VO, MSGL_V, "pixel per line: %d\n", fb_line_len / fb_pixel_size);
 
-        if (fs || vm) {
-            int clear_size = fb_line_len * fb_yres;
-            if (vo_doublebuffering)
-                clear_size <<= 1;
-            memset(frame_buffer, 0, clear_size);
-        }
+        if (fs || vm)
+            memset(frame_buffer, '\0', fb_line_len * fb_yres);
+    }
+    if (vt_doit && (vt_fd = open("/dev/tty", O_WRONLY)) == -1) {
+        mp_msg(MSGT_VO, MSGL_ERR, "can't open /dev/tty: %s\n", strerror(errno));
+        vt_doit = 0;
+    }
+    if (vt_doit && !(vt_fp = fdopen(vt_fd, "w"))) {
+        mp_msg(MSGT_VO, MSGL_ERR, "can't fdopen /dev/tty: %s\n", strerror(errno));
+        vt_doit = 0;
     }
 
-    vt_set_textarea(last_row, fb_yres);
+    if (vt_doit)
+        vt_set_textarea(last_row, fb_yres);
 
     return 0;
 }
@@ -1030,11 +1017,17 @@ static int draw_frame(uint8_t *src[])
 
 static int draw_slice(uint8_t *src[], int stride[], int w, int h, int x, int y)
 {
-    uint8_t *d;
+    uint8_t *d, *s;
 
     d = center + fb_line_len * y + fb_pixel_size * x;
 
-    memcpy_pic2(d, src[0], w * fb_pixel_size, h, fb_line_len, stride[0], 1);
+    s = src[0];
+    while (h) {
+        fast_memcpy(d, s, w * fb_pixel_size);
+        d += fb_line_len;
+        s += stride[0];
+        h--;
+    }
 
     return 0;
 }
@@ -1045,20 +1038,6 @@ static void check_events(void)
 
 static void flip_page(void)
 {
-    int next_page = !fb_page;
-    int page_delta = next_page - fb_page;
-#ifdef CONFIG_VIDIX
-    if (vidix_name)
-        return;
-#endif
-    if (!vo_doublebuffering)
-        return;
-
-    fb_vinfo.yoffset = fb_page * fb_yres;
-    ioctl(fb_dev_fd, FBIOPAN_DISPLAY, &fb_vinfo);
-
-    center += page_delta * fb_yres * fb_line_len;
-    fb_page = next_page;
 }
 
 static void draw_osd(void)
@@ -1083,7 +1062,8 @@ static void uninit(void)
         if (ioctl(fb_tty_fd, KDSETMODE, KD_TEXT) < 0)
             mp_msg(MSGT_VO, MSGL_WARN, "Can't restore text mode: %s\n", strerror(errno));
     }
-    vt_set_textarea(0, fb_orig_vinfo.yres);
+    if (vt_doit)
+        vt_set_textarea(0, fb_orig_vinfo.yres);
     close(fb_tty_fd);
     close(fb_dev_fd);
     if (frame_buffer)
@@ -1115,19 +1095,19 @@ static int preinit(const char *vo_subdevice)
         }
     }
     if (!pre_init_err)
-        return pre_init_err = fb_preinit(0) ? 0 : -1;
+        return pre_init_err = (fb_preinit(0) ? 0 : -1);
     return -1;
 }
 
 static uint32_t get_image(mp_image_t *mpi)
 {
     if (!IMGFMT_IS_BGR(mpi->imgfmt) ||
-        IMGFMT_BGR_DEPTH(mpi->imgfmt) != fb_bpp ||
-        (mpi->type != MP_IMGTYPE_STATIC && mpi->type != MP_IMGTYPE_TEMP) ||
+        (IMGFMT_BGR_DEPTH(mpi->imgfmt) != fb_bpp) ||
+        ((mpi->type != MP_IMGTYPE_STATIC) && (mpi->type != MP_IMGTYPE_TEMP)) ||
         (mpi->flags & MP_IMGFLAG_PLANAR) ||
         (mpi->flags & MP_IMGFLAG_YUV) ||
-        mpi->width != in_width ||
-        mpi->height != in_height
+        (mpi->width != in_width) ||
+        (mpi->height != in_height)
        )
         return VO_FALSE;
 
@@ -1143,7 +1123,7 @@ static int control(uint32_t request, void *data, ...)
     case VOCTRL_GET_IMAGE:
         return get_image(data);
     case VOCTRL_QUERY_FORMAT:
-        return query_format(*(uint32_t*)data);
+        return query_format(*((uint32_t*)data));
     }
 
 #ifdef CONFIG_VIDIX

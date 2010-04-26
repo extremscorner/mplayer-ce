@@ -21,11 +21,10 @@
  */
 
 /**
- * @file
+ * @file libavcodec/ratecontrol.c
  * Rate control for video encoders.
  */
 
-#include "libavutil/intmath.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "ratecontrol.h"
@@ -107,7 +106,7 @@ int ff_rate_control_init(MpegEncContext *s)
     };
     emms_c();
 
-    rcc->rc_eq_eval = ff_parse_expr(s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp", const_names, func1, func1_names, NULL, NULL, &error);
+    rcc->rc_eq_eval = ff_parse(s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp", const_names, func1, func1_names, NULL, NULL, &error);
     if (!rcc->rc_eq_eval) {
         av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\": %s\n", s->avctx->rc_eq, error? error : "");
         return -1;
@@ -211,6 +210,7 @@ int ff_rate_control_init(MpegEncContext *s)
             for(i=0; i<60*30; i++){
                 double bits= s->avctx->rc_initial_cplx * (i/10000.0 + 1.0)*s->mb_num;
                 RateControlEntry rce;
+                double q;
 
                 if     (i%((s->gop_size+3)/4)==0) rce.pict_type= FF_I_TYPE;
                 else if(i%(s->max_b_frames+1))    rce.pict_type= FF_B_TYPE;
@@ -240,7 +240,9 @@ int ff_rate_control_init(MpegEncContext *s)
                 rcc->mv_bits_sum[rce.pict_type] += rce.mv_bits;
                 rcc->frame_count[rce.pict_type] ++;
 
-                get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
+                bits= rce.i_tex_bits + rce.p_tex_bits;
+
+                q= get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
                 rcc->pass1_wanted_bits+= s->bit_rate/(1/av_q2d(s->avctx->time_base)); //FIXME misbehaves a little for variable fps
             }
         }
@@ -255,7 +257,7 @@ void ff_rate_control_uninit(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     emms_c();
 
-    ff_free_expr(rcc->rc_eq_eval);
+    ff_eval_free(rcc->rc_eq_eval);
     av_freep(&rcc->entry);
 
 #if CONFIG_LIBXVID
@@ -339,7 +341,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         0
     };
 
-    bits= ff_eval_expr(rcc->rc_eq_eval, const_values, rce);
+    bits= ff_parse_eval(rcc->rc_eq_eval, const_values, rce);
     if (isnan(bits)) {
         av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->avctx->rc_eq);
         return -1;
@@ -433,6 +435,7 @@ static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pic
 static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, int frame_num){
     RateControlContext *rcc= &s->rc_context;
     int qmin, qmax;
+    double bits;
     const int pict_type= rce->new_pict_type;
     const double buffer_size= s->avctx->rc_buffer_size;
     const double fps= 1/av_q2d(s->avctx->time_base);
@@ -445,6 +448,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
     if(s->avctx->rc_qmod_freq && frame_num%s->avctx->rc_qmod_freq==0 && pict_type==FF_P_TYPE)
         q*= s->avctx->rc_qmod_amp;
 
+    bits= qp2bits(rce, q);
 //printf("q:%f\n", q);
     /* buffer overflow/underflow protection */
     if(buffer_size){

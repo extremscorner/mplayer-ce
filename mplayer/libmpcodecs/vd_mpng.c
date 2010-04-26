@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -30,7 +12,7 @@
 
 #include "vd_internal.h"
 
-static const vd_info_t info = {
+static vd_info_t info = {
 	"PNG Images decoder",
 	"mpng",
 	"A'rpi",
@@ -97,7 +79,7 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
     unsigned char *p;
 
     if(len<=0) return NULL; // skipped frame
-
+    
  png=png_create_read_struct( PNG_LIBPNG_VER_STRING,NULL,NULL,NULL );
  info=png_create_info_struct( png );
  endinfo=png_create_info_struct( png );
@@ -149,20 +131,20 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
   }
 #endif
 
-    mpi=mpcodecs_get_image(sh, MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
+    mpi=mpcodecs_get_image(sh, MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE, 
 	png_width,png_height);
     if(!mpi) return NULL;
 
 // Let's DECODE!
  row_p=malloc( sizeof( png_bytep ) * png_height );
-//png_get_rowbytes( png,info )
+//png_get_rowbytes( png,info ) 
  for ( i=0; i < png_height; i++ ) row_p[i]=mpi->planes[0] + mpi->stride[0]*i;
  png_read_image( png,row_p );
  free( row_p );
 
  if (out_fmt==IMGFMT_BGR8) {
      png_get_PLTE( png,info,&pal,&cols );
-     mpi->planes[1] = realloc(mpi->planes[1], 4*cols);
+     mpi->planes[1] = (char*)realloc(mpi->planes[1], 4*cols);
      p = mpi->planes[1];
      for (i = 0; i < cols; i++) {
 	 *p++ = pal[i].blue;
@@ -171,7 +153,7 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
 	 *p++ = 0;
      }
  }
-
+ 
  png_read_end( png,endinfo );
  png_destroy_read_struct( &png,&info,&endinfo );
 

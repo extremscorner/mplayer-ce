@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_TVI_DSHOW_H
 #define MPLAYER_TVI_DSHOW_H
 
@@ -47,7 +29,7 @@ typedef struct IReferenceClock *LPREFERENCECLOCK;
 typedef struct IMediaSample *LPMEDIASAMPLE;
 typedef struct IVideoWindow *LPVIDEOWINDOW;
 
-typedef struct
+typedef struct 
 {
     long cBuffers;
     long cbBuffer;
@@ -452,8 +434,6 @@ DECLARE_INTERFACE(IAMCrossbar)
     STDMETHOD(get_CrossbarPinInfo) (THIS_ BOOL, long, long *, long *);
 };
 
-#ifndef __IPropertyBag_INTERFACE_DEFINED__
-#define __IPropertyBag_INTERFACE_DEFINED__
 #undef INTERFACE
 #define INTERFACE IPropertyBag
 DECLARE_INTERFACE(IPropertyBag)
@@ -464,7 +444,6 @@ DECLARE_INTERFACE(IPropertyBag)
     STDMETHOD(Read) (THIS_ LPCOLESTR, LPVARIANT, LPERRORLOG);
     STDMETHOD(Write) (THIS_ LPCOLESTR, LPVARIANT);
 };
-#endif
 
 #undef INTERFACE
 #define INTERFACE IAMStreamConfig
@@ -634,7 +613,7 @@ DECLARE_INTERFACE(IMediaSample)
     STDMETHOD(SetMediaTime )(THIS_ long long* ,long long* );
 };
 
-
+    
 #undef INTERFACE
 #define INTERFACE IAMBufferNegotiation
 DECLARE_INTERFACE(IAMBufferNegotiation)
@@ -699,19 +678,6 @@ DECLARE_INTERFACE(IVideoWindow)
     STDMETHOD(IsCursorHidden) (THIS_ long *);
 };
 
-#ifndef DECLARE_ENUMERATOR_
-#define DECLARE_ENUMERATOR_(I,T) \
-    DECLARE_INTERFACE_(I,IUnknown) \
-    { \
-        STDMETHOD(QueryInterface)(I*, REFIID,PVOID*); \
-        STDMETHOD_(ULONG,AddRef)(I*); \
-        STDMETHOD_(ULONG,Release)(I*); \
-        STDMETHOD(Next)(I*, ULONG,T*,ULONG*); \
-        STDMETHOD(Skip)(I*, ULONG); \
-        STDMETHOD(Reset)(I*); \
-        STDMETHOD(Clone)(I*, I**); \
-    }
-#endif
 DECLARE_ENUMERATOR_(IEnumFilters, LPBASEFILTER);
 DECLARE_ENUMERATOR_(IEnumPins, LPPIN);
 DECLARE_ENUMERATOR_(IEnumMediaTypes, AM_MEDIA_TYPE *);

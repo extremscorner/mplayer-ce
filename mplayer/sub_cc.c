@@ -2,31 +2,16 @@
  * decoder for Closed Captions
  *
  * This decoder relies on MPlayer's OSD to display subtitles.
- * Be warned that decoding is somewhat preliminary, though it basically works.
- *
- * Most notably, only the text information is decoded as of now, discarding
- * color, background and position info (see source below).
+ * Be warned that the decoding is somewhat preliminary, though it basically works.
+ * 
+ * Most notably, only the text information is decoded as of now, discarding color,
+ * background and position info (see source below).
+ * 
+ * by Matteo Giani
  *
  * uses source from the xine closed captions decoder
- *
- * Copyright (C) 2002 Matteo Giani
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,32 +90,31 @@ static void scroll_buffer(subtitle* buf)
 		buf->lines--;
 	}
 }
-
-
+ 
+ 
 void subcc_init(void)
 {
 	int i;
-	printf("subcc_init(): initing...\n");
+	//printf("subcc_init(): initing...\n");
 	build_char_table();
 	for(i=0;i<SUB_MAX_TEXT;i++) {buf1.text[i]=buf2.text[i]=NULL;}
 	buf1.lines=buf2.lines=0;
 	fb=&buf1;
 	bb=&buf2;
-
+	
 	initialized=1;
 }
 
 static void append_char(char c)
 {
-	printf("append_char\n");
 	if(!bb->lines) {bb->lines++; cursor_pos=0;}
-	if(bb->text[bb->lines - 1]==NULL)
+	if(bb->text[bb->lines - 1]==NULL) 
 	{
 		bb->text[bb->lines - 1]=malloc(CC_MAX_LINE_LENGTH);
 		memset(bb->text[bb->lines - 1],0,CC_MAX_LINE_LENGTH);
 		cursor_pos=0;
 	}
-
+	
 	if(c=='\n')
 	{
 		if(cursor_pos>0 && bb->lines < SUB_MAX_TEXT)
@@ -142,11 +126,11 @@ static void append_char(char c)
 			}
 		}
 	}
-	else
+	else 
 	{
 		if(cursor_pos==CC_MAX_LINE_LENGTH-1)
 		{
-			//fprintf(stderr,"CC: append_char() reached CC_MAX_LINE_LENGTH!\n");
+			fprintf(stderr,"CC: append_char() reached CC_MAX_LINE_LENGTH!\n");
 			return;
 		}
 		bb->text[bb->lines - 1][cursor_pos++]=c;
@@ -173,8 +157,8 @@ static void display_buffer(subtitle * buf)
 
 static void cc_decode_EIA608(unsigned short int data)
 {
-
-  static unsigned short int lastcode=0x0000;
+  
+  static unsigned short int lastcode=0x0000;	
   unsigned char c1 = data & 0x7f;
   unsigned char c2 = (data >> 8) & 0x7f;
 
@@ -196,13 +180,13 @@ static void cc_decode_EIA608(unsigned short int data)
 			switch(c1)
 			{
 				case 0x10:	break; // ext attribute
-				case 0x11:
-					if((c2 & 0x30)==0x30)
+				case 0x11: 
+					if((c2 & 0x30)==0x30) 
 					{
 						//printf("[debug]:Special char (ignored)\n");
 						/*cc_decode_special_char()*/;
 					}
-					else if (c2 & 0x20)
+					else if (c2 & 0x20) 
 					{
 						//printf("[debug]: midrow_attr (ignored)\n");
 						/*cc_decode_midrow_attr()*/;
@@ -239,8 +223,8 @@ static void cc_decode_EIA608(unsigned short int data)
 					}
 			}
 	  }
-  }
-  lastcode=data;
+  } 
+  lastcode=data;  
 }
 
 static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
@@ -263,13 +247,13 @@ static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
    *   0x00 is padding, followed by 2 more 0x00.
    *
    *   0x01 always seems to appear at the beginning, always seems to
-   *        be followed by 0xf8, 8-bit number.
+   *        be followed by 0xf8, 8-bit number. 
    *        The lower 7 bits of this 8-bit number seem to denote the
    *        number of code triplets that follow.
-   *        The most significant bit denotes whether the Line 21 field 1
+   *        The most significant bit denotes whether the Line 21 field 1 
    *        captioning information is at odd or even triplet offsets from this
    *        beginning triplet. 1 denotes odd offsets, 0 denotes even offsets.
-   *
+   *      
    *        Most captions are encoded with odd offsets, so this is what we
    *        will assume.
    *
@@ -288,22 +272,22 @@ static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
 
     if (inputlength - curbytes < 2) {
 #ifdef LOG_DEBUG
-      //fprintf(stderr, "Not enough data for 2-byte CC encoding\n");
+      fprintf(stderr, "Not enough data for 2-byte CC encoding\n");
 #endif
       break;
     }
-
+    
     data1 = *(current+1);
     data2 = *(current + 2);
     current++; curbytes++;
-
+    
     switch (cc_code) {
     case 0xfe:
       /* expect 2 byte encoding (perhaps CC3, CC4?) */
       /* ignore for time being */
       skip = 2;
       break;
-
+      
     case 0xff:
       /* expect EIA-608 CC1/CC2 encoding */
       // FIXME check parity!
@@ -312,12 +296,12 @@ static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
       cc_decode_EIA608(data1 | (data2 << 8));
       skip = 5;
       break;
-
+      
     case 0x00:
       /* This seems to be just padding */
       skip = 2;
       break;
-
+      
     case 0x01:
       odd_offset = data2 & 0x80;
       if (odd_offset)
@@ -325,10 +309,10 @@ static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
       else
 	skip = 5;
       break;
-
+      
     default:
 //#ifdef LOG_DEBUG
-      //fprintf(stderr, "Unknown CC encoding: %x\n", cc_code);
+      fprintf(stderr, "Unknown CC encoding: %x\n", cc_code);
 //#endif
       skip = 2;
       break;
@@ -343,6 +327,7 @@ void subcc_process_data(unsigned char *inputdata,unsigned int len)
 {
 	if(!subcc_enabled) return;
 	if(!initialized) subcc_init();
-
+	
 	subcc_decode(inputdata, len);
 }
+

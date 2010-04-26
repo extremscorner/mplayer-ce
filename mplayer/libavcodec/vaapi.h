@@ -72,7 +72,7 @@ struct vaapi_context {
      * - encoding: unused
      * - decoding: Set by libavcodec
      */
-    uint32_t pic_param_buf_id;
+    VABufferID pic_param_buf_id;
 
     /**
      * VAIQMatrixBuffer ID
@@ -80,7 +80,7 @@ struct vaapi_context {
      * - encoding: unused
      * - decoding: Set by libavcodec
      */
-    uint32_t iq_matrix_buf_id;
+    VABufferID iq_matrix_buf_id;
 
     /**
      * VABitPlaneBuffer ID (for VC-1 decoding)
@@ -88,7 +88,7 @@ struct vaapi_context {
      * - encoding: unused
      * - decoding: Set by libavcodec
      */
-    uint32_t bitplane_buf_id;
+    VABufferID bitplane_buf_id;
 
     /**
      * Slice parameter/data buffer IDs
@@ -96,7 +96,7 @@ struct vaapi_context {
      * - encoding: unused
      * - decoding: Set by libavcodec
      */
-    uint32_t *slice_buf_ids;
+    VABufferID *slice_buf_ids;
 
     /**
      * Number of effective slice buffer IDs to send to the HW
@@ -113,6 +113,71 @@ struct vaapi_context {
      * - decoding: Set by libavcodec
      */
     unsigned int slice_buf_ids_alloc;
+
+    /**
+     * Picture parameter buffer
+     *
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    union {
+        VAPictureParameterBufferMPEG2 mpeg2;
+        VAPictureParameterBufferMPEG4 mpeg4;
+        VAPictureParameterBufferH264  h264;
+        VAPictureParameterBufferVC1   vc1;
+    } pic_param;
+
+    /**
+     * Size of a VAPictureParameterBuffer element
+     *
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    unsigned int pic_param_size;
+
+    /**
+     * Inverse quantization matrix buffer
+     *
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    union {
+        VAIQMatrixBufferMPEG2         mpeg2;
+        VAIQMatrixBufferMPEG4         mpeg4;
+        VAIQMatrixBufferH264          h264;
+    } iq_matrix;
+
+    /**
+     * Size of a VAIQMatrixBuffer element
+     *
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    unsigned int iq_matrix_size;
+
+    /**
+     * Flag: is quantization matrix present?
+     *
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    uint8_t iq_matrix_present;
+
+    /**
+     * VC-1 bitplane buffer
+     *
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    uint8_t *bitplane_buffer;
+
+    /**
+     * Size of VC-1 bitplane buffer
+     *
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    unsigned int bitplane_buffer_size;
 
     /**
      * Pointer to VASliceParameterBuffers

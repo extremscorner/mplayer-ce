@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> 
 
 #include "af.h"
 
@@ -40,7 +40,7 @@ typedef struct af_center_s
 // Initialization and runtime control
 static int control(struct af_instance_s* af, int cmd, void* arg)
 {
-  af_center_t* s   = af->setup;
+  af_center_t* s   = af->setup; 
 
   switch(cmd){
   case AF_CONTROL_REINIT:{
@@ -62,7 +62,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   case AF_CONTROL_CENTER_CH | AF_CONTROL_SET: // Requires reinit
     // Sanity check
     if((*(int*)arg >= AF_NCH) || (*(int*)arg < 0)){
-      mp_msg(MSGT_AFILTER, MSGL_ERR, "[sub] Center channel number must be between "
+      af_msg(AF_MSG_ERROR,"[sub] Center channel number must be between "
 	     " 0 and %i current value is %i\n", AF_NCH-1, *(int*)arg);
       return AF_ERROR;
     }
@@ -75,7 +75,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   return AF_UNKNOWN;
 }
 
-// Deallocate memory
+// Deallocate memory 
 static void uninit(struct af_instance_s* af)
 {
   if(af->data)
@@ -90,7 +90,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
   af_data_t*    c   = data;	 // Current working data
   af_center_t*  s   = af->setup; // Setup for this instance
   float*   	a   = c->audio;	 // Audio data
-  int		len = c->len/4;	 // Number of samples in current audio block
+  int		len = c->len/4;	 // Number of samples in current audio block 
   int		nch = c->nch;	 // Number of channels
   int		ch  = s->ch;	 // Channel in which to insert the center audio
   register int  i;

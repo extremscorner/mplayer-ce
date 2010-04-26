@@ -21,12 +21,11 @@
  */
 
 /**
- * @file
+ * @file libavutil/intfloat_readwrite.c
  * portable IEEE float/double read/write functions
  */
 
-#include <stdint.h>
-#include <math.h>
+#include "common.h"
 #include "intfloat_readwrite.h"
 
 double av_int2dbl(int64_t v){

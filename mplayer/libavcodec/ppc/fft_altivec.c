@@ -20,11 +20,12 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "libavcodec/fft.h"
+#include "libavcodec/dsputil.h"
+
+#include "gcc_fixes.h"
+
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
-#include "dsputil_altivec.h"
-
 /**
  * Do a complex FFT with the parameters defined in ff_fft_init(). The
  * input data must be permuted before with s->revtab table. No
@@ -36,7 +37,7 @@
  * that successive MUL + ADD/SUB have been merged into
  * fused multiply-add ('vec_madd' in altivec)
  */
-static void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
+void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
 POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
     register const vector float vczero = (const vector float)vec_splat_u32(0.);
@@ -134,10 +135,4 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
     } while (nblocks != 0);
 
 POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
-}
-
-av_cold void ff_fft_init_altivec(FFTContext *s)
-{
-    s->fft_calc = ff_fft_calc_altivec;
-    s->split_radix = 0;
 }

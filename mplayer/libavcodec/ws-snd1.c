@@ -23,7 +23,7 @@
 #include "avcodec.h"
 
 /**
- * @file
+ * @file libavcodec/ws-snd1.c
  * Westwood SNDx codecs.
  *
  * Reference documents about VQA format and its audio codecs
@@ -48,10 +48,8 @@ static av_cold int ws_snd_decode_init(AVCodecContext * avctx)
 
 static int ws_snd_decode_frame(AVCodecContext *avctx,
                 void *data, int *data_size,
-                AVPacket *avpkt)
+                const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
 //    WSSNDContext *c = avctx->priv_data;
 
     int in_size, out_size;
@@ -147,7 +145,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
 
 AVCodec ws_snd1_decoder = {
     "ws_snd1",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_WESTWOOD_SND1,
     0,
     ws_snd_decode_init,

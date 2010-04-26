@@ -68,6 +68,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "FPS niet gespecificeerd (of foutief) in de header! Gebruik de optie -fps!\n"
 #define MSGTR_TryForceAudioFmtStr "Probeer audio codec driver familie %s te forceren...\n"
 #define MSGTR_CantFindAudioCodec "Kan codec voor audio format 0x%X niet vinden!\n"
+#define MSGTR_RTFMCodecs "Lees DOCS/HTML/en/codecs.html voor meer informatie!\n"
 #define MSGTR_TryForceVideoFmtStr "Probeer video codec driver familie %s te forceren...\n"
 #define MSGTR_CantFindVideoCodec "Kan codec voor video format 0x%X niet vinden!\n"
 #define MSGTR_VOincompCodec "Sorry, geselecteerde video_out device is incompatibel met deze codec.\n"
@@ -443,14 +444,14 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nDEMUXER: Te veel (%d in %d bytes) audio packetten in de buffer!\n"
 #define MSGTR_TooManyVideoInBuffer "\nDEMUXER: Te veel (%d in %d bytes) video packetten in de buffer!\n"
 #define MSGTR_MaybeNI "(misschien speel je een non-interleaved stream/bestand of werkte de codec niet)\n" \
-                      "Voor .AVI bestanden probeer je best non-interleaved mode met de optie -ni\n"
+		      "Voor .AVI bestanden probeer je best non-interleaved mode met de optie -ni\n"
 #define MSGTR_SwitchToNi "\nSlecht geinterleaved .AVI bestand gedetecteerd - schakel om naar -ni mode!\n"
 #define MSGTR_Detected_XXX_FileFormat "%s bestandsformaat gedetecteerd!\n"
 #define MSGTR_DetectedAudiofile "Audio bestandsformaat gedetecteerd!\n"
 #define MSGTR_NotSystemStream "Geen MPEG System Stream formaat... (misschien Transport Stream?)\n"
 #define MSGTR_InvalidMPEGES "Invalid MPEG-ES stream??? Contacteer de auteur, het zou een bug kunnen zijn :(\n"
 #define MSGTR_FormatNotRecognized "============= Sorry, dit bestandsformaat niet herkend/ondersteund ===============\n"\
-                                  "=== Als dit een AVI bestand, ASF bestand of MPEG stream is, contacteer dan aub de auteur! ===\n"
+				  "=== Als dit een AVI bestand, ASF bestand of MPEG stream is, contacteer dan aub de auteur! ===\n"
 #define MSGTR_MissingVideoStream "Geen video stream gevonden!\n"
 #define MSGTR_MissingAudioStream "Geen audio stream gevonden...  ->nosound\n"
 #define MSGTR_MissingVideoStreamBug "Ontbrekende video stream!? Contacteer de auteur, het zou een bug kunnen zijn :(\n"
@@ -531,6 +532,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: codec stelde sh->disp_w en sh->disp_h niet in, ik probeer het probleem te omzeilen!\n"
+#define MSGTR_VoConfigRequest "VDec: vo config aanvraag - %d x %d (csp voorkeur: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Kon geen bijpassende kleurenruimte vinden - ik probeer opnieuw met -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Film-Aspect is %.2f:1 - voorscalering naar het correcte film-aspect.\n"
 #define MSGTR_MovieAspectUndefined "Movie-Aspect is niet gedefinieerd - geen voorscalering toegepast.\n"
@@ -831,7 +833,7 @@ static const char help_text[]=
 
 // ======================= AO Audio Output drivers ========================
 
-// libao2
+// libao2 
 
 // audio_out.c
 #define MSGTR_AO_ALSA9_1x_Removed "audio_out: de alsa9 en alsa1x modules werden verwijderd, gebruik -ao alsa.\n"
@@ -863,7 +865,7 @@ static const char help_text[]=
 #define MSGTR_AO_ESD_CantOpenPBStream "[AO ESD] Kon de esd playback stream niet openen: %s\n"
 
 // ao_mpegpes.c
-#define MSGTR_AO_MPEGPES_CantSetMixer "[AO MPEGPES] DVB het instellen van de audio mixer is mislukt: %s\n"
+#define MSGTR_AO_MPEGPES_CantSetMixer "[AO MPEGPES] DVB het instellen van de audio mixer is mislukt: %s\n" 
 #define MSGTR_AO_MPEGPES_UnsupSamplerate "[AO MPEGPES] %d s niet ondersteund, probeer \"-aop list=resample\"\n"
 
 // ao_null.c

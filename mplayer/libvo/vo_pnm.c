@@ -39,7 +39,7 @@
 #include "mp_msg.h"
 #include "video_out.h"
 #include "video_out_internal.h"
-#include "mp_core.h"			/* for exit_player() */
+#include "mplayer.h"			/* for exit_player() */
 #include "help_mp.h"
 
 /* ------------------------------------------------------------------------- */
@@ -98,7 +98,7 @@ char *pnm_file_extension = NULL;
 
 static void pnm_write_error(void) {
     mp_msg(MSGT_VO, MSGL_ERR, MSGTR_ErrorWritingFile, info.short_name);
-    exit_player(EXIT_ERROR);
+    exit_player(MSGTR_Exit_error);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -128,7 +128,7 @@ static int preinit(const char *arg)
         {"ascii",       OPT_ARG_BOOL,   &ascii_mode,    NULL},
         {"outdir",      OPT_ARG_MSTRZ,  &pnm_outdir,    NULL},
         {"subdirs",     OPT_ARG_MSTRZ,  &pnm_subdirs,   NULL},
-        {"maxfiles",    OPT_ARG_INT,    &pnm_maxfiles,  int_pos},
+        {"maxfiles",    OPT_ARG_INT,    &pnm_maxfiles,  (opt_test_f)int_pos},
         {NULL, 0, NULL, NULL}
     };
     const char *info_message = NULL;
@@ -197,7 +197,7 @@ static int preinit(const char *arg)
  *                  returns, everything went well.
  */
 
-static void pnm_mkdir(char *buf, int verbose) {
+static void pnm_mkdir(char *buf, int verbose) { 
     struct stat stat_p;
 
 /* Silly MING32 bug workaround */
@@ -214,19 +214,19 @@ static void pnm_mkdir(char *buf, int verbose) {
                             MSGTR_VO_GenericError, strerror(errno) );
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s %s\n", info.short_name,
                             MSGTR_VO_UnableToAccess,buf);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
                 if ( !S_ISDIR(stat_p.st_mode) ) {
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s %s\n", info.short_name,
                             buf, MSGTR_VO_ExistsButNoDirectory);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
                 if ( !(stat_p.st_mode & S_IWUSR) ) {
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s - %s\n", info.short_name,
                             buf, MSGTR_VO_DirExistsButNotWritable);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
-
+                
                 if (strcmp(buf, ".") != 0) {
                 mp_msg(MSGT_VO, MSGL_INFO, "%s: %s - %s\n", info.short_name,
                         buf, MSGTR_VO_DirExistsAndIsWritable);
@@ -238,9 +238,9 @@ static void pnm_mkdir(char *buf, int verbose) {
                         MSGTR_VO_GenericError, strerror(errno) );
                 mp_msg(MSGT_VO, MSGL_ERR, "%s: %s - %s\n", info.short_name,
                         buf, MSGTR_VO_CantCreateDirectory);
-                exit_player(EXIT_ERROR);
+                exit_player(MSGTR_Exit_error);
         } /* end switch */
-    } else if ( verbose ) {
+    } else if ( verbose ) {  
         mp_msg(MSGT_VO, MSGL_INFO, "%s: %s - %s\n", info.short_name,
                 buf, MSGTR_VO_DirectoryCreateSuccess);
     } /* end if */
@@ -267,7 +267,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     }
 
     /* Create outdir. */
-
+    
     snprintf(buf, BUFLENGTH, "%s", pnm_outdir);
     pnm_mkdir(buf, 1); /* This function only returns if creation was
                            successful. If not, the player will exit. */
@@ -442,9 +442,9 @@ static void pnm_write_image(mp_image_t *mpi)
 
     if (!mpi) {
         mp_msg(MSGT_VO, MSGL_ERR, "%s: No image data suplied to video output driver\n", info.short_name );
-        exit_player(EXIT_ERROR);
+        exit_player(MSGTR_Exit_error);
     }
-
+        
     /* Start writing to new subdirectory after a certain amount of frames */
     if ( framecounter == pnm_maxfiles ) {
         framecounter = 0;
@@ -460,23 +460,23 @@ static void pnm_write_image(mp_image_t *mpi)
         pnm_mkdir(buf, 0); /* This function only returns if creation was
                                successful. If not, the player will exit. */
     }
-
+    
     framenum++;
     framecounter++;
 
     /* snprintf the full pathname of the outputfile */
     snprintf(buf, BUFLENGTH, "%s/%s/%08d.%s", pnm_outdir, subdirname,
                                             framenum, pnm_file_extension);
-
+    
     if ( (outfile = fopen(buf, "wb") ) == NULL ) {
         mp_msg(MSGT_VO, MSGL_ERR, "\n%s: %s\n", info.short_name,
                 MSGTR_VO_CantCreateFile);
         mp_msg(MSGT_VO, MSGL_ERR, "%s: %s: %s\n",
                 info.short_name, MSGTR_VO_GenericError,
                 strerror(errno) );
-        exit_player(EXIT_ERROR);
+        exit_player(MSGTR_Exit_error);
     }
-
+    
     pnm_write_pnm(outfile, mpi);
 
     fclose(outfile);
@@ -595,3 +595,4 @@ static void flip_page (void)
 #undef PNM_TYPE_PGMYUV
 
 /* ------------------------------------------------------------------------- */
+

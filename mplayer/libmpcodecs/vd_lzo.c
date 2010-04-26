@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -27,7 +9,7 @@
 
 #define MOD_NAME "DecLZO"
 
-static const vd_info_t info = {
+static vd_info_t info = {
 	"LZO compressed Video",
 	"lzo",
 	"Tilmann Bitterberg",
@@ -63,7 +45,7 @@ static int init(sh_video_t *sh)
 
     if (sh->bih->biSizeImage <= 0) {
 	mp_msg (MSGT_DECVIDEO, MSGL_ERR, "[%s] Invalid frame size\n", MOD_NAME);
-	return 0;
+	return 0; 
     }
 
     priv = malloc(sizeof(lzo_context_t));
@@ -84,7 +66,7 @@ static int init(sh_video_t *sh)
 static void uninit(sh_video_t *sh)
 {
     lzo_context_t *priv = sh->context;
-
+    
     if (priv)
     {
 	free(priv->buffer);
@@ -105,11 +87,11 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags)
     if (len <= 0) {
 	    return NULL; // skipped frame
     }
-
+    
     r = av_lzo1x_decode(priv->buffer, &w, data, &len);
     if (r) {
 	/* this should NEVER happen */
-	mp_msg (MSGT_DECVIDEO, MSGL_ERR,
+	mp_msg (MSGT_DECVIDEO, MSGL_ERR, 
 		"[%s] internal error - decompression failed: %d\n", MOD_NAME, r);
       return NULL;
     }
@@ -158,7 +140,7 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags)
         mpi->stride[1] = sh->disp_w / 2;
     }
 
-    mp_msg (MSGT_DECVIDEO, MSGL_DBG2,
+    mp_msg (MSGT_DECVIDEO, MSGL_DBG2, 
 		"[%s] decompressed %lu bytes into %lu bytes\n", MOD_NAME,
 		(long) len, (long)w);
 

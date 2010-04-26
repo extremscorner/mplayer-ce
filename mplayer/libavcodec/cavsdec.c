@@ -20,13 +20,13 @@
  */
 
 /**
- * @file
+ * @file libavcodec/cavsdec.c
  * Chinese AVS video (AVS1-P2, JiZhun profile) decoder
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "golomb.h"
 #include "cavs.h"
 
@@ -441,7 +441,7 @@ static inline int check_for_slice(AVSContext *h) {
     align = (-get_bits_count(gb)) & 7;
     /* check for stuffing byte */
     if(!align && (show_bits(gb,8) == 0x80))
-        align = 8;
+        get_bits(gb,8);
     if((show_bits_long(gb,24+align) & 0xFFFFFF) == 0x000001) {
         skip_bits_long(gb,24+align);
         h->stc = get_bits(gb,8);
@@ -483,15 +483,6 @@ static int decode_pic(AVSContext *h) {
         h->pic_type = FF_I_TYPE;
         if(get_bits1(&s->gb))
             skip_bits(&s->gb,24);//time_code
-        /* old sample clips were all progressive and no low_delay,
-           bump stream revision if detected otherwise */
-        if((s->low_delay) || !(show_bits(&s->gb,9) & 1))
-            h->stream_revision = 1;
-        /* similarly test top_field_first and repeat_first_field */
-        else if(show_bits(&s->gb,11) & 3)
-            h->stream_revision = 1;
-        if(h->stream_revision > 0)
-            skip_bits(&s->gb,1); //marker_bit
     }
     /* release last B frame */
     if(h->picture.data[0])
@@ -634,9 +625,7 @@ static void cavs_flush(AVCodecContext * avctx) {
 }
 
 static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
-                             AVPacket *avpkt) {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+                             const uint8_t * buf, int buf_size) {
     AVSContext *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
     int input_size;
@@ -711,7 +700,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
 
 AVCodec cavs_decoder = {
     "cavs",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_CAVS,
     sizeof(AVSContext),
     ff_cavs_init,

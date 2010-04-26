@@ -6,8 +6,8 @@
  */
 
 #include "libavutil/internal.h"
-#include "libavutil/mem.h"
-#include "mpg123.h"
+
+typedef float real;
 
 extern float __attribute__((aligned(16))) costab_mmx[];
 
@@ -421,3 +421,4 @@ void dct64_sse(short *out0,short *out1,real *c)
 #endif
     out1[0] = out0[0];
 }
+

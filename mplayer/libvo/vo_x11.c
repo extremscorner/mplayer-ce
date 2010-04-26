@@ -267,7 +267,7 @@ static void freeMyXImage(void)
     ImageData = NULL;
 }
 
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #define BO_NATIVE    MSBFirst
 #define BO_NONNATIVE LSBFirst
 #else
@@ -352,8 +352,8 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
          && vinfo.visualid != XVisualIDFromVisual(attribs.visual)))
         XMatchVisualInfo(mDisplay, mScreen, depth, TrueColor, &vinfo);
 
-    /* set image size (which is indeed neither the input nor output size),
-       if zoom is on it will be changed during draw_slice anyway so we don't duplicate the aspect code here
+    /* set image size (which is indeed neither the input nor output size), 
+       if zoom is on it will be changed during draw_slice anyway so we don't duplicate the aspect code here 
      */
     image_width = (width + 7) & (~7);
     image_height = height;
@@ -457,7 +457,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     // we can easily "emulate" them.
     if (out_format & 64 && (IMGFMT_IS_RGB(out_format) || IMGFMT_IS_BGR(out_format))) {
       out_format &= ~64;
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
       out_offset = 1;
 #else
       out_offset = -1;
@@ -523,8 +523,8 @@ static void flip_page(void)
 static int draw_slice(uint8_t * src[], int stride[], int w, int h,
                            int x, int y)
 {
-    uint8_t *dst[MP_MAX_PLANES] = {NULL};
-    int dstStride[MP_MAX_PLANES] = {0};
+    uint8_t *dst[3];
+    int dstStride[3];
 
     if ((old_vo_dwidth != vo_dwidth
          || old_vo_dheight != vo_dheight) /*&& y==0 */  && zoomFlag)
@@ -557,6 +557,8 @@ static int draw_slice(uint8_t * src[], int stride[], int w, int h,
         }
         dst_width = newW;
     }
+    dstStride[1] = dstStride[2] = 0;
+    dst[1] = dst[2] = NULL;
 
     dstStride[0] = image_width * ((bpp + 7) / 8);
     dst[0] = ImageData;
@@ -565,7 +567,7 @@ static int draw_slice(uint8_t * src[], int stride[], int w, int h,
         dst[0] += dstStride[0] * (image_height - 1);
         dstStride[0] = -dstStride[0];
     }
-    sws_scale(swsContext, src, stride, y, h, dst, dstStride);
+    sws_scale_ordered(swsContext, src, stride, y, h, dst, dstStride);
     return 0;
 }
 
@@ -619,13 +621,13 @@ static int query_format(uint32_t format)
 
     switch (format)
     {
-//   case IMGFMT_BGR8:
+//   case IMGFMT_BGR8:  
 //   case IMGFMT_BGR15:
 //   case IMGFMT_BGR16:
 //   case IMGFMT_BGR24:
 //   case IMGFMT_BGR32:
 //    return 0x2;
-//   case IMGFMT_YUY2:
+//   case IMGFMT_YUY2: 
         case IMGFMT_I420:
         case IMGFMT_IYUV:
         case IMGFMT_YV12:

@@ -3,23 +3,7 @@
  *
  * Nathan Laredo (laredo@broked.net)
  *
- * Frequencies are given in kHz
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * Frequencies are given in kHz 
  */
 
 #ifndef MPLAYER_FREQUENCIES_H
@@ -36,7 +20,7 @@
    containing 8 bits frame sync, 5 bits control, 11 bits additional data, and
    704 bits audio data.  The bit rate is reduced by transmitting only 10 bits
    plus parity of each 14 bit sample, the largest sample in a frame determines
-   which 10 bits are transmitted.  The parity bits for audio samples also
+   which 10 bits are transmitted.  The parity bits for audio samples also 
    specify the scaling factor used for that channel during that frame.  The
    companeded audio data is interleaved to reduce the influence of dropouts
    and the whole frame except for sync bits is scrambled for spectrum shaping.

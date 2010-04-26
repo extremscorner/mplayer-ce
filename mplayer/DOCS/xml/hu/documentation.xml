@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- synced with r29305 -->
+<!-- synced with r28266 -->
 
 <bookinfo id="toc">
 <title><application>MPlayer</application> - The Movie Player</title>
 <subtitle><ulink url="http://www.mplayerhq.hu"></ulink></subtitle>
-<date>2009. május 24.</date>
+<date>March 24, 2003</date>
 <copyright>
   <year>2000</year>
   <year>2001</year>
@@ -15,8 +15,7 @@
   <year>2006</year>
   <year>2007</year>
   <year>2008</year>
-  <year>2009</year>
-  <year>2010</year>
+  <year>2009</year>	
   <holder>MPlayer team</holder>
 </copyright>
 <legalnotice>

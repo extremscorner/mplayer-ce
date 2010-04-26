@@ -20,9 +20,10 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/lls.h"
 #include "libavutil/md5.h"
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "dsputil.h"
 #include "golomb.h"
 #include "lpc.h"
@@ -83,7 +84,6 @@ typedef struct FlacEncodeContext {
     int channels;
     int samplerate;
     int sr_code[2];
-    int max_blocksize;
     int min_framesize;
     int max_framesize;
     int max_encoded_framesize;
@@ -108,8 +108,8 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
     init_put_bits(&pb, header, FLAC_STREAMINFO_SIZE);
 
     /* streaminfo metadata block */
-    put_bits(&pb, 16, s->max_blocksize);
-    put_bits(&pb, 16, s->max_blocksize);
+    put_bits(&pb, 16, s->avctx->frame_size);
+    put_bits(&pb, 16, s->avctx->frame_size);
     put_bits(&pb, 24, s->min_framesize);
     put_bits(&pb, 24, s->max_framesize);
     put_bits(&pb, 20, s->samplerate);
@@ -327,7 +327,6 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     } else {
         s->avctx->frame_size = select_blocksize(s->samplerate, s->options.block_time_ms);
     }
-    s->max_blocksize = s->avctx->frame_size;
     av_log(avctx, AV_LOG_DEBUG, " block size: %d\n", s->avctx->frame_size);
 
     /* set LPC precision */
@@ -352,7 +351,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
     /* initialize MD5 context */
     s->md5ctx = av_malloc(av_md5_size);
     if(!s->md5ctx)
-        return AVERROR(ENOMEM);
+        return AVERROR_NOMEM;
     av_md5_init(s->md5ctx);
 
     streaminfo = av_malloc(FLAC_STREAMINFO_SIZE);
@@ -551,6 +550,69 @@ static uint32_t calc_rice_params_lpc(RiceContext *rc, int pmin, int pmax,
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
     return bits;
 }
+
+/**
+ * Apply Welch window function to audio block
+ */
+static void apply_welch_window(const int32_t *data, int len, double *w_data)
+{
+    int i, n2;
+    double w;
+    double c;
+
+    assert(!(len&1)); //the optimization in r11881 does not support odd len
+                      //if someone wants odd len extend the change in r11881
+
+    n2 = (len >> 1);
+    c = 2.0 / (len - 1.0);
+
+    w_data+=n2;
+      data+=n2;
+    for(i=0; i<n2; i++) {
+        w = c - n2 + i;
+        w = 1.0 - (w * w);
+        w_data[-i-1] = data[-i-1] * w;
+        w_data[+i  ] = data[+i  ] * w;
+    }
+}
+
+/**
+ * Calculates autocorrelation data from audio samples
+ * A Welch window function is applied before calculation.
+ */
+void ff_flac_compute_autocorr(const int32_t *data, int len, int lag,
+                              double *autoc)
+{
+    int i, j;
+    double tmp[len + lag + 1];
+    double *data1= tmp + lag;
+
+    apply_welch_window(data, len, data1);
+
+    for(j=0; j<lag; j++)
+        data1[j-lag]= 0.0;
+    data1[len] = 0.0;
+
+    for(j=0; j<lag; j+=2){
+        double sum0 = 1.0, sum1 = 1.0;
+        for(i=0; i<len; i++){
+            sum0 += data1[i] * data1[i-j];
+            sum1 += data1[i] * data1[i-j-1];
+        }
+        autoc[j  ] = sum0;
+        autoc[j+1] = sum1;
+    }
+
+    if(j==lag){
+        double sum = 1.0;
+        for(i=0; i<len; i+=2){
+            sum += data1[i  ] * data1[i-j  ]
+                 + data1[i+1] * data1[i-j+1];
+        }
+        autoc[j] = sum;
+    }
+}
+
 
 static void encode_residual_verbatim(int32_t *res, int32_t *smp, int n)
 {
@@ -1161,7 +1223,7 @@ static void output_frame_footer(FlacEncodeContext *s)
 
 static void update_md5_sum(FlacEncodeContext *s, int16_t *samples)
 {
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     int i;
     for(i = 0; i < s->frame.blocksize*s->channels; i++) {
         int16_t smp = le2me_16(samples[i]);
@@ -1253,7 +1315,7 @@ static av_cold int flac_encode_close(AVCodecContext *avctx)
 
 AVCodec flac_encoder = {
     "flac",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_FLAC,
     sizeof(FlacEncodeContext),
     flac_encode_init,
@@ -1261,6 +1323,6 @@ AVCodec flac_encoder = {
     flac_encode_close,
     NULL,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
 };

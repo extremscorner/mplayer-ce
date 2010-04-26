@@ -1,6 +1,6 @@
 /*
  * VIDIX driver for SuperH Mobile VEU hardware block.
- * Copyright (C) 2008, 2009 Magnus Damm
+ * Copyright (C) 2008 Magnus Damm
  *
  * Requires a kernel that exposes the VEU hardware block to user space
  * using UIO. Available in upstream linux-2.6.27 or later.
@@ -179,7 +179,8 @@ static int get_fb_info(char *device, struct fb_info *fip)
     memset(iomem, 0, fip->line_length * fip->height);
     munmap(iomem, fip->size);
 
-    return fd;
+    close(fd);
+    return 0;
 }
 
 #define VESTR 0x00 /* start register */
@@ -218,8 +219,6 @@ static int get_fb_info(char *device, struct fb_info *fip)
 #define VMCR22 0x220 /* color conversion matrix coefficient 22 */
 #define VCOFFR 0x224 /* color conversion offset */
 #define VCBR   0x228 /* color conversion clip */
-
-#define VRPBR  0xc8 /* resize passband */
 
 /* Helper functions for reading registers. */
 
@@ -269,7 +268,6 @@ struct sh_veu_plane {
 
 static struct sh_veu_plane _src, _dst;
 static vidix_playback_t my_info;
-static int fb_fd;
 
 static int sh_veu_probe(int verbose, int force)
 {
@@ -278,7 +276,6 @@ static int sh_veu_probe(int verbose, int force)
     ret = get_fb_info("/dev/fb0", &fbi);
     if (ret < 0)
         return ret;
-    fb_fd = ret;
 
     if (fbi.bpp != 16) {
         printf("sh_veu: only 16bpp supported\n");
@@ -318,26 +315,18 @@ static void sh_veu_wait_irq(vidix_playback_t *info)
     read(uio_dev.fd, &n_pending, sizeof(unsigned long));
 
     write_reg(&uio_mmio, 0x100, VEVTR); /* ack int, write 0 to bit 0 */
-
-    /* flush framebuffer to handle deferred io case */
-    fsync(fb_fd);
 }
 
 static int sh_veu_is_veu2h(void)
 {
-    return uio_mmio.size == 0x27c;
-}
-
-static int sh_veu_is_veu3f(void)
-{
-    return uio_mmio.size == 0xcc;
+    return uio_mmio.size > 0xb8;
 }
 
 static unsigned long sh_veu_do_scale(struct uio_map *ump,
                                      int vertical, int size_in,
                                      int size_out, int crop_out)
 {
-    unsigned long fixpoint, mant, frac, value, rep, vb;
+    unsigned long fixpoint, mant, frac, value, rep;
 
     /* calculate FRAC and MANT */
     do {
@@ -408,34 +397,6 @@ static unsigned long sh_veu_do_scale(struct uio_map *ump,
         value |= (rep << 12) | crop_out;
     }
     write_reg(ump, value, VRFSR);
-
-    /* VEU3F needs additional VRPBR register handling */
-    if (sh_veu_is_veu3f()) {
-        if (size_out > size_in)
-            vb = 64;
-        else {
-            if ((mant >= 8) && (mant < 16))
-                value = 4;
-            else if ((mant >= 4) && (mant < 8))
-                value = 2;
-            else
-                value = 1;
-
-            vb = 64 * 4096 * value;
-            vb /= 4096 * mant + frac;
-        }
-
-        /* set resize passband register */
-        value = read_reg(ump, VRPBR);
-        if (vertical) {
-            value &= ~0xffff0000;
-            value |= vb << 16;
-        } else {
-            value &= ~0xffff;
-            value |= vb;
-        }
-        write_reg(ump, value, VRPBR);
-    }
 
     return (((size_in * crop_out) / size_out) + 0x03) & ~0x03;
 }
@@ -525,7 +486,6 @@ static int sh_veu_init(void)
 
 static void sh_veu_destroy(void)
 {
-    close(fb_fd);
 }
 
 static int sh_veu_get_caps(vidix_capability_t *to)

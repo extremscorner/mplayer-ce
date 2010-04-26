@@ -1,6 +1,6 @@
 .\" synced with 1.685
 .\" Encoding: iso-8859-1
-.\" MPlayer (C) 2000-2010 El equipo de MPlayer
+.\" MPlayer (C) 2000-2009 El equipo de MPlayer
 .\" Esta página de manual ha sido escrita por Gabucino, Diego Biurrun,
 .\" Jonas Jermann y traducida al español por Juan Martín López.
 .\"
@@ -313,7 +313,7 @@ Ajusta la saturación.
 .PD 1
 .PP
 (Las siguientes teclas son válidas únicamente cuando se usa quartz o el
-controlador de vídeo de corevideo)
+controlador de vídeo de macosx)
 .PP
 .PD 0
 .IPs "command + 0"
@@ -2478,7 +2478,7 @@ vídeo sea más uniforme (por defecto: activada).
 Salida de audio a través de NAS.
 .
 .TP
-.B coreaudio (Mac OS X solamente)
+.B macosx (Mac OS X solamente)
 Controlador de salida de audio nativo Mac OS X.
 .
 .TP
@@ -2882,7 +2882,7 @@ de aspecto de ventana.
 .TP
 .B \-ontop
 Hace que la ventana de reproducción se quede por encima de las otras ventanas.
-Soportado por controladores que usen X11, excepto SDL, así como directx,corevideo,
+Soportado por controladores que usen X11, excepto SDL, así como directx,macosx,
 quartz, ggi y gl2.
 .
 .TP
@@ -2892,7 +2892,7 @@ película a 16:9 para ajustarla a una pantalla 4:3 sin bandas negras).
 .br
 El rango controla cuánto de la imagen será recortado.
 Sólo funciona con los controladores de salida de vídeo xv, xmga, mga, gl, gl2,
-quartz, corevideo y xvidix.
+quartz, macosx y xvidix.
 .
 .TP
 .B \-panscanrange <\-19.0\-99.0> (experimental)
@@ -2915,7 +2915,7 @@ Reproduce la película en la ventana raíz (fondo de escritorio).
 Las imágenes del fondo de escritorio pueden cubrir sin embargo a la ventana
 de la película.
 Funciona sólo con los controladores de salida de vídeo x11, xv, xmga,
-xvidix, quartz, corevideo y directx.
+xvidix, quartz, macosx y directx.
 .
 .TP
 .B \-saturation <\-100\-100>
@@ -3249,7 +3249,7 @@ Especifica la resolución a pantalla completa (útil en sistemas lentos).
 .PD 1
 .
 .TP
-.B corevideo (Mac OS X 10.4 o 10.3.9 con QuickTime 7)
+.B macosx (Mac OS X 10.4 o 10.3.9 con QuickTime 7)
 Controlador de salida de vídeo Mac OS X CoreVideo.
 .PD 0
 .RSs
@@ -3264,7 +3264,7 @@ Usa el framebuffer del kernel para la reproducir vídeo.
 .PD 0
 .RSs
 .IPs <dispositivo>
-Especifica el nombre del dispositivo fbdev a usar (p.e.\& /dev/\:fb0) o el
+Especifica el nombre del dispositivo fbdev a usar (p.e.\& /dev/\:fb0) o el 
 nombre del dispositivo VIDIX si el nombre del dispositivo comienza con 'vidix'
 (p.e.\& 'vidixsis_vid' para el controlador sis).
 .RE
@@ -3885,7 +3885,7 @@ Escribre ficheros PPM (por defecto).
 Escribre ficheros PGM.
 .IPs pgmyuv
 Escribre ficheros PGMYUV.
-PGMYUV es como PGM pero también contiene los planos U y V añadidos al fondo
+PGMYUV es como PGM pero también contiene los planos U y V añadidos al fondo 
 de la imagen.
 .IPs "raw\ \ "
 Escribe ficheros PNM en modo crudo (por defecto).
@@ -3920,7 +3920,7 @@ Especifica el nivel de compresión.
 .B "tga\ \ \ \ "
 Guarda cada frame en un fichero Targa en el directorio actual.
 Cada archivo toma el número de frame completado con ceros como nombre.
-El propósito de este controlador de vídeo de salida es tener un escritor de
+El propósito de este controlador de vídeo de salida es tener un escritor de 
 imágenes sin pérdidas, sencillo, que no necesite ninguna librería externa.
 Soporta el formato de color BGR[A] con 15, 24 y 32 bpp.
 Puede forzar un formato particular con el filtro de vídeo de formato.
@@ -4182,7 +4182,7 @@ decodificar y codificar. Esto, sin embargo, hace que se pague un precio
 en precisión.
 .IPs lowres=<número>[,<w>]
 Decodifica a resoluciones más bajas.
-La decodificación a resoluciones más bajas no esta soportada por todos los
+La decodificación a resoluciones más bajas no esta soportada por todos los 
 codecs y a menudo producirá artefactos no deseados.
 Esto no es un fallo, sino un efecto secundario de no decodificar a resolución
 completa.
@@ -4434,7 +4434,7 @@ filtro de debloque de croma
 filtro de debloque de luminancia
 .IPs dering-luma (vea también \-vf pp)
 filtro de desanillado lumínico
-filtro
+filtro 
 .IPs dering-chroma (vea también \-vf pp)
 filtro de desanillado de croma
 .IPs filmeffect (vea también \-vf noise)

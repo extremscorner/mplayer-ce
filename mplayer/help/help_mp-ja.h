@@ -67,6 +67,7 @@ static const char help_text[]=
 #define MSGTR_CoreDumped "コアダンプ ;)\n"
 #define MSGTR_FPSnotspecified "FPS がヘッダに指定されていないか不正です. -fps オプションを利用して下さい.\n"
 #define MSGTR_CantFindAudioCodec "audio format 0x%X 向けのコーデックを見付ける事が出来ませんでした.\n"
+#define MSGTR_RTFMCodecs "DOCS/HTML/en/codecs.html を御覧下さい\n"
 #define MSGTR_VOincompCodec "選択された映像出力デバイスはコーデックと互換性がありません\n"
 #define MSGTR_CannotInitVO "FATAL: 映像出力ドライバの初期化に失敗しました.\n"
 #define MSGTR_CannotInitAO "音声デバイスの初期化に失敗しました -> 無音声になります.\n"
@@ -192,7 +193,7 @@ static const char help_text[]=
 #define MSGTR_Detected_XXX_FileFormat "%s ファイルフォーマットと判断.\n"
 #define MSGTR_DetectedAudiofile "音声ファイルと判断.\n"
 #define MSGTR_FormatNotRecognized "============ このファイルフォーマットは サポートしていません =============\n"\
-                                  "======= もしこのファイルが AVI、ASF、MPEGなら作成者に連絡して下さい ======\n"
+				  "======= もしこのファイルが AVI、ASF、MPEGなら作成者に連絡して下さい ======\n"
 #define MSGTR_MissingVideoStream "映像ストリームが存在しません.\n"
 #define MSGTR_MissingAudioStream "音声ストリームが存在しません -> 無音声になります\n"
 #define MSGTR_MissingVideoStreamBug "Missing video stream!? 作成者に連絡して下さい、恐らくこれはバグです :(\n"
@@ -268,6 +269,7 @@ static const char help_text[]=
 #define MSGTR_CannotFindColorspace "common colorspaceが見付かりません, even by inserting 'scale' :(\n"
 
 // vd.c
+#define MSGTR_VoConfigRequest "VDec: 映像出力設定 - %d x %d (preferred csp: %s)\n"
 
 // ====================== GUI messages/buttons ========================
 

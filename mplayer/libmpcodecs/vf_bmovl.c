@@ -125,14 +125,14 @@ struct vf_priv_s {
 };
 
 static int
-query_format(struct vf_instance *vf, unsigned int fmt){
+query_format(struct vf_instance_s* vf, unsigned int fmt){
     if(fmt==IMGFMT_YV12) return VFCAP_CSP_SUPPORTED;
     return 0;
 }
 
 
 static int
-config(struct vf_instance *vf,
+config(struct vf_instance_s* vf,
        int width, int height, int d_width, int d_height,
        unsigned int flags, unsigned int outfmt)
 {
@@ -162,7 +162,7 @@ config(struct vf_instance *vf,
 }
 
 static void
-uninit(struct vf_instance *vf)
+uninit(struct vf_instance_s *vf)
 {
 	if(vf->priv) {
 		free(vf->priv->bitmap.y);
@@ -211,10 +211,10 @@ _read_cmd(int fd, char *cmd, char *args) {
 	}
 	return TRUE;
 }
-
+			
 
 static int
-put_image(struct vf_instance *vf, mp_image_t* mpi, double pts){
+put_image(struct vf_instance_s* vf, mp_image_t* mpi, double pts){
 	int buf_x=0, buf_y=0, buf_pos=0;
 	int have, got, want;
 	int xpos=0, ypos=0, pos=0;
@@ -318,7 +318,7 @@ put_image(struct vf_instance *vf, mp_image_t* mpi, double pts){
 				vf->priv->x2 = av_clip(imgx + imgw, vf->priv->x2, vf->priv->w);
 				vf->priv->y2 = av_clip(imgy + imgh, vf->priv->y2, vf->priv->h);
 			}
-
+			
 			if( command == CMD_CLEAR ) {
 				sscanf( args, "%d %d %d %d", &imgw, &imgh, &imgx, &imgy);
 				mp_msg(MSGT_VFILTER, MSGL_DBG2, "\nDEBUG: CLEAR: %d %d %d %d\n\n", imgw, imgh, imgx, imgy);
@@ -435,19 +435,19 @@ put_image(struct vf_instance *vf, mp_image_t* mpi, double pts){
 						dmpi->planes[2][pos] = vf->priv->bitmap.v[pos];
 					}
 				} else { // Alphablended pixel
-					dmpi->planes[0][pos] =
-						((255 - alpha) * (int)dmpi->planes[0][pos] +
+					dmpi->planes[0][pos] = 
+						((255 - alpha) * (int)dmpi->planes[0][pos] + 
 						alpha * (int)vf->priv->bitmap.y[pos]) >> 8;
-
+					
 					if ((ypos%2) && (xpos%2)) {
 						pos = ( (ypos/2) * dmpi->stride[1] ) + (xpos/2);
 
-						dmpi->planes[1][pos] =
-							((255 - alpha) * (int)dmpi->planes[1][pos] +
+						dmpi->planes[1][pos] = 
+							((255 - alpha) * (int)dmpi->planes[1][pos] + 
 							alpha * (int)vf->priv->bitmap.u[pos]) >> 8;
-
-						dmpi->planes[2][pos] =
-							((255 - alpha) * (int)dmpi->planes[2][pos] +
+						
+						dmpi->planes[2][pos] = 
+							((255 - alpha) * (int)dmpi->planes[2][pos] + 
 							alpha * (int)vf->priv->bitmap.v[pos]) >> 8;
 					}
 			    }
@@ -458,7 +458,7 @@ put_image(struct vf_instance *vf, mp_image_t* mpi, double pts){
 } // put_image
 
 static int
-vf_open(vf_instance_t *vf, char *args)
+vf_open(vf_instance_t* vf, char* args)
 {
     char filename[1000];
 

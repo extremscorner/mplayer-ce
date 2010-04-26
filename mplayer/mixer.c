@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <string.h>
 #if !defined(__MINGW32__) && !defined(GEKKO)
 #include <sys/ioctl.h>
@@ -34,8 +16,7 @@
 char * mixer_device=NULL;
 char * mixer_channel=NULL;
 int soft_vol = 0;
-float soft_vol_max = 200.0;
-extern float mplayer_volume;
+float soft_vol_max = 110.0;
 
 void mixer_getvolume(mixer_t *mixer, float *l, float *r)
 {
@@ -59,7 +40,6 @@ void mixer_getvolume(mixer_t *mixer, float *l, float *r)
     }
     *r=vol.right;
     *l=vol.left;
-    mplayer_volume=vol.right;
   }
 }
 
@@ -104,9 +84,9 @@ void mixer_incvolume(mixer_t *mixer)
  float mixer_l, mixer_r;
  mixer_getvolume(mixer, &mixer_l, &mixer_r);
  mixer_l += mixer->volstep;
- if ( mixer_l > 200 ) mixer_l = 200;
+ if ( mixer_l > 100 ) mixer_l = 100;
  mixer_r += mixer->volstep;
- if ( mixer_r > 200 ) mixer_r = 200;
+ if ( mixer_r > 100 ) mixer_r = 100;
  mixer_setvolume(mixer, mixer_l, mixer_r);
 }
 
@@ -132,7 +112,7 @@ void mixer_mute(mixer_t *mixer)
 {
  if (mixer->muted) mixer_setvolume(mixer, mixer->last_l, mixer->last_r);
   else
-   {
+   { 
     mixer_getvolume(mixer, &mixer->last_l, &mixer->last_r);
     mixer_setvolume(mixer, 0, 0);
     mixer->muted=1;
@@ -180,3 +160,4 @@ void mixer_setbalance(mixer_t *mixer, float val)
   af_pan_balance->control(af_pan_balance,
       AF_CONTROL_PAN_BALANCE | AF_CONTROL_SET, &val);
 }
+

@@ -13,6 +13,9 @@
 #include        <string.h>
 #include        <math.h>
 
+#define real float
+// #define int long
+
 #include "mpg123.h"
 #include "huffman.h"
 #include "mp3.h"
@@ -20,7 +23,7 @@
 #include "cpudetect.h"
 //#include "liba52/mm_accel.h"
 #include "mp_msg.h"
-#include "libmpcodecs/ad_mp3lib.h"
+
 #include "libvo/fastmemcpy.h"
 
 #include "libavutil/common.h"
@@ -55,6 +58,8 @@ static long outscale = 32768;
 #include "tabinit.c"
 
 #if 1
+int mplayer_audio_read(char *buf,int size);
+
 LOCAL int mp3_read(char *buf,int size){
 //  int len=fread(buf,1,size,mp3_file);
   int len=mplayer_audio_read(buf,size);
@@ -68,13 +73,13 @@ int mp3_read(char *buf,int size);
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: sr1.c 31032 2010-04-12 10:56:17Z diego $
+ * $Id: sr1.c 28622 2009-02-17 03:08:56Z diego $
  */
 
 
 //void mp3_seek(int pos){
 //  fseek(mp3_file,pos,SEEK_SET);
-//  return MP3_fpos = ftell(mp3_file);
+//  return (MP3_fpos=ftell(mp3_file));
 //}
 
 /*       Frame reader           */
@@ -163,7 +168,7 @@ LOCAL unsigned int get1bit(void)
   bitindex++;
   wordpointer += (bitindex>>3);
   bitindex &= 7;
-  return (rval >> 7) & 1;
+  return ((rval>>7)&1);
 }
 
 LOCAL void set_pointer(int backstep)
@@ -186,7 +191,7 @@ LOCAL int stream_head_read(unsigned char *hbuf,uint32_t *newhead){
    * we may not be able to address unaligned 32-bit data on non-x86 cpus.
    * Fall back to some portable code.
    */
-  *newhead =
+  *newhead = 
       hbuf[0] << 24 |
       hbuf[1] << 16 |
       hbuf[2] <<  8 |
@@ -210,7 +215,7 @@ LOCAL int stream_head_shift(unsigned char *hbuf,uint32_t *head){
 LOCAL int decode_header(struct frame *fr,uint32_t newhead){
 
     // head_check:
-    if( (newhead & 0xffe00000) != 0xffe00000 ||
+    if( (newhead & 0xffe00000) != 0xffe00000 ||  
         (newhead & 0x0000fc00) == 0x0000fc00) return FALSE;
 
     fr->lay = 4-((newhead>>17)&3);
@@ -368,7 +373,7 @@ retry1:
 
   /* read main data into memory */
   if(!stream_read_frame_body(fr->framesize)){
-    //printf("\nBroken frame at 0x%X                                                  \n",resyncpos);
+    printf("\nBroken frame at 0x%X                                                  \n",resyncpos);
     return 0;
   }
   ++frames;
@@ -387,6 +392,12 @@ static int _has_mmx = 0;  // used by layer2.c, layer3.c to pre-scale coeffs
 /*           PUBLIC FUNCTIONS                  */
 /******************************************************************************/
 
+/* It's hidden from gcc in assembler */
+void dct64_MMX(short *, short *, real *);
+void dct64_MMX_3dnow(short *, short *, real *);
+void dct64_MMX_3dnowex(short *, short *, real *);
+void dct64_sse(short *, short *, real *);
+void dct64_altivec(real *, real *, real *);
 void (*dct64_MMX_func)(short *, short *, real *);
 
 #include "layer2.c"
@@ -412,34 +423,34 @@ void MP3_Init(void){
 #if HAVE_MMX
     if (gCpuCaps.hasMMX)
     {
-        _has_mmx = 1;
-        synth_func = synth_1to1_MMX;
+	_has_mmx = 1;
+	synth_func = synth_1to1_MMX;
     }
 #endif
 
 #if HAVE_AMD3DNOWEXT
     if (gCpuCaps.has3DNowExt)
     {
-        dct36_func=dct36_3dnowex;
-        dct64_MMX_func= dct64_MMX_3dnowex;
-        mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using 3DNow!Ex optimized decore!\n");
+	dct36_func=dct36_3dnowex;
+	dct64_MMX_func= dct64_MMX_3dnowex;
+	mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using 3DNow!Ex optimized decore!\n");
     }
     else
 #endif
 #if HAVE_AMD3DNOW
     if (gCpuCaps.has3DNow)
     {
-        dct36_func = dct36_3dnow;
-        dct64_MMX_func = dct64_MMX_3dnow;
-        mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using 3DNow! optimized decore!\n");
+	dct36_func = dct36_3dnow;
+	dct64_MMX_func = dct64_MMX_3dnow;
+	mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using 3DNow! optimized decore!\n");
     }
     else
 #endif
 #if HAVE_SSE
     if (gCpuCaps.hasSSE)
     {
-        dct64_MMX_func = dct64_sse;
-        mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using SSE optimized decore!\n");
+	dct64_MMX_func = dct64_sse;
+	mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using SSE optimized decore!\n");
     }
     else
 #endif
@@ -447,28 +458,28 @@ void MP3_Init(void){
 #if HAVE_MMX
     if (gCpuCaps.hasMMX)
     {
-        dct64_MMX_func = dct64_MMX;
-        mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using MMX optimized decore!\n");
+	dct64_MMX_func = dct64_MMX;
+	mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using MMX optimized decore!\n");
     }
     else
 #endif
     if (gCpuCaps.cpuType >= CPUTYPE_I586)
     {
-        synth_func = synth_1to1_pent;
-        mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using Pentium optimized decore!\n");
+	synth_func = synth_1to1_pent;
+	mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using Pentium optimized decore!\n");
     }
     else
 #endif /* ARCH_X86_32 */
 #if HAVE_ALTIVEC
     if (gCpuCaps.hasAltiVec)
     {
-        mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using AltiVec optimized decore!\n");
+	mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using AltiVec optimized decore!\n");
     }
     else
 #endif
     {
-        synth_func = NULL; /* use default c version */
-        mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using generic C decore!\n");
+	synth_func = NULL; /* use default c version */
+	mp_msg(MSGT_DECAUDIO,MSGL_V,"mp3lib: using generic C decore!\n");
     }
 
 #ifdef CONFIG_FAKE_MONO
@@ -526,8 +537,8 @@ int MP3_Open(char *filename,int buffsize){
 int MP3_DecodeFrame(unsigned char *hova,short single){
    pcm_sample = hova;
    pcm_point = 0;
-   if(!read_frame(&fr)) return 0;
-   if(single==-2){ set_pointer(512); return 1; }
+   if(!read_frame(&fr))return(0);
+   if(single==-2){ set_pointer(512); return(1); }
    if(fr.error_protection) getbits(16); /* skip crc */
    fr.single=single;
    switch(fr.lay){
@@ -535,10 +546,10 @@ int MP3_DecodeFrame(unsigned char *hova,short single){
      case 3: do_layer3(&fr,single);break;
      case 1: do_layer1(&fr,single);break;
      default:
-         return 0;      // unsupported
+         return 0;	// unsupported
    }
 //   ++MP3_frames;
-   return pcm_point ? pcm_point : 2;
+   return(pcm_point?pcm_point:2);
 }
 
 // Prints last frame header in ascii.

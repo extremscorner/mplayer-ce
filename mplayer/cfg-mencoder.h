@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_CFG_MENCODER_H
 #define MPLAYER_CFG_MENCODER_H
 
@@ -23,22 +5,26 @@
  * config for cfgparser
  */
 
-#include "libmpcodecs/ve_x264.h"
 #include "cfg-common.h"
 
 extern int sws_flags;
+int readPPOpt(void *, char *arg);
+void revertPPOpt(void *conf, char* opt);
 extern char *pp_help;
 
-extern const m_option_t faacopts_conf[];
-extern const m_option_t lameopts_conf[];
-extern const m_option_t lavcopts_conf[];
-extern const m_option_t lavfopts_conf[];
-extern const m_option_t mpegopts_conf[];
-extern const m_option_t nuvopts_conf[];
-extern const m_option_t toolameopts_conf[];
-extern const m_option_t twolameopts_conf[];
-extern const m_option_t vfwopts_conf[];
-extern const m_option_t xvidencopts_conf[];
+extern m_option_t lameopts_conf[];
+extern m_option_t lavcopts_conf[];
+extern m_option_t toolameopts_conf[];
+extern m_option_t twolameopts_conf[];
+extern m_option_t faacopts_conf[];
+extern m_option_t vfwopts_conf[];
+extern m_option_t xvidencopts_conf[];
+
+void x264enc_set_param(const m_option_t* opt, char* arg);
+
+extern m_option_t nuvopts_conf[];
+extern m_option_t mpegopts_conf[];
+extern m_option_t lavfopts_conf[];
 
 const m_option_t ovc_conf[]={
 	{"copy", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_COPY, NULL},
@@ -214,20 +200,20 @@ const m_option_t mencoder_opts[]={
 
 	{"pass", "-pass has been removed, use -lavcopts vpass=n, -xvidencopts pass=n\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 	{"passlogfile", &passtmpfile, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
-
+	
 	{"vobsubout", &vobsub_out, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
 	{"vobsuboutindex", &vobsub_out_index, CONF_TYPE_INT, CONF_RANGE|CONF_GLOBAL, 0, 31, NULL},
 	{"vobsuboutid", &vobsub_out_id, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
 
 	{"autoexpand", &auto_expand, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"noautoexpand", &auto_expand, CONF_TYPE_FLAG, 0, 1, 0, NULL},
-
+	
 	{"encodedups", &encode_duplicates, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"noencodedups", &encode_duplicates, CONF_TYPE_FLAG, 0, 1, 0, NULL},
-
+	
 	{"odml", &write_odml, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
 	{"noodml", &write_odml, CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL},
-
+	
 	// info header strings
 	{"info", info_conf, CONF_TYPE_SUBCONFIG, CONF_GLOBAL, 0, 0, NULL},
 
@@ -270,7 +256,7 @@ const m_option_t mencoder_opts[]={
 	{"mpegopts",  mpegopts_conf, CONF_TYPE_SUBCONFIG, CONF_GLOBAL, 0, 0, NULL},
 #ifdef CONFIG_LIBAVFORMAT
 	{"lavfopts",  lavfopts_conf, CONF_TYPE_SUBCONFIG, CONF_GLOBAL, 0, 0, NULL},
-#endif
+#endif	
 
 #include "cfg-common-opts.h"
 

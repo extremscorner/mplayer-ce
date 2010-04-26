@@ -99,7 +99,7 @@ static int lock_fd(int fd) {
   lock.l_type = F_WRLCK;
 
   mp_msg(MSGT_STREAM,MSGL_DBG2, "Lock (%d)\n",getpid());
-  do {
+  do {    
     if(fcntl(fd,F_SETLKW,&lock)) {
       if(errno == EAGAIN) continue;
       mp_msg(MSGT_STREAM,MSGL_ERR, "Failed to get the lock: %s\n",
@@ -163,7 +163,7 @@ static mp_net_stream_packet_t* send_net_stream_cmd(stream_t *s,uint16_t cmd,char
     free(pack);
     return NULL;
   }
-
+  
   mp_msg(MSGT_STREAM,MSGL_ERR, "Unknown response to %d: %d\n",cmd,pack->cmd);
   free(pack);
   return NULL;
@@ -193,9 +193,9 @@ static int fill_buffer(stream_t *s, char* buffer, int max_len){
 static int seek(stream_t *s,off_t newpos) {
   uint64_t pos = le2me_64((uint64_t)newpos);
   mp_net_stream_packet_t* pack;
-
+  
   pack = send_net_stream_cmd(s,NET_STREAM_SEEK,(char*)&pos,8);
-  if(!pack) {
+  if(!pack) {    
     return 0;
   }
   s->pos = newpos;
@@ -205,15 +205,15 @@ static int seek(stream_t *s,off_t newpos) {
 
 static int net_stream_reset(struct stream_st *s) {
   mp_net_stream_packet_t* pack;
-
-  pack = send_net_stream_cmd(s,NET_STREAM_RESET,NULL,0);
+  
+  pack = send_net_stream_cmd(s,NET_STREAM_RESET,NULL,0);  
   if(!pack) {
     return 0;
   }
   free(pack);
   return 1;
 }
-
+ 
 static int control(struct stream_st *s,int cmd,void* arg) {
   switch(cmd) {
   case STREAM_CTRL_RESET:
@@ -224,7 +224,7 @@ static int control(struct stream_st *s,int cmd,void* arg) {
 
 static void close_s(struct stream_st *s) {
   mp_net_stream_packet_t* pack;
-
+  
   pack = send_net_stream_cmd(s,NET_STREAM_CLOSE,NULL,0);
   if(pack)
     free(pack);
@@ -262,14 +262,14 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
   if(!pack) {
     goto error;
   }
-
-  if(pack->len != sizeof(mp_net_stream_packet_t) +
+  
+  if(pack->len != sizeof(mp_net_stream_packet_t) + 
      sizeof(mp_net_stream_opened_t)) {
     mp_msg(MSGT_OPEN,MSGL_ERR, "Invalid open response packet len (%d bytes)\n",pack->len);
     free(pack);
     goto error;
   }
-
+  
   opened = (mp_net_stream_opened_t*)pack->data;
   net_stream_opened_2_me(opened);
 
@@ -281,7 +281,7 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
 
   stream->fill_buffer = fill_buffer;
   stream->control = control;
-  if(stream->flags & MP_STREAM_SEEK)
+  if(stream->flags & STREAM_SEEK)
     stream->seek = seek;
   stream->close = close_s;
 

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_M_CONFIG_H
 #define MPLAYER_M_CONFIG_H
 
@@ -84,7 +66,7 @@ struct m_profile {
 typedef struct m_config {
   /// Registered options.
   /** This contains all options and suboptions.
-   */
+   */ 
   m_config_option_t* opts;
   /// Current stack level.
   int lvl;
@@ -192,7 +174,7 @@ m_config_add_profile(m_config_t* config, char* name);
 
 /// Set the description of a profile.
 /** Used by the config file parser when defining a profile.
- *
+ * 
  *  \param p The profile object.
  *  \param arg The profile's name.
  */
@@ -201,7 +183,7 @@ m_profile_set_desc(m_profile_t* p, char* desc);
 
 /// Add an option to a profile.
 /** Used by the config file parser when defining a profile.
- *
+ * 
  *  \param config The config object.
  *  \param p The profile object.
  *  \param name The option's name.
@@ -213,7 +195,7 @@ m_config_set_profile_option(m_config_t* config, m_profile_t* p,
 
 /// Enables profile usage
 /** Used by the config file parser when loading a profile.
- *
+ * 
  *  \param config The config object.
  *  \param p The profile object.
  */

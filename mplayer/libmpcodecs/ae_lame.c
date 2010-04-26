@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -29,7 +11,6 @@
 #include "stream/stream.h"
 #include "libmpdemux/muxer.h"
 #include "help_mp.h"
-#include "ae_lame.h"
 #include "ae_pcm.h"
 #include "libaf/af_format.h"
 #include "libmpdemux/mp3_hdr.h"
@@ -59,7 +40,7 @@ static int  lame_presets_set( lame_t gfp, int fast, int cbr, const char* preset_
 #endif
 
 
-const m_option_t lameopts_conf[] = {
+m_option_t lameopts_conf[]={
 	{"q", &lame_param_quality, CONF_TYPE_INT, CONF_RANGE, 0, 9, NULL},
 	{"aq", &lame_param_algqual, CONF_TYPE_INT, CONF_RANGE, 0, 9, NULL},
 	{"vbr", &lame_param_vbr, CONF_TYPE_INT, CONF_RANGE, 0, vbr_max_indicator, NULL},
@@ -112,11 +93,11 @@ static int bind_lame(audio_encoder_t *encoder, muxer_stream_t *mux_a)
     ((MPEGLAYER3WAVEFORMAT*)(mux_a->wf))->nBlockSize=encoder->params.samples_per_frame; // ???
     ((MPEGLAYER3WAVEFORMAT*)(mux_a->wf))->nFramesPerBlock=1;
     ((MPEGLAYER3WAVEFORMAT*)(mux_a->wf))->nCodecDelay=0;
-
+    
     encoder->input_format = AF_FORMAT_S16_NE;
     encoder->min_buffer_size = 4608;
     encoder->max_buffer_size = mux_a->h.dwRate * mux_a->wf->nChannels * 2;
-
+    
     return 1;
 }
 
@@ -206,14 +187,14 @@ int mpae_init_lame(audio_encoder_t *encoder)
     }
 #endif
     if(lame_init_params(lame) == -1) {
-        mp_msg(MSGT_MENCODER, MSGL_FATAL, MSGTR_LameCantInit);
+        mp_msg(MSGT_MENCODER, MSGL_FATAL, MSGTR_LameCantInit); 
         return 0;
     }
     if( mp_msg_test(MSGT_MENCODER,MSGL_V) ) {
         lame_print_config(lame);
         lame_print_internals(lame);
     }
-
+    
     encoder->bind = bind_lame;
     encoder->get_frame_size = get_frame_size;
     encoder->encode = encode_lame;
@@ -223,7 +204,7 @@ int mpae_init_lame(audio_encoder_t *encoder)
 }
 
 #ifdef CONFIG_MP3LAME_PRESET
-/* lame_presets_set
+/* lame_presets_set 
    taken out of presets_set in lame-3.93.1/frontend/parse.c and modified */
 static int  lame_presets_set( lame_t gfp, int fast, int cbr, const char* preset_name )
 {
@@ -283,7 +264,7 @@ static int  lame_presets_set( lame_t gfp, int fast, int cbr, const char* preset_
         return 0;
     }
 #endif
-
+    
     if (strcmp(preset_name, "standard") == 0) {
         if (fast > 0)
            lame_set_preset(gfp, STANDARD_FAST);
@@ -292,7 +273,7 @@ static int  lame_presets_set( lame_t gfp, int fast, int cbr, const char* preset_
 
         return 0;
     }
-
+    
     else if (strcmp(preset_name, "extreme") == 0){
         if (fast > 0)
            lame_set_preset(gfp, EXTREME_FAST);
@@ -301,12 +282,12 @@ static int  lame_presets_set( lame_t gfp, int fast, int cbr, const char* preset_
 
         return 0;
     }
-
-    else if (((strcmp(preset_name, "insane") == 0) ||
+    					
+    else if (((strcmp(preset_name, "insane") == 0) || 
               (strcmp(preset_name, "320"   ) == 0))   && (fast < 1)) {
 
         lame_set_preset(gfp, INSANE);
-
+ 
         return 0;
     }
 

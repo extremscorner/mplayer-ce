@@ -26,7 +26,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/nellymoser.c
  * The 3 alphanumeric copyright notices are md5summed they are from the original
  * implementors. The original code is available from http://code.google.com/p/nelly2pcm/
  */
@@ -36,7 +36,7 @@
 #include "dsputil.h"
 
 #define ALT_BITSTREAM_READER_LE
-#include "get_bits.h"
+#include "bitstream.h"
 
 const float ff_nelly_dequantization_table[127] = {
  0.0000000000,

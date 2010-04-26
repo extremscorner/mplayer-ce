@@ -1,7 +1,7 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: decod386.c 31032 2010-04-12 10:56:17Z diego $
+ * $Id: decod386.c 28374 2009-01-26 09:56:27Z diego $
  */
 
 /*
@@ -22,10 +22,10 @@
 #if 0
  /* old WRITE_SAMPLE */
    /* is portable */
-#define WRITE_SAMPLE(samples,sum,clip) {                        \
-  if( (sum) > 32767.0) { *(samples) = 0x7fff; (clip)++; }       \
+#define WRITE_SAMPLE(samples,sum,clip) {			\
+  if( (sum) > 32767.0) { *(samples) = 0x7fff; (clip)++; }	\
   else if( (sum) < -32768.0) { *(samples) = -0x8000; (clip)++; }\
-  else { *(samples) = sum;  }                                   \
+  else { *(samples) = sum;  }					\
 }
 #else
  /* new WRITE_SAMPLE */
@@ -50,14 +50,14 @@
  * On a SPARC cpu, we fetch the low-order 32-bit from the second 32-bit
  * word of the double fp value stored in memory.  On an x86 cpu, we fetch it
  * from the first 32-bit word.
- * I'm not sure if the HAVE_BIGENDIAN feature test covers all possible memory
+ * I'm not sure if the WORDS_BIGENDIAN feature test covers all possible memory
  * layouts of double floating point values an all cpu architectures.  If
  * it doesn't work for you, just enable the "old WRITE_SAMPLE" macro.
  */
-#if HAVE_BIGENDIAN
-#define MANTISSA_OFFSET 1
+#ifdef WORDS_BIGENDIAN
+#define	MANTISSA_OFFSET	1
 #else
-#define MANTISSA_OFFSET 0
+#define	MANTISSA_OFFSET	0
 #endif
 
    /* sizeof(int) == 4 */
@@ -107,7 +107,7 @@ static synth_func_t synth_func;
 #else /* HAVE_ALTIVEC */
 #define dct64_base(a,b,c) dct64(a,b,c)
 #endif /* HAVE_ALTIVEC */
-
+ 
 static int synth_1to1(real *bandPtr,int channel,unsigned char *out,int *pnt)
 {
   static real buffs[2][2][0x110];

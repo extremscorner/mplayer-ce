@@ -23,8 +23,7 @@
  */
 #include <limits.h>
 #include "avcodec.h"
-#include "get_bits.h"
-#include "put_bits.h"
+#include "bitstream.h"
 
 /**
  * G.726 11bit float.
@@ -364,10 +363,8 @@ static int g726_encode_frame(AVCodecContext *avctx,
 
 static int g726_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             AVPacket *avpkt)
+                             const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     G726Context *c = avctx->priv_data;
     short *samples = data;
     GetBitContext gb;
@@ -387,21 +384,21 @@ static int g726_decode_frame(AVCodecContext *avctx,
 #if CONFIG_ADPCM_G726_ENCODER
 AVCodec adpcm_g726_encoder = {
     "g726",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_ADPCM_G726,
     sizeof(G726Context),
     g726_init,
     g726_encode_frame,
     g726_close,
     NULL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
 #endif
 
 AVCodec adpcm_g726_decoder = {
     "g726",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_ADPCM_G726,
     sizeof(G726Context),
     g726_init,

@@ -1,6 +1,6 @@
 .\" synced with 1.1114
 .\" Encoding: iso-8859-2
-.\" MPlayer (C) 2000-2010 MPlayer Team
+.\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .\" T³umaczenie: Wac³aw "Torinthiel" Schiller (torinthiel@wp.pl)
 .\"            i Maciej "Paszczi" Paszta (paszczi@go2.pl)
@@ -334,7 +334,7 @@ Modyfikuje nasycenie.
 .PD 1
 .PP
 (Nastêpuj±ce klawisze dzia³aj± tylko ze sterownikiem wyj¶cia video quartz lub
-corevideo.)
+macosx.)
 .PP
 .PD 0
 .RSs
@@ -820,7 +820,7 @@ Odtwarza film w formacie Matroska w jêzyku japoñskim.
 Wymusza typ demuxera audio dla \-audiofile.
 U¿ycie "+" przed nazw± wymusza j±, wy³±cza to niektóre testy.
 Podaj nazwê demuksera wypisan± przez \-audio\-demuxer help.
-Dla kompatybilno¶ci z poprzednimi wersjami akceptuje te¿
+Dla kompatybilno¶ci z poprzednimi wersjami akceptuje te¿ 
 ID demuxera zdefiniowane w zbiorze libmpdemux/\:demuxer.h.
 \-audio\-demuxer audio albo \-audio\-demuxer 17 wymusza MP3.
 .
@@ -1947,7 +1947,7 @@ Ocenia opó¼nienie audio, powinno dawaæ równiejsze odtwarzanie video
 przekazuje d¼wiêk przez NAS
 .
 .TP
-.B coreaudio (tylko Mac OS X)
+.B macosx (tylko Mac OS X)
 rdzenny sterownik Mac OS X
 .
 .TP
@@ -2293,14 +2293,14 @@ Dodatkowo, pod X11 Twój manager okien musi rozumieæ zalecenia proporcji okna.
 .B "\-ontop\ "
 Sprawia, ¿e okno zostaje nad innymi oknami.
 Obs³ugiwane przez sterowniki wyj¶cia video u¿ywaj±ce X11, poza SDL
-oraz directx, corevideo, quartz, ggi i gl2.
+oraz directx, macosx, quartz, ggi i gl2.
 .
 .TP
 .B \-panscan <0.0\-1.0>
 W³±cza tryb panoramiczny (obcina boki filmu np.\& 16:9 tak, by pasowa³ na
 ekran 4:3 bez czarnych pasków).
 Zasiêg kontroluje jak du¿a czê¶æ obrazu bêdzie przyciêta.
-Dzia³a tylko ze sterownikami wyj¶cia video xv, xmga, mga, gl, quartz, corevideo i xvidix.
+Dzia³a tylko ze sterownikami wyj¶cia video xv, xmga, mga, gl, quartz, macosx i xvidix.
 .
 .TP
 .B \-refreshrate <Hz>
@@ -2311,7 +2311,7 @@ Obecnie opcja ta jest obs³ugiwana tylko przez \-vo directx razem z \-vm.
 .B \-rootwin
 Odtwarza film w g³ównym oknie (t³o pulpitu).
 Jednak obrazki t³a na pulpicie mog± przes³aniaæ okno filmu.
-Dzia³a tylko ze sterownikami wyj¶cia video x11, xv, xmga, xvidix, quartz, corevideo i directx.
+Dzia³a tylko ze sterownikami wyj¶cia video x11, xv, xmga, xvidix, quartz, macosx i directx.
 .
 .TP
 .B \-saturation <\-100\-100>
@@ -2621,7 +2621,7 @@ Podaje rozdzielczo¶æ pe³noekranow± (przydatne na wolnych systemach).
 .PD 1
 .
 .TP
-.B corevideo (Mac OS X 10.4 lub 10.3.9 z QuickTime 7)
+.B macosx (Mac OS X 10.4 lub 10.3.9 z QuickTime 7)
 sterownik wyj¶cia video Mac OS X CoreVideo
 .PD 0
 .RSs
@@ -2720,7 +2720,7 @@ OpenGL.
 .PD 0
 .RSs
 .IPs (no)manyfmts
-W³±cza obs³ugê wiêkszej ilo¶ci formatów kolorów (RGB i BGR)
+W³±cza obs³ugê wiêkszej ilo¶ci formatów kolorów (RGB i BGR) 
 (domy¶lnie: w³±czone).
 Wymaga wersji OpenGL >= 1.2.
 .IPs slice-height=<0\-...>
@@ -3816,7 +3816,7 @@ wyj¶ciowa czêstotliwo¶æ próbkowania
 .IPs <d³ug>
 d³ugo¶æ filtru ze wzglêdu na ni¿sz± czêstotliwo¶æ próbkowania
 (domy¶lnie: 16)
-.IPs <lin>
+.IPs <lin> 
 je¶li 1 to filtry bêd± liniowo interpolowane pomiêdzy wielofazowymi pozycjami
 .IPs <liczba>
 log2 z liczby wielofazowych pozycji
@@ -4050,7 +4050,7 @@ na poziomie 60Hz i dodany do oddzielnego kana³u w strumieniu audio.
 .br
 .I UWAGA:
 Wy³±cz ten filtr, je¿eli odtwarzasz DVD z d¼wiêkiem w systemie Dolby Digital
-5.1, w przeciwnym wypadku jego dzia³anie zak³óci d¼wiêk subwoofera.
+5.1, w przeciwnym wypadku jego dzia³anie zak³óci d¼wiêk subwoofera. 
 .PD 0
 .RSs
 .IPs "<fc>\ "
@@ -4159,7 +4159,7 @@ tylne kana³y i subwoofer o 0ms, a centralny o 7ms.
 .B export[=mmapowany_zbiór[:npróbek]]
 Eksportuje przychodz±cy sygna³ do innych procesów u¿ywaj±c mapowania pamiêci
 (mmap()).
-Zmapowane obszary zawieraj± nag³ówek:
+Zmapowane obszary zawieraj± nag³ówek: 
 .sp 1
 .nf
 int lkan                     /*liczba kana³ów*/
@@ -8348,7 +8348,7 @@ Poziom 1 mo¿e dwukrotnie przyspieszyæ pierwszy przebieg nie zmniejszaj±c
 globalnego PSNR ostatniego przej¶cia w porównaniu z pierwszym przebiegiem
 pe³nej jako¶ci.
 .br
-Poziom 2 mo¿e czterokrotnie przyspieszyæ pierwszy przebieg zmieniaj±c
+Poziom 2 mo¿e czterokrotnie przyspieszyæ pierwszy przebieg zmieniaj±c 
 globalne PSNR ostatniego przej¶cia o +/\- 0.05dB w porównaniu z pierwszym
 przebiegiem pe³nej jako¶ci.
 .REss

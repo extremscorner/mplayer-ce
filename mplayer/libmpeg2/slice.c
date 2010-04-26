@@ -23,7 +23,7 @@
  *
  * Modified for use with MPlayer, see libmpeg2_changes.diff for the exact changes.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: slice.c 29306 2009-05-13 15:22:13Z bircoph $
+ * $Id: slice.c 27604 2008-09-13 17:31:45Z diego $
  */
 
 #include "config.h"
@@ -1906,7 +1906,7 @@ void mpeg2_slice (mpeg2_decoder_t * const decoder, const int code,
 
 	    if (   ((macroblock_modes >> MOTION_TYPE_SHIFT) < 0)
                 || ((macroblock_modes >> MOTION_TYPE_SHIFT) >=
-                    (int)(sizeof(decoder->motion_parser)
+                    (int)(sizeof(decoder->motion_parser) 
                           / sizeof(decoder->motion_parser[0])))
 	       ) {
 		break; // Illegal !

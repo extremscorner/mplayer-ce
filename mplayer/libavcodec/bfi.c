@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/bfi.c
  * @brief Brute Force & Ignorance (.bfi) video decoder
  * @author Sisir Koppaka ( sisir.koppaka at gmail dot com )
  * @sa http://wiki.multimedia.cx/index.php?title=BFI
@@ -45,10 +45,9 @@ static av_cold int bfi_decode_init(AVCodecContext * avctx)
 }
 
 static int bfi_decode_frame(AVCodecContext * avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *data_size, const uint8_t * buf,
+                            int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     BFIContext *bfi = avctx->priv_data;
     uint8_t *dst = bfi->dst;
     uint8_t *src, *dst_offset, colour1, colour2;
@@ -173,12 +172,11 @@ static av_cold int bfi_decode_close(AVCodecContext * avctx)
 
 AVCodec bfi_decoder = {
     .name = "bfi",
-    .type = AVMEDIA_TYPE_VIDEO,
+    .type = CODEC_TYPE_VIDEO,
     .id = CODEC_ID_BFI,
     .priv_data_size = sizeof(BFIContext),
     .init = bfi_decode_init,
     .close = bfi_decode_close,
     .decode = bfi_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Brute Force & Ignorance"),
 };

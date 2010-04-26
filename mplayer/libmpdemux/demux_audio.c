@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 #include "mp_msg.h"
@@ -23,7 +6,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "stream/stream.h"
-#include "aviprint.h"
 #include "demuxer.h"
 #include "stheader.h"
 #include "genres.h"
@@ -62,6 +44,8 @@ typedef struct mp3_hdr {
   int cons_hdrs; // if this reaches MIN_MP3_HDRS we accept as MP3 file
   struct mp3_hdr *next;
 } mp3_hdr_t;
+
+void print_wave_header(WAVEFORMATEX *h, int verbose_level);
 
 int hr_mp3_seek = 0;
 
@@ -167,7 +151,7 @@ get_flac_metadata (demuxer_t* demuxer)
   uint8_t preamble[4];
   unsigned int blk_len;
   stream_t *s = demuxer->stream;
-
+  
   /* file is qualified; skip over the signature bytes in the stream */
   stream_seek (s, 4);
 
@@ -175,7 +159,7 @@ get_flac_metadata (demuxer_t* demuxer)
    * will always be 1 metadata block */
   do {
     int r;
-
+    
     r = stream_read (s, (char *) preamble, FLAC_SIGNATURE_SIZE);
     if (r != FLAC_SIGNATURE_SIZE)
       return;
@@ -249,7 +233,7 @@ get_flac_metadata (demuxer_t* demuxer)
     case FLAC_APPLICATION:
     case FLAC_SEEKTABLE:
     case FLAC_CUESHEET:
-    default:
+    default: 
       /* 6-127 are presently reserved */
       stream_skip (s, blk_len);
       break;
@@ -267,7 +251,7 @@ static int demux_audio_open(demuxer_t* demuxer) {
   // mp3_hdrs list is sorted first by next_frame_pos and then by frame_pos
   mp3_hdr_t *mp3_hdrs = NULL, *mp3_found = NULL;
   da_priv_t* priv;
-
+  
   s = demuxer->stream;
 
   stream_read(s, hdr, HDR_SIZE);
@@ -298,7 +282,7 @@ static int demux_audio_open(demuxer_t* demuxer) {
       step = 4;
     } else if( hdr[0] == 'f' && hdr[1] == 'm' && hdr[2] == 't' && hdr[3] == ' ' ) {
       frmt = WAV;
-      break;
+      break;      
     } else if((mp3_flen = mp_get_mp3_header(hdr, &mp3_chans, &mp3_freq,
                                 &mpa_spf, &mpa_layer, &mpa_br)) > 0) {
       mp3_found = add_mp3_hdr(&mp3_hdrs, st_pos, mp3_chans, mp3_freq,
@@ -341,11 +325,11 @@ static int demux_audio_open(demuxer_t* demuxer) {
     sh_audio->wf->nAvgBytesPerSec = mp3_found->mpa_br * (1000 / 8);
     sh_audio->wf->nBlockAlign = mp3_found->mpa_spf;
     sh_audio->wf->wBitsPerSample = 16;
-    sh_audio->wf->cbSize = 0;
+    sh_audio->wf->cbSize = 0;    
     sh_audio->i_bps = sh_audio->wf->nAvgBytesPerSec;
     free(mp3_found);
     mp3_found = NULL;
-    if(s->end_pos && (s->flags & MP_STREAM_SEEK) == MP_STREAM_SEEK) {
+    if(s->end_pos && (s->flags & STREAM_SEEK) == STREAM_SEEK) {
       char tag[4];
       stream_seek(s,s->end_pos-128);
       stream_read(s,tag,3);
@@ -416,8 +400,6 @@ static int demux_audio_open(demuxer_t* demuxer) {
       }
       stream_read(s,(char*)((char*)(w)+sizeof(WAVEFORMATEX)),w->cbSize);
       l -= w->cbSize;
-      if (w->wFormatTag & 0xfffe && w->cbSize >= 22)
-          sh_audio->format = ((WAVEFORMATEXTENSIBLE *)w)->SubFormat;
     }
 
     if( mp_msg_test(MSGT_DEMUX,MSGL_V) ) print_wave_header(w, MSGL_V);
@@ -529,10 +511,11 @@ static int demux_audio_open(demuxer_t* demuxer) {
 }
 
 
-static int demux_audio_fill_buffer(demuxer_t *demux, demux_stream_t *ds) {
+static int demux_audio_fill_buffer(demuxer_t *demuxer, demux_stream_t *ds) {
   int l;
   demux_packet_t* dp;
   sh_audio_t* sh_audio = ds->sh;
+  demuxer_t* demux = ds->demuxer;
   da_priv_t* priv = demux->priv;
   double this_pts = priv->next_pts;
   stream_t* s = demux->stream;
@@ -655,7 +638,7 @@ static void demux_audio_seek(demuxer_t *demuxer,float rel_seek_secs,float audio_
     pos = demuxer->movi_start;
 
   priv->next_pts = (pos-demuxer->movi_start)/(double)sh_audio->i_bps;
-
+  
   switch(priv->frmt) {
   case WAV:
     pos -= (pos - demuxer->movi_start) %
@@ -679,7 +662,7 @@ static int demux_audio_control(demuxer_t *demuxer,int cmd, void *arg){
     sh_audio_t *sh_audio=demuxer->audio->sh;
     int audio_length = sh_audio->i_bps ? demuxer->movi_end / sh_audio->i_bps : 0;
     da_priv_t* priv = demuxer->priv;
-
+	    
     switch(cmd) {
 	case DEMUXER_CTRL_GET_TIME_LENGTH:
 	    if (audio_length<=0) return DEMUXER_CTRL_DONTKNOW;
@@ -687,7 +670,7 @@ static int demux_audio_control(demuxer_t *demuxer,int cmd, void *arg){
 	    return DEMUXER_CTRL_GUESS;
 
 	case DEMUXER_CTRL_GET_PERCENT_POS:
-	    if (audio_length<=0)
+	    if (audio_length<=0) 
     		return DEMUXER_CTRL_DONTKNOW;
     	    *((int *)arg)=(int)( (priv->next_pts*100)  / audio_length);
 	    return DEMUXER_CTRL_OK;

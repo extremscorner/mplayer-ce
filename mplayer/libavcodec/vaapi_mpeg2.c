@@ -46,16 +46,16 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
 
     dprintf(avctx, "vaapi_mpeg2_start_frame()\n");
 
+    vactx->pic_param_size   = sizeof(VAPictureParameterBufferMPEG2);
+    vactx->iq_matrix_size   = sizeof(VAIQMatrixBufferMPEG2);
     vactx->slice_param_size = sizeof(VASliceParameterBufferMPEG2);
 
     /* Fill in VAPictureParameterBufferMPEG2 */
-    pic_param = ff_vaapi_alloc_pic_param(vactx, sizeof(VAPictureParameterBufferMPEG2));
-    if (!pic_param)
-        return -1;
+    pic_param = &vactx->pic_param.mpeg2;
     pic_param->horizontal_size                                  = s->width;
     pic_param->vertical_size                                    = s->height;
-    pic_param->forward_reference_picture                        = VA_INVALID_ID;
-    pic_param->backward_reference_picture                       = VA_INVALID_ID;
+    pic_param->forward_reference_picture                        = 0xffffffff;
+    pic_param->backward_reference_picture                       = 0xffffffff;
     pic_param->picture_coding_type                              = s->pict_type;
     pic_param->f_code                                           = mpeg2_get_f_code(s);
     pic_param->picture_coding_extension.value                   = 0; /* reset all bits */
@@ -73,21 +73,20 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
 
     switch (s->pict_type) {
     case FF_B_TYPE:
-        pic_param->backward_reference_picture = ff_vaapi_get_surface_id(&s->next_picture);
+        pic_param->backward_reference_picture = ff_vaapi_get_surface(&s->next_picture);
         // fall-through
     case FF_P_TYPE:
-        pic_param->forward_reference_picture = ff_vaapi_get_surface_id(&s->last_picture);
+        pic_param->forward_reference_picture = ff_vaapi_get_surface(&s->last_picture);
         break;
     }
 
     /* Fill in VAIQMatrixBufferMPEG2 */
-    iq_matrix = ff_vaapi_alloc_iq_matrix(vactx, sizeof(VAIQMatrixBufferMPEG2));
-    if (!iq_matrix)
-        return -1;
+    iq_matrix = &vactx->iq_matrix.mpeg2;
     iq_matrix->load_intra_quantiser_matrix              = 1;
     iq_matrix->load_non_intra_quantiser_matrix          = 1;
     iq_matrix->load_chroma_intra_quantiser_matrix       = 1;
     iq_matrix->load_chroma_non_intra_quantiser_matrix   = 1;
+    vactx->iq_matrix_present                            = 1;
 
     for (i = 0; i < 64; i++) {
         int n = s->dsp.idct_permutation[ff_zigzag_direct[i]];
@@ -131,7 +130,6 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     if (!slice_param)
         return -1;
     slice_param->macroblock_offset              = macroblock_offset;
-    slice_param->slice_horizontal_position      = s->mb_x;
     slice_param->slice_vertical_position        = s->mb_y;
     slice_param->quantiser_scale_code           = quantiser_scale_code;
     slice_param->intra_slice_flag               = intra_slice_flag;
@@ -140,7 +138,7 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 
 AVHWAccel mpeg2_vaapi_hwaccel = {
     .name           = "mpeg2_vaapi",
-    .type           = AVMEDIA_TYPE_VIDEO,
+    .type           = CODEC_TYPE_VIDEO,
     .id             = CODEC_ID_MPEG2VIDEO,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
     .capabilities   = 0,

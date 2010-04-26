@@ -1,27 +1,12 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include "config.h"
 #include "cpudetect.h"
 #include "mp_msg.h"
 
 CpuCaps gCpuCaps;
 
+#if HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 #include <stdlib.h>
 
 #if ARCH_X86
@@ -47,8 +32,8 @@ CpuCaps gCpuCaps;
 #include <proto/exec.h>
 #endif
 
-/* Thanks to the FreeBSD project for some of this cpuid code, and
- * help understanding how to use it.  Thanks to the Mesa
+/* Thanks to the FreeBSD project for some of this cpuid code, and 
+ * help understanding how to use it.  Thanks to the Mesa 
  * team for SSE support detection and more cpu detect code.
  */
 
@@ -70,19 +55,19 @@ static int has_cpuid(void)
                           "pushfl\n\t"
                           "pop %0\n\t"
                           "mov %0, %1\n\t"
-
+                          
                           /* ... Toggle the ID bit in one copy and store */
                           /*     to the EFLAGS reg */
                           "xor $0x200000, %0\n\t"
                           "push %0\n\t"
                           "popfl\n\t"
-
+                          
                           /* ... Get the (hopefully modified) EFLAGS */
                           "pushfl\n\t"
                           "pop %0\n\t"
                           : "=a" (a), "=c" (c)
                           :
-                          : "cc"
+                          : "cc" 
                           );
 
 	return a != c;
@@ -104,7 +89,7 @@ do_cpuid(unsigned int ax, unsigned int *p)
 	("mov %%"REG_b", %%"REG_S"\n\t"
          "cpuid\n\t"
          "xchg %%"REG_b", %%"REG_S
-         : "=a" (p[0]), "=S" (p[1]),
+         : "=a" (p[0]), "=S" (p[1]), 
            "=c" (p[2]), "=d" (p[3])
          : "0" (ax));
 #endif
@@ -195,15 +180,23 @@ void GetCpuCaps( CpuCaps *caps)
 #endif
 
 		/* FIXME: Does SSE2 need more OS support, too? */
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) \
+  || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) \
+  || defined(__APPLE__) || defined(__CYGWIN__) || defined(__MINGW32__) \
+  || defined(__OS2__)
 		if (caps->hasSSE)
 			check_os_katmai_support();
 		if (!caps->hasSSE)
 			caps->hasSSE2 = 0;
+#else
+		caps->hasSSE=0;
+		caps->hasSSE2 = 0;
+#endif
 //		caps->has3DNow=1;
 //		caps->hasMMX2 = 0;
 //		caps->hasMMX = 0;
 
-#if !CONFIG_RUNTIME_CPUDETECT
+#ifndef RUNTIME_CPUDETECT
 #if !HAVE_MMX
 	if(caps->hasMMX) mp_msg(MSGT_CPUDETECT,MSGL_WARN,"MMX supported but disabled\n");
 	caps->hasMMX=0;
@@ -228,7 +221,7 @@ void GetCpuCaps( CpuCaps *caps)
 	if(caps->has3DNowExt) mp_msg(MSGT_CPUDETECT,MSGL_WARN,"3DNowExt supported but disabled\n");
 	caps->has3DNowExt=0;
 #endif
-#endif  // CONFIG_RUNTIME_CPUDETECT
+#endif  // RUNTIME_CPUDETECT
 }
 
 char *GetCpuFriendlyName(unsigned int regs[], unsigned int regs2[]){
@@ -284,7 +277,7 @@ LONG CALLBACK win32_sig_handler_sse(EXCEPTION_POINTERS* ep)
    if(ep->ExceptionRecord->ExceptionCode==EXCEPTION_ILLEGAL_INSTRUCTION){
       mp_msg(MSGT_CPUDETECT,MSGL_V, "SIGILL, " );
       ep->ContextRecord->Eip +=3;
-      gCpuCaps.hasSSE=0;
+      gCpuCaps.hasSSE=0;       
 	  return EXCEPTION_CONTINUE_EXECUTION;
    }
    return EXCEPTION_CONTINUE_SEARCH;
@@ -315,7 +308,7 @@ ULONG _System os2_sig_handler_sse( PEXCEPTIONREPORTRECORD       p1,
  * and RedHat patched 2.2 kernels that have broken exception handling
  * support for user space apps that do SSE.
  */
-
+ 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__DragonFly__)
 #define SSE_SYSCTL_NAME "hw.instruction_sse"
 #elif defined(__APPLE__)
@@ -443,7 +436,7 @@ static void sigill_handler (int sig)
         signal (sig, SIG_DFL);
         raise (sig);
     }
-
+    
     canjump = 0;
     siglongjmp (jmpbuf, 1);
 }
@@ -465,7 +458,7 @@ void GetCpuCaps( CpuCaps *caps)
 	caps->hasSSE4a=0;
 	caps->isX86=0;
 	caps->hasAltiVec = 0;
-#if HAVE_ALTIVEC
+#if HAVE_ALTIVEC   
 #ifdef __APPLE__
 /*
   rip-off from ffmpeg altivec detection code.
@@ -477,7 +470,7 @@ void GetCpuCaps( CpuCaps *caps)
                 size_t len = sizeof(has_vu);
                 int err;
 
-                err = sysctl(sels, 2, &has_vu, &len, NULL, 0);
+                err = sysctl(sels, 2, &has_vu, &len, NULL, 0);   
 
                 if (err == 0)
                         if (has_vu != 0)
@@ -498,12 +491,12 @@ void GetCpuCaps( CpuCaps *caps)
             signal (SIGILL, SIG_DFL);
           } else {
             canjump = 1;
-
+            
             __asm__ volatile ("mtspr 256, %0\n\t"
                           "vand %%v0, %%v0, %%v0"
                           :
                           : "r" (-1));
-
+            
             signal (SIGILL, SIG_DFL);
             caps->hasAltiVec = 1;
           }
@@ -527,8 +520,8 @@ if (ARCH_PPC)
 if (ARCH_ALPHA)
 	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: Digital Alpha\n");
 
-if (ARCH_MIPS)
-	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: MIPS\n");
+if (ARCH_SGI_MIPS)
+	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: SGI MIPS\n");
 
 if (ARCH_PA_RISC)
 	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: Hewlett-Packard PA-RISC\n");

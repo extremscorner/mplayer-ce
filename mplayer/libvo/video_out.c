@@ -79,67 +79,60 @@ int vo_directrendering=0;
 int vo_colorkey = 0x0000ff00; // default colorkey is green
                               // (0xff000000 means that colorkey has been disabled)
 
-// name to be used instead of the vo's default
-char *vo_winname;
-// title to be applied to movie window
-char *vo_wintitle;
-
 //
 // Externally visible list of all vo drivers
 //
-extern const vo_functions_t video_out_mga;
-extern const vo_functions_t video_out_xmga;
-extern const vo_functions_t video_out_x11;
+extern vo_functions_t video_out_mga;
+extern vo_functions_t video_out_xmga;
+extern vo_functions_t video_out_x11;
 extern vo_functions_t video_out_xover;
-extern const vo_functions_t video_out_xvmc;
-extern const vo_functions_t video_out_vdpau;
-extern const vo_functions_t video_out_xv;
-extern const vo_functions_t video_out_gl_nosw;
-extern const vo_functions_t video_out_gl;
-extern const vo_functions_t video_out_gl2;
-extern const vo_functions_t video_out_matrixview;
-extern const vo_functions_t video_out_dga;
-extern const vo_functions_t video_out_sdl;
-extern const vo_functions_t video_out_3dfx;
-extern const vo_functions_t video_out_tdfxfb;
-extern const vo_functions_t video_out_s3fb;
-extern const vo_functions_t video_out_wii;
-extern const vo_functions_t video_out_null;
-extern const vo_functions_t video_out_zr;
-extern const vo_functions_t video_out_zr2;
-extern const vo_functions_t video_out_bl;
+extern vo_functions_t video_out_xvmc;
+extern vo_functions_t video_out_vdpau;
+extern vo_functions_t video_out_xv;
+extern vo_functions_t video_out_gl;
+extern vo_functions_t video_out_gl2;
+extern vo_functions_t video_out_dga;
+extern vo_functions_t video_out_sdl;
+extern vo_functions_t video_out_3dfx;
+extern vo_functions_t video_out_tdfxfb;
+extern vo_functions_t video_out_s3fb;
+extern vo_functions_t video_out_wii;
+extern vo_functions_t video_out_null;
+extern vo_functions_t video_out_zr;
+extern vo_functions_t video_out_zr2;
+extern vo_functions_t video_out_bl;
 extern vo_functions_t video_out_fbdev;
-extern const vo_functions_t video_out_fbdev2;
+extern vo_functions_t video_out_fbdev2;
 extern vo_functions_t video_out_svga;
-extern const vo_functions_t video_out_png;
-extern const vo_functions_t video_out_ggi;
-extern const vo_functions_t video_out_aa;
-extern const vo_functions_t video_out_caca;
-extern const vo_functions_t video_out_mpegpes;
-extern const vo_functions_t video_out_yuv4mpeg;
-extern const vo_functions_t video_out_direct3d;
-extern const vo_functions_t video_out_directx;
-extern const vo_functions_t video_out_kva;
-extern const vo_functions_t video_out_dxr2;
-extern const vo_functions_t video_out_dxr3;
-extern const vo_functions_t video_out_ivtv;
-extern const vo_functions_t video_out_v4l2;
-extern const vo_functions_t video_out_jpeg;
-extern const vo_functions_t video_out_gif89a;
+extern vo_functions_t video_out_png;
+extern vo_functions_t video_out_ggi;
+extern vo_functions_t video_out_aa;
+extern vo_functions_t video_out_caca;
+extern vo_functions_t video_out_mpegpes;
+extern vo_functions_t video_out_yuv4mpeg;
+extern vo_functions_t video_out_direct3d;
+extern vo_functions_t video_out_directx;
+extern vo_functions_t video_out_kva;
+extern vo_functions_t video_out_dxr2;
+extern vo_functions_t video_out_dxr3;
+extern vo_functions_t video_out_ivtv;
+extern vo_functions_t video_out_v4l2;
+extern vo_functions_t video_out_jpeg;
+extern vo_functions_t video_out_gif89a;
 extern vo_functions_t video_out_vesa;
-extern const vo_functions_t video_out_directfb;
-extern const vo_functions_t video_out_dfbmga;
+extern vo_functions_t video_out_directfb;
+extern vo_functions_t video_out_dfbmga;
 extern vo_functions_t video_out_xvidix;
 extern vo_functions_t video_out_winvidix;
 extern vo_functions_t video_out_cvidix;
-extern const vo_functions_t video_out_tdfx_vid;
-extern const vo_functions_t video_out_xvr100;
-extern const vo_functions_t video_out_tga;
-extern const vo_functions_t video_out_corevideo;
-extern const vo_functions_t video_out_quartz;
-extern const vo_functions_t video_out_pnm;
-extern const vo_functions_t video_out_md5sum;
-extern const vo_functions_t video_out_gekko;
+extern vo_functions_t video_out_tdfx_vid;
+extern vo_functions_t video_out_xvr100;
+extern vo_functions_t video_out_tga;
+extern vo_functions_t video_out_macosx;
+extern vo_functions_t video_out_quartz;
+extern vo_functions_t video_out_pnm;
+extern vo_functions_t video_out_md5sum;
+extern vo_functions_t video_out_gekko;
 
 const vo_functions_t* const video_out_drivers[] =
 {
@@ -159,7 +152,7 @@ const vo_functions_t* const video_out_drivers[] =
         &video_out_kva,
 #endif
 #ifdef CONFIG_COREVIDEO
-        &video_out_corevideo,
+        &video_out_macosx,
 #endif
 #ifdef CONFIG_QUARTZ
         &video_out_quartz,
@@ -182,16 +175,13 @@ const vo_functions_t* const video_out_drivers[] =
 #ifdef CONFIG_3DFX
         &video_out_3dfx,
 #endif
-#if CONFIG_VDPAU
-        &video_out_vdpau,
-#endif
 #ifdef CONFIG_XV
         &video_out_xv,
 #endif
-#ifdef CONFIG_X11
-#ifdef CONFIG_GL
-        &video_out_gl_nosw,
+#if CONFIG_VDPAU
+        &video_out_vdpau,
 #endif
+#ifdef CONFIG_X11
         &video_out_x11,
         &video_out_xover,
 #endif
@@ -214,9 +204,6 @@ const vo_functions_t* const video_out_drivers[] =
 #endif
 #ifdef CONFIG_SVGALIB
         &video_out_svga,
-#endif
-#ifdef CONFIG_MATRIXVIEW
-        &video_out_matrixview,
 #endif
 #ifdef CONFIG_AA
         &video_out_aa,
@@ -273,7 +260,7 @@ const vo_functions_t* const video_out_drivers[] =
 #ifdef CONFIG_YUV4MPEG
         &video_out_yuv4mpeg,
 #endif
-#ifdef CONFIG_LIBAVCODEC
+#ifdef CONFIG_PNG
         &video_out_png,
 #endif
 #ifdef CONFIG_JPEG
@@ -428,9 +415,9 @@ void calc_src_dst_rects(int src_width, int src_height, struct vo_rect *src, stru
   if (borders) {
     borders->left = 0; borders->top = 0;
   }
-  if (aspect_scaling()) {
-    aspect(&scaled_width, &scaled_height, A_WINZOOM);
-    panscan_calc_windowed();
+  if (vo_fs) {
+    aspect(&scaled_width, &scaled_height, A_ZOOM);
+    panscan_calc();
     scaled_width  += vo_panscan_x;
     scaled_height += vo_panscan_y;
     if (borders) {
@@ -488,7 +475,7 @@ range_t *str2range(char *s)
 	for (i = 0; *endptr; i++) {
 		if (*s == ',')
 			goto out_err;
-		if (!(r = realloc(r, sizeof(*r) * (i + 2)))) {
+		if (!(r = (range_t *) realloc(r, sizeof(*r) * (i + 2)))) {
 			mp_msg(MSGT_GLOBAL, MSGL_WARN,"can't realloc 'r'\n");
 			return NULL;
 		}
@@ -531,3 +518,4 @@ out_err:
 
 /* Borrowed from vo_fbdev.c END */
 #endif
+

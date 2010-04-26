@@ -38,6 +38,20 @@
 #include "mp_msg.h"
 
 #ifdef CONFIG_DVB
+#ifndef CONFIG_DVB_HEAD
+#include <poll.h>
+
+#include <sys/ioctl.h>
+#include <stdio.h>
+#include <time.h>
+
+#include <ost/dmx.h>
+#include <ost/frontend.h>
+#include <ost/sec.h>
+#include <ost/video.h>
+#include <ost/audio.h>
+
+#else
 #define true 1
 #define false 0
 #include <poll.h>
@@ -51,6 +65,7 @@
 #include <linux/dvb/video.h>
 #include <linux/dvb/audio.h>
 #endif
+#endif
 
 #include "config.h"
 #include "video_out.h"
@@ -60,7 +75,7 @@
 int vo_mpegpes_fd=-1;
 extern int vo_mpegpes_fd2;
 
-static const vo_info_t info =
+static const vo_info_t info = 
 {
 #ifdef CONFIG_DVB
 	"MPEG-PES to DVB card",
@@ -96,7 +111,7 @@ static int preinit(const char *arg){
 #ifdef CONFIG_DVB
     int card = -1;
     char vo_file[30], ao_file[30], *tmp;
-
+    
     if(arg != NULL){
 	if((tmp = strstr(arg, "card=")) != NULL) {
 	    card = atoi(&tmp[5]);
@@ -108,7 +123,7 @@ static int preinit(const char *arg){
 	    arg = NULL;
 	}
     }
-
+    
     if(!arg){
     //|O_NONBLOCK
         //search the first usable card
@@ -126,9 +141,15 @@ static int preinit(const char *arg){
           mp_msg(MSGT_VO,MSGL_INFO, "Couldn't find a usable dvb video device, exiting\n");
           return -1;
         }
+#ifndef CONFIG_DVB_HEAD
+	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/ost/video+audio\n");
+	sprintf(vo_file, "/dev/ost/video");
+	sprintf(ao_file, "/dev/ost/audio");
+#else
 	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/dvb/adapter%d/video0+audio0\n", card);
 	sprintf(vo_file, "/dev/dvb/adapter%d/video0", card);
 	sprintf(ao_file, "/dev/dvb/adapter%d/audio0", card);
+#endif
 	if((vo_mpegpes_fd = open(vo_file,O_RDWR)) < 0){
         	perror("DVB VIDEO DEVICE: ");
         	return -1;
@@ -151,7 +172,7 @@ static int preinit(const char *arg){
     arg = (arg ? arg : "grab.mpg");
     mp_msg(MSGT_VO,MSGL_INFO, "Saving PES stream to %s\n", arg);
     vo_mpegpes_fd=open(arg,O_WRONLY|O_CREAT,0666);
-    if(vo_mpegpes_fd<0){
+    if(vo_mpegpes_fd<0){	
 	perror("vo_mpegpes");
 	return -1;
     }
@@ -174,7 +195,7 @@ static int my_write(unsigned char* data,int len){
 
 	pfd[0].fd = vo_mpegpes_fd;
 	pfd[0].events = POLLOUT;
-
+	
 	pfd[1].fd = vo_mpegpes_fd2;
 	pfd[1].events = POLLOUT;
 
@@ -182,7 +203,7 @@ static int my_write(unsigned char* data,int len){
 	if (poll(pfd,NFD,1)){
 	    if (pfd[0].revents & POLLOUT){
 		int ret=write(vo_mpegpes_fd,data,len);
-//		printf("ret=%d  \n",ret);
+//		printf("ret=%d  \n",ret); 
 		if(ret<=0){
 		    perror("write");
 		    usleep(0);
@@ -199,10 +220,14 @@ static int my_write(unsigned char* data,int len){
     return orig_len;
 }
 
-static void send_pes_packet(unsigned char* data, int len, int id, int timestamp)
-{
+void send_pes_packet(unsigned char* data,int len,int id,int timestamp){
     send_mpeg_pes_packet (data, len, id, timestamp, 1, my_write);
 }
+
+void send_lpcm_packet(unsigned char* data,int len,int id,unsigned int timestamp,int freq_id){
+    send_mpeg_lpcm_packet(data, len, id, timestamp, freq_id, my_write);
+}
+
 
 static int draw_frame(uint8_t * src[])
 {

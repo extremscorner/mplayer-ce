@@ -44,6 +44,8 @@ Small improvements:
  * add help suboption to -lavcopts vcodec=/acodec=, -lavfopts format=,
    -subcp, and anything else that needs it.
 
+ * ability to set mplayer default/startup volume
+
  * ability to cycle switch_aspect
 
  * ability to rename vo_jpeg,vo_gif,vo_png output filename
@@ -111,9 +113,7 @@ Enhancements:
 
  * implement Plextor compatible SCSI VCD reading
 
- * DXVA / DXVA2 -vo for Windows
-
- * GDI -vo for older windows versions
+ * DirectX video acceleration -vo for Windows (similar to XvmC)
 
  * hardware MPEG encoding support (Ati cards)
 
@@ -141,9 +141,11 @@ Enhancements:
 
  * make -noborder work with all video outputs
 
+ * add option to use ffmpeg network code (rtsp, http, mms etc)
+
 Difficult stuff:
 
- * RE all closed source codecs (Voxware, VIVO, MVI2, MSS1/MSS2, ...)
+ * RE all closed source codecs (QDMC, WMA9, Indeo 4/5, ...)
 
  * support for Bink codec
 
@@ -179,3 +181,4 @@ Difficult stuff:
  * encode and display video at the same time
 
  * write mpimage for displaying pictures
+
