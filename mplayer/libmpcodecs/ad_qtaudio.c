@@ -1,39 +1,26 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <inttypes.h>
 
 #include "config.h"
-#include "mp_msg.h"
-#include "mpbswap.h"
-#include "ad_internal.h"
 
 #ifdef CONFIG_QUICKTIME
 #include <QuickTime/QuickTimeComponents.h>
-#else
-#include "loader/ldt_keeper.h"
-#include "loader/wine/windef.h"
 #endif
 
-static const ad_info_t info =  {
+#include "mp_msg.h"
+
+#include "loader/wine/windef.h"
+
+#include "ad_internal.h"
+#include "mpbswap.h"
+
+#ifdef WIN32_LOADER
+#include "loader/ldt_keeper.h"
+#endif
+
+static ad_info_t info =  {
 	"QuickTime Audio Decoder",
 	"qtaudio",
 	"A'rpi",
@@ -63,14 +50,14 @@ typedef int (__cdecl* LPFUNC1)(long flag);
 typedef int (__cdecl* LPFUNC2)(const SoundComponentData *, const SoundComponentData *,SoundConverter *);
 typedef int (__cdecl* LPFUNC3)(SoundConverter sc);
 typedef int (__cdecl* LPFUNC4)(void);
-typedef int (__cdecl* LPFUNC5)(SoundConverter sc, OSType selector,void * infoPtr);
-typedef int (__cdecl* LPFUNC6)(SoundConverter sc,
+typedef int (__cdecl* LPFUNC5)(SoundConverter sc, OSType selector,void * infoPtr);                          
+typedef int (__cdecl* LPFUNC6)(SoundConverter sc, 
 								unsigned long inputBytesTarget,
 								unsigned long *inputFrames,
 								unsigned long *inputBytes,
 								unsigned long *outputBytes );
-typedef int (__cdecl* LPFUNC7)(SoundConverter sc,
-								const void    *inputPtr,
+typedef int (__cdecl* LPFUNC7)(SoundConverter sc, 
+								const void    *inputPtr, 
 								unsigned long inputFrames,
 								void          *outputPtr,
 								unsigned long *outputFrames,
@@ -79,7 +66,7 @@ typedef int (__cdecl* LPFUNC8)(SoundConverter sc,
 								void      *outputPtr,
                                 unsigned long *outputFrames,
                                 unsigned long *outputBytes);
-typedef int (__cdecl* LPFUNC9)(SoundConverter         sc) ;
+typedef int (__cdecl* LPFUNC9)(SoundConverter         sc) ;                                
 
 static HINSTANCE qtime_qts; // handle to the preloaded quicktime.qts
 static HINSTANCE qtml_dll;
@@ -99,7 +86,7 @@ HMODULE   WINAPI LoadLibraryA(LPCSTR);
 FARPROC   WINAPI GetProcAddress(HMODULE,LPCSTR);
 int       WINAPI FreeLibrary(HMODULE);
 
-static int loader_init(void)
+static int loader_init()
 {
 
 #ifdef WIN32_LOADER
@@ -118,6 +105,7 @@ static int loader_init(void)
         mp_msg(MSGT_DECAUDIO,MSGL_ERR,"failed loading qtmlClient.dll\n" );
 	return 1;
     }
+#if 1
     InitializeQTML = (LPFUNC1)GetProcAddress(qtml_dll,"InitializeQTML");
 	if ( InitializeQTML == NULL )
     {
@@ -172,6 +160,7 @@ static int loader_init(void)
         mp_msg(MSGT_DECAUDIO,MSGL_ERR,"failed getting proc address SoundConverterBeginConversion\n");
 		return 1;
     }
+#endif
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"loader_init DONE???\n");
 	return 0;
 }
@@ -195,7 +184,7 @@ static int preinit(sh_audio_t *sh){
     EnterMovies();
 #else
     if(loader_init()) return 0; // failed to load DLL
-
+    
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"loader_init DONE!\n");
 
     error = InitializeQTML(6+16);
@@ -204,7 +193,8 @@ static int preinit(sh_audio_t *sh){
         return 0;
     }
 #endif
-
+    
+#if 1
 	OutputFormatInfo.flags = InputFormatInfo.flags = 0;
 	OutputFormatInfo.sampleCount = InputFormatInfo.sampleCount = 0;
 	OutputFormatInfo.buffer = InputFormatInfo.buffer = NULL;
@@ -234,7 +224,7 @@ static int preinit(sh_audio_t *sh){
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"InputBufferSize  = %li\n",InputBufferSize);
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"OutputBufferSize = %li\n",OutputBufferSize);
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"FramesToGet = %li\n",FramesToGet);
-
+    
     InFrameSize=(InputBufferSize+FramesToGet-1)/FramesToGet;
     OutFrameSize=OutputBufferSize/FramesToGet;
 
@@ -246,13 +236,15 @@ static int preinit(sh_audio_t *sh){
 
     sh->audio_out_minsize=OutputBufferSize;
     sh->audio_in_minsize=InputBufferSize;
-
+  
     sh->channels=sh->wf->nChannels;
     sh->samplerate=sh->wf->nSamplesPerSec;
     sh->samplesize=2; //(sh->wf->wBitsPerSample+7)/8;
 
     sh->i_bps=sh->wf->nAvgBytesPerSec;
 //InputBufferSize*WantedBufferSize/OutputBufferSize;
+
+#endif
 
    if(sh->format==0x3343414D){
        // MACE 3:1
@@ -277,11 +269,6 @@ static void uninit(sh_audio_t *sh){
     int error;
     unsigned long ConvertedFrames=0;
     unsigned long ConvertedBytes=0;
-
-#ifdef WIN32_LOADER
-    Setup_FS_Segment();
-#endif
-
     error=SoundConverterEndConversion(myConverter,NULL,&ConvertedFrames,&ConvertedBytes);
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"SoundConverterEndConversion:%i\n",error);
     error = SoundConverterClose(myConverter);
@@ -304,11 +291,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
     unsigned long InputBufferSize=0; //size of the input buffer
     unsigned long ConvertedFrames=0;
     unsigned long ConvertedBytes=0;
-
-#ifdef WIN32_LOADER
-    Setup_FS_Segment();
-#endif
-
+    
     FramesToGet=minlen/OutFrameSize;
     if(FramesToGet*OutFrameSize<minlen &&
        (FramesToGet+1)*OutFrameSize<=maxlen) ++FramesToGet;
@@ -327,7 +310,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
 	if(InputBufferSize>sh->a_in_buffer_len)
 	    FramesToGet=sh->a_in_buffer_len/InFrameSize; // not enough data!
     }
-
+    
 //    printf("\nSoundConverterConvertBuffer(myConv=%p,inbuf=%p,frames=%d,outbuf=%p,&convframes=%p,&convbytes=%p)\n",
 //	myConverter,sh->a_in_buffer,FramesToGet,buf,&ConvertedFrames,&ConvertedBytes);
     error = SoundConverterConvertBuffer(myConverter,sh->a_in_buffer,
@@ -335,7 +318,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
 //    printf("SoundConverterConvertBuffer:%i\n",error);
 //    printf("ConvertedFrames = %li\n",ConvertedFrames);
 //    printf("ConvertedBytes = %li\n",ConvertedBytes);
-
+    
 //    InputBufferSize=(ConvertedBytes/OutFrameSize)*InFrameSize; // FIXME!!
     InputBufferSize=FramesToGet*InFrameSize;
     sh->a_in_buffer_len-=InputBufferSize;

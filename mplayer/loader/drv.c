@@ -7,6 +7,9 @@
 #include "debug.h"
 
 #include <stdio.h>
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 #include <stdlib.h>
 #ifdef __FreeBSD__
 #include <sys/time.h>
@@ -25,7 +28,12 @@
 #ifndef __MINGW32__
 #include "ext.h"
 #endif
-#include "path.h"
+
+#ifndef WIN32_LOADER
+char* def_path=WIN32_PATH;
+#else
+extern char* def_path;
+#endif
 
 #if 1
 
@@ -44,7 +52,7 @@
 #else
 // this asm code is no longer needed
 #define STORE_ALL \
-    __asm__ volatile ( \
+    __asm__ __volatile__ ( \
     "push %%ebx\n\t" \
     "push %%ecx\n\t" \
     "push %%edx\n\t" \
@@ -52,13 +60,28 @@
     "push %%edi\n\t"::)
 
 #define REST_ALL \
-    __asm__ volatile ( \
+    __asm__ __volatile__ ( \
     "pop %%edi\n\t" \
     "pop %%esi\n\t" \
     "pop %%edx\n\t" \
     "pop %%ecx\n\t" \
     "pop %%ebx\n\t"::)
 #endif
+
+static int needs_free=0;
+void SetCodecPath(const char* path)
+{
+    if(needs_free)free(def_path);
+    if(path==0)
+    {
+	def_path=WIN32_PATH;
+	needs_free=0;
+	return;
+    }
+    def_path = (char*) malloc(strlen(path)+1);
+    strcpy(def_path, path);
+    needs_free=1;
+}
 
 static DWORD dwDrvID = 0;
 
@@ -75,7 +98,7 @@ LRESULT WINAPI SendDriverMessage(HDRVR hDriver, UINT message,
 #endif
     if (!module || !module->hDriverModule || !module->DriverProc) return -1;
 #ifndef __svr4__
-    __asm__ volatile ("fsave (%0)\n\t": :"r"(&qw));
+    __asm__ __volatile__ ("fsave (%0)\n\t": :"r"(&qw));
 #endif
 
 #ifdef WIN32_LOADER
@@ -87,7 +110,7 @@ LRESULT WINAPI SendDriverMessage(HDRVR hDriver, UINT message,
     REST_ALL;
 
 #ifndef __svr4__
-    __asm__ volatile ("frstor (%0)\n\t": :"r"(&qw));
+    __asm__ __volatile__ ("frstor (%0)\n\t": :"r"(&qw));
 #endif
 
 #ifdef DETAILED_OUT
@@ -133,7 +156,7 @@ HDRVR DrvOpen(LPARAM lParam2)
 #endif
     printf("Loading codec DLL: '%s'\n",filename);
 
-    hDriver = malloc(sizeof(DRVR));
+    hDriver = (NPDRVR) malloc(sizeof(DRVR));
     if (!hDriver)
 	return (HDRVR) 0;
     memset((void*)hDriver, 0, sizeof(DRVR));

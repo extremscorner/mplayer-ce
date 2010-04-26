@@ -39,7 +39,7 @@ typedef struct ThreadContext{
 }ThreadContext;
 
 
-static void attribute_align_arg thread_func(void *v){
+void attribute_align_arg thread_func(void *v){
     ThreadContext *c= v;
 
     for(;;){
@@ -81,7 +81,7 @@ void avcodec_thread_free(AVCodecContext *s){
     av_freep(&s->thread_opaque);
 }
 
-static int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size){
+int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count){
     ThreadContext *c= s->thread_opaque;
     int i;
 
@@ -92,7 +92,7 @@ static int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext 
 
     for(i=0; i<count; i++){
 
-        c[i].arg= (char*)arg + i*size;
+        c[i].arg= arg[i];
         c[i].func= func;
         c[i].ret= 12345;
 
@@ -115,9 +115,6 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     uint32_t threadid;
 
     s->thread_count= thread_count;
-
-    if (thread_count <= 1)
-        return 0;
 
     assert(!s->thread_opaque);
     c= av_mallocz(sizeof(ThreadContext)*thread_count);

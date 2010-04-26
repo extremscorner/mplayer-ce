@@ -21,10 +21,10 @@
 #include "ext.h"
 #include "registry.h"
 
-#include "path.h"
-
 //#undef TRACE
 //#define TRACE printf
+
+extern char *get_path ( const char * );
 
 // ...can be set before init_registry() call
 char* regpathname = NULL;
@@ -216,7 +216,7 @@ static reg_handle_t* find_handle(int handle)
 	}
 	return 0;
 }
-static int generate_handle(void)
+static int generate_handle()
 {
 	static unsigned int zz=249;
 	zz++;
@@ -277,7 +277,7 @@ static struct reg_value* insert_reg_value(int handle, const char* name, int type
 	{
 		if(regs==0)
 		    create_registry();
-		regs = realloc(regs, sizeof(struct reg_value) * (reg_size +1 ));
+		regs=(struct reg_value*)realloc(regs, sizeof(struct reg_value)*(reg_size+1));
 		//regs=(struct reg_value*)my_realloc(regs, sizeof(struct reg_value)*(reg_size+1));
 		v=regs+reg_size;
 		reg_size++;
@@ -385,7 +385,7 @@ long __stdcall RegCloseKey(long key)
     if(handle==head)
 	head=head->prev;
     free(handle);
-    return 0;
+    return 1;
 }
 
 long __stdcall RegQueryValueExA(long key, const char* value, int* reserved, int* type, int* data, int* count)

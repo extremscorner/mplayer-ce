@@ -22,7 +22,7 @@
  */
 
 #include <windows.h>
-#include "path.h"
+#include <get_path.h>
 #include "gui/interface.h"
 #include "m_option.h"
 #include "mixer.h"
@@ -39,15 +39,14 @@
 #include "libvo/video_out.h"
 #include "libao2/audio_out.h"
 #include "access_mpcontext.h"
-#include "libmpcodecs/vd.h"
-#include "gui/mplayer/gmplayer.h"
-#include "mp_core.h"
 #include "gui.h"
 #include "dialogs.h"
 #ifdef CONFIG_LIBCDIO
 #include <cdio/cdio.h>
 #endif
 
+extern int abs_seek_pos;
+extern float rel_seek_secs;
 extern int vcd_track;
 extern af_cfg_t af_cfg;
 int guiWinID = 0;
@@ -467,7 +466,7 @@ static unsigned __stdcall GuiThread(void* param)
 
     if(!skinName) skinName = strdup("Blue");
     if(!mygui) mygui = create_gui(get_path("skins"), skinName, guiSetEvent);
-    if(!mygui) exit_player(EXIT_ERROR);
+    if(!mygui) exit_player("Unable to load GUI.");
 
     if(autosync && autosync != gtkAutoSync)
     {
@@ -519,11 +518,11 @@ void guiDone(void)
 }
 
 /* this function gets called by mplayer to update the gui */
-int guiGetEvent(int type, void *arg)
+int guiGetEvent(int type, char *arg)
 {
-    stream_t *stream = arg;
+    stream_t *stream = (stream_t *) arg;
 #ifdef CONFIG_DVDREAD
-    dvd_priv_t *dvdp = arg;
+    dvd_priv_t *dvdp = (dvd_priv_t *) arg;
 #endif
     if(!mygui || !mygui->skin) return 0;
 
@@ -577,17 +576,17 @@ int guiGetEvent(int type, void *arg)
             break;
         }
         case guiSetContext:
-            guiIntfStruct.mpcontext = arg;
+            guiIntfStruct.mpcontext = (void *) arg;
             break;
         case guiSetDemuxer:
-            guiIntfStruct.demuxer = arg;
+            guiIntfStruct.demuxer = (void *) arg;
             break;
         case guiSetValues:
         {
             guiIntfStruct.sh_video = arg;
             if (arg)
             {
-                sh_video_t *sh = arg;
+                sh_video_t *sh = (sh_video_t *)arg;
                 codecname = sh->codec->name;
                 guiIntfStruct.FPS = sh->fps;
 
@@ -644,7 +643,7 @@ int guiGetEvent(int type, void *arg)
             mygui->updatedisplay(mygui, mygui->mainwindow);
             break;
         case guiSetAfilter:
-            guiIntfStruct.afilter = arg;
+            guiIntfStruct.afilter = (void *) arg;
             break;
         case guiCEvent:
         {
@@ -684,7 +683,7 @@ int guiGetEvent(int type, void *arg)
                     mygui->uninit(mygui);
                     free(mygui);
                     mygui = NULL;
-                    exit_player(EXIT_QUIT);
+                    exit_player("Done");
                     return 0;
                 }
                 case MP_CMD_GUI_STOP:
@@ -719,7 +718,7 @@ int guiGetEvent(int type, void *arg)
             break;
         }
         case guiSetFileName:
-            if (arg) guiIntfStruct.Filename = arg;
+            if (arg) guiIntfStruct.Filename = (char *) arg;
             break;
         case guiSetDefaults:
         {

@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "bytestream.h"
 #include "dsputil.h"
 
@@ -36,7 +36,7 @@ typedef struct {
     int             num_vblocks[3];
     int             num_hblocks[3];
 
-    void           *swap_buf;
+    uint8_t        *swap_buf;
     int             swap_buf_size;
 
     int             cur_index;
@@ -45,7 +45,7 @@ typedef struct {
     AVFrame         buf_ptrs    [16];
     AVPicture       flipped_ptrs[16];
 
-    DECLARE_ALIGNED(16, DCTELEM, dct_block)[64];
+    DECLARE_ALIGNED_16(DCTELEM, dct_block[64]);
 
     GetBitContext   gb;
     ScanTable       scantable;
@@ -110,7 +110,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     ctx->prev_index = 0;
     ctx->cur_index = 15;
 
-    if(init_vlc(&ctx->vlc, 11, FF_ARRAY_ELEMS(huffbits),
+    if(init_vlc(&ctx->vlc, 11, sizeof(huffbits)/sizeof(huffbits[0]),
                  huffbits, 1, 1, huffcodes, 4, 4, 0)) {
         av_log(avctx, AV_LOG_ERROR, "error initializing vlc table\n");
         return -1;
@@ -121,7 +121,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static const int8_t vlcdec_lookup[9][64] = {
+const static int8_t vlcdec_lookup[9][64] = {
     {    0, },
     {   -1,   1, },
     {   -3,   3,   -2,   2, },
@@ -163,7 +163,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
     DCTELEM *block = ctx->dct_block;
     unsigned int pos;
 
-    ctx->dsp.clear_block(block);
+    memset(block, 0, 64 * sizeof(DCTELEM));
 
     block[0] = get_bits(&ctx->gb, 8) << 3;
 
@@ -274,10 +274,8 @@ static void prepare_avpic(MimicContext *ctx, AVPicture *dst, AVPicture *src)
 }
 
 static int mimic_decode_frame(AVCodecContext *avctx, void *data,
-                              int *data_size, AVPacket *avpkt)
+                              int *data_size, const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     MimicContext *ctx = avctx->priv_data;
     int is_pframe;
     int width, height;
@@ -334,12 +332,12 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
     prepare_avpic(ctx, &ctx->flipped_ptrs[ctx->cur_index],
                   (AVPicture*) &ctx->buf_ptrs[ctx->cur_index]);
 
-    av_fast_malloc(&ctx->swap_buf, &ctx->swap_buf_size,
+    ctx->swap_buf = av_fast_realloc(ctx->swap_buf, &ctx->swap_buf_size,
                                  swap_buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if(!ctx->swap_buf)
-        return AVERROR(ENOMEM);
+        return AVERROR_NOMEM;
 
-    ctx->dsp.bswap_buf(ctx->swap_buf,
+    ctx->dsp.bswap_buf((uint32_t*)ctx->swap_buf,
                         (const uint32_t*) buf,
                         swap_buf_size>>2);
     init_get_bits(&ctx->gb, ctx->swap_buf, swap_buf_size << 3);
@@ -380,7 +378,7 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
 
 AVCodec mimic_decoder = {
     "mimic",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_MIMIC,
     sizeof(MimicContext),
     mimic_decode_init,

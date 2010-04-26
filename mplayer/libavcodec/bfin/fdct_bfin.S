@@ -127,10 +127,9 @@ root:/u/ffmpeg/bhead/libavcodec>
 
 */
 
-#include "config.h"
 #include "config_bfin.h"
 
-#if defined(__FDPIC__) && CONFIG_SRAM
+#ifdef __FDPIC__
 .section .l1.data.B,"aw",@progbits
 #else
 .data
@@ -139,7 +138,7 @@ root:/u/ffmpeg/bhead/libavcodec>
 dct_coeff:
 .short 0x5a82, 0x2d41, 0x187e, 0x3b21, 0x0c7c, 0x3ec5, 0x238e, 0x3537;
 
-#if defined(__FDPIC__) && CONFIG_SRAM
+#ifdef __FDPIC__
 .section .l1.data.A,"aw",@progbits
 #endif
 .align 4

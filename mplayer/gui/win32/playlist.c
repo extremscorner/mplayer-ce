@@ -23,7 +23,6 @@
 
 #include <windows.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include "mp_msg.h"
 #include "playlist.h"
 

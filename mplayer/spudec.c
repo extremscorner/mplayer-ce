@@ -1,32 +1,16 @@
-/*
- * Skeleton of function spudec_process_controll() is from xine sources.
- * Further works:
- * LGB,... (yeah, try to improve it and insert your name here! ;-)
- *
- * Kim Minh Kaplan
- * implement fragments reassembly, RLE decoding.
- * read brightness from the IFO.
- *
- * For information on SPU format see <URL:http://sam.zoy.org/doc/dvd/subtitles/>
- * and <URL:http://members.aol.com/mpucoder/DVD/spu.html>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/* SPUdec.c
+   Skeleton of function spudec_process_controll() is from xine sources.
+   Further works:
+   LGB,... (yeah, try to improve it and insert your name here! ;-)
 
+   Kim Minh Kaplan
+   implement fragments reassembly, RLE decoding.
+   read brightness from the IFO.
+
+   For information on SPU format see <URL:http://sam.zoy.org/doc/dvd/subtitles/>
+   and <URL:http://members.aol.com/mpucoder/DVD/spu.html>
+
+ */
 #include "config.h"
 #include "mp_msg.h"
 
@@ -39,9 +23,7 @@
 #include <math.h>
 #include "libvo/video_out.h"
 #include "spudec.h"
-#include "vobsub.h"
 #include "libavutil/avutil.h"
-#include "libavutil/intreadwrite.h"
 #include "libswscale/swscale.h"
 
 /* Valid values for spu_aamode:
@@ -174,10 +156,15 @@ static inline unsigned char get_nibble(packet_t *packet)
 static inline int mkalpha(int i)
 {
   /* In mplayer's alpha planes, 0 is transparent, then 1 is nearly
-     opaque upto 255 which is fully opaque */
-  // extend 4 -> 8 bit
-  i |= i << 4;
-  return (uint8_t)(-i);
+     opaque upto 255 which is transparent */
+  switch (i) {
+  case 0xf:
+    return 1;
+  case 0:
+    return 0;
+  default:
+    return (0xf - i) << 4;
+  }
 }
 
 /* Cut the sub to visible part */
@@ -207,7 +194,7 @@ static inline void spudec_cut_image(spudec_handle_t *this)
 	  this->image_size = 0;
 	  return;
   }
-
+  
 //  printf("new h %d new start %d (sz %d st %d)---\n\n", this->height, this->start_row, this->image_size, this->stride);
 
   image = malloc(2 * this->stride * this->height);
@@ -354,7 +341,7 @@ static void compute_palette(spudec_handle_t *this, packet_t *packet)
 
 static void spudec_process_control(spudec_handle_t *this, int pts100)
 {
-  int a,b,c,d; /* Temporary vars */
+  int a,b; /* Temporary vars */
   unsigned int date, type;
   unsigned int off;
   unsigned int start_off = 0;
@@ -417,22 +404,10 @@ static void spudec_process_control(spudec_handle_t *this, int pts100)
 	break;
       case 0x04:
 	/* Alpha */
-	a = this->packet[off] >> 4;
-	b = this->packet[off] & 0xf;
-	c = this->packet[off + 1] >> 4;
-	d = this->packet[off + 1] & 0xf;
-	// Note: some DVDs change these values to create a fade-in/fade-out effect
-	// We can not handle this, so just keep the highest value during the display time.
-	if (display) {
-		a = FFMAX(a, this->alpha[0]);
-		b = FFMAX(b, this->alpha[1]);
-		c = FFMAX(c, this->alpha[2]);
-		d = FFMAX(d, this->alpha[3]);
-	}
-	this->alpha[0] = a;
-	this->alpha[1] = b;
-	this->alpha[2] = c;
-	this->alpha[3] = d;
+	this->alpha[0] = this->packet[off] >> 4;
+	this->alpha[1] = this->packet[off] & 0xf;
+	this->alpha[2] = this->packet[off + 1] >> 4;
+	this->alpha[3] = this->packet[off + 1] & 0xf;
 	mp_msg(MSGT_SPUDEC,MSGL_DBG2,"Alpha %d, %d, %d, %d\n",
 	       this->alpha[0], this->alpha[1], this->alpha[2], this->alpha[3]);
 	off+=2;
@@ -533,6 +508,12 @@ void spudec_assemble(void *this, unsigned char *packet, unsigned int len, int pt
       mp_msg(MSGT_SPUDEC,MSGL_WARN,"SPUasm: packet too short\n");
       return;
   }
+#if 0
+  if ((spu->packet_pts + 10000) < pts100) {
+    // [cb] too long since last fragment: force new packet
+    spu->packet_offset = 0;
+  }
+#endif
   spu->packet_pts = pts100;
   if (spu->packet_offset == 0) {
     unsigned int len2 = get_be16(packet);
@@ -610,7 +591,7 @@ void spudec_reset(void *this)	// called after seek
 }
 
 void spudec_heartbeat(void *this, unsigned int pts100)
-{
+{ 
   spudec_handle_t *spu = (spudec_handle_t*) this;
   spu->now_pts = pts100;
 
@@ -754,16 +735,14 @@ static void scale_image(int x, int y, scale_pixel* table_x, scale_pixel* table_y
   spu->scaled_image[scaled] = (color[0] * scale[0] + color[1] * scale[1] + color[2] * scale[2] + color[3] * scale[3])>>24;
   spu->scaled_aimage[scaled] = (scale[0] + scale[1] + scale[2] + scale[3]) >> 16;
   if (spu->scaled_aimage[scaled]){
-    // ensure that MPlayer's simplified alpha-blending can not overflow
-    spu->scaled_image[scaled] = FFMIN(spu->scaled_image[scaled], spu->scaled_aimage[scaled]);
-    // convert to MPlayer-style alpha
-    spu->scaled_aimage[scaled] = -spu->scaled_aimage[scaled];
+    spu->scaled_aimage[scaled] = 256 - spu->scaled_aimage[scaled];
+    if(spu->scaled_aimage[scaled] + spu->scaled_image[scaled] > 255)
+      spu->scaled_image[scaled] = 256 - spu->scaled_aimage[scaled];
   }
 }
 
-static void sws_spu_image(unsigned char *d1, unsigned char *d2, int dw, int dh,
-                          int ds, unsigned char *s1, unsigned char *s2, int sw,
-                          int sh, int ss)
+void sws_spu_image(unsigned char *d1, unsigned char *d2, int dw, int dh, int ds,
+	unsigned char *s1, unsigned char *s2, int sw, int sh, int ss)
 {
 	struct SwsContext *ctx;
 	static SwsFilter filter;
@@ -779,7 +758,7 @@ static void sws_spu_image(unsigned char *d1, unsigned char *d2, int dw, int dh,
 		firsttime = 0;
 		oldvar = spu_gaussvar;
 	}
-
+	
 	ctx=sws_getContext(sw, sh, PIX_FMT_GRAY8, dw, dh, PIX_FMT_GRAY8, SWS_GAUSS, &filter, NULL, NULL);
 	sws_scale(ctx,&s1,&ss,0,sh,&d1,&ds);
 	for (i=ss*sh-1; i>=0; i--) if (!s2[i]) s2[i] = 255; //else s2[i] = 1;
@@ -793,14 +772,11 @@ void spudec_draw_scaled(void *me, unsigned int dxs, unsigned int dys, void (*dra
   spudec_handle_t *spu = (spudec_handle_t *)me;
   scale_pixel *table_x;
   scale_pixel *table_y;
-  
-  if (!spu)
-    return;
-  
+
   if (spu->start_pts <= spu->now_pts && spu->now_pts < spu->end_pts) {
 
-    // check if only forced subtitles are requested
-    if( (spu->forced_subs_only) && !(spu->is_forced_sub) ){
+    // check if only forced subtitles are requested 
+    if( (spu->forced_subs_only) && !(spu->is_forced_sub) ){ 
 	return;
     }
 
@@ -924,7 +900,7 @@ void spudec_draw_scaled(void *me, unsigned int dxs, unsigned int dys, void (*dra
 
 	       The original rectangular region that the scaled pixel
 	       represents is cut in 9 rectangular areas like this:
-
+	       
 	       +---+-----------------+---+
 	       | 1 |        2        | 3 |
 	       +---+-----------------+---+
@@ -1033,7 +1009,7 @@ void spudec_draw_scaled(void *me, unsigned int dxs, unsigned int dys, void (*dra
 		      alpha += tmp;
 		      color += tmp * spu->image[base + walkx];
 		    }
-		  }
+		  }		    
 		}
 		/* 6: center right part */
 		if (right > 0.0 && height > 0) {
@@ -1138,78 +1114,39 @@ void spudec_set_font_factor(void * this, double factor)
   spu->font_start_level = (int)(0xF0-(0xE0*factor));
 }
 
-static void spudec_parse_extradata(spudec_handle_t *this,
-                                   uint8_t *extradata, int extradata_len)
+void *spudec_new_scaled(unsigned int *palette, unsigned int frame_width, unsigned int frame_height)
 {
-  uint8_t *buffer, *ptr;
-  unsigned int *pal = this->global_palette, *cuspal = this->cuspal;
-  unsigned int tridx;
-  int i;
-
-  if (extradata_len == 16*4) {
-    for (i=0; i<16; i++)
-      pal[i] = AV_RB32(extradata + i*4);
-    this->auto_palette = 0;
-    return;
-  }
-
-  if (!(ptr = buffer = malloc(extradata_len+1)))
-    return;
-  memcpy(buffer, extradata, extradata_len);
-  buffer[extradata_len] = 0;
-
-  do {
-    if (*ptr == '#')
-        continue;
-    if (!strncmp(ptr, "size: ", 6))
-        sscanf(ptr + 6, "%dx%d", &this->orig_frame_width, &this->orig_frame_height);
-    if (!strncmp(ptr, "palette: ", 9) &&
-        sscanf(ptr + 9, "%x, %x, %x, %x, %x, %x, %x, %x, "
-                        "%x, %x, %x, %x, %x, %x, %x, %x",
-               &pal[ 0], &pal[ 1], &pal[ 2], &pal[ 3],
-               &pal[ 4], &pal[ 5], &pal[ 6], &pal[ 7],
-               &pal[ 8], &pal[ 9], &pal[10], &pal[11],
-               &pal[12], &pal[13], &pal[14], &pal[15]) == 16) {
-      for (i=0; i<16; i++)
-        pal[i] = vobsub_palette_to_yuv(pal[i]);
-      this->auto_palette = 0;
-    }
-    if (!strncasecmp(ptr, "forced subs: on", 15))
-      this->forced_subs_only = 1;
-    if (!strncmp(ptr, "custom colors: ON, tridx: ", 26) &&
-        sscanf(ptr + 26, "%x, colors: %x, %x, %x, %x",
-               &tridx, cuspal+0, cuspal+1, cuspal+2, cuspal+3) == 5) {
-      for (i=0; i<4; i++) {
-        cuspal[i] = vobsub_rgb_to_yuv(cuspal[i]);
-        if (tridx & (1 << (12-4*i)))
-          cuspal[i] |= 1 << 31;
-      }
-      this->custom = 1;
-    }
-  } while ((ptr=strchr(ptr,'\n')) && *++ptr);
-
-  free(buffer);
+  return spudec_new_scaled_vobsub(palette, NULL, 0, frame_width, frame_height);
 }
 
-void *spudec_new_scaled(unsigned int *palette, unsigned int frame_width, unsigned int frame_height, uint8_t *extradata, int extradata_len)
+/* get palette custom color, width, height from .idx file */
+void *spudec_new_scaled_vobsub(unsigned int *palette, unsigned int *cuspal, unsigned int custom, unsigned int frame_width, unsigned int frame_height)
 {
   spudec_handle_t *this = calloc(1, sizeof(spudec_handle_t));
   if (this){
-    this->orig_frame_height = frame_height;
-    // set up palette:
-    if (palette)
-      memcpy(this->global_palette, palette, sizeof(this->global_palette));
-    else
-      this->auto_palette = 1;
-    if (extradata)
-      spudec_parse_extradata(this, extradata, extradata_len);
+    //(fprintf(stderr,"VobSub Custom Palette: %d,%d,%d,%d", this->cuspal[0], this->cuspal[1], this->cuspal[2],this->cuspal[3]);
+    this->packet = NULL;
+    this->image = NULL;
+    this->scaled_image = NULL;
     /* XXX Although the video frame is some size, the SPU frame is
        always maximum size i.e. 720 wide and 576 or 480 high */
     this->orig_frame_width = 720;
-    if (this->orig_frame_height == 480 || this->orig_frame_height == 240)
-      this->orig_frame_height = 480;
-    else
-      this->orig_frame_height = 576;
+    this->orig_frame_height = (frame_height == 480 || frame_height == 240) ? 480 : 576;
+    this->custom = custom;
+    // set up palette:
+    this->auto_palette = 1;
+    if (palette){
+      memcpy(this->global_palette, palette, sizeof(this->global_palette));
+      this->auto_palette = 0;
+    }
+    this->custom = custom;
+    if (custom && cuspal) {
+      memcpy(this->cuspal, cuspal, sizeof(this->cuspal));
+      this->auto_palette = 0;
+    }
+    // forced subtitles default: show all subtitles
+    this->forced_subs_only=0;
+    this->is_forced_sub=0;
   }
   else
     mp_msg(MSGT_SPUDEC,MSGL_FATAL, "FATAL: spudec_init: calloc");
@@ -1218,7 +1155,7 @@ void *spudec_new_scaled(unsigned int *palette, unsigned int frame_width, unsigne
 
 void *spudec_new(unsigned int *palette)
 {
-    return spudec_new_scaled(palette, 0, 0, NULL, 0);
+    return spudec_new_scaled(palette, 0, 0);
 }
 
 void spudec_free(void *this)

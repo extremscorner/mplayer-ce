@@ -1,22 +1,14 @@
-/*
- * Copyright (C) 2002 Anders Johansson ajh@atri.curtin.edu.au
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/*=============================================================================
+//	
+//  This software has been released under the terms of the GNU General Public
+//  license. See http://www.gnu.org/copyleft/gpl.html for details.
+//
+//  Copyright 2002 Anders Johansson ajh@atri.curtin.edu.au
+//
+//=============================================================================
+*/
+
+/* */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +29,7 @@ typedef struct af_pan_s
 // Initialization and runtime control
 static int control(struct af_instance_s* af, int cmd, void* arg)
 {
-  af_pan_t* s = af->setup;
+  af_pan_t* s = af->setup; 
 
   switch(cmd){
   case AF_CONTROL_REINIT:
@@ -50,7 +42,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     af->data->nch    = s->nch ? s->nch: ((af_data_t*)arg)->nch;
     af->mul          = (double)af->data->nch / ((af_data_t*)arg)->nch;
 
-    if((af->data->format != ((af_data_t*)arg)->format) ||
+    if((af->data->format != ((af_data_t*)arg)->format) || 
        (af->data->bps != ((af_data_t*)arg)->bps)){
       ((af_data_t*)arg)->format = af->data->format;
       ((af_data_t*)arg)->bps = af->data->bps;
@@ -72,12 +64,12 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     j = 0; k = 0;
     while((*cp == ':') && (k < AF_NCH)){
       sscanf(cp, ":%f%n" , &s->level[j][k], &n);
-      mp_msg(MSGT_AFILTER, MSGL_V, "[pan] Pan level from channel %i to"
+      af_msg(AF_MSG_VERBOSE,"[pan] Pan level from channel %i to" 
 	     " channel %i = %f\n",k,j,s->level[j][k]);
       cp =&cp[n];
       j++;
       if(j>=nch){
-	j = 0;
+	j = 0; 
 	k++;
       }
     }
@@ -108,7 +100,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 
     // Sanity check
     if(((int*)arg)[0] <= 0 || ((int*)arg)[0] > AF_NCH){
-      mp_msg(MSGT_AFILTER, MSGL_ERR, "[pan] The number of output channels must be"
+      af_msg(AF_MSG_ERROR,"[pan] The number of output channels must be" 
 	     " between 1 and %i. Current value is %i\n",AF_NCH,((int*)arg)[0]);
       return AF_ERROR;
     }
@@ -138,7 +130,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   return AF_UNKNOWN;
 }
 
-// Deallocate memory
+// Deallocate memory 
 static void uninit(struct af_instance_s* af)
 {
   if(af->data)
@@ -165,7 +157,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     return NULL;
 
   out = l->audio;
-  // Execute panning
+  // Execute panning 
   // FIXME: Too slow
   while(in < end){
     for(j=0;j<ncho;j++){

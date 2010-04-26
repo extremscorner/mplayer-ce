@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 /// \file
 /// \ingroup ConfigParsers MEntry
@@ -64,7 +47,7 @@ m_entry_set_options(m_config_t *config, m_entry_t* entry) {
 }
 
 
-
+  
 
 m_entry_t*
 m_config_parse_me_command_line(m_config_t *config, int argc, char **argv)
@@ -75,7 +58,7 @@ m_config_parse_me_command_line(m_config_t *config, int argc, char **argv)
   int no_more_opts = 0;
   int opt_exit = 0;
   m_entry_t *lst = NULL, *entry = NULL;
-
+	
 #ifdef MP_DEBUG
   assert(config != NULL);
   assert(argv != NULL);
@@ -100,7 +83,7 @@ m_config_parse_me_command_line(m_config_t *config, int argc, char **argv)
 	  }
 	continue;
       }
-
+			
     if ((no_more_opts == 0) && (*opt == '-') && (*(opt+1) != 0)) /* option */
       {
 	const m_option_t* mp_opt = NULL;

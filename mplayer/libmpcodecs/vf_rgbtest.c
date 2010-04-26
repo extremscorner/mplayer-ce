@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,7 +31,7 @@ static unsigned int getfmt(unsigned int outfmt){
     case IMGFMT_ABGR:
 	return outfmt;
     }
-    return 0;
+    return 0;    
 }
 
 static void put_pixel(uint8_t *buf, int x, int y, int stride, int r, int g, int b, int fmt){
@@ -62,7 +44,7 @@ static void put_pixel(uint8_t *buf, int x, int y, int stride, int r, int g, int 
     break;
     case IMGFMT_RGB16: ((uint16_t*)(buf + y*stride))[x]= ((b>>3)<<11) | ((g>>2)<<5) | (r>>3);
     break;
-    case IMGFMT_RGB24:
+    case IMGFMT_RGB24: 
         buf[3*x + y*stride + 0]= r;
         buf[3*x + y*stride + 1]= g;
         buf[3*x + y*stride + 2]= b;
@@ -95,7 +77,7 @@ static void put_pixel(uint8_t *buf, int x, int y, int stride, int r, int g, int 
     }
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
     if (vf->priv->w > 0) { d_width  = width  = vf->priv->w; }
@@ -105,7 +87,7 @@ static int config(struct vf_instance *vf,
     return vf_next_config(vf,width,height,d_width,d_height,flags,vf->priv->fmt);
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     mp_image_t *dmpi;
     int x, y;
     int w = vf->priv->w > 0 ? vf->priv->w : mpi->w;
@@ -120,11 +102,11 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
          for(x=0; x<w; x++){
              int c= 256*x/w;
              int r=0,g=0,b=0;
-
+             
              if(3*y<h)        r=c;
              else if(3*y<2*h) g=c;
              else                  b=c;
-
+             
              put_pixel(dmpi->planes[0], x, y, dmpi->stride[0], r, g, b, vf->priv->fmt);
          }
      }
@@ -134,13 +116,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
 //===========================================================================//
 
-static int query_format(struct vf_instance *vf, unsigned int outfmt){
+static int query_format(struct vf_instance_s* vf, unsigned int outfmt){
     unsigned int fmt=getfmt(outfmt);
     if(!fmt) return 0;
     return vf_next_query_format(vf,fmt) & (~VFCAP_CSP_SUPPORTED_BY_HW);
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
     vf->config=config;
     vf->put_image=put_image;
     vf->query_format=query_format;
@@ -156,7 +138,7 @@ const vf_info_t vf_info_rgbtest = {
     "rgbtest",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };
 

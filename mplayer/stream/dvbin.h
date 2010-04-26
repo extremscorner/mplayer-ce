@@ -2,35 +2,45 @@
  *
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: dvbin.h 30818 2010-03-02 19:57:17Z diego $
+ * $Id: dvbin.h 27402 2008-08-03 15:21:40Z diego $
  */
 
 #ifndef MPLAYER_DVBIN_H
 #define MPLAYER_DVBIN_H
 
-#include "config.h"
 #include "stream.h"
 
 #define SLOF (11700*1000UL)
 #define LOF1 (9750*1000UL)
 #define LOF2 (10600*1000UL)
 
-#include <linux/dvb/dmx.h>
-#include <linux/dvb/frontend.h>
-#include <linux/dvb/version.h>
+#ifdef CONFIG_DVB_HEAD
+	#include <linux/dvb/dmx.h>
+	#include <linux/dvb/frontend.h>
+	#include <linux/dvb/version.h>
+#else
+	#include <ost/dmx.h>
+	#include <ost/sec.h>
+	#include <ost/frontend.h>
+	#define fe_status_t FrontendStatus
+	#define fe_spectral_inversion_t SpectralInversion
+	#define fe_modulation_t Modulation
+	#define fe_code_rate_t CodeRate
+	#define fe_transmit_mode_t TransmitMode
+	#define fe_guard_interval_t GuardInterval
+	#define fe_bandwidth_t BandWidth
+	#define fe_hierarchy_t Hierarchy
+	#define fe_sec_voltage_t SecVoltage
+	#define dmx_pes_filter_params dmxPesFilterParams
+	#define dmx_sct_filter_params dmxSctFilterParams
+	#define dmx_pes_type_t dmxPesType_t
+#endif
 
 #undef DVB_ATSC
 #if defined(DVB_API_VERSION_MINOR)
-
-/* kernel headers >=2.6.28 have version 5.
- *
- * FIXME: are there any real differences between 3.1 and 5?
- */
-
-#if (DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1) || DVB_API_VERSION == 5
+#if DVB_API_VERSION == 3 && DVB_API_VERSION_MINOR >= 1
 #define DVB_ATSC 1
 #endif
-
 #endif
 
 
@@ -98,9 +108,9 @@ typedef struct {
 #define TUNER_CBL	3
 #define TUNER_ATSC	4
 
-int dvb_step_channel(stream_t *, int);
-int dvb_set_channel(stream_t *, int, int);
-dvb_config_t *dvb_get_config(void);
-void dvb_free_config(dvb_config_t *config);
+extern int dvb_step_channel(stream_t *, int);
+extern int dvb_set_channel(stream_t *, int, int);
+extern dvb_config_t *dvb_get_config(void);
+extern void dvb_free_config(dvb_config_t *config);
 
 #endif /* MPLAYER_DVBIN_H */

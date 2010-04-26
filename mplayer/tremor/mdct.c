@@ -13,7 +13,7 @@
 
  function: normalized modified discrete cosine transform
            power of two length transform only [64 <= n ]
- last mod: $Id: mdct.c 29306 2009-05-13 15:22:13Z bircoph $
+ last mod: $Id: mdct.c 14281 2004-12-30 12:11:32Z henry $
 
  Original algorithm adapted long ago from _The use of multirate filter
  banks for coding of high quality digital audio_, by T. Sporer,
@@ -98,12 +98,12 @@ STIN void mdct_butterfly_32(DATA_TYPE *x){
 
   REG_TYPE r0, r1;
 
-	   r0 = x[30] - x[14]; x[30] += x[14];
+	   r0 = x[30] - x[14]; x[30] += x[14];           
 	   r1 = x[31] - x[15]; x[31] += x[15];
 	   x[14] = r0; x[15] = r1;
 	   MB();
 
-	   r0 = x[28] - x[12]; x[28] += x[12];
+	   r0 = x[28] - x[12]; x[28] += x[12];           
 	   r1 = x[29] - x[13]; x[29] += x[13];
 	   XNPROD31( r0, r1, cPI1_8, cPI3_8, &x[12], &x[13] );
 	   MB();
@@ -235,7 +235,7 @@ STIN void mdct_butterflies(DATA_TYPE *x,int points,int shift){
 
   int stages=8-shift;
   int i,j;
-
+  
   for(i=0;--stages>0;i++){
     for(j=0;j<(1<<i);j++)
       mdct_butterfly_generic(x+(points>>i)*j,points>>i,4<<(i+shift));
@@ -350,7 +350,7 @@ void mdct_backward(int n, DATA_TYPE *in, DATA_TYPE *out){
   for (shift=6;!(n&(1<<shift));shift++);
   shift=13-shift;
   step=2<<shift;
-
+   
   /* rotate */
 
   iX            = in+n2-7;

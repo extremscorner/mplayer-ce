@@ -1,31 +1,20 @@
 /*
- * vidix interface to any mplayer vo driver
- * (partly based on vesa_lvo.c)
+ *  vosub_vidix.c
  *
- * copyright (C) 2002 Nick Kurshev <nickols_k@mail.ru>
- * copyright (C) Alex Beregszaszi
+ *	Copyright (C) Nick Kurshev <nickols_k@mail.ru> - 2002
+ *	Copyright (C) Alex Beregszaszi
  *
- * This file is part of MPlayer.
+ *  You can redistribute this file under terms and conditions
+ *  of GNU General Public licence v2 or later.
  *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * This file contains vidix interface to any mplayer's VO plugin.
+ * (Partly based on vesa_lvo.c from mplayer's package)
  */
 
 #include <inttypes.h>
 #include <unistd.h>
 #include <fcntl.h>
-#if !defined(__MINGW32__) && !defined(GEKKO)
+#ifndef __MINGW32__
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #endif
@@ -134,7 +123,7 @@ static uint32_t vidix_draw_slice_420(uint8_t *image[], int stride[], int w,int h
 	    src2+= stride[2];
 	}
     }
-    else
+    else 
     {
 		/* Plane V */
 		dest = vidix_mem + vidix_play.offsets[next_frame] + vidix_play.offset.v;
@@ -175,12 +164,12 @@ static uint32_t vidix_draw_slice_410(uint8_t *image[], int stride[], int w,int h
         src+=stride[0];
         dest += dstrides.y;
     }
-
+    
     if (vidix_play.flags & VID_PLAY_INTERLEAVED_UV)
     {
 	mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_SUB_VIDIX_InterleavedUvForYuv410pNotSupported);
     }
-    else
+    else 
     {
 		/* Plane V */
 		dest = vidix_mem + vidix_play.offsets[next_frame] + vidix_play.offset.v;
@@ -283,7 +272,7 @@ static void     vidix_flip_page(void)
   {
 	vdlPlaybackFrameSelect(vidix_handler,next_frame);
 	next_frame=(next_frame+1)%vidix_play.num_frames;
-  }
+  }	
 }
 
 static void draw_alpha(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride)
@@ -394,7 +383,7 @@ int      vidix_init(unsigned src_width,unsigned src_height,
 	  mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_SUB_VIDIX_UnsupportedFourccForThisVidixDriver,
 	    format,vo_format_name(format));
 	  return -1;
-	}
+	} 
 
 	if(((vidix_cap.maxwidth != -1) && (vid_w > vidix_cap.maxwidth)) ||
 	    ((vidix_cap.minwidth != -1) && (vid_w < vidix_cap.minwidth)) ||
@@ -549,7 +538,7 @@ static uint32_t vidix_get_image(mp_image_t *mpi)
     if(mpi->flags&MP_IMGFLAG_READABLE) return VO_FALSE; /* slow video ram */
     if(( (mpi->stride[0]==dstrides.y && (!(mpi->flags&MP_IMGFLAG_PLANAR) ||
       (mpi->stride[1]==dstrides.u && mpi->stride[2]==dstrides.v)) )
-      || (mpi->flags&(MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_ACCEPT_WIDTH))) &&
+      || (mpi->flags&(MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_ACCEPT_WIDTH))) && 
        (!forced_fourcc && !(vidix_play.flags & VID_PLAY_INTERLEAVED_UV)))
     {
 	if(mpi->flags&MP_IMGFLAG_ACCEPT_WIDTH){
@@ -604,9 +593,9 @@ uint32_t vidix_control(uint32_t request, void *data, ...)
     va_start(ap, data);
     value = va_arg(ap, int);
     va_end(ap);
-
+    
 //    printf("vidix seteq %s -> %d  \n",data,value);
-
+    
     /* vidix eq ranges are -1000..1000 */
     if (!strcasecmp(data, "brightness"))
     {
@@ -646,7 +635,7 @@ uint32_t vidix_control(uint32_t request, void *data, ...)
     va_start(ap, data);
     value = va_arg(ap, int*);
     va_end(ap);
-
+    
     /* vidix eq ranges are -1000..1000 */
     if (!strcasecmp(data, "brightness"))
     {
@@ -686,7 +675,7 @@ int vidix_preinit(const char *drvname,vo_functions_t *server)
 	vidix_handler = vdlOpen(drvname ? drvname[0] == ':' ? &drvname[1] : drvname[0] ? drvname : NULL : NULL,
 				TYPE_OUTPUT,
 				verbose);
-
+              
 	if(vidix_handler == NULL)
 	{
 		mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_SUB_VIDIX_CouldntFindWorkingVidixDriver);

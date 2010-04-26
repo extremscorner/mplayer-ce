@@ -1,26 +1,9 @@
 /*
- * Copyright (C) 2005 Rik Snel <rsnel@cube.dyndns.org>
- * - based on vd_mpegpes.c by A'rpi (C) 2002-2003
+ * Copyright (C) 2005 Rik Snel <rsnel@cube.dyndns.org>, license GPL v2 or later
+ * - based on vd_mpegpes.c by A'rpi (C) 2002-2003 
  * - guess_mjpeg_type code stolen from lav_io.c (C) 2000 Rainer Johanni
  *   <Rainer@Johanni.de> from the mjpegtools package
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -36,7 +19,7 @@
 
 #include "vd_internal.h"
 
-static const vd_info_t info =
+static vd_info_t info = 
 {
 	"Zoran MJPEG Video passthrough",
 	"zrmjpeg",
@@ -59,7 +42,7 @@ static int query_format(sh_video_t *sh, unsigned int format) {
 	if (format == ctx->preferred_csp) return VFCAP_CSP_SUPPORTED;
 	return CONTROL_FALSE;
 }
-
+	
 // to set/get/query special features/parameters
 static int control(sh_video_t *sh, int cmd, void* arg, ...) {
 	switch (cmd) {
@@ -80,9 +63,9 @@ static int init(sh_video_t *sh) {
 	sh->context = ctx;
 
 	/* defer init of vo until the first frame is known */
-	return 1;
+	return 1; 
 #if 0
-	return mpcodecs_config_vo(sh, sh->disp_w, sh->disp_h, IMGFMT_ZRMJPEGIT);
+	return mpcodecs_config_vo(sh, sh->disp_w, sh->disp_h, IMGFMT_ZRMJPEGIT); 
 #endif
 }
 
@@ -109,7 +92,7 @@ static int get_int2(unsigned char *buf) {
 static unsigned int guess_mjpeg_type(unsigned char *data, unsigned int size,
 		int d_height) {
 	unsigned int p;
-	int marker, length, height, i, hf[3], vf[3];
+	int marker, length, height, ncomps, i, hf[3], vf[3];
 	unsigned int app0 = 0, header = 0;
 
 	/* The initial marker must be SIO */
@@ -122,7 +105,7 @@ static unsigned int guess_mjpeg_type(unsigned char *data, unsigned int size,
 		ERROR("JPEG data must start with FFD8, but doesn't\n");
 		return 0;
 	}
-
+	
 	p = 2; /* pointer within jpeg data */
 
 	while (p < size) {
@@ -131,7 +114,7 @@ static unsigned int guess_mjpeg_type(unsigned char *data, unsigned int size,
 			p++;
 			if (p >= size) return 0;
 		}
-
+		
 		/* get marker code, skip duplicate FF's */
 		while(data[p] == 0xFF) {
 			p++;
@@ -142,7 +125,7 @@ static unsigned int guess_mjpeg_type(unsigned char *data, unsigned int size,
 
 		/* marker may have an associated length */
 		if (p <= size - 2) length = get_int2(data+p);
-		else length = 0;
+		else length = 0; 
 
 		switch (marker) {
 			case M_SOF0:
@@ -163,10 +146,10 @@ static unsigned int guess_mjpeg_type(unsigned char *data, unsigned int size,
 
 		/* these markers shouldn't have parameters,
 		 * i.e. we don't need to skip anaything */
-		if (marker == 0 || marker == 1 ||
+		if (marker == 0 || marker == 1 || 
 				(marker >= 0xd0 && marker < 0xd8))
-			continue;
-
+			continue; 
+		
 		if  (p + length <= size) p += length;
 		else {
 			ERROR("input JPEG too short, data missing\n");
@@ -223,9 +206,9 @@ static unsigned int guess_mjpeg_type(unsigned char *data, unsigned int size,
 		return IMGFMT_ZRMJPEGIT;
 	}
 
-
+	
 	return 0;
-}
+}	
 
 // decode a frame
 static mp_image_t* decode(sh_video_t *sh, void* data, int len, int flags) {
@@ -235,12 +218,12 @@ static mp_image_t* decode(sh_video_t *sh, void* data, int len, int flags) {
 	if (!ctx->vo_initialized) {
 		ctx->preferred_csp = guess_mjpeg_type(data, len, sh->disp_h);
 		if (ctx->preferred_csp == 0) return NULL;
-		mpcodecs_config_vo(sh, sh->disp_w, sh->disp_h,
+		mpcodecs_config_vo(sh, sh->disp_w, sh->disp_h, 
 				ctx->preferred_csp);
 		ctx->vo_initialized = 1;
 	}
 
-	mpi = mpcodecs_get_image(sh, MP_IMGTYPE_EXPORT, 0,
+	mpi = mpcodecs_get_image(sh, MP_IMGTYPE_EXPORT, 0, 
 			sh->disp_w, sh->disp_h);
 	/* abuse of mpi */
     	mpi->planes[0]=(uint8_t*)data;

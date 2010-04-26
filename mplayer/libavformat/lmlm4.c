@@ -22,7 +22,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define LMLM4_I_FRAME   0x00
@@ -62,14 +61,14 @@ static int lmlm4_read_header(AVFormatContext *s, AVFormatParameters *ap) {
 
     if (!(st = av_new_stream(s, 0)))
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_MPEG4;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
     av_set_pts_info(st, 64, 1001, 30000);
 
     if (!(st = av_new_stream(s, 1)))
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id   = CODEC_ID_MP2;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
 
@@ -104,7 +103,7 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
 
     switch (frame_type) {
         case LMLM4_I_FRAME:
-            pkt->flags = AV_PKT_FLAG_KEY;
+            pkt->flags = PKT_FLAG_KEY;
         case LMLM4_P_FRAME:
         case LMLM4_B_FRAME:
             pkt->stream_index = 0;

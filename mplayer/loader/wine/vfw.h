@@ -6,7 +6,9 @@
 #ifndef MPLAYER_VFW_H
 #define MPLAYER_VFW_H
 //#include "pshpack1.h"
-#include "windef.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct __attribute__((__packed__))
 {
@@ -39,8 +41,8 @@ typedef struct {
 } BITMAPINFO, *LPBITMAPINFO;
 #endif
 
-#define VFWAPI
-#define VFWAPIV
+#define VFWAPI	
+#define VFWAPIV	
 #ifndef MPLAYER_WINDEF_H
 typedef long (__stdcall__ *DRIVERPROC)(long,HDRVR,unsigned int,long,long);
 #endif
@@ -207,9 +209,6 @@ typedef struct {
     void*		lpPrev;
 } ICCOMPRESS;
 
-
-long VFWAPI VideoForWindowsVersion(void);
-
 long VFWAPIV ICCompress(
 	HIC hic,long dwFlags,LPBITMAPINFOHEADER lpbiOutput,void* lpData,
 	LPBITMAPINFOHEADER lpbiInput,void* lpBits,long* lpckid,
@@ -230,14 +229,14 @@ long VFWAPIV ICCompress(
 	ICSendMessage(					\
 	    hic, ICM_GETDEFAULTKEYFRAMERATE,		\
 	    (long)(void*)(lpint), 			\
-	    0	)
+	    0	)		
 
 #define ICGetDefaultQuality(hic,lpint) 			\
 	ICSendMessage(					\
 	    hic, ICM_GETDEFAULTQUALITY,			\
 	    (long)(void*)(lpint), 			\
-	    0	)
-
+	    0	)		
+	    	
 
 #define ICCompressBegin(hic, lpbiInput, lpbiOutput) 			\
     ICSendMessage(							\
@@ -571,7 +570,7 @@ typedef struct AVIFILEINFOW {
     long               dwSuggestedBufferSize;
     long               dwWidth;
     long               dwHeight;
-    long               dwScale;
+    long               dwScale;        
     long               dwRate;
     long               dwLength;
     long               dwEditCount;
@@ -586,7 +585,7 @@ typedef struct AVIFILEINFOA {
     long               dwSuggestedBufferSize;
     long               dwWidth;
     long               dwHeight;
-    long               dwScale;
+    long               dwScale;        
     long               dwRate;
     long               dwLength;
     long               dwEditCount;
@@ -666,4 +665,7 @@ typedef struct {
 #define AVIERR_USERABORT	MAKE_AVIERR(198)
 #define AVIERR_ERROR		MAKE_AVIERR(199)
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* MPLAYER_VFW_H */

@@ -1,5 +1,5 @@
 /**
- * @file
+ * @file vp5.c
  * VP5 compatible video decoder
  *
  * Copyright (C) 2006  Aurelien Jacobs <aurel@gnuage.org>
@@ -26,17 +26,17 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "get_bits.h"
+#include "bitstream.h"
 
 #include "vp56.h"
 #include "vp56data.h"
 #include "vp5data.h"
 
 
-static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
+static int vp5_parse_header(vp56_context_t *s, const uint8_t *buf, int buf_size,
                             int *golden_frame)
 {
-    VP56RangeCoder *c = &s->c;
+    vp56_range_coder_t *c = &s->c;
     int rows, cols;
 
     vp56_init_range_decoder(&s->c, buf, buf_size);
@@ -58,14 +58,12 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size,
         vp56_rac_gets(c, 8);  /* number of displayed macroblock rows */
         vp56_rac_gets(c, 8);  /* number of displayed macroblock cols */
         vp56_rac_gets(c, 2);
-        if (!s->macroblocks || /* first frame */
-            16*cols != s->avctx->coded_width ||
+        if (16*cols != s->avctx->coded_width ||
             16*rows != s->avctx->coded_height) {
             avcodec_set_dimensions(s->avctx, 16*cols, 16*rows);
             return 2;
         }
-    } else if (!s->macroblocks)
-        return 0;
+    }
     return 1;
 }
 
@@ -86,10 +84,10 @@ static int vp5_adjust(int v, int t)
     return v;
 }
 
-static void vp5_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
+static void vp5_parse_vector_adjustment(vp56_context_t *s, vp56_mv_t *vect)
 {
-    VP56RangeCoder *c = &s->c;
-    VP56Model *model = s->modelp;
+    vp56_range_coder_t *c = &s->c;
+    vp56_model_t *model = s->modelp;
     int comp, di;
 
     for (comp=0; comp<2; comp++) {
@@ -110,10 +108,10 @@ static void vp5_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
     }
 }
 
-static void vp5_parse_vector_models(VP56Context *s)
+static void vp5_parse_vector_models(vp56_context_t *s)
 {
-    VP56RangeCoder *c = &s->c;
-    VP56Model *model = s->modelp;
+    vp56_range_coder_t *c = &s->c;
+    vp56_model_t *model = s->modelp;
     int comp, node;
 
     for (comp=0; comp<2; comp++) {
@@ -133,10 +131,10 @@ static void vp5_parse_vector_models(VP56Context *s)
                 model->vector_pdv[comp][node] = vp56_rac_gets_nn(c, 7);
 }
 
-static void vp5_parse_coeff_models(VP56Context *s)
+static void vp5_parse_coeff_models(vp56_context_t *s)
 {
-    VP56RangeCoder *c = &s->c;
-    VP56Model *model = s->modelp;
+    vp56_range_coder_t *c = &s->c;
+    vp56_model_t *model = s->modelp;
     uint8_t def_prob[11];
     int node, cg, ctx;
     int ct;    /* code type */
@@ -179,10 +177,10 @@ static void vp5_parse_coeff_models(VP56Context *s)
                         model->coeff_acct[pt][ct][cg][ctx][node] = av_clip(((model->coeff_ract[pt][ct][cg][node] * vp5_ract_lc[ct][cg][node][ctx][0] + 128) >> 8) + vp5_ract_lc[ct][cg][node][ctx][1], 1, 254);
 }
 
-static void vp5_parse_coeff(VP56Context *s)
+static void vp5_parse_coeff(vp56_context_t *s)
 {
-    VP56RangeCoder *c = &s->c;
-    VP56Model *model = s->modelp;
+    vp56_range_coder_t *c = &s->c;
+    vp56_model_t *model = s->modelp;
     uint8_t *permute = s->scantable.permutated;
     uint8_t *model1, *model2;
     int coeff, sign, coeff_idx;
@@ -252,9 +250,9 @@ static void vp5_parse_coeff(VP56Context *s)
     }
 }
 
-static void vp5_default_models_init(VP56Context *s)
+static void vp5_default_models_init(vp56_context_t *s)
 {
-    VP56Model *model = s->modelp;
+    vp56_model_t *model = s->modelp;
     int i;
 
     for (i=0; i<2; i++) {
@@ -269,7 +267,7 @@ static void vp5_default_models_init(VP56Context *s)
 
 static av_cold int vp5_decode_init(AVCodecContext *avctx)
 {
-    VP56Context *s = avctx->priv_data;
+    vp56_context_t *s = avctx->priv_data;
 
     vp56_init(avctx, 1, 0);
     s->vp56_coord_div = vp5_coord_div;
@@ -286,9 +284,9 @@ static av_cold int vp5_decode_init(AVCodecContext *avctx)
 
 AVCodec vp5_decoder = {
     "vp5",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_VP5,
-    sizeof(VP56Context),
+    sizeof(vp56_context_t),
     vp5_decode_init,
     NULL,
     vp56_free,

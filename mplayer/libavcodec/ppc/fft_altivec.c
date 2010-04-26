@@ -2,7 +2,7 @@
  * FFT/IFFT transforms
  * AltiVec-enabled
  * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
- * Based on code Copyright (c) 2002 Fabrice Bellard
+ * Based on code Copyright (c) 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
  *
@@ -20,10 +20,36 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "libavcodec/fft.h"
+#include "libavcodec/dsputil.h"
+
+#include "gcc_fixes.h"
+
 #include "dsputil_ppc.h"
 #include "util_altivec.h"
-#include "dsputil_altivec.h"
+/*
+  those three macros are from libavcodec/fft.c
+  and are required for the reference C code
+*/
+/* butter fly op */
+#define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1) \
+{\
+    FFTSample ax, ay, bx, by;\
+    bx=pre1;\
+    by=pim1;\
+    ax=qre1;\
+    ay=qim1;\
+    pre = (bx + ax);\
+    pim = (by + ay);\
+    qre = (bx - ax);\
+    qim = (by - ay);\
+}
+#define MUL16(a,b) ((a) * (b))
+#define CMUL(pre, pim, are, aim, bre, bim) \
+{\
+    pre = (MUL16(are, bre) - MUL16(aim, bim));\
+    pim = (MUL16(are, bim) + MUL16(bre, aim));\
+}
+
 
 /**
  * Do a complex FFT with the parameters defined in ff_fft_init(). The
@@ -36,7 +62,7 @@
  * that successive MUL + ADD/SUB have been merged into
  * fused multiply-add ('vec_madd' in altivec)
  */
-static void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
+void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
 POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
     register const vector float vczero = (const vector float)vec_splat_u32(0.);
@@ -134,10 +160,4 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
     } while (nblocks != 0);
 
 POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
-}
-
-av_cold void ff_fft_init_altivec(FFTContext *s)
-{
-    s->fft_calc = ff_fft_calc_altivec;
-    s->split_radix = 0;
 }

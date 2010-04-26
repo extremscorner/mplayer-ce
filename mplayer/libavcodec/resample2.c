@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file resample2.c
  * audio resampling
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
@@ -57,7 +57,6 @@
 
 
 typedef struct AVResampleContext{
-    const AVClass *av_class;
     FELEM *filter_bank;
     int filter_length;
     int ideal_dst_incr;
@@ -76,13 +75,11 @@ typedef struct AVResampleContext{
  */
 static double bessel(double x){
     double v=1;
-    double lastv=0;
     double t=1;
     int i;
 
     x= x*x/4;
-    for(i=1; v != lastv; i++){
-        lastv=v;
+    for(i=1; i<50; i++){
         t *= x/(i*i);
         v += t;
     }
@@ -95,7 +92,7 @@ static double bessel(double x){
  * @param scale wanted sum of coefficients for each filter
  * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2..16->kaiser windowed sinc beta=2..16
  */
-static void build_filter(FELEM *filter, double factor, int tap_count, int phase_count, int scale, int type){
+void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_count, int scale, int type){
     int ph, i;
     double x, y, w, tab[tap_count];
     const int center= (tap_count-1)/2;
@@ -178,6 +175,10 @@ static void build_filter(FELEM *filter, double factor, int tap_count, int phase_
 #endif
 }
 
+/**
+ * Initializes an audio resampler.
+ * Note, if either rate is not an integer then simply scale both rates up so they are.
+ */
 AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff){
     AVResampleContext *c= av_mallocz(sizeof(AVResampleContext));
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
@@ -189,7 +190,7 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
 
     c->filter_length= FFMAX((int)ceil(filter_size/factor), 1);
     c->filter_bank= av_mallocz(c->filter_length*(phase_count+1)*sizeof(FELEM));
-    build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
+    av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, WINDOW_TYPE);
     memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
     c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
 
@@ -205,12 +206,33 @@ void av_resample_close(AVResampleContext *c){
     av_freep(&c);
 }
 
+/**
+ * Compensates samplerate/timestamp drift. The compensation is done by changing
+ * the resampler parameters, so no audible clicks or similar distortions occur
+ * @param compensation_distance distance in output samples over which the compensation should be performed
+ * @param sample_delta number of output samples which should be output less
+ *
+ * example: av_resample_compensate(c, 10, 500)
+ * here instead of 510 samples only 500 samples would be output
+ *
+ * note, due to rounding the actual compensation might be slightly different,
+ * especially if the compensation_distance is large and the in_rate used during init is small
+ */
 void av_resample_compensate(AVResampleContext *c, int sample_delta, int compensation_distance){
 //    sample_delta += (c->ideal_dst_incr - c->dst_incr)*(int64_t)c->compensation_distance / c->ideal_dst_incr;
     c->compensation_distance= compensation_distance;
     c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
 }
 
+/**
+ * resamples.
+ * @param src an array of unconsumed samples
+ * @param consumed the number of samples of src which have been consumed are returned here
+ * @param src_size the number of unconsumed samples available
+ * @param dst_size the amount of space in samples available in dst
+ * @param update_ctx If this is 0 then the context will not be modified, that way several channels can be resampled with the same context.
+ * @return the number of samples written in dst or -1 if an error occurred
+ */
 int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int src_size, int dst_size, int update_ctx){
     int dst_index, i;
     int index= c->index;

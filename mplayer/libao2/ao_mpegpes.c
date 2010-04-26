@@ -1,23 +1,3 @@
-/*
- * MPEG-PES audio output driver
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +10,11 @@
 
 #include "config.h"
 
+#ifdef HAVE_DVB
+#include <sys/poll.h>
+#include <sys/ioctl.h>
+#endif
+
 #include "audio_out.h"
 #include "audio_out_internal.h"
 
@@ -40,11 +25,14 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 
-#ifdef CONFIG_DVB
-#include <poll.h>
-#include <sys/ioctl.h>
+#ifdef HAVE_DVB
+#ifndef HAVE_DVB_HEAD
+#include <ost/audio.h>
+audioMixer_t dvb_mixer={255,255};
+#else
 #include <linux/dvb/audio.h>
 audio_mixer_t dvb_mixer={255,255};
+#endif
 #endif
 
 #define true 1
@@ -55,9 +43,9 @@ int vo_mpegpes_fd2 = -1;
 
 #include <errno.h>
 
-static const ao_info_t info =
+static ao_info_t info = 
 {
-#ifdef CONFIG_DVB
+#ifdef HAVE_DVB
 	"DVB audio output",
 #else
 	"MPEG-PES audio output",
@@ -72,7 +60,7 @@ LIBAO_EXTERN(mpegpes)
 
 // to set/get/query special features/parameters
 static int control(int cmd,void *arg){
-#ifdef CONFIG_DVB
+#ifdef HAVE_DVB
     switch(cmd){
 	case AOCONTROL_GET_VOLUME:
 	  if(vo_mpegpes_fd2>=0){
@@ -104,12 +92,17 @@ static int control(int cmd,void *arg){
 static int freq=0;
 static int freq_id=0;
 
-#ifdef CONFIG_DVB
+#ifdef HAVE_DVB
 static int init_device(int card)
 {
 	char ao_file[30];
+#ifndef HAVE_DVB_HEAD
+	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/ost/audio\n");
+	sprintf(ao_file, "/dev/ost/audio");
+#else
 	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/dvb/adapter%d/audio0\n", card);
 	sprintf(ao_file, "/dev/dvb/adapter%d/audio0", card);
+#endif
 	if((vo_mpegpes_fd2 = open(ao_file,O_RDWR|O_NONBLOCK)) < 0)
 	{
         	mp_msg(MSGT_VO, MSGL_ERR, "DVB AUDIO DEVICE: %s\n", strerror(errno));
@@ -145,7 +138,7 @@ static int preinit(const char *arg)
 	int card = -1;
 	char *ao_file = NULL;
 
-	const opt_t subopts[] = {
+	opt_t subopts[] = {
 		{"card", OPT_ARG_INT, &card, NULL},
 		{"file", OPT_ARG_MSTRZ, &ao_file, NULL},
 		{NULL}
@@ -173,7 +166,8 @@ static int preinit(const char *arg)
 			}
         	}
 	}
-#endif	
+#endif
+
 	if((card < 1) || (card > 4))
 	{
 		mp_msg(MSGT_VO, MSGL_ERR, "DVB card number must be between 1 and 4\n");
@@ -181,10 +175,10 @@ static int preinit(const char *arg)
 	}
 	card--;
 
-#ifdef CONFIG_DVB
+#ifdef HAVE_DVB
 	if(!ao_file)
 		return init_device(card);
-#else
+#else	
 	if(!ao_file)
 		return vo_mpegpes_fd;	//video fd
 #endif
@@ -198,9 +192,9 @@ static int preinit(const char *arg)
 	return vo_mpegpes_fd2;
 }
 
-static int my_ao_write(const unsigned char* data,int len){
+static int my_ao_write(unsigned char* data,int len){
     int orig_len = len;
-#ifdef CONFIG_DVB
+#ifdef HAVE_DVB
 #define NFD   1
     struct pollfd pfd[NFD];
 
@@ -240,11 +234,8 @@ static int init(int rate,int channels,int format,int flags){
     switch(format){
 	case AF_FORMAT_S16_BE:
 	case AF_FORMAT_MPEG2:
-	case AF_FORMAT_AC3_BE:
+	case AF_FORMAT_AC3:
 	    ao_data.format=format;
-	    break;
-	case AF_FORMAT_AC3_LE:
-	    ao_data.format=AF_FORMAT_AC3_BE;
 	    break;
 	default:
 	    ao_data.format=AF_FORMAT_S16_BE;
@@ -322,8 +313,12 @@ static int play(void* data,int len,int flags){
     if(ao_data.format==AF_FORMAT_MPEG2)
 	send_mpeg_pes_packet (data, len, 0x1C0, ao_data.pts, 1, my_ao_write);
     else {
+	int i;
+	unsigned short *s=data;
 //	if(len>2000) len=2000;
 //	printf("ao_mpegpes: len=%d  \n",len);
+	if(ao_data.format==AF_FORMAT_AC3)
+	    for(i=0;i<len/2;i++) s[i]=(s[i]>>8)|(s[i]<<8); // le<->be
 	send_mpeg_lpcm_packet(data, len, 0xA0, ao_data.pts, freq_id, my_ao_write);
     }
     return len;

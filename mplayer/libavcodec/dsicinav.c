@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file dsicinav.c
  * Delphine Software International CIN audio/video decoders
  */
 
@@ -195,10 +195,8 @@ static void cin_decode_rle(const unsigned char *src, int src_size, unsigned char
 
 static int cinvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 AVPacket *avpkt)
+                                 const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     CinVideoContext *cin = avctx->priv_data;
     int i, y, palette_type, palette_colors_count, bitmap_frame_type, bitmap_frame_size;
 
@@ -314,10 +312,8 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
 
 static int cinaudio_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 AVPacket *avpkt)
+                                 const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     CinAudioContext *cin = avctx->priv_data;
     const uint8_t *src = buf;
     int16_t *samples = (int16_t *)data;
@@ -345,7 +341,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
 
 AVCodec dsicinvideo_decoder = {
     "dsicinvideo",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_DSICINVIDEO,
     sizeof(CinVideoContext),
     cinvideo_decode_init,
@@ -358,7 +354,7 @@ AVCodec dsicinvideo_decoder = {
 
 AVCodec dsicinaudio_decoder = {
     "dsicinaudio",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_DSICINAUDIO,
     sizeof(CinAudioContext),
     cinaudio_decode_init,

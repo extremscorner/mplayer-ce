@@ -23,13 +23,13 @@
 
 extern listItems     * skinAppMPlayer;
 
-int skinRead( char * dname  );
-int skinBPRead( char * fname, txSample * bf );
+extern int skinRead( char * dname  );
+extern int skinBPRead( char * fname, txSample * bf );
 
 // ---
 
-char * trimleft( char * in );
-char * strswap( char * in, char what, char whereof );
-char * trim( char * in );
+extern char * trimleft( char * in );
+extern char * strswap( char * in,char what,char whereof );
+extern char * trim( char * in );
 
 #endif /* MPLAYER_GUI_SKIN_H */

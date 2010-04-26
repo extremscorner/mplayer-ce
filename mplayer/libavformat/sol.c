@@ -1,6 +1,6 @@
 /*
  * Sierra SOL demuxer
- * Copyright Konstantin Shishkov
+ * Copyright Konstantin Shishkov.
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +47,7 @@ static int sol_probe(AVProbeData *p)
 #define SOL_16BIT   4
 #define SOL_STEREO 16
 
-static enum CodecID sol_codec_id(int magic, int type)
+static int sol_codec_id(int magic, int type)
 {
     if (magic == 0x0B8D)
     {
@@ -88,8 +88,7 @@ static int sol_read_header(AVFormatContext *s,
     int size;
     unsigned int magic,tag;
     ByteIOContext *pb = s->pb;
-    unsigned int id, channels, rate, type;
-    enum CodecID codec;
+    unsigned int id, codec, channels, rate, type;
     AVStream *st;
 
     /* check ".snd" header */
@@ -114,7 +113,7 @@ static int sol_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return -1;
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_tag = id;
     st->codec->codec_id = codec;
     st->codec->channels = channels;

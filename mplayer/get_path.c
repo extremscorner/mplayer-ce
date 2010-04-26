@@ -5,22 +5,6 @@
  *   Returns the pointer to the ALLOCATED buffer containing the
  *   zero terminated path string. This buffer has to be FREED
  *   by the caller.
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include <stdio.h>
@@ -34,12 +18,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#elif defined(__MINGW32__)
+#endif
+
+#ifdef WIN32
 #include <windows.h>
-#elif defined(__CYGWIN__)
-#include <windows.h>
-#include <sys/cygwin.h>
-#elif defined(__OS2__)
+#endif
+
+#ifdef __OS2__
 #define INCL_DOS
 #include <os2.h>
 #endif
@@ -47,9 +32,8 @@
 char *get_path(const char *filename){
 	char *homedir;
 	char *buff;
-#if defined (__MINGW32__) || defined (GEKKO)
-	//static char *config_dir = "/mplayer";
-	static char *config_dir = "/";
+#ifdef __MINGW32__
+	static char *config_dir = "/mplayer";
 #else
 	static char *config_dir = "/.mplayer";
 #endif
@@ -156,8 +140,8 @@ char *get_path(const char *filename){
 	return buff;
 }
 
-#if (defined(__MINGW32__) || defined(__CYGWIN__)) && defined(CONFIG_WIN32DLL)
-void set_path_env(void)
+#if defined(WIN32) && defined(CONFIG_WIN32DLL)
+void set_path_env()
 {
 	/*make our codec dirs available for LoadLibraryA()*/
 	char tmppath[MAX_PATH*2 + 1];
@@ -192,4 +176,4 @@ void set_path_env(void)
 	if (!SetEnvironmentVariableA("PATH", tmppath))
 		mp_msg(MSGT_WIN32, MSGL_WARN, "Cannot set PATH!");
 }
-#endif /* (defined(__MINGW32__) || defined(__CYGWIN__)) && defined(CONFIG_WIN32DLL) */
+#endif /*WIN32 && CONFIG_WIN32DLL*/

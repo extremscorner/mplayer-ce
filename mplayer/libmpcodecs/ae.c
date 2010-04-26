@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -58,11 +40,11 @@ audio_encoder_t *new_audio_encoder(muxer_stream_t *stream, audio_encoding_params
 	audio_encoder_t *encoder;
 	if(! params)
 		return NULL;
-
-	encoder = calloc(1, sizeof(audio_encoder_t));
+	
+	encoder = (audio_encoder_t *) calloc(1, sizeof(audio_encoder_t));
 	memcpy(&encoder->params, params, sizeof(audio_encoding_params_t));
 	encoder->stream = stream;
-
+	
 	switch(stream->codec)
 	{
 		case ACODEC_PCM:
@@ -97,7 +79,7 @@ audio_encoder_t *new_audio_encoder(muxer_stream_t *stream, audio_encoding_params
 			ris = 0;
 			break;
 	}
-
+	
 	if(! ris)
 	{
 		free(encoder);
@@ -110,7 +92,9 @@ audio_encoder_t *new_audio_encoder(muxer_stream_t *stream, audio_encoding_params
 		free(encoder);
 		return NULL;
 	}
-
+	
 	encoder->codec = stream->codec;
 	return encoder;
 }
+
+

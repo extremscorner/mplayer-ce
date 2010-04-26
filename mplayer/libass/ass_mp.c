@@ -25,11 +25,12 @@
 #include <stdlib.h>
 
 #include "mp_msg.h"
-#include "path.h"
+#include "get_path.h"
 
+#include "ass.h"
+#include "ass_utils.h"
 #include "ass_mp.h"
-#include "help_mp.h"
-#include "stream/stream.h"
+#include "ass_library.h"
 
 #ifdef CONFIG_FONTCONFIG
 #include <fontconfig/fontconfig.h>
@@ -70,6 +71,8 @@ extern char* sub_cp;
 static char* sub_cp = 0;
 #endif
 
+extern void process_force_style(ass_track_t* track);
+
 ass_track_t* ass_default_track(ass_library_t* library) {
 	ass_track_t* track = ass_new_track(library);
 
@@ -91,7 +94,6 @@ ass_track_t* ass_default_track(ass_library_t* library) {
 		style = track->styles + sid;
 		style->Name = strdup("Default");
 		style->FontName = (font_fontconfig >= 0 && sub_font_name) ? strdup(sub_font_name) : (font_fontconfig >= 0 && font_name) ? strdup(font_name) : strdup("Sans");
-		style->treat_fontname_as_pattern = 1;
 
 		fs = track->PlayResY * text_font_scale_factor / 100.;
 		// approximate autoscale coefficients
@@ -188,7 +190,7 @@ int ass_process_subtitle(ass_track_t* track, subtitle* sub)
 
 	mp_msg(MSGT_ASS, MSGL_V, "plaintext event at %" PRId64 ", +%" PRId64 ": %s  \n",
 			(int64_t)event->Start, (int64_t)event->Duration, event->Text);
-
+	
 	return eid;
 }
 
@@ -218,51 +220,6 @@ ass_track_t* ass_read_subdata(ass_library_t* library, sub_data* subdata, double 
 	return track;
 }
 
-ass_track_t* ass_read_stream(ass_library_t* library, const char *fname, char *charset) {
-	int i;
-	char *buf = NULL;
-	ass_track_t *track;
-	size_t sz = 0;
-	size_t buf_alloc = 0;
-	stream_t *fd;
-
-	fd = open_stream(fname, NULL, &i);
-	if (!fd) {
-		mp_msg(MSGT_ASS, MSGL_WARN, MSGTR_LIBASS_FopenFailed, fname);
-		return NULL;
-	}
-	if (fd->end_pos > STREAM_BUFFER_SIZE)
-		/* read entire file if size is known */
-		buf_alloc = fd->end_pos;
-	for (;;) {
-		if (buf_alloc >= 100*1024*1024) {
-			mp_msg(MSGT_ASS, MSGL_INFO, MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan100M, fname);
-			sz = 0;
-			break;
-		}
-		if (buf_alloc < sz + STREAM_BUFFER_SIZE)
-			buf_alloc += STREAM_BUFFER_SIZE;
-		buf = realloc(buf, buf_alloc + 1);
-		i = stream_read(fd, buf + sz, buf_alloc - sz);
-		if (i <= 0) break;
-		sz += i;
-	}
-	free_stream(fd);
-	if (!sz) {
-		free(buf);
-		return NULL;
-	}
-	buf[sz] = 0;
-	buf = realloc(buf, sz + 1);
-	track = ass_read_memory(library, buf, sz, charset);
-	if (track) {
-		free(track->name);
-		track->name = strdup(fname);
-	}
-	free(buf);
-	return track;
-}
-
 void ass_configure(ass_renderer_t* priv, int w, int h, int unscaled) {
 	int hinting;
 	ass_set_frame_size(priv, w, h);
@@ -287,14 +244,10 @@ void ass_configure_fonts(ass_renderer_t* priv) {
 	else if (font_fontconfig >= 0 && font_name) family = strdup(font_name);
 	else family = 0;
 
-#if defined(LIBASS_VERSION) && LIBASS_VERSION >= 0x00907010
-        ass_set_fonts(priv, path, family, font_fontconfig, NULL, 1);
-#else
 	if (font_fontconfig >= 0)
 		ass_set_fonts(priv, path, family);
 	else
 		ass_set_fonts_nofc(priv, path, family);
-#endif
 
 	free(dir);
 	free(path);

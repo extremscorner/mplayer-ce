@@ -9,5 +9,6 @@ HINSTANCE16 ELFDLL_LoadModule16(LPCSTR libname);
 void ELFDLL_UnloadLibrary(WINE_MODREF *wm);
 
 void *ELFDLL_dlopen(const char *libname, int flags);
+extern char *extra_ld_library_path;
 
 #endif /* MPLAYER_ELFDLL_H */

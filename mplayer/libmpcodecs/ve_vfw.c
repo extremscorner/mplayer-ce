@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +37,7 @@ static HRESULT CoInitRes = -1;
 
 #include "m_option.h"
 
-const m_option_t vfwopts_conf[]={
+m_option_t vfwopts_conf[]={
     {"codec", &vfw_param_codec, CONF_TYPE_STRING, 0, 0, 0, NULL},
     {"compdata", &vfw_param_compdata, CONF_TYPE_STRING, 0, 0, 0, NULL},
     {NULL, NULL, 0, 0, 0, 0, NULL}
@@ -96,6 +78,7 @@ static BITMAPINFOHEADER* vfw_open_encoder(char *dll_name, char *compdatafile, BI
   }
   mp_msg(MSGT_WIN32,MSGL_INFO,"HIC: %x\n", encoder_hic);
 
+#if 1
 {
   ICINFO icinfo;
 
@@ -117,6 +100,7 @@ if (icinfo.dwFlags & VIDCF_QUALITYTIME)
     mp_msg(MSGT_WIN32,MSGL_INFO," temp-quality");
 mp_msg(MSGT_WIN32,MSGL_INFO,"\n");
 }
+#endif
 
   if(compdatafile){
     if (!strncmp(compdatafile, "dialog", 6)){
@@ -139,7 +123,7 @@ mp_msg(MSGT_WIN32,MSGL_INFO,"\n");
         mp_msg(MSGT_WIN32,MSGL_ERR,"Cannot open Compressor data file!\n");
         return NULL;
       }
-      drvdata = malloc(st.st_size);
+      drvdata = (char *) malloc(st.st_size);
       if (fread(drvdata, st.st_size, 1, fd) != 1) {
         mp_msg(MSGT_WIN32,MSGL_ERR,"Cannot read Compressor data file!\n");
         fclose(fd);
@@ -183,7 +167,7 @@ static int vfw_start_encoder(BITMAPINFOHEADER *input_bih, BITMAPINFOHEADER *outp
     return 0;
   }
   mp_msg(MSGT_WIN32,MSGL_V,"ICCompressGetFormat OK\n");
-
+  
   if (temp_len > sizeof(BITMAPINFOHEADER))
   {
     unsigned char* temp=(unsigned char*)output_bih;
@@ -236,7 +220,7 @@ static int vfw_start_encoder(BITMAPINFOHEADER *input_bih, BITMAPINFOHEADER *outp
     mp_msg(MSGT_WIN32,MSGL_INFO,"  biBitCount %d\n", output_bih->biBitCount);
     mp_msg(MSGT_WIN32,MSGL_INFO,"  biCompression 0x%lx ('%.4s')\n", output_bih->biCompression, (char *)&output_bih->biCompression);
     mp_msg(MSGT_WIN32,MSGL_INFO,"  biSizeImage %ld\n", output_bih->biSizeImage);
-
+  
   encoder_buf_size=input_bih->biSizeImage;
   encoder_buf=malloc(encoder_buf_size);
   encoder_frameno=0;
@@ -275,7 +259,7 @@ static int vfw_encode_frame(BITMAPINFOHEADER* biOutput,void* OutBuf,
 #define mux_v (vf->priv->mux)
 #define vfw_bih (vf->priv->bih)
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 
@@ -293,17 +277,17 @@ static int config(struct vf_instance *vf,
     return 1;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
 
     return CONTROL_UNKNOWN;
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     if(fmt==IMGFMT_BGR24) return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_FLIPPED;
     return 0;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     long flags=0;
     int ret;
 //    flip_upside_down(vo_image_ptr,vo_image_ptr,3*vo_w,vo_h); // dirty hack
@@ -314,7 +298,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     return 1;
 }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
 {
     HRESULT ret;
 

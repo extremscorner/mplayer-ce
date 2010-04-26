@@ -20,11 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef GEKKO
-#include <strings.h>
-#endif
 #include "libavutil/avstring.h"
-#include "libavutil/bswap.h"
 #include "libavutil/tree.h"
 #include "nut.h"
 
@@ -138,7 +134,7 @@ static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
  * Find the given startcode.
  * @param code the startcode
  * @param pos the start position of the search, or -1 if the current position
- * @return the position of the startcode or -1 if not found
+ * @returns the position of the startcode or -1 if not found
  */
 static int64_t find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
     for(;;){
@@ -209,7 +205,7 @@ static int decode_main_header(NUTContext *nut){
     for(i=0; i<nut->time_base_count; i++){
         GET_V(nut->time_base[i].num, tmp>0 && tmp<(1ULL<<31))
         GET_V(nut->time_base[i].den, tmp>0 && tmp<(1ULL<<31))
-        if(av_gcd(nut->time_base[i].num, nut->time_base[i].den) != 1){
+        if(ff_gcd(nut->time_base[i].num, nut->time_base[i].den) != 1){
             av_log(s, AV_LOG_ERROR, "time base invalid\n");
             return -1;
         }
@@ -317,19 +313,19 @@ static int decode_stream_header(NUTContext *nut){
     switch(class)
     {
         case 0:
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tmp);
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_id = codec_get_id(codec_bmp_tags, tmp);
             break;
         case 1:
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, tmp);
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_id = codec_get_id(codec_wav_tags, tmp);
             break;
         case 2:
-            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-            st->codec->codec_id = ff_codec_get_id(ff_nut_subtitle_tags, tmp);
+            st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+            st->codec->codec_id = codec_get_id(ff_nut_subtitle_tags, tmp);
             break;
         case 3:
-            st->codec->codec_type = AVMEDIA_TYPE_DATA;
+            st->codec->codec_type = CODEC_TYPE_DATA;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);
@@ -351,17 +347,17 @@ static int decode_stream_header(NUTContext *nut){
         get_buffer(bc, st->codec->extradata, st->codec->extradata_size);
     }
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
+    if (st->codec->codec_type == CODEC_TYPE_VIDEO){
         GET_V(st->codec->width , tmp > 0)
         GET_V(st->codec->height, tmp > 0)
-        st->sample_aspect_ratio.num= ff_get_v(bc);
-        st->sample_aspect_ratio.den= ff_get_v(bc);
-        if((!st->sample_aspect_ratio.num) != (!st->sample_aspect_ratio.den)){
-            av_log(s, AV_LOG_ERROR, "invalid aspect ratio %d/%d\n", st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
+        st->codec->sample_aspect_ratio.num= ff_get_v(bc);
+        st->codec->sample_aspect_ratio.den= ff_get_v(bc);
+        if((!st->codec->sample_aspect_ratio.num) != (!st->codec->sample_aspect_ratio.den)){
+            av_log(s, AV_LOG_ERROR, "invalid aspect ratio %d/%d\n", st->codec->sample_aspect_ratio.num, st->codec->sample_aspect_ratio.den);
             return -1;
         }
         ff_get_v(bc); /* csp type */
-    }else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO){
+    }else if (st->codec->codec_type == CODEC_TYPE_AUDIO){
         GET_V(st->codec->sample_rate , tmp > 0)
         ff_get_v(bc); // samplerate_den
         GET_V(st->codec->channels, tmp > 0)
@@ -391,14 +387,13 @@ static void set_disposition_bits(AVFormatContext* avf, char* value, int stream_i
 static int decode_info_header(NUTContext *nut){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = s->pb;
-    uint64_t tmp, chapter_start, chapter_len;
-    unsigned int stream_id_plus1, count;
+    uint64_t tmp;
+    unsigned int stream_id_plus1, chapter_start, chapter_len, count;
     int chapter_id, i;
     int64_t value, end;
     char name[256], str_value[1024], type_str[256];
     const char *type;
     AVChapter *chapter= NULL;
-    AVStream *st= NULL;
 
     end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += url_ftell(bc);
@@ -414,8 +409,7 @@ static int decode_info_header(NUTContext *nut){
         chapter= ff_new_chapter(s, chapter_id,
                                 nut->time_base[chapter_start % nut->time_base_count],
                                 start, start + chapter_len, NULL);
-    } else if(stream_id_plus1)
-        st= s->streams[stream_id_plus1 - 1];
+    }
 
     for(i=0; i<count; i++){
         get_str(bc, name, sizeof(name));
@@ -445,16 +439,21 @@ static int decode_info_header(NUTContext *nut){
             continue;
         }
 
-        if(!strcmp(type, "UTF-8")){
-            AVMetadata **metadata = NULL;
-            if(chapter_id==0 && !strcmp(name, "Disposition"))
+        if(chapter_id==0 && !strcmp(type, "UTF-8")){
+            if     (!strcmp(name, "Author"))
+                av_strlcpy(s->author   , str_value, sizeof(s->author));
+            else if(!strcmp(name, "Title"))
+                av_strlcpy(s->title    , str_value, sizeof(s->title));
+            else if(!strcmp(name, "Copyright"))
+                av_strlcpy(s->copyright, str_value, sizeof(s->copyright));
+            else if(!strcmp(name, "Description"))
+                av_strlcpy(s->comment  , str_value, sizeof(s->comment));
+            else if(!strcmp(name, "Disposition"))
                 set_disposition_bits(s, str_value, stream_id_plus1 - 1);
-            else if(chapter)          metadata= &chapter->metadata;
-            else if(stream_id_plus1)  metadata= &st->metadata;
-            else                      metadata= &s->metadata;
-            if(metadata && strcasecmp(name,"Uses")
-               && strcasecmp(name,"Depends") && strcasecmp(name,"Replaces"))
-                av_metadata_set(metadata, name, str_value);
+        }
+        if(chapter && !strcmp(type, "UTF-8")){
+            if(!strcmp(name, "Title"))
+                chapter->title= av_strdup(str_value);
         }
     }
 
@@ -756,7 +755,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
 
     pkt->stream_index = stream_id;
     if (stc->last_flags & FLAG_KEY)
-        pkt->flags |= AV_PKT_FLAG_KEY;
+        pkt->flags |= PKT_FLAG_KEY;
     pkt->pts = pts;
 
     return 0;
@@ -847,9 +846,9 @@ assert(0);
 static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags){
     NUTContext *nut = s->priv_data;
     AVStream *st= s->streams[stream_index];
-    Syncpoint dummy={.ts= pts*av_q2d(st->time_base)*AV_TIME_BASE};
-    Syncpoint nopts_sp= {.ts= AV_NOPTS_VALUE, .back_ptr= AV_NOPTS_VALUE};
-    Syncpoint *sp, *next_node[2]= {&nopts_sp, &nopts_sp};
+    syncpoint_t dummy={.ts= pts*av_q2d(st->time_base)*AV_TIME_BASE};
+    syncpoint_t nopts_sp= {.ts= AV_NOPTS_VALUE, .back_ptr= AV_NOPTS_VALUE};
+    syncpoint_t *sp, *next_node[2]= {&nopts_sp, &nopts_sp};
     int64_t pos, pos2, ts;
     int i;
 
@@ -861,8 +860,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         pos2= st->index_entries[index].pos;
         ts  = st->index_entries[index].timestamp;
     }else{
-        av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pts_cmp,
-                     (void **) next_node);
+        av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pts_cmp, next_node);
         av_log(s, AV_LOG_DEBUG, "%"PRIu64"-%"PRIu64" %"PRId64"-%"PRId64"\n", next_node[0]->pos, next_node[1]->pos,
                                                     next_node[0]->ts , next_node[1]->ts);
         pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
@@ -871,8 +869,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         if(!(flags & AVSEEK_FLAG_BACKWARD)){
             dummy.pos= pos+16;
             next_node[1]= &nopts_sp;
-            av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pos_cmp,
-                         (void **) next_node);
+            av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, next_node);
             pos2= av_gen_search(s, -2, dummy.pos, next_node[0]->pos     , next_node[1]->pos, next_node[1]->pos,
                                                 next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
             if(pos2>=0)
@@ -880,8 +877,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
             //FIXME dir but I think it does not matter
         }
         dummy.pos= pos;
-        sp= av_tree_find(nut->syncpoints, &dummy, (void *) ff_nut_sp_pos_cmp,
-                         NULL);
+        sp= av_tree_find(nut->syncpoints, &dummy, ff_nut_sp_pos_cmp, NULL);
 
         assert(sp);
         pos2= sp->back_ptr  - 15;
@@ -902,18 +898,14 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
 static int nut_read_close(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
-    int i;
 
     av_freep(&nut->time_base);
     av_freep(&nut->stream);
-    ff_nut_free_sp(nut);
-    for(i = 1; i < nut->header_count; i++)
-        av_freep(&nut->header[i]);
 
     return 0;
 }
 
-#if CONFIG_NUT_DEMUXER
+#ifdef CONFIG_NUT_DEMUXER
 AVInputFormat nut_demuxer = {
     "nut",
     NULL_IF_CONFIG_SMALL("NUT format"),
@@ -924,6 +916,5 @@ AVInputFormat nut_demuxer = {
     nut_read_close,
     read_seek,
     .extensions = "nut",
-    .metadata_conv = ff_nut_metadata_conv,
 };
 #endif
