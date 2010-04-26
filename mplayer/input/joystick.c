@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 
@@ -50,7 +33,7 @@ int mp_input_joystick_init(char* dev) {
   int fd,l=0;
   int initialized = 0;
   struct js_event ev;
-
+  
   mp_msg(MSGT_INPUT,MSGL_V,MSGTR_INPUT_JOYSTICK_Opening,dev ? dev : JS_DEV);
 
   fd = open( dev ? dev : JS_DEV , O_RDONLY | O_NONBLOCK );
@@ -58,7 +41,7 @@ int mp_input_joystick_init(char* dev) {
     mp_msg(MSGT_INPUT,MSGL_ERR,MSGTR_INPUT_JOYSTICK_CantOpen,dev ? dev : JS_DEV,strerror(errno));
     return -1;
   }
-
+  
   while(! initialized) {
     l = 0;
     while((unsigned int)l < sizeof(struct js_event)) {
@@ -73,12 +56,12 @@ int mp_input_joystick_init(char* dev) {
 	mp_msg(MSGT_INPUT,MSGL_ERR,MSGTR_INPUT_JOYSTICK_ErrReading,strerror(errno));
 	close(fd);
 	return -1;
-      }
+      }	
       l += r;
     }
     if((unsigned int)l < sizeof(struct js_event)) {
       if(l > 0)
-	mp_msg(MSGT_INPUT,MSGL_WARN,MSGTR_INPUT_JOYSTICK_LoosingBytes,l);
+	mp_msg(MSGT_INPUT,MSGL_WARN,MSGTR_INPUT_JOYSTICK_LoosingBytes,l);	  
       break;
     }
     if(ev.type == JS_EVENT_BUTTON)
@@ -86,7 +69,7 @@ int mp_input_joystick_init(char* dev) {
     if(ev.type == JS_EVENT_AXIS)
       axis[ev.number] = ev.value;
   }
-
+	
   return fd;
 }
 
@@ -104,9 +87,9 @@ int mp_input_joystick_read(int fd) {
       if( r < 0)
 	mp_msg(MSGT_INPUT,MSGL_ERR,MSGTR_INPUT_JOYSTICK_ErrReading,strerror(errno));
       else
-	mp_msg(MSGT_INPUT,MSGL_ERR,MSGTR_INPUT_JOYSTICK_ErrReading,"EOF");
+	mp_msg(MSGT_INPUT,MSGL_ERR,MSGTR_INPUT_JOYSTICK_ErrReading,"EOF"); 
       return MP_INPUT_DEAD;
-    }
+    } 	
     l += r;
   }
 
@@ -117,7 +100,7 @@ int mp_input_joystick_read(int fd) {
   }
 
   if(ev.type & JS_EVENT_INIT) {
-    mp_msg(MSGT_INPUT,MSGL_WARN,MSGTR_INPUT_JOYSTICK_WarnLostSync);
+    mp_msg(MSGT_INPUT,MSGL_WARN,MSGTR_INPUT_JOYSTICK_WarnLostSync);	
     ev.type &= ~JS_EVENT_INIT;
     if(ev.type == JS_EVENT_BUTTON) {
       int s = (btns >> ev.number) & 1;
@@ -130,9 +113,9 @@ int mp_input_joystick_read(int fd) {
 	  (axis[ev.number] == 0 && ev.value >= -JOY_AXIS_DELTA && ev.value <= JOY_AXIS_DELTA)
 	  ) // State is the same : ignore
 	return MP_INPUT_NOTHING;
-    }
+    }	
   }
-
+  
   if(ev.type & JS_EVENT_BUTTON) {
     btns &= ~(1 << ev.number);
     btns |= (ev.value << ev.number);
@@ -154,7 +137,7 @@ int mp_input_joystick_read(int fd) {
     } else
       return MP_INPUT_NOTHING;
   } else {
-    mp_msg(MSGT_INPUT,MSGL_WARN,MSGTR_INPUT_JOYSTICK_WarnUnknownEvent,ev.type);
+    mp_msg(MSGT_INPUT,MSGL_WARN,MSGTR_INPUT_JOYSTICK_WarnUnknownEvent,ev.type);	
     return MP_INPUT_ERROR;
   }
 

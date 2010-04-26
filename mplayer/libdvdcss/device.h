@@ -2,11 +2,11 @@
  * device.h: DVD device access
  *****************************************************************************
  * Copyright (C) 1998-2002 VideoLAN
- * $Id: device.h 27494 2008-08-29 20:22:36Z diego $
+ * $Id: device.h 20629 2006-11-03 12:25:56Z diego $
  *
- * Authors: StÃ©phane Borel <stef@via.ecp.fr>
- *          Sam Hocevar <sam@zoy.org>
- *          HÃ¥kan Hjort <d95hjort@dtek.chalmers.se>
+ * Authors: Stéphane Borel <stef@via.ecp.fr>
+ *          Samuel Hocevar <sam@zoy.org>
+ *          Håkan Hjort <d95hjort@dtek.chalmers.se>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

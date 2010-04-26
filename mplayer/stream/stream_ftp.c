@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 
@@ -27,8 +10,9 @@
 #include <unistd.h>
 #include <errno.h>
 #if !defined(GEKKO)
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
 #include <sys/socket.h>
+#define closesocket close
 #else
 #include <winsock2.h>
 #endif
@@ -36,8 +20,8 @@
 #else
 #define MSG_OOB 0x01 //scip
 #endif
+#include "network.h" //scip
 #include "mp_msg.h"
-#include "network.h"
 #include "stream.h"
 #include "help_mp.h"
 #include "m_option.h"
@@ -94,6 +78,9 @@ static const struct m_struct_st stream_opts = {
 // Check if there is something to read on a fd. This avoid hanging
 // forever if the network stop responding.
 static int fd_can_read(int fd,int timeout) {
+	#if defined (GEKKO) 
+		return 1; 
+	#endif; //select not implemented in GEKKO
   fd_set fds;
   struct timeval tv;
 
@@ -101,7 +88,7 @@ static int fd_can_read(int fd,int timeout) {
   FD_SET(fd,&fds);
   tv.tv_sec = timeout;
   tv.tv_usec = 0;
-
+  
   return select(fd+1, &fds, NULL, NULL, &tv) > 0;
 }
 
@@ -115,7 +102,7 @@ static int readline(char *buf,int max,struct stream_priv_s *ctl)
     int x,retval = 0;
     char *end,*bp=buf;
     int eof = 0;
-
+ 
     do {
       if (ctl->cavail > 0) {
 	x = (max >= ctl->cavail) ? ctl->cavail : max-1;
@@ -170,9 +157,37 @@ static int readline(char *buf,int max,struct stream_priv_s *ctl)
       ctl->cavail += x;
       ctl->cput += x;
     } while (1);
-
+    
     return retval;
 }
+
+/*
+ssize_t readline( void *vptr, size_t maxlen, int fd )
+{
+	ssize_t n, rc;
+	char c, *ptr;
+
+	ptr = vptr ;
+	for( n =1 ; n < maxlen; n++ ) {
+again:
+		if( (rc= read(fd, &c, 1 )) ==1 ) {
+			*ptr++ = c;
+			if( c=='\n' )
+				break;
+		} else if( rc== 0 ) {
+			return 0;
+		} else {
+			if( errno == EINTR )
+				goto again;
+			return(-1);
+		}
+	}
+
+	*ptr = 0;
+//	printf(" -> '%s'\n", (char*) vptr );
+	return( n );
+}
+*/
 
 /*
  * read a response from the server
@@ -185,10 +200,12 @@ static int readresp(struct stream_priv_s* ctl,char* rsp)
     static char response[256];
     char match[5];
     int r;
+    
 
+//legne na readline
     if (readline(response,256,ctl) == -1)
       return 0;
-
+ 
     r = atoi(response)/100;
     if(rsp) strcpy(rsp,response);
 
@@ -224,12 +241,12 @@ static int FtpSendCmd(const char *cmd, struct stream_priv_s *nControl,char* rsp)
       mp_msg(MSGT_OPEN,MSGL_ERR, "[ftp] write error: %s\n",strerror(errno));
       return 0;
     }
-
+    
     cmd += s;
     l -= s;
   }
-
-  if (hascrlf)
+    
+  if (hascrlf)  
     return readresp(nControl,rsp);
   else
     return FtpSendCmd("\r\n", nControl, rsp);
@@ -246,9 +263,9 @@ static int FtpOpenPort(struct stream_priv_s* p) {
     mp_msg(MSGT_OPEN,MSGL_WARN, "[ftp] command 'PASV' failed: %s\n",rsp_txt);
     return 0;
   }
-
+  
   par = strchr(rsp_txt,'(');
-
+  
   if(!par || !par[0] || !par[1]) {
     mp_msg(MSGT_OPEN,MSGL_ERR, "[ftp] invalid server response: %s ??\n",rsp_txt);
     return 0;
@@ -265,7 +282,7 @@ static int FtpOpenPort(struct stream_priv_s* p) {
   return fd;
 }
 
-static int FtpOpenData(stream_t* s,off_t newpos) {
+static int FtpOpenData(stream_t* s,size_t newpos) {
   struct stream_priv_s* p = s->priv;
   int resp;
   char str[256],rsp_txt[256];
@@ -303,7 +320,7 @@ static int fill_buffer(stream_t *s, char* buffer, int max_len){
 
   if(s->fd < 0 && !FtpOpenData(s,s->pos))
     return -1;
-
+  
   if(!fd_can_read(s->fd, 15)) {
     mp_msg(MSGT_OPEN,MSGL_ERR, "[ftp] read timed out\n");
     return -1;
@@ -335,13 +352,13 @@ static int seek(stream_t *s,off_t newpos) {
   if(s->fd >= 0) {
     static const char pre_cmd[]={TELNET_IAC,TELNET_IP,TELNET_IAC,TELNET_SYNCH};
     //int fl;
-
+    
     // First close the fd
     closesocket(s->fd);
     s->fd = 0;
-
+    
     // Send send the telnet sequence needed to make the server react
-
+    
     // Dunno if this is really needed, lftp have it. I let
     // it here in case it turn out to be needed on some other OS
     //fl=fcntl(p->handle,F_GETFL);
@@ -350,7 +367,7 @@ static int seek(stream_t *s,off_t newpos) {
     // send only first byte as OOB due to OOB braindamage in many unices
     send(p->handle,pre_cmd,1,MSG_OOB);
     send(p->handle,pre_cmd+1,sizeof(pre_cmd)-1,0);
-
+    
     //fcntl(p->handle,F_SETFL,fl);
 
     // Get the 426 Transfer aborted
@@ -390,10 +407,10 @@ static void close_f(stream_t *s) {
 
 
 static int open_f(stream_t *stream,int mode, void* opts, int* file_format) {
-  int resp;
-  int64_t len = 0;
+  int len = 0,resp;
   struct stream_priv_s* p = (struct stream_priv_s*)opts;
   char str[256],rsp_txt[256];
+  
 
   if(mode != STREAM_READ) {
     mp_msg(MSGT_OPEN,MSGL_ERR, "[ftp] Unknown open mode %d\n",mode);
@@ -409,7 +426,9 @@ static int open_f(stream_t *stream,int mode, void* opts, int* file_format) {
 
   // Open the control connection
   p->handle = connect2Server(p->host,p->port,1);
-
+  
+  //ok
+  
   if(p->handle < 0) {
     m_struct_free(&stream_opts,opts);
     return STREAM_ERROR;
@@ -419,16 +438,23 @@ static int open_f(stream_t *stream,int mode, void* opts, int* file_format) {
   stream->fd = -1;
   stream->priv = p;
   p->buf = malloc(BUFSIZE);
+  
 
   if (readresp(p, NULL) == 0) {
     close_f(stream);
     m_struct_free(&stream_opts,opts);
     return STREAM_ERROR;
   }
+  
+  //printf("\n::::4");
+  //sleep(3);
 
   // Login
   snprintf(str,255,"USER %s",p->user);
   resp = FtpSendCmd(str,p,rsp_txt);
+  
+  //printf("\n::::5");
+  //sleep(3);
 
   // password needed
   if(resp == 3) {
@@ -444,7 +470,7 @@ static int open_f(stream_t *stream,int mode, void* opts, int* file_format) {
     close_f(stream);
     return STREAM_ERROR;
   }
-
+    
   // Set the transfer type
   resp = FtpSendCmd("TYPE I",p,rsp_txt);
   if(resp != 2) {
@@ -460,7 +486,7 @@ static int open_f(stream_t *stream,int mode, void* opts, int* file_format) {
     mp_msg(MSGT_OPEN,MSGL_WARN, "[ftp] command '%s' failed: %s\n",str,rsp_txt);
   } else {
     int dummy;
-    sscanf(rsp_txt,"%d %"SCNd64,&dummy,&len);
+    sscanf(rsp_txt,"%d %d",&dummy,&len);
   }
 
   if(len > 0) {
@@ -476,6 +502,7 @@ static int open_f(stream_t *stream,int mode, void* opts, int* file_format) {
   stream->priv = p;
   stream->fill_buffer = fill_buffer;
   stream->close = close_f;
+  //stream->type = STREAMTYPE_STREAM; //scip //ftp fix? //STREAMTYPE_STREAM?
 
   return STREAM_OK;
 }

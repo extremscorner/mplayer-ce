@@ -24,7 +24,7 @@
 
 
 typedef struct avs_format {
-    VocDecContext voc;
+    voc_dec_context_t voc;
     AVStream *st_video;
     AVStream *st_audio;
     int width;
@@ -34,7 +34,7 @@ typedef struct avs_format {
     int nb_frames;
     int remaining_frame_size;
     int remaining_audio_size;
-} AvsFormat;
+} avs_format_t;
 
 typedef enum avs_block_type {
     AVS_NONE      = 0x00,
@@ -42,7 +42,7 @@ typedef enum avs_block_type {
     AVS_AUDIO     = 0x02,
     AVS_PALETTE   = 0x03,
     AVS_GAME_DATA = 0x04,
-} AvsBlockType;
+} avs_block_type_t;
 
 static int avs_probe(AVProbeData * p)
 {
@@ -57,7 +57,7 @@ static int avs_probe(AVProbeData * p)
 
 static int avs_read_header(AVFormatContext * s, AVFormatParameters * ap)
 {
-    AvsFormat *avs = s->priv_data;
+    avs_format_t *avs = s->priv_data;
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -82,10 +82,10 @@ static int avs_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
 static int
 avs_read_video_packet(AVFormatContext * s, AVPacket * pkt,
-                      AvsBlockType type, int sub_type, int size,
+                      avs_block_type_t type, int sub_type, int size,
                       uint8_t * palette, int palette_size)
 {
-    AvsFormat *avs = s->priv_data;
+    avs_format_t *avs = s->priv_data;
     int ret;
 
     ret = av_new_packet(pkt, size + palette_size);
@@ -113,14 +113,14 @@ avs_read_video_packet(AVFormatContext * s, AVPacket * pkt,
     pkt->size = ret + palette_size;
     pkt->stream_index = avs->st_video->index;
     if (sub_type == 0)
-        pkt->flags |= AV_PKT_FLAG_KEY;
+        pkt->flags |= PKT_FLAG_KEY;
 
     return 0;
 }
 
 static int avs_read_audio_packet(AVFormatContext * s, AVPacket * pkt)
 {
-    AvsFormat *avs = s->priv_data;
+    avs_format_t *avs = s->priv_data;
     int ret, size;
 
     size = url_ftell(s->pb);
@@ -134,16 +134,16 @@ static int avs_read_audio_packet(AVFormatContext * s, AVPacket * pkt)
         return ret;
 
     pkt->stream_index = avs->st_audio->index;
-    pkt->flags |= AV_PKT_FLAG_KEY;
+    pkt->flags |= PKT_FLAG_KEY;
 
     return size;
 }
 
 static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
 {
-    AvsFormat *avs = s->priv_data;
+    avs_format_t *avs = s->priv_data;
     int sub_type = 0, size = 0;
-    AvsBlockType type = AVS_NONE;
+    avs_block_type_t type = AVS_NONE;
     int palette_size = 0;
     uint8_t palette[4 + 3 * 256];
     int ret;
@@ -178,11 +178,11 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
                     avs->st_video = av_new_stream(s, AVS_VIDEO);
                     if (avs->st_video == NULL)
                         return AVERROR(ENOMEM);
-                    avs->st_video->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+                    avs->st_video->codec->codec_type = CODEC_TYPE_VIDEO;
                     avs->st_video->codec->codec_id = CODEC_ID_AVS;
                     avs->st_video->codec->width = avs->width;
                     avs->st_video->codec->height = avs->height;
-                    avs->st_video->codec->bits_per_coded_sample=avs->bits_per_sample;
+                    avs->st_video->codec->bits_per_sample=avs->bits_per_sample;
                     avs->st_video->nb_frames = avs->nb_frames;
                     avs->st_video->codec->time_base = (AVRational) {
                     1, avs->fps};
@@ -195,7 +195,7 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
                     avs->st_audio = av_new_stream(s, AVS_AUDIO);
                     if (avs->st_audio == NULL)
                         return AVERROR(ENOMEM);
-                    avs->st_audio->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+                    avs->st_audio->codec->codec_type = CODEC_TYPE_AUDIO;
                 }
                 avs->remaining_audio_size = size - 4;
                 size = avs_read_audio_packet(s, pkt);
@@ -218,7 +218,7 @@ static int avs_read_close(AVFormatContext * s)
 AVInputFormat avs_demuxer = {
     "avs",
     NULL_IF_CONFIG_SMALL("AVS format"),
-    sizeof(AvsFormat),
+    sizeof(avs_format_t),
     avs_probe,
     avs_read_header,
     avs_read_packet,

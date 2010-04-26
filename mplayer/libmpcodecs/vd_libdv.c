@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,9 +17,8 @@
 #include "libmpdemux/stheader.h"
 
 #include "vd_internal.h"
-#include "vd_libdv.h"
 
-static const vd_info_t info =
+static vd_info_t info =
 {
 	"Raw DV Video Decoder",
 	"libdv",
@@ -81,7 +62,7 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags)
 {
    mp_image_t* mpi;
    dv_decoder_t *decoder=sh->context;
-
+   
    if(len<=0 || (flags&3)){
 //      fprintf(stderr,"decode() (rawdv) SKIPPED\n");
       return NULL; // skipped frame
@@ -90,13 +71,13 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags)
    dv_parse_header(decoder, data);
 
    mpi=mpcodecs_get_image(sh, MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE, sh->disp_w, sh->disp_h);
-
+    
    if(!mpi){	// temporary!
       fprintf(stderr,"couldn't allocate image for stderr codec\n");
       return NULL;
    }
 
    dv_decode_full_frame(decoder, data, e_dv_color_yuv, mpi->planes, mpi->stride);
-
+   
    return mpi;
 }

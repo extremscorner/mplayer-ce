@@ -1,12 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- synced with r29305 -->
+<!-- synced with r26990 -->
 <appendix id="skin">
 <title><application>MPlayer</application> skin formátum</title>
 
 <sect1 id="skin-overview">
 <title>Áttekintés</title>
 
+<para>
+Igazából ennek nincs köze a skin formátumához, de tudnod kell, hogy
+az <application>MPlayer</application>nek
+<emphasis role="bold">nincs</emphasis> beépített skin-je,
+így <emphasis role="bold">legalább egy skin-nek telepítve kell
+lennie, hogy használni tudd a GUI-t.</emphasis>
+</para>
+
 <!-- ********** -->
+
+<sect2 id="skin-overview-directories">
+<title>Könyvtárak</title>
+
+<para>
+Az alábbi könyvtárak kerülnek átvizsgálásra (sorrendben):
+<orderedlist>
+<listitem><para>
+  <filename class="directory">$(DATADIR)/skins/</filename>
+</para></listitem>
+<listitem><para>
+  <filename class="directory">$(PREFIX)/share/mplayer/skins/</filename>
+</para></listitem>
+<listitem><para>
+  <filename class="directory">~/.mplayer/skins/</filename>
+</para></listitem>
+</orderedlist>
+</para>
+
+<para>
+Figyelj rá, hogy az első elérési út változhat az
+<application>MPlayer</application> konfigurációjának megfelelően
+(lásd a <command>configure</command> script
+<option>--prefix</option> és <option>--datadir</option> kapcsolóit).
+</para>
+
+<para>
+Minden skin a saját könyvtárába kerül telepítésre a fent felsorolt könyvtárakon
+belül, például:
+<screen>$(PREFIX)/share/mplayer/skins/default/</screen>
+</para>
+</sect2>
+
+<!-- ********** -->
+
+<sect2 id="skin-overview-formats">
+<title>Képformátumok</title>
+
+<para>A képeknek truecolor-os (24 vagy 32 bpp) PNG-knek kell lenniük.</para>
+<para>
+A fő ablakban és a playbar-on (lásd lejjebb) használhatsz transzparens képeket:
+Az #FF00FF (bíborvörös) színnel feltöltött területek teljesen
+transzparensek lesznek, ha az <application>MPlayer</application>-rel
+nézed. Ez azt jelenti, hogy formázott ablakjaid is lehetnek, ha az X
+szerverednek van XShape kiterjesztése.
+</para>
+</sect2>
 
 <sect2 id="skin-overview-components">
 <title>Skin komponensek</title>
@@ -37,13 +92,13 @@ aktiválható).
   és <emphasis>címkék</emphasis>.
   Minden egyes elemnek meg kell adnod a pozícióját és a méretét.
   </para>
-
+  
   <para>
   Egy <emphasis role="bold">gomb</emphasis>nak három állása van (lenyomott,
   felengedett, letiltott), így a képe függőlegesen három részre van osztva.
   Lásd a <link linkend="skin-button">gomb</link> elemet a részletekért.
   </para>
-
+  
   <para>
   Egy <emphasis role="bold">potmeter</emphasis>nek (főként a kereső sáv és a
   hangerő/balansz állító) bármennyi fázisa lehet a képének egymás alatti
@@ -51,7 +106,7 @@ aktiválható).
   <link linkend="skin-hpotmeter">hpotmeter</link>t és
   <link linkend="skin-potmeter">potmeter</link>t a részletekért.
   </para>
-
+  
   <para>
   A <emphasis role="bold">címkék</emphasis> egy kicsit különlegesek: A
   megrajzolásukhoz szükséges karaktereket egy kép fájlból nyerjük és
@@ -106,19 +161,6 @@ Van egy fontos dolog, amiről eddig nem beszéltünk: a gombokhoz, potméterekhe
 hogy mit csináljon, ha rákattintanak. Ez <link linkend="skin-gui">üzenetekkel</link>
 (eseményekkel) van megvalósítva. Minden elemhez meg kell adnod, hogy milyen
 üzenetet generál, amikor kattintanak rá.
-</para>
-</sect2>
-
-<sect2 id="skin-overview-formats">
-<title>Képformátumok</title>
-
-<para>A képeknek truecolor-os (24 vagy 32 bpp) PNG-knek kell lenniük.</para>
-<para>
-A fő ablakban és a playbar-on (lásd lejjebb) használhatsz transzparens képeket:
-Az #FF00FF (bíborvörös) színnel feltöltött területek teljesen
-transzparensek lesznek, ha az <application>MPlayer</application>-rel
-nézed. Ez azt jelenti, hogy formázott ablakjaid is lehetnek, ha az X
-szerverednek van XShape kiterjesztése.
 </para>
 </sect2>
 
@@ -739,7 +781,7 @@ Ahol az <literal><replaceable>image</replaceable></literal> a betűhöz használ
 kép fájl neve (nem kell megadnod a kiterjesztést).
 <anchor id="skin-font-char"/>
 <programlisting>"char" = X, Y, width, height</programlisting>
-Itt az <literal>X</literal> és az <literal>Y</literal> a
+Itt az <literal>X</literal> és az <literal>Y</literal> a 
 <literal>char</literal> karakter pozícióját adja meg a képen (<literal>0,0</literal>
 a bal felső sarok). A <literal>width</literal> és a <literal>height</literal>
 a karakter méretei pixelben.

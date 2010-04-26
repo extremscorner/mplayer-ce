@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,17 +10,14 @@
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
-#include "vf_scale.h"
 
-#include "libswscale/swscale.h"
-#include "fmt-conversion.h"
+#include "libswscale/rgb2rgb.h"
 
 struct vf_priv_s {
 	int field;
-	struct SwsContext *ctx;
 };
 
-#if HAVE_MMX
+#ifdef HAVE_MMX
 static void halfpack_MMX(unsigned char *dst, unsigned char *src[3],
 		     int dststride, int srcstride[3],
 		     int w, int h)
@@ -58,7 +37,7 @@ static void halfpack_MMX(unsigned char *dst, unsigned char *src[3],
 	vinc = srcstride[2] - w/2;
 
 	for (h/=2; h; h--) {
-		__asm__ (
+		asm (
 			"pxor %%mm0, %%mm0 \n\t"
 			ASMALIGN(4)
 			"1: \n\t"
@@ -74,7 +53,7 @@ static void halfpack_MMX(unsigned char *dst, unsigned char *src[3],
 			"paddw %%mm4, %%mm2 \n\t"
 			"psrlw $1, %%mm1 \n\t"
 			"psrlw $1, %%mm2 \n\t"
-
+			
 			"movq (%2), %%mm3 \n\t"
 			"movq (%3), %%mm5 \n\t"
 			"punpcklbw %%mm0, %%mm3 \n\t"
@@ -120,7 +99,7 @@ static void halfpack_MMX(unsigned char *dst, unsigned char *src[3],
 		v += vinc;
 		dst += dstinc;
 	}
-	__asm__ volatile ( "emms \n\t" ::: "memory" );
+	asm volatile ( "emms \n\t" ::: "memory" );
 }
 #endif
 
@@ -163,12 +142,8 @@ static void (*halfpack)(unsigned char *dst, unsigned char *src[3],
 	int dststride, int srcstride[3], int w, int h);
 
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
-	const uint8_t *src[MP_MAX_PLANES] = {
-		mpi->planes[0] + mpi->stride[0]*vf->priv->field,
-		mpi->planes[1], mpi->planes[2], NULL};
-	int src_stride[MP_MAX_PLANES] = {mpi->stride[0]*2, mpi->stride[1], mpi->stride[2], 0};
 	mp_image_t *dmpi;
 
 	// hope we'll get DR buffer:
@@ -179,8 +154,9 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 	switch(vf->priv->field) {
 	case 0:
 	case 1:
-		sws_scale(vf->priv->ctx, src, src_stride,
-		          0, mpi->h/2, dmpi->planes, dmpi->stride);
+		yuv422ptoyuy2(mpi->planes[0] + mpi->stride[0]*vf->priv->field,
+			mpi->planes[1], mpi->planes[2], dmpi->planes[0],
+			mpi->w, mpi->h/2, mpi->stride[0]*2, mpi->stride[1], dmpi->stride[0]);
 		break;
 	default:
 		halfpack(dmpi->planes[0], mpi->planes, dmpi->stride[0],
@@ -190,25 +166,16 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
 		  int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt)
 {
-	if (vf->priv->field < 2) {
-		sws_freeContext(vf->priv->ctx);
-		// get unscaled 422p -> yuy2 conversion
-		vf->priv->ctx =
-			sws_getContext(width, height / 2, PIX_FMT_YUV422P,
-			               width, height / 2, PIX_FMT_YUYV422,
-			               SWS_POINT | SWS_PRINT_INFO | get_sws_cpuflags(),
-			               NULL, NULL, NULL);
-	}
 	/* FIXME - also support UYVY output? */
 	return vf_next_config(vf, width, height/2, d_width, d_height, flags, IMGFMT_YUY2);
 }
 
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
 	/* FIXME - really any YUV 4:2:0 input format should work */
 	switch (fmt) {
@@ -220,25 +187,24 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
 	return 0;
 }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
 {
-	sws_freeContext(vf->priv->ctx);
 	free(vf->priv);
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
 	vf->config=config;
 	vf->query_format=query_format;
 	vf->put_image=put_image;
 	vf->uninit=uninit;
-
+	
 	vf->priv = calloc(1, sizeof (struct vf_priv_s));
 	vf->priv->field = 2;
 	if (args) sscanf(args, "%d", &vf->priv->field);
-
+	
 	halfpack = halfpack_C;
-#if HAVE_MMX
+#ifdef HAVE_MMX
 	if(gCpuCaps.hasMMX) halfpack = halfpack_MMX;
 #endif
 	return 1;
@@ -249,6 +215,7 @@ const vf_info_t vf_info_halfpack = {
 	"halfpack",
 	"Richard Felker",
 	"",
-	vf_open,
+	open,
 	NULL
 };
+

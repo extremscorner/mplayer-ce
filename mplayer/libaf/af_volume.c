@@ -1,26 +1,16 @@
-/*
- * Copyright (C)2002 Anders Johansson ajh@atri.curtin.edu.au
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/*=============================================================================
+//	
+//  This software has been released under the terms of the GNU General Public
+//  license. See http://www.gnu.org/copyleft/gpl.html for details.
+//
+//  Copyright 2002 Anders Johansson ajh@atri.curtin.edu.au
+//
+//=============================================================================
+*/
 
 /* This audio filter changes the volume of the sound, and can be used
    when the mixer doesn't support the PCM channel. It can handle
-   between 1 and AF_NCH channels. The volume can be adjusted between -60dB
+   between 1 and 6 channels. The volume can be adjusted between -60dB
    to +20dB and is set on a per channels basis. The is accessed through
    AF_CONTROL_VOLUME_LEVEL.
 
@@ -31,12 +21,12 @@
    probing is enable by AF_CONTROL_VOLUME_PROBE_ON_OFF and is done on a
    per channel basis. The result from the probing is obtained using
    AF_CONTROL_VOLUME_PROBE_GET and AF_CONTROL_VOLUME_PROBE_GET_MAX. The
-   probed values are calculated in dB.
+   probed values are calculated in dB. 
 */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> 
 
 #include <inttypes.h>
 #include <math.h>
@@ -59,16 +49,16 @@ typedef struct af_volume_s
 // Initialization and runtime control
 static int control(struct af_instance_s* af, int cmd, void* arg)
 {
-  af_volume_t* s   = (af_volume_t*)af->setup;
+  af_volume_t* s   = (af_volume_t*)af->setup; 
 
   switch(cmd){
   case AF_CONTROL_REINIT:
     // Sanity check
     if(!arg) return AF_ERROR;
-
+    
     af->data->rate   = ((af_data_t*)arg)->rate;
     af->data->nch    = ((af_data_t*)arg)->nch;
-
+    
     if(s->fast && (((af_data_t*)arg)->format != (AF_FORMAT_FLOAT_NE))){
       af->data->format = AF_FORMAT_S16_NE;
       af->data->bps    = 2;
@@ -78,7 +68,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       float x = 2.0*M_PI*15.0/(float)af->data->rate;
       float t = 2.0-cos(x);
       s->time = 1.0 - (t - sqrt(t*t - 1));
-      mp_msg(MSGT_AFILTER, MSGL_DBG2, "[volume] Forgetting factor = %0.5f\n",s->time);
+      af_msg(AF_MSG_DEBUG0,"[volume] Forgetting factor = %0.5f\n",s->time);
       af->data->format = AF_FORMAT_FLOAT_NE;
       af->data->bps    = 4;
     }
@@ -91,22 +81,22 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     for(i=0;i<AF_NCH;i++) vol[i]=v;
     return control(af,AF_CONTROL_VOLUME_LEVEL | AF_CONTROL_SET, vol);
   }
-  case AF_CONTROL_POST_CREATE:
-    s->fast = ((((af_cfg_t*)arg)->force & AF_INIT_FORMAT_MASK) ==
+  case AF_CONTROL_POST_CREATE:	
+    s->fast = ((((af_cfg_t*)arg)->force & AF_INIT_FORMAT_MASK) == 
       AF_INIT_FLOAT) ? 0 : 1;
     return AF_OK;
   case AF_CONTROL_VOLUME_ON_OFF | AF_CONTROL_SET:
     memcpy(s->enable,(int*)arg,AF_NCH*sizeof(int));
-    return AF_OK;
+    return AF_OK; 
   case AF_CONTROL_VOLUME_ON_OFF | AF_CONTROL_GET:
     memcpy((int*)arg,s->enable,AF_NCH*sizeof(int));
-    return AF_OK;
+    return AF_OK; 
   case AF_CONTROL_VOLUME_SOFTCLIP | AF_CONTROL_SET:
     s->soft = *(int*)arg;
-    return AF_OK;
+    return AF_OK; 
   case AF_CONTROL_VOLUME_SOFTCLIP | AF_CONTROL_GET:
     *(int*)arg = s->soft;
-    return AF_OK;
+    return AF_OK; 
   case AF_CONTROL_VOLUME_LEVEL | AF_CONTROL_SET:
     return af_from_dB(AF_NCH,(float*)arg,s->level,20.0,-200.0,60.0);
   case AF_CONTROL_VOLUME_LEVEL | AF_CONTROL_GET:
@@ -122,7 +112,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       for(i=0;i<AF_NCH;i++)
 	m=max(m,s->max[i]);
 	af_to_dB(1, &m, &m, 10.0);
-	mp_msg(MSGT_AFILTER, MSGL_INFO, "[volume] The maximum volume was %0.2fdB \n", m);
+	af_msg(AF_MSG_INFO,"[volume] The maximum volume was %0.2fdB \n", m);
     }
     return AF_OK;
   }
@@ -130,7 +120,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   return AF_UNKNOWN;
 }
 
-// Deallocate memory
+// Deallocate memory 
 static void uninit(struct af_instance_s* af)
 {
   if(af->data)
@@ -145,7 +135,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
   af_data_t*    c   = data;			// Current working data
   af_volume_t*  s   = (af_volume_t*)af->setup; 	// Setup for this instance
   int           ch  = 0;			// Channel counter
-  register int	nch = c->nch;			// Number of channels
+  register int	nch = c->nch;			// Number of channels	
   register int  i   = 0;
 
   // Basic operation volume control only (used on slow machines)
@@ -154,7 +144,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     int         len = c->len/2;			// Number of samples
     for(ch = 0; ch < nch ; ch++){
       if(s->enable[ch]){
-	register int vol = (int)(255.0 * s->level[ch]);
+	register int vol = (int)(255.0 * s->level[ch]); 
 	for(i=ch;i<len;i+=nch){
 	  register int x = (a[i] * vol) >> 8;
 	  a[i]=clamp(x,SHRT_MIN,SHRT_MAX);
@@ -163,7 +153,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     }
   }
   // Machine is fast and data is floating point
-  else if(af->data->format == (AF_FORMAT_FLOAT_NE)){
+  else if(af->data->format == (AF_FORMAT_FLOAT_NE)){ 
     float*   	a   	= (float*)c->audio;	// Audio data
     int       	len 	= c->len/4;		// Number of samples
     for(ch = 0; ch < nch ; ch++){
@@ -172,7 +162,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
 	float	t   = 1.0 - s->time;
 	for(i=ch;i<len;i+=nch){
 	  register float x 	= a[i];
-	  register float pow 	= x*x;
+	  register float pow 	= x*x;	
 	  // Check maximum power value
 	  if(pow > s->max[ch])
 	    s->max[ch] = pow;

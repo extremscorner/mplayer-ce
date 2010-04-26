@@ -20,12 +20,12 @@
  */
 
 /**
- * @file
+ * @file rv30data.h
  * miscellaneous RV30 tables
  */
 
-#ifndef AVCODEC_RV30DATA_H
-#define AVCODEC_RV30DATA_H
+#ifndef FFMPEG_RV30DATA_H
+#define FFMPEG_RV30DATA_H
 
 #include <stdint.h>
 
@@ -171,11 +171,4 @@ static const uint8_t rv30_itype_from_context[900] = {
     2, 7, 8, 4, 0, 6, 1, 5, 3,
     2, 8, 3, 0, 7, 4, 1, 6, 5,
 };
-
-/**
- * Loop filter limits are taken from this table.
- */
-static const uint8_t rv30_loop_filt_lim[32] = {
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5
-};
-#endif /* AVCODEC_RV30DATA_H */
+#endif /* FFMPEG_RV30DATA_H */

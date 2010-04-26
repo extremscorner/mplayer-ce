@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file adx.h
  * SEGA CRI adx codecs.
  *
  * Reference documents:
@@ -28,8 +28,8 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
-#ifndef AVCODEC_ADX_H
-#define AVCODEC_ADX_H
+#ifndef FFMPEG_ADX_H
+#define FFMPEG_ADX_H
 
 typedef struct {
     int s1,s2;
@@ -46,4 +46,4 @@ typedef struct {
 #define    SCALE1    0x7298
 #define    SCALE2    0x3350
 
-#endif /* AVCODEC_ADX_H */
+#endif /* FFMPEG_ADX_H */

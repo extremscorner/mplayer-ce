@@ -20,9 +20,9 @@
  */
 
 /**
- * @file
+ * @file mm.c
  * American Laser Games MM Format Demuxer
- * by Peter Ross (pross@xvid.org)
+ * by Peter Ross (suxen_drol at hotmail dot com)
  *
  * The MM format was used by IBM-PC ports of ALG's "arcade shooter" games,
  * including Mad Dog McCree and Crime Patrol.
@@ -31,7 +31,6 @@
  *  http://wiki.multimedia.cx/index.php?title=American_Laser_Games_MM
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define MM_PREAMBLE_SIZE    6
@@ -56,31 +55,19 @@ typedef struct {
   unsigned int audio_pts, video_pts;
 } MmDemuxContext;
 
-static int probe(AVProbeData *p)
+static int mm_probe(AVProbeData *p)
 {
-    int len, type, fps, w, h;
-    if (p->buf_size < MM_HEADER_LEN_AV + MM_PREAMBLE_SIZE)
-        return 0;
     /* the first chunk is always the header */
     if (AV_RL16(&p->buf[0]) != MM_TYPE_HEADER)
         return 0;
-    len = AV_RL32(&p->buf[2]);
-    if (len != MM_HEADER_LEN_V && len != MM_HEADER_LEN_AV)
-        return 0;
-    fps = AV_RL16(&p->buf[8]);
-    w = AV_RL16(&p->buf[12]);
-    h = AV_RL16(&p->buf[14]);
-    if (!fps || fps > 60 || !w || w > 2048 || !h || h > 2048)
-        return 0;
-    type = AV_RL16(&p->buf[len]);
-    if (!type || type > 0x31)
+    if (AV_RL32(&p->buf[2]) != MM_HEADER_LEN_V && AV_RL32(&p->buf[2]) != MM_HEADER_LEN_AV)
         return 0;
 
     /* only return half certainty since this check is a bit sketchy */
     return AVPROBE_SCORE_MAX / 2;
 }
 
-static int read_header(AVFormatContext *s,
+static int mm_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     MmDemuxContext *mm = s->priv_data;
@@ -108,7 +95,7 @@ static int read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_MMVIDEO;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = width;
@@ -120,7 +107,7 @@ static int read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR(ENOMEM);
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_tag = 0; /* no fourcc */
         st->codec->codec_id = CODEC_ID_PCM_U8;
         st->codec->channels = 1;
@@ -133,7 +120,7 @@ static int read_header(AVFormatContext *s,
     return 0;
 }
 
-static int read_packet(AVFormatContext *s,
+static int mm_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     MmDemuxContext *mm = s->priv_data;
@@ -180,7 +167,7 @@ static int read_packet(AVFormatContext *s,
             return 0;
 
         default :
-            av_log(s, AV_LOG_INFO, "unknown chunk type 0x%x\n", type);
+            av_log(NULL, AV_LOG_INFO, "mm: unknown chunk type 0x%x\n", type);
             url_fseek(pb, length, SEEK_CUR);
         }
     }
@@ -188,11 +175,17 @@ static int read_packet(AVFormatContext *s,
     return 0;
 }
 
+static int mm_read_close(AVFormatContext *s)
+{
+    return 0;
+}
+
 AVInputFormat mm_demuxer = {
     "mm",
     NULL_IF_CONFIG_SMALL("American Laser Games MM format"),
     sizeof(MmDemuxContext),
-    probe,
-    read_header,
-    read_packet,
+    mm_probe,
+    mm_read_header,
+    mm_read_packet,
+    mm_read_close,
 };

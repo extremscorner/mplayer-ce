@@ -21,7 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intmath.h"
 #include "avcodec.h"
 #include "bytestream.h"
 
@@ -30,16 +29,29 @@
 
 
 #define MAX_DPCM (127*127)
+static unsigned char dpcmValues[MAX_DPCM];
 
 
 typedef struct
 {
     short lastSample[2];
-} ROQDPCMContext;
+} ROQDPCMContext_t;
 
-static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
+static av_cold void roq_dpcm_table_init(void)
 {
-    ROQDPCMContext *context = avctx->priv_data;
+    int i;
+
+    /* Create a table of quick DPCM values */
+    for (i=0; i<MAX_DPCM; i++) {
+        int s= ff_sqrt(i);
+        int mid= s*s + s;
+        dpcmValues[i]= s + (i>mid);
+    }
+}
+
+static int roq_dpcm_encode_init(AVCodecContext *avctx)
+{
+    ROQDPCMContext_t *context = avctx->priv_data;
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be mono or stereo\n");
@@ -53,6 +65,8 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Audio must be signed 16-bit\n");
         return -1;
     }
+
+    roq_dpcm_table_init();
 
     avctx->frame_size = ROQ_FIRST_FRAME_SIZE;
 
@@ -78,10 +92,8 @@ static unsigned char dpcm_predict(short *previous, short current)
 
     if (diff >= MAX_DPCM)
         result = 127;
-    else {
-        result = ff_sqrt(diff);
-        result += diff > result*result+result;
-    }
+    else
+        result = dpcmValues[diff];
 
     /* See if this overflows */
  retry:
@@ -111,7 +123,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx,
     short *in;
     unsigned char *out;
 
-    ROQDPCMContext *context = avctx->priv_data;
+    ROQDPCMContext_t *context = avctx->priv_data;
 
     stereo = (avctx->channels == 2);
 
@@ -155,13 +167,13 @@ static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
 
 AVCodec roq_dpcm_encoder = {
     "roq_dpcm",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_ROQ_DPCM,
-    sizeof(ROQDPCMContext),
+    sizeof(ROQDPCMContext_t),
     roq_dpcm_encode_init,
     roq_dpcm_encode_frame,
     roq_dpcm_encode_close,
     NULL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
 };

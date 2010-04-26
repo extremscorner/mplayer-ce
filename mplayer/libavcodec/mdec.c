@@ -1,5 +1,5 @@
 /*
- * Sony PlayStation MDEC (Motion DECoder)
+ * PSX MDEC codec
  * Copyright (c) 2003 Michael Niedermayer
  *
  * based upon code from Sebastian Jedruszkiewicz <elf@frogger.rules.pl>
@@ -22,15 +22,14 @@
  */
 
 /**
- * @file
- * Sony PlayStation MDEC (Motion DECoder)
- * This is very similar to intra-only MPEG-1.
+ * @file mdec.c
+ * PSX MDEC codec.
+ * This is very similar to intra only MPEG1.
  */
 
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "mpeg12.h"
 
 typedef struct MDECContext{
     AVCodecContext *avctx;
@@ -44,13 +43,15 @@ typedef struct MDECContext{
     int mb_width;
     int mb_height;
     int mb_x, mb_y;
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED_16(DCTELEM, block[6][64]);
+    DECLARE_ALIGNED_8(uint16_t, intra_matrix[64]);
+    DECLARE_ALIGNED_8(int, q_intra_matrix[64]);
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int block_last_index[6];
 } MDECContext;
 
-//very similar to MPEG-1
+//very similar to mpeg1
 static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
 {
     int level, diff, i, j, run;
@@ -60,7 +61,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
     const uint16_t *quant_matrix= ff_mpeg1_default_intra_matrix;
     const int qscale= a->qscale;
 
-    /* DC coefficient */
+    /* DC coef */
     if(a->version==2){
         block[0]= 2*get_sbits(&a->gb, 10) + 1024;
     }else{
@@ -75,7 +76,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
     i = 0;
     {
         OPEN_READER(re, &a->gb);
-        /* now quantify & encode AC coefficients */
+        /* now quantify & encode AC coefs */
         for(;;) {
             UPDATE_CACHE(re, &a->gb);
             GET_RL_VLC(level, run, re, &a->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
@@ -152,10 +153,8 @@ static inline void idct_put(MDECContext *a, int mb_x, int mb_y){
 
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
-                        AVPacket *avpkt)
+                        const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     MDECContext * const a = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p= &a->picture;
@@ -172,9 +171,7 @@ static int decode_frame(AVCodecContext *avctx,
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
-    av_fast_malloc(&a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!a->bitstream_buffer)
-        return AVERROR(ENOMEM);
+    a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     for(i=0; i<buf_size; i+=2){
         a->bitstream_buffer[i]  = buf[i+1];
         a->bitstream_buffer[i+1]= buf[i  ];
@@ -201,7 +198,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     p->quality= a->qscale * FF_QP2LAMBDA;
-    memset(p->qscale_table, a->qscale, a->mb_width);
+    memset(p->qscale_table, a->qscale, p->qstride*a->mb_height);
 
     *picture   = a->picture;
     *data_size = sizeof(AVPicture);
@@ -226,11 +223,11 @@ static av_cold int decode_init(AVCodecContext *avctx){
     AVFrame *p= &a->picture;
 
     mdec_common_init(avctx);
-    ff_mpeg12_init_vlcs();
+    init_vlcs();
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, ff_zigzag_direct);
 
-    p->qstride= 0;
-    p->qscale_table= av_mallocz(a->mb_width);
+    p->qstride= a->mb_width;
+    p->qscale_table= av_mallocz( p->qstride * a->mb_height);
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
     return 0;
@@ -239,8 +236,6 @@ static av_cold int decode_init(AVCodecContext *avctx){
 static av_cold int decode_end(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
 
-    if(a->picture.data[0])
-        avctx->release_buffer(avctx, &a->picture);
     av_freep(&a->bitstream_buffer);
     av_freep(&a->picture.qscale_table);
     a->bitstream_buffer_size=0;
@@ -250,7 +245,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec mdec_decoder = {
     "mdec",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_MDEC,
     sizeof(MDECContext),
     decode_init,

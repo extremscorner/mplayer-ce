@@ -46,7 +46,6 @@
 #endif
 #include "win32.h"
 #include "drv.h"
-#include "path.h"
 
 #ifdef EMU_QTX_API
 #include "wrapper.h"
@@ -242,7 +241,7 @@ static WIN_BOOL MODULE_DllProcessAttach( WINE_MODREF *wm, LPVOID lpReserved )
     //local_wm=wm;
     if(local_wm)
     {
-        local_wm->next = malloc(sizeof(modref_list));
+	local_wm->next = (modref_list*) malloc(sizeof(modref_list));
         local_wm->next->prev=local_wm;
         local_wm->next->next=NULL;
         local_wm->next->wm=wm;
@@ -366,7 +365,8 @@ static WIN_BOOL MODULE_FreeLibrary( WINE_MODREF *wm )
 HMODULE WINAPI LoadLibraryExA(LPCSTR libname, HANDLE hfile, DWORD flags)
 {
 	WINE_MODREF *wm = 0;
-	char* listpath[] = { "", "", 0 };
+	char* listpath[] = { "", "", "/usr/lib/win32", "/usr/local/lib/win32", 0 };
+	extern char* def_path;
 	char path[512];
 	char checked[2000];
         int i = -1;
@@ -393,9 +393,9 @@ HMODULE WINAPI LoadLibraryExA(LPCSTR libname, HANDLE hfile, DWORD flags)
 		    strncpy(path, libname, 511);
                 else
 		    /* check default user path */
-		    strncpy(path, codec_path, 300);
+		    strncpy(path, def_path, 300);
 	    }
-	    else if (strcmp(codec_path, listpath[i]))
+	    else if (strcmp(def_path, listpath[i]))
                 /* path from the list */
 		strncpy(path, listpath[i], 300);
 	    else
@@ -649,7 +649,7 @@ FARPROC WINAPI GetProcAddress( HMODULE hModule, LPCSTR function )
 
 #ifdef DEBUG_QTX_API
 
-/*
+/* 
 http://lists.apple.com/archives/quicktime-api/2003/Jan/msg00278.html
 */
 
@@ -720,7 +720,7 @@ static int dump_component(char* name, int type, void* orig, ComponentParameters 
     ++c_level;
     ret=orig(params,glob);
     --c_level;
-
+    
     if(ret>=0x1000)
 	fprintf(stderr,"%*s return=0x%X\n",3*c_level,"",ret);
     else
@@ -744,31 +744,6 @@ static int dump_component(char* name, int type, void* orig, ComponentParameters 
 
 #ifdef EMU_QTX_API
 
-#ifdef __OS2__
-uint32_t _System DosQueryMem(void *, uint32_t *, uint32_t *);
-#endif
-
-static int is_invalid_ptr_handle(void *p)
-{
-#ifdef __OS2__
-    uint32_t cb = 1;
-    uint32_t fl;
-
-    if(DosQueryMem(p, &cb, &fl))
-        return 1;
-
-    // Occasionally, ptr with 'EXEC' attr is passed.
-    // On OS/2, however, malloc() never sets 'EXEC' attr.
-    // So ptr with 'EXEC' attr is invalid.
-    if(fl & 0x04)
-        return 1;
-
-    return 0;
-#else
-    return (uint32_t)p >= 0x60000000;
-#endif
-}
-
 static uint32_t ret_array[4096];
 static int ret_i=0;
 
@@ -782,35 +757,35 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
   char* pname=NULL;
   int plen=-1;
   // find the code:
-
+  
   dptr=0x62b67ae0;dptr+=2*((reg->eax>>16)&255);
 //  printf("FUNC: flag=%d ptr=%p\n",dptr[0],dptr[1]);
   if(dptr[0]&255){
       dptr=dptr[1];dptr+=4*(reg->eax&65535);
 //      printf("FUNC: ptr2=%p  eax=%p  edx=%p\n",dptr[1],dptr[0],dptr[2]);
-      pwrapper=dptr[1]; pptr=dptr[0]; plen=dptr[2];
+      pwrapper=dptr[1]; pptr=dptr[0]; plen=dptr[2]; 
   } else {
       pwrapper=0x62924910;
       switch(dptr[1]){
       case 0x629248d0:
           dptr=0x62b672c0;dptr+=2*(reg->eax&65535);
 //          printf("FUNC: ptr2=%p  eax=%p  edx=%p\n",0x62924910,dptr[0],dptr[1]);
-          pptr=dptr[0]; plen=dptr[1];
+          pptr=dptr[0]; plen=dptr[1]; 
 	  break;
       case 0x62924e40:
           dptr=0x62b67c70;dptr+=2*(reg->eax&65535);
 //          printf("FUNC: ptr2=%p  eax=%p  edx=%p\n",0x62924910,dptr[0],dptr[1]);
-          pptr=dptr[0]; plen=dptr[1];
+          pptr=dptr[0]; plen=dptr[1]; 
 	  break;
       case 0x62924e60:
           dptr=0x62b68108;if(reg->eax&0x8000) dptr+=2*(reg->eax|0xffff0000); else dptr+=2*(reg->eax&65535);
 //          printf("FUNC: ptr2=%p  eax=%p  edx=%p\n",0x62924910,dptr[0],dptr[1]);
-          pptr=dptr[0]; plen=dptr[1];
+          pptr=dptr[0]; plen=dptr[1]; 
 	  break;
       case 0x62924e80:
           dptr=0x62b68108;if(reg->eax&0x8000) dptr+=2*(reg->eax|0xffff0000); else dptr+=2*(reg->eax&65535);
 //          printf("FUNC: ptr2=%p  eax=%p  edx=%p\n",0x62924910,dptr[0],dptr[1]);
-          pptr=dptr[0]; plen=dptr[1];
+          pptr=dptr[0]; plen=dptr[1]; 
 	  break;
       default:
           printf("FUNC: unknown ptr & psize!\n");
@@ -848,13 +823,14 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
   fflush(stdout);
 
 #endif
-
+  
+#if 1
   // emulate some functions:
   switch(reg->eax){
   // memory management:
   case 0x150011: //NewPtrClear
   case 0x150012: //NewPtrSysClear
-      reg->eax = malloc(((uint32_t *)stack_base)[1]);
+      reg->eax=(uint32_t)malloc(((uint32_t *)stack_base)[1]);
       memset((void *)reg->eax,0,((uint32_t *)stack_base)[1]);
 #ifdef DEBUG_QTX_API
       printf("%*sLEAVE(%d): EMULATED! 0x%X\n",ret_i*2,"",ret_i, reg->eax);
@@ -862,16 +838,16 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
       return 1;
   case 0x15000F: //NewPtr
   case 0x150010: //NewPtrSys
-      reg->eax = malloc(((uint32_t *)stack_base)[1]);
+      reg->eax=(uint32_t)malloc(((uint32_t *)stack_base)[1]);
 #ifdef DEBUG_QTX_API
       printf("%*sLEAVE(%d): EMULATED! 0x%X\n",ret_i*2,"",ret_i, reg->eax);
 #endif
       return 1;
   case 0x15002f: //DisposePtr
-      if(is_invalid_ptr_handle(((void **)stack_base)[1]))
+      if(((uint32_t *)stack_base)[1]>=0x60000000)
           printf("WARNING! Invalid Ptr handle!\n");
       else
-          free(((void **)stack_base)[1]);
+          free((void *)((uint32_t *)stack_base)[1]);
       reg->eax=0;
 #ifdef DEBUG_QTX_API
       printf("%*sLEAVE(%d): EMULATED! 0x%X\n",ret_i*2,"",ret_i, reg->eax);
@@ -894,6 +870,7 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
 #endif
       return 1;
   }
+#endif
 
 #if 0
   switch(reg->eax){
@@ -937,7 +914,7 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
       }
   }
 
-  // print stack/reg information
+  // print stack/reg information 
   printf("ENTER(%d) stack = %d bytes @ %p\n"
 	 "eax = 0x%08x edx = 0x%08x ebx = 0x%08x ecx = 0x%08x\n"
 	 "esp = 0x%08x ebp = 0x%08x esi = 0x%08x edi = 0x%08x\n"
@@ -953,15 +930,15 @@ static int report_func(void *stack_base, int stack_size, reg386_t *reg, uint32_t
   ++ret_i;
 
 #if 0
-  // print first 7 longs in the stack (return address, arg[1], arg[2] ... )
+  // print first 7 longs in the stack (return address, arg[1], arg[2] ... ) 
   printf("stack[] = { ");
   for (i=0;i<7;i++) {
     printf("%08x ", ((uint32_t *)stack_base)[i]);
   }
   printf("}\n\n");
 #endif
-
-//  // mess with function parameters
+  
+//  // mess with function parameters 
 //  ((uint32_t *)stack_base)[1] = 0x66554433;
 
 //  // mess with return address...
@@ -989,7 +966,7 @@ static int report_func_ret(void *stack_base, int stack_size, reg386_t *reg, uint
   printf("\n");
   fflush(stdout);
 #else
-  // print stack/reg information
+  // print stack/reg information 
   printf("LEAVE(%d) stack = %d bytes @ %p\n"
 	 "eax = 0x%08x edx = 0x%08x ebx = 0x%08x ecx = 0x%08x\n"
 	 "esp = 0x%08x ebp = 0x%08x esi = 0x%08x edi = 0x%08x\n"
@@ -1001,7 +978,7 @@ static int report_func_ret(void *stack_base, int stack_size, reg386_t *reg, uint
 #endif
 
 #if 0
-  // print first 7 longs in the stack (return address, arg[1], arg[2] ... )
+  // print first 7 longs in the stack (return address, arg[1], arg[2] ... ) 
   printf("stack[] = { ");
   for (i=0;i<7;i++) {
     printf("%08x ", ((uint32_t *)stack_base)[i]);
@@ -1010,8 +987,8 @@ static int report_func_ret(void *stack_base, int stack_size, reg386_t *reg, uint
 #endif
 
 #endif
-
-//  // mess with function parameters
+  
+//  // mess with function parameters 
 //  ((uint32_t *)stack_base)[1] = 0x66554433;
 
 //  // mess with return address...

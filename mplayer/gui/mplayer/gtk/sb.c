@@ -51,7 +51,7 @@ void ShowSkinBrowser( void )
    else SkinBrowser=create_SkinBrowser();
 }
 
-static void HideSkinBrowser( void )
+void HideSkinBrowser( void )
 {
  if ( !SkinBrowser ) return;
  gtk_widget_hide( SkinBrowser );
@@ -104,7 +104,7 @@ static void prButton( GtkObject * object,gpointer user_data )
 	ChangeSkin( sbSelectedSkin );
 	if ( skinName ) free( skinName );
 	skinName=strdup( sbSelectedSkin );
-	break;
+	break;   
   }
  }
  HideSkinBrowser();

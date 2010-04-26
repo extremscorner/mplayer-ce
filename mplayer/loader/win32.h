@@ -12,7 +12,16 @@
 #include "wine/winbase.h"
 #include "com.h"
 
-void my_garbagecollection(void);
+#ifdef AVIFILE
+#ifdef __GNUC__
+#include "avm_output.h"
+#ifndef __cplusplus
+#define printf(a, ...)  avm_printf("Win32 plugin", a, ## __VA_ARGS__)
+#endif
+#endif
+#endif
+
+extern void my_garbagecollection(void);
 
 typedef struct {
     UINT             uDriverSignature;
@@ -28,7 +37,7 @@ typedef DRVR  *LPDRVR;
 typedef struct tls_s tls_t;
 
 
-void* LookupExternal(const char* library, int ordinal);
-void* LookupExternalByName(const char* library, const char* name);
+extern void* LookupExternal(const char* library, int ordinal);
+extern void* LookupExternalByName(const char* library, const char* name);
 
 #endif /* MPLAYER_WIN32_H */

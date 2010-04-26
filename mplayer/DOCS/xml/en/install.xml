@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 29461 $ -->
+<!-- $Revision: 26990 $ -->
 <chapter id="install">
 <title>Installation</title>
 
@@ -26,21 +26,13 @@ answers.
 
 <itemizedlist>
 <listitem><para>
-  <emphasis role="bold">POSIX system</emphasis> - You need a POSIX-compatible
-  shell and POSIX-compatible system tools like grep, sed, awk, etc. in your
-  path.
+  <emphasis role="bold">binutils</emphasis> - recommended version is
+  <emphasis role="bold">2.11.x</emphasis>.
 </para></listitem>
 <listitem><para>
-  <emphasis role="bold">GNU make</emphasis> 3.81 or later
-</para></listitem>
-<listitem><para>
-  <emphasis role="bold">binutils</emphasis> - GNU binutils 2.11 or later
-  is known to work.
-</para></listitem>
-<listitem><para>
-  <emphasis role="bold">compiler</emphasis> - We mostly use gcc, the
-  recommended versions on x86 are 2.95 and 3.4+. On PowerPC, use 4.x+.
-  icc 10.1+ is also known to work.
+  <emphasis role="bold">gcc</emphasis> - recommended versions are 2.95
+  and 3.4+. 2.96 and 3.0.x are known to generate faulty code, 3.1 and
+  3.2 also had problems, 3.3 some minor ones. On PowerPC, use 4.x.
 </para></listitem>
 <listitem><para>
   <emphasis role="bold">Xorg/XFree86</emphasis> - recommended version is
@@ -48,6 +40,10 @@ answers.
   <emphasis role="bold">development packages</emphasis> are installed,
   too, otherwise it won't work.
   You don't absolutely need X, some video output drivers work without it.
+</para></listitem>
+<listitem><para>
+  <emphasis role="bold">make</emphasis> - recommended version is
+  3.79.x or later. To build the XML documentation you need 3.80.
 </para></listitem>
 <listitem><para>
   <emphasis role="bold">FreeType</emphasis> - 2.0.9 or later is required
@@ -74,7 +70,8 @@ answers.
   necessary for encoding MP3 audio with <application>MEncoder</application>.
 </para></listitem>
 <listitem><para>
-  <emphasis role="bold">zlib</emphasis> - recommended, many codecs use it.
+  <emphasis role="bold">zlib</emphasis> - recommended, necessary for compressed
+  MOV header and PNG support
 </para></listitem>
 <listitem><para>
   <emphasis role="bold"><ulink url="http://www.live555.com/mplayer/">LIVE555 Streaming Media</ulink></emphasis>
@@ -89,10 +86,6 @@ answers.
 </para></listitem>
 <listitem><para>
   <emphasis role="bold">libsmb</emphasis> - optional, for SMB networking support
-</para></listitem>
-<listitem><para>
-  <emphasis role="bold"><ulink url="http://www.underbit.com/products/mad/">libmad</ulink></emphasis>
-  - optional, for fast integer-only MP3 decoding on FPU-less platforms
 </para></listitem>
 </itemizedlist>
 </sect1>
@@ -184,9 +177,11 @@ See the <link linkend="subosd">Subtitles and OSD</link> section for details.
 <title>What about the GUI?</title>
 
 <para>
-The GUI needs GTK 1.2.x or GTK 2.0 (it isn't fully GTK, but the panels are),
-so <systemitem class="library">GTK</systemitem> (and the devel stuff, usually
-called <systemitem class="library">gtk-dev</systemitem>) has to be installed.
+The GUI needs GTK 1.2.x or GTK 2.0 (it isn't fully GTK, but the panels are).
+The skins are stored in PNG format, so GTK,
+<systemitem class="library">libpng</systemitem> (and their devel stuff, usually
+called <systemitem class="library">gtk-dev</systemitem>
+and <systemitem class="library">libpng-dev</systemitem>) has to be installed.
 You can build it by specifying <option>--enable-gui</option> during
 <filename>./configure</filename>. Then, to turn on GUI mode, you have to
 execute the <command>gmplayer</command> binary.
@@ -194,16 +189,16 @@ execute the <command>gmplayer</command> binary.
 
 <para>
 As <application>MPlayer</application> doesn't have a skin included, you
-have to download one if you want to use the GUI. See the <ulink
+have to download them if you want to use the GUI. See the <ulink
 url="http://www.mplayerhq.hu/dload.html">download page</ulink>.
-It should be extracted to the usual system-wide directory (<filename
+They should be extracted to the usual system-wide directory (<filename
 class="directory">$PREFIX/share/mplayer/skins</filename>), or to <filename
 class="directory">$HOME/.mplayer/skins</filename>.
 <application>MPlayer</application> by default looks in these directories
 for a directory named <filename class="directory">default</filename>, but
 you can use the <option>-skin <replaceable>newskin</replaceable></option>
 option, or the <literal>skin=newskin</literal> config file directive to use
-the skin in the <filename class="directory">*/skins/newskin</filename>
+the skin in <filename class="directory">*/skins/newskin</filename>
 directory.
 </para>
 </sect1>
@@ -346,154 +341,6 @@ the Preferences menu is currently UNIMPLEMENTED!
 </para></listitem>
 </orderedlist>
 </sect2>
-</sect1>
-
-
-<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-
-
-<sect1 id="codec-installation">
-<title>Codec installation</title>
-
-<!-- ********** -->
-
-<sect2 id="xvid">
-<title>Xvid</title>
-
-<para>
-<ulink url="http://www.xvid.org">Xvid</ulink> is a free software MPEG-4 ASP
-compliant video codec. Note that Xvid is not necessary to decode Xvid-encoded
-video. <systemitem class="library">libavcodec</systemitem> is used by
-default as it offers better speed.
-</para>
-
-<procedure>
-<title>Installing <systemitem class="library">Xvid</systemitem></title>
-<para>
-  Like most open source software, it is available in two flavors:
-  <ulink url="http://www.xvid.org/downloads.html">official releases</ulink>
-  and the CVS version.
-  The CVS version is usually stable enough to use, as most of the time it
-  features fixes for bugs that exist in releases.
-  Here is what to do to make <systemitem class="library">Xvid</systemitem>
-  CVS work with <application>MEncoder</application>:
-</para>
-<step><para>
-  <screen>cvs -z3 -d:pserver:anonymous@cvs.xvid.org:/xvid login</screen>
-</para></step>
-<step><para>
-  <screen>cvs -z3 -d:pserver:anonymous@cvs.xvid.org:/xvid co xvidcore</screen>
-</para></step>
-<step><para>
-  <screen>cd xvidcore/build/generic</screen>
-</para></step>
-<step><para>
-  <screen>./bootstrap.sh &amp;&amp; ./configure</screen>
-  You may have to add some options (examine the output of
-  <command>./configure --help</command>).
-</para></step>
-<step><para>
-  <screen>make &amp;&amp; make install</screen>
-</para></step>
-<step><para>
-  Recompile <application>MPlayer</application>.
-</para></step>
-</procedure>
-</sect2>
-
-<!-- ********** -->
-
-<sect2 id="x264">
-<title><systemitem class="library">x264</systemitem></title>
-
-<para>
-<ulink url="http://developers.videolan.org/x264.html"><systemitem class="library">x264</systemitem></ulink>
-is a library for creating H.264 video.
-<application>MPlayer</application> sources are updated whenever
-an <systemitem class="library">x264</systemitem> API change
-occurs, so it is always suggested to use
-<application>MPlayer</application> from Subversion.
-</para>
-
-<para>
-If you have a GIT client installed, the latest x264
-sources can be gotten with this command:
-<screen>git clone git://git.videolan.org/x264.git</screen>
-
-Then build and install in the standard way:
-<screen>./configure &amp;&amp; make &amp;&amp; make install</screen>
-
-Now rerun <filename>./configure</filename> for
-<application>MPlayer</application> to pick up
-<systemitem class="library">x264</systemitem> support.
-</para>
-</sect2>
-
-<!-- ********** -->
-
-<sect2 id="aac">
-<title>AAC</title>
-
-<para>
-An open source AAC decoder called FAAD2 is available from
-<ulink url="http://www.audiocoding.com/downloads.html"/>.
-<application>MPlayer</application> includes a copy of it in its source tree.
-If you want to use the external library instead, install it and pass
-<option>--enable-faad-external</option> to <filename>./configure</filename>.
-</para>
-
-<para>
-FAAD2 binaries are not available from audiocoding.com, but you can (apt-)get
-Debian packages from
-<ulink url="http://www.debian-multimedia.org/">Christian Marillat</ulink>,
-Mandrake/Mandriva RPMs from the <ulink url="http://plf.zarb.org">P.L.F</ulink>
-and Fedora/CentOS/RHEL RPMs from <ulink url="http://rpmfusion.org/">RPMFusion</ulink>.
-</para>
-<para>
-If you choose to build from source, you do not need all of FAAD2 to decode
-AAC files, libfaad is enough. Build it like this:
-<screen>
-cd faad2/
-sh bootstrap
-./configure
-cd libfaad
-make
-make install
-</screen>
-</para>
-</sect2>
-
-<!-- ********** -->
-
-<sect2 id="amr">
-<title>AMR</title>
-
-<para>
-MPlayer can use the OpenCORE AMR libraries through FFmpeg.
-Download the libraries for AMR-NB and AMR-WB from the
-<ulink url="http://sourceforge.net/projects/opencore-amr/">opencore-amr</ulink>
-project and install them according to the instructions on that page.
-</para>
-</sect2>
-
-<sect2 id="xmms">
-<title>XMMS</title>
-
-<para>
-<application>MPlayer</application> can use <application>XMMS</application> input
-plugins to play many file formats. There are plugins for SNES game tunes, SID
-tunes (from Commodore 64), many Amiga formats, .xm, .it, VQF, Musepack, Bonk,
-shorten and many others. You can find them at the
-<ulink url="http://www.xmms.org/plugins.php?category=input">XMMS input plugin page</ulink>.
-</para>
-
-<para>
-For this feature you need to have <application>XMMS</application> and compile
-<application>MPlayer</application> with
-<filename>./configure --enable-xmms</filename>.
-</para>
-</sect2>
-
 </sect1>
 
 

@@ -1,31 +1,12 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <inttypes.h>
-#include <limits.h>
 
 #include "config.h"
 #include "mp_msg.h"
 #include "mp_fifo.h"
-#include "libavutil/common.h"
 #include "x11_common.h"
 
 #ifdef X11_FULLSCREEN
@@ -104,7 +85,6 @@ int mLocalDisplay;
 int vo_mouse_autohide = 0;
 int vo_wm_type = 0;
 int vo_fs_type = 0; // needs to be accessible for GUI X11 code
-static int window_state;
 static int vo_fs_flip = 0;
 char **vo_fstype_list;
 
@@ -121,6 +101,7 @@ static Atom XA_NET_WM_PID;
 static Atom XA_WIN_PROTOCOLS;
 static Atom XA_WIN_LAYER;
 static Atom XA_WIN_HINTS;
+static Atom XA_BLACKBOX_PID;
 static Atom XAWM_PROTOCOLS;
 static Atom XAWM_DELETE_WINDOW;
 
@@ -159,11 +140,14 @@ void vo_x11_ewmh_fullscreen(int action)
         xev.xclient.type = ClientMessage;
         xev.xclient.serial = 0;
         xev.xclient.send_event = True;
-        xev.xclient.message_type = XA_NET_WM_STATE;
+        xev.xclient.message_type = XInternAtom(mDisplay,
+                                               "_NET_WM_STATE", False);
         xev.xclient.window = vo_window;
         xev.xclient.format = 32;
         xev.xclient.data.l[0] = action;
-        xev.xclient.data.l[1] = XA_NET_WM_STATE_FULLSCREEN;
+        xev.xclient.data.l[1] = XInternAtom(mDisplay,
+                                            "_NET_WM_STATE_FULLSCREEN",
+                                            False);
         xev.xclient.data.l[2] = 0;
         xev.xclient.data.l[3] = 0;
         xev.xclient.data.l[4] = 0;
@@ -227,6 +211,7 @@ static int x11_errorhandler(Display * display, XErrorEvent * event)
            event->error_code, event->request_code, event->minor_code);
 
 //    abort();
+    //exit_player("X11 error");
     return 0;
 #undef MSGLEN
 }
@@ -336,13 +321,27 @@ static int vo_wm_detect(void)
                    "[x11] Using workaround for Metacity bugs.\n");
         }
     }
-// --- netwm
+// --- netwm 
     if (x11_get_property(XA_NET_SUPPORTED, &args, &nitems))
     {
         mp_msg(MSGT_VO, MSGL_V, "[x11] Detected wm supports NetWM.\n");
         for (i = 0; i < nitems; i++)
             wm |= net_wm_support_state_test(args[i]);
         XFree(args);
+#if 0
+        // ugly hack for broken OpenBox _NET_WM_STATE_FULLSCREEN support
+        // (in their implementation it only changes internal window state, nothing more!!!)
+        if (wm & vo_wm_FULLSCREEN)
+        {
+            if (x11_get_property(XA_BLACKBOX_PID, &args, &nitems))
+            {
+                mp_msg(MSGT_VO, MSGL_V,
+                       "[x11] Detected wm is a broken OpenBox.\n");
+                wm ^= vo_wm_FULLSCREEN;
+            }
+            XFree(args);
+        }
+#endif
     }
 
     if (wm == 0)
@@ -362,6 +361,7 @@ static void init_atoms(void)
     XA_INIT(_WIN_PROTOCOLS);
     XA_INIT(_WIN_LAYER);
     XA_INIT(_WIN_HINTS);
+    XA_INIT(_BLACKBOX_PID);
     XA_INIT(WM_PROTOCOLS);
     XA_INIT(WM_DELETE_WINDOW);
 }
@@ -416,7 +416,7 @@ int vo_init(void)
 // Window    mRootWin;
     XWindowAttributes attribs;
     char *dispName;
-
+	
 	if (vo_rootwin)
 		WinID = 0; // use root window
 
@@ -561,72 +561,278 @@ void vo_uninit(void)
 #include "wskeys.h"
 
 #ifdef XF86XK_AudioPause
-static const struct keymap keysym_map[] = {
-    {XF86XK_MenuKB, KEY_MENU},
-    {XF86XK_AudioPlay, KEY_PLAY}, {XF86XK_AudioPause, KEY_PAUSE}, {XF86XK_AudioStop, KEY_STOP},
-    {XF86XK_AudioPrev, KEY_PREV}, {XF86XK_AudioNext, KEY_NEXT},
-    {XF86XK_AudioMute, KEY_MUTE}, {XF86XK_AudioLowerVolume, KEY_VOLUME_DOWN}, {XF86XK_AudioRaiseVolume, KEY_VOLUME_UP},
-    {0, 0}
-};
-
 static void vo_x11_putkey_ext(int keysym)
 {
-    int mpkey = lookup_keymap_table(keysym_map, keysym);
-    if (mpkey)
-        mplayer_put_key(mpkey);
+    switch (keysym)
+    {
+        case XF86XK_AudioPause:
+            mplayer_put_key(KEY_PAUSE);
+            break;
+        case XF86XK_AudioStop:
+            mplayer_put_key(KEY_STOP);
+            break;
+        case XF86XK_AudioPrev:
+            mplayer_put_key(KEY_PREV);
+            break;
+        case XF86XK_AudioNext:
+            mplayer_put_key(KEY_NEXT);
+            break;
+        case XF86XK_AudioLowerVolume:
+            mplayer_put_key(KEY_VOLUME_DOWN);
+            break;
+        case XF86XK_AudioRaiseVolume:
+            mplayer_put_key(KEY_VOLUME_UP);
+            break;
+        default:
+            break;
+    }
 }
 #endif
 
-static const struct keymap keymap[] = {
-    // special keys
-    {wsEscape, KEY_ESC}, {wsBackSpace, KEY_BS}, {wsTab, KEY_TAB}, {wsEnter, KEY_ENTER},
-
-    // cursor keys
-    {wsLeft, KEY_LEFT}, {wsRight, KEY_RIGHT}, {wsUp, KEY_UP}, {wsDown, KEY_DOWN},
-
-    // navigation block
-    {wsInsert, KEY_INSERT}, {wsDelete, KEY_DELETE}, {wsHome, KEY_HOME}, {wsEnd, KEY_END},
-    {wsPageUp, KEY_PAGE_UP}, {wsPageDown, KEY_PAGE_DOWN},
-
-    // F-keys
-    {wsF1, KEY_F+1}, {wsF2, KEY_F+2}, {wsF3, KEY_F+3}, {wsF4, KEY_F+4},
-    {wsF5, KEY_F+5}, {wsF6, KEY_F+6}, {wsF7, KEY_F+7}, {wsF8, KEY_F+8},
-    {wsF9, KEY_F+9}, {wsF10, KEY_F+10}, {wsF11, KEY_F+11}, {wsF12, KEY_F+12},
-
-    // numpad independent of numlock
-    {wsGrayMinus, '-'}, {wsGrayPlus, '+'}, {wsGrayMul, '*'}, {wsGrayDiv, '/'},
-    {wsGrayEnter, KEY_KPENTER},
-
-    // numpad with numlock
-    {wsGray0, KEY_KP0}, {wsGray1, KEY_KP1}, {wsGray2, KEY_KP2},
-    {wsGray3, KEY_KP3}, {wsGray4, KEY_KP4}, {wsGray5, KEY_KP5},
-    {wsGray6, KEY_KP6}, {wsGray7, KEY_KP7}, {wsGray8, KEY_KP8},
-    {wsGray9, KEY_KP9}, {wsGrayDecimal, KEY_KPDEC},
-
-    // numpad without numlock
-    {wsGrayInsert, KEY_KPINS}, {wsGrayEnd, KEY_KP1}, {wsGrayDown, KEY_KP2},
-    {wsGrayPgDn, KEY_KP3}, {wsGrayLeft, KEY_KP4}, {wsGray5Dup, KEY_KP5},
-    {wsGrayRight, KEY_KP6}, {wsGrayHome, KEY_KP7}, {wsGrayUp, KEY_KP8},
-    {wsGrayPgUp, KEY_KP9}, {wsGrayDelete, KEY_KPDEL},
-
-    {0, 0}
-};
-
 void vo_x11_putkey(int key)
 {
-    static const char *passthrough_keys = " -+*/<>`~!@#$%^&()_{}:;\"\',.?\\|=[]";
-    int mpkey = 0;
-    if ((key >= 'a' && key <= 'z') ||
-        (key >= 'A' && key <= 'Z') ||
-        (key >= '0' && key <= '9') ||
-        (key >  0   && key <  256 && strchr(passthrough_keys, key)))
-        mpkey = key;
+    switch (key)
+    {
+        case wsLeft:
+            mplayer_put_key(KEY_LEFT);
+            break;
+        case wsRight:
+            mplayer_put_key(KEY_RIGHT);
+            break;
+        case wsUp:
+            mplayer_put_key(KEY_UP);
+            break;
+        case wsDown:
+            mplayer_put_key(KEY_DOWN);
+            break;
+        case wsSpace:
+            mplayer_put_key(' ');
+            break;
+        case wsEscape:
+            mplayer_put_key(KEY_ESC);
+            break;
+        case wsTab:
+            mplayer_put_key(KEY_TAB);
+            break;
+        case wsEnter:
+            mplayer_put_key(KEY_ENTER);
+            break;
+        case wsBackSpace:
+            mplayer_put_key(KEY_BS);
+            break;
+        case wsDelete:
+            mplayer_put_key(KEY_DELETE);
+            break;
+        case wsInsert:
+            mplayer_put_key(KEY_INSERT);
+            break;
+        case wsHome:
+            mplayer_put_key(KEY_HOME);
+            break;
+        case wsEnd:
+            mplayer_put_key(KEY_END);
+            break;
+        case wsPageUp:
+            mplayer_put_key(KEY_PAGE_UP);
+            break;
+        case wsPageDown:
+            mplayer_put_key(KEY_PAGE_DOWN);
+            break;
+        case wsF1:
+            mplayer_put_key(KEY_F + 1);
+            break;
+        case wsF2:
+            mplayer_put_key(KEY_F + 2);
+            break;
+        case wsF3:
+            mplayer_put_key(KEY_F + 3);
+            break;
+        case wsF4:
+            mplayer_put_key(KEY_F + 4);
+            break;
+        case wsF5:
+            mplayer_put_key(KEY_F + 5);
+            break;
+        case wsF6:
+            mplayer_put_key(KEY_F + 6);
+            break;
+        case wsF7:
+            mplayer_put_key(KEY_F + 7);
+            break;
+        case wsF8:
+            mplayer_put_key(KEY_F + 8);
+            break;
+        case wsF9:
+            mplayer_put_key(KEY_F + 9);
+            break;
+        case wsF10:
+            mplayer_put_key(KEY_F + 10);
+            break;
+        case wsF11:
+            mplayer_put_key(KEY_F + 11);
+            break;
+        case wsF12:
+            mplayer_put_key(KEY_F + 12);
+            break;
+        case wsMinus:
+        case wsGrayMinus:
+            mplayer_put_key('-');
+            break;
+        case wsPlus:
+        case wsGrayPlus:
+            mplayer_put_key('+');
+            break;
+        case wsGrayMul:
+        case wsMul:
+            mplayer_put_key('*');
+            break;
+        case wsGrayDiv:
+        case wsDiv:
+            mplayer_put_key('/');
+            break;
+        case wsLess:
+            mplayer_put_key('<');
+            break;
+        case wsMore:
+            mplayer_put_key('>');
+            break;
+        case wsGray0:
+            mplayer_put_key(KEY_KP0);
+            break;
+        case wsGrayEnd:
+        case wsGray1:
+            mplayer_put_key(KEY_KP1);
+            break;
+        case wsGrayDown:
+        case wsGray2:
+            mplayer_put_key(KEY_KP2);
+            break;
+        case wsGrayPgDn:
+        case wsGray3:
+            mplayer_put_key(KEY_KP3);
+            break;
+        case wsGrayLeft:
+        case wsGray4:
+            mplayer_put_key(KEY_KP4);
+            break;
+        case wsGray5Dup:
+        case wsGray5:
+            mplayer_put_key(KEY_KP5);
+            break;
+        case wsGrayRight:
+        case wsGray6:
+            mplayer_put_key(KEY_KP6);
+            break;
+        case wsGrayHome:
+        case wsGray7:
+            mplayer_put_key(KEY_KP7);
+            break;
+        case wsGrayUp:
+        case wsGray8:
+            mplayer_put_key(KEY_KP8);
+            break;
+        case wsGrayPgUp:
+        case wsGray9:
+            mplayer_put_key(KEY_KP9);
+            break;
+        case wsGrayDecimal:
+            mplayer_put_key(KEY_KPDEC);
+            break;
+        case wsGrayInsert:
+            mplayer_put_key(KEY_KPINS);
+            break;
+        case wsGrayDelete:
+            mplayer_put_key(KEY_KPDEL);
+            break;
+        case wsGrayEnter:
+            mplayer_put_key(KEY_KPENTER);
+            break;
+        case wsGrave:
+            mplayer_put_key('`');
+            break;
+        case wsTilde:
+            mplayer_put_key('~');
+            break;
+        case wsExclSign:
+            mplayer_put_key('!');
+            break;
+        case wsAt:
+            mplayer_put_key('@');
+            break;
+        case wsHash:
+            mplayer_put_key('#');
+            break;
+        case wsDollar:
+            mplayer_put_key('$');
+            break;
+        case wsPercent:
+            mplayer_put_key('%');
+            break;
+        case wsCircumflex:
+            mplayer_put_key('^');
+            break;
+        case wsAmpersand:
+            mplayer_put_key('&');
+            break;
+        case wsobracket:
+            mplayer_put_key('(');
+            break;
+        case wscbracket:
+            mplayer_put_key(')');
+            break;
+        case wsUnder:
+            mplayer_put_key('_');
+            break;
+        case wsocbracket:
+            mplayer_put_key('{');
+            break;
+        case wsccbracket:
+            mplayer_put_key('}');
+            break;
+        case wsColon:
+            mplayer_put_key(':');
+            break;
+        case wsSemicolon:
+            mplayer_put_key(';');
+            break;
+        case wsDblQuote:
+            mplayer_put_key('\"');
+            break;
+        case wsAcute:
+            mplayer_put_key('\'');
+            break;
+        case wsComma:
+            mplayer_put_key(',');
+            break;
+        case wsPoint:
+            mplayer_put_key('.');
+            break;
+        case wsQuestSign:
+            mplayer_put_key('?');
+            break;
+        case wsBSlash:
+            mplayer_put_key('\\');
+            break;
+        case wsPipe:
+            mplayer_put_key('|');
+            break;
+        case wsEqual:
+            mplayer_put_key('=');
+            break;
+        case wsosbrackets:
+            mplayer_put_key('[');
+            break;
+        case wscsbrackets:
+            mplayer_put_key(']');
+            break;
 
-    if (!mpkey)
-        mpkey = lookup_keymap_table(keymap, key);
 
-    if (mpkey)
-        mplayer_put_key(mpkey);
+        default:
+            if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z') ||
+                (key >= '0' && key <= '9'))
+                mplayer_put_key(key);
+    }
+
 }
 
 
@@ -733,12 +939,12 @@ void vo_x11_decoration(Display * vo_Display, Window w, int d)
     }
 }
 
-void vo_x11_classhint(Display * display, Window window, const char *name)
+void vo_x11_classhint(Display * display, Window window, char *name)
 {
     XClassHint wmClass;
     pid_t pid = getpid();
 
-    wmClass.res_name = vo_winname ? vo_winname : name;
+    wmClass.res_name = name;
     wmClass.res_class = "MPlayer";
     XSetClassHint(display, window, &wmClass);
     XChangeProperty(display, window, XA_NET_WM_PID, XA_CARDINAL, 32,
@@ -788,7 +994,6 @@ void vo_x11_uninit(void)
                 XEvent xev;
 
                 XUnmapWindow(mDisplay, vo_window);
-                XSelectInput(mDisplay, vo_window, StructureNotifyMask);
                 XDestroyWindow(mDisplay, vo_window);
                 do
                 {
@@ -845,13 +1050,26 @@ int vo_x11_check_events(Display * mydisplay)
 //         if (vo_fs && Event.xconfigure.width != vo_screenwidth && Event.xconfigure.height != vo_screenheight) break;
                 if (vo_window == None)
                     break;
+                vo_dwidth = Event.xconfigure.width;
+                vo_dheight = Event.xconfigure.height;
+#if 0
+                /* when resizing, x and y are zero :( */
+                vo_dx = Event.xconfigure.x;
+                vo_dy = Event.xconfigure.y;
+#else
                 {
-                    int old_w = vo_dwidth, old_h = vo_dheight;
-		    int old_x = vo_dx, old_y = vo_dy;
-                    vo_x11_update_geometry();
-                    if (vo_dwidth != old_w || vo_dheight != old_h || vo_dx != old_x || vo_dy != old_y)
-                        ret |= VO_EVENT_RESIZE;
+                    Window root;
+                    int foo;
+                    Window win;
+
+                    XGetGeometry(mydisplay, vo_window, &root, &foo, &foo,
+                                 &foo /*width */ , &foo /*height */ , &foo,
+                                 &foo);
+                    XTranslateCoordinates(mydisplay, vo_window, root, 0, 0,
+                                          &vo_dx, &vo_dy, &win);
                 }
+#endif
+                ret |= VO_EVENT_RESIZE;
                 break;
             case KeyPress:
                 {
@@ -1000,13 +1218,6 @@ void vo_x11_sizehint(int x, int y, int width, int height, int max)
     vo_hint.flags |= PMinSize;
     vo_hint.min_width = vo_hint.min_height = 4;
 
-    // Set the base size. A window manager might display the window
-    // size to the user relative to this.
-    // Setting these to width/height might be nice, but e.g. fluxbox can't handle it.
-    vo_hint.flags |= PBaseSize;
-    vo_hint.base_width = 0 /*width*/;
-    vo_hint.base_height = 0 /*height*/;
-
     vo_hint.flags |= PWinGravity;
     vo_hint.win_gravity = StaticGravity;
     XSetWMNormalHints(mDisplay, vo_window, &vo_hint);
@@ -1039,7 +1250,7 @@ Window vo_x11_create_smooth_window(Display * mDisplay, Window mRoot,
                                    unsigned int width, unsigned int height,
                                    int depth, Colormap col_map)
 {
-    unsigned long xswamask = CWBorderPixel;
+    unsigned long xswamask = CWBackingStore | CWBorderPixel;
     XSetWindowAttributes xswa;
     Window ret_win;
 
@@ -1050,7 +1261,7 @@ Window vo_x11_create_smooth_window(Display * mDisplay, Window mRoot,
     }
     xswa.background_pixel = 0;
     xswa.border_pixel = 0;
-    xswa.backing_store = NotUseful;
+    xswa.backing_store = Always;
     xswa.bit_gravity = StaticGravity;
 
     ret_win =
@@ -1085,37 +1296,14 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
                              Colormap col_map,
                              const char *classname, const char *title)
 {
-  XGCValues xgcv;
-  if (WinID >= 0) {
-    vo_fs = flags & VOFLAG_FULLSCREEN;
-    vo_window = WinID ? (Window)WinID : mRootWin;
-    if (col_map != CopyFromParent) {
-      unsigned long xswamask = CWColormap;
-      XSetWindowAttributes xswa;
-      xswa.colormap = col_map;
-      XChangeWindowAttributes(mDisplay, vo_window, xswamask, &xswa);
-      XInstallColormap(mDisplay, col_map);
-    }
-    if (WinID) vo_x11_update_geometry();
-    vo_x11_selectinput_witherr(mDisplay, vo_window,
-          StructureNotifyMask | KeyPressMask | PointerMotionMask |
-          ButtonPressMask | ButtonReleaseMask | ExposureMask);
-    goto final;
-  }
   if (vo_window == None) {
+    XSizeHints hint;
+    XEvent xev;
     vo_fs = 0;
     vo_dwidth = width;
     vo_dheight = height;
     vo_window = vo_x11_create_smooth_window(mDisplay, mRootWin, vis->visual,
                       x, y, width, height, vis->depth, col_map);
-    window_state = VOFLAG_HIDDEN;
-  }
-  if (flags & VOFLAG_HIDDEN)
-    goto final;
-  if (window_state & VOFLAG_HIDDEN) {
-    XSizeHints hint;
-    XEvent xev;
-    window_state &= ~VOFLAG_HIDDEN;
     vo_x11_classhint(mDisplay, vo_window, classname);
     XStoreName(mDisplay, vo_window, title);
     vo_hidecursor(mDisplay, vo_window);
@@ -1124,10 +1312,11 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
     hint.width = width; hint.height = height;
     hint.flags = PPosition | PSize;
     XSetStandardProperties(mDisplay, vo_window, title, title, None, NULL, 0, &hint);
+    vo_x11_sizehint(x, y, width, height, 0);
     if (!vo_border) vo_x11_decoration(mDisplay, vo_window, 0);
     // map window
     XMapWindow(mDisplay, vo_window);
-    vo_x11_clearwindow(mDisplay, vo_window);
+    XClearWindow(mDisplay, vo_window);
     // wait for map
     do {
       XNextEvent(mDisplay, &xev);
@@ -1142,18 +1331,6 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
   vo_x11_nofs_sizepos(vo_dx, vo_dy, width, height);
   if (!!vo_fs != !!(flags & VOFLAG_FULLSCREEN))
     vo_x11_fullscreen();
-  else if (vo_fs) {
-    // if we are already in fullscreen do not switch back and forth, just
-    // set the size values right.
-    vo_dwidth  = vo_screenwidth;
-    vo_dheight = vo_screenheight;
-  }
-final:
-  if (vo_gc != None)
-    XFreeGC(mDisplay, vo_gc);
-  vo_gc = XCreateGC(mDisplay, vo_window, GCForeground, &xgcv);
-  XSync(mDisplay, False);
-  vo_mouse_autohide = 1;
 }
 
 void vo_x11_clearwindow_part(Display * mDisplay, Window vo_window,
@@ -1264,6 +1441,7 @@ static int vo_x11_get_fs_type(int supported)
 
     if (vo_fstype_list)
     {
+        i = 0;
         for (i = 0; vo_fstype_list[i]; i++)
         {
             int neg = 0;
@@ -1321,49 +1499,31 @@ static int vo_x11_get_fs_type(int supported)
                 else
                     type |= vo_wm_NETWM;
             } else if (!strcmp(arg, "none"))
-                type = 0; // clear; keep parsing
+                return 0;
         }
     }
 
     return type;
 }
 
-/**
- * \brief update vo_dx, vo_dy, vo_dwidth and vo_dheight with current values of vo_window
- * \return returns current color depth of vo_window
- */
-int vo_x11_update_geometry(void) {
-    unsigned depth, w, h;
-    int dummy_int;
-    Window dummy_win;
-    XGetGeometry(mDisplay, vo_window, &dummy_win, &dummy_int, &dummy_int,
-                 &w, &h, &dummy_int, &depth);
-    if (w <= INT_MAX && h <= INT_MAX) { vo_dwidth = w; vo_dheight = h; }
-    XTranslateCoordinates(mDisplay, vo_window, mRootWin, 0, 0, &vo_dx, &vo_dy,
-                          &dummy_win);
-    if (vo_wintitle)
-        XStoreName(mDisplay, vo_window, vo_wintitle);
-
-    return depth <= INT_MAX ? depth : 0;
-}
-
 void vo_x11_fullscreen(void)
 {
     int x, y, w, h;
-    x = vo_old_x;
-    y = vo_old_y;
-    w = vo_old_width;
-    h = vo_old_height;
 
-    if (WinID >= 0) {
-        vo_fs = !vo_fs;
-        return;
-    }
-    if (vo_fs_flip)
+    if (WinID >= 0 || vo_fs_flip)
         return;
 
     if (vo_fs)
     {
+        // fs->win
+        if ( ! (vo_fs_type & vo_wm_FULLSCREEN) ) // not needed with EWMH fs
+        {
+            x = vo_old_x;
+            y = vo_old_y;
+            w = vo_old_width;
+            h = vo_old_height;
+	}
+
         vo_x11_ewmh_fullscreen(_NET_WM_STATE_REMOVE);   // removes fullscreen state if wm supports EWMH
         vo_fs = VO_FALSE;
     } else
@@ -1595,13 +1755,12 @@ void vo_x11_selectinput_witherr(Display * display, Window w,
 }
 
 #ifdef CONFIG_XF86VM
-void vo_vm_switch(void)
+void vo_vm_switch(uint32_t X, uint32_t Y, int *modeline_width,
+                  int *modeline_height)
 {
     int vm_event, vm_error;
     int vm_ver, vm_rev;
     int i, j, have_vm = 0;
-    int X = vo_dwidth, Y = vo_dheight;
-    int modeline_width, modeline_height;
 
     int modecount;
 
@@ -1611,10 +1770,9 @@ void vo_vm_switch(void)
         mp_msg(MSGT_VO, MSGL_V, "XF86VidMode extension v%i.%i\n", vm_ver,
                vm_rev);
         have_vm = 1;
-    } else {
+    } else
         mp_msg(MSGT_VO, MSGL_WARN,
                "XF86VidMode extension not available.\n");
-    }
 
     if (have_vm)
     {
@@ -1622,39 +1780,32 @@ void vo_vm_switch(void)
             XF86VidModeGetAllModeLines(mDisplay, mScreen, &modecount,
                                        &vidmodes);
         j = 0;
-        modeline_width = vidmodes[0]->hdisplay;
-        modeline_height = vidmodes[0]->vdisplay;
+        *modeline_width = vidmodes[0]->hdisplay;
+        *modeline_height = vidmodes[0]->vdisplay;
 
         for (i = 1; i < modecount; i++)
             if ((vidmodes[i]->hdisplay >= X)
                 && (vidmodes[i]->vdisplay >= Y))
-                if ((vidmodes[i]->hdisplay <= modeline_width)
-                    && (vidmodes[i]->vdisplay <= modeline_height))
+                if ((vidmodes[i]->hdisplay <= *modeline_width)
+                    && (vidmodes[i]->vdisplay <= *modeline_height))
                 {
-                    modeline_width = vidmodes[i]->hdisplay;
-                    modeline_height = vidmodes[i]->vdisplay;
+                    *modeline_width = vidmodes[i]->hdisplay;
+                    *modeline_height = vidmodes[i]->vdisplay;
                     j = i;
                 }
 
         mp_msg(MSGT_VO, MSGL_INFO, MSGTR_SelectedVideoMode,
-               modeline_width, modeline_height, X, Y);
+               *modeline_width, *modeline_height, X, Y);
         XF86VidModeLockModeSwitch(mDisplay, mScreen, 0);
         XF86VidModeSwitchToMode(mDisplay, mScreen, vidmodes[j]);
         XF86VidModeSwitchToMode(mDisplay, mScreen, vidmodes[j]);
-
-        // FIXME: all this is more of a hack than proper solution
-        X = (vo_screenwidth - modeline_width) / 2;
-        Y = (vo_screenheight - modeline_height) / 2;
+        X = (vo_screenwidth - *modeline_width) / 2;
+        Y = (vo_screenheight - *modeline_height) / 2;
         XF86VidModeSetViewPort(mDisplay, mScreen, X, Y);
-        vo_dx = X;
-        vo_dy = Y;
-        vo_dwidth = modeline_width;
-        vo_dheight = modeline_height;
-        aspect_save_screenres(modeline_width, modeline_height);
     }
 }
 
-void vo_vm_close(void)
+void vo_vm_close(Display * dpy)
 {
 #ifdef CONFIG_GUI
     if (vidmodes != NULL && vo_window != None)
@@ -1663,6 +1814,9 @@ void vo_vm_close(void)
 #endif
     {
         int i, modecount;
+        int screen;
+
+        screen = DefaultScreen(dpy);
 
         free(vidmodes);
         vidmodes = NULL;
@@ -1678,8 +1832,8 @@ void vo_vm_close(void)
                 break;
             }
 
-        XF86VidModeSwitchToMode(mDisplay, mScreen, vidmodes[i]);
-        XF86VidModeSwitchToMode(mDisplay, mScreen, vidmodes[i]);
+        XF86VidModeSwitchToMode(dpy, screen, vidmodes[i]);
+        XF86VidModeSwitchToMode(dpy, screen, vidmodes[i]);
         free(vidmodes);
         vidmodes = NULL;
     }
@@ -2123,7 +2277,7 @@ void vo_xv_get_max_img_dim( uint32_t * width, uint32_t * height )
  * Outputs the content of |ck_handling| as a readable message.
  *
  */
-static void vo_xv_print_ck_info(void)
+void vo_xv_print_ck_info(void)
 {
   mp_msg( MSGT_VO, MSGL_V, "[xv common] " );
 
@@ -2143,7 +2297,7 @@ static void vo_xv_print_ck_info(void)
 
   switch ( xv_ck_info.source )
   {
-    case CK_SRC_CUR:
+    case CK_SRC_CUR:      
       mp_msg( MSGT_VO, MSGL_V, "Using colorkey from Xv (0x%06lx).\n",
               xv_colorkey );
       break;
@@ -2206,12 +2360,12 @@ int vo_xv_init_colorkey(void)
     if ( xv_ck_info.source != CK_SRC_CUR )
     {
       xv_colorkey = vo_colorkey;
-
+  
       /* check if we have to set the colorkey too */
       if ( xv_ck_info.source == CK_SRC_SET )
       {
         xv_atom = XInternAtom(mDisplay, "XV_COLORKEY",False);
-
+  
         rez = XvSetPortAttribute( mDisplay, xv_port, xv_atom, vo_colorkey );
         if ( rez != Success )
         {
@@ -2221,7 +2375,7 @@ int vo_xv_init_colorkey(void)
         }
       }
     }
-    else
+    else 
     {
       int colorkey_ret;
 
@@ -2239,13 +2393,13 @@ int vo_xv_init_colorkey(void)
       }
     }
 
-    xv_atom = xv_intern_atom_if_exists( "XV_AUTOPAINT_COLORKEY" );
+    xv_atom = xv_intern_atom_if_exists( "XV_AUTOPAINT_COLORKEY" );    
 
     /* should we draw the colorkey ourselves or activate autopainting? */
     if ( xv_ck_info.method == CK_METHOD_AUTOPAINT )
     {
       rez = !Success; // reset rez to something different than Success
-
+ 
       if ( xv_atom != None ) // autopaint is supported
       {
         rez = XvSetPortAttribute( mDisplay, xv_port, xv_atom, 1 );
@@ -2389,11 +2543,11 @@ void xv_setup_colorkeyhandling( char const * ck_method_str,
     else if ( strncmp( ck_method_str, "man", 3 ) == 0 )
     {
       xv_ck_info.method = CK_METHOD_MANUALFILL;
-    }
+    }    
     else if ( strncmp( ck_method_str, "auto", 4 ) == 0 )
     {
       xv_ck_info.method = CK_METHOD_AUTOPAINT;
-    }
+    }    
   }
 }
 

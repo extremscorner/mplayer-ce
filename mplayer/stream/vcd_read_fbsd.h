@@ -1,32 +1,10 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_VCD_READ_FBSD_H
 #define MPLAYER_VCD_READ_FBSD_H
 
-#define _XOPEN_SOURCE 500
-
 #include <sys/types.h>
 #include <inttypes.h>
-#include <unistd.h>
 #include "libavutil/intreadwrite.h"
 #include <sys/cdio.h>
-#include <sys/ioctl.h>
 #if defined(__NetBSD__) || defined(__OpenBSD__)
 #define VCD_NETBSD 1
 #endif
@@ -144,7 +122,7 @@ vcd_seek_to_track(mp_vcd_priv_t* vcd, int track)
   return VCD_SECTOR_DATA * vcd_get_msf(vcd);
 }
 
-static int
+int
 vcd_get_track_end(mp_vcd_priv_t* vcd, int track)
 {
   if (!read_toc_entry(vcd,
@@ -153,7 +131,7 @@ vcd_get_track_end(mp_vcd_priv_t* vcd, int track)
   return VCD_SECTOR_DATA * vcd_get_msf(vcd);
 }
 
-static mp_vcd_priv_t*
+mp_vcd_priv_t*
 vcd_read_toc(int fd)
 {
   struct ioc_toc_header tochdr;
@@ -210,11 +188,6 @@ vcd_read_toc(int fd)
     }
   }
   return vcd;
-}
-
-static int vcd_end_track(mp_vcd_priv_t* vcd)
-{
-  return vcd->tochdr.ending_track;
 }
 
 static int

@@ -1,27 +1,7 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_CFG_COMMON_OPTS_H
 #define MPLAYER_CFG_COMMON_OPTS_H
 
 #include "config.h"
-#include "libmpcodecs/vd.h"
-#include "osdep/priority.h"
 
 // ------------------------- common options --------------------
 	{"quiet", &quiet, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
@@ -30,17 +10,14 @@
 	{"v", cfg_inc_verbose, CONF_TYPE_FUNC, CONF_GLOBAL|CONF_NOSAVE, 0, 0, NULL},
 	{"msglevel", msgl_config, CONF_TYPE_SUBCONFIG, CONF_GLOBAL, 0, 0, NULL},
 	{"msgcolor", &mp_msg_color, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
-	{"nomsgcolor", &mp_msg_color, CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL},
 	{"msgmodule", &mp_msg_module, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
-	{"nomsgmodule", &mp_msg_module, CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL},
 #ifdef CONFIG_ICONV
 	{"msgcharset", &mp_msg_charset, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
 #endif
 	{"include", cfg_include, CONF_TYPE_FUNC_PARAM, CONF_NOSAVE, 0, 0, NULL},
-#ifdef CONFIG_PRIORITY
+#ifdef WIN32
 	{"priority", &proc_priority, CONF_TYPE_STRING, 0, 0, 0, NULL},
 #endif
-	{"codecpath", &codec_path, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"noconfig", noconfig_opts, CONF_TYPE_SUBCONFIG, CONF_GLOBAL|CONF_NOCFG|CONF_PRE_PARSE, 0, 0, NULL},
 
 // ------------------------- stream options --------------------
@@ -57,7 +34,7 @@
 	{"cuefile", "-cuefile has been removed, use cue://filename:N where N is the track number.\n", CONF_TYPE_PRINT, 0, 0, 0, NULL},
 	{"cdrom-device", &cdrom_device, CONF_TYPE_STRING, 0, 0, 0, NULL},
 #ifdef CONFIG_DVDREAD
-	{"dvd-device", &dvd_device,  CONF_TYPE_STRING, 0, 0, 0, NULL},
+	{"dvd-device", &dvd_device,  CONF_TYPE_STRING, 0, 0, 0, NULL}, 
 	{"dvd-speed", &dvd_speed, CONF_TYPE_INT, 0, 0, 0, NULL},
 	{"dvd", "-dvd N has been removed, use dvd://N instead.\n" , CONF_TYPE_PRINT, 0, 0, 0, NULL},
 	{"dvdangle", &dvd_angle, CONF_TYPE_INT, CONF_RANGE, 1, 99, NULL},
@@ -81,11 +58,9 @@
 	{"user-agent", &network_useragent, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"cookies", &network_cookies_enabled, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"nocookies", &network_cookies_enabled, CONF_TYPE_FLAG, 0, 1, 0, NULL},
-#ifndef GEKKO	
-	{"cookies-file", &cookies_file, CONF_TYPE_STRING, 0, 0, 0, NULL},
-#endif	
-	{"prefer-ipv4", &network_prefer_ipv4, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	{"ipv4-only-proxy", &network_ipv4_only_proxy, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+//	{"cookies-file", &cookies_file, CONF_TYPE_STRING, 0, 0, 0, NULL},
+	{"prefer-ipv4", &network_prefer_ipv4, CONF_TYPE_FLAG, 0, 0, 1, NULL},	
+	{"ipv4-only-proxy", &network_ipv4_only_proxy, CONF_TYPE_FLAG, 0, 0, 1, NULL},	
 	{"reuse-socket", &reuse_socket, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
 	{"noreuse-socket", &reuse_socket, CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL},
 #ifdef HAVE_AF_INET6
@@ -103,28 +78,23 @@
 
 #ifdef CONFIG_LIVE555
         {"sdp", "-sdp has been removed, use sdp://file instead.\n", CONF_TYPE_PRINT, 0, 0, 0, NULL},
-#endif /* CONFIG_LIVE555 */
-#if defined(CONFIG_LIBNEMESI) || defined(CONFIG_LIVE555)
 	// -rtsp-stream-over-tcp option, specifying TCP streaming of RTP/RTCP
+        {"rtsp-stream-over-tcp", &rtspStreamOverTCP, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+#elif defined (CONFIG_LIBNEMESI)
         {"rtsp-stream-over-tcp", &rtsp_transport_tcp, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-#else
-	{"rtsp-stream-over-tcp", "-rtsp-stream-over-tcp requires the \"LIVE555 Streaming Media\" or \"libnemesi\" libraries.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
-#endif /* defined(CONFIG_LIBNEMESI) || defined(CONFIG_LIVE555) */
-#ifdef CONFIG_LIBNEMESI
         {"rtsp-stream-over-sctp", &rtsp_transport_sctp, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 #else
-        {"rtsp-stream-over-sctp", "-rtsp-stream-over-sctp requires the \"libnemesi\" library\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
-#endif /* CONFIG_LIBNEMESI */
+	{"rtsp-stream-over-tcp", "-rtsp-stream-over-tcp requires the \"LIVE555 Streaming Media\" libraries.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
+#endif /* CONFIG_LIVE555 */
 #ifdef CONFIG_NETWORK
-#ifndef GEKKO
-        {"rtsp-port", &rtsp_port, CONF_TYPE_INT, CONF_RANGE, -1, 65535, NULL},
-        {"rtsp-destination", &rtsp_destination, CONF_TYPE_STRING, CONF_MIN, 0, 0, NULL},
-#endif      
+//scip
+       // {"rtsp-port", &rtsp_port, CONF_TYPE_INT, CONF_RANGE, -1, 65535, NULL},	
+       // {"rtsp-destination", &rtsp_destination, CONF_TYPE_STRING, CONF_MIN, 0, 0, NULL},
 #else
         {"rtsp-port", "MPlayer was compiled without network support.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
         {"rtsp-destination", "MPlayer was compiled without network support.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 #endif /* CONFIG_NETWORK */
-
+  
 // ------------------------- demuxer options --------------------
 
 	// number of frames to play/convert
@@ -151,11 +121,9 @@
 	{"loadidx", &index_file_load, CONF_TYPE_STRING, 0, 0, 0, NULL},
 
 	// select audio/video/subtitle stream
-	{"aid", &audio_id, CONF_TYPE_INT, CONF_RANGE, -2, 8190, NULL},
-	{"ausid", &audio_substream_id, CONF_TYPE_INT, 0, 0, 0, NULL},
-	{"vid", &video_id, CONF_TYPE_INT, CONF_RANGE, -2, 8190, NULL},
-	{"sid", &dvdsub_id, CONF_TYPE_INT, CONF_RANGE, -2, 8190, NULL},
-	{"nosub", &dvdsub_id, CONF_TYPE_FLAG, 0, -1, -2, NULL},
+	{"aid", &audio_id, CONF_TYPE_INT, CONF_RANGE, 0, 8190, NULL},
+	{"vid", &video_id, CONF_TYPE_INT, CONF_RANGE, 0, 8190, NULL},
+	{"sid", &dvdsub_id, CONF_TYPE_INT, CONF_RANGE, 0, 8190, NULL},
 	{"novideo", &video_id, CONF_TYPE_FLAG, 0, -1, -2, NULL},
 
 	{ "hr-mp3-seek", &hr_mp3_seek, CONF_TYPE_FLAG, 0, 0, 1, NULL },
@@ -207,11 +175,11 @@
 
 	// set A-V sync correction speed (0=disables it):
 	{"mc", &default_max_pts_correction, CONF_TYPE_FLOAT, CONF_RANGE, 0, 100, NULL},
-
+	
 	// force video/audio rate:
 	{"fps", &force_fps, CONF_TYPE_DOUBLE, CONF_MIN, 0, 0, NULL},
 	{"srate", &force_srate, CONF_TYPE_INT, CONF_RANGE, 1000, 8*48000, NULL},
-	{"channels", &audio_output_channels, CONF_TYPE_INT, CONF_RANGE, 1, 8, NULL},
+	{"channels", &audio_output_channels, CONF_TYPE_INT, CONF_RANGE, 1, 6, NULL},
 	{"format", &audio_output_format, CONF_TYPE_AFMT, 0, 0, 0, NULL},
 	{"speed", &playback_speed, CONF_TYPE_FLOAT, CONF_RANGE, 0.01, 100.0, NULL},
 
@@ -303,7 +271,7 @@
 	{"noflip-hebrew", &flip_hebrew, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"flip-hebrew-commas", &fribidi_flip_commas, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"noflip-hebrew-commas", &fribidi_flip_commas, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-#else
+#else 
 	{"fribidi-charset", "MPlayer was compiled without FriBiDi support.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 	{"flip-hebrew", "MPlayer was compiled without FriBiDi support.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 	{"noflip-hebrew", "MPlayer was compiled without FriBiDi support.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
@@ -311,15 +279,15 @@
 	{"noflip-hebrew-commas", "MPlayer was compiled without FriBiDi support.\n", CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
 #endif /* CONFIG_FRIBIDI */
 #ifdef CONFIG_ICONV
-	{"subcp", &sub_cp, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
-#endif
+	{"subcp", &sub_cp, CONF_TYPE_STRING, 0, 0, 0, NULL},
+#endif	
 	{"subdelay", &sub_delay, CONF_TYPE_FLOAT, 0, 0.0, 10.0, NULL},
 	{"subfps", &sub_fps, CONF_TYPE_FLOAT, 0, 0.0, 10.0, NULL},
 	{"autosub", &sub_auto, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-    {"noautosub", &sub_auto, CONF_TYPE_FLAG, 0, 1, 0, NULL},
+        {"noautosub", &sub_auto, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"unicode", &sub_unicode, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"nounicode", &sub_unicode, CONF_TYPE_FLAG, 0, 1, 0, NULL},
-	{"utf8", &sub_utf8, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
+	{"utf8", &sub_utf8, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"noutf8", &sub_utf8, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"forcedsubsonly", &forced_subs_only, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	// specify IFO file for VOBSUB subtitle

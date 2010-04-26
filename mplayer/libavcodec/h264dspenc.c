@@ -21,12 +21,15 @@
  */
 
 /**
- * @file
+ * @file h264dspenc.c
  * H.264 encoder related DSP utils
  *
  */
 
 #include "dsputil.h"
+
+extern const uint8_t ff_div6[52];
+extern const uint8_t ff_rem6[52];
 
 #define  H264_DCT_PART1(X) \
          a = block[0][X]+block[3][X]; \
@@ -71,7 +74,7 @@ static void h264_dct_c(DCTELEM block[4][4])
     H264_DCT_PART2(3);
 }
 
-av_cold void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx)
+void ff_h264dspenc_init(DSPContext* c, AVCodecContext *avctx)
 {
     c->h264_dct = h264_dct_c;
 }

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 /* Stuff for correct aspect scaling. */
 #include "aspect.h"
 #include "geometry.h"
@@ -40,6 +22,7 @@ float vo_panscanrange = 1.0;
 float force_monitor_aspect=0;
 float monitor_aspect=0;
 float monitor_pixel_aspect=1;
+extern float movie_aspect;
 
 static struct {
   int orgw; // real width
@@ -98,11 +81,11 @@ void aspect_fit(int *srcw, int *srch, int fitw, int fith){
 #ifdef ASPECT_DEBUG
   printf("aspect(2) wh: %dx%d (org: %dx%d)\n",*srcw,*srch,aspdat.prew,aspdat.preh);
 #endif
-  if(*srch>fith || *srch<aspdat.orgh){
+  if(*srch>aspdat.scrh || *srch<aspdat.orgh){
       tmpw = (int)(((float)fith / (float)aspdat.preh * (float)aspdat.prew)
                 * ((float)aspdat.scrw / ((float)aspdat.scrh / (1.0/monitor_aspect))));
     tmpw+= tmpw%2; // round
-    if(tmpw<=fitw /*&& tmpw>=aspdat.orgw*/){
+    if(tmpw<=aspdat.scrw /*&& tmpw>=aspdat.orgw*/){
       *srch = fith;
       *srcw = tmpw;
     }else{
@@ -119,21 +102,9 @@ void aspect_fit(int *srcw, int *srch, int fitw, int fith){
 #endif
 }
 
-static void get_max_dims(int *w, int *h, int zoom)
-{
-  *w = zoom ? aspdat.scrw : aspdat.prew;
-  *h = zoom ? aspdat.scrh : aspdat.preh;
-  if (zoom && WinID >= 0) zoom = A_WINZOOM;
-  if (zoom == A_WINZOOM) {
-    *w = vo_dwidth;
-    *h = vo_dheight;
-  }
-}
-
 void aspect(int *srcw, int *srch, int zoom){
-  int fitw;
-  int fith;
-  get_max_dims(&fitw, &fith, zoom);
+  int fitw = zoom ? aspdat.scrw : aspdat.prew;
+  int fith = zoom ? aspdat.scrh : aspdat.preh;
   if( !zoom && geometry_wh_changed ) {
 #ifdef ASPECT_DEBUG
     printf("aspect(0) no aspect forced!\n");
@@ -150,37 +121,22 @@ void panscan_init( void )
  vo_panscan_amount=0.0f;
 }
 
-static void panscan_calc_internal(int zoom)
+void panscan_calc( void )
 {
  int fwidth,fheight;
  int vo_panscan_area;
- int max_w, max_h;
- get_max_dims(&max_w, &max_h, zoom);
 
  if (vo_panscanrange > 0) {
-   aspect(&fwidth,&fheight,zoom);
-   vo_panscan_area = max_h - fheight;
+   aspect(&fwidth,&fheight,A_ZOOM);
+   vo_panscan_area = (aspdat.scrh-fheight);
    if (!vo_panscan_area)
-     vo_panscan_area = max_w - fwidth;
+     vo_panscan_area = aspdat.scrw - fwidth;
    vo_panscan_area *= vo_panscanrange;
  } else
-   vo_panscan_area = -vo_panscanrange * max_h;
+   vo_panscan_area = -vo_panscanrange * aspdat.scrh;
 
- vo_panscan_amount = vo_fs || zoom == A_WINZOOM ? vo_panscan : 0;
+ vo_panscan_amount = vo_fs ? vo_panscan : 0;
  vo_panscan_x = vo_panscan_area * vo_panscan_amount * aspdat.asp;
  vo_panscan_y = vo_panscan_area * vo_panscan_amount;
 }
 
-void panscan_calc(void)
-{
-  panscan_calc_internal(A_ZOOM);
-}
-
-/**
- * vos that set vo_dwidth and v_dheight correctly should call this to update
- * vo_panscan_x and vo_panscan_y
- */
-void panscan_calc_windowed(void)
-{
-  panscan_calc_internal(A_WINZOOM);
-}

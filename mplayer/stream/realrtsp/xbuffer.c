@@ -1,4 +1,4 @@
-/*
+/* 
  * xbuffer code
  *
  * Includes a minimalistic replacement for xine_buffer functions used in
@@ -11,21 +11,6 @@
  * You must take care of pointers returned by xbuffers functions (no macro to
  * do it automatically)
  *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include <stdlib.h>
@@ -43,7 +28,7 @@ typedef struct {
 
 
 
-void *xbuffer_init(int chunk_size) {
+void *xbuffer_init(int chunk_size) {  
   uint8_t *data=calloc(1,chunk_size+XBUFFER_HEADER_SIZE);
 
   xbuffer_header_t *header=(xbuffer_header_t*)data;
@@ -90,7 +75,7 @@ void *xbuffer_ensure_size(void *buf, int size) {
   }
 
   xbuf = ((xbuffer_header_t*)(((uint8_t*)buf)-XBUFFER_HEADER_SIZE));
-
+  
   if (xbuf->size < size) {
     new_size = size + xbuf->chunk_size - (size % xbuf->chunk_size);
     xbuf->size = new_size;

@@ -364,9 +364,9 @@ PSP软件修改，对不同软件限制也许会有不同。
 <title>编码到PSP</title>
 <para>
 <screen>
-mencoder -ofps 30000/1001 -af lavcresample=24000 -vf harddup -oac lavc \
-    -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=libfaac \
-    -of lavf -lavfopts format=psp \
+mencoder -ofps 30000/1001 -af lavcresample=24000 -vf harddup -of lavf \
+    -oac lavc -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=aac \
+    -lavfopts format=psp:i_certify_that_my_video_stream_does_not_use_b_frames \
     <replaceable>input.video</replaceable> -o <replaceable>output.psp</replaceable>
 </screen>
 注意你可以通过
@@ -511,7 +511,7 @@ mencoder <replaceable>input.nsv</replaceable> -oac copy -fafmttag 0x706D \
 
 <para>
 <application>MEncoder</application>可以通过一个或多个JPEG, PNG, TGA, 或其
-他图片文件制作电影。使用简单的桢复制，它能生成MJPEG (移动JPEG), MPNG
+他图片文件制作电影。使用简单的桢复制，它能生成MJPEG (移动JPEG), MPNG 
 (移动PNG)或MTGA (移动TGA) 文件。
 </para>
 
@@ -558,7 +558,7 @@ mencoder mf://<replaceable>frame001.jpg,frame002.jpg</replaceable> -mf w=800:h=6
 使用显示指示的一系列JPEG文件生成MPEG-4文件（当前目录下的list.txt包含被用做源的文件列表，
 一个一行）：
 <screen>
-mencoder mf://<replaceable>@list.txt</replaceable> -mf w=800:h=600:fps=25:type=jpg \
+mencoder mf://<replaceable>@list.txt</replaceable> -mf w=800:h=600:fps=25:type=jpg \ 
     -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell -oac copy -o <replaceable>output.avi</replaceable>
 </screen>
 </para>
@@ -681,14 +681,14 @@ DVD及SVCD(例如MPEG-1/2)文件包含画面比例，此信息可用来指示播
 <para>还有</para>
 
 <para>
-MPEG-4有个独特的特点：视频流可以包含它需要的画面比例。是的，正像MPEG-1/2 (DVD,
+MPEG-4有个独特的特点：视频流可以包含它需要的画面比例。是的，正像MPEG-1/2 (DVD, 
 SVCD)及H.263文件一样。可惜的是，除了<application>MPlayer</application>几乎没有播放器
 支持这项MPEG-4属性。
 </para>
 
 <para>
 这种特性之可以与
-<systemitem class="library">libavcodec</systemitem>的
+<link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>的
 <systemitem>mpeg4</systemitem>编码器一同使用。记住：虽然
 <application>MPlayer</application>可以正常播放所生成的文件，其他播放器可能使用错误
 的图象比例。

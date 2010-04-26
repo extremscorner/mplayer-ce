@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <sys/types.h>
 #include <stdio.h>
 
@@ -42,7 +24,7 @@ int glob(const char *pattern, int flags,
 		    //printf("could not find a file matching your search criteria\n");
 	        return 1;
 		}
-		else
+		else 
 		{
 			//printf("glob():ERROR:FindFirstFile: %i\n",GetLastError());
 			return 1;
@@ -69,9 +51,9 @@ int glob(const char *pattern, int flags,
 		else
 		{
             //printf("glob: found file %s\n",found_file.cFileName);
-            pglob->gl_pathc++;
+            pglob->gl_pathc++;       
             pglob->gl_pathv = realloc(pglob->gl_pathv,pglob->gl_pathc * sizeof(char*));
-            pglob->gl_pathv[pglob->gl_pathc-1] = strdup(found_file.cFileName);
+            pglob->gl_pathv[pglob->gl_pathc-1] = strdup(found_file.cFileName);       
  		}
     }
     FindClose(searchhndl);
@@ -98,7 +80,7 @@ int main(void){
         for(i=0;i<gg.gl_pathc;i++)printf("GLOBED:%i %s\n",i,gg.gl_pathv[i]);
     }
    globfree(&gg);
-
+   
    return 0;
 }
 #endif

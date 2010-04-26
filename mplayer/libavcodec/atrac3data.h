@@ -21,12 +21,12 @@
  */
 
 /**
- * @file
+ * @file atrac3data.h
  * Atrac 3 AKA RealAudio 8 compatible decoder data
  */
 
-#ifndef AVCODEC_ATRAC3DATA_H
-#define AVCODEC_ATRAC3DATA_H
+#ifndef FFMPEG_ATRAC3DATA_H
+#define FFMPEG_ATRAC3DATA_H
 
 #include <stdint.h>
 
@@ -105,10 +105,6 @@ static const uint8_t* const huff_bits[7] = {
   huffbits1,huffbits2,huffbits3,huffbits4,huffbits5,huffbits6,huffbits7,
 };
 
-static const uint16_t atrac3_vlc_offs[] = {
-    0,512,1024,1536,2048,2560,3072,3584,4096
-};
-
 /* selector tables */
 
 static const uint8_t CLCLengthTab[8] = {0, 4, 3, 3, 4, 4, 5, 6};
@@ -127,7 +123,18 @@ static const uint16_t subbandTab[33] = {
   256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 896, 1024
 };
 
+/* transform data */
+
+static const float qmf_48tap_half[24] = {
+   -0.00001461907, -0.00009205479, -0.000056157569, 0.00030117269,
+    0.0002422519,-0.00085293897, -0.0005205574, 0.0020340169,
+    0.00078333891, -0.0042153862, -0.00075614988, 0.0078402944,
+   -0.000061169922, -0.01344162, 0.0024626821, 0.021736089,
+   -0.007801671, -0.034090221, 0.01880949, 0.054326009,
+   -0.043596379, -0.099384367, 0.13207909, 0.46424159
+};
+
 /* joint stereo related tables */
 static const float matrixCoeffs[8] = {0.0, 2.0, 2.0, 2.0, 0.0, 0.0, 1.0, 1.0};
 
-#endif /* AVCODEC_ATRAC3DATA_H */
+#endif /* FFMPEG_ATRAC3DATA_H */
