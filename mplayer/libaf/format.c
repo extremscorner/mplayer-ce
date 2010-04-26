@@ -1,22 +1,12 @@
-/*
- * Copyright (C) 2005 Alex Beregszaszi
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/*=============================================================================
+//	
+//  This software has been released under the terms of the GNU General Public
+//  license. See http://www.gnu.org/copyleft/gpl.html for details.
+//
+//  Copyright 2005 Alex Beregszaszi
+//
+//=============================================================================
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +27,7 @@ int af_str2fmt(const char* str)
   else if(strstr(str,"le") || strstr(str,"LE"))
     format |= AF_FORMAT_LE;
   else
-    format |= AF_FORMAT_NE;
+    format |= AF_FORMAT_NE;    
 
   // Scan for special formats
   if(strstr(str,"mulaw") || strstr(str,"MULAW")){
@@ -47,7 +37,7 @@ int af_str2fmt(const char* str)
     format |= AF_FORMAT_A_LAW; return format;
   }
   if(strstr(str,"ac3") || strstr(str,"AC3")){
-    format |= AF_FORMAT_AC3 | AF_FORMAT_16BIT; return format;
+    format |= AF_FORMAT_AC3; return format;
   }
   if(strstr(str,"mpeg2") || strstr(str,"MPEG2")){
     format |= AF_FORMAT_MPEG2; return format;
@@ -55,7 +45,7 @@ int af_str2fmt(const char* str)
   if(strstr(str,"imaadpcm") || strstr(str,"IMAADPCM")){
     format |= AF_FORMAT_IMA_ADPCM; return format;
   }
-
+  
   // Scan for int/float
   if(strstr(str,"float") || strstr(str,"FLOAT")){
     format |= AF_FORMAT_F; return format;
@@ -65,16 +55,15 @@ int af_str2fmt(const char* str)
 
   // Scan for signed/unsigned
   if(strstr(str,"unsigned") || strstr(str,"UNSIGNED"))
-    format |= AF_FORMAT_US;
+    format |= AF_FORMAT_US; 
   else
     format |= AF_FORMAT_SI;
-
+  
   return format;
 }
 
 int af_fmt2bits(int format)
 {
-    if (AF_FORMAT_IS_AC3(format)) return 16;
     return (format & AF_FORMAT_BITS_MASK)+8;
 //    return (((format & AF_FORMAT_BITS_MASK)>>3)+1) * 8;
 #if 0
@@ -95,7 +84,7 @@ int af_bits2fmt(int bits)
     return (bits/8 - 1) << 3;
 }
 
-/* Convert format to str input str is a buffer for the
+/* Convert format to str input str is a buffer for the 
    converted string, size is the size of the buffer */
 char* af_fmt2str(int format, char* str, int size)
 {
@@ -110,21 +99,21 @@ char* af_fmt2str(int format, char* str, int size)
     i+=snprintf(str,size-i,"little-endian ");
   else
     i+=snprintf(str,size-i,"big-endian ");
-
+  
   if(format & AF_FORMAT_SPECIAL_MASK){
     switch(format & AF_FORMAT_SPECIAL_MASK){
-    case(AF_FORMAT_MU_LAW):
+    case(AF_FORMAT_MU_LAW): 
       i+=snprintf(&str[i],size-i,"mu-law "); break;
-    case(AF_FORMAT_A_LAW):
+    case(AF_FORMAT_A_LAW): 
       i+=snprintf(&str[i],size-i,"A-law "); break;
-    case(AF_FORMAT_MPEG2):
+    case(AF_FORMAT_MPEG2): 
       i+=snprintf(&str[i],size-i,"MPEG-2 "); break;
-    case(AF_FORMAT_AC3):
+    case(AF_FORMAT_AC3): 
       i+=snprintf(&str[i],size-i,"AC3 "); break;
-    case(AF_FORMAT_IMA_ADPCM):
+    case(AF_FORMAT_IMA_ADPCM): 
       i+=snprintf(&str[i],size-i,"IMA-ADPCM "); break;
     default:
-      i+=snprintf(&str[i],size-i,MSGTR_AF_FORMAT_UnknownFormat);
+      i+=snprintf(&str[i],size-i,MSGTR_AF_FORMAT_UnknownFormat); 
     }
   }
   else{
@@ -158,9 +147,7 @@ static struct {
     { "mulaw", AF_FORMAT_MU_LAW },
     { "alaw", AF_FORMAT_A_LAW },
     { "mpeg2", AF_FORMAT_MPEG2 },
-    { "ac3le", AF_FORMAT_AC3_LE },
-    { "ac3be", AF_FORMAT_AC3_BE },
-    { "ac3ne", AF_FORMAT_AC3_NE },
+    { "ac3", AF_FORMAT_AC3 },
     { "imaadpcm", AF_FORMAT_IMA_ADPCM },
 
     { "u8", AF_FORMAT_U8 },
@@ -186,7 +173,7 @@ static struct {
     { "floatle", AF_FORMAT_FLOAT_LE },
     { "floatbe", AF_FORMAT_FLOAT_BE },
     { "floatne", AF_FORMAT_FLOAT_NE },
-
+	
     { NULL, 0 }
 };
 

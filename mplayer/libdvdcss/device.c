@@ -2,11 +2,11 @@
  * device.h: DVD device access
  *****************************************************************************
  * Copyright (C) 1998-2006 VideoLAN
- * $Id: device.c 27474 2008-08-21 13:40:16Z diego $
+ * $Id: device.c 20746 2006-11-07 16:42:39Z diego $
  *
- * Authors: StÃ©phane Borel <stef@via.ecp.fr>
+ * Authors: Stéphane Borel <stef@via.ecp.fr>
  *          Sam Hocevar <sam@zoy.org>
- *          HÃ¥kan Hjort <d95hjort@dtek.chalmers.se>
+ *          Håkan Hjort <d95hjort@dtek.chalmers.se>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@
 #endif
 
 #ifdef GEKKO
-#    include "../osdep/di2.h"
+#    include <di/di.h>
 #    include <malloc.h>
 #endif
 
@@ -325,7 +325,6 @@ int _dvdcss_open ( dvdcss_t dvdcss )
 
     return di_open( dvdcss, psz_device );
 #else
-
 #if defined( WIN32 )
     dvdcss->b_file = 1;
     /* If device is "X:" or "X:\", we are not actually opening a file. */
@@ -362,7 +361,7 @@ int _dvdcss_open ( dvdcss_t dvdcss )
         dvdcss->pf_readv = libc_readv;
         return libc_open( dvdcss, psz_device );
     }
-#endif    
+#endif
 }
 
 #ifndef WIN32
@@ -415,6 +414,10 @@ int _dvdcss_close ( dvdcss_t dvdcss )
     }
 
     return 0;
+#elif defined GEKKO
+	print_debug(dvdcss, "DI: deinitializing dvd...");
+	//DI_StopMotor();
+	//DI_Close();
 #else
     close( dvdcss->i_fd );
 
@@ -1015,12 +1018,12 @@ static int di_open(dvdcss_t dvdcss, char const * psz_device) {
 	}
 
 	print_debug(dvdcss, "DI: initializing dvd...");
-	//DI2_Mount();   //rodries: not needed I always mount dvd, don't uncomment or dvd hang
+//	DI_Mount();
 
 	print_debug(dvdcss, "DI: waiting for device to become ready...");
-
+/*
 	while (retry > 0) {
-		status = DI2_GetStatus();
+		status = DI_GetStatus();
 
 		if (!(status & DVD_INIT))
 			break;
@@ -1029,14 +1032,17 @@ static int di_open(dvdcss_t dvdcss, char const * psz_device) {
 		
 		usleep (200 * 1000);
 	}
-
+*/
+status = DI_GetStatus();
 	if (status & DVD_NO_DISC) {
 		print_debug(dvdcss, "DI: no disc, dude");
+//		DI_Close();
 		return -1;
 	}
 
 	if (!(status & DVD_READY)) {
 		print_debug(dvdcss, "DI: dvd not ready: 0x%x", status);
+//		DI_Close();
 		return -1;
 	}
 
@@ -1047,6 +1053,7 @@ static int di_open(dvdcss_t dvdcss, char const * psz_device) {
 		print_debug(dvdcss, "DI: modchip detected");
 
 	dvdcss->i_pos = 0;
+
 	return 0;
 }
 
@@ -1070,7 +1077,7 @@ static int di_read(dvdcss_t dvdcss, void *buffer, int blocks) {
 		return -1;
 	}
 
-	ret = DI2_ReadDVD(bfr, blocks, dvdcss->i_pos);
+	ret = DI_ReadDVD(bfr, blocks, dvdcss->i_pos);
 
 	if (ret < 0) {
 		print_debug(dvdcss, "DI: read failed with %d", ret);
@@ -1102,7 +1109,7 @@ static int di_readv(dvdcss_t dvdcss, struct iovec *iov, int iovcnt) {
 		return -1;
 	}
 
-	ret = DI2_ReadDVD(bfr, len / DVDCSS_BLOCK_SIZE, dvdcss->i_pos);
+	ret = DI_ReadDVD(bfr, len / DVDCSS_BLOCK_SIZE, dvdcss->i_pos);
 	if (ret < 0) {
 		print_debug( dvdcss, "DI: readv failed with %d", ret);
 		free(bfr);
@@ -1121,3 +1128,4 @@ static int di_readv(dvdcss_t dvdcss, struct iovec *iov, int iovcnt) {
 	return len;
 }
 #endif
+

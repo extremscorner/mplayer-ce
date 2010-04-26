@@ -1,6 +1,6 @@
 /*
  * MPEG Audio header decoder
- * Copyright (c) 2001, 2002 Fabrice Bellard
+ * Copyright (c) 2001, 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
  *
@@ -20,12 +20,12 @@
  */
 
 /**
- * @file
+ * @file mpegaudiodecheader.c
  * MPEG Audio header decoder.
  */
 
-#ifndef AVCODEC_MPEGAUDIODECHEADER_H
-#define AVCODEC_MPEGAUDIODECHEADER_H
+#ifndef FFMPEG_MPEGAUDIODECHEADER_H
+#define FFMPEG_MPEGAUDIODECHEADER_H
 
 #include "libavutil/common.h"
 #include "mpegaudio.h"
@@ -34,6 +34,6 @@
 /* header decoding. MUST check the header before because no
    consistency check is done there. Return 1 if free format found and
    that the frame size must be computed externally */
-int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header);
+int ff_mpegaudio_decode_header(MPADecodeContext *s, uint32_t header);
 
-#endif /* AVCODEC_MPEGAUDIODECHEADER_H */
+#endif /* FFMPEG_MPEGAUDIODECHEADER_H */

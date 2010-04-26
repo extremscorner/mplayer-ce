@@ -20,15 +20,15 @@
  */
 
 /**
- * @file
+ * @file rl.h
  * rl header.
  */
 
-#ifndef AVCODEC_RL_H
-#define AVCODEC_RL_H
+#ifndef FFMPEG_RL_H
+#define FFMPEG_RL_H
 
 #include <stdint.h>
-#include "get_bits.h"
+#include "bitstream.h"
 
 /* run length table */
 #define MAX_RUN    64
@@ -83,4 +83,4 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
     return index + level - 1;
 }
 
-#endif /* AVCODEC_RL_H */
+#endif /* FFMPEG_RL_H */

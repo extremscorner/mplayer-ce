@@ -42,7 +42,7 @@
 
 #define MAX_DEV_PER_VENDOR_CFG1 64
 #define MAX_PCI_DEVICES_PER_BUS 32
-#define MAX_PCI_DEVICES         256
+#define MAX_PCI_DEVICES         64
 #define PCI_MULTIFUNC_DEV	0x80
 #define PCI_COMMAND_IO          0x1     /* Enable response to I/O space */
 
@@ -56,29 +56,29 @@ typedef struct pciinfo_s
 }pciinfo_t;
 
 /* needed for mga_vid */
-int pci_config_read(unsigned char bus, unsigned char dev, unsigned char func,
+extern int pci_config_read(unsigned char bus, unsigned char dev, unsigned char func,
 			unsigned char cmd, int len, unsigned long *val);
 			/* Fill array pci_list which must have size MAX_PCI_DEVICES
 			   and return 0 if sucessful */
-int pci_scan(pciinfo_t *pci_list,unsigned *num_card);
+extern int  pci_scan(pciinfo_t *pci_list,unsigned *num_card);
 
 
 	    /* Enables/disables accessing to IO space from application side.
 	       Should return 0 if o'k or errno on error. */
-int enable_app_io(void);
-int disable_app_io(void);
+extern int enable_app_io( void );
+extern int disable_app_io( void );
 
-unsigned char  INPORT8(unsigned idx);
-unsigned short INPORT16(unsigned idx);
-unsigned       INPORT32(unsigned idx);
+extern unsigned char  INPORT8(unsigned idx);
+extern unsigned short INPORT16(unsigned idx);
+extern unsigned       INPORT32(unsigned idx);
 #define INPORT(idx) INPORT32(idx)
-void          OUTPORT8(unsigned idx, unsigned char val);
-void          OUTPORT16(unsigned idx, unsigned short val);
-void          OUTPORT32(unsigned idx, unsigned val);
+extern void          OUTPORT8(unsigned idx,unsigned char val);
+extern void          OUTPORT16(unsigned idx,unsigned short val);
+extern void          OUTPORT32(unsigned idx,unsigned val);
 #define OUTPORT(idx,val) OUTPORT32(idx,val)
 
-void *  map_phys_mem(unsigned long base, unsigned long size);
-void    unmap_phys_mem(void *ptr, unsigned long size);
+extern void *  map_phys_mem(unsigned long base, unsigned long size);
+extern void    unmap_phys_mem(void *ptr, unsigned long size);
 
 /*  These are the region types  */
 #define MTRR_TYPE_UNCACHABLE 0
@@ -86,6 +86,6 @@ void    unmap_phys_mem(void *ptr, unsigned long size);
 #define MTRR_TYPE_WRTHROUGH  4
 #define MTRR_TYPE_WRPROT     5
 #define MTRR_TYPE_WRBACK     6
-int mtrr_set_type(unsigned base, unsigned size, int type);
+extern int	mtrr_set_type(unsigned base,unsigned size,int type);
 
 #endif /* MPLAYER_DHA_H */

@@ -1,23 +1,5 @@
-/*
- * codec-specific routines used to interface between MPlayer
- * and the "LIVE555 Streaming Media" libraries
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+////////// Codec-specific routines used to interface between "MPlayer"
+////////// and the "LIVE555 Streaming Media" libraries:
 
 #include "demux_rtp_internal.h"
 extern "C" {
@@ -29,7 +11,6 @@ extern "C" {
 
 #ifdef CONFIG_LIBAVCODEC
 AVCodecParserContext * h264parserctx;
-AVCodecContext *avcctx;
 #endif
 
 // Copied from vlc
@@ -83,7 +64,7 @@ parseQTState_video(QuickTimeGenericRTPSource::QTState const& qtState,
 static Boolean
 parseQTState_audio(QuickTimeGenericRTPSource::QTState const& qtState,
 		   unsigned& fourcc, unsigned& numChannels); // forward
-
+		       
 static BITMAPINFOHEADER * insertVideoExtradata(BITMAPINFOHEADER *bih,
                                                unsigned char * extraData,
                                                unsigned size)
@@ -112,7 +93,7 @@ void rtpCodecInitialize_video(demuxer_t* demuxer,
   sh_video->bih = bih;
   demux_stream_t* d_video = demuxer->video;
   d_video->sh = sh_video; sh_video->ds = d_video;
-
+  
   // Map known video MIME types to the BITMAPINFOHEADER parameters
   // that this program uses.  (Note that not all types need all
   // of the parameters to be set.)
@@ -138,7 +119,6 @@ void rtpCodecInitialize_video(demuxer_t* demuxer,
 #ifdef CONFIG_LIBAVCODEC
     avcodec_register_all();
     h264parserctx = av_parser_init(CODEC_ID_H264);
-    avcctx = avcodec_alloc_context();
 #endif
     needVideoFrameRate(demuxer, subsession);
   } else if (strcmp(subsession->codecName(), "H261") == 0) {
@@ -183,19 +163,17 @@ void rtpCodecInitialize_video(demuxer_t* demuxer,
     bih->biCompression = sh_video->format = fourcc;
     bih->biWidth = qtRTPSource->qtState.width;
     bih->biHeight = qtRTPSource->qtState.height;
-      if (qtRTPSource->qtState.sdAtomSize > 83)
-        bih->biBitCount = qtRTPSource->qtState.sdAtom[83];
       uint8_t *pos = (uint8_t*)qtRTPSource->qtState.sdAtom + 86;
       uint8_t *endpos = (uint8_t*)qtRTPSource->qtState.sdAtom
                         + qtRTPSource->qtState.sdAtomSize;
       while (pos+8 < endpos) {
         unsigned atomLength = pos[0]<<24 | pos[1]<<16 | pos[2]<<8 | pos[3];
         if (atomLength == 0 || atomLength > endpos-pos) break;
-        if (((!memcmp(pos+4, "avcC", 4) && fourcc==mmioFOURCC('a','v','c','1')) ||
-             !memcmp(pos+4, "esds", 4) ||
-             (!memcmp(pos+4, "SMI ", 4) && fourcc==mmioFOURCC('S','V','Q','3'))) &&
+        if ((!memcmp(pos+4, "avcC", 4) && fourcc==mmioFOURCC('a','v','c','1') || 
+             !memcmp(pos+4, "esds", 4) || 
+             !memcmp(pos+4, "SMI ", 4) && fourcc==mmioFOURCC('S','V','Q','3')) &&
             atomLength > 8) {
-          sh_video->bih = bih =
+          sh_video->bih = bih = 
               insertVideoExtradata(bih, pos+8, atomLength-8);
           break;
         }
@@ -221,7 +199,7 @@ void rtpCodecInitialize_audio(demuxer_t* demuxer,
   demux_stream_t* d_audio = demuxer->audio;
   d_audio->sh = sh_audio; sh_audio->ds = d_audio;
   d_audio->id = sh_audio->aid;
-
+  
   wf->nChannels = subsession->numChannels();
 
   // Map known audio MIME types to the WAVEFORMATEX parameters
@@ -319,10 +297,6 @@ void rtpCodecInitialize_audio(demuxer_t* demuxer,
     wf->wFormatTag = sh_audio->format = fourcc;
     wf->nChannels = numChannels;
 
-      if (qtRTPSource->qtState.sdAtomSize > 33) {
-        wf->wBitsPerSample = qtRTPSource->qtState.sdAtom[27];
-        wf->nSamplesPerSec = qtRTPSource->qtState.sdAtom[32]<<8|qtRTPSource->qtState.sdAtom[33];
-      }
     uint8_t *pos = (uint8_t*)qtRTPSource->qtState.sdAtom + 52;
     uint8_t *endpos = (uint8_t*)qtRTPSource->qtState.sdAtom
                       + qtRTPSource->qtState.sdAtomSize;
@@ -366,7 +340,7 @@ static void needVideoFrameRate(demuxer_t* demuxer,
     sh_video->frametime = 1.0f/fps;
     return;
   }
-
+  
   // Keep looking at incoming frames until we see two with different,
   // non-zero "pts" timestamps:
   unsigned char* packetData; unsigned packetDataLen;

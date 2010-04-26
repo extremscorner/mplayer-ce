@@ -1,5 +1,5 @@
 /**
- * @file libavcodec/fdctref.c
+ * @file fdctref.c
  * forward discrete cosine transform, double precision.
  */
 
@@ -46,7 +46,7 @@ void fdct (short *block);
 /* private data */
 static double c[8][8]; /* transform coefficients */
 
-void init_fdct(void)
+void init_fdct()
 {
   int i, j;
   double s;

@@ -344,7 +344,7 @@
       <para>
         <screen>
           mencoder -ofps 30000/1001 -af lavcresample=24000 -vf harddup -of lavf \
-          -oac lavc -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=libfaac \
+          -oac lavc -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=aac \
           -lavfopts format=psp \
           <replaceable>input.video</replaceable> -o <replaceable>output.psp</replaceable>
         </screen>
@@ -729,7 +729,7 @@ mencoder mf://<replaceable>@list.txt</replaceable> -mf w=800:h=600:fps=25:type=j
 
     <para>
       Dieses Feature kann nur mit dem <systemitem>mpeg4</systemitem>-Codec von
-      <systemitem class="library">libavcodec</systemitem>
+      <link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
       verwendet werden. Vergiss nicht: Obwohl <application>MPlayer</application>
       die erzeugte Datei korrekt abspielen wird, könnten andere Player das verkehrte
       Seitenverhältnis benutzen.

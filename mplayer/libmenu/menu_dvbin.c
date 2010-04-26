@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -64,7 +47,7 @@ struct menu_priv_s {
 #define ST_OFF(m) M_ST_OFF(struct menu_priv_s, m)
 #define mpriv (menu->priv)
 
-static const m_option_t cfg_fields[] = {
+static m_option_t cfg_fields[] = {
   MENU_LIST_PRIV_FIELDS,
   { "title", ST_OFF(title), CONF_TYPE_STRING, 0, 0, 0, NULL },
   { "auto-close", ST_OFF(auto_close), CONF_TYPE_FLAG, 0, 0, 1, NULL },
@@ -120,17 +103,17 @@ static int fill_channels_menu(menu_t *menu, dvb_channels_list  *dvb_list_ptr)
 			elem->p.next 	= NULL;
 			elem->p.txt 	= strdup(channel->name);
 			elem->num 	= n;
-
+			
 			menu_list_add_entry(menu, elem);
 		}
 		else
 		{
-			mp_msg(MSGT_DEMUX, MSGL_ERR, "dvb_menu: fill_menu: couldn't malloc %d bytes for menu item: %s, exit\n",
+			mp_msg(MSGT_DEMUX, MSGL_ERR, "dvb_menu: fill_menu: couldn't malloc %d bytes for menu item: %s, exit\n", 
 					sizeof(list_entry_t), strerror(errno));
 			break;
 		}
-	}
-
+	}  
+	
 	return n;
 }
 
@@ -147,23 +130,23 @@ static int fill_cards_menu(menu_t *menu, dvb_config_t *conf)
 			elem->p.next 	= NULL;
 			elem->p.txt	= strdup(conf->cards[n].name);
 			elem->num 	= n;
-
+				
 			if(n == 0)
 			    elem->p.prev = NULL;
-
+				
 			menu_list_add_entry(menu, elem);
 		}
 		else
 		{
-			fprintf(stderr, "dvb_menu: fill_menu: couldn't malloc %d bytes for menu item: %s, exit\n",
+			fprintf(stderr, "dvb_menu: fill_menu: couldn't malloc %d bytes for menu item: %s, exit\n", 
 				sizeof(list_entry_t), strerror(errno));
 			if(n)
 				return 1;
 
 			return 0;
 		}
-	}
-
+	}  
+	
 	return n;
 }
 
@@ -172,9 +155,9 @@ static int fill_menu(menu_t* menu)
 {
 	list_entry_t* elem;
 	dvb_channels_list  *dvb_list_ptr;
-
+		
 	menu_list_init(menu);
-
+	
 	if(mpriv->config == NULL)
 	{
 		if((elem = calloc(1, sizeof(list_entry_t))) != NULL)
@@ -187,7 +170,7 @@ static int fill_menu(menu_t* menu)
 		}
 		return 0;
 	}
-
+	
 	mpriv->p.title = mpriv->title;
 	if(mpriv->level == 1 && mpriv->config->count > 1)
 		return fill_cards_menu(menu, mpriv->config);
@@ -216,17 +199,17 @@ static void read_cmd(menu_t* menu, int cmd)
 			mpriv->card = mpriv->p.current->num;
 			mpriv->level = 2;
 			menu_list_uninit(menu, free_entry);
-			fill_menu(menu);
+			fill_menu(menu); 
 		}
 		else
 		{
 			dvb_priv_t *dvbp = (dvb_priv_t*) mpriv->config->priv;
 			cmd_name = malloc(25 + strlen(elem->p.txt));
 			if(dvbp != NULL)
-				sprintf(cmd_name, "dvb_set_channel %d %d", elem->num, mpriv->card);
+				sprintf(cmd_name, "dvb_set_channel %d %d", elem->num, mpriv->card);	
 			else
 				sprintf(cmd_name, "loadfile 'dvb://%d@%s'", mpriv->card+1, elem->p.txt);
-
+		
 			c = mp_input_parse_cmd(cmd_name);
 			free(cmd_name);
 			if(c)
@@ -243,7 +226,7 @@ static void read_cmd(menu_t* menu, int cmd)
 	case MENU_CMD_CANCEL:
 	{
 		elem = mpriv->p.current;
-
+		
 		menu_list_uninit(menu, free_entry);
 		if(mpriv->config->count > 1)
 			mpriv->level--;

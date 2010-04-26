@@ -2,23 +2,7 @@
  * HTTP Cookies
  * Reads Netscape and Mozilla cookies.txt files
  *
- * Copyright (c) 2003 Dave Lambley <mplayer@davel.me.uk>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * by Dave Lambley <mplayer@davel.me.uk>
  */
 
 #include <stdio.h>
@@ -133,7 +117,7 @@ static char *load_file(const char *filename, off_t * length)
 	return NULL;
     }
 
-    lseek(fd, 0, SEEK_SET);
+    lseek(fd, SEEK_SET, 0);
 
     if (!(buffer = malloc(*length + 1))) {
 	mp_msg(MSGT_NETWORK, MSGL_V, "Could not malloc.");
@@ -157,6 +141,8 @@ static struct cookie_list_type *load_cookies_from(const char *filename,
 {
     char *ptr;
     off_t length;
+
+    mp_msg(MSGT_NETWORK, MSGL_V, "Loading cookie file: %s\n", filename);
 
     ptr = load_file(filename, &length);
     if (!ptr)
@@ -205,8 +191,8 @@ static struct cookie_list_type *load_cookies(void)
     if (dir) {
 	while ((ent = readdir(dir)) != NULL) {
 	    if ((ent->d_name)[0] != '.') {
-		buf = malloc(strlen(getenv("HOME")) +
-                             sizeof("/.mozilla/default/") +
+		buf = malloc(strlen(getenv("HOME")) + 
+                             sizeof("/.mozilla/default/") + 
                              strlen(ent->d_name) + sizeof("cookies.txt") + 1);
 		sprintf(buf, "%s/.mozilla/default/%s/cookies.txt",
 			 getenv("HOME"), ent->d_name);

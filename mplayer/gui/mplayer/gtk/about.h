@@ -23,7 +23,7 @@
 
 extern GtkWidget * About;
 
-GtkWidget * create_About( void );
-void ShowAboutBox( void );
+extern GtkWidget * create_About( void );
+extern void ShowAboutBox( void );
 
 #endif /* MPLAYER_GUI_ABOUT_H */

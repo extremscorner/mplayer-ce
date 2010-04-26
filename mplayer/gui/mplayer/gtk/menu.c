@@ -34,47 +34,47 @@
 #include "libmpdemux/demuxer.h"
 #include "libmpdemux/stheader.h"
 
-#include "gui/mplayer/pixmaps/ab.xpm"
-#include "gui/mplayer/pixmaps/half.xpm"
-#include "gui/mplayer/pixmaps/normal.xpm"
-#include "gui/mplayer/pixmaps/double.xpm"
-#include "gui/mplayer/pixmaps/fs.xpm"
-#include "gui/mplayer/pixmaps/exit.xpm"
-#include "gui/mplayer/pixmaps/prefs.xpm"
-#include "gui/mplayer/pixmaps/eq.xpm"
-#include "gui/mplayer/pixmaps/pl.xpm"
-#include "gui/mplayer/pixmaps/skin.xpm"
-#include "gui/mplayer/pixmaps/sound.xpm"
-#include "gui/mplayer/pixmaps/open.xpm"
-#include "gui/mplayer/pixmaps/play.xpm"
-#include "gui/mplayer/pixmaps/stop2.xpm"
-#include "gui/mplayer/pixmaps/pause.xpm"
-#include "gui/mplayer/pixmaps/prev.xpm"
-#include "gui/mplayer/pixmaps/next.xpm"
-#include "gui/mplayer/pixmaps/aspect.xpm"
-#include "gui/mplayer/pixmaps/a11.xpm"
-#include "gui/mplayer/pixmaps/a169.xpm"
-#include "gui/mplayer/pixmaps/a235.xpm"
-#include "gui/mplayer/pixmaps/a43.xpm"
-#include "gui/mplayer/pixmaps/file2.xpm"
-#include "gui/mplayer/pixmaps/url.xpm"
-#include "gui/mplayer/pixmaps/sub.xpm"
-#include "gui/mplayer/pixmaps/delsub.xpm"
-#include "gui/mplayer/pixmaps/empty.xpm"
-#include "gui/mplayer/pixmaps/loadeaf.xpm"
-#include "gui/mplayer/pixmaps/title.xpm"
+#include "../pixmaps/ab.xpm"
+#include "../pixmaps/half.xpm"
+#include "../pixmaps/normal.xpm"
+#include "../pixmaps/double.xpm"
+#include "../pixmaps/fs.xpm"
+#include "../pixmaps/exit.xpm"
+#include "../pixmaps/prefs.xpm"
+#include "../pixmaps/eq.xpm"
+#include "../pixmaps/pl.xpm"
+#include "../pixmaps/skin.xpm"
+#include "../pixmaps/sound.xpm"
+#include "../pixmaps/open.xpm"
+#include "../pixmaps/play.xpm"
+#include "../pixmaps/stop2.xpm"
+#include "../pixmaps/pause.xpm"
+#include "../pixmaps/prev.xpm"
+#include "../pixmaps/next.xpm"
+#include "../pixmaps/aspect.xpm"
+#include "../pixmaps/a11.xpm"
+#include "../pixmaps/a169.xpm"
+#include "../pixmaps/a235.xpm"
+#include "../pixmaps/a43.xpm"
+#include "../pixmaps/file2.xpm"
+#include "../pixmaps/url.xpm"
+#include "../pixmaps/sub.xpm"
+#include "../pixmaps/delsub.xpm"
+#include "../pixmaps/empty.xpm"
+#include "../pixmaps/loadeaf.xpm"
+#include "../pixmaps/title.xpm"
 #ifdef CONFIG_DVDREAD
-#include "gui/mplayer/pixmaps/dvd.xpm"
-#include "gui/mplayer/pixmaps/playdvd.xpm"
-#include "gui/mplayer/pixmaps/chapter.xpm"
-#include "gui/mplayer/pixmaps/dolby.xpm"
-#include "gui/mplayer/pixmaps/tongue.xpm"
-#include "gui/mplayer/pixmaps/tonguebla.xpm"
-#include "gui/mplayer/pixmaps/empty1px.xpm"
+#include "../pixmaps/dvd.xpm"
+#include "../pixmaps/playdvd.xpm"
+#include "../pixmaps/chapter.xpm"
+#include "../pixmaps/dolby.xpm"
+#include "../pixmaps/tongue.xpm"
+#include "../pixmaps/tonguebla.xpm"
+#include "../pixmaps/empty1px.xpm"
 #endif
 #ifdef CONFIG_VCD
-#include "gui/mplayer/pixmaps/vcd.xpm"
-#include "gui/mplayer/pixmaps/playvcd.xpm"
+#include "../pixmaps/vcd.xpm"
+#include "../pixmaps/playvcd.xpm"
 #endif
 
 void ActivateMenuItem( int Item )
@@ -102,20 +102,20 @@ static GtkWidget * AddMenuCheckItem(GtkWidget *window1, const char * immagine_xp
 
  Item=gtk_check_menu_item_new();
  Label = gtk_label_new (label);
-
+ 
  hbox = gtk_hbox_new (FALSE, 8);
  gtk_box_pack_start (GTK_BOX (hbox), Pixmap, FALSE, FALSE, 0);
  gtk_box_pack_start (GTK_BOX (hbox), Label, FALSE, FALSE, 0);
  gtk_container_add (GTK_CONTAINER (Item), hbox);
-
+ 
  gtk_menu_append( GTK_MENU( Menu ),Item );
-
+ 
  gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(Item),state);
  gtk_signal_connect_object( GTK_OBJECT(Item),"activate",
    GTK_SIGNAL_FUNC(ActivateMenuItem),(gpointer)Number );
  gtk_menu_item_right_justify (GTK_MENU_ITEM (Item));
  gtk_widget_show_all(Item);
-
+   
  return Item;
 }
 GtkWidget * AddMenuItem( GtkWidget *window1, const char * immagine_xpm,  GtkWidget * SubMenu,const char * label,int Number )
@@ -174,10 +174,10 @@ GtkWidget * AddSubMenu( GtkWidget *window1, const char * immagine_xpm, GtkWidget
  gtk_box_pack_start (GTK_BOX (hbox), Pixmap, FALSE, FALSE, 0);
  gtk_box_pack_start (GTK_BOX (hbox), Label, FALSE, FALSE, 0);
  gtk_container_add (GTK_CONTAINER (SubItem), hbox);
-
+ 
  gtk_menu_append( GTK_MENU( Menu ),SubItem );
  gtk_menu_item_set_submenu( GTK_MENU_ITEM( SubItem ),Item );
-
+ 
  gtk_widget_show_all( SubItem );
  return Item;
 }
@@ -451,7 +451,7 @@ GtkWidget * create_PopUpMenu( void )
     AddMenuItem( window1, (const char*)playvcd_xpm, VCDSubMenu,MSGTR_MENU_PlayDisc,evPlayVCD );
     AddSeparator( VCDSubMenu );
     VCDTitleMenu=AddSubMenu( window1, (const char*)title_xpm, VCDSubMenu,MSGTR_MENU_Titles );
-    if ( guiIntfStruct.VCDTracks )
+    if ( guiIntfStruct.VCDTracks ) 
      {
       char tmp[32]; int i;
       for ( i=0;i < guiIntfStruct.VCDTracks;i++ )
@@ -560,7 +560,7 @@ GtkWidget * create_PopUpMenu( void )
 
     for ( i=0;i < MAX_A_STREAMS;i++ )
      if ( ((demuxer_t *)guiIntfStruct.demuxer)->a_streams[i] ) c++;
-
+    
     if ( c > 1 )
      {
       SubMenu=AddSubMenu( window1, (const char*)empty_xpm, Menu,MSGTR_MENU_AudioTrack );
@@ -576,7 +576,7 @@ GtkWidget * create_PopUpMenu( void )
 
     for ( c=0,i=0;i < MAX_V_STREAMS;i++ )
      if ( ((demuxer_t *)guiIntfStruct.demuxer)->v_streams[i] ) c++;
-
+    
     if ( c > 1 )
      {
       SubMenu=AddSubMenu( window1, (const char*)empty_xpm, Menu,MSGTR_MENU_VideoTrack );
@@ -590,7 +590,7 @@ GtkWidget * create_PopUpMenu( void )
         }
      }
    }
-
+  
   /* cheap subtitle switching for non-DVD streams */
   if ( global_sub_size && guiIntfStruct.StreamType != STREAMTYPE_DVD )
    {
@@ -619,9 +619,9 @@ GtkWidget * create_PopUpMenu( void )
     AddSeparator( Menu );
     if ( !appMPlayer.subWindow.isFullScreen && guiIntfStruct.Playing )
      {
-      if ( ( appMPlayer.subWindow.Width == guiIntfStruct.MovieWidth * 2 )&&
+      if ( ( appMPlayer.subWindow.Width == guiIntfStruct.MovieWidth * 2 )&& 
            ( appMPlayer.subWindow.Height == guiIntfStruct.MovieHeight * 2 ) ) b2=1;
-      else if ( ( appMPlayer.subWindow.Width == guiIntfStruct.MovieWidth / 2 ) &&
+      else if ( ( appMPlayer.subWindow.Width == guiIntfStruct.MovieWidth / 2 ) && 
                 ( appMPlayer.subWindow.Height == guiIntfStruct.MovieHeight / 2 ) ) b_half=1;
       else b1=1;
      } else b1=!appMPlayer.subWindow.isFullScreen;

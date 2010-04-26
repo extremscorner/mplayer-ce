@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,15 +9,10 @@
 
 #include "img_format.h"
 #include "mp_image.h"
-#include "vd.h"
 #include "vf.h"
 #include "cmmx.h"
 
 #include "libvo/fastmemcpy.h"
-
-#ifdef GEKKO
-#include <gctypes.h>
-#endif
 
 #define NUM_STORED 4
 
@@ -94,17 +71,16 @@ struct vf_priv_s {
     struct frame_stats stats[2];
     struct metrics thres;
     char chflag;
-#ifdef GEKKO
-    u64 diff_time, merge_time, decode_time, vo_time, filter_time;
-#else
     double diff_time, merge_time, decode_time, vo_time, filter_time;
-#endif    
 };
 
 #define PPZ { 2000, 2000, 0, 2000 }
 #define PPR { 2000, 2000, 0, 2000 }
 static const struct frame_stats ppzs = {PPZ,PPZ,PPZ,PPZ,PPZ,PPZ,PPZ,0,0,9999};
 static const struct frame_stats pprs = {PPR,PPR,PPR,PPR,PPR,PPR,PPR,0,0,9999};
+
+extern int opt_screen_size_x;
+extern int opt_screen_size_y;
 
 #ifndef MIN
 #define        MIN(a,b) (((a)<(b))?(a):(b))
@@ -269,7 +245,7 @@ get_metrics_faster_c(unsigned char *a, unsigned char *b, int as, int bs,
 	a += 2*as;
 	b += 2*bs;
     } while (--lines);
-
+    
 }
 
 static inline void
@@ -392,13 +368,13 @@ block_metrics_faster_c(unsigned char *a, unsigned char *b, int as, int bs,
 #define MEQ(X,Y) ((X).even == (Y).even && (X).odd == (Y).odd && (X).temp == (Y).temp && (X).noise == (Y).noise)
 
 #define BLOCK_METRICS_TEMPLATE() \
-    __asm__ volatile("pxor %mm7, %mm7\n\t"   /* The result is colleted in mm7 */ \
+    asm volatile("pxor %mm7, %mm7\n\t"   /* The result is colleted in mm7 */ \
 		 "pxor %mm6, %mm6\n\t"   /* Temp to stay at 0 */	     \
 	);								     \
     a -= as;								     \
     b -= bs;								     \
     do {								     \
-	__asm__ volatile(						     \
+	asm volatile(							     \
 	    "movq (%0,%2), %%mm0\n\t"					     \
 	    "movq (%1,%3), %%mm1\n\t"   /* mm1 = even */		     \
 	    PSADBW(%%mm1, %%mm0, %%mm4, %%mm6)				     \
@@ -448,7 +424,7 @@ block_metrics_faster_c(unsigned char *a, unsigned char *b, int as, int bs,
 	    "paddusw %%mm2, %%mm7\n\t"					     \
 	    "paddusw %%mm1, %%mm7\n\t"					     \
 	    : "=r" (a), "=r" (b)					     \
-	    : "r"((x86_reg)as), "r"((x86_reg)bs), "m" (ones), "0"(a), "1"(b), "X"(*a), "X"(*b) \
+	    : "r"((long)as), "r"((long)bs), "m" (ones), "0"(a), "1"(b), "X"(*a), "X"(*b) \
 	    );								     \
     } while (--lines);
 
@@ -457,13 +433,13 @@ block_metrics_3dnow(unsigned char *a, unsigned char *b, int as, int bs,
 		    int lines, struct vf_priv_s *p, struct frame_stats *s)
 {
     struct metrics tm;
-#if !HAVE_AMD3DNOW
+#ifndef HAVE_3DNOW
     mp_msg(MSGT_VFILTER, MSGL_FATAL, "block_metrics_3dnow: internal error\n");
 #else
     static const unsigned long long ones = 0x0101010101010101ull;
 
     BLOCK_METRICS_TEMPLATE();
-    __asm__ volatile("movq %%mm7, %0\n\temms" : "=m" (tm));
+    asm volatile("movq %%mm7, %0\n\temms" : "=m" (tm));
     get_block_stats(&tm, p, s);
 #endif
     return tm;
@@ -486,16 +462,16 @@ block_metrics_mmx2(unsigned char *a, unsigned char *b, int as, int bs,
 		   int lines, struct vf_priv_s *p, struct frame_stats *s)
 {
     struct metrics tm;
-#if !HAVE_MMX
+#ifndef HAVE_MMX
     mp_msg(MSGT_VFILTER, MSGL_FATAL, "block_metrics_mmx2: internal error\n");
 #else
     static const unsigned long long ones = 0x0101010101010101ull;
-    x86_reg interlaced;
-    x86_reg prefetch_line = (((long)a>>3) & 7) + 10;
+    unsigned long interlaced;
+    unsigned long prefetch_line = (((long)a>>3) & 7) + 10;
 #ifdef DEBUG
     struct frame_stats ts = *s;
 #endif
-    __asm__ volatile("prefetcht0 (%0,%2)\n\t"
+    asm volatile("prefetcht0 (%0,%2)\n\t"
 		 "prefetcht0 (%1,%3)\n\t" :
 		 : "r" (a), "r" (b),
 		 "r" (prefetch_line * as), "r" (prefetch_line * bs));
@@ -503,7 +479,7 @@ block_metrics_mmx2(unsigned char *a, unsigned char *b, int as, int bs,
     BLOCK_METRICS_TEMPLATE();
 
     s->num_blocks++;
-    __asm__ volatile(
+    asm volatile(
 	"movq %3, %%mm0\n\t"
 	"movq %%mm7, %%mm1\n\t"
 	"psubusw %%mm0, %%mm1\n\t"
@@ -549,7 +525,7 @@ block_metrics_mmx2(unsigned char *a, unsigned char *b, int as, int bs,
 	s->interlaced_high += interlaced >> 16;
 	s->interlaced_low += interlaced;
     } else {
-	__asm__ volatile(
+	asm volatile(
 	    "pcmpeqw %%mm0, %%mm0\n\t" /* -1 */
 	    "psubw 	%%mm0, %%mm4\n\t"
 	    "psubw 	%%mm0, %%mm5\n\t"
@@ -563,7 +539,7 @@ block_metrics_mmx2(unsigned char *a, unsigned char *b, int as, int bs,
 	    : "=m" (s->tiny), "=m" (s->low), "=m" (s->high)
 	    );
 
-	__asm__ volatile(
+	asm volatile(
 	    "pshufw $0, %2, %%mm0\n\t"
 	    "psubusw %%mm7, %%mm0\n\t"
 	    "pcmpeqw %%mm6, %%mm0\n\t"   /* 0 if below sad_thres */
@@ -580,7 +556,7 @@ block_metrics_mmx2(unsigned char *a, unsigned char *b, int as, int bs,
 	    );
     }
 
-    __asm__ volatile(
+    asm volatile(
 	"movq %%mm7, (%1)\n\t"
 	PMAXUW((%0), %%mm7)
 	"movq %%mm7, (%0)\n\t"
@@ -615,13 +591,13 @@ static inline int
 dint_copy_line_mmx2(unsigned char *dst, unsigned char *a, long bos,
 		    long cos, int ds, int ss, int w, int t)
 {
-#if !HAVE_MMX
+#ifndef HAVE_MMX
     mp_msg(MSGT_VFILTER, MSGL_FATAL, "dint_copy_line_mmx2: internal error\n");
     return 0;
 #else
     unsigned long len = (w+7) >> 3;
     int ret;
-    __asm__ volatile (
+    asm volatile (
 	"pxor %%mm6, %%mm6 \n\t"       /* deinterlaced pixel counter */
 	"movd %0, %%mm7 \n\t"
 	"punpcklbw %%mm7, %%mm7 \n\t"
@@ -631,7 +607,7 @@ dint_copy_line_mmx2(unsigned char *dst, unsigned char *a, long bos,
 	: "rm" (t)
 	);
     do {
-	__asm__ volatile (
+	asm volatile (
 	    "movq (%0), %%mm0\n\t"
 	    "movq (%0,%3,2), %%mm1\n\t"
 	    "movq %%mm0, (%2)\n\t"
@@ -657,13 +633,13 @@ dint_copy_line_mmx2(unsigned char *dst, unsigned char *a, long bos,
 	    "por %%mm3, %%mm1 \n\t"     /* avg if >= threshold */
 	    "movq %%mm1, (%2,%4) \n\t"
 	    : /* no output */
-	    : "r" (a), "r" ((x86_reg)bos), "r" ((x86_reg)dst), "r" ((x86_reg)ss), "r" ((x86_reg)ds), "r" ((x86_reg)cos)
+	    : "r" (a), "r" (bos), "r" (dst), "r" ((long)ss), "r" ((long)ds), "r" (cos)
 	    );
 	a += 8;
 	dst += 8;
     } while (--len);
 
-    __asm__ volatile ("pxor %%mm7, %%mm7 \n\t"
+    asm volatile ("pxor %%mm7, %%mm7 \n\t"
 		  "psadbw %%mm6, %%mm7 \n\t"
 		  "movd %%mm7, %0 \n\t"
 		  "emms \n\t"
@@ -933,22 +909,14 @@ static void init(struct vf_priv_s *p, mp_image_t *mpi)
     p->num_fields = 3;
 }
 
-#ifdef GEKKO
-#include <ogc/lwp_watchdog.h>
-static inline u64 get_time(void)
-{
-	return tick_microsecs(gettime());
-}
-#else
 static inline double get_time(void)
 {
     struct timeval tv;
     gettimeofday(&tv, 0);
     return tv.tv_sec + tv.tv_usec * 1e-6;
 }
-#endif
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi)
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi)
 {
     struct vf_priv_s *p = vf->priv;
     static unsigned char **planes, planes_idx;
@@ -1152,7 +1120,7 @@ find_breaks(struct vf_priv_s *p, struct frame_stats *s)
 
 #define ITOC(X) (!(X) ? ' ' : (X) + ((X)>9 ? 'a'-10 : '0'))
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
     mp_image_t *dmpi;
     struct vf_priv_s *p = vf->priv;
@@ -1164,11 +1132,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     int breaks, prev;
     int show_fields = 0;
     int dropped_fields = 0;
-#ifdef GEKKO    
-    u64 start_time, diff_time;
-#else
     double start_time, diff_time;
-#endif    
     char prev_chflag = p->chflag;
     int keep_rate;
 
@@ -1354,7 +1318,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     return show_fields ? vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE) : 0;
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
     /* FIXME - support more formats */
     switch (fmt) {
@@ -1369,7 +1333,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     return 0;
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
 		  int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt)
 {
@@ -1414,17 +1378,17 @@ static int config(struct vf_instance *vf,
     return vf_next_config(vf, p->w, p->h, d_width, d_height, flags, outfmt);
 }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
 {
     struct vf_priv_s *p = vf->priv;
     mp_msg(MSGT_VFILTER, MSGL_INFO, "diff_time: %.3f, merge_time: %.3f, "
-	   "export: %lu, merge: %lu, copy: %lu\n", (double)p->diff_time, (double)p->merge_time,
+	   "export: %lu, merge: %lu, copy: %lu\n", p->diff_time, p->merge_time,
 	   p->export_count, p->merge_count, p->num_copies);
     free(p->memory_allocated);
     free(p);
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
     struct vf_priv_s *p;
     vf->get_image = get_image;
@@ -1458,10 +1422,10 @@ static int vf_open(vf_instance_t *vf, char *args)
     }
     if (p->mmx2 > 2)
 	p->mmx2 = 0;
-#if !HAVE_MMX
+#ifndef HAVE_MMX
     p->mmx2 = 0;
 #endif
-#if !HAVE_AMD3DNOW
+#ifndef HAVE_3DNOW
     p->mmx2 &= 1;
 #endif
     p->thres.odd  = p->thres.even;
@@ -1476,6 +1440,6 @@ const vf_info_t vf_info_filmdint = {
     "filmdint",
     "Zoltan Hidvegi",
     "",
-    vf_open,
+    open,
     NULL
 };

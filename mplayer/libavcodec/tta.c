@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file tta.c
  * TTA (The Lossless True Audio) decoder
  * (www.true-audio.com or tta.corecodec.org)
  * @author Alex Beregszaszi
@@ -31,7 +31,7 @@
 //#define DEBUG
 #include <limits.h>
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 
 #define FORMAT_INT 1
 #define FORMAT_FLOAT 3
@@ -209,11 +209,11 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         return -1;
 
     init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size);
-    if (show_bits_long(&s->gb, 32) == AV_RL32("TTA1"))
+    if (show_bits_long(&s->gb, 32) == ff_get_fourcc("TTA1"))
     {
         /* signature */
         skip_bits(&s->gb, 32);
-//        if (get_bits_long(&s->gb, 32) != bswap_32(AV_RL32("TTA1"))) {
+//        if (get_bits_long(&s->gb, 32) != bswap_32(ff_get_fourcc("TTA1"))) {
 //            av_log(s->avctx, AV_LOG_ERROR, "Missing magic\n");
 //            return -1;
 //        }
@@ -226,8 +226,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         }
         s->is_float = (s->flags == FORMAT_FLOAT);
         avctx->channels = s->channels = get_bits(&s->gb, 16);
-        avctx->bits_per_coded_sample = get_bits(&s->gb, 16);
-        s->bps = (avctx->bits_per_coded_sample + 7) / 8;
+        avctx->bits_per_sample = get_bits(&s->gb, 16);
+        s->bps = (avctx->bits_per_sample + 7) / 8;
         avctx->sample_rate = get_bits_long(&s->gb, 32);
         if(avctx->sample_rate > 1000000){ //prevent FRAME_TIME * avctx->sample_rate from overflowing and sanity check
             av_log(avctx, AV_LOG_ERROR, "sample_rate too large\n");
@@ -261,7 +261,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
                         (s->last_frame_length ? 1 : 0);
 
         av_log(s->avctx, AV_LOG_DEBUG, "flags: %x chans: %d bps: %d rate: %d block: %d\n",
-            s->flags, avctx->channels, avctx->bits_per_coded_sample, avctx->sample_rate,
+            s->flags, avctx->channels, avctx->bits_per_sample, avctx->sample_rate,
             avctx->block_align);
         av_log(s->avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
             s->data_length, s->frame_length, s->last_frame_length, s->total_frames);
@@ -287,10 +287,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
 
 static int tta_decode_frame(AVCodecContext *avctx,
         void *data, int *data_size,
-        AVPacket *avpkt)
+        const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     TTAContext *s = avctx->priv_data;
     int i;
 
@@ -302,10 +300,6 @@ static int tta_decode_frame(AVCodecContext *avctx,
         int cur_chan = 0, framelen = s->frame_length;
         int32_t *p;
 
-        if (*data_size < (framelen * s->channels * 2)) {
-            av_log(avctx, AV_LOG_ERROR, "Output buffer size is too small.\n");
-            return -1;
-        }
         // FIXME: seeking
         s->total_frames--;
         if (!s->total_frames && s->last_frame_length)
@@ -336,14 +330,9 @@ static int tta_decode_frame(AVCodecContext *avctx,
                 unary--;
             }
 
-            if (get_bits_left(&s->gb) < k)
-                return -1;
-
-            if (k) {
-                if (k > MIN_CACHE_BITS)
-                    return -1;
+            if (k)
                 value = (unary << k) + get_bits(&s->gb, k);
-            } else
+            else
                 value = unary;
 
             // FIXME: copy paste from original
@@ -413,8 +402,6 @@ static int tta_decode_frame(AVCodecContext *avctx,
             }
         }
 
-        if (get_bits_left(&s->gb) < 32)
-            return -1;
         skip_bits(&s->gb, 32); // frame crc
 
         // convert to output buffer
@@ -449,12 +436,12 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
 
 AVCodec tta_decoder = {
     "tta",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_TTA,
     sizeof(TTAContext),
     tta_decode_init,
     NULL,
     tta_decode_close,
     tta_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("True Audio (TTA)"),
+    .long_name = NULL_IF_CONFIG_SMALL("True Audio"),
 };

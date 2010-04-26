@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define TXD_FILE            0x16
@@ -43,7 +42,7 @@ static int txd_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_TXD;
     st->codec->time_base.den = 5;
     st->codec->time_base.num = 1;
@@ -62,10 +61,10 @@ next_chunk:
     marker     = get_le32(pb);
 
     if (url_feof(s->pb))
-        return AVERROR_EOF;
+        return AVERROR(EIO);
     if (marker != TXD_MARKER && marker != TXD_MARKER2) {
-        av_log(s, AV_LOG_ERROR, "marker does not match\n");
-        return AVERROR_INVALIDDATA;
+        av_log(NULL, AV_LOG_ERROR, "marker does not match\n");
+        return AVERROR(EIO);
     }
 
     switch (id) {
@@ -78,22 +77,20 @@ next_chunk:
         case TXD_TEXTURE:
             goto next_chunk;
         default:
-            av_log(s, AV_LOG_ERROR, "unknown chunk id %i\n", id);
-            return AVERROR_INVALIDDATA;
+            av_log(NULL, AV_LOG_ERROR, "unknown chunk id %i\n", id);
+            return AVERROR(EIO);
     }
 
     ret = av_get_packet(s->pb, pkt, chunk_size);
-    if (ret < 0)
-        return ret;
     pkt->stream_index = 0;
 
-    return 0;
+    return ret <= 0 ? AVERROR(EIO) : ret;
 }
 
 AVInputFormat txd_demuxer =
 {
     "txd",
-    NULL_IF_CONFIG_SMALL("Renderware TeXture Dictionary"),
+    NULL_IF_CONFIG_SMALL("txd format"),
     0,
     txd_probe,
     txd_read_header,

@@ -42,13 +42,13 @@ typedef struct
 extern txSample   Bitmap;
 extern bmpFont  * Fonts[26];
 
-int  fntAddNewFont( char * name );
-void fntFreeFont( void );
-int  fntFindID( char * name );
-int  fntTextHeight( int id, char * str );
-int  fntTextWidth( int id, char * str );
+extern int  fntAddNewFont( char * name );
+extern void fntFreeFont( void );
+extern int  fntFindID( char * name );
+extern int  fntTextHeight( int id,char * str );
+extern int  fntTextWidth( int id,char * str );
 
-int        fntRead( char * path, char * fname );
-txSample * fntRender( wItem * item, int px, const char * fmt, ... );
+extern int        fntRead( char * path,char * fname );
+extern txSample * fntRender( wItem * item,int px,const char * fmt,... );
 
 #endif /* MPLAYER_GUI_FONT_H */

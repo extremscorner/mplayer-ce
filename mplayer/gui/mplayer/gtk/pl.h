@@ -21,9 +21,9 @@
 
 #include <gtk/gtk.h>
 
-void ShowPlayList( void );
-void HidePlayList( void );
+extern void ShowPlayList( void );
+extern void HidePlayList( void );
 
-GtkWidget * create_PlayList (void);
+extern GtkWidget * create_PlayList (void);
 
 #endif /* MPLAYER_GUI_PL_H */

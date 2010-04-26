@@ -1,7 +1,7 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: mpg123.h 31032 2010-04-12 10:56:17Z diego $
+ * $Id: mpg123.h 23453 2007-06-02 16:47:10Z zuxy $
  */
 
 /*
@@ -9,23 +9,18 @@
  * used source: musicout.h from mpegaudio package
  */
 
-#ifndef MPLAYER_MP3LIB_MPG123_H
-#define MPLAYER_MP3LIB_MPG123_H
-
 #include "config.h"
 
 #ifndef M_PI
-#define M_PI            3.141592653589793238462
+#define M_PI		3.141592653589793238462
 #endif
 #ifndef M_SQRT2
-#define M_SQRT2         1.414213562373095048802
+#define M_SQRT2		1.414213562373095048802
 #endif
 #define REAL_IS_FLOAT
 #define NEW_DCT9
 
 #undef MPG123_REMOTE           /* Get rid of this stuff for Win32 */
-
-typedef float real;
 
 /*
 #  define real float
@@ -121,24 +116,13 @@ struct III_sideinfo
 extern real mp3lib_decwin[(512+32)];
 extern real *mp3lib_pnts[];
 
-int synth_1to1_pent( real *, int, short * );
-int synth_1to1_MMX( real *, int, short * );
-int synth_1to1_MMX_s(real *, int, short *, short *, int *);
+extern int synth_1to1_pent( real *,int,short * );
+extern int synth_1to1_MMX( real *,int,short * );
+extern int synth_1to1_MMX_s(real *, int, short *, short *, int *);
 
-void dct36_3dnow(real *, real *, real *, real *, real *);
-void dct36_3dnowex(real *, real *, real *, real *, real *);
-void dct36_sse(real *, real *, real *, real *, real *);
-
-void dct64_MMX(short *, short *, real *);
-void dct64_MMX_3dnow(short *, short *, real *);
-void dct64_MMX_3dnowex(short *, short *, real *);
-void dct64_sse(short *, short *, real *);
-void dct64_altivec(real *, real *, real *);
-extern void (*dct64_MMX_func)(short *, short *, real *);
-
-void mp3lib_dct64(real *, real *, real *);
+extern void dct36_3dnow(real *,real *,real *,real *,real *);
+extern void dct36_3dnowex(real *,real *,real *,real *,real *);
+extern void dct36_sse(real *,real *,real *,real *,real *);
 
 typedef int (*synth_func_t)( real *,int,short * );
 typedef void (*dct36_func_t)(real *,real *,real *,real *,real *);
-
-#endif /* MPLAYER_MP3LIB_MPG123_H */

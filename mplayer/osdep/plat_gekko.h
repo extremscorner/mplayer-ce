@@ -10,36 +10,29 @@
 #include <fat.h>
 
 #include <gctypes.h>
-#include <ogc/mutex.h>
+
+//typedef DIR_ITER DIR;
+//#include "gekko_dirent.h"
 
 extern bool reset_pressed;
 extern bool power_pressed;
-extern mutex_t watchdogmutex;
-extern int watchdogcounter;
 
-#ifndef PATH_MAX
+// yeah, i know...
+// there is no _FILE_OFFSET_BITS in newlib and mplayer expects a 64bit off_t,
+// so thats what it gets
+#define off_t s64
+
 #define PATH_MAX MAXPATHLEN
-#endif
 
+int gekko_gettimeofday(struct timeval *tv, void *tz);
 
 void gekko_abort(void);
-bool DVDGekkoMount();
 
+#define gettimeofday(TV, TZ) gekko_gettimeofday((TV), (TZ))
 #define abort(x) gekko_abort(x)
 
 void plat_init (int *argc, char **argv[]);
 void plat_deinit (int rc);
-
-#define WATCH_TIMEOUT 5
-static inline void setwatchdogcounter(int counter) // -1 disable watchdog
-{
-	if(watchdogmutex==LWP_MUTEX_NULL) return;
-	LWP_MutexLock(watchdogmutex);
-	//printf("watchdogcounter: %i\n",counter);
-	watchdogcounter=counter;
-	LWP_MutexUnlock(watchdogmutex);
-}
-
 
 #endif
 

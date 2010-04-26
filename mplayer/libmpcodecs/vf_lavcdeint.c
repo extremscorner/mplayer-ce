@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +14,7 @@
 
 extern int avcodec_initialized;
 
-struct vf_priv_s
+struct vf_priv_s 
 {
   int       width, height;
   int       pix_fmt;
@@ -87,8 +69,8 @@ imgfmt_to_pixfmt (int imgfmt)
 }
 
 
-static int
-config (struct vf_instance *vf,
+static int 
+config (struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
         unsigned int flags, unsigned int outfmt)
 {
@@ -97,7 +79,7 @@ config (struct vf_instance *vf,
   priv->pix_fmt = imgfmt_to_pixfmt(outfmt);
   if(priv->pix_fmt == -1)
     return 0;
-
+  
   /* The deinterlacer will fail if this is false */
   if ((width & 3) != 0 || (height & 3) != 0)
     return 0;
@@ -113,21 +95,21 @@ config (struct vf_instance *vf,
 			flags, outfmt);
 }
 
-static int
-put_image (struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int 
+put_image (struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
   struct vf_priv_s *priv = vf->priv;
   mp_image_t* dmpi;
   AVPicture pic;
   AVPicture lavc_picture;
-
+  
   lavc_picture.data[0]     = mpi->planes[0];
   lavc_picture.data[1]     = mpi->planes[1];
   lavc_picture.data[2]     = mpi->planes[2];
   lavc_picture.linesize[0] = mpi->stride[0];
   lavc_picture.linesize[1] = mpi->stride[1];
   lavc_picture.linesize[2] = mpi->stride[2];
-
+  
   dmpi = vf_get_image(vf->next, mpi->imgfmt,
 		      MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE,
 		      priv->width, priv->height);
@@ -139,19 +121,19 @@ put_image (struct vf_instance *vf, mp_image_t *mpi, double pts)
   pic.linesize[1] = dmpi->stride[1];
   pic.linesize[2] = dmpi->stride[2];
 
-  if (avpicture_deinterlace(&pic, &lavc_picture,
+  if (avpicture_deinterlace(&pic, &lavc_picture, 
 			    priv->pix_fmt, priv->width, priv->height) < 0)
     {
       /* This should not happen -- see config() */
       return 0;
     }
-
+  
   return vf_next_put_image(vf, dmpi, pts);
 }
 
 
-static int
-query_format (struct vf_instance *vf, unsigned int fmt)
+static int 
+query_format (struct vf_instance_s* vf, unsigned int fmt)
 {
   if(imgfmt_to_pixfmt(fmt) == -1)
     return 0;
@@ -160,8 +142,8 @@ query_format (struct vf_instance *vf, unsigned int fmt)
 }
 
 
-static int
-vf_open(vf_instance_t *vf, char *args)
+static int 
+open (vf_instance_t *vf, char* args)
 {
   /* We don't have any args */
   (void) args;
@@ -192,7 +174,7 @@ const vf_info_t vf_info_lavcdeint = {
     "Joe Rabinoff",
     "libavcodec's internal deinterlacer, in case you don't like "
       "the builtin ones (invoked with -pp or -npp)",
-    vf_open,
+    open,
     NULL
 };
 

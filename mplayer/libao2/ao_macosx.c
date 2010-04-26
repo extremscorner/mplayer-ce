@@ -53,7 +53,7 @@
 #include "libaf/af_format.h"
 #include "osdep/timer.h"
 
-static const ao_info_t info =
+static ao_info_t info =
   {
     "Darwin/Mac OS X native audio output",
     "macosx",

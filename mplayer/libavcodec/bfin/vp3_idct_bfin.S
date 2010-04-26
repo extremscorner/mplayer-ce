@@ -28,10 +28,9 @@ Registers Used  : A0, A1, R0-R7, I0-I3, B0, B2, B3, M0-M2, L0-L3, P0-P5, LC0.
 
 */
 
-#include "config.h"
 #include "config_bfin.h"
 
-#if defined(__FDPIC__) && CONFIG_SRAM
+#ifdef __FDPIC__
 .section .l1.data.B,"aw",@progbits
 #else
 .data
@@ -50,7 +49,7 @@ coefs:
 .short 0x18F9;           //cos(7pi/16)
 .short 0x7D8A;           //cos(pi/16)
 
-#if defined(__FDPIC__) && CONFIG_SRAM
+#ifdef __FDPIC__
 .section .l1.data.A
 #endif
 

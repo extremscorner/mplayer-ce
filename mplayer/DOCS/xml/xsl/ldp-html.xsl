@@ -4,7 +4,7 @@
                 xmlns="http://www.w3.org/TR/xhtml1/transitional"
                 exclude-result-prefixes="#default">
 
-<!-- $Id: ldp-html.xsl 29305 2009-05-13 02:58:57Z diego $  -->
+<!-- $Id: ldp-html.xsl 9676 2003-03-23 23:35:12Z nicolas $  -->
 
 <!-- This stylesheet calls Norman Walsh's 'docbook.xsl' stylesheet
      and therefore generates a SINGLE HTML FILE as output. -->
@@ -19,7 +19,7 @@
 <!-- Imports the common LDP customization layer. -->
 <xsl:import href="/home/n/xml/xsl/ldp-html-common.xsl"/>
 
-<!-- If there was some reason to override 'ldp-html-common.xsl' or to
+<!-- If there was some reason to override 'ldp-html-common.xsl' or to 
      perform any other customizations that affect *only* the generation
      of a single HTML file, those templates or parameters could be
      entered here. -->

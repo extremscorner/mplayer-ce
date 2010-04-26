@@ -20,18 +20,20 @@
  */
 
 /**
- * @file
+ * @file cabac.h
  * Context Adaptive Binary Arithmetic Coder.
  */
 
-#ifndef AVCODEC_CABAC_H
-#define AVCODEC_CABAC_H
+#ifndef FFMPEG_CABAC_H
+#define FFMPEG_CABAC_H
 
-#include "put_bits.h"
+#include "bitstream.h"
 
 //#undef NDEBUG
 #include <assert.h>
+#ifdef ARCH_X86
 #include "libavutil/x86_cpu.h"
+#endif
 
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
@@ -270,7 +272,7 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-#if ! ( ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) )
+#if ! ( defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) )
 static void refill2(CABACContext *c){
     int i, x;
 
@@ -304,7 +306,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     int temp;
 #if 0
     //P3:683    athlon:475
-    __asm__(
+    asm(
         "lea -0x100(%0), %2         \n\t"
         "shr $31, %2                \n\t"  //FIXME 31->63 for x86-64
         "shl %%cl, %0               \n\t"
@@ -313,7 +315,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     );
 #elif 0
     //P3:680    athlon:474
-    __asm__(
+    asm(
         "cmp $0x100, %0             \n\t"
         "setb %%cl                  \n\t"  //FIXME 31->63 for x86-64
         "shl %%cl, %0               \n\t"
@@ -323,7 +325,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 #elif 1
     int temp2;
     //P3:665    athlon:517
-    __asm__(
+    asm(
         "lea -0x100(%0), %%eax      \n\t"
         "cltd                       \n\t"
         "mov %0, %%eax              \n\t"
@@ -336,7 +338,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 #elif 0
     int temp2;
     //P3:673    athlon:509
-    __asm__(
+    asm(
         "cmp $0x100, %0             \n\t"
         "sbb %%edx, %%edx           \n\t"
         "mov %0, %%eax              \n\t"
@@ -349,7 +351,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 #else
     int temp2;
     //P3:677    athlon:511
-    __asm__(
+    asm(
         "cmp $0x100, %0             \n\t"
         "lea (%0, %0), %%eax        \n\t"
         "lea (%1, %1), %%edx        \n\t"
@@ -372,7 +374,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     //FIXME gcc generates duplicate load/stores for c->low and c->range
 #define LOW          "0"
 #define RANGE        "4"
-#if ARCH_X86_64
+#ifdef ARCH_X86_64
 #define BYTESTART   "16"
 #define BYTE        "24"
 #define BYTEEND     "32"
@@ -381,11 +383,11 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 #define BYTE        "16"
 #define BYTEEND     "20"
 #endif
-#if ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS)
+#if defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS)
     int bit;
 
 #ifndef BRANCHLESS_CABAC_DECODER
-    __asm__ volatile(
+    asm volatile(
         "movzbl (%1), %0                        \n\t"
         "movl "RANGE    "(%2), %%ebx            \n\t"
         "movl "RANGE    "(%2), %%edx            \n\t"
@@ -467,7 +469,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 #else /* BRANCHLESS_CABAC_DECODER */
 
 
-#if HAVE_FAST_CMOV
+#if defined HAVE_FAST_CMOV
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
         "mov    "tmp"       , %%ecx                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
@@ -524,7 +526,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "add    "tmp"       , "low"                                     \n\t"\
         "1:                                                             \n\t"
 
-    __asm__ volatile(
+    asm volatile(
         "movl "RANGE    "(%2), %%esi            \n\t"
         "movl "LOW      "(%2), %%ebx            \n\t"
         BRANCHLESS_GET_CABAC("%0", "%2", "(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl")
@@ -537,7 +539,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     );
     bit&=1;
 #endif /* BRANCHLESS_CABAC_DECODER */
-#else /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
+#else /* defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
     int bit, lps_mask av_unused;
@@ -576,22 +578,22 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     if(!(c->low & CABAC_MASK))
         refill2(c);
 #endif /* BRANCHLESS_CABAC_DECODER */
-#endif /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
+#endif /* defined(ARCH_X86) && defined(HAVE_7REGS) && defined(HAVE_EBX_AVAILABLE) && !defined(BROKEN_RELOCATIONS) */
     return bit;
 }
 
-static int av_noinline av_unused get_cabac_noinline(CABACContext *c, uint8_t * const state){
+static int av_noinline get_cabac_noinline(CABACContext *c, uint8_t * const state){
     return get_cabac_inline(c,state);
 }
 
-static int av_unused get_cabac(CABACContext *c, uint8_t * const state){
+static int get_cabac(CABACContext *c, uint8_t * const state){
     return get_cabac_inline(c,state);
 }
 
-static int av_unused get_cabac_bypass(CABACContext *c){
+static int get_cabac_bypass(CABACContext *c){
 #if 0 //not faster
     int bit;
-    __asm__ volatile(
+    asm volatile(
         "movl "RANGE    "(%1), %%ebx            \n\t"
         "movl "LOW      "(%1), %%eax            \n\t"
         "shl $17, %%ebx                         \n\t"
@@ -637,8 +639,8 @@ static int av_unused get_cabac_bypass(CABACContext *c){
 
 
 static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
-#if ARCH_X86 && HAVE_EBX_AVAILABLE
-    __asm__ volatile(
+#if defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__))
+    asm volatile(
         "movl "RANGE    "(%1), %%ebx            \n\t"
         "movl "LOW      "(%1), %%eax            \n\t"
         "shl $17, %%ebx                         \n\t"
@@ -687,7 +689,7 @@ static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
  *
  * @return the number of bytes read or 0 if no end
  */
-static int av_unused get_cabac_terminate(CABACContext *c){
+static int get_cabac_terminate(CABACContext *c){
     c->range -= 2;
     if(c->low < c->range<<(CABAC_BITS+1)){
         renorm_cabac_decoder_once(c);
@@ -755,4 +757,4 @@ static int get_cabac_ueg(CABACContext *c, uint8_t * state, int max, int is_signe
 }
 #endif /* 0 */
 
-#endif /* AVCODEC_CABAC_H */
+#endif /* FFMPEG_CABAC_H */

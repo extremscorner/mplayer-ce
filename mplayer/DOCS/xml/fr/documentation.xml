@@ -15,24 +15,22 @@
   <year>2006</year>
   <year>2007</year>
   <year>2008</year>
-  <year>2009</year>
-  <year>2010</year>
   <holder>MPlayer team</holder>
 </copyright>
 <legalnotice>
   <title>License</title>
-  <para>MPlayer is free software; you can redistribute it and/or modify
+  <para>This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by the
   Free Software Foundation; either version 2 of the License, or (at your
   option) any later version.</para>
 
-  <para>MPlayer is distributed in the hope that it will be useful, but
+  <para>This program is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
   or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
   for more details.</para>
 
   <para>You should have received a copy of the GNU General Public License
-  along with MPlayer; if not, write to the Free Software Foundation,
+  along with this program; if not, write to the Free Software Foundation,
   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.</para>
 </legalnotice>
 </bookinfo>
@@ -119,7 +117,7 @@ audio PCM/MP3/MP3 VBR.
 et de décodeurs de <application>MPlayer</application></para></listitem>
 <listitem><para>
   Encodage dans tous les codecs
-  <systemitem class="library">libavcodec</systemitem> de FFmpeg
+  <link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link> de FFmpeg
 </para></listitem>
 <listitem><para>
   Encodage vidéo depuis les tuners TV compatibles V4L
@@ -175,12 +173,19 @@ peuvent être distribués selon les termes de la GNU General Public License Vers
 
 &usage.xml;
 &cd-dvd.xml;
+&faq.xml;
+
+&containers.xml;
+&codecs.xml;
+&video.xml;
+&audio.xml;
 &tvinput.xml;
 &radio.xml;
-&video.xml;
+
 &ports.xml;
 &mencoder.xml;
 &encoding-guide.xml;
-&faq.xml;
 &bugreports.xml;
+&bugs.xml;
 &skin.xml;
+&history.xml;

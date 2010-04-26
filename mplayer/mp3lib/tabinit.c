@@ -1,10 +1,8 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: tabinit.c 30675 2010-02-20 21:02:49Z diego $
+ * $Id: tabinit.c 23452 2007-06-02 16:25:18Z zuxy $
  */
-
-#include "mpg123.h"
 
 real mp3lib_decwin[(512+32)];
 static real cos64[32], cos32[16], cos16[8], cos8[4], cos4[2];
@@ -73,3 +71,5 @@ static void make_decode_tables(long scaleval)
       scaleval = - scaleval;
   }
 }
+
+

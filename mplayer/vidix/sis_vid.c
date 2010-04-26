@@ -2,8 +2,8 @@
  * VIDIX driver for SiS chipsets.
  * Based on SiS Xv driver
  *
- * Copyright (C) 2003 Jake Page, Sugar Media
- * Copyright 2002-2003 by Thomas Winischhofer, Vienna, Austria
+ * Copyright (C) 2003 Jake Page, Sugar Media.
+ * Copyright 2002-2003 by Thomas Winischhofer, Vienna, Austria.
  * 2003/10/08 integrated into mplayer/vidix architecture -- Alex Beregszaszi
  *
  * This file is part of MPlayer.
@@ -37,7 +37,6 @@
 #include "pci_ids.h"
 #include "pci_names.h"
 
-#include "sis_bridge.h"
 #include "sis_regs.h"
 #include "sis_defs.h"
 
@@ -93,7 +92,7 @@ typedef struct {
 
     uint8_t lineBufSize;
 
-     uint8_t(*VBlankActiveFunc)(void);
+     uint8_t(*VBlankActiveFunc) ();
 
     uint16_t SCREENheight;
 
@@ -167,6 +166,9 @@ static unsigned short sis_card_ids[] = {
 };
 
 /** function declarations **/
+
+extern void sis_init_video_bridge(void);
+
 
 static void set_overlay(SISOverlayPtr pOverlay, int index);
 static void close_overlay(void);
@@ -1492,7 +1494,7 @@ static void set_hue(uint8_t hue)
 VDXDriver sis_drv = {
   "sis",
   NULL,
-
+    
   .probe = sis_probe,
   .get_caps = sis_get_caps,
   .query_fourcc = sis_query_fourcc,

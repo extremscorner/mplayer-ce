@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include "config.h"
 
 #include <stdio.h>
@@ -106,9 +88,9 @@ const m_option_t cdda_opts[] = {
   {NULL, NULL, 0, 0, 0, 0, NULL}
 };
 
-int cdd_identify(const char *dev);
-int cddb_resolve(const char *dev, char **xmcd_file);
-cd_info_t* cddb_parse_xmcd(char *xmcd_file);
+extern int cdd_identify(const char *dev);
+extern int cddb_resolve(const char *dev, char **xmcd_file);
+extern cd_info_t* cddb_parse_xmcd(char *xmcd_file);
 
 static int seek(stream_t* s,off_t pos);
 static int fill_buffer(stream_t* s, char* buffer, int max_len);
@@ -200,7 +182,7 @@ static int open_cdda(stream_t *st,int m, void* opts, int* file_format) {
     }
   }
 #endif
-
+  
 #ifndef CONFIG_LIBCDIO
   if(p->generic_dev)
     cdd = cdda_identify_scsi(p->generic_dev,p->device,0,NULL);
@@ -298,7 +280,7 @@ static int open_cdda(stream_t *st,int m, void* opts, int* file_format) {
     mode = PARANOIA_MODE_OVERLAP;
   else
     mode = PARANOIA_MODE_FULL;
-
+  
   if(p->no_skip)
     mode |= PARANOIA_MODE_NEVERSKIP;
 #ifndef CONFIG_LIBCDIO
@@ -354,7 +336,7 @@ static int fill_buffer(stream_t* s, char* buffer, int max_len) {
   cd_track_t *cd_track;
   int16_t * buf;
   int i;
-
+  
   if((p->sector < p->start_sector) || (p->sector > p->end_sector)) {
     s->eof = 1;
     return 0;
@@ -364,7 +346,7 @@ static int fill_buffer(stream_t* s, char* buffer, int max_len) {
   if (!buf)
     return 0;
 
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN 
   for(i=0;i<CD_FRAMESIZE_RAW/2;i++)
           buf[i]=le2me_16(buf[i]);
 #endif
@@ -377,14 +359,14 @@ static int fill_buffer(stream_t* s, char* buffer, int max_len) {
 		  cd_track = cd_info_get_track(p->cd_info, i+1);
 //printf("Track %d, sector=%d\n", i, p->sector-1);
 		  if( cd_track!=NULL ) {
-			mp_msg(MSGT_SEEK, MSGL_INFO, "\n%s\n", cd_track->name);
+			mp_msg(MSGT_SEEK, MSGL_INFO, "\n%s\n", cd_track->name); 
 			mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_CDDA_TRACK=%d\n", cd_track->track_nb);
 		  }
 		  break;
 	  }
   }
 
-
+  
   return CD_FRAMESIZE_RAW;
 }
 
@@ -395,7 +377,7 @@ static int seek(stream_t* s,off_t newpos) {
   int current_track=0, seeked_track=0;
   int seek_to_track = 0;
   int i;
-
+  
   s->pos = newpos;
   sec = s->pos/CD_FRAMESIZE_RAW;
   if (s->pos < 0 || sec > p->end_sector) {
@@ -405,7 +387,7 @@ static int seek(stream_t* s,off_t newpos) {
 
 //printf("pos: %d, sec: %d ## %d\n", (int)s->pos, (int)sec, CD_FRAMESIZE_RAW);
 //printf("sector: %d  new: %d\n", p->sector, sec );
-
+ 
   for(i=0;i<p->cd->tracks;i++){
 //        printf("trk #%d: %d .. %d\n",i,p->cd->disc_toc[i].dwStartSector,p->cd->disc_toc[i+1].dwStartSector);
 	if( p->sector>=p->cd->disc_toc[i].dwStartSector && p->sector<p->cd->disc_toc[i+1].dwStartSector ) {

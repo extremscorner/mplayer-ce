@@ -1,7 +1,7 @@
 /**
  * \file dvdcss.h
- * \author StÃ©phane Borel <stef@via.ecp.fr>
- * \author Sam Hocevar <sam@zoy.org>
+ * \author Stéphane Borel <stef@via.ecp.fr>
+ * \author Samuel Hocevar <sam@zoy.org>
  * \brief The \e libdvdcss public header.
  *
  * This header contains the public types and functions that applications
@@ -9,8 +9,8 @@
  */
 
 /*
- * Copyright (C) 1998-2008 VideoLAN
- * $Id: dvdcss.h 27494 2008-08-29 20:22:36Z diego $
+ * Copyright (C) 1998-2002 VideoLAN
+ * $Id: dvdcss.h 25645 2008-01-07 22:46:53Z diego $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,8 +87,6 @@ LIBDVDCSS_EXPORT int      dvdcss_readv ( dvdcss_t,
                                int i_blocks,
                                int i_flags );
 LIBDVDCSS_EXPORT char *   dvdcss_error ( dvdcss_t );
-
-LIBDVDCSS_EXPORT int      dvdcss_is_scrambled ( dvdcss_t );
 
 
 /*

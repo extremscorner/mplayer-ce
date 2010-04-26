@@ -92,7 +92,7 @@ void avcodec_thread_free(AVCodecContext *s){
     av_freep(&s->thread_opaque);
 }
 
-static int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size){
+int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count){
     ThreadContext *c= s->thread_opaque;
     int i;
 
@@ -102,7 +102,7 @@ static int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext 
     /* note, we can be certain that this is not called with the same AVCodecContext by different threads at the same time */
 
     for(i=0; i<count; i++){
-        c[i].arg= (char*)arg + i*size;
+        c[i].arg= arg[i];
         c[i].func= func;
         c[i].ret= 12345;
 
@@ -122,9 +122,6 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     ThreadContext *c;
 
     s->thread_count= thread_count;
-
-    if (thread_count <= 1)
-        return 0;
 
     assert(!s->thread_opaque);
     c= av_mallocz(sizeof(ThreadContext)*thread_count);

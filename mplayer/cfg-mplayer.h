@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_CFG_MPLAYER_H
 #define MPLAYER_CFG_MPLAYER_H
 
@@ -24,8 +6,6 @@
  */
 
 #include "cfg-common.h"
-#include "libmpcodecs/vd.h"
-#include "libvo/vo_zr.h"
 
 extern int key_fifo_size;
 extern unsigned doubleclick_time;
@@ -40,6 +20,11 @@ extern float vo_panscanrange;
 /* only used at startup (setting these values from configfile) */
 extern char *vo_geometry;
 
+extern int opt_screen_size_x;
+extern int opt_screen_size_y;
+extern int fullscreen;
+extern int vidmode;
+
 extern char *ao_outputfilename;
 extern int ao_pcm_waveheader;
 
@@ -52,11 +37,13 @@ extern char *menu_chroot;
 extern char *menu_fribidi_charset;
 extern int menu_flip_hebrew;
 extern int menu_fribidi_flip_commas;
-extern int dir_play;
 
 extern char *unrar_executable;
 
-extern const m_option_t dxr2_opts[];
+extern int vo_zr_parseoption(const m_option_t* conf, char *opt, char * param);
+extern void vo_zr_revertoption(const m_option_t* opt,char* pram);
+
+extern m_option_t dxr2_opts[];
 
 extern char * skinName;
 extern int guiWinID;
@@ -67,6 +54,8 @@ extern float force_monitor_aspect;
 extern float monitor_pixel_aspect;
 
 extern int sws_flags;
+extern int readPPOpt(void *conf, char *arg);
+extern void revertPPOpt(void *conf, char* opt);
 extern char* pp_help;
 
 const m_option_t vd_conf[]={
@@ -85,7 +74,7 @@ const m_option_t tvscan_conf[]={
 /*
  * CONF_TYPE_FUNC_FULL :
  * allows own implementations for passing the params
- *
+ * 
  * the function receives parameter name and argument (if it does not start with - )
  * useful with a conf.name like 'aa*' to parse several parameters to a function
  * return 0 =ok, but we didn't need the param (could be the filename)
@@ -119,7 +108,6 @@ const m_option_t mplayer_opts[]={
         {"nosoftvol", &soft_vol, CONF_TYPE_FLAG, 0, 1, 0, NULL},
         {"softvol-max", &soft_vol_max, CONF_TYPE_FLOAT, CONF_RANGE, 10, 10000, NULL},
 	{"volstep", &volstep, CONF_TYPE_INT, CONF_RANGE, 0, 100, NULL},
-	{"volume", &start_volume, CONF_TYPE_FLOAT, CONF_RANGE, -1, 10000, NULL},
 	{"master", "Option -master has been removed, use -af volume instead.\n", CONF_TYPE_PRINT, 0, 0, 0, NULL},
 	// override audio buffer size (used only by -ao oss, anyway obsolete...)
 	{"abs", &ao_data.buffersize, CONF_TYPE_INT, CONF_MIN, 0, 0, NULL},
@@ -133,7 +121,7 @@ const m_option_t mplayer_opts[]={
             CONF_TYPE_PRINT, 0, 0, 0, NULL},
 	{"noalsa", "-noalsa has been removed. Remove it from your config file.\n",
             CONF_TYPE_PRINT, 0, 0, 0, NULL},
-	{"edlout", &edl_output_filename,  CONF_TYPE_STRING, 0, 0, 0, NULL},
+	{"edlout", &edl_output_filename,  CONF_TYPE_STRING, 0, 0, 0, NULL}, 
 
 #ifdef CONFIG_X11
 	{"display", &mDisplayName, CONF_TYPE_STRING, 0, 0, 0, NULL},
@@ -158,10 +146,10 @@ const m_option_t mplayer_opts[]={
 	    CONF_TYPE_PRINT, 0, 0, 0, NULL},
 
 #if defined(CONFIG_FBDEV) || defined(CONFIG_VESA)
-       {"monitor-hfreq", &monitor_hfreq_str, CONF_TYPE_STRING, 0, 0, 0, NULL},
-       {"monitor-vfreq", &monitor_vfreq_str, CONF_TYPE_STRING, 0, 0, 0, NULL},
-       {"monitor-dotclock", &monitor_dotclock_str, CONF_TYPE_STRING, 0, 0, 0, NULL},
-#endif
+       {"monitor-hfreq", &monitor_hfreq_str, CONF_TYPE_STRING, 0, 0, 0, NULL}, 
+       {"monitor-vfreq", &monitor_vfreq_str, CONF_TYPE_STRING, 0, 0, 0, NULL}, 
+       {"monitor-dotclock", &monitor_dotclock_str, CONF_TYPE_STRING, 0, 0, 0, NULL}, 
+#endif 
 
 #ifdef CONFIG_FBDEV
 	{"fbmode", &fb_mode_name, CONF_TYPE_STRING, 0, 0, 0, NULL},
@@ -207,10 +195,10 @@ const m_option_t mplayer_opts[]={
 
 	{"grabpointer", &vo_grabpointer, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"nograbpointer", &vo_grabpointer, CONF_TYPE_FLAG, 0, 1, 0, NULL},
-
+	
     {"adapter", &vo_adapter_num, CONF_TYPE_INT, CONF_RANGE, 0, 5, NULL},
     {"refreshrate",&vo_refresh_rate,CONF_TYPE_INT,CONF_RANGE, 0,100, NULL},
-	{"wid", &WinID, CONF_TYPE_INT64, 0, 0, 0, NULL},
+	{"wid", &WinID, CONF_TYPE_INT, 0, 0, 0, NULL},
 #ifdef CONFIG_X11
 	// x11,xv,xmga,xvidix
 	{"icelayer", "-icelayer has been removed. Use -fstype layer:<number> instead.\n", CONF_TYPE_PRINT, 0, 0, 0, NULL},
@@ -261,7 +249,7 @@ const m_option_t mplayer_opts[]={
 	{"crash-debug", &crash_debug, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
 	{"nocrash-debug", &crash_debug, CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL},
 #endif
-	{"osdlevel", &osd_level, CONF_TYPE_INT, CONF_RANGE, 0, 4, NULL},
+	{"osdlevel", &osd_level, CONF_TYPE_INT, CONF_RANGE, 0, 3, NULL},
 	{"osd-duration", &osd_duration, CONF_TYPE_INT, CONF_MIN, 0, 0, NULL},
 #ifdef CONFIG_MENU
 	{"menu", &use_menu, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
@@ -318,20 +306,18 @@ const m_option_t mplayer_opts[]={
 
 	{"gui", "The -gui option will only work as the first command line argument.\n", CONF_TYPE_PRINT, 0, 0, 0, (void *)1},
 	{"nogui", "The -nogui option will only work as the first command line argument.\n", CONF_TYPE_PRINT, 0, 0, 0, (void *)1},
-
+      
 #ifdef CONFIG_GUI
 	{"skin", &skinName, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
 	{"enqueue", &enqueue, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"noenqueue", &enqueue, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"guiwid", &guiWinID, CONF_TYPE_INT, 0, 0, 0, NULL},
 #endif
+	
 	//geexbox bgvideo patch
 	{"bgvideo", &bg_video, CONF_TYPE_STRING, 0, 0, 0, NULL},
-	{"dir_play", &dir_play, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL},
-	
-	
-  //
-  
+	//
+
 	{"noloop", &mpctx_s.loop_times, CONF_TYPE_FLAG, 0, 0, -1, NULL},
 	{"loop", &mpctx_s.loop_times, CONF_TYPE_INT, CONF_RANGE, -1, 10000, NULL},
 	{"playlist", NULL, CONF_TYPE_STRING, 0, 0, 0, NULL},
@@ -341,6 +327,8 @@ const m_option_t mplayer_opts[]={
         {"nocorrect-pts", &user_correct_pts, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 	{"noautosync", &autosync, CONF_TYPE_FLAG, 0, 0, -1, NULL},
 	{"autosync", &autosync, CONF_TYPE_INT, CONF_RANGE, 0, 10000, NULL},
+//	{"dapsync", &dapsync, CONF_TYPE_FLAG, 0, 0, 1, NULL},
+//	{"nodapsync", &dapsync, CONF_TYPE_FLAG, 0, 1, 0, NULL},
 
 	{"softsleep", &softsleep, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 #ifdef HAVE_RTC
@@ -383,3 +371,4 @@ const m_option_t mplayer_opts[]={
 };
 
 #endif /* MPLAYER_CFG_MPLAYER_H */
+

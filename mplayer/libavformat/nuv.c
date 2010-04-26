@@ -1,6 +1,6 @@
 /*
  * NuppelVideo demuxer.
- * Copyright (c) 2006 Reimar Doeffinger
+ * Copyright (c) 2006 Reimar Doeffinger.
  *
  * This file is part of FFmpeg.
  *
@@ -18,8 +18,6 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
-#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "riff.h"
 
@@ -35,7 +33,7 @@ typedef enum {
     NUV_AUDIO = 'A',
     NUV_SEEKP = 'R',
     NUV_MYTHEXT = 'X'
-} nuv_frametype;
+} frametype_t;
 
 static int nuv_probe(AVProbeData *p) {
     if (!memcmp(p->buf, "NuppelVideo", 12))
@@ -57,7 +55,7 @@ static int nuv_probe(AVProbeData *p) {
  */
 static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                           AVStream *ast, int myth) {
-    nuv_frametype frametype;
+    frametype_t frametype;
     if (!vst && !myth)
         return 1; // no codec data needed
     while (!url_feof(pb)) {
@@ -86,7 +84,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                 if (vst) {
                     vst->codec->codec_tag = get_le32(pb);
                     vst->codec->codec_id =
-                        ff_codec_get_id(ff_codec_bmp_tags, vst->codec->codec_tag);
+                        codec_get_id(codec_bmp_tags, vst->codec->codec_tag);
                     if (vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G'))
                         vst->codec->codec_id = CODEC_ID_NUV;
                 } else
@@ -95,11 +93,11 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                 if (ast) {
                     ast->codec->codec_tag = get_le32(pb);
                     ast->codec->sample_rate = get_le32(pb);
-                    ast->codec->bits_per_coded_sample = get_le32(pb);
+                    ast->codec->bits_per_sample = get_le32(pb);
                     ast->codec->channels = get_le32(pb);
                     ast->codec->codec_id =
-                        ff_wav_codec_get_id(ast->codec->codec_tag,
-                                         ast->codec->bits_per_coded_sample);
+                        wav_codec_get_id(ast->codec->codec_tag,
+                                         ast->codec->bits_per_sample);
                     ast->need_parsing = AVSTREAM_PARSE_FULL;
                 } else
                     url_fskip(pb, 4 * 4);
@@ -123,14 +121,14 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
 static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
     NUVContext *ctx = s->priv_data;
     ByteIOContext *pb = s->pb;
-    char id_string[12];
+    char id_string[12], version_string[5];
     double aspect, fps;
     int is_mythtv, width, height, v_packs, a_packs;
     int stream_nr = 0;
     AVStream *vst = NULL, *ast = NULL;
     get_buffer(pb, id_string, 12);
     is_mythtv = !memcmp(id_string, "MythTVVideo", 12);
-    url_fskip(pb, 5); // version string
+    get_buffer(pb, version_string, 5);
     url_fskip(pb, 3); // padding
     width = get_le32(pb);
     height = get_le32(pb);
@@ -155,12 +153,12 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         vst = av_new_stream(s, ctx->v_id);
         if (!vst)
             return AVERROR(ENOMEM);
-        vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        vst->codec->codec_type = CODEC_TYPE_VIDEO;
         vst->codec->codec_id = CODEC_ID_NUV;
         vst->codec->width = width;
         vst->codec->height = height;
-        vst->codec->bits_per_coded_sample = 10;
-        vst->sample_aspect_ratio = av_d2q(aspect * height / width, 10000);
+        vst->codec->bits_per_sample = 10;
+        vst->codec->sample_aspect_ratio = av_d2q(aspect * height / width, 10000);
         vst->r_frame_rate = av_d2q(fps, 60000);
         av_set_pts_info(vst, 32, 1, 1000);
     } else
@@ -171,13 +169,13 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         ast = av_new_stream(s, ctx->a_id);
         if (!ast)
             return AVERROR(ENOMEM);
-        ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        ast->codec->codec_type = CODEC_TYPE_AUDIO;
         ast->codec->codec_id = CODEC_ID_PCM_S16LE;
         ast->codec->channels = 2;
         ast->codec->sample_rate = 44100;
         ast->codec->bit_rate = 2 * 2 * 44100 * 8;
         ast->codec->block_align = 2 * 2;
-        ast->codec->bits_per_coded_sample = 16;
+        ast->codec->bits_per_sample = 16;
         av_set_pts_info(ast, 32, 1, 1000);
     } else
         ctx->a_id = -1;
@@ -193,14 +191,13 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     NUVContext *ctx = s->priv_data;
     ByteIOContext *pb = s->pb;
     uint8_t hdr[HDRSIZE];
-    nuv_frametype frametype;
+    frametype_t frametype;
     int ret, size;
     while (!url_feof(pb)) {
         int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
-        uint64_t pos = url_ftell(pb);
         ret = get_buffer(pb, hdr, HDRSIZE);
-        if (ret < HDRSIZE)
-            return ret < 0 ? ret : AVERROR(EIO);
+        if (ret <= 0)
+            return ret ? ret : -1;
         frametype = hdr[0];
         size = PKTSIZE(AV_RL32(&hdr[8]));
         switch (frametype) {
@@ -218,21 +215,12 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 ret = av_new_packet(pkt, copyhdrsize + size);
                 if (ret < 0)
                     return ret;
-                // HACK: we have no idea if it is a keyframe,
-                // but if we mark none seeking will not work at all.
-                pkt->flags |= AV_PKT_FLAG_KEY;
-                pkt->pos = pos;
+                pkt->pos = url_ftell(pb) - copyhdrsize;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
                 memcpy(pkt->data, hdr, copyhdrsize);
                 ret = get_buffer(pb, pkt->data + copyhdrsize, size);
-                if (ret < 0) {
-                    av_free_packet(pkt);
-                    return ret;
-                }
-                if (ret < size)
-                    av_shrink_packet(pkt, copyhdrsize + ret);
-                return 0;
+                return ret;
             case NUV_AUDIO:
                 if (ctx->a_id < 0) {
                     av_log(s, AV_LOG_ERROR, "Audio packet in file without audio stream!\n");
@@ -240,12 +228,9 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                     break;
                 }
                 ret = av_get_packet(pb, pkt, size);
-                pkt->flags |= AV_PKT_FLAG_KEY;
-                pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->a_id;
-                if (ret < 0) return ret;
-                return 0;
+                return ret;
             case NUV_SEEKP:
                 // contains no data, size value is invalid
                 break;
@@ -266,5 +251,4 @@ AVInputFormat nuv_demuxer = {
     nuv_packet,
     NULL,
     NULL,
-    .flags = AVFMT_GENERIC_INDEX,
 };

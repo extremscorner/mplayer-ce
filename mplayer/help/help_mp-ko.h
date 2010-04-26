@@ -4,7 +4,7 @@
 // ========================= MPlayer help ===========================
 
 #ifdef HELP_MP_DEFINE_STATIC
-static const char help_text[]=
+static char help_text[]=
 "사용법:   mplayer [선택사항] [url|경로/]파일명\n"
 "\n"
 "기본 선택사항: (전체 목록은 man 페이지 참조)\n"
@@ -47,7 +47,7 @@ static const char help_text[]=
 
 // ========================= MPlayer messages ===========================
 
-// mplayer.c:
+// mplayer.c: 
 
 #define MSGTR_Exiting "\n종료합니다.\n"
 #define MSGTR_ExitingHow "\n종료합니다... (%s)\n"
@@ -67,6 +67,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "헤더에 FPS가 지정되지 않았거나 유효하지 않습니다. -fps 옵션을 사용하세요.\n"
 #define MSGTR_TryForceAudioFmtStr "오디오 코덱 드라이버 집합 %s를 시도하고 있습니다...\n"
 #define MSGTR_CantFindAudioCodec "오디오 형식 0x%X를 위한 코덱을 찾을 수 없습니다.\n"
+#define MSGTR_RTFMCodecs "DOCS/HTML/en/codecs.html을 참조하세요!\n"
 #define MSGTR_TryForceVideoFmtStr "비디오 코덱 드라이버 집합 %s를 시도하고 있습니다...\n"
 #define MSGTR_CantFindVideoCodec "선택한 -vo 및 비디오 형식 0x%X과 일치하는 코덱을 찾을 수 없습니다.\n"
 #define MSGTR_VOincompCodec "선택한 비디오 출력 장치는 이 코덱과 호환되지 않습니다.\n"
@@ -236,14 +237,14 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\n버퍼에 너무 많은 오디오 패킷이 있습니다.: (%d in %d bytes)\n"
 #define MSGTR_TooManyVideoInBuffer "\n버퍼에 너무 많은 비디오 패킷이 있습니다.: (%d in %d bytes)\n"
 #define MSGTR_MaybeNI "non-interleaved 스트림/파일을 재생하고있거나 코덱에 문제가 있나요?\n" \
-                      "AVI 파일의 경우, -ni 옵션으로 non-interleaved 모드로 강제 시도해보세요.\n"
+		      "AVI 파일의 경우, -ni 옵션으로 non-interleaved 모드로 강제 시도해보세요.\n"
 #define MSGTR_SwitchToNi "\n잘못된 interleaved AVI 파일을 발견했습니다. -ni 모드로 변경합니다...\n"
 #define MSGTR_Detected_XXX_FileFormat "%s 파일 형식을 발견했습니다.\n"
 #define MSGTR_DetectedAudiofile "오디오 파일을 감지하였습니다.\n"
 #define MSGTR_NotSystemStream "MPEG 시스템 스트림 포맷이 아닙니다... (혹시 전송 스트림일지도?)\n"
 #define MSGTR_InvalidMPEGES "유효하지 않은 MPEG-ES 스트림??? 저작자에게 문의하세요, 버그일지도 모릅니다. :(\n"
 #define MSGTR_FormatNotRecognized "============= 죄송합니다. 이 파일형식을 인식하지못했거나 지원하지않습니다 ===============\n"\
-                                  "=== 만약 이 파일이 AVI, ASF 또는 MPEG 스트림이라면, 저작자에게 문의하세요! ===\n"
+				  "=== 만약 이 파일이 AVI, ASF 또는 MPEG 스트림이라면, 저작자에게 문의하세요! ===\n"
 #define MSGTR_MissingVideoStream "비디오 스트림을 찾지 못했습니다.\n"
 #define MSGTR_MissingAudioStream "오디오 스트림을 찾지 못했습니다. -> 소리없음\n"
 #define MSGTR_MissingVideoStreamBug "찾을 수 없는 비디오 스트림!? 저작자에게 문의하세요, 버그일지도 모릅니다. :(\n"
@@ -324,6 +325,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: 코덱이 sh->disp_w와 sh->disp_h로 설정되지 않아서, 다시 시도합니다.\n"
+#define MSGTR_VoConfigRequest "VDec: vo 설정 요청 - %d x %d (선호하는 csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "어울리는 컬러공간을 찾을 수 없습니다. -vf 크기조절로 다시 시도합니다...\n"
 #define MSGTR_MovieAspectIsSet "화면비율이 %.2f:1 입니다. - 화면비율을 조정하기위해 사전 크기조절을 합니다.\n"
 #define MSGTR_MovieAspectUndefined "화면비율이 정의되지 않았습니다. - 사전 크기조절이 적용되지 않았습니다.\n"
@@ -370,7 +372,7 @@ static const char help_text[]=
 #define MSGTR_IDFGCVD "죄송합니다. GUI 호환 비디오 출력 드라이버를 찾지 못했습니다."
 
 // --- skin loader error messages
-#define MSGTR_SKIN_ERRORMESSAGE "[스킨] 스킨 설정파일의 %d번째 줄에 오류가 있습니다.: %s"
+#define MSGTR_SKIN_ERRORMESSAGE "[스킨] 스킨 설정파일의 %d번째 줄에 오류가 있습니다.: %s" 
 #define MSGTR_SKIN_WARNING1 "[스킨] 설정파일의 %d번째 줄 경고:\n위젯(%s)을 찾았지만 그 앞에 \"section\"을 찾을 수 없습니다."
 #define MSGTR_SKIN_WARNING2 "[스킨] 설정파일의 %d번째 줄 경고:\n위젯(%s)을 찾았지만 그 앞에 \"subsection\"을 찾을 수 없습니다."
 #define MSGTR_SKIN_WARNING3 "[스킨] 설정파일의 %d번째 줄 경고:\n이 subsection은 현재 위젯에서 지원되지 않습니다. (%s)"
@@ -557,6 +559,6 @@ static const char help_text[]=
 // --- messagebox
 #define MSGTR_MSGBOX_LABEL_FatalError "치명적 오류!"
 #define MSGTR_MSGBOX_LABEL_Error "오류!"
-#define MSGTR_MSGBOX_LABEL_Warning "경고!"
+#define MSGTR_MSGBOX_LABEL_Warning "경고!" 
 
 #endif

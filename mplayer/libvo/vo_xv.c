@@ -1,22 +1,4 @@
-/*
- * X11 Xv interface
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/* vo_xv.c, X11 Xv interface */
 
 // Number of buffers _FOR_DOUBLEBUFFERING_MODE_
 // Use option -double to enable double buffering! (default: single buffer)
@@ -103,11 +85,12 @@ static XvImage *xvimage[NUM_BUFFERS];
 static uint32_t image_width;
 static uint32_t image_height;
 static uint32_t image_format;
+static int flip_flag;
 
 static int int_pause;
 
-static struct vo_rect src_rect;
-static struct vo_rect dst_rect;
+static Window mRoot;
+static uint32_t drwX, drwY, drwBorderWidth, drwDepth;
 static uint32_t max_width = 0, max_height = 0; // zero means: not set
 
 static void (*draw_alpha_fnc) (int x0, int y0, int w, int h,
@@ -159,11 +142,20 @@ static void draw_alpha_null(int x0, int y0, int w, int h,
 
 static void deallocate_xvimage(int foo);
 
-static void resize(void)
-{
-    calc_src_dst_rects(image_width, image_height, &src_rect, &dst_rect, NULL, NULL);
-    vo_x11_clearwindow_part(mDisplay, vo_window, dst_rect.width, dst_rect.height, 1);
-    vo_xv_draw_colorkey(dst_rect.left, dst_rect.top, dst_rect.width, dst_rect.height);
+static void calc_drwXY(uint32_t *drwX, uint32_t *drwY) {
+  *drwX = *drwY = 0;
+  if (vo_fs) {
+    aspect(&vo_dwidth, &vo_dheight, A_ZOOM);
+    vo_dwidth = FFMIN(vo_dwidth, vo_screenwidth);
+    vo_dheight = FFMIN(vo_dheight, vo_screenheight);
+    *drwX = (vo_screenwidth - vo_dwidth) / 2;
+    *drwY = (vo_screenheight - vo_dheight) / 2;
+    mp_msg(MSGT_VO, MSGL_V, "[xv-fs] dx: %d dy: %d dw: %d dh: %d\n",
+           *drwX, *drwY, vo_dwidth, vo_dheight);
+  } else if (WinID == 0) {
+    *drwX = vo_dx;
+    *drwY = vo_dy;
+  }
 }
 
 /*
@@ -174,14 +166,19 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
                        uint32_t d_height, uint32_t flags, char *title,
                        uint32_t format)
 {
+    XSizeHints hint;
     XVisualInfo vinfo;
+    XGCValues xgcv;
     XSetWindowAttributes xswa;
     XWindowAttributes attribs;
     unsigned long xswamask;
     int depth;
 
 #ifdef CONFIG_XF86VM
-    int vm = flags & VOFLAG_MODESWITCHING;
+    int vm = 0;
+    unsigned int modeline_width, modeline_height;
+    static uint32_t vm_width;
+    static uint32_t vm_height;
 #endif
 
     image_height = height;
@@ -196,9 +193,16 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
         return -1;
     }
 
+    vo_mouse_autohide = 1;
+
     int_pause = 0;
     visible_buf = -1;
 
+#ifdef CONFIG_XF86VM
+    if (flags & VOFLAG_MODESWITCHING)
+        vm = 1;
+#endif
+    flip_flag = flags & VOFLAG_FLIPPING;
     num_buffers =
         vo_doublebuffering ? (vo_directrendering ? NUM_BUFFERS : 2) : 1;
 
@@ -222,16 +226,38 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 
 #ifdef CONFIG_GUI
     if (use_gui)
-        guiGetEvent(guiSetShVideo, 0);  // the GUI will set up / resize the window
+        guiGetEvent(guiSetShVideo, 0);  // let the GUI to setup/resize our window
     else
 #endif
     {
+        hint.x = vo_dx;
+        hint.y = vo_dy;
+        hint.width = d_width;
+        hint.height = d_height;
 #ifdef CONFIG_XF86VM
         if (vm)
         {
-            vo_vm_switch();
-        }
+            if ((d_width == 0) && (d_height == 0))
+            {
+                vm_width = image_width;
+                vm_height = image_height;
+            } else
+            {
+                vm_width = d_width;
+                vm_height = d_height;
+            }
+            vo_vm_switch(vm_width, vm_height, &modeline_width,
+                         &modeline_height);
+            hint.x = (vo_screenwidth - modeline_width) / 2;
+            hint.y = (vo_screenheight - modeline_height) / 2;
+            hint.width = modeline_width;
+            hint.height = modeline_height;
+            aspect_save_screenres(modeline_width, modeline_height);
+        } else
 #endif
+        hint.flags = PPosition | PSize /* | PBaseSize */ ;
+        hint.base_width = hint.width;
+        hint.base_height = hint.height;
         XGetWindowAttributes(mDisplay, DefaultRootWindow(mDisplay),
                              &attribs);
         depth = attribs.depth;
@@ -247,10 +273,41 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
         xswa.border_pixel = 0;
         xswamask = CWBackPixel | CWBorderPixel;
 
-            vo_x11_create_vo_window(&vinfo, vo_dx, vo_dy, vo_dwidth, vo_dheight,
+        if (WinID >= 0)
+        {
+            vo_window = WinID ? ((Window) WinID) : mRootWin;
+            if (WinID)
+            {
+                XUnmapWindow(mDisplay, vo_window);
+                XChangeWindowAttributes(mDisplay, vo_window, xswamask,
+                                        &xswa);
+                vo_x11_selectinput_witherr(mDisplay, vo_window,
+                                           StructureNotifyMask |
+                                           KeyPressMask |
+                                           PropertyChangeMask |
+                                           PointerMotionMask |
+                                           ButtonPressMask |
+                                           ButtonReleaseMask |
+                                           ExposureMask);
+                XMapWindow(mDisplay, vo_window);
+                XGetGeometry(mDisplay, vo_window, &mRoot,
+                             &drwX, &drwY, &vo_dwidth, &vo_dheight,
+                             &drwBorderWidth, &drwDepth);
+                if (vo_dwidth <= 0) vo_dwidth = d_width;
+                if (vo_dheight <= 0) vo_dheight = d_height;
+                aspect_save_prescale(vo_dwidth, vo_dheight);
+            }
+        } else
+        {
+            vo_x11_create_vo_window(&vinfo, vo_dx, vo_dy, d_width, d_height,
                    flags, CopyFromParent, "xv", title);
             XChangeWindowAttributes(mDisplay, vo_window, xswamask, &xswa);
+        }
 
+        if (vo_gc != None)
+            XFreeGC(mDisplay, vo_gc);
+        vo_gc = XCreateGC(mDisplay, vo_window, 0L, &xgcv);
+        XSync(mDisplay, False);
 #ifdef CONFIG_XF86VM
         if (vm)
         {
@@ -295,7 +352,51 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     current_buf = 0;
     current_ip_buf = 0;
 
-    resize();
+#if 0
+    set_gamma_correction();
+#endif
+
+    aspect(&vo_dwidth, &vo_dheight, A_NOZOOM);
+    if ((flags & VOFLAG_FULLSCREEN) && WinID <= 0) vo_fs = 1;
+    calc_drwXY(&drwX, &drwY);
+
+    panscan_calc();
+    
+    vo_xv_draw_colorkey(drwX - (vo_panscan_x >> 1),
+                        drwY - (vo_panscan_y >> 1),
+                        vo_dwidth + vo_panscan_x - 1,
+                        vo_dheight + vo_panscan_y - 1);
+
+
+#if 0
+#ifdef HAVE_SHM
+    if (Shmem_Flag)
+    {
+        XvShmPutImage(mDisplay, xv_port, vo_window, vo_gc,
+                      xvimage[current_buf], 0, 0, image_width,
+                      image_height, drwX, drwY, 1, 1, False);
+        XvShmPutImage(mDisplay, xv_port, vo_window, vo_gc,
+                      xvimage[current_buf], 0, 0, image_width,
+                      image_height, drwX, drwY, vo_dwidth,
+                      (vo_fs ? vo_dheight - 1 : vo_dheight), False);
+    } else
+#endif
+    {
+        XvPutImage(mDisplay, xv_port, vo_window, vo_gc,
+                   xvimage[current_buf], 0, 0, image_width, image_height,
+                   drwX, drwY, 1, 1);
+        XvPutImage(mDisplay, xv_port, vo_window, vo_gc,
+                   xvimage[current_buf], 0, 0, image_width, image_height,
+                   drwX, drwY, vo_dwidth,
+                   (vo_fs ? vo_dheight - 1 : vo_dheight));
+    }
+#endif
+
+    mp_msg(MSGT_VO, MSGL_V, "[xv] dx: %d dy: %d dw: %d dh: %d\n", drwX,
+           drwY, vo_dwidth, vo_dheight);
+
+    if (vo_ontop)
+        vo_x11_setlayer(mDisplay, vo_window, vo_ontop);
 
     return 0;
 }
@@ -368,17 +469,19 @@ static inline void put_xvimage( XvImage * xvi )
     if (Shmem_Flag)
     {
         XvShmPutImage(mDisplay, xv_port, vo_window, vo_gc,
-                      xvi,
-                      src_rect.left, src_rect.top, src_rect.width, src_rect.height,
-                      dst_rect.left, dst_rect.top, dst_rect.width, dst_rect.height,
+                      xvi, 0, 0, image_width,
+                      image_height, drwX - (vo_panscan_x >> 1),
+                      drwY - (vo_panscan_y >> 1), vo_dwidth + vo_panscan_x,
+                      vo_dheight + vo_panscan_y,
                       False);
     } else
 #endif
     {
         XvPutImage(mDisplay, xv_port, vo_window, vo_gc,
-                   xvi,
-                   src_rect.left, src_rect.top, src_rect.width, src_rect.height,
-                   dst_rect.left, dst_rect.top, dst_rect.width, dst_rect.height);
+                   xvi, 0, 0, image_width, image_height,
+                   drwX - (vo_panscan_x >> 1), drwY - (vo_panscan_y >> 1),
+                   vo_dwidth + vo_panscan_x,
+                   vo_dheight + vo_panscan_y);
     }
 }
 
@@ -386,9 +489,22 @@ static void check_events(void)
 {
     int e = vo_x11_check_events(mDisplay);
 
+    if (e & VO_EVENT_RESIZE)
+    {
+        XGetGeometry(mDisplay, vo_window, &mRoot, &drwX, &drwY, &vo_dwidth,
+                     &vo_dheight, &drwBorderWidth, &drwDepth);
+        mp_msg(MSGT_VO, MSGL_V, "[xv] dx: %d dy: %d dw: %d dh: %d\n", drwX,
+               drwY, vo_dwidth, vo_dheight);
+
+        calc_drwXY(&drwX, &drwY);
+    }
+
     if (e & VO_EVENT_EXPOSE || e & VO_EVENT_RESIZE)
     {
-        resize();
+	vo_xv_draw_colorkey(drwX - (vo_panscan_x >> 1),
+			    drwY - (vo_panscan_y >> 1),
+			    vo_dwidth + vo_panscan_x - 1,
+			    vo_dheight + vo_panscan_y - 1);
     }
 
     if ((e & VO_EVENT_EXPOSE || e & VO_EVENT_RESIZE) && int_pause)
@@ -464,7 +580,8 @@ static int draw_slice(uint8_t * image[], int stride[], int w, int h,
 
 static int draw_frame(uint8_t * src[])
 {
-    return VO_ERROR;
+    mp_msg(MSGT_VO,MSGL_INFO, MSGTR_LIBVO_XV_DrawFrameCalled);
+    return -1;
 }
 
 static uint32_t draw_image(mp_image_t * mpi)
@@ -594,7 +711,7 @@ static void uninit(void)
     for (i = 0; i < num_buffers; i++)
         deallocate_xvimage(i);
 #ifdef CONFIG_XF86VM
-    vo_vm_close();
+    vo_vm_close(mDisplay);
 #endif
     mp_input_rm_event_fd(ConnectionNumber(mDisplay));
     vo_x11_uninit();
@@ -609,11 +726,11 @@ static int preinit(const char *arg)
     strarg_t ck_method_arg = { 0, NULL };
     int xv_adaptor = -1;
 
-    const opt_t subopts[] =
-    {
+    opt_t subopts[] =
+    {  
       /* name         arg type     arg var         test */
-      {  "port",      OPT_ARG_INT, &xv_port,       int_pos },
-      {  "adaptor",   OPT_ARG_INT, &xv_adaptor,    int_non_neg },
+      {  "port",      OPT_ARG_INT, &xv_port,       (opt_test_f)int_pos },
+      {  "adaptor",   OPT_ARG_INT, &xv_adaptor,    (opt_test_f)int_non_neg },
       {  "ck",        OPT_ARG_STR, &ck_src_arg,    xv_test_ck },
       {  "ck-method", OPT_ARG_STR, &ck_method_arg, xv_test_ckm },
       {  NULL }
@@ -687,7 +804,7 @@ static int preinit(const char *arg)
         /* check if adaptor number has been specified */
         if (xv_adaptor != -1 && xv_adaptor != i)
           continue;
-
+      
         if ((ai[i].type & XvInputMask) && (ai[i].type & XvImageMask))
         {
             for (xv_p = ai[i].base_id;
@@ -748,12 +865,33 @@ static int control(uint32_t request, void *data, ...)
         case VOCTRL_GUISUPPORT:
             return VO_TRUE;
         case VOCTRL_GET_PANSCAN:
+            if (!vo_config_count || !vo_fs)
+                return VO_FALSE;
             return VO_TRUE;
         case VOCTRL_FULLSCREEN:
             vo_x11_fullscreen();
             /* indended, fallthrough to update panscan on fullscreen/windowed switch */
         case VOCTRL_SET_PANSCAN:
-                    resize();
+            if ((vo_fs && (vo_panscan != vo_panscan_amount))
+                || (!vo_fs && vo_panscan_amount))
+            {
+                int old_y = vo_panscan_y;
+
+                panscan_calc();
+
+                if (old_y != vo_panscan_y)
+                {
+                    vo_x11_clearwindow_part(mDisplay, vo_window,
+                                            vo_dwidth + vo_panscan_x - 1,
+                                            vo_dheight + vo_panscan_y - 1,
+                                            1);
+		    vo_xv_draw_colorkey(drwX - (vo_panscan_x >> 1),
+					drwY - (vo_panscan_y >> 1),
+					vo_dwidth + vo_panscan_x - 1,
+					vo_dheight + vo_panscan_y - 1);
+                    flip_page();
+                }
+            }
             return VO_TRUE;
         case VOCTRL_SET_EQUALIZER:
             {

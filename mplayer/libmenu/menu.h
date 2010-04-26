@@ -1,27 +1,8 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_MENU_H
 #define MPLAYER_MENU_H
 
 #include "m_struct.h"
 #include "libmpcodecs/mp_image.h"
-#include "libmpcodecs/vf.h"
 
 struct menu_priv_s;
 typedef struct  menu_s menu_t;
@@ -62,7 +43,7 @@ typedef struct menu_info_s {
 #define MENU_CMD_OK 2
 #define MENU_CMD_CANCEL 3
 #define MENU_CMD_LEFT 4
-#define MENU_CMD_RIGHT 5
+#define MENU_CMD_RIGHT 5 
 #define MENU_CMD_ACTION 6
 #define MENU_CMD_HOME 7
 #define MENU_CMD_END 8
@@ -104,7 +85,7 @@ void menu_draw_text(mp_image_t* mpi, char* txt, int x, int y);
 int menu_text_length(char* txt);
 int menu_text_num_lines(char* txt, int max_width);
 
-void menu_text_size(char* txt,int max_width,
+void menu_text_size(char* txt,int max_width, 
 		    int vspace, int warp,
 		    int* _w, int* _h);
 
@@ -113,7 +94,5 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
 			 int vspace, int warp, int align, int anchor);
 
 void menu_draw_box(mp_image_t* mpi, unsigned char grey, unsigned char alpha, int x, int y, int w, int h);
-
-void vf_menu_pause_update(struct vf_instance *vf);
 
 #endif /* MPLAYER_MENU_H */

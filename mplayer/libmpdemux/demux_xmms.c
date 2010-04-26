@@ -101,7 +101,7 @@ static int disk_open(AFormat fmt, int rate, int nch) {
             xmms_afmt=AF_FORMAT_U16_LE;
             break;
         case FMT_U16_NE:
-#if HAVE_BIGENDIAN
+#if WORDS_BIGENDIAN
             xmms_afmt=AF_FORMAT_U16_BE;
 #else
             xmms_afmt=AF_FORMAT_U16_LE;
@@ -166,11 +166,11 @@ static InputPlugin* input_plugins[100];
 static int no_plugins=0;
 
 /* Dummy functions  */
-static InputVisType input_get_vis_type(void){return 0;}
+static InputVisType input_get_vis_type(){return 0;}
 static void input_add_vis_pcm(int time, AFormat fmt, int nch, int length,
                                                                 void *ptr){}
 static void input_set_info_text(char * text){}
-char *xmms_get_gentitle_format(void){ return ""; }
+char *xmms_get_gentitle_format(){ return ""; }
 /* Dummy functions  END*/
 
 static void input_set_info(char* title,int length, int rate, int freq, int nch)
@@ -212,7 +212,7 @@ static void init_plugins_from_dir(const char *plugin_dir){
     closedir(dir);
 }
 
-static void init_plugins(void) {
+static void init_plugins(){
     char *home;
 
     no_plugins=0;
@@ -227,7 +227,7 @@ static void init_plugins(void) {
     init_plugins_from_dir(XMMS_INPUT_PLUGIN_DIR);
 }
 
-static void cleanup_plugins(void) {
+static void cleanup_plugins(){
     while(no_plugins>0){
         --no_plugins;
         mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_MPDEMUX_XMMS_ClosingPlugin,

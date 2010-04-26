@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #ifndef MPLAYER_SUB_H
 #define MPLAYER_SUB_H
@@ -66,6 +49,14 @@ typedef struct mp_osd_obj_s {
     unsigned char *bitmap_buffer;
 } mp_osd_obj_t;
 
+
+#if 0
+
+// disable subtitles:
+static inline void vo_draw_text_osd(int dxs,int dys,void (*draw_alpha)(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride)){
+}
+
+#else
 
 #include "subreader.h"
 
@@ -122,11 +113,11 @@ extern int spu_alignment;
 extern int spu_aamode;
 extern float spu_gaussvar;
 
-void vo_draw_text(int dxs,int dys,void (*draw_alpha)(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride));
-void vo_draw_text_ext(int dxs, int dys, int left_border, int top_border,
-                      int right_border, int bottom_border, int orig_w, int orig_h,
-                      void (*draw_alpha)(int x0, int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride));
-void vo_remove_text(int dxs,int dys,void (*remove)(int x0,int y0, int w,int h));
+//extern void vo_draw_text_osd(int dxs,int dys,void (*draw_alpha)(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride));
+//extern void vo_draw_text_progbar(int dxs,int dys,void (*draw_alpha)(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride));
+//extern void vo_draw_text_sub(int dxs,int dys,void (*draw_alpha)(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride));
+extern void vo_draw_text(int dxs,int dys,void (*draw_alpha)(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride));
+extern void vo_remove_text(int dxs,int dys,void (*remove)(int x0,int y0, int w,int h));
 
 void vo_init_osd(void);
 int vo_update_osd(int dxs,int dys);
@@ -142,5 +133,7 @@ unsigned utf8_get_char(const char **str);
 #include <inttypes.h>
 void osd_set_nav_box (uint16_t sx, uint16_t sy, uint16_t ex, uint16_t ey);
 #endif
+
+#endif /* 0 */
 
 #endif /* MPLAYER_SUB_H */

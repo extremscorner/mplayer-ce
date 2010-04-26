@@ -30,8 +30,8 @@
 #define	S3_SAVAGE_MOBILE_SERIES(chip) ((chip==S3_SAVAGE_MX) || (chip==S3_SUPERSAVAGE))
 #define S3_SAVAGE_SERIES(chip) ((chip>=S3_SAVAGE3D) && (chip<=S3_SAVAGE2000))
 
-/*
- * Chip tags.  These are used to group the adapters into
+/* 
+ * Chip tags.  These are used to group the adapters into 
  * related families.
  */
 enum S3CHIPTAGS {
@@ -54,7 +54,7 @@ enum S3CHIPTAGS {
 #define S3_NEWMMIO_REGSIZE		0x0010000	/* 64KB */
 #define S3_NEWMMIO_REGSIZE_SAVAGE	0x0080000	/* 512KB */
 
-#define BASE_FREQ			14.31818
+#define BASE_FREQ			14.31818	
 
 /*
  * There are two different streams engines used in the S3 line.
@@ -167,7 +167,7 @@ do { \
 #define HSCALING_Shift    0
 #define HSCALING_Mask     (((1L << 16)-1) << HSCALING_Shift)
 #define HSCALING(w0,w1)   ((((unsigned int)(((double)w0/(double)w1) * (1 << 15))) << HSCALING_Shift) & HSCALING_Mask)
-
+                                                                                                                    
 #define VSCALING_Shift    0
 #define VSCALING_Mask     (((1L << 20)-1) << VSCALING_Shift)
 #define VSCALING(h0,h1)   ((((unsigned int) (((double)h0/(double)h1) * (1 << 15))) << VSCALING_Shift) & VSCALING_Mask)
@@ -196,7 +196,7 @@ do { \
 #ifndef USE_RMW_CYCLES
 
 /* Can be used to inhibit READ-MODIFY-WRITE cycles. On by default. */
-#define MEM_BARRIER() __asm__ volatile ("" : : : "memory")
+#define MEM_BARRIER() __asm__ __volatile__ ("" : : : "memory")
 
 #undef  VID_WR08
 #define VID_WR08(p,i,val) ({ MEM_BARRIER(); ((uint8_t *)(p))[(i)]=(val); })
