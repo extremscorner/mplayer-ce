@@ -3,12 +3,6 @@
 # Missing messages are filled in from the master message file and, if
 # requested, character set conversion is performed.
 
-if test -z $2 ; then
-    echo "Error: missing parameters"
-    echo "Usage: $0 <messages file> <character set>"
-    exit 1
-fi
-
 MASTER=help/help_mp-en.h
 TARGET=help_mp.h
 
@@ -19,20 +13,20 @@ missing_messages(){
 curr=""
 
 while read -r line; do
-    if echo "$line" | grep -q '^#define' ; then
-        curr=`printf "%s\n" "$line" | cut -d ' ' -f 2`
-        if grep -q "^#define $curr[	 ]" "$TRANSLATION" ; then
-            curr=""
-        fi
-    else
-        if [ -z "$line" ]; then
-            curr=""
-        fi
-    fi
+	if echo "$line" | grep -q '^#define' ; then
+		curr=`printf "%s\n" "$line" | cut -d ' ' -f 2`
+		if grep -q "^#define $curr[	 ]" "$TRANSLATION" ; then
+			curr=""
+		fi
+	else
+		if [ -z "$line" ]; then
+			curr=""
+		fi
+	fi
 
-    if [ -n "$curr" ]; then
-        printf "%s\n" "$line"
-    fi
+	if [ -n "$curr" ]; then
+		printf "%s\n" "$line"
+	fi
 done
 }
 

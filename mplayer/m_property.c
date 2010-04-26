@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 /// \file
 /// \ingroup Properties
@@ -118,7 +101,7 @@ char* m_properties_expand_string(const m_option_t* prop_list,char* str, void *ct
     int l,fr=0,pos=0,size=strlen(str)+512;
     char *p = NULL,*e,*ret = malloc(size), num_val;
     int skip = 0, lvl = 0, skip_lvl = 0;
-
+    
     while(str[0]) {
         if(str[0] == '\\') {
             int sl = 1;
@@ -131,7 +114,7 @@ char* m_properties_expand_string(const m_option_t* prop_list,char* str, void *ct
                 p = "\r", l = 1; break;
             case 't':
                 p = "\t", l = 1; break;
-            case 'x':
+            case 'x': 
                 if(str[2]) {
                     char num[3] = { str[2], str[3], 0 };
                     char* end = num;
@@ -162,7 +145,7 @@ char* m_properties_expand_string(const m_option_t* prop_list,char* str, void *ct
             str = e+1;
         } else if(str[0] == '?' && str[1] == '(' && (e = strchr(str+2,':'))) {
             lvl++;
-            if(!skip) {
+            if(!skip) {            
                 int is_not = str[2] == '!';
                 int pl = e - str - (is_not ? 3 : 2);
                 char pname[pl+1];
@@ -178,9 +161,9 @@ char* m_properties_expand_string(const m_option_t* prop_list,char* str, void *ct
             str = e+1, l = 0;
         } else
             p = str, l = 1, str++;
-
+        
         if(skip || l <= 0) continue;
-
+        
         if(pos+l+1 > size) {
             size = pos+l+512;
             ret = realloc(ret,size);
@@ -189,7 +172,7 @@ char* m_properties_expand_string(const m_option_t* prop_list,char* str, void *ct
         pos += l;
         if(fr) free(p), fr = 0;
     }
-
+    
     ret[pos] = 0;
     return ret;
 }
@@ -197,7 +180,7 @@ char* m_properties_expand_string(const m_option_t* prop_list,char* str, void *ct
 void m_properties_print_help_list(const m_option_t* list) {
     char min[50],max[50];
     int i,count = 0;
-
+    
     mp_msg(MSGT_CFGPARSER, MSGL_INFO, MSGTR_PropertyListHeader);
     for(i = 0 ; list[i].name ; i++) {
         const m_option_t* opt = &list[i];
@@ -262,17 +245,6 @@ int m_property_choice(const m_option_t* prop,int action,
     return m_property_int_range(prop,action,arg,var);
 }
 
-int m_property_flag_ro(const m_option_t* prop,int action,
-                       void* arg,int var) {
-    switch(action) {
-    case M_PROPERTY_PRINT:
-        if(!arg) return 0;
-        *(char**)arg = strdup((var > prop->min) ? MSGTR_Enabled : MSGTR_Disabled);
-        return 1;
-    }
-    return m_property_int_ro(prop,action,arg,var);
-}
-
 int m_property_flag(const m_option_t* prop,int action,
                     void* arg,int* var) {
     switch(action) {
@@ -281,7 +253,9 @@ int m_property_flag(const m_option_t* prop,int action,
         *var = *var == prop->min ? prop->max : prop->min;
         return 1;
     case M_PROPERTY_PRINT:
-        return m_property_flag_ro(prop, action, arg, *var);
+        if(!arg) return 0;
+        *(char**)arg = strdup((*var > prop->min) ? MSGTR_Enabled : MSGTR_Disabled);
+        return 1;
     }
     return m_property_int_range(prop,action,arg,var);
 }

@@ -1,0 +1,1 @@
+Copy to (devkitpro dir)\libogc 

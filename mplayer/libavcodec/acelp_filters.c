@@ -24,8 +24,11 @@
 
 #include "avcodec.h"
 #include "acelp_filters.h"
+#define FRAC_BITS 13
+#include "mathops.h"
 
-const int16_t ff_acelp_interp_filter[61] = { /* (0.15) */
+const int16_t ff_acelp_interp_filter[61] =
+{ /* (0.15) */
   29443, 28346, 25207, 20449, 14701,  8693,
    3143, -1352, -4402, -5865, -5850, -4673,
   -2783,  -672,  1211,  2536,  3130,  2991,
@@ -39,19 +42,26 @@ const int16_t ff_acelp_interp_filter[61] = { /* (0.15) */
       0,
 };
 
-void ff_acelp_interpolate(int16_t* out, const int16_t* in,
-                          const int16_t* filter_coeffs, int precision,
-                          int frac_pos, int filter_length, int length)
+void ff_acelp_interpolate(
+        int16_t* out,
+        const int16_t* in,
+        const int16_t* filter_coeffs,
+        int precision,
+        int pitch_delay_frac,
+        int filter_length,
+        int length)
 {
     int n, i;
 
-    assert(frac_pos >= 0 && frac_pos < precision);
+    assert(pitch_delay_frac >= 0 && pitch_delay_frac < precision);
 
-    for (n = 0; n < length; n++) {
+    for(n=0; n<length; n++)
+    {
         int idx = 0;
         int v = 0x4000;
 
-        for (i = 0; i < filter_length;) {
+        for(i=0; i<filter_length;)
+        {
 
             /* The reference G.729 and AMR fixed point code performs clipping after
                each of the two following accumulations.
@@ -62,84 +72,112 @@ void ff_acelp_interpolate(int16_t* out, const int16_t* in,
                 v += R(n-i)*ff_acelp_interp_filter(t+6i)
                 v += R(n+i+1)*ff_acelp_interp_filter(6-t+6i) */
 
-            v += in[n + i] * filter_coeffs[idx + frac_pos];
+            v += in[n + i] * filter_coeffs[idx + pitch_delay_frac];
             idx += precision;
             i++;
-            v += in[n - i] * filter_coeffs[idx - frac_pos];
+            v += in[n - i] * filter_coeffs[idx - pitch_delay_frac];
         }
-        if (av_clip_int16(v >> 15) != (v >> 15))
-            av_log(NULL, AV_LOG_WARNING, "overflow that would need cliping in ff_acelp_interpolate()\n");
-        out[n] = v >> 15;
+        out[n] = av_clip_int16(v >> 15);
     }
 }
 
-void ff_acelp_interpolatef(float *out, const float *in,
-                           const float *filter_coeffs, int precision,
-                           int frac_pos, int filter_length, int length)
+void ff_acelp_convolve_circ(
+        int16_t* fc_out,
+        const int16_t* fc_in,
+        const int16_t* filter,
+        int subframe_size)
 {
-    int n, i;
+    int i, k;
 
-    for (n = 0; n < length; n++) {
-        int idx = 0;
-        float v = 0;
+    memset(fc_out, 0, subframe_size * sizeof(int16_t));
 
-        for (i = 0; i < filter_length;) {
-            v += in[n + i] * filter_coeffs[idx + frac_pos];
-            idx += precision;
-            i++;
-            v += in[n - i] * filter_coeffs[idx - frac_pos];
+    /* Since there are few pulses over an entire subframe (i.e. almost
+       all fc_in[i] are zero) it is faster to swap two loops and process
+       non-zero samples only. In the case of G.729D the buffer contains
+       two non-zero samples before the call to ff_acelp_enhance_harmonics
+       and, due to pitch_delay being bounded by [20; 143], a maximum
+       of four non-zero samples for a total of 40 after the call. */
+    for(i=0; i<subframe_size; i++)
+    {
+        if(fc_in[i])
+        {
+            for(k=0; k<i; k++)
+                fc_out[k] += (fc_in[i] * filter[subframe_size + k - i]) >> 15;
+
+            for(k=i; k<subframe_size; k++)
+                fc_out[k] += (fc_in[i] * filter[k - i]) >> 15;
         }
-        out[n] = v;
     }
 }
 
+int ff_acelp_lp_synthesis_filter(
+        int16_t *out,
+        const int16_t* filter_coeffs,
+        const int16_t* in,
+        int buffer_length,
+        int filter_length,
+        int stop_on_overflow,
+        int rounder)
+{
+    int i,n;
 
-void ff_acelp_high_pass_filter(int16_t* out, int hpf_f[2],
-                               const int16_t* in, int length)
+    // These two lines are to avoid a -1 subtraction in the main loop
+    filter_length++;
+    filter_coeffs--;
+
+    for(n=0; n<buffer_length; n++)
+    {
+        int sum = rounder;
+        for(i=1; i<filter_length; i++)
+            sum -= filter_coeffs[i] * out[n-i];
+
+        sum = (sum >> 12) + in[n];
+
+        /* Check for overflow */
+        if(sum + 0x8000 > 0xFFFFU)
+        {
+            if(stop_on_overflow)
+                return 1;
+            sum = (sum >> 31) ^ 32767;
+        }
+        out[n] = sum;
+    }
+
+    return 0;
+}
+
+void ff_acelp_weighted_filter(
+        int16_t *out,
+        const int16_t* in,
+        const int16_t *weight_pow,
+        int filter_length)
+{
+    int n;
+    for(n=0; n<filter_length; n++)
+        out[n] = (in[n] * weight_pow[n] + 0x4000) >> 15; /* (3.12) = (0.15) * (3.12) with rounding */
+}
+
+void ff_acelp_high_pass_filter(
+        int16_t* out,
+        int hpf_f[2],
+        const int16_t* in,
+        int length)
 {
     int i;
     int tmp;
 
-    for (i = 0; i < length; i++) {
-        tmp  = (hpf_f[0]* 15836LL) >> 13;
-        tmp += (hpf_f[1]* -7667LL) >> 13;
-        tmp += 7699 * (in[i] - 2*in[i-1] + in[i-2]);
+    for(i=0; i<length; i++)
+    {
+        tmp =  MULL(hpf_f[0], 15836);                     /* (14.13) = (13.13) * (1.13) */
+        tmp += MULL(hpf_f[1], -7667);                     /* (13.13) = (13.13) * (0.13) */
+        tmp += 7699 * (in[i] - 2*in[i-1] + in[i-2]); /* (14.13) =  (0.13) * (14.0) */
 
-        /* With "+0x800" rounding, clipping is needed
-           for ALGTHM and SPEECH tests. */
-        out[i] = av_clip_int16((tmp + 0x800) >> 12);
+        /* Multiplication by 2 with rounding can cause short type
+           overflow, thus clipping is required. */
+
+        out[i] = av_clip_int16((tmp + 0x800) >> 12);      /* (15.0) = 2 * (13.13) = (14.13) */
 
         hpf_f[1] = hpf_f[0];
         hpf_f[0] = tmp;
     }
 }
-
-void ff_acelp_apply_order_2_transfer_function(float *out, const float *in,
-                                              const float zero_coeffs[2],
-                                              const float pole_coeffs[2],
-                                              float gain, float mem[2], int n)
-{
-    int i;
-    float tmp;
-
-    for (i = 0; i < n; i++) {
-        tmp = gain * in[i] - pole_coeffs[0] * mem[0] - pole_coeffs[1] * mem[1];
-        out[i] =       tmp + zero_coeffs[0] * mem[0] + zero_coeffs[1] * mem[1];
-
-        mem[1] = mem[0];
-        mem[0] = tmp;
-    }
-}
-
-void ff_tilt_compensation(float *mem, float tilt, float *samples, int size)
-{
-    float new_tilt_mem = samples[size - 1];
-    int i;
-
-    for (i = size - 1; i > 0; i--)
-        samples[i] -= tilt * samples[i - 1];
-
-    samples[0] -= tilt * *mem;
-    *mem = new_tilt_mem;
-}
-

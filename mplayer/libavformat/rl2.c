@@ -21,7 +21,7 @@
 
 /**
  * RL2 file demuxer
- * @file
+ * @file rl2.c
  * @author Sascha Sommer (saschasommer@freenet.de)
  * For more information regarding the RL2 file format, visit:
  *   http://wiki.multimedia.cx/index.php?title=RL2
@@ -33,7 +33,6 @@
  * optional background_frame
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define EXTRADATA1_SIZE (6 + 256 * 3) ///< video base, clr, palette
@@ -116,7 +115,7 @@ static av_cold int rl2_read_header(AVFormatContext *s,
     if(!st)
          return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RL2;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = 320;
@@ -145,16 +144,16 @@ static av_cold int rl2_read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR(ENOMEM);
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_PCM_U8;
         st->codec->codec_tag = 1;
         st->codec->channels = channels;
-        st->codec->bits_per_coded_sample = 8;
+        st->codec->bits_per_sample = 8;
         st->codec->sample_rate = rate;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_coded_sample;
+            st->codec->bits_per_sample;
         st->codec->block_align = st->codec->channels *
-            st->codec->bits_per_coded_sample / 8;
+            st->codec->bits_per_sample / 8;
         av_set_pts_info(st,32,1,rate);
     }
 
@@ -289,7 +288,7 @@ static int rl2_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 AVInputFormat rl2_demuxer = {
     "rl2",
-    NULL_IF_CONFIG_SMALL("RL2 format"),
+    NULL_IF_CONFIG_SMALL("rl2 format"),
     sizeof(Rl2DemuxContext),
     rl2_probe,
     rl2_read_header,

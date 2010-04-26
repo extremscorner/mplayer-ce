@@ -1,22 +1,6 @@
-/*
- * libvo common functions, variables used by many/all drivers.
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+
+/* this file contains libvo's common functions, variables used by 
+   many/all drivers. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +52,7 @@ int vo_refresh_rate=0;
 int vo_keepaspect=1;
 int vo_rootwin=0;
 int vo_border=1;
-int64_t WinID = -1;
+int WinID = -1;
 
 int vo_pts=0; // for hw decoding
 float vo_fps=0;
@@ -77,69 +61,59 @@ char *vo_subdevice = NULL;
 int vo_directrendering=0;
 
 int vo_colorkey = 0x0000ff00; // default colorkey is green
-                              // (0xff000000 means that colorkey has been disabled)
-
-// name to be used instead of the vo's default
-char *vo_winname;
-// title to be applied to movie window
-char *vo_wintitle;
+			      // (0xff000000 means that colorkey has been disabled)
 
 //
 // Externally visible list of all vo drivers
 //
-extern const vo_functions_t video_out_mga;
-extern const vo_functions_t video_out_xmga;
-extern const vo_functions_t video_out_x11;
+extern vo_functions_t video_out_mga;
+extern vo_functions_t video_out_xmga;
+extern vo_functions_t video_out_x11;
 extern vo_functions_t video_out_xover;
-extern const vo_functions_t video_out_xvmc;
-extern const vo_functions_t video_out_vdpau;
-extern const vo_functions_t video_out_xv;
-extern const vo_functions_t video_out_gl_nosw;
-extern const vo_functions_t video_out_gl;
-extern const vo_functions_t video_out_gl2;
-extern const vo_functions_t video_out_matrixview;
-extern const vo_functions_t video_out_dga;
-extern const vo_functions_t video_out_sdl;
-extern const vo_functions_t video_out_3dfx;
-extern const vo_functions_t video_out_tdfxfb;
-extern const vo_functions_t video_out_s3fb;
-extern const vo_functions_t video_out_wii;
-extern const vo_functions_t video_out_null;
-extern const vo_functions_t video_out_zr;
-extern const vo_functions_t video_out_zr2;
-extern const vo_functions_t video_out_bl;
+extern vo_functions_t video_out_xvmc;
+extern vo_functions_t video_out_xv;
+extern vo_functions_t video_out_gl;
+extern vo_functions_t video_out_gl2;
+extern vo_functions_t video_out_dga;
+extern vo_functions_t video_out_sdl;
+extern vo_functions_t video_out_3dfx;
+extern vo_functions_t video_out_tdfxfb;
+extern vo_functions_t video_out_s3fb;
+extern vo_functions_t video_out_wii;
+extern vo_functions_t video_out_null;
+extern vo_functions_t video_out_zr;
+extern vo_functions_t video_out_zr2;
+extern vo_functions_t video_out_bl;
 extern vo_functions_t video_out_fbdev;
-extern const vo_functions_t video_out_fbdev2;
+extern vo_functions_t video_out_fbdev2;
 extern vo_functions_t video_out_svga;
-extern const vo_functions_t video_out_png;
-extern const vo_functions_t video_out_ggi;
-extern const vo_functions_t video_out_aa;
-extern const vo_functions_t video_out_caca;
-extern const vo_functions_t video_out_mpegpes;
-extern const vo_functions_t video_out_yuv4mpeg;
-extern const vo_functions_t video_out_direct3d;
-extern const vo_functions_t video_out_directx;
-extern const vo_functions_t video_out_kva;
-extern const vo_functions_t video_out_dxr2;
-extern const vo_functions_t video_out_dxr3;
-extern const vo_functions_t video_out_ivtv;
-extern const vo_functions_t video_out_v4l2;
-extern const vo_functions_t video_out_jpeg;
-extern const vo_functions_t video_out_gif89a;
+extern vo_functions_t video_out_png;
+extern vo_functions_t video_out_ggi;
+extern vo_functions_t video_out_aa;
+extern vo_functions_t video_out_caca;
+extern vo_functions_t video_out_mpegpes;
+extern vo_functions_t video_out_yuv4mpeg;
+extern vo_functions_t video_out_directx;
+extern vo_functions_t video_out_dxr2;
+extern vo_functions_t video_out_dxr3;
+extern vo_functions_t video_out_ivtv;
+extern vo_functions_t video_out_v4l2;
+extern vo_functions_t video_out_jpeg;
+extern vo_functions_t video_out_gif89a;
 extern vo_functions_t video_out_vesa;
-extern const vo_functions_t video_out_directfb;
-extern const vo_functions_t video_out_dfbmga;
+extern vo_functions_t video_out_directfb;
+extern vo_functions_t video_out_dfbmga;
 extern vo_functions_t video_out_xvidix;
 extern vo_functions_t video_out_winvidix;
 extern vo_functions_t video_out_cvidix;
-extern const vo_functions_t video_out_tdfx_vid;
-extern const vo_functions_t video_out_xvr100;
-extern const vo_functions_t video_out_tga;
-extern const vo_functions_t video_out_corevideo;
-extern const vo_functions_t video_out_quartz;
-extern const vo_functions_t video_out_pnm;
-extern const vo_functions_t video_out_md5sum;
-extern const vo_functions_t video_out_gekko;
+extern vo_functions_t video_out_tdfx_vid;
+extern vo_functions_t video_out_xvr100;
+extern vo_functions_t video_out_tga;
+extern vo_functions_t video_out_macosx;
+extern vo_functions_t video_out_quartz;
+extern vo_functions_t video_out_pnm;
+extern vo_functions_t video_out_md5sum;
+extern vo_functions_t video_out_gekko;
 
 const vo_functions_t* const video_out_drivers[] =
 {
@@ -152,17 +126,11 @@ const vo_functions_t* const video_out_drivers[] =
 #ifdef CONFIG_DIRECTX
         &video_out_directx,
 #endif
-#ifdef CONFIG_DIRECT3D
-        &video_out_direct3d,
-#endif
-#ifdef CONFIG_KVA
-        &video_out_kva,
-#endif
 #ifdef CONFIG_COREVIDEO
-        &video_out_corevideo,
+	&video_out_macosx,
 #endif
 #ifdef CONFIG_QUARTZ
-        &video_out_quartz,
+	&video_out_quartz,
 #endif
 #ifdef CONFIG_XMGA
         &video_out_xmga,
@@ -182,21 +150,15 @@ const vo_functions_t* const video_out_drivers[] =
 #ifdef CONFIG_3DFX
         &video_out_3dfx,
 #endif
-#if CONFIG_VDPAU
-        &video_out_vdpau,
-#endif
 #ifdef CONFIG_XV
         &video_out_xv,
 #endif
 #ifdef CONFIG_X11
-#ifdef CONFIG_GL
-        &video_out_gl_nosw,
-#endif
         &video_out_x11,
         &video_out_xover,
 #endif
 #ifdef CONFIG_GL
-        &video_out_gl,
+	        &video_out_gl,
         &video_out_gl2,
 #endif
 #ifdef CONFIG_DGA
@@ -206,29 +168,26 @@ const vo_functions_t* const video_out_drivers[] =
         &video_out_sdl,
 #endif
 #ifdef CONFIG_GGI
-        &video_out_ggi,
+	&video_out_ggi,
 #endif
 #ifdef CONFIG_FBDEV
-        &video_out_fbdev,
-        &video_out_fbdev2,
+	&video_out_fbdev,
+	&video_out_fbdev2,
 #endif
 #ifdef CONFIG_SVGALIB
-        &video_out_svga,
-#endif
-#ifdef CONFIG_MATRIXVIEW
-        &video_out_matrixview,
+	&video_out_svga,
 #endif
 #ifdef CONFIG_AA
-        &video_out_aa,
+	&video_out_aa,
 #endif
 #ifdef CONFIG_CACA
-        &video_out_caca,
+	&video_out_caca,
 #endif
 #ifdef CONFIG_DXR2
-        &video_out_dxr2,
+	&video_out_dxr2,
 #endif
 #ifdef CONFIG_DXR3
-        &video_out_dxr3,
+	&video_out_dxr3,
 #endif
 #ifdef CONFIG_IVTV
         &video_out_ivtv,
@@ -237,59 +196,59 @@ const vo_functions_t* const video_out_drivers[] =
         &video_out_v4l2,
 #endif
 #ifdef CONFIG_ZR
-        &video_out_zr,
-        &video_out_zr2,
+	&video_out_zr,
+	&video_out_zr2,
 #endif
 #ifdef CONFIG_BL
-        &video_out_bl,
+	&video_out_bl,
 #endif
 #ifdef CONFIG_VESA
-        &video_out_vesa,
+	&video_out_vesa,
 #endif
 #ifdef CONFIG_DIRECTFB
-        &video_out_directfb,
+	&video_out_directfb,
 #endif
 #ifdef CONFIG_DFBMGA
         &video_out_dfbmga,
 #endif
 #ifdef CONFIG_VIDIX
 #ifdef CONFIG_X11
-        &video_out_xvidix,
+	&video_out_xvidix,
 #endif
-#if defined(__MINGW32__) || defined(__CYGWIN__)
-        &video_out_winvidix,
+#ifdef WIN32
+    &video_out_winvidix,
 #endif
-        &video_out_cvidix,
+    &video_out_cvidix,
 #endif
 #ifdef GEKKO
     &video_out_gekko,
 #endif
         &video_out_null,
-        // should not be auto-selected
-#if CONFIG_XVMC
+	// should not be auto-selected
+#ifdef HAVE_XVMC
         &video_out_xvmc,
 #endif
-        &video_out_mpegpes,
+	&video_out_mpegpes,
 #ifdef CONFIG_YUV4MPEG
-        &video_out_yuv4mpeg,
+	&video_out_yuv4mpeg,
 #endif
-#ifdef CONFIG_LIBAVCODEC
-        &video_out_png,
-#endif
+#ifdef CONFIG_PNG
+	&video_out_png,
+#endif	
 #ifdef CONFIG_JPEG
-        &video_out_jpeg,
+	&video_out_jpeg,
 #endif
 #ifdef CONFIG_GIF
-        &video_out_gif89a,
+	&video_out_gif89a,
 #endif
 #ifdef CONFIG_TGA
         &video_out_tga,
 #endif
 #ifdef CONFIG_PNM
-        &video_out_pnm,
+    &video_out_pnm,
 #endif
 #ifdef CONFIG_MD5SUM
-        &video_out_md5sum,
+    &video_out_md5sum,
 #endif
         NULL
 };
@@ -300,7 +259,7 @@ void list_video_out(void){
       mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_VIDEO_OUTPUTS\n");
       while (video_out_drivers[i]) {
         const vo_info_t *info = video_out_drivers[i++]->info;
-        mp_msg(MSGT_GLOBAL, MSGL_INFO,"\t%s\t%s\n", info->short_name, info->name);
+      	mp_msg(MSGT_GLOBAL, MSGL_INFO,"\t%s\t%s\n", info->short_name, info->name);
       }
       mp_msg(MSGT_GLOBAL, MSGL_INFO,"\n");
 }
@@ -369,89 +328,8 @@ int config_video_out(const vo_functions_t *vo, uint32_t width, uint32_t height,
   return vo->config(width, height, d_width, d_height, flags, title, format);
 }
 
-/**
- * \brief lookup an integer in a table, table must have 0 as the last key
- * \param key key to search for
- * \result translation corresponding to key or "to" value of last mapping
- *         if not found.
- */
-int lookup_keymap_table(const struct keymap *map, int key) {
-  while (map->from && map->from != key) map++;
-  return map->to;
-}
-
-/**
- * \brief helper function for the kind of panscan-scaling that needs a source
- *        and destination rectangle like Direct3D and VDPAU
- */
-static void src_dst_split_scaling(int src_size, int dst_size, int scaled_src_size,
-                                  int *src_start, int *src_end, int *dst_start, int *dst_end) {
-  if (scaled_src_size > dst_size) {
-    int border = src_size * (scaled_src_size - dst_size) / scaled_src_size;
-    // round to a multiple of 2, this is at least needed for vo_direct3d and ATI cards
-    border = (border / 2 + 1) & ~1;
-    *src_start = border;
-    *src_end   = src_size - border;
-    *dst_start = 0;
-    *dst_end   = dst_size;
-  } else {
-    *src_start = 0;
-    *src_end   = src_size;
-    *dst_start = (dst_size - scaled_src_size) / 2;
-    *dst_end   = *dst_start + scaled_src_size;
-  }
-}
-
-/**
- * Calculate the appropriate source and destination rectangle to
- * get a correctly scaled picture, including pan-scan.
- * Can be extended to take future cropping support into account.
- *
- * \param crop specifies the cropping border size in the left, right, top and bottom members, may be NULL
- * \param borders the border values as e.g. EOSD (ASS) and properly placed DVD highlight support requires,
- *                may be NULL and only left and top are currently valid.
- */
-void calc_src_dst_rects(int src_width, int src_height, struct vo_rect *src, struct vo_rect *dst,
-                        struct vo_rect *borders, const struct vo_rect *crop) {
-  static const struct vo_rect no_crop = {0, 0, 0, 0, 0, 0};
-  int scaled_width  = 0;
-  int scaled_height = 0;
-  if (!crop) crop = &no_crop;
-  src_width  -= crop->left + crop->right;
-  src_height -= crop->top  + crop->bottom;
-  if (src_width  < 2) src_width  = 2;
-  if (src_height < 2) src_height = 2;
-  dst->left = 0; dst->right  = vo_dwidth;
-  dst->top  = 0; dst->bottom = vo_dheight;
-  src->left = 0; src->right  = src_width;
-  src->top  = 0; src->bottom = src_height;
-  if (borders) {
-    borders->left = 0; borders->top = 0;
-  }
-  if (aspect_scaling()) {
-    aspect(&scaled_width, &scaled_height, A_WINZOOM);
-    panscan_calc_windowed();
-    scaled_width  += vo_panscan_x;
-    scaled_height += vo_panscan_y;
-    if (borders) {
-      borders->left = (vo_dwidth  - scaled_width ) / 2;
-      borders->top  = (vo_dheight - scaled_height) / 2;
-    }
-    src_dst_split_scaling(src_width, vo_dwidth, scaled_width,
-                          &src->left, &src->right, &dst->left, &dst->right);
-    src_dst_split_scaling(src_height, vo_dheight, scaled_height,
-                          &src->top, &src->bottom, &dst->top, &dst->bottom);
-  }
-  src->left += crop->left; src->right  += crop->left;
-  src->top  += crop->top;  src->bottom += crop->top;
-  src->width  = src->right  - src->left;
-  src->height = src->bottom - src->top;
-  dst->width  = dst->right  - dst->left;
-  dst->height = dst->bottom - dst->top;
-}
-
 #if defined(CONFIG_FBDEV) || defined(CONFIG_VESA)
-/* Borrowed from vo_fbdev.c
+/* Borrowed from vo_fbdev.c 
 Monitor ranges related functions*/
 
 char *monitor_hfreq_str = NULL;
@@ -488,7 +366,7 @@ range_t *str2range(char *s)
 	for (i = 0; *endptr; i++) {
 		if (*s == ',')
 			goto out_err;
-		if (!(r = realloc(r, sizeof(*r) * (i + 2)))) {
+		if (!(r = (range_t *) realloc(r, sizeof(*r) * (i + 2)))) {
 			mp_msg(MSGT_GLOBAL, MSGL_WARN,"can't realloc 'r'\n");
 			return NULL;
 		}
@@ -531,3 +409,4 @@ out_err:
 
 /* Borrowed from vo_fbdev.c END */
 #endif
+

@@ -1,6 +1,6 @@
-                          ------------------------------
+			  ------------------------------
                           How to build an MPlayer mirror
-                          ------------------------------
+			  ------------------------------
 
 This document might be inacurate or even incomplete, please
 send feedback + corrections to the mplayer-mirror mailing list.
@@ -160,13 +160,15 @@ Setting up a webserver
 Set up Apache or whatever web server you prefer. We just have static pages,
 so no fancy configuration is necessary. However, we need a few aliases so that
 links on our pages work correctly. /MPlayer and /DOCS should redirect to the
-directory with the downloadable files.
+directory with the downloadable files and /homepage should redirect to the
+directory with the HTML pages.
 
 Here is an example stanza to paste into your Apache configuration:
 
 <VirtualHost www#.mplayerhq.hu>
         DocumentRoot /path/to/htdocs
         Options FollowSymLinks Indexes
+        Alias /homepage /path/to/htdocs
         Alias /MPlayer  /path/to/MPlayer
         Alias /DOCS     /path/to/MPlayer/DOCS
         AddDefaultCharset off
@@ -175,6 +177,7 @@ Here is an example stanza to paste into your Apache configuration:
 <VirtualHost www.mplayerhq.hu>
         DocumentRoot /path/to/htdocs
         Options FollowSymLinks Indexes
+        Alias /homepage /path/to/htdocs
         Alias /MPlayer  /path/to/MPlayer
         Alias /DOCS     /path/to/MPlayer/DOCS
         AddDefaultCharset off
@@ -202,7 +205,7 @@ both for your mirror address (www#.mplayerhq.hu) and the DNS round-robin
 address (www.mplayerhq.hu):
 
 - The virtual host is reachable by its address.
-- The MPlayer and DOCS subdirectories work.
+- The subdirectories MPlayer, DOCS and homepage work.
 - The man pages and documentation are served with the correct content-type.
   Try Russian or Chinese, you will notice breakage immediately.
 

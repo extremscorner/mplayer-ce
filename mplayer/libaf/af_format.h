@@ -1,24 +1,6 @@
-/*
- * The sample format system used lin libaf is based on bitmasks.
- * The format definition only refers to the storage format,
- * not the resolution.
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/* The sample format system used lin libaf is based on bitmasks. The
+   format definition only refers to the storage format not the
+   resolution. */
 
 #ifndef MPLAYER_AF_FORMAT_H
 #define MPLAYER_AF_FORMAT_H
@@ -30,7 +12,7 @@
 #define AF_FORMAT_LE		(1<<0) // Little Endian
 #define AF_FORMAT_END_MASK	(1<<0)
 
-#if HAVE_BIGENDIAN	       	// Native endian of cpu
+#if WORDS_BIGENDIAN	       	// Native endian of cpu
 #define	AF_FORMAT_NE		AF_FORMAT_BE
 #else
 #define	AF_FORMAT_NE		AF_FORMAT_LE
@@ -83,10 +65,7 @@
 #define AF_FORMAT_FLOAT_LE	(AF_FORMAT_F|AF_FORMAT_32BIT|AF_FORMAT_LE)
 #define AF_FORMAT_FLOAT_BE	(AF_FORMAT_F|AF_FORMAT_32BIT|AF_FORMAT_BE)
 
-#define AF_FORMAT_AC3_LE	(AF_FORMAT_AC3|AF_FORMAT_16BIT|AF_FORMAT_LE)
-#define AF_FORMAT_AC3_BE	(AF_FORMAT_AC3|AF_FORMAT_16BIT|AF_FORMAT_BE)
-
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #define AF_FORMAT_U16_NE AF_FORMAT_U16_BE
 #define AF_FORMAT_S16_NE AF_FORMAT_S16_BE
 #define AF_FORMAT_U24_NE AF_FORMAT_U24_BE
@@ -94,7 +73,6 @@
 #define AF_FORMAT_U32_NE AF_FORMAT_U32_BE
 #define AF_FORMAT_S32_NE AF_FORMAT_S32_BE
 #define AF_FORMAT_FLOAT_NE AF_FORMAT_FLOAT_BE
-#define AF_FORMAT_AC3_NE AF_FORMAT_AC3_BE
 #else
 #define AF_FORMAT_U16_NE AF_FORMAT_U16_LE
 #define AF_FORMAT_S16_NE AF_FORMAT_S16_LE
@@ -103,18 +81,15 @@
 #define AF_FORMAT_U32_NE AF_FORMAT_U32_LE
 #define AF_FORMAT_S32_NE AF_FORMAT_S32_LE
 #define AF_FORMAT_FLOAT_NE AF_FORMAT_FLOAT_LE
-#define AF_FORMAT_AC3_NE AF_FORMAT_AC3_LE
 #endif
 
 #define AF_FORMAT_UNKNOWN (-1)
 
-#define AF_FORMAT_IS_AC3(fmt) (((fmt) & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_AC3)
-
-int af_str2fmt(const char *str);
-int af_str2fmt_short(const char *str);
-int af_fmt2bits(int format);
-int af_bits2fmt(int bits);
-char* af_fmt2str(int format, char* str, int size);
-const char* af_fmt2str_short(int format);
+extern int af_str2fmt(const char *str);
+extern int af_str2fmt_short(const char *str);
+extern int af_fmt2bits(int format);
+extern int af_bits2fmt(int bits);
+extern char* af_fmt2str(int format, char* str, int size);
+extern const char* af_fmt2str_short(int format);
 
 #endif /* MPLAYER_AF_FORMAT_H */

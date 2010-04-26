@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file vmdvideo.c
  * Sierra VMD audio & video decoders
  * by Vladimir "VAG" Gneushev (vagsoft at mail.ru)
  * for more information on the Sierra VMD format, visit:
@@ -42,8 +42,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 #define VMD_HEADER_SIZE 0x330
@@ -358,15 +358,15 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
         palette32[i] = (r << 16) | (g << 8) | (b);
     }
 
+    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+
     return 0;
 }
 
 static int vmdvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 AVPacket *avpkt)
+                                 const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     VmdVideoContext *s = avctx->priv_data;
 
     s->buf = buf;
@@ -444,7 +444,7 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     s->channels = avctx->channels;
-    s->bits = avctx->bits_per_coded_sample;
+    s->bits = avctx->bits_per_sample;
     s->block_align = avctx->block_align;
     avctx->sample_fmt = SAMPLE_FMT_S16;
 
@@ -455,13 +455,13 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
 }
 
 static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
-    const uint8_t *buf, int buf_size, int stereo)
+    const uint8_t *buf, int stereo)
 {
     int i;
     int chan = 0;
     int16_t *out = (int16_t*)data;
 
-    for(i = 0; i < buf_size; i++) {
+    for(i = 0; i < s->block_align; i++) {
         if(buf[i] & 0x80)
             s->predictors[chan] -= vmdaudio_table[buf[i] & 0x7F];
         else
@@ -473,7 +473,7 @@ static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
 }
 
 static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
-    const uint8_t *buf, int silence, int data_size)
+    const uint8_t *buf, int silence)
 {
     int bytes_decoded = 0;
     int i;
@@ -484,30 +484,30 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
 
         /* stereo handling */
         if (silence) {
-            memset(data, 0, data_size * 2);
+            memset(data, 0, s->block_align * 2);
         } else {
             if (s->bits == 16)
-                vmdaudio_decode_audio(s, data, buf, data_size, 1);
+                vmdaudio_decode_audio(s, data, buf, 1);
             else {
                 /* copy the data but convert it to signed */
-                for (i = 0; i < data_size; i++){
+                for (i = 0; i < s->block_align; i++){
                     *data++ = buf[i] + 0x80;
                     *data++ = buf[i] + 0x80;
                 }
             }
         }
     } else {
-        bytes_decoded = data_size * 2;
+        bytes_decoded = s->block_align * 2;
 
         /* mono handling */
         if (silence) {
-            memset(data, 0, data_size * 2);
+            memset(data, 0, s->block_align * 2);
         } else {
             if (s->bits == 16) {
-                vmdaudio_decode_audio(s, data, buf, data_size, 0);
+                vmdaudio_decode_audio(s, data, buf, 0);
             } else {
                 /* copy the data but convert it to signed */
-                for (i = 0; i < data_size; i++){
+                for (i = 0; i < s->block_align; i++){
                     *data++ = buf[i] + 0x80;
                     *data++ = buf[i] + 0x80;
                 }
@@ -515,15 +515,13 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
         }
     }
 
-    return data_size * 2;
+    return s->block_align * 2;
 }
 
 static int vmdaudio_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
-                                 AVPacket *avpkt)
+                                 const uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     VmdAudioContext *s = avctx->priv_data;
     unsigned char *output_samples = (unsigned char *)data;
 
@@ -535,26 +533,15 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
 
     if (buf[6] == 1) {
         /* the chunk contains audio */
-        *data_size = vmdaudio_loadsound(s, output_samples, p, 0, buf_size - 16);
+        *data_size = vmdaudio_loadsound(s, output_samples, p, 0);
     } else if (buf[6] == 2) {
-        /* initial chunk, may contain audio and silence */
-        uint32_t flags = AV_RB32(p);
-        int raw_block_size = s->block_align * s->bits / 8;
-        int silent_chunks;
-        if(flags == 0xFFFFFFFF)
-            silent_chunks = 32;
-        else
-            silent_chunks = av_log2(flags + 1);
-        if(*data_size < (s->block_align*silent_chunks + buf_size - 20) * 2)
-            return -1;
-        *data_size = 0;
-        memset(output_samples, 0, raw_block_size * silent_chunks);
-        output_samples += raw_block_size * silent_chunks;
-        *data_size = raw_block_size * silent_chunks;
-        *data_size += vmdaudio_loadsound(s, output_samples, p + 4, 0, buf_size - 20);
+        /* the chunk may contain audio */
+        p += 4;
+        *data_size = vmdaudio_loadsound(s, output_samples, p, (buf_size == 16));
+        output_samples += (s->block_align * s->bits / 8);
     } else if (buf[6] == 3) {
         /* silent chunk */
-        *data_size = vmdaudio_loadsound(s, output_samples, p, 1, 0);
+        *data_size = vmdaudio_loadsound(s, output_samples, p, 1);
     }
 
     return buf_size;
@@ -567,7 +554,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
 
 AVCodec vmdvideo_decoder = {
     "vmdvideo",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_VMDVIDEO,
     sizeof(VmdVideoContext),
     vmdvideo_decode_init,
@@ -580,7 +567,7 @@ AVCodec vmdvideo_decoder = {
 
 AVCodec vmdaudio_decoder = {
     "vmdaudio",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_VMDAUDIO,
     sizeof(VmdAudioContext),
     vmdaudio_decode_init,

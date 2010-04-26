@@ -1,6 +1,6 @@
 /*
  * AC-3 tables
- * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
+ * Copyright (c) 2000, 2001, 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
  *
@@ -19,16 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_AC3TAB_H
-#define AVCODEC_AC3TAB_H
+#ifndef FFMPEG_AC3TAB_H
+#define FFMPEG_AC3TAB_H
 
 #include "libavutil/common.h"
 
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];
-extern const uint16_t ff_ac3_channel_layout_tab[8];
-extern const uint8_t  ff_ac3_enc_channel_map[8][2][6];
-extern const uint8_t  ff_ac3_dec_channel_map[8][2][6];
 extern const uint16_t ff_ac3_sample_rate_tab[3];
 extern const uint16_t ff_ac3_bitrate_tab[19];
 extern const int16_t  ff_ac3_window[256];
@@ -59,4 +56,4 @@ enum CustomChannelMapLocation{
     AC3_CHMAP_LFE =     1<<(15-15)
 };
 
-#endif /* AVCODEC_AC3TAB_H */
+#endif /* FFMPEG_AC3TAB_H */

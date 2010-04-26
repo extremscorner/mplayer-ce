@@ -1,24 +1,6 @@
-/*
- * copyright (C) 2002 Mark Zealey <mark@zealos.org>
+/* Copyright (C) Mark Zealey, 2002, <mark@zealos.org>. Released under the terms
+ * and conditions of the GPL.
  *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
-/*
  * 30/03/02: An almost total rewrite, added DR support and support for modes
  * other than 16bpp. Fixed the crash when playing multiple files
  * 07/04/02: Fixed DR support, added YUY2 support, fixed OSD stuff.
@@ -202,7 +184,7 @@ static void uninit(void)
 	}
 }
 
-static void clear_screen(void)
+static void clear_screen()
 {
 	/* There needs to be some sort of delay here or else things seriously
 	 * screw up.  Causes the image to not be the right size on screen if

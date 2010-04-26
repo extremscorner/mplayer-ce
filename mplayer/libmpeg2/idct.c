@@ -20,9 +20,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Modified for use with MPlayer, see libmpeg2_changes.diff for the exact changes.
+ * Modified for use with MPlayer, see libmpeg-0.4.1.diff for the exact changes.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: idct.c 28325 2009-01-16 09:21:21Z reimar $
+ * $Id: idct.c 26657 2008-05-03 15:23:22Z diego $
  */
 
 #include "config.h"
@@ -239,40 +239,34 @@ static void mpeg2_idct_add_c (const int last, int16_t * block,
 
 void mpeg2_idct_init (uint32_t accel)
 {
-#if HAVE_SSE2
+#ifdef ARCH_X86
     if (accel & MPEG2_ACCEL_X86_SSE2) {
 	mpeg2_idct_copy = mpeg2_idct_copy_sse2;
 	mpeg2_idct_add = mpeg2_idct_add_sse2;
 	mpeg2_idct_mmx_init ();
-    } else
-#elif HAVE_MMX2
-    if (accel & MPEG2_ACCEL_X86_MMXEXT) {
+    } else if (accel & MPEG2_ACCEL_X86_MMXEXT) {
 	mpeg2_idct_copy = mpeg2_idct_copy_mmxext;
 	mpeg2_idct_add = mpeg2_idct_add_mmxext;
 	mpeg2_idct_mmx_init ();
-    } else
-#elif HAVE_MMX
-    if (accel & MPEG2_ACCEL_X86_MMX) {
+    } else if (accel & MPEG2_ACCEL_X86_MMX) {
 	mpeg2_idct_copy = mpeg2_idct_copy_mmx;
 	mpeg2_idct_add = mpeg2_idct_add_mmx;
 	mpeg2_idct_mmx_init ();
     } else
 #endif
-#if HAVE_ALTIVEC
+#ifdef HAVE_ALTIVEC
     if (accel & MPEG2_ACCEL_PPC_ALTIVEC) {
 	mpeg2_idct_copy = mpeg2_idct_copy_altivec;
 	mpeg2_idct_add = mpeg2_idct_add_altivec;
 	mpeg2_idct_altivec_init ();
     } else
 #endif
-#if HAVE_MVI
+#ifdef ARCH_ALPHA
     if (accel & MPEG2_ACCEL_ALPHA_MVI) {
 	mpeg2_idct_copy = mpeg2_idct_copy_mvi;
 	mpeg2_idct_add = mpeg2_idct_add_mvi;
 	mpeg2_idct_alpha_init ();
-    } else
-#elif ARCH_ALPHA
-    if (accel & MPEG2_ACCEL_ALPHA) {
+    } else if (accel & MPEG2_ACCEL_ALPHA) {
 	int i;
 
 	mpeg2_idct_copy = mpeg2_idct_copy_alpha;
@@ -283,6 +277,8 @@ void mpeg2_idct_init (uint32_t accel)
     } else
 #endif
     {
+	extern uint8_t mpeg2_scan_norm[64];
+	extern uint8_t mpeg2_scan_alt[64];
 	int i, j;
 
 	mpeg2_idct_copy = mpeg2_idct_copy_c;

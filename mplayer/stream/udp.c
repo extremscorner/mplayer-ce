@@ -30,22 +30,24 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <ctype.h>
+
 #if !defined(GEKKO)
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#define closesocket close
 #else
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
+
 #else
 #include "stream.h"
 #endif
 
 #include "mp_msg.h"
-#include "network.h"
 #include "url.h"
 #include "udp.h"
 
@@ -77,10 +79,9 @@ udp_open_socket (URL_t *url)
     return -1;
   }
 
-  memset(&server_address, 0, sizeof(server_address));
   if (isalpha (url->hostname[0]))
   {
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
     hp = (struct hostent *) gethostbyname (url->hostname);
     if (!hp)
     {
@@ -93,17 +94,21 @@ udp_open_socket (URL_t *url)
             (void *) hp->h_addr_list[0], hp->h_length);
 #else
     server_address.sin_addr.s_addr = htonl (INADDR_ANY);
-#endif /* HAVE_WINSOCK2_H */
+#endif /* HAVE_WINSOCK2 */
   }
   else
   {
-#if HAVE_INET_PTON
-    inet_pton (AF_INET, url->hostname, &server_address.sin_addr);
-#elif HAVE_INET_ATON
+//#if !defined(GEKKO)
+#ifndef HAVE_WINSOCK2
+#ifdef HAVE_ATON
     inet_aton (url->hostname, &server_address.sin_addr);
-#elif !HAVE_WINSOCK2_H
+#else
+    inet_pton (AF_INET, url->hostname, &server_address.sin_addr);
+#endif /* HAVE_ATON */
+#else
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-#endif
+#endif /* HAVE_WINSOCK2 */
+//#endif
   }
   server_address.sin_family = AF_INET;
   server_address.sin_port = htons (url->port);
@@ -114,19 +119,19 @@ udp_open_socket (URL_t *url)
   if (bind (socket_server_fd, (struct sockaddr *) &server_address,
             sizeof (server_address)) == -1)
   {
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
     if (errno != EINPROGRESS)
 #else
     if (WSAGetLastError () != WSAEINPROGRESS)
-#endif /* HAVE_WINSOCK2_H */
+#endif /* HAVE_WINSOCK2 */
     {
       mp_msg (MSGT_NETWORK, MSGL_ERR, "Failed to connect to server\n");
       closesocket (socket_server_fd);
       return -1;
     }
   }
-
-#if HAVE_WINSOCK2_H
+	
+#ifdef HAVE_WINSOCK2
   if (isalpha (url->hostname[0]))
   {
     hp = (struct hostent *) gethostbyname (url->hostname);
@@ -145,7 +150,7 @@ udp_open_socket (URL_t *url)
     unsigned int addr = inet_addr (url->hostname);
     memcpy ((void *) &server_address.sin_addr, (void *) &addr, sizeof (addr));
   }
-#endif /* HAVE_WINSOCK2_H */
+#endif /* HAVE_WINSOCK2 */
 
   /* Increase the socket rx buffer size to maximum -- this is UDP */
   rxsockbufsz = 240 * 1024;
@@ -155,6 +160,7 @@ udp_open_socket (URL_t *url)
     mp_msg (MSGT_NETWORK, MSGL_ERR,
             "Couldn't set receive socket buffer size\n");
   }
+
 #if !defined(GEKKO)
   if ((ntohl (server_address.sin_addr.s_addr) >> 28) == 0xe)
   {
@@ -170,12 +176,13 @@ udp_open_socket (URL_t *url)
     }
   }
 #endif
+
   tv.tv_sec = 1; /* 1 second timeout */
   tv.tv_usec = 0;
 
   FD_ZERO (&set);
   FD_SET (socket_server_fd, &set);
-
+  
   err = select (socket_server_fd + 1, &set, NULL, NULL, &tv);
   if (err < 0)
   {
@@ -192,6 +199,7 @@ udp_open_socket (URL_t *url)
     closesocket (socket_server_fd);
     return -1;
   }
+
 #if !defined(GEKKO)
   err_len = sizeof (err);
   getsockopt (socket_server_fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
@@ -202,5 +210,6 @@ udp_open_socket (URL_t *url)
     return -1;
   }
 #endif
+
   return socket_server_fd;
 }

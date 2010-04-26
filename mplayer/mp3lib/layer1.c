@@ -1,24 +1,24 @@
-/*
- * Mpeg Layer-1 audio decoder
+/* 
+ * Mpeg Layer-1 audio decoder 
  * --------------------------
  * copyright (c) 1995 by Michael Hipp, All rights reserved. See also 'README'
  * near unoptimzed ...
  *
- * may have a few bugs after last optimization ...
+ * may have a few bugs after last optimization ... 
  *
  */
 
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: layer1.c 31032 2010-04-12 10:56:17Z diego $
+ * $Id: layer1.c 23484 2007-06-06 05:13:13Z zuxy $
  *
  * The above-mentioned README file has the following to say about licensing:
  *
  *   COPYING: you may use this source under LGPL terms!
  */
 
-#include "mpg123.h"
+//#include "mpg123.h"
 
 static void I_step_one(unsigned int balloc[], unsigned int scale_index[2][SBLIMIT],struct frame *fr)
 {
@@ -28,7 +28,7 @@ static void I_step_one(unsigned int balloc[], unsigned int scale_index[2][SBLIMI
   if(fr->stereo == 2) {
     int i;
     int jsbound = fr->jsbound;
-    for (i=0;i<jsbound;i++) {
+    for (i=0;i<jsbound;i++) { 
       *ba++ = getbits(4);
       *ba++ = getbits(4);
     }
@@ -61,7 +61,7 @@ static void I_step_one(unsigned int balloc[], unsigned int scale_index[2][SBLIMI
 }
 
 static void I_step_two(real fraction[2][SBLIMIT],unsigned int balloc[2*SBLIMIT],
-                       unsigned int scale_index[2][SBLIMIT],struct frame *fr)
+	unsigned int scale_index[2][SBLIMIT],struct frame *fr)
 {
   int i,n;
   int smpb[2*SBLIMIT]; /* values: 0-65535 */
@@ -80,7 +80,7 @@ static void I_step_two(real fraction[2][SBLIMIT],unsigned int balloc[2*SBLIMIT],
       if ((n = *ba++))
         *sample++ = getbits(n+1);
     }
-    for (i=jsbound;i<SBLIMIT;i++)
+    for (i=jsbound;i<SBLIMIT;i++) 
       if ((n = *ba++))
         *sample++ = getbits(n+1);
 
@@ -137,7 +137,7 @@ static int do_layer1(struct frame *fr,int single)
 //  printf("do_layer1(0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X )\n",
 //    wordpointer[0],wordpointer[1],wordpointer[2],wordpointer[3],wordpointer[4],wordpointer[5],wordpointer[6],wordpointer[7]);
 
-  fr->jsbound = (fr->mode == MPG_MD_JOINT_STEREO) ?
+  fr->jsbound = (fr->mode == MPG_MD_JOINT_STEREO) ? 
                          (fr->mode_ext<<2)+4 : 32;
 
   if(stereo == 1 || single == 3)
@@ -163,3 +163,5 @@ static int do_layer1(struct frame *fr,int single)
 
   return clip;
 }
+
+

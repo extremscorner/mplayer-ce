@@ -19,7 +19,7 @@
  */
 
 /**
- * @file libavcodec/apiexample.c
+ * @file apiexample.c
  * avcodec API use example.
  *
  * Note that this library only handles codecs (mpeg, mpeg4, etc...),
@@ -30,13 +30,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+
+#define PI 3.14159265358979323846
 
 #ifdef HAVE_AV_CONFIG_H
 #undef HAVE_AV_CONFIG_H
 #endif
 
 #include "avcodec.h"
-#include "libavutil/mathematics.h"
 
 #define INBUF_SIZE 4096
 
@@ -89,7 +91,7 @@ void audio_encode_example(const char *filename)
 
     /* encode a single tone sound */
     t = 0;
-    tincr = 2 * M_PI * 440.0 / c->sample_rate;
+    tincr = 2 * PI * 440.0 / c->sample_rate;
     for(i=0;i<200;i++) {
         for(j=0;j<frame_size;j++) {
             samples[2*j] = (int)(sin(t) * 10000);
@@ -159,8 +161,7 @@ void audio_decode_example(const char *outfilename, const char *filename)
 
         inbuf_ptr = inbuf;
         while (size > 0) {
-            out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-            len = avcodec_decode_audio2(c, (short *)outbuf, &out_size,
+            len = avcodec_decode_audio(c, (short *)outbuf, &out_size,
                                        inbuf_ptr, size);
             if (len < 0) {
                 fprintf(stderr, "Error while decoding\n");

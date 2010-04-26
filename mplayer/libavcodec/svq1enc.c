@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file svq1enc.c
  * Sorenson Vector Quantizer #1 (SVQ1) video codec.
  * For more information of the SVQ1 algorithm, visit:
  *   http://www.pcisys.net/~melanson/codecs/
@@ -30,8 +30,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "h263.h"
-#include "internal.h"
 
 #include "svq1.h"
 #include "svq1enc_cb.h"
@@ -69,8 +67,6 @@ typedef struct SVQ1Context {
     int16_t (*motion_val16[3])[2];
 
     int64_t rd_total;
-
-    uint8_t *scratchbuf;
 } SVQ1Context;
 
 static void svq1_write_header(SVQ1Context *s, int frame_type)
@@ -95,11 +91,19 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
         /* output 5 unknown bits (2 + 2 + 1) */
         put_bits(&s->pb, 5, 2); /* 2 needed by quicktime decoder */
 
-        i= ff_match_2uint16(ff_svq1_frame_size_table, FF_ARRAY_ELEMS(ff_svq1_frame_size_table), s->frame_width, s->frame_height);
-        put_bits(&s->pb, 3, i);
+        for (i = 0; i < 7; i++)
+        {
+            if ((ff_svq1_frame_size_table[i].width == s->frame_width) &&
+                (ff_svq1_frame_size_table[i].height == s->frame_height))
+            {
+                put_bits(&s->pb, 3, i);
+                break;
+            }
+        }
 
         if (i == 7)
         {
+            put_bits(&s->pb, 3, 7);
                 put_bits(&s->pb, 12, s->frame_width);
                 put_bits(&s->pb, 12, s->frame_height);
         }
@@ -113,7 +117,7 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
 #define QUALITY_THRESHOLD 100
 #define THRESHOLD_MULTIPLIER 0.6
 
-#if HAVE_ALTIVEC
+#if defined(HAVE_ALTIVEC)
 #undef vector
 #endif
 
@@ -269,7 +273,6 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
     int block_width, block_height;
     int level;
     int threshold[6];
-    uint8_t *src = s->scratchbuf + stride * 16;
     const int lambda= (s->picture.quality*s->picture.quality) >> (2*FF_LAMBDA_SHIFT);
 
     /* figure out the acceptable level thresholds in advance */
@@ -328,6 +331,8 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
         s->m.me.dia_size= s->avctx->dia_size;
         s->m.first_slice_line=1;
         for (y = 0; y < block_height; y++) {
+            uint8_t src[stride*16];
+
             s->m.new_picture.data[0]= src - y*16*stride; //ugly
             s->m.mb_y= y;
 
@@ -355,6 +360,8 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
 
     s->m.first_slice_line=1;
     for (y = 0; y < block_height; y++) {
+        uint8_t src[stride*16];
+
         for(i=0; i<16 && i + 16*y<height; i++){
             memcpy(&src[i*stride], &src_plane[(i+16*y)*src_stride], width);
             for(x=width; x<16*block_width; x++)
@@ -371,7 +378,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
             uint8_t *decoded= decoded_plane + offset;
             uint8_t *ref= ref_plane + offset;
             int score[4]={0,0,0,0}, best;
-            uint8_t *temp = s->scratchbuf;
+            uint8_t temp[16*stride];
 
             if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < 3000){ //FIXME check size
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
@@ -490,7 +497,6 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     s->avctx= avctx;
     s->m.avctx= avctx;
-    s->m.me.temp      =
     s->m.me.scratchpad= av_mallocz((avctx->width+64)*2*16*2*sizeof(uint8_t));
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
@@ -518,7 +524,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     if(!s->current_picture.data[0]){
         avctx->get_buffer(avctx, &s->current_picture);
         avctx->get_buffer(avctx, &s->last_picture);
-        s->scratchbuf = av_malloc(s->current_picture.linesize[0] * 16 * 2);
     }
 
     temp= s->current_picture;
@@ -561,7 +566,6 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
     av_freep(&s->m.me.score_map);
     av_freep(&s->mb_type);
     av_freep(&s->dummy);
-    av_freep(&s->scratchbuf);
 
     for(i=0; i<3; i++){
         av_freep(&s->motion_val8[i]);
@@ -574,12 +578,12 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 
 AVCodec svq1_encoder = {
     "svq1",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_SVQ1,
     sizeof(SVQ1Context),
     svq1_encode_init,
     svq1_encode_frame,
     svq1_encode_end,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
+    .long_name= NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1"),
 };

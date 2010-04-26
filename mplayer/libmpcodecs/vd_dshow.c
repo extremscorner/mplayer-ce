@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -29,7 +11,7 @@
 
 #include "loader/dshow/DS_VideoDecoder.h"
 
-static const vd_info_t info = {
+static vd_info_t info = {
 	"DirectShow video codecs",
 	"dshow",
 	"A'rpi",
@@ -66,7 +48,7 @@ static int control(sh_video_t *sh,int cmd,void* arg,...){
 
 // init driver
 static int init(sh_video_t *sh){
-    unsigned int out_fmt=sh->codec->outfmt[0];
+    unsigned int out_fmt;
 
     /* Hack for VSSH codec: new dll can't decode old files
      * In my samples old files have no extradata, so use that info
@@ -80,8 +62,7 @@ static int init(sh_video_t *sh){
         mp_msg(MSGT_DECVIDEO,MSGL_HINT,MSGTR_DownloadCodecPackage);
 	return 0;
     }
-    if(!mpcodecs_config_vo(sh,sh->disp_w,sh->disp_h,out_fmt)) return 0;
-    // mpcodecs_config_vo can change the format
+    if(!mpcodecs_config_vo(sh,sh->disp_w,sh->disp_h,IMGFMT_YUY2)) return 0;
     out_fmt=sh->codec->outfmt[sh->outfmtidx];
     switch(out_fmt){
     case IMGFMT_YUY2:
@@ -113,16 +94,16 @@ static void uninit(sh_video_t *sh){
 static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
     mp_image_t* mpi;
     if(len<=0) return NULL; // skipped frame
-
+    
     if(flags&3){
 	// framedrop:
         DS_VideoDecoder_DecodeInternal(sh->context, data, len, 0, 0);
 	return NULL;
     }
-
-    mpi=mpcodecs_get_image(sh, MP_IMGTYPE_TEMP, MP_IMGFLAG_COMMON_PLANE,
+    
+    mpi=mpcodecs_get_image(sh, MP_IMGTYPE_TEMP, 0 /*MP_IMGFLAG_ACCEPT_STRIDE*/, 
 	sh->disp_w, sh->disp_h);
-
+    
     if(!mpi){	// temporary!
 	mp_msg(MSGT_DECVIDEO,MSGL_WARN,MSGTR_MPCODECS_CouldntAllocateImageForCinepakCodec);
 	return NULL;

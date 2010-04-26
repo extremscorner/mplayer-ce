@@ -42,7 +42,7 @@
 #include "subopt-helper.h"
 
 
-static const ao_info_t info =
+static ao_info_t info =
 {
 	"Windows DirectSound audio output",
 	"dsound",
@@ -55,6 +55,7 @@ LIBAO_EXTERN(dsound)
 /**
 \todo use the definitions from the win32 api headers when they define these
 */
+#if 1
 #define WAVE_FORMAT_IEEE_FLOAT 0x0003
 #define WAVE_FORMAT_DOLBY_AC3_SPDIF 0x0092
 #define WAVE_FORMAT_EXTENSIBLE 0xFFFE
@@ -102,6 +103,8 @@ typedef struct {
 } WAVEFORMATEXTENSIBLE, *PWAVEFORMATEXTENSIBLE;
 #endif
 
+#endif
+
 static const int channel_mask[] = {
   SPEAKER_FRONT_LEFT   | SPEAKER_FRONT_RIGHT  | SPEAKER_LOW_FREQUENCY,
   SPEAKER_FRONT_LEFT   | SPEAKER_FRONT_RIGHT  | SPEAKER_BACK_LEFT    | SPEAKER_BACK_RIGHT,
@@ -110,17 +113,17 @@ static const int channel_mask[] = {
 };
 
 static HINSTANCE hdsound_dll = NULL;      ///handle to the dll
-static LPDIRECTSOUND hds = NULL;          ///direct sound object
+static LPDIRECTSOUND hds = NULL;          ///direct sound object 
 static LPDIRECTSOUNDBUFFER hdspribuf = NULL; ///primary direct sound buffer
 static LPDIRECTSOUNDBUFFER hdsbuf = NULL; ///secondary direct sound buffer (stream buffer)
-static int buffer_size = 0;               ///size in bytes of the direct sound buffer
+static int buffer_size = 0;               ///size in bytes of the direct sound buffer   
 static int write_offset = 0;              ///offset of the write cursor in the direct sound buffer
 static int min_free_space = 0;            ///if the free space is below this value get_space() will return 0
                                           ///there will always be at least this amout of free space to prevent
                                           ///get_space() from returning wrong values when buffer is 100% full.
                                           ///will be replaced with nBlockAlign in init()
 static int device_num = 0;                ///wanted device number
-static GUID device;                       ///guid of the device
+static GUID device;                       ///guid of the device 
 
 /***************************************************************************************/
 
@@ -218,17 +221,17 @@ static int InitDirectSound(void)
 
 	// initialize directsound
     HRESULT (WINAPI *OurDirectSoundCreate)(LPGUID, LPDIRECTSOUND *, LPUNKNOWN);
-	HRESULT (WINAPI *OurDirectSoundEnumerate)(LPDSENUMCALLBACKA, LPVOID);
+	HRESULT (WINAPI *OurDirectSoundEnumerate)(LPDSENUMCALLBACKA, LPVOID);   
 	int device_index=0;
-	const opt_t subopts[] = {
+	opt_t subopts[] = {
 	  {"device", OPT_ARG_INT, &device_num,NULL},
 	  {NULL}
-	};
+	}; 
 	if (subopt_parse(ao_subdevice, subopts) != 0) {
 		print_help();
 		return 0;
 	}
-
+    
 	hdsound_dll = LoadLibrary("DSOUND.DLL");
 	if (hdsound_dll == NULL) {
 		mp_msg(MSGT_AO, MSGL_ERR, "ao_dsound: cannot load DSOUND.DLL\n");
@@ -242,7 +245,7 @@ static int InitDirectSound(void)
 		FreeLibrary(hdsound_dll);
 		return 0;
 	}
-
+    
 	// Enumerate all directsound devices
 	mp_msg(MSGT_AO, MSGL_V,"ao_dsound: Output Devices:\n");
 	OurDirectSoundEnumerate(DirectSoundEnum,&device_index);
@@ -307,24 +310,24 @@ static void DestroyBuffer(void)
 static int write_buffer(unsigned char *data, int len)
 {
   HRESULT res;
-  LPVOID lpvPtr1;
-  DWORD dwBytes1;
-  LPVOID lpvPtr2;
-  DWORD dwBytes2;
-
+  LPVOID lpvPtr1; 
+  DWORD dwBytes1; 
+  LPVOID lpvPtr2; 
+  DWORD dwBytes2; 
+	
   // Lock the buffer
-  res = IDirectSoundBuffer_Lock(hdsbuf,write_offset, len, &lpvPtr1, &dwBytes1, &lpvPtr2, &dwBytes2, 0);
-  // If the buffer was lost, restore and retry lock.
-  if (DSERR_BUFFERLOST == res)
-  {
+  res = IDirectSoundBuffer_Lock(hdsbuf,write_offset, len, &lpvPtr1, &dwBytes1, &lpvPtr2, &dwBytes2, 0); 
+  // If the buffer was lost, restore and retry lock. 
+  if (DSERR_BUFFERLOST == res) 
+  { 
     IDirectSoundBuffer_Restore(hdsbuf);
 	res = IDirectSoundBuffer_Lock(hdsbuf,write_offset, len, &lpvPtr1, &dwBytes1, &lpvPtr2, &dwBytes2, 0);
   }
-
-
-  if (SUCCEEDED(res))
+ 
+  
+  if (SUCCEEDED(res)) 
   {
-  	if( (ao_data.channels == 6) && !AF_FORMAT_IS_AC3(ao_data.format) ) {
+  	if( (ao_data.channels == 6) && (ao_data.format!=AF_FORMAT_AC3) ) {
   	    // reorder channels while writing to pointers.
   	    // it's this easy because buffer size and len are always
   	    // aligned to multiples of channels*bytespersample
@@ -351,27 +354,27 @@ static int write_buffer(unsigned char *data, int len)
   	    write_offset+=dwBytes1+dwBytes2;
   	    if(write_offset>=buffer_size)write_offset=dwBytes2;
   	} else {
-  	    // Write to pointers without reordering.
+  	    // Write to pointers without reordering. 
 	fast_memcpy(lpvPtr1,data,dwBytes1);
     if (NULL != lpvPtr2 )fast_memcpy(lpvPtr2,data+dwBytes1,dwBytes2);
 	write_offset+=dwBytes1+dwBytes2;
     if(write_offset>=buffer_size)write_offset=dwBytes2;
   	}
-
-   // Release the data back to DirectSound.
+	
+   // Release the data back to DirectSound. 
     res = IDirectSoundBuffer_Unlock(hdsbuf,lpvPtr1,dwBytes1,lpvPtr2,dwBytes2);
-    if (SUCCEEDED(res))
-    {
-	  // Success.
+    if (SUCCEEDED(res)) 
+    { 
+	  // Success. 
 	  DWORD status;
 	  IDirectSoundBuffer_GetStatus(hdsbuf, &status);
       if (!(status & DSBSTATUS_PLAYING)){
 	    res = IDirectSoundBuffer_Play(hdsbuf, 0, 0, DSBPLAY_LOOPING);
 	  }
-	  return dwBytes1+dwBytes2;
-    }
-  }
-  // Lock, Unlock, or Restore failed.
+	  return dwBytes1+dwBytes2; 
+    } 
+  } 
+  // Lock, Unlock, or Restore failed. 
   return 0;
 }
 
@@ -405,7 +408,7 @@ static int control(int cmd, void *arg)
 	return -1;
 }
 
-/**
+/** 
 \brief setup sound device
 \param rate samplerate
 \param channels number of channels
@@ -423,25 +426,17 @@ static int init(int rate, int channels, int format, int flags)
 	DSBUFFERDESC dsbpridesc;
 	DSBUFFERDESC dsbdesc;
 
-	//check if the channel count and format is supported in general
-	if (channels > 6) {
-		UninitDirectSound();
-		mp_msg(MSGT_AO, MSGL_ERR, "ao_dsound: 8 channel audio not yet supported\n");
-		return 0;
-	}
-
-	if (AF_FORMAT_IS_AC3(format))
-		format = AF_FORMAT_AC3_NE;
+	//check if the format is supported in general
 	switch(format){
-		case AF_FORMAT_AC3_NE:
+		case AF_FORMAT_AC3:
 		case AF_FORMAT_S24_LE:
 		case AF_FORMAT_S16_LE:
-		case AF_FORMAT_U8:
+		case AF_FORMAT_S8:
 			break;
 		default:
 			mp_msg(MSGT_AO, MSGL_V,"ao_dsound: format %s not supported defaulting to Signed 16-bit Little-Endian\n",af_fmt2str_short(format));
 			format=AF_FORMAT_S16_LE;
-	}
+	}   	
 	//fill global ao_data
 	ao_data.channels = channels;
 	ao_data.samplerate = rate;
@@ -456,7 +451,7 @@ static int init(int rate, int channels, int format, int flags)
 	wformat.Format.cbSize          = (channels > 2) ? sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX) : 0;
 	wformat.Format.nChannels       = channels;
 	wformat.Format.nSamplesPerSec  = rate;
-	if (AF_FORMAT_IS_AC3(format)) {
+	if (format == AF_FORMAT_AC3) {
 		wformat.Format.wFormatTag      = WAVE_FORMAT_DOLBY_AC3_SPDIF;
 		wformat.Format.wBitsPerSample  = 16;
 		wformat.Format.nBlockAlign     = 4;
@@ -498,7 +493,7 @@ static int init(int rate, int channels, int format, int flags)
 	ao_data.outburst = wformat.Format.nBlockAlign * 512;
 
 	// create primary buffer and set its format
-
+    
 	res = IDirectSound_CreateSoundBuffer( hds, &dsbpridesc, &hdspribuf, NULL );
 	if ( res != DS_OK ) {
 		UninitDirectSound();
@@ -558,7 +553,7 @@ static void audio_resume(void)
 	IDirectSoundBuffer_Play(hdsbuf, 0, 0, DSBPLAY_LOOPING);
 }
 
-/**
+/** 
 \brief close audio device
 \param immed stop playback immediately
 */
@@ -584,7 +579,7 @@ static int get_space(void)
 	int space;
 	DWORD play_offset;
 	IDirectSoundBuffer_GetCurrentPosition(hdsbuf,&play_offset,NULL);
-	space=buffer_size-(write_offset-play_offset);
+	space=buffer_size-(write_offset-play_offset);                                             
 	//                |                                                      | <-- const --> |                |                 |
 	//                buffer start                                           play_cursor     write_cursor     write_offset      buffer end
 	// play_cursor is the actual postion of the play cursor
@@ -606,10 +601,10 @@ static int play(void* data, int len, int flags)
 {
 	DWORD play_offset;
 	int space;
-
+  
 	// make sure we have enough space to write data
 	IDirectSoundBuffer_GetCurrentPosition(hdsbuf,&play_offset,NULL);
-	space=buffer_size-(write_offset-play_offset);
+	space=buffer_size-(write_offset-play_offset);                                             
 	if(space > buffer_size)space -= buffer_size; // write_offset < play_offset
 	if(space < len) len = space;
 
@@ -627,7 +622,7 @@ static float get_delay(void)
 	DWORD play_offset;
 	int space;
 	IDirectSoundBuffer_GetCurrentPosition(hdsbuf,&play_offset,NULL);
-	space=play_offset-write_offset;
+	space=play_offset-write_offset;                                             
 	if(space <= 0)space += buffer_size;
 	return (float)(buffer_size - space) / (float)ao_data.bps;
 }

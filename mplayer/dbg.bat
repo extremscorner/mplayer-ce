@@ -1,1 +1,1 @@
-C:\devkitPro\devkitPPC\bin\powerpc-eabi-addr2line -e mplayer.elf %1
+C:\devkitPro\devkitPPC\bin\powerpc-gekko-addr2line -e mplayer.elf %1

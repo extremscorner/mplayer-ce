@@ -1,25 +1,9 @@
 /*
- * aclib - advanced C library ;)
- * functions which improve and expand the standard C library
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+  aclib - advanced C library ;)
+  This file contains functions which improve and expand standard C-library
+*/
 
-#if !HAVE_SSE2
+#ifndef HAVE_SSE2
 /*
    P3 processor has only one SSE decoder so can execute only 1 sse insn per
    cpu clock, but it has 3 mmx decoders (include load/store unit)
@@ -29,7 +13,6 @@
    I have doubts. Anyway SSE2 version of this code can be written better.
 */
 #undef HAVE_SSE
-#define HAVE_SSE 0
 #endif
 
 
@@ -82,7 +65,7 @@ If you have questions please contact with me: Nick Kurshev: nickols_k@mail.ru.
 
 
 #undef HAVE_ONLY_MMX1
-#if HAVE_MMX && !HAVE_MMX2 && !HAVE_AMD3DNOW && !HAVE_SSE
+#if defined(HAVE_MMX) && !defined(HAVE_MMX2) && !defined(HAVE_3DNOW) && !defined(HAVE_SSE)
 /*  means: mmx v.1. Note: Since we added alignment of destinition it speedups
     of memory copying on PentMMX, Celeron-1 and P2 upto 12% versus
     standard (non MMX-optimized) version.
@@ -93,15 +76,15 @@ If you have questions please contact with me: Nick Kurshev: nickols_k@mail.ru.
 
 
 #undef HAVE_K6_2PLUS
-#if !HAVE_MMX2 && HAVE_AMD3DNOW
+#if !defined( HAVE_MMX2) && defined( HAVE_3DNOW)
 #define HAVE_K6_2PLUS
 #endif
 
 /* for small memory blocks (<256 bytes) this version is faster */
 #define small_memcpy(to,from,n)\
 {\
-register x86_reg dummy;\
-__asm__ volatile(\
+register unsigned long int dummy;\
+__asm__ __volatile__(\
 	"rep; movsb"\
 	:"=&D"(to), "=&S"(from), "=&c"(dummy)\
 /* It's most portable way to notify compiler */\
@@ -112,7 +95,7 @@ __asm__ volatile(\
 }
 
 #undef MMREG_SIZE
-#if HAVE_SSE
+#ifdef HAVE_SSE
 #define MMREG_SIZE 16
 #else
 #define MMREG_SIZE 64 //8
@@ -121,23 +104,23 @@ __asm__ volatile(\
 #undef PREFETCH
 #undef EMMS
 
-#if HAVE_MMX2
+#ifdef HAVE_MMX2
 #define PREFETCH "prefetchnta"
-#elif HAVE_AMD3DNOW
+#elif defined ( HAVE_3DNOW )
 #define PREFETCH  "prefetch"
 #else
 #define PREFETCH " # nop"
 #endif
 
 /* On K6 femms is faster of emms. On K7 femms is directly mapped on emms. */
-#if HAVE_AMD3DNOW
+#ifdef HAVE_3DNOW
 #define EMMS     "femms"
 #else
 #define EMMS     "emms"
 #endif
 
 #undef MOVNTQ
-#if HAVE_MMX2
+#ifdef HAVE_MMX2
 #define MOVNTQ "movntq"
 #else
 #define MOVNTQ "movq"
@@ -170,7 +153,7 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 #endif
 #ifndef HAVE_ONLY_MMX1
         /* PREFETCH has effect even for MOVSB instruction ;) */
-	__asm__ volatile (
+	__asm__ __volatile__ (
 	        PREFETCH" (%0)\n"
 	        PREFETCH" 64(%0)\n"
 	        PREFETCH" 128(%0)\n"
@@ -180,9 +163,9 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 #endif
         if(len >= MIN_LEN)
 	{
-	  register x86_reg delta;
+	  register unsigned long int delta;
           /* Align destinition to MMREG_SIZE -boundary */
-          delta = ((intptr_t)to)&(MMREG_SIZE-1);
+          delta = ((unsigned long int)to)&(MMREG_SIZE-1);
           if(delta)
 	  {
 	    delta=MMREG_SIZE-delta;
@@ -200,12 +183,12 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
            perform reading and writing to be multiple to a number of
            processor's decoders, but it's not always possible.
         */
-#if HAVE_SSE /* Only P3 (may be Cyrix3) */
-	if(((intptr_t)from) & 15)
+#ifdef HAVE_SSE /* Only P3 (may be Cyrix3) */
+	if(((unsigned long)from) & 15)
 	/* if SRC is misaligned */
 	for(; i>0; i--)
 	{
-		__asm__ volatile (
+		__asm__ __volatile__ (
 		PREFETCH" 320(%0)\n"
 		"movups (%0), %%xmm0\n"
 		"movups 16(%0), %%xmm1\n"
@@ -227,7 +210,7 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 	*/
 	for(; i>0; i--)
 	{
-		__asm__ volatile (
+		__asm__ __volatile__ (
 		PREFETCH" 320(%0)\n"
 		"movaps (%0), %%xmm0\n"
 		"movaps 16(%0), %%xmm1\n"
@@ -243,9 +226,9 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 	}
 #else
 	// Align destination at BLOCK_SIZE boundary
-	for(; ((intptr_t)to & (BLOCK_SIZE-1)) && i>0; i--)
+	for(; ((int)to & (BLOCK_SIZE-1)) && i>0; i--)
 	{
-		__asm__ volatile (
+		__asm__ __volatile__ (
 #ifndef HAVE_ONLY_MMX1
         	PREFETCH" 320(%0)\n"
 #endif
@@ -273,14 +256,14 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 //	printf(" %d %d\n", (int)from&1023, (int)to&1023);
 	// Pure Assembly cuz gcc is a bit unpredictable ;)
 	if(i>=BLOCK_SIZE/64)
-		__asm__ volatile(
+		asm volatile(
 			"xor %%"REG_a", %%"REG_a"	\n\t"
 			ASMALIGN(4)
 			"1:			\n\t"
-				"movl (%0, %%"REG_a"), %%ecx 	\n\t"
-				"movl 32(%0, %%"REG_a"), %%ecx 	\n\t"
-				"movl 64(%0, %%"REG_a"), %%ecx 	\n\t"
-				"movl 96(%0, %%"REG_a"), %%ecx 	\n\t"
+				"movl (%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 32(%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 64(%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 96(%0, %%"REG_a"), %%ebx 	\n\t"
 				"add $128, %%"REG_a"		\n\t"
 				"cmp %3, %%"REG_a"		\n\t"
 				" jb 1b				\n\t"
@@ -313,10 +296,10 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 	// a few percent speedup on out of order executing CPUs
 			"mov %5, %%"REG_a"		\n\t"
 				"2:			\n\t"
-				"movl (%0), %%ecx	\n\t"
-				"movl (%0), %%ecx	\n\t"
-				"movl (%0), %%ecx	\n\t"
-				"movl (%0), %%ecx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
 				"dec %%"REG_a"		\n\t"
 				" jnz 2b		\n\t"
 #endif
@@ -328,13 +311,13 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 			"cmp %4, %2		\n\t"
 			" jae 1b		\n\t"
 				: "+r" (from), "+r" (to), "+r" (i)
-				: "r" ((x86_reg)BLOCK_SIZE), "i" (BLOCK_SIZE/64), "i" ((x86_reg)CONFUSION_FACTOR)
-				: "%"REG_a, "%ecx"
+				: "r" ((long)BLOCK_SIZE), "i" (BLOCK_SIZE/64), "i" ((long)CONFUSION_FACTOR)
+				: "%"REG_a, "%ebx"
 		);
 
 	for(; i>0; i--)
 	{
-		__asm__ volatile (
+		__asm__ __volatile__ (
 #ifndef HAVE_ONLY_MMX1
         	PREFETCH" 320(%0)\n"
 #endif
@@ -360,14 +343,14 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 	}
 
 #endif /* Have SSE */
-#if HAVE_MMX2
+#ifdef HAVE_MMX2
                 /* since movntq is weakly-ordered, a "sfence"
 		 * is needed to become ordered again. */
-		__asm__ volatile ("sfence":::"memory");
+		__asm__ __volatile__ ("sfence":::"memory");
 #endif
-#if !HAVE_SSE
+#ifndef HAVE_SSE
 		/* enables to use FPU */
-		__asm__ volatile (EMMS:::"memory");
+		__asm__ __volatile__ (EMMS:::"memory");
 #endif
 	}
 	/*
@@ -400,9 +383,9 @@ static void * RENAME(mem2agpcpy)(void * to, const void * from, size_t len)
 #endif
         if(len >= MIN_LEN)
 	{
-	  register x86_reg delta;
+	  register unsigned long int delta;
           /* Align destinition to MMREG_SIZE -boundary */
-          delta = ((intptr_t)to)&7;
+          delta = ((unsigned long int)to)&7;
           if(delta)
 	  {
 	    delta=8-delta;
@@ -422,7 +405,7 @@ static void * RENAME(mem2agpcpy)(void * to, const void * from, size_t len)
         */
 	for(; i>0; i--)
 	{
-		__asm__ volatile (
+		__asm__ __volatile__ (
         	PREFETCH" 320(%0)\n"
 		"movq (%0), %%mm0\n"
 		"movq 8(%0), %%mm1\n"
@@ -444,13 +427,13 @@ static void * RENAME(mem2agpcpy)(void * to, const void * from, size_t len)
 		from=((const unsigned char *)from)+64;
 		to=((unsigned char *)to)+64;
 	}
-#if HAVE_MMX2
+#ifdef HAVE_MMX2
                 /* since movntq is weakly-ordered, a "sfence"
 		 * is needed to become ordered again. */
-		__asm__ volatile ("sfence":::"memory");
+		__asm__ __volatile__ ("sfence":::"memory");
 #endif
 		/* enables to use FPU */
-		__asm__ volatile (EMMS:::"memory");
+		__asm__ __volatile__ (EMMS:::"memory");
 	}
 	/*
 	 *	Now do the tail of the block
@@ -458,3 +441,4 @@ static void * RENAME(mem2agpcpy)(void * to, const void * from, size_t len)
 	if(len) small_memcpy(to, from, len);
 	return retval;
 }
+

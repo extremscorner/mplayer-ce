@@ -40,10 +40,12 @@ Man page translations:
     * French: Guillaume Poirier
     * German: Sebastian Krämer
     * Hungarian: Gabor Mizda
-    * Italian: Paolo Tresoldi
+    * Italian: Daniele Forghieri
     * Polish: Waclaw Schiller
-    * Spanish: None
-    * Russian: Vladimir Voroshilov
+    * Spanish: Reynaldo H. Verdejo Pinochet (outdated)
+    * Chinese: unmaintained, outdated
+    * Swedish: unmaintained, outdated, incomplete
+    * Russian: Vladimir Voroshilov (incomplete)
 
 Documentation translations:
     * Czech: Jiri Heryan
@@ -52,9 +54,9 @@ Documentation translations:
     * Hungarian: Gabor Mizda
     * Italian: Paolo Tresoldi
     * Polish: Waclaw Schiller
-    * Spanish: None
-    * Chinese (simplified): unmaintained, outdated
-    * Italian: unmaintained, outdated
+    * Spanish: Reynaldo H. Verdejo Pinochet (outdated)
+    * Chinese (simplified): unmaintained, outdated, still HTML
+    * Italian: unmaintained, outdated, still HTML
     * Russian: Vladimir Voroshilov
 
 Platforms/ports:
@@ -66,8 +68,8 @@ Platforms/ports:
     * OpenBSD: Björn Sandell
     * Solaris: Derek Lewis
     * Win32/Cygwin/MinGW: Sascha Sommer, Joey Parrish
-    * MPlayer OS X frontend: Nicolas Plourde, Adrian Stutz
-    * Mac OS X: None
+    * MPlayer OS X frontend: Nicolas Plourde
+    * Mac OS X: Ulion
     * AIX: Derek Lewis
 
 MPlayer code:
@@ -86,7 +88,7 @@ MPlayer code:
     * DVB support: Nico Sabbi
     * GUI: None
     * GUI skins: Diego Biurrun
-    * EDL code: Oded Shimon
+    * EDL code: Reynaldo H. Verdejo Pinochet, Oded Shimon
 
 Imported libs/projects:
     * FFmpeg: Michael Niedermayer
@@ -114,6 +116,7 @@ demuxers:
     * demux_rtp* - Ross Finlayson
     * demux_mpg and demux_ts - Nico Sabbi
     * demux_mpc.c - Reimar Döffinger
+    * demux_nuv.c - Reimar Döffinger
 
 muxers:
     * muxer_lavf.c - Michael Niedermayer
@@ -145,8 +148,8 @@ video filters:
 audio filters:
     * general: Alex Beregszaszi
     * af_ladspa.c - Ivo van Poorten
-    * af_equalizer.c - None
-    * af_karaoke.c - None
+    * af_equalizer.c - Reynaldo H. Verdejo Pinochet
+    * af_karaoke.c - Reynaldo H. Verdejo Pinochet
 
 audio encoders:
     * ae_toolame.c, ae_twolame.c and ae_faac.c - Nico Sabbi
@@ -156,11 +159,9 @@ libvo drivers:
     * vo_aa.c - Alban Bedel
     * vo_caca.c - Howell Tam (Pigeon)
     * vo_bl.c - Rik Snel
-    * vo_corevideo.m - Adrian Stutz
     * vo_cvidix.c - Sascha Sommer
     * vo_dga.c - None
     * vo_dfbmga.c - Ville Syrjälä
-    * vo_direct3d.c - Georgi Petrov
     * vo_directfb[2].c - Jiri Svoboda
     * vo_directx.c - Sascha Sommer
     * vo_dxr2.c - Alban Bedel
@@ -173,8 +174,9 @@ libvo drivers:
     * vo_gl2.c - Reimar Döffinger
     * vo_ivtv.c - Benjamin Zores
     * vo_jpeg.c - Ivo van Poorten
+    * vo_macosx.m - Ulion
     * vo_md5sum.c - Ivo van Poorten
-    * vo_mga.c - None
+    * vo_mga.c - Attila Kinali
     * vo_mpegpes.c - None
     * vo_null.c - None
     * vo_png.c - Felix Bünemann
@@ -188,7 +190,7 @@ libvo drivers:
     * vo_wii.c - Benjamin Zores
     * vo_winvidix.c - Sascha Sommer
     * vo_x11.c - Alexander Strasser
-    * vo_xmga.c - None
+    * vo_xmga.c - Attila Kinali
     * vo_xover.c - Alban Bedel
     * vo_xv.c - Alexander Strasser
     * vo_xvidix.c - None
@@ -204,12 +206,12 @@ libao2 drivers:
     * ao_alsa5.c - None
     * ao_alsa.c - Clemens Ladisch
     * ao_arts.c - None
-    * ao_coreaudio.c - None
     * ao_dsound.c - None
     * ao_dxr2.c - None
     * ao_esd.c - None
     * ao_ivtv.c - Benjamin Zores
     * ao_jack.c - Reimar Döffinger
+    * ao_macosx.c - Ulion
     * ao_mpegpes.c - None
     * ao_nas.c - Tobias Diedrich
     * ao_null.c - None
@@ -217,7 +219,7 @@ libao2 drivers:
     * ao_oss.c - None
     * ao_pcm.c - None
     * ao_plugin.c - None
-    * ao_pulse.c - None
+    * ao_pulse.c - Reimar Döffinger
     * ao_sdl.c - None
     * ao_sgi.c - None
     * ao_sun.c - None

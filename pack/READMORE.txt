@@ -1,19 +1,9 @@
 ---Compiling
-In order to compile mplayer_ce you first need to build the necessary libs, stored in the libs
-directory.
-
-Please note that libdvdread and libdvdnav are now included in the main MPlayer release.  Make
-may give you an error if you still have the libs in your libogc folder, delete them to avoid
-the error.
-
-Build libogc with 'make wii' and 'make install'
-libfat with 'make wii-release' and then copying the libogc folder to your DevkitPro directory
-libfreetype with 'make' and 'make install'
-libjpeg with 'make' and 'make install'
-libiconv with 'make' and 'make install-lib'
-libfribidi with 'make' and 'make install'
-
-Now you can build mplayer_ce with 'make'.
+In order to compile mplayer_ce you first need to build libdvdread and libdvdnav.
+In config.mak in both libdvdread and libdvdnav you need to set both SRC_PATH and SRC_PATH_BARE
+to the correct directory, eg /c/projects/mplayer_ce-source/libdvdread-trunk.  Remember that it is
+case sensitive.  After this you can build livdvdread with 'make' and 'make install' and then libdvdnav
+with 'make' and 'make install' (in that order).  Now you can build mplayer_ce with 'make'.
 It should create mplayer.dol in the mplayer-trunk directory.
 
 ---Editing the source

@@ -2,9 +2,9 @@
  * ioctl.h: DVD ioctl replacement function
  *****************************************************************************
  * Copyright (C) 1999-2001 VideoLAN
- * $Id: ioctl.h 27494 2008-08-29 20:22:36Z diego $
+ * $Id: ioctl.h 24555 2007-09-17 13:08:51Z diego $
  *
- * Authors: Sam Hocevar <sam@zoy.org>
+ * Authors: Samuel Hocevar <sam@zoy.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

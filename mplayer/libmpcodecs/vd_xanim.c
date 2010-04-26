@@ -1,40 +1,24 @@
 /*
- * XAnim Video Codec DLL support
- *
- * It partly emulates the Xanim codebase.
- * You need the -rdynamic flag to use this with gcc.
- *
- * Copyright (C) 2001-2002 Alex Beregszaszi
- *                         Arpad Gereoffy <arpi@thot.banki.hu>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+  XAnim Video Codec DLL support
+
+  It partly emulates the Xanim codebase.
+  You need the -rdynamic flag to use this with gcc.
+
+  (C) 2001-2002 Alex Beregszaszi
+            and Arpad Gereoffy <arpi@thot.banki.hu>
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> /* strerror */
 
 #include "config.h"
-#include "path.h"
+
 #include "mp_msg.h"
 
 #include "vd_internal.h"
 
-static const vd_info_t info = {
+static vd_info_t info = {
 	"XAnim codecs",
 	"xanim",
 	"A'rpi & Alex",
@@ -237,7 +221,7 @@ static int xacodec_load(sh_video_t *sh, char *filename)
 	dlclose(priv->file_handler);
 	return 0;
     }
-
+	
     mod_hdr = what_the();
     if (!mod_hdr)
     {
@@ -245,7 +229,7 @@ static int xacodec_load(sh_video_t *sh, char *filename)
 	dlclose(priv->file_handler);
 	return 0;
     }
-
+    
     mp_msg(MSGT_DECVIDEO, MSGL_V, "=== XAnim Codec ===\n");
     mp_msg(MSGT_DECVIDEO, MSGL_V, " Filename: %s (API revision: %x)\n", filename, mod_hdr->api_rev);
     mp_msg(MSGT_DECVIDEO, MSGL_V, " Codec: %s. Rev: %s\n", mod_hdr->desc, mod_hdr->rev);
@@ -271,7 +255,7 @@ static int xacodec_load(sh_video_t *sh, char *filename)
 	dlclose(priv->file_handler);
 	return 0;
     }
-
+    
     mp_msg(MSGT_DECVIDEO, MSGL_DBG2, "Exported functions by codec: [functable: %p entries: %d]\n",
 	mod_hdr->funcs, mod_hdr->num_funcs);
     for (i = 0; i < (int)mod_hdr->num_funcs; i++)
@@ -335,22 +319,6 @@ static int xacodec_query(sh_video_t *sh, XA_CODEC_HDR *codec_hdr)
     }
 }
 
-/* These functions are required for loading XAnim binary libs.
- * Add forward declarations to avoid warnings with -Wmissing-prototypes. */
-void XA_Print(char *fmt, ...);
-void TheEnd1(char *err_mess);
-void XA_Add_Func_To_Free_Chain(XA_ANIM_HDR *anim_hdr, void (*function)());
-unsigned long XA_Time_Read(void);
-void XA_Gen_YUV_Tabs(XA_ANIM_HDR *anim_hdr);
-void JPG_Setup_Samp_Limit_Table(XA_ANIM_HDR *anim_hdr);
-void JPG_Alloc_MCU_Bufs(XA_ANIM_HDR *anim_hdr, unsigned int width,
-                        unsigned int height, unsigned int full_flag);
-void *YUV2x2_Blk_Func(unsigned int image_type, int blks,
-                      unsigned int dith_flag);
-void *YUV2x2_Map_Func(unsigned int image_type, unsigned int dith_type);
-void *XA_YUV1611_Func(unsigned int image_type);
-void *XA_YUV221111_Func(unsigned int image_type);
-
 void XA_Print(char *fmt, ...)
 {
     va_list vallist;
@@ -386,12 +354,13 @@ void XA_Add_Func_To_Free_Chain(XA_ANIM_HDR *anim_hdr, void (*function)())
     return;
 }
 
+
 unsigned long XA_Time_Read(void)
 {
     return GetTimer(); //(GetRelativeTime());
 }
 
-static void XA_dummy(void)
+void XA_dummy(void)
 {
     XA_Print("dummy() called");
 }
@@ -409,7 +378,7 @@ void JPG_Setup_Samp_Limit_Table(XA_ANIM_HDR *anim_hdr)
 }
 
 void JPG_Alloc_MCU_Bufs(XA_ANIM_HDR *anim_hdr, unsigned int width,
-                        unsigned int height, unsigned int full_flag)
+	unsigned int height, unsigned int full_flag)
 {
     XA_Print("JPG_Alloc_MCU_Bufs('anim_hdr: %08x', 'width: %d', 'height: %d', 'full_flag: %d')",
 	    anim_hdr, width, height, full_flag);
@@ -438,7 +407,7 @@ typedef struct
     image->planes[1][((x)>>1)+((y)>>1)*image->stride[1]]=cmap2x2->clr1_0;\
     image->planes[2][((x)>>1)+((y)>>1)*image->stride[2]]=cmap2x2->clr1_1;
 
-static void XA_2x2_OUT_1BLK_Convert(unsigned char *image_p, unsigned int x, unsigned int y,
+void XA_2x2_OUT_1BLK_Convert(unsigned char *image_p, unsigned int x, unsigned int y,
     unsigned int imagex, XA_2x2_Color *cmap2x2)
 {
     mp_image_t *mpi = (mp_image_t *)image_p;
@@ -455,7 +424,7 @@ static void XA_2x2_OUT_1BLK_Convert(unsigned char *image_p, unsigned int x, unsi
     return;
 }
 
-static void XA_2x2_OUT_4BLKS_Convert(unsigned char *image_p, unsigned int x, unsigned int y,
+void XA_2x2_OUT_4BLKS_Convert(unsigned char *image_p, unsigned int x, unsigned int y,
     unsigned int imagex, XA_2x2_Color *cm0, XA_2x2_Color *cm1, XA_2x2_Color *cm2,
     XA_2x2_Color *cm3)
 {
@@ -485,7 +454,7 @@ void *YUV2x2_Blk_Func(unsigned int image_type, int blks, unsigned int dith_flag)
 
 //  Take Four Y's and UV and put them into a 2x2 Color structure.
 
-static void XA_YUV_2x2_clr(XA_2x2_Color *cmap2x2, unsigned int Y0, unsigned int Y1,
+void XA_YUV_2x2_clr(XA_2x2_Color *cmap2x2, unsigned int Y0, unsigned int Y1,
     unsigned int Y2, unsigned int Y3, unsigned int U, unsigned int V,
     unsigned int map_flag, unsigned int *map, XA_CHDR *chdr)
 {
@@ -537,7 +506,7 @@ YUVTabs def_yuv_tabs;
 
 /* -------------- YUV 4x4 1x1 1x1  (4:1:0 aka YVU9) [Indeo 3,4,5] ------------------ */
 
-static void XA_YUV1611_Convert(unsigned char *image_p, unsigned int imagex, unsigned int imagey,
+void XA_YUV1611_Convert(unsigned char *image_p, unsigned int imagex, unsigned int imagey,
     unsigned int i_x, unsigned int i_y, YUVBufs *yuv, YUVTabs *yuv_tabs,
     unsigned int map_flag, unsigned int *map, XA_CHDR *chdr)
 {
@@ -617,7 +586,7 @@ void *XA_YUV1611_Func(unsigned int image_type)
 
 /* --------------- YUV 2x2 1x1 1x1 (4:2:0 aka YV12) [3ivX,H263] ------------ */
 
-static void XA_YUV221111_Convert(unsigned char *image_p, unsigned int imagex, unsigned int imagey,
+void XA_YUV221111_Convert(unsigned char *image_p, unsigned int imagex, unsigned int imagey,
     unsigned int i_x, unsigned int i_y, YUVBufs *yuv, YUVTabs *yuv_tabs, unsigned int map_flag,
     unsigned int *map, XA_CHDR *chdr)
 {
@@ -664,10 +633,11 @@ static int control(sh_video_t *sh,int cmd,void* arg,...){
 static int init(sh_video_t *sh)
 {
     vd_xanim_ctx *priv;
+    char *def_path = XACODEC_PATH;
     char dll[1024];
     XA_CODEC_HDR codec_hdr;
     int i;
-
+    
     priv = malloc(sizeof(vd_xanim_ctx));
     if (!priv)
 	return 0;
@@ -675,14 +645,17 @@ static int init(sh_video_t *sh)
     memset(priv, 0, sizeof(vd_xanim_ctx));
 
     if(!mpcodecs_config_vo(sh,sh->disp_w,sh->disp_h,IMGFMT_YV12)) return 0;
-
+    
     priv->iq_func = NULL;
     priv->dec_func = NULL;
 
     for (i=0; i < XA_CLOSE_FUNCS; i++)
 	xa_close_func[i] = NULL;
 
-    snprintf(dll, 1024, "%s/%s", codec_path, sh->codec->dll);
+    if (getenv("XANIM_MOD_DIR"))
+	def_path = getenv("XANIM_MOD_DIR");
+
+    snprintf(dll, 1024, "%s/%s", def_path, sh->codec->dll);
     if (xacodec_load(sh, dll) == 0)
 	return 0;
 
@@ -778,7 +751,7 @@ static mp_image_t* decode(sh_video_t *sh, void *data, int len, int flags)
 {
     vd_xanim_ctx *priv = sh->context;
     unsigned int ret;
-
+    
     if (len <= 0)
 	return NULL; // skipped frame
 
@@ -786,7 +759,7 @@ static mp_image_t* decode(sh_video_t *sh, void *data, int len, int flags)
 
     if(sh->codec->outflags[sh->outfmtidx] & CODECS_FLAG_STATIC){
 	// allocate static buffer for cvid-like codecs:
-	priv->mpi = mpcodecs_get_image(sh, MP_IMGTYPE_STATIC,
+	priv->mpi = mpcodecs_get_image(sh, MP_IMGTYPE_STATIC, 
 	    MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
 	    (sh->disp_w+3)&(~3), (sh->disp_h+3)&(~3));
 	if (!priv->mpi) return NULL;
@@ -844,6 +817,6 @@ static mp_image_t* decode(sh_video_t *sh, void *data, int len, int flags)
 	mp_msg(MSGT_DECVIDEO, MSGL_DBG2, "body\n");
 	return NULL;
     }
-
+    
     return priv->mpi;
 }

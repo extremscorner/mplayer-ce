@@ -18,13 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_X86_CPU_H
-#define AVUTIL_X86_CPU_H
+#ifndef FFMPEG_X86CPU_H
+#define FFMPEG_X86CPU_H
 
 #include <stdint.h>
 #include "config.h"
 
-#if ARCH_X86_64
+#ifdef ARCH_X86_64
 #    define REG_a "rax"
 #    define REG_b "rbx"
 #    define REG_c "rcx"
@@ -43,7 +43,7 @@ typedef int64_t x86_reg;
 #    define REGd    rdx
 #    define REGSP   rsp
 
-#elif ARCH_X86_32
+#else
 
 #    define REG_a "eax"
 #    define REG_b "ebx"
@@ -62,15 +62,18 @@ typedef int32_t x86_reg;
 #    define REGc    ecx
 #    define REGd    edx
 #    define REGSP   esp
-#else
-typedef int x86_reg;
 #endif
 
-#define HAVE_7REGS (ARCH_X86_64 || (HAVE_EBX_AVAILABLE && HAVE_EBP_AVAILABLE))
-#define HAVE_6REGS (ARCH_X86_64 || (HAVE_EBX_AVAILABLE || HAVE_EBP_AVAILABLE))
+#if defined(ARCH_X86_64) || (defined(ARCH_X86_32) && defined(HAVE_EBX_AVAILABLE) && defined(HAVE_EBP_AVAILABLE))
+#    define HAVE_7REGS 1
+#endif
 
-#if ARCH_X86_64 && defined(PIC)
+#if defined(ARCH_X86_64) || (defined(ARCH_X86_32) && (defined(HAVE_EBX_AVAILABLE) || defined(HAVE_EBP_AVAILABLE)))
+#    define HAVE_6REGS 1
+#endif
+
+#if defined(ARCH_X86_64) && defined(PIC)
 #    define BROKEN_RELOCATIONS 1
 #endif
 
-#endif /* AVUTIL_X86_CPU_H */
+#endif /* FFMPEG_X86CPU_H */

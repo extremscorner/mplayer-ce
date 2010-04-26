@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 #include "mp_msg.h"
@@ -56,7 +39,7 @@ static struct menu_priv_s cfg_dflt = {
 
 #define ST_OFF(m) M_ST_OFF(struct menu_priv_s,m)
 
-static const m_option_t cfg_fields[] = {
+static m_option_t cfg_fields[] = {
   { "minbor", ST_OFF(minb), CONF_TYPE_INT, M_OPT_MIN, 0, 0, NULL },
   { "hspace", ST_OFF(hspace), CONF_TYPE_INT, M_OPT_MIN, 0, 0, NULL },
   { "file", ST_OFF(file), CONF_TYPE_STRING, 0, 0, 0, NULL },
@@ -66,6 +49,7 @@ static const m_option_t cfg_fields[] = {
 #define mpriv (menu->priv)
 
 static void read_cmd(menu_t* menu,int cmd) {
+
   switch(cmd) {
   case MENU_CMD_UP:
     mpriv->cur_line -= mpriv->disp_lines / 2;
@@ -119,14 +103,14 @@ static void draw(menu_t* menu,mp_image_t* mpi) {
     end = i + mpriv->disp_lines;
     if(end >= mpriv->num_lines) end = mpriv->num_lines - 1;
   }
-
+  
   for( ; i < end ; i++) {
     menu_draw_text(mpi,mpriv->lines[i],x,y);
     y += vo_font->height + mpriv->hspace;
   }
 
 }
-
+    
 #define BUF_SIZE 1024
 
 static int open_txt(menu_t* menu, char* args) {
@@ -164,7 +148,7 @@ static int open_txt(menu_t* menu, char* args) {
     }
     pos += r;
     buf[pos] = '\0';
-
+    
     while((l = strchr(buf,'\n')) != NULL) {
       s = l-buf;
       mpriv->lines = realloc(mpriv->lines,(mpriv->num_lines + 1)*sizeof(char*));

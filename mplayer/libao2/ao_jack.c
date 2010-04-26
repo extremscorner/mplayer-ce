@@ -1,24 +1,11 @@
-/*
- * JACK audio output driver for MPlayer
+/* 
+ * ao_jack.c - libao2 JACK Audio Output Driver for MPlayer
+ *
+ * This driver is under the same license as MPlayer.
+ * (http://www.mplayerhq.hu)
  *
  * Copyleft 2001 by Felix Bünemann (atmosfear@users.sf.net)
  * and Reimar Döffinger (Reimar.Doeffinger@stud.uni-karlsruhe.de)
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * along with MPlayer; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <stdio.h>
@@ -36,11 +23,11 @@
 #include "osdep/timer.h"
 #include "subopt-helper.h"
 
-#include "libavutil/fifo.h"
+#include "libvo/fastmemcpy.h"
 
 #include <jack/jack.h>
 
-static const ao_info_t info =
+static ao_info_t info = 
 {
   "JACK audio output",
   "jack",
@@ -68,10 +55,47 @@ static volatile float callback_time = 0;
 #define CHUNK_SIZE (16 * 1024)
 //! number of "virtual" chunks the buffer consists of
 #define NUM_CHUNKS 8
-#define BUFFSIZE (NUM_CHUNKS * CHUNK_SIZE)
+// This type of ring buffer may never fill up completely, at least
+// one byte must always be unused.
+// For performance reasons (alignment etc.) one whole chunk always stays
+// empty, not only one byte.
+#define BUFFSIZE ((NUM_CHUNKS + 1) * CHUNK_SIZE)
 
 //! buffer for audio data
-static AVFifoBuffer *buffer;
+static unsigned char *buffer = NULL;
+
+//! buffer read position, may only be modified by playback thread or while it is stopped
+static volatile int read_pos;
+//! buffer write position, may only be modified by MPlayer's thread
+static volatile int write_pos;
+
+/**
+ * \brief get the number of free bytes in the buffer
+ * \return number of free bytes in buffer
+ * 
+ * may only be called by MPlayer's thread
+ * return value may change between immediately following two calls,
+ * and the real number of free bytes might be larger!
+ */
+static int buf_free(void) {
+  int free = read_pos - write_pos - CHUNK_SIZE;
+  if (free < 0) free += BUFFSIZE;
+  return free;
+}
+
+/**
+ * \brief get amount of data available in the buffer
+ * \return number of bytes available in buffer
+ *
+ * may only be called by the playback thread
+ * return value may change between immediately following two calls,
+ * and the real number of buffered bytes might be larger!
+ */
+static int buf_used(void) {
+  int used = write_pos - read_pos;
+  if (used < 0) used += BUFFSIZE;
+  return used;
+}
 
 /**
  * \brief insert len bytes into buffer
@@ -82,33 +106,21 @@ static AVFifoBuffer *buffer;
  * If there is not enough room, the buffer is filled up
  */
 static int write_buffer(unsigned char* data, int len) {
-  int free = av_fifo_space(buffer);
+  int first_len = BUFFSIZE - write_pos;
+  int free = buf_free();
   if (len > free) len = free;
-  return av_fifo_generic_write(buffer, data, len, NULL);
+  if (first_len > len) first_len = len;
+  // till end of buffer
+  fast_memcpy (&buffer[write_pos], data, first_len);
+  if (len > first_len) { // we have to wrap around
+    // remaining part from beginning of buffer
+    fast_memcpy (buffer, &data[first_len], len - first_len);
+  }
+  write_pos = (write_pos + len) % BUFFSIZE;
+  return len;
 }
 
 static void silence(float **bufs, int cnt, int num_bufs);
-
-struct deinterleave {
-  float **bufs;
-  int num_bufs;
-  int cur_buf;
-  int pos;
-};
-
-static void deinterleave(void *info, void *src, int len) {
-  struct deinterleave *di = info;
-  float *s = src;
-  int i;
-  len /= sizeof(float);
-  for (i = 0; i < len; i++) {
-    di->bufs[di->cur_buf++][di->pos] = s[i];
-    if (di->cur_buf >= di->num_bufs) {
-      di->cur_buf = 0;
-      di->pos++;
-    }
-  }
-}
 
 /**
  * \brief read data from buffer and splitting it into channels
@@ -124,13 +136,18 @@ static void deinterleave(void *info, void *src, int len) {
  * with silence.
  */
 static int read_buffer(float **bufs, int cnt, int num_bufs) {
-  struct deinterleave di = {bufs, num_bufs, 0, 0};
-  int buffered = av_fifo_size(buffer);
+  int buffered = buf_used();
+  int i, j;
   if (cnt * sizeof(float) * num_bufs > buffered) {
     silence(bufs, cnt, num_bufs);
     cnt = buffered / sizeof(float) / num_bufs;
   }
-  av_fifo_generic_read(buffer, &di, cnt * num_bufs * sizeof(float), deinterleave);
+  for (i = 0; i < cnt; i++) {
+    for (j = 0; j < num_bufs; j++) {
+      bufs[j][i] = *(float *)&buffer[read_pos];
+      read_pos = (read_pos + sizeof(float)) % BUFFSIZE;
+    }
+  }
   return cnt;
 }
 
@@ -197,25 +214,19 @@ static void print_help (void)
            "  name=<client name>\n"
            "    Client name to pass to JACK\n"
            "  estimate\n"
-           "    Estimates the amount of data in buffers (experimental)\n"
-           "  autostart\n"
-           "    Automatically start JACK server if necessary\n"
-         );
+           "    Estimates the amount of data in buffers (experimental)\n");
 }
 
 static int init(int rate, int channels, int format, int flags) {
   const char **matching_ports = NULL;
   char *port_name = NULL;
   char *client_name = NULL;
-  int autostart = 0;
-  const opt_t subopts[] = {
+  opt_t subopts[] = {
     {"port", OPT_ARG_MSTRZ, &port_name, NULL},
     {"name", OPT_ARG_MSTRZ, &client_name, NULL},
     {"estimate", OPT_ARG_BOOL, &estimate, NULL},
-    {"autostart", OPT_ARG_BOOL, &autostart, NULL},
     {NULL}
   };
-  jack_options_t open_options = JackUseExactName;
   int port_flags = JackPortIsInput;
   int i;
   estimate = 1;
@@ -231,14 +242,12 @@ static int init(int rate, int channels, int format, int flags) {
     client_name = malloc(40);
     sprintf(client_name, "MPlayer [%d]", getpid());
   }
-  if (!autostart)
-    open_options |= JackNoStartServer;
-  client = jack_client_open(client_name, open_options, NULL);
+  client = jack_client_new(client_name);
   if (!client) {
     mp_msg(MSGT_AO, MSGL_FATAL, "[JACK] cannot open server\n");
     goto err_out;
   }
-  buffer = av_fifo_alloc(BUFFSIZE);
+  reset();
   jack_set_process_callback(client, outputaudio, 0);
 
   // list matching ports
@@ -278,6 +287,7 @@ static int init(int rate, int channels, int format, int flags) {
   jack_latency = (float)(jack_port_get_total_latency(client, ports[0]) +
                          jack_get_buffer_size(client)) / (float)rate;
   callback_interval = 0;
+  buffer = malloc(BUFFSIZE);
 
   ao_data.channels = channels;
   ao_data.samplerate = rate;
@@ -296,7 +306,7 @@ err_out:
   free(client_name);
   if (client)
     jack_client_close(client);
-  av_fifo_free(buffer);
+  free(buffer);
   buffer = NULL;
   return 0;
 }
@@ -309,7 +319,7 @@ static void uninit(int immed) {
   reset();
   usec_sleep(100 * 1000);
   jack_client_close(client);
-  av_fifo_free(buffer);
+  free(buffer);
   buffer = NULL;
 }
 
@@ -318,7 +328,8 @@ static void uninit(int immed) {
  */
 static void reset(void) {
   paused = 1;
-  av_fifo_reset(buffer);
+  read_pos = 0;
+  write_pos = 0;
   paused = 0;
 }
 
@@ -337,7 +348,7 @@ static void audio_resume(void) {
 }
 
 static int get_space(void) {
-  return av_fifo_space(buffer);
+  return buf_free();
 }
 
 /**
@@ -351,7 +362,7 @@ static int play(void *data, int len, int flags) {
 }
 
 static float get_delay(void) {
-  int buffered = av_fifo_size(buffer); // could be less
+  int buffered = BUFFSIZE - CHUNK_SIZE - buf_free(); // could be less
   float in_jack = jack_latency;
   if (estimate && callback_interval > 0) {
     float elapsed = (float)GetTimer() / 1000000.0 - callback_time;
@@ -360,3 +371,4 @@ static float get_delay(void) {
   }
   return (float)buffered / (float)ao_data.bps + in_jack;
 }
+
