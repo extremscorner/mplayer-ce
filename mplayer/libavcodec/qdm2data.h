@@ -23,7 +23,7 @@
  */
 
  /**
- * @file
+ * @file libavcodec/qdm2data.h
  * Various QDM2 tables.
  */
 

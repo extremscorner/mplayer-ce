@@ -77,7 +77,7 @@ struct rtsp_session_s {
 };
 
 /*
- * closes an rtsp connection
+ * closes an rtsp connection 
  */
 
 static void rtsp_close(rtsp_t *s) {
@@ -94,10 +94,9 @@ static void rtsp_close(rtsp_t *s) {
   if (s->mrl) free(s->mrl);
   if (s->session) free(s->session);
   if (s->user_agent) free(s->user_agent);
-  free(s->server);
   rtsp_free_answers(s);
   rtsp_unschedule_all(s);
-  free(s);
+  free(s);  
 }
 
 //rtsp_session_t *rtsp_session_start(char *mrl) {
@@ -107,12 +106,13 @@ rtsp_session_t *rtsp_session_start(int fd, char **mrl, char *path, char *host,
   rtsp_session_t *rtsp_session = NULL;
   char *server;
   char *mrl_line = NULL;
+  rmff_header_t *h;
 
   rtsp_session = malloc (sizeof (rtsp_session_t));
   rtsp_session->s = NULL;
   rtsp_session->real_session = NULL;
   rtsp_session->rtp_session = NULL;
-
+ 
 //connect:
   *redir = 0;
 
@@ -138,9 +138,8 @@ rtsp_session_t *rtsp_session_start(int fd, char **mrl, char *path, char *host,
   {
     /* we are talking to a real server ... */
 
-    rmff_header_t *h=real_setup_and_get_header(rtsp_session->s, bandwidth, user, pass);
-    if (!h || !h->streams[0]) {
-      rmff_free_header(h);
+    h=real_setup_and_get_header(rtsp_session->s, bandwidth, user, pass);
+    if (!h) {
       /* got an redirect? */
       if (rtsp_search_answers(rtsp_session->s, RTSP_OPTIONS_LOCATION))
       {
@@ -165,7 +164,7 @@ rtsp_session_t *rtsp_session_start(int fd, char **mrl, char *path, char *host,
         return NULL;
       }
     }
-
+	
     rtsp_session->real_session = init_real_rtsp_session ();
     if(!strncmp(h->streams[0]->mime_type, "application/vnd.rn-rmadriver", h->streams[0]->mime_type_size) ||
        !strncmp(h->streams[0]->mime_type, "application/smil", h->streams[0]->mime_type_size)) {
@@ -175,7 +174,7 @@ rtsp_session_t *rtsp_session_start(int fd, char **mrl, char *path, char *host,
       mp_msg(MSGT_OPEN, MSGL_V, "smil-over-realrtsp playlist, switching to raw rdt mode\n");
     } else {
     rtsp_session->real_session->header_len =
-      rmff_dump_header (h, (char *) rtsp_session->real_session->header, RTSP_HEADER_SIZE);
+      rmff_dump_header (h, (char *) rtsp_session->real_session->header, HEADER_SIZE);
 
       if (rtsp_session->real_session->header_len < 0) {
         mp_msg (MSGT_OPEN, MSGL_ERR,"rtsp_session: error while dumping RMFF headers, session can not be established.\n");
@@ -196,7 +195,6 @@ rtsp_session_t *rtsp_session_start(int fd, char **mrl, char *path, char *host,
       rtsp_session->real_session->header_len;
     }
     rtsp_session->real_session->recv_read = 0;
-    rmff_free_header(h);
   } else /* not a Real server : try RTP instead */
   {
     char *public = NULL;
@@ -241,12 +239,12 @@ rtsp_session_t *rtsp_session_start(int fd, char **mrl, char *path, char *host,
     }
   }
   free(server);
-
+  
   return rtsp_session;
 }
 
 int rtsp_session_read (rtsp_session_t *this, char *data, int len) {
-
+  
   if (this->real_session) {
   int to_copy=len;
   char *dest=data;
@@ -259,7 +257,7 @@ int rtsp_session_read (rtsp_session_t *this, char *data, int len) {
   if (len < 0) return 0;
   if (this->real_session->recv_size < 0) return -1;
   while (to_copy > fill) {
-
+    
     memcpy(dest, source, fill);
     to_copy -= fill;
     dest += fill;
@@ -280,7 +278,7 @@ int rtsp_session_read (rtsp_session_t *this, char *data, int len) {
       return len-to_copy;
     }
   }
-
+  
   memcpy(dest, source, to_copy);
   this->real_session->recv_read += to_copy;
 
@@ -300,7 +298,7 @@ int rtsp_session_read (rtsp_session_t *this, char *data, int len) {
 
     if (l == 0)
       rtsp_session_end (this);
-
+    
     return l;
   }
 

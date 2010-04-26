@@ -22,7 +22,7 @@
  *
  * Modified for use with MPlayer, see libmpeg2_changes.diff for the exact changes.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: cpu_accel.c 29306 2009-05-13 15:22:13Z bircoph $
+ * $Id: cpu_accel.c 28325 2009-01-16 09:21:21Z reimar $
  */
 
 #include "config.h"
@@ -42,10 +42,10 @@ static inline uint32_t arch_accel (uint32_t accel)
 #if 0
     if (accel & (MPEG2_ACCEL_X86_3DNOW | MPEG2_ACCEL_X86_MMXEXT))
 	accel |= MPEG2_ACCEL_X86_MMX;
-
+	
     if (accel & (MPEG2_ACCEL_X86_SSE2 | MPEG2_ACCEL_X86_SSE3))
 	accel |= MPEG2_ACCEL_X86_MMXEXT;
-
+	
     if (accel & (MPEG2_ACCEL_X86_SSE3))
 	accel |= MPEG2_ACCEL_X86_SSE2;
 

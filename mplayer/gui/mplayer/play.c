@@ -26,7 +26,6 @@
 
 #include "config.h"
 #include "help_mp.h"
-#include "libmpcodecs/vd.h"
 #include "libvo/x11_common.h"
 #include "libvo/video_out.h"
 #include "input/input.h"
@@ -57,8 +56,8 @@ void mplFullScreen( void )
  if ( guiIntfStruct.NoWindow && guiIntfStruct.Playing ) return;
 
   if ( ( guiIntfStruct.Playing )&&( appMPlayer.subWindow.isFullScreen ) )
-   {
-    appMPlayer.subWindow.OldWidth=guiIntfStruct.MovieWidth; appMPlayer.subWindow.OldHeight=guiIntfStruct.MovieHeight;
+   { 
+    appMPlayer.subWindow.OldWidth=guiIntfStruct.MovieWidth; appMPlayer.subWindow.OldHeight=guiIntfStruct.MovieHeight; 
     switch ( appMPlayer.sub.x )
      {
       case -1: appMPlayer.subWindow.OldX=( wsMaxX / 2 ) - ( appMPlayer.subWindow.OldWidth / 2 ) + wsOrgX; break;
@@ -95,7 +94,7 @@ void mplEnd( void )
    guiIntfStruct.FilenameChanged=guiIntfStruct.NewPlay=1;
    gfree( (void **)&guiIntfStruct.AudioFile );
    gfree( (void **)&guiIntfStruct.Subtitlename );
-  }
+  } 
   else
     {
      if ( guiIntfStruct.FilenameChanged || guiIntfStruct.NewPlay ) return;
@@ -188,7 +187,7 @@ void ChangeSkin( char * name )
  int bprev = appMPlayer.barIsPresent;
 
  mainVisible=0;
-
+ 
  appInitStruct( &tmpList );
  skinAppMPlayer=&tmpList;
  fntFreeFont();
@@ -269,13 +268,13 @@ void ChangeSkin( char * name )
 
  wsSetLayer( wsDisplay,appMPlayer.mainWindow.WindowID,appMPlayer.subWindow.isFullScreen );
  wsSetLayer( wsDisplay,appMPlayer.menuWindow.WindowID,appMPlayer.subWindow.isFullScreen );
-
+ 
 }
 
 void mplSetFileName( char * dir,char * name,int type )
 {
  if ( !name ) return;
-
+ 
  if ( !dir ) guiSetFilename( guiIntfStruct.Filename,name )
   else guiSetDF( guiIntfStruct.Filename,dir,name );
 
@@ -289,7 +288,7 @@ void mplCurr( void )
 {
  plItem * curr;
  int      stop = 0;
-
+ 
  if ( guiIntfStruct.Playing == 2 ) return;
  switch ( guiIntfStruct.StreamType )
   {
@@ -301,7 +300,7 @@ void mplCurr( void )
    case STREAMTYPE_VCD:
 	break;
 #endif
-   default:
+   default: 
 	if ( (curr=gtkSet( gtkGetCurrPlItem,0,NULL)) )
 	 {
 	  mplSetFileName( curr->path,curr->name,STREAMTYPE_FILE );
@@ -319,7 +318,7 @@ void mplPrev( void )
 {
  plItem * prev;
  int      stop = 0;
-
+ 
  if ( guiIntfStruct.Playing == 2 ) return;
  switch ( guiIntfStruct.StreamType )
   {
@@ -338,7 +337,7 @@ void mplPrev( void )
 	if ( --guiIntfStruct.Track == 0 ) { guiIntfStruct.Track=1; stop=1; }
 	break;
 #endif
-   default:
+   default: 
 	if ( (prev=gtkSet( gtkGetPrevPlItem,0,NULL)) )
 	 {
 	  mplSetFileName( prev->path,prev->name,STREAMTYPE_FILE );
@@ -375,8 +374,8 @@ void mplNext( void )
 	break;
 #endif
    default:
-	if ( (next=gtkSet( gtkGetNextPlItem,0,NULL)) )
-	 {
+	if ( (next=gtkSet( gtkGetNextPlItem,0,NULL)) ) 
+	 { 
 	  mplSetFileName( next->path,next->name,STREAMTYPE_FILE );
 	  mplGotoTheNext=0;
 	  break;

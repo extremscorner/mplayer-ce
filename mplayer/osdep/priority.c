@@ -20,11 +20,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "osdep.h"
+#ifdef __OS2__
 
-#ifdef _WIN32
+#define INCL_DOS
+#include <os2.h>
+
+#define REALTIME_PRIORITY_CLASS     MAKESHORT(0, PRTYC_TIMECRITICAL)
+#define HIGH_PRIORITY_CLASS         MAKESHORT(PRTYD_MAXIMUM, PRTYC_REGULAR)
+#define ABOVE_NORMAL_PRIORITY_CLASS MAKESHORT(PRTYD_MAXIMUM / 2, PRTYC_REGULAR)
+#define NORMAL_PRIORITY_CLASS       MAKESHORT(0, PRTYC_REGULAR)
+#define BELOW_NORMAL_PRIORITY_CLASS MAKESHORT(PRTYD_MAXIMUM, PRTYC_IDLETIME)
+#define IDLE_PRIORITY_CLASS         MAKESHORT(0, PRTYC_IDLETIME)
+
+#else
+
 #include <windows.h>
-#endif
+
+#endif /* __OS2__ */
 
 #include <string.h>
 
@@ -64,6 +76,14 @@ void set_priority(void)
         mp_msg(MSGT_CPLAYER, MSGL_STATUS, MSGTR_SettingProcessPriority,
                priority_presets_defs[i].name);
 
+#ifdef __OS2__
+        DosSetPriority(PRTYS_PROCESS,
+                       HIBYTE(priority_presets_defs[i].prio),
+                       LOBYTE(priority_presets_defs[i].prio),
+                       0);
+#else
         SetPriorityClass(GetCurrentProcess(), priority_presets_defs[i].prio);
+#endif
     }
 }
+

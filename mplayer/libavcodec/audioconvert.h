@@ -24,7 +24,7 @@
 #define AVCODEC_AUDIOCONVERT_H
 
 /**
- * @file
+ * @file libavcodec/audioconvert.h
  * Audio format conversion routines
  */
 

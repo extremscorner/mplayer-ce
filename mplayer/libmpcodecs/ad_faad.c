@@ -28,7 +28,7 @@
 #include "ad_internal.h"
 #include "libaf/reorder_ch.h"
 
-static const ad_info_t info =
+static ad_info_t info = 
 {
 	"AAC (MPEG2/4 Advanced Audio Coding)",
 	"faad",
@@ -47,10 +47,10 @@ LIBAD_EXTERN(faad)
 
 /* configure maximum supported channels, *
  * this is theoretically max. 64 chans   */
-#define FAAD_MAX_CHANNELS 8
-#define FAAD_BUFFLEN (FAAD_MIN_STREAMSIZE*FAAD_MAX_CHANNELS)
+#define FAAD_MAX_CHANNELS 6
+#define FAAD_BUFFLEN (FAAD_MIN_STREAMSIZE*FAAD_MAX_CHANNELS)		       
 
-//#define AAC_DUMP_COMPRESSED
+//#define AAC_DUMP_COMPRESSED  
 
 static faacDecHandle faac_hdec;
 static faacDecFrameInfo faac_finfo;
@@ -80,7 +80,7 @@ static int aac_probe(unsigned char *buffer, int len)
   mp_msg(MSGT_DECAUDIO,MSGL_V, "\nAAC_PROBE: ret %d\n", pos);
   return pos;
 }
-
+	
 static int init(sh_audio_t *sh)
 {
   unsigned long faac_samplerate;
@@ -96,6 +96,7 @@ static int init(sh_audio_t *sh)
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"FAAD: codecdata extracted from WAVEFORMATEX\n");
   }
   if(!sh->codecdata_len) {
+#if 1
     faacDecConfigurationPtr faac_conf;
     /* Set the default object type and samplerate */
     /* This is useful for RAW AAC files */
@@ -124,6 +125,7 @@ static int init(sh_audio_t *sh)
     //faac_conf->defObjectType = LTP; // => MAIN, LC, SSR, LTP available.
 
     faacDecSetConfiguration(faac_hdec, faac_conf);
+#endif
 
     sh->a_in_buffer_len = demux_read_data(sh->ds, sh->a_in_buffer, sh->a_in_buffer_size);
     pos = aac_probe(sh->a_in_buffer, sh->a_in_buffer_len);
@@ -149,7 +151,7 @@ static int init(sh_audio_t *sh)
         faac_conf->downMatrix = 1;
         faacDecSetConfiguration(faac_hdec, faac_conf);
     }
-
+    
     /*int i;
     for(i = 0; i < sh_audio->codecdata_len; i++)
       printf("codecdata_dump %d: 0x%02X\n", i, sh_audio->codecdata[i]);*/
@@ -165,8 +167,7 @@ static int init(sh_audio_t *sh)
   } else {
     mp_msg(MSGT_DECAUDIO,MSGL_V,"FAAD: Decoder init done (%dBytes)!\n", sh->a_in_buffer_len); // XXX: remove or move to debug!
     mp_msg(MSGT_DECAUDIO,MSGL_V,"FAAD: Negotiated samplerate: %ldHz  channels: %d\n", faac_samplerate, faac_channels);
-    // 8 channels is aac channel order #7.
-    sh->channels = faac_channels == 7 ? 8 : faac_channels;
+    sh->channels = faac_channels;
     if (audio_output_channels <= 2) sh->channels = faac_channels > 1 ? 2 : 1;
     sh->samplerate = faac_samplerate;
     sh->samplesize=2;
@@ -174,9 +175,9 @@ static int init(sh_audio_t *sh)
     if(!sh->i_bps) {
       mp_msg(MSGT_DECAUDIO,MSGL_WARN,"FAAD: compressed input bitrate missing, assuming 128kbit/s!\n");
       sh->i_bps = 128*1000/8; // XXX: HACK!!! ::atmos
-    } else
+    } else 
       mp_msg(MSGT_DECAUDIO,MSGL_V,"FAAD: got %dkbit/s bitrate from MP4 header!\n",sh->i_bps*8/1000);
-  }
+  }  
   return 1;
 }
 
@@ -212,7 +213,7 @@ static int control(sh_audio_t *sh,int cmd,void* arg, ...)
       case ADCTRL_RESYNC_STREAM:
          aac_sync(sh);
 	 return CONTROL_TRUE;
-#if 0
+#if 0      
       case ADCTRL_SKIP_FRAME:
 	  return CONTROL_TRUE;
 #endif
@@ -236,7 +237,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
 	demux_read_data(sh->ds,&sh->a_in_buffer[sh->a_in_buffer_len],
 	sh->a_in_buffer_size - sh->a_in_buffer_len);
     }
-
+	  
 #ifdef DUMP_AAC_COMPRESSED
     {int i;
     for (i = 0; i < 16; i++)
@@ -248,7 +249,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
    // raw aac stream:
    do {
     faac_sample_buffer = faacDecDecode(faac_hdec, &faac_finfo, sh->a_in_buffer, sh->a_in_buffer_len);
-
+	
     /* update buffer index after faacDecDecode */
     if(faac_finfo.bytesconsumed >= sh->a_in_buffer_len) {
       sh->a_in_buffer_len=0;
@@ -270,7 +271,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
       errors++;
     } else
       break;
-   } while(errors < MAX_FAAD_ERRORS);
+   } while(errors < MAX_FAAD_ERRORS);	  
   } else {
    // packetized (.mp4) aac stream:
     unsigned char* bufptr=NULL;
@@ -284,7 +285,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
     faac_sample_buffer = faacDecDecode(faac_hdec, &faac_finfo, bufptr, buflen);
   }
   //for (j=0;j<faac_finfo.channels;j++) printf("%d:%d\n", j, faac_finfo.channel_position[j]);
-
+  
     if(faac_finfo.error > 0) {
       mp_msg(MSGT_DECAUDIO,MSGL_WARN,"FAAD: Failed to decode frame: %s \n",
       faacDecGetErrorMessage(faac_finfo.error));

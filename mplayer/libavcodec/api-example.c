@@ -19,7 +19,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/apiexample.c
  * avcodec API use example.
  *
  * Note that this library only handles codecs (mpeg, mpeg4, etc...),
@@ -35,7 +35,7 @@
 #undef HAVE_AV_CONFIG_H
 #endif
 
-#include "libavcodec/avcodec.h"
+#include "avcodec.h"
 #include "libavutil/mathematics.h"
 
 #define INBUF_SIZE 4096

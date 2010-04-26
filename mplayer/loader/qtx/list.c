@@ -1,22 +1,5 @@
-/*
- * To compile edit loader/win32.c and change the #if 0 to 1 at line 1326
- * to enable quicktime fix!
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+/* to compile:
+   edit ../win32.c, change the #if 0 to 1 at line 1326 to enabel quicktime fix!
  */
 
 #include <stdio.h>
@@ -25,7 +8,7 @@
 
 #include "qtxsdk/components.h"
 #include "qtxsdk/select.h"
-#include "loader/ldt_keeper.h"
+#include "ldt_keeper.h"
 
 char* get_path(const char* x){  return strdup(x);}
 void* LoadLibraryA(char* name);
@@ -33,7 +16,7 @@ void* GetProcAddress(void* handle,char* func);
 
 #define __stdcall __attribute__((__stdcall__))
 #define __cdecl   __attribute__((__cdecl__))
-#define APIENTRY
+#define APIENTRY 
 
 int main(void) {
     void *handler;
@@ -68,7 +51,7 @@ int main(void) {
     desc.componentManufacturer=0;
     desc.componentFlags=0;
     desc.componentFlagsMask=0;
-
+    
     printf("Count = %ld\n",CountComponents(&desc));
 
     exit(0);

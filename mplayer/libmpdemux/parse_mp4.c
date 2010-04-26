@@ -33,8 +33,7 @@
 #define MP4_DL MSGL_V
 #define freereturn(a,b) free(a); return b
 
-static int mp4_read_descr_len(stream_t *s)
-{
+int mp4_read_descr_len(stream_t *s) {
   uint8_t b;
   uint8_t numBytes = 0;
   uint32_t length = 0;
@@ -56,11 +55,11 @@ int mp4_parse_esds(unsigned char *data, int datalen, esds_t *esds) {
   uint16_t len;
 #ifdef MP4_DUMPATOM
   {int i;
-  printf("ESDS Dump (%dbyte):\n", datalen);
+  printf("ESDS Dump (%dbyte):\n", datalen);  
   for(i = 0; i < datalen; i++)
     printf("%02X ", data[i]);
   printf("\nESDS Dumped\n");}
-#endif
+#endif  
   memset(esds, 0, sizeof(esds_t));
 
   esds->version = stream_read_char(s);
@@ -128,7 +127,7 @@ int mp4_parse_esds(unsigned char *data, int datalen, esds_t *esds) {
   }
 
   /* read length */
-  esds->decoderConfigLen = len = mp4_read_descr_len(s);
+  esds->decoderConfigLen = len = mp4_read_descr_len(s); 
 
   esds->decoderConfig = malloc(esds->decoderConfigLen);
   if (esds->decoderConfig) {
@@ -171,3 +170,4 @@ void mp4_free_esds(esds_t *esds) {
 
 #undef freereturn
 #undef MP4_DL
+

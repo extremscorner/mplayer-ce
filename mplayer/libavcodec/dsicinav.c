@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/dsicinav.c
  * Delphine Software International CIN audio/video decoders
  */
 
@@ -345,7 +345,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
 
 AVCodec dsicinvideo_decoder = {
     "dsicinvideo",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_DSICINVIDEO,
     sizeof(CinVideoContext),
     cinvideo_decode_init,
@@ -358,7 +358,7 @@ AVCodec dsicinvideo_decoder = {
 
 AVCodec dsicinaudio_decoder = {
     "dsicinaudio",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_DSICINAUDIO,
     sizeof(CinAudioContext),
     cinaudio_decode_init,

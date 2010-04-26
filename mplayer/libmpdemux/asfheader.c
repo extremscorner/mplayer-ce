@@ -1,22 +1,5 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 // .asf fileformat docs from http://divx.euro.ru
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,13 +12,12 @@
 #include "help_mp.h"
 
 #include "stream/stream.h"
-#include "aviprint.h"
 #include "demuxer.h"
 #include "stheader.h"
 
 #include "asf.h"
+
 #include "asfguid.h"
-#include "asfheader.h"
 
 typedef struct {
   // must be 0 for metadata record, might be non-zero for metadata lib record
@@ -78,7 +60,7 @@ static const char* asf_chunk_type(unsigned char* guid) {
       return "guid_ext_audio_stream";
     case ASF_GUID_PREFIX_ext_stream_embed_stream_header:
       return "guid_ext_stream_embed_stream_header";
-    case ASF_GUID_PREFIX_video_stream:
+    case ASF_GUID_PREFIX_video_stream: 
       return "guid_video_stream";
     case ASF_GUID_PREFIX_audio_conceal_none:
       return "guid_audio_conceal_none";
@@ -92,7 +74,7 @@ static const char* asf_chunk_type(unsigned char* guid) {
       return "guid_index_chunk";
     case ASF_GUID_PREFIX_stream_header:
       return "guid_stream_header";
-    case ASF_GUID_PREFIX_header_2_0:
+    case ASF_GUID_PREFIX_header_2_0: 
       return "guid_header_2_0";
     case ASF_GUID_PREFIX_file_header:
       return "guid_file_header";
@@ -136,6 +118,10 @@ int asf_check_header(demuxer_t *demuxer){
   return DEMUXER_TYPE_ASF;
 }
 
+void print_wave_header(WAVEFORMATEX *h, int verbose_level);
+void print_video_header(BITMAPINFOHEADER *h, int verbose_level);
+
+
 static int get_ext_stream_properties(char *buf, int buf_len, int stream_num, struct asf_priv* asf, int is_video)
 {
   int pos=0;
@@ -176,7 +162,7 @@ static int get_ext_stream_properties(char *buf, int buf_len, int stream_num, str
       stnamect = AV_RL16(buffer);buffer+=2;
       payct = AV_RL16(buffer);buffer+=2;
 
-      // need to read stream names if present in order
+      // need to read stream names if present in order 
       // to get lengths - values are ignored for now
       for (i=0; i<stnamect; i++) {
         int stream_name_len;
@@ -328,7 +314,7 @@ static int is_drm(char* buf, int buf_len)
   buf += 4;
 
   buf[key_len - 1] = '\0';
-  mp_msg(MSGT_HEADER, MSGL_V, "DRM Key ID: %s\n", buf);
+  mp_msg(MSGT_HEADER, MSGL_V, "DRM Key ID: %s\n", buf); 
 
   buf += key_len;
   url_len = AV_RL32(buf);
@@ -338,7 +324,7 @@ static int is_drm(char* buf, int buf_len)
   buf[url_len - 1] = '\0';
   mp_msg(MSGT_HEADER, MSGL_INFO, MSGTR_MPDEMUX_ASFHDR_DRMLicenseURL, buf);
   return 1;
-}
+} 
 
 static int asf_init_audio_stream(demuxer_t *demuxer,struct asf_priv* asf, sh_audio_t* sh_audio, ASF_stream_header_t *streamh, int *ppos, uint8_t** buf, char *hdr, unsigned int hdr_len)
 {
@@ -397,7 +383,7 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
     mp_msg(MSGT_HEADER, MSGL_FATAL, "Header size is too small.\n");
     return 0;
   }
-
+    
   if (hdr_len > 1024 * 1024) {
     mp_msg(MSGT_HEADER, MSGL_ERR, MSGTR_MPDEMUX_ASFHDR_HeaderSizeOver1MB,
 			hdr_len);
@@ -428,7 +414,7 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
     int sh_pos=0;
 
     sh_pos = find_backwards_asf_guid(hdr, asf_stream_header_guid, pos);
-
+ 
     if (sh_pos > 0) {
       sh_audio_t *sh_audio;
 
@@ -441,7 +427,6 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
       audio_pos += 64; //16+16+4+4+4+16+4;
       buffer = &hdr[audio_pos];
       sh_audio=new_sh_audio(demuxer,streamh->stream_no & 0x7F);
-      sh_audio->needs_parsing = 1;
       mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "asfheader", streamh->stream_no & 0x7F);
       ++audio_streams;
       if (!asf_init_audio_stream(demuxer, asf, sh_audio, streamh, &audio_pos, &buffer, hdr, hdr_len))
@@ -453,7 +438,7 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
   // find stream headers
   // only reset pos if we didnt find dvr_ms audio stream
   // if we did find it then we want to avoid reading its header twice
-  if (audio_pos == 0)
+  if (audio_pos == 0) 
     pos = 0;
 
   while ((pos = find_asf_guid(hdr, asf_stream_header_guid, pos, hdr_len)) >= 0)
@@ -536,13 +521,13 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
       mp_msg(MSGT_HEADER, MSGL_V, "ASF: packets: %d  flags: %d  "
               "max_packet_size: %d  min_packet_size: %d  max_bitrate: %d  "
               "preroll: %d\n",
-              (int)fileh->num_packets, (int)fileh->flags,
+              (int)fileh->num_packets, (int)fileh->flags, 
               (int)fileh->min_packet_size, (int)fileh->max_packet_size,
               (int)fileh->max_bitrate, (int)fileh->preroll);
       asf->packetsize=fileh->max_packet_size;
       asf->packet=malloc(asf->packetsize); // !!!
       asf->packetrate=fileh->max_bitrate/8.0/(double)asf->packetsize;
-      asf->movielength=(fileh->play_duration-10000*fileh->preroll)/10000000.0;
+      asf->movielength=(fileh->play_duration-fileh->preroll)/10000000LL;
   }
 
   // find content header
@@ -563,11 +548,11 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
           if (pos > hdr_len) goto len_err_out;
           if ((string = get_ucs2str(wstring, len))) {
             mp_msg(MSGT_HEADER,MSGL_V," Title: %s\n", string);
-            demux_info_add(demuxer, "title", string);
+            demux_info_add(demuxer, "name", string);
             free(string);
           }
         }
-        // extract the author
+        // extract the author 
         if((len = contenth->author_size) != 0) {
           wstring = (uint16_t*)&hdr[pos];
           pos += len;
@@ -612,7 +597,7 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
         }
 	mp_msg(MSGT_HEADER,MSGL_V,"\n");
   }
-
+  
   // find content header
   pos = find_asf_guid(hdr, asf_stream_group_guid, 0, hdr_len);
   if (pos >= 0) {
@@ -694,7 +679,7 @@ else if(best_audio > 0 && demuxer->audio->id == -1) demuxer->audio->id=best_audi
 if(!video_streams){
     if(!audio_streams){
 	mp_msg(MSGT_HEADER,MSGL_ERR,MSGTR_MPDEMUX_ASFHDR_AudioVideoHeaderNotFound);
-	return 0;
+	return 0; 
     }
     demuxer->video->id=-2; // audio-only
 } else if (best_video > 0 && demuxer->video->id == -1) demuxer->video->id = best_video;

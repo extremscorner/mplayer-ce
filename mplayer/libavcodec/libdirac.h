@@ -19,12 +19,16 @@
  */
 
 /**
-* @file
+* @file libavcodec/libdirac.h
 * data structures common to libdiracenc.c and libdiracdec.c
 */
 
 #ifndef AVCODEC_LIBDIRAC_H
 #define AVCODEC_LIBDIRAC_H
+
+#include "config.h"
+
+#if CONFIG_LIBDIRAC
 
 #include "avcodec.h"
 #include <libdirac_common/dirac_types.h>
@@ -41,4 +45,5 @@ static const struct {
     { PIX_FMT_YUV444P, format444 },
 };
 
+#endif /* CONFIG_LIBDIRAC */
 #endif /* AVCODEC_LIBDIRAC_H */

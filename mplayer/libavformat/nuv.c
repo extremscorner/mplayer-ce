@@ -86,7 +86,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                 if (vst) {
                     vst->codec->codec_tag = get_le32(pb);
                     vst->codec->codec_id =
-                        ff_codec_get_id(ff_codec_bmp_tags, vst->codec->codec_tag);
+                        codec_get_id(codec_bmp_tags, vst->codec->codec_tag);
                     if (vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G'))
                         vst->codec->codec_id = CODEC_ID_NUV;
                 } else
@@ -98,7 +98,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                     ast->codec->bits_per_coded_sample = get_le32(pb);
                     ast->codec->channels = get_le32(pb);
                     ast->codec->codec_id =
-                        ff_wav_codec_get_id(ast->codec->codec_tag,
+                        wav_codec_get_id(ast->codec->codec_tag,
                                          ast->codec->bits_per_coded_sample);
                     ast->need_parsing = AVSTREAM_PARSE_FULL;
                 } else
@@ -155,7 +155,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         vst = av_new_stream(s, ctx->v_id);
         if (!vst)
             return AVERROR(ENOMEM);
-        vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        vst->codec->codec_type = CODEC_TYPE_VIDEO;
         vst->codec->codec_id = CODEC_ID_NUV;
         vst->codec->width = width;
         vst->codec->height = height;
@@ -171,7 +171,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
         ast = av_new_stream(s, ctx->a_id);
         if (!ast)
             return AVERROR(ENOMEM);
-        ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        ast->codec->codec_type = CODEC_TYPE_AUDIO;
         ast->codec->codec_id = CODEC_ID_PCM_S16LE;
         ast->codec->channels = 2;
         ast->codec->sample_rate = 44100;
@@ -220,7 +220,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                     return ret;
                 // HACK: we have no idea if it is a keyframe,
                 // but if we mark none seeking will not work at all.
-                pkt->flags |= AV_PKT_FLAG_KEY;
+                pkt->flags |= PKT_FLAG_KEY;
                 pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
@@ -240,7 +240,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                     break;
                 }
                 ret = av_get_packet(pb, pkt, size);
-                pkt->flags |= AV_PKT_FLAG_KEY;
+                pkt->flags |= PKT_FLAG_KEY;
                 pkt->pos = pos;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->a_id;

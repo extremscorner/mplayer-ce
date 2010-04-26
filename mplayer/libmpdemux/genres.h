@@ -18,12 +18,12 @@
  ***********************************
  * FILE: GENRES.H
  * NAME: ID3EDIT - ID3 tag v 1.1 editor
- * DESCRIPTION: Genres character array
+ * DESCRIPTION: Genres character array 
  * AUTHOR: Jason Carter
  ***********************************
  *
  * Initially modified for use with MPlayer by Diego Biurrun on 2004-08-22
- * $Id: genres.h 29305 2009-05-13 02:58:57Z diego $
+ * $Id: genres.h 28283 2009-01-09 10:14:03Z diego $
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
  */
 

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -46,19 +28,18 @@ static int bind_pcm(audio_encoder_t *encoder, muxer_stream_t *mux_a)
 	mux_a->wf->nAvgBytesPerSec=mux_a->h.dwSampleSize*mux_a->wf->nSamplesPerSec;
 	mux_a->wf->wBitsPerSample=16;
 	mux_a->wf->cbSize=0; // FIXME for l3codeca.acm
-
+	
 	encoder->input_format = (mux_a->wf->wBitsPerSample==8) ? AF_FORMAT_U8 : AF_FORMAT_S16_LE;
 	encoder->min_buffer_size = 16384;
 	encoder->max_buffer_size = mux_a->wf->nAvgBytesPerSec;
-
+	
 	return 1;
 }
 
 static int encode_pcm(audio_encoder_t *encoder, uint8_t *dest, void *src, int nsamples, int max_size)
 {
 	max_size = FFMIN(nsamples, max_size);
-	if (encoder->params.channels == 5 || encoder->params.channels == 6 ||
-		    encoder->params.channels == 8) {
+	if (encoder->params.channels == 6 || encoder->params.channels == 5) {
 		max_size -= max_size % (encoder->params.channels * 2);
 		reorder_channel_copy_nch(src, AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
 		                         dest, AF_CHANNEL_LAYOUT_WAVEEX_DEFAULT,
@@ -89,13 +70,14 @@ int mpae_init_pcm(audio_encoder_t *encoder)
 {
 	encoder->params.samples_per_frame = encoder->params.sample_rate;
 	encoder->params.bitrate = encoder->params.sample_rate * encoder->params.channels * 2 * 8;
-
+	
 	encoder->decode_buffer_size = encoder->params.bitrate / 8;
 	encoder->bind = bind_pcm;
 	encoder->get_frame_size = get_frame_size;
 	encoder->set_decoded_len = set_decoded_len;
 	encoder->encode = encode_pcm;
 	encoder->close = close_pcm;
-
+	
 	return 1;
 }
+

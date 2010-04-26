@@ -115,7 +115,7 @@ ACLOCAL = ${SHELL} /home/Julian/libiconv/build-aux/missing --run aclocal-1.10
 ALLOCA = ${LIBOBJDIR}alloca.o
 ALLOCA_H = alloca.h
 AMTAR = ${SHELL} /home/Julian/libiconv/build-aux/missing --run tar
-AR = ${DEVKITPPC}/bin/powerpc-gekko-ar
+AR = /c/devkitPro/devkitPPC/bin/powerpc-gekko-ar
 AS = as
 AUTOCONF = ${SHELL} /home/Julian/libiconv/build-aux/missing --run autoconf
 AUTOHEADER = ${SHELL} /home/Julian/libiconv/build-aux/missing --run autoheader
@@ -126,12 +126,12 @@ BITSIZEOF_SIG_ATOMIC_T = 32
 BITSIZEOF_SIZE_T = 32
 BITSIZEOF_WCHAR_T = 32
 BITSIZEOF_WINT_T = 32
-CC = ${DEVKITPPC}/bin/powerpc-gekko-gcc
+CC = /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc
 CCDEPMODE = depmode=none
 CFLAGS = -mcpu=750
 CFLAG_VISIBILITY = -fvisibility=hidden
 CP = cp -p
-CPP = ${DEVKITPPC}/bin/powerpc-gekko-gcc -E
+CPP = /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXCPP = g++ -E
@@ -291,7 +291,7 @@ PATH_SEPARATOR = :
 PLUGLIB = 
 POSUB = 
 PTRDIFF_T_SUFFIX = 
-RANLIB = ${DEVKITPPC}/bin/powerpc-gekko-ranlib
+RANLIB = /c/devkitPro/devkitPPC/bin/powerpc-gekko-ranlib.exe
 RELOCATABLE = no
 RELOCATABLE_BUILD_DIR = $(top_builddir)/srclib
 RELOCATABLE_CONFIG_H_DIR = $(top_builddir)

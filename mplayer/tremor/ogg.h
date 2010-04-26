@@ -11,7 +11,7 @@
  ********************************************************************
 
  function: toplevel libogg include
- last mod: $Id: ogg.h 29306 2009-05-13 15:22:13Z bircoph $
+ last mod: $Id: ogg.h 15251 2005-04-24 08:37:48Z henry $
 
  ********************************************************************/
 #ifndef _OGG_H
@@ -88,7 +88,7 @@ typedef struct {
   long  e_o_s;
 
   ogg_int64_t  granulepos;
-
+  
   ogg_int64_t  packetno;     /* sequence number for decode; the framing
 				knows where there's a hole in the data,
 				but we need coupling so that the codec

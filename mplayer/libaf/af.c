@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "osdep/strsep.h"
 
 #include "af.h"
 
@@ -51,11 +50,8 @@ extern af_info_t af_info_karaoke;
 extern af_info_t af_info_scaletempo;
 extern af_info_t af_info_stats;
 extern af_info_t af_info_bs2b;
-#ifdef GEKKO
-extern af_info_t af_info_wiilight;
-#endif
 
-static af_info_t* filter_list[]={
+static af_info_t* filter_list[]={ 
    &af_info_dummy,
    &af_info_delay,
    &af_info_channels,
@@ -92,10 +88,7 @@ static af_info_t* filter_list[]={
 #ifdef CONFIG_LIBBS2B
    &af_info_bs2b,
 #endif
-#ifdef GEKKO
-   &af_info_wiilight,
-#endif
-   NULL
+   NULL 
 };
 
 // CPU speed
@@ -113,13 +106,13 @@ static af_info_t* af_find(char*name)
   }
   mp_msg(MSGT_AFILTER, MSGL_ERR, "Couldn't find audio filter '%s'\n",name);
   return NULL;
-}
+} 
 
 /* Find filter in the dynamic filter list using it's name This
    function is used for finding already initialized filters */
 af_instance_t* af_get(af_stream_t* s, char* name)
 {
-  af_instance_t* af=s->first;
+  af_instance_t* af=s->first; 
   // Find the filter
   while(af != NULL){
     if(!strcmp(af->info->name,name))
@@ -141,7 +134,7 @@ static af_instance_t* af_create(af_stream_t* s, const char* name_with_cmd)
   if (!name || !new) {
     mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Could not allocate memory\n");
     goto err_out;
-  }
+  }  
   memset(new,0,sizeof(af_instance_t));
 
   // Check for commandline parameters
@@ -155,29 +148,29 @@ static af_instance_t* af_create(af_stream_t* s, const char* name_with_cmd)
      non-reentrant */
   if(new->info->flags & AF_FLAGS_NOT_REENTRANT){
     if(af_get(s,name)){
-      mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] There can only be one instance of"
-	     " the filter '%s' in each stream\n",name);
+      mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] There can only be one instance of" 
+	     " the filter '%s' in each stream\n",name);  
       goto err_out;
     }
   }
-
+  
   mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Adding filter %s \n",name);
-
+  
   // Initialize the new filter
-  if(AF_OK == new->info->open(new) &&
+  if(AF_OK == new->info->open(new) && 
      AF_ERROR < new->control(new,AF_CONTROL_POST_CREATE,&s->cfg)){
     if(cmdline){
       if(AF_ERROR>=new->control(new,AF_CONTROL_COMMAND_LINE,cmdline))
         goto err_out;
     }
     free(name);
-    return new;
+    return new; 
   }
-
+  
 err_out:
   free(new);
   mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Couldn't create or open audio filter '%s'\n",
-	 name);
+	 name);  
   free(name);
   return NULL;
 }
@@ -235,8 +228,8 @@ void af_remove(af_stream_t* s, af_instance_t* af)
 {
   if(!af) return;
 
-  // Print friendly message
-  mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Removing filter %s \n",af->info->name);
+  // Print friendly message 
+  mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Removing filter %s \n",af->info->name); 
 
   // Notify filter before changing anything
   af->control(af,AF_CONTROL_PRE_DESTROY,0);
@@ -251,7 +244,7 @@ void af_remove(af_stream_t* s, af_instance_t* af)
   else
     s->last=af->prev;
 
-  // Uninitialize af and free memory
+  // Uninitialize af and free memory   
   af->uninit(af);
   free(af);
 }
@@ -267,21 +260,21 @@ static int af_reinit(af_stream_t* s, af_instance_t* af)
 
     // Check if there are any filters left in the list
     if(NULL == af){
-      if(!(af=af_append(s,s->first,"dummy")))
-	return AF_UNKNOWN;
+      if(!(af=af_append(s,s->first,"dummy"))) 
+	return AF_UNKNOWN; 
       else
 	return AF_ERROR;
     }
 
-    // Check if this is the first filter
-    if(!af->prev)
+    // Check if this is the first filter 
+    if(!af->prev) 
       memcpy(&in,&(s->input),sizeof(af_data_t));
     else
       memcpy(&in,af->prev->data,sizeof(af_data_t));
     // Reset just in case...
     in.audio=NULL;
     in.len=0;
-
+    
     rv = af->control(af,AF_CONTROL_REINIT,&in);
     switch(rv){
     case AF_OK:
@@ -300,7 +293,7 @@ static int af_reinit(af_stream_t* s, af_instance_t* af)
 	  if(AF_OK != (rv = new->control(new,AF_CONTROL_CHANNELS,&in.nch)))
 	    return rv;
 	  // Initialize channels filter
-	  if(!new->prev)
+	  if(!new->prev) 
 	    memcpy(&in,&(s->input),sizeof(af_data_t));
 	  else
 	    memcpy(&in,new->prev->data,sizeof(af_data_t));
@@ -317,7 +310,7 @@ static int af_reinit(af_stream_t* s, af_instance_t* af)
 	  if(AF_OK != (rv = new->control(new,AF_CONTROL_FORMAT_FMT,&in.format)))
 	    return rv;
 	  // Initialize format filter
-	  if(!new->prev)
+	  if(!new->prev) 
 	    memcpy(&in,&(s->input),sizeof(af_data_t));
 	  else
 	    memcpy(&in,new->prev->data,sizeof(af_data_t));
@@ -325,7 +318,7 @@ static int af_reinit(af_stream_t* s, af_instance_t* af)
 	    return rv;
 	}
 	if(!new){ // Should _never_ happen
-	  mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Unable to correct audio format. "
+	  mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Unable to correct audio format. " 
 		 "This error should never uccur, please send bugreport.\n");
 	  return AF_ERROR;
 	}
@@ -351,7 +344,7 @@ static int af_reinit(af_stream_t* s, af_instance_t* af)
       break;
     }
     default:
-      mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Reinitialization did not work, audio"
+      mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Reinitialization did not work, audio" 
 	     " filter '%s' returned error code %i\n",af->info->name,rv);
       return AF_ERROR;
     }
@@ -364,58 +357,6 @@ void af_uninit(af_stream_t* s)
 {
   while(s->first)
     af_remove(s,s->first);
-}
-
-/**
- * Extend the filter chain so we get the required output format at the end.
- * \return AF_ERROR on error, AF_OK if successful.
- */
-static int fixup_output_format(af_stream_t* s)
-{
-    af_instance_t* af = NULL;
-    // Check number of output channels fix if not OK
-    // If needed always inserted last -> easy to screw up other filters
-    if(s->output.nch && s->last->data->nch!=s->output.nch){
-      if(!strcmp(s->last->info->name,"format"))
-	af = af_prepend(s,s->last,"channels");
-      else
-	af = af_append(s,s->last,"channels");
-      // Init the new filter
-      if(!af || (AF_OK != af->control(af,AF_CONTROL_CHANNELS,&(s->output.nch))))
-	return AF_ERROR;
-      if(AF_OK != af_reinit(s,af))
-	return AF_ERROR;
-    }
-
-    // Check output format fix if not OK
-    if(s->output.format != AF_FORMAT_UNKNOWN &&
-		s->last->data->format != s->output.format){
-      if(strcmp(s->last->info->name,"format"))
-	af = af_append(s,s->last,"format");
-      else
-	af = s->last;
-      // Init the new filter
-      s->output.format |= af_bits2fmt(s->output.bps*8);
-      if(!af || (AF_OK != af->control(af,AF_CONTROL_FORMAT_FMT,&(s->output.format))))
-	return AF_ERROR;
-      if(AF_OK != af_reinit(s,af))
-	return AF_ERROR;
-    }
-
-    // Re init again just in case
-    if(AF_OK != af_reinit(s,s->first))
-      return AF_ERROR;
-
-    if (s->output.format == AF_FORMAT_UNKNOWN)
-	s->output.format = s->last->data->format;
-    if (!s->output.nch) s->output.nch = s->last->data->nch;
-    if (!s->output.rate) s->output.rate = s->last->data->rate;
-    if((s->last->data->format != s->output.format) ||
-       (s->last->data->nch    != s->output.nch)    ||
-       (s->last->data->rate   != s->output.rate))  {
-      return AF_ERROR;
-    }
-    return AF_OK;
 }
 
 /* Initialize the stream "s". This function creates a new filter list
@@ -446,8 +387,8 @@ int af_init(af_stream_t* s)
   if(!s->first){
     // Add all filters in the list (if there are any)
     if(!s->cfg.list){      // To make automatic format conversion work
-      if(!af_append(s,s->first,"dummy"))
-	return -1;
+      if(!af_append(s,s->first,"dummy")) 
+	return -1; 
     }
     else{
       while(s->cfg.list[i]){
@@ -457,7 +398,7 @@ int af_init(af_stream_t* s)
     }
   }
 
-  // Init filters
+  // Init filters 
   if(AF_OK != af_reinit(s,s->first))
     return -1;
 
@@ -485,7 +426,7 @@ int af_init(af_stream_t* s)
 	    af = af_append(s,s->first,resampler);
 	  else
 	    af = af_prepend(s,s->first,resampler);
-	}
+	}		
 	else{
 	  if(!strcmp(s->last->info->name,"format"))
 	    af = af_prepend(s,s->last,resampler);
@@ -511,10 +452,50 @@ int af_init(af_stream_t* s)
       }
       if(AF_OK != af_reinit(s,af))
       	return -1;
+    }	
+      
+    // Check number of output channels fix if not OK
+    // If needed always inserted last -> easy to screw up other filters
+    if(s->output.nch && s->last->data->nch!=s->output.nch){
+      if(!strcmp(s->last->info->name,"format"))
+	af = af_prepend(s,s->last,"channels");
+      else
+	af = af_append(s,s->last,"channels");
+      // Init the new filter
+      if(!af || (AF_OK != af->control(af,AF_CONTROL_CHANNELS,&(s->output.nch))))
+	return -1;
+      if(AF_OK != af_reinit(s,af))
+	return -1;
     }
-    if (AF_OK != fixup_output_format(s)) {
-      // Something is stuffed audio out will not work
-      mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Unable to setup filter system can not"
+    
+    // Check output format fix if not OK
+    if(s->output.format != AF_FORMAT_UNKNOWN &&
+		s->last->data->format != s->output.format){
+      if(strcmp(s->last->info->name,"format"))
+	af = af_append(s,s->last,"format");
+      else
+	af = s->last;
+      // Init the new filter
+      s->output.format |= af_bits2fmt(s->output.bps*8);
+      if(!af || (AF_OK != af->control(af,AF_CONTROL_FORMAT_FMT,&(s->output.format))))
+	return -1;
+      if(AF_OK != af_reinit(s,af))
+	return -1;
+    }
+
+    // Re init again just in case
+    if(AF_OK != af_reinit(s,s->first))
+      return -1;
+
+    if (s->output.format == AF_FORMAT_UNKNOWN)
+	s->output.format = s->last->data->format;
+    if (!s->output.nch) s->output.nch = s->last->data->nch;
+    if (!s->output.rate) s->output.rate = s->last->data->rate;
+    if((s->last->data->format != s->output.format) || 
+       (s->last->data->nch    != s->output.nch)    || 
+       (s->last->data->rate   != s->output.rate))  {
+      // Something is stuffed audio out will not work 
+      mp_msg(MSGT_AFILTER, MSGL_ERR, "[libaf] Unable to setup filter system can not" 
 	     " meet sound-card demands, please send bugreport. \n");
       af_uninit(s);
       return -1;
@@ -541,8 +522,7 @@ af_instance_t* af_add(af_stream_t* s, char* name){
     return NULL;
 
   // Reinitalize the filter list
-  if(AF_OK != af_reinit(s, s->first) ||
-     AF_OK != fixup_output_format(s)){
+  if(AF_OK != af_reinit(s, s->first)){
     free(new);
     return NULL;
   }
@@ -552,8 +532,8 @@ af_instance_t* af_add(af_stream_t* s, char* name){
 // Filter data chunk through the filters in the list
 af_data_t* af_play(af_stream_t* s, af_data_t* data)
 {
-  af_instance_t* af=s->first;
-  // Iterate through all filters
+  af_instance_t* af=s->first; 
+  // Iterate through all filters 
   do{
     if (data->len <= 0) break;
     data=af->play(af,data);
@@ -575,7 +555,7 @@ int af_lencalc(double mul, af_data_t* d)
 // Calculate average ratio of filter output size to input size
 double af_calc_filter_multiplier(af_stream_t* s)
 {
-  af_instance_t* af=s->first;
+  af_instance_t* af=s->first; 
   double mul = 1;
   // Iterate through all filters and calculate total multiplication factor
   do{
@@ -589,10 +569,9 @@ double af_calc_filter_multiplier(af_stream_t* s)
 /* Calculate the total delay [bytes output] caused by the filters */
 double af_calc_delay(af_stream_t* s)
 {
-  if(!s) return 0.0;
-  af_instance_t* af=s->first;
+  af_instance_t* af=s->first; 
   register double delay = 0.0;
-  // Iterate through all filters
+  // Iterate through all filters 
   while(af){
     delay += af->delay;
     delay *= af->mul;
@@ -607,10 +586,10 @@ int af_resize_local_buffer(af_instance_t* af, af_data_t* data)
 {
   // Calculate new length
   register int len = af_lencalc(af->mul,data);
-  mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Reallocating memory in module %s, "
+  mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Reallocating memory in module %s, " 
 	 "old len = %i, new len = %i\n",af->info->name,af->data->len,len);
   // If there is a buffer free it
-  if(af->data->audio)
+  if(af->data->audio) 
     free(af->data->audio);
   // Create new buffer and check that it is OK
   af->data->audio = malloc(len);

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +15,6 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 #include "av_opts.h"
-#include "osdep/strsep.h"
 
 #include "codec-cfg.h"
 #include "stream/stream.h"
@@ -43,7 +24,6 @@
 #include "libmpdemux/muxer.h"
 
 #include "img_format.h"
-#include "fmt-conversion.h"
 #include "mp_image.h"
 #include "vf.h"
 
@@ -183,7 +163,8 @@ static char *lavc_param_avopt = NULL;
 
 #include "m_option.h"
 
-const m_option_t lavcopts_conf[]={
+#ifdef CONFIG_LIBAVCODEC
+m_option_t lavcopts_conf[]={
 	{"acodec", &lavc_param_acodec, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"abitrate", &lavc_param_abitrate, CONF_TYPE_INT, CONF_RANGE, 1, 1000000, NULL},
 	{"atag", &lavc_param_atag, CONF_TYPE_INT, CONF_RANGE, 0, 0xffff, NULL},
@@ -330,6 +311,7 @@ const m_option_t lavcopts_conf[]={
         {"o", &lavc_param_avopt, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{NULL, NULL, 0, 0, 0, 0, NULL}
 };
+#endif
 
 struct vf_priv_s {
     muxer_stream_t* mux;
@@ -343,14 +325,14 @@ struct vf_priv_s {
 #define mux_v (vf->priv->mux)
 #define lavc_venc_context (vf->priv->context)
 
-static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts);
+static int encode_frame(struct vf_instance_s* vf, AVFrame *pic, double pts);
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
     int size, i;
-    char *p;
-
+    void *p;
+        
     mux_v->bih->biWidth=width;
     mux_v->bih->biHeight=height;
     mux_v->bih->biSizeImage=mux_v->bih->biWidth*mux_v->bih->biHeight*(mux_v->bih->biBitCount/8);
@@ -446,7 +428,7 @@ static int config(struct vf_instance *vf,
 		break;
 	    lavc_venc_context->intra_matrix[i++] = atoi(tmp);
 	}
-
+	
 	if (i != 64)
 	    av_freep(&lavc_venc_context->intra_matrix);
 	else
@@ -466,7 +448,7 @@ static int config(struct vf_instance *vf,
 		break;
 	    lavc_venc_context->inter_matrix[i++] = atoi(tmp);
 	}
-
+	
 	if (i != 64)
 	    av_freep(&lavc_venc_context->inter_matrix);
 	else
@@ -481,7 +463,7 @@ static int config(struct vf_instance *vf,
 	    mp_msg(MSGT_MENCODER,MSGL_ERR,"error parsing vrc_q\n");
             return 0;
         }
-        lavc_venc_context->rc_override=
+        lavc_venc_context->rc_override= 
             realloc(lavc_venc_context->rc_override, sizeof(RcOverride)*(i+1));
         lavc_venc_context->rc_override[i].start_frame= start;
         lavc_venc_context->rc_override[i].end_frame  = end;
@@ -514,7 +496,7 @@ static int config(struct vf_instance *vf,
     {
 	int par_width, par_height, e;
 	float ratio=0;
-
+	
 	e= sscanf (lavc_param_aspect, "%d/%d", &par_width, &par_height);
 	if(e==2){
             if(par_height)
@@ -525,7 +507,7 @@ static int config(struct vf_instance *vf,
 
 	if (e && ratio > 0.1 && ratio < 10.0) {
 	    lavc_venc_context->sample_aspect_ratio= av_d2q(ratio * height / width, 255);
-	    mp_dbg(MSGT_MENCODER, MSGL_DBG2, "sample_aspect_ratio: %d/%d\n",
+	    mp_dbg(MSGT_MENCODER, MSGL_DBG2, "sample_aspect_ratio: %d/%d\n", 
                 lavc_venc_context->sample_aspect_ratio.num,
                 lavc_venc_context->sample_aspect_ratio.den);
 	    mux_v->aspect = ratio;
@@ -558,7 +540,7 @@ static int config(struct vf_instance *vf,
     lavc_venc_context->mb_cmp= lavc_param_mb_cmp;
 #ifdef FF_CMP_VSAD
     lavc_venc_context->ildct_cmp= lavc_param_ildct_cmp;
-#endif
+#endif    
     lavc_venc_context->dia_size= lavc_param_dia_size;
     lavc_venc_context->flags|= lavc_param_qpel;
     lavc_venc_context->trellis = lavc_param_trell;
@@ -580,7 +562,7 @@ static int config(struct vf_instance *vf,
     lavc_venc_context->flags|= lavc_param_gmc;
 #ifdef CODEC_FLAG_CLOSED_GOP
     lavc_venc_context->flags|= lavc_param_closed_gop;
-#endif
+#endif    
     if(lavc_param_gray) lavc_venc_context->flags|= CODEC_FLAG_GRAY;
 
     if(lavc_param_normalize_aqp) lavc_venc_context->flags|= CODEC_FLAG_NORMALIZE_AQP;
@@ -611,16 +593,37 @@ static int config(struct vf_instance *vf,
     }
 
     mux_v->imgfmt = lavc_param_format;
-    lavc_venc_context->pix_fmt = imgfmt2pixfmt(lavc_param_format);
-    if (lavc_venc_context->pix_fmt == PIX_FMT_NONE)
-        return 0;
+    switch(lavc_param_format)
+    {
+	case IMGFMT_YV12:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV420P;
+	    break;
+	case IMGFMT_422P:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV422P;
+	    break;
+	case IMGFMT_444P:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV444P;
+	    break;
+	case IMGFMT_411P:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV411P;
+	    break;
+	case IMGFMT_YVU9:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV410P;
+	    break;
+	case IMGFMT_BGR32:
+	    lavc_venc_context->pix_fmt = PIX_FMT_RGB32;
+	    break;
+	default:
+    	    mp_msg(MSGT_MENCODER,MSGL_ERR,"%s is not a supported format\n", vo_format_name(lavc_param_format));
+    	    return 0;
+    }
 
     if(!stats_file) {
     /* lavc internal 2pass bitrate control */
     switch(lavc_param_vpass){
     case 2:
     case 3:
-	lavc_venc_context->flags|= CODEC_FLAG_PASS2;
+	lavc_venc_context->flags|= CODEC_FLAG_PASS2; 
 	stats_file= fopen(passtmpfile, "rb");
 	if(stats_file==NULL){
 	    mp_msg(MSGT_MENCODER,MSGL_ERR,"2pass failed: filename=%s\n", passtmpfile);
@@ -629,21 +632,21 @@ static int config(struct vf_instance *vf,
 	fseek(stats_file, 0, SEEK_END);
 	size= ftell(stats_file);
 	fseek(stats_file, 0, SEEK_SET);
-
+	
 	lavc_venc_context->stats_in= av_malloc(size + 1);
 	lavc_venc_context->stats_in[size]=0;
 
 	if(fread(lavc_venc_context->stats_in, size, 1, stats_file)<1){
 	    mp_msg(MSGT_MENCODER,MSGL_ERR,"2pass failed: reading from filename=%s\n", passtmpfile);
             return 0;
-	}
+	}        
 	if(lavc_param_vpass == 2)
 	    break;
 	else
 	    fclose(stats_file);
 	    /* fall through */
-    case 1:
-	lavc_venc_context->flags|= CODEC_FLAG_PASS1;
+    case 1: 
+	lavc_venc_context->flags|= CODEC_FLAG_PASS1; 
 	stats_file= fopen(passtmpfile, "wb");
 	if(stats_file==NULL){
 	    mp_msg(MSGT_MENCODER,MSGL_ERR,"2pass failed: filename=%s\n", passtmpfile);
@@ -682,7 +685,7 @@ static int config(struct vf_instance *vf,
     {
 	mp_msg(MSGT_MENCODER, MSGL_INFO, MSGTR_MPCODECS_UsingConstantQscale, lavc_param_vqscale);
 	lavc_venc_context->flags |= CODEC_FLAG_QSCALE;
-        lavc_venc_context->global_quality=
+        lavc_venc_context->global_quality= 
 	vf->priv->pic->quality = (int)(FF_QP2LAMBDA * lavc_param_vqscale + 0.5);
     }
 
@@ -698,7 +701,7 @@ static int config(struct vf_instance *vf,
 	mp_msg(MSGT_MENCODER,MSGL_ERR,"avcodec init failed (ctx->codec->encode == NULL)!\n");
 	return 0;
     }
-
+    
     /* free second pass buffer, its not needed anymore */
     av_freep(&lavc_venc_context->stats_in);
     if(lavc_venc_context->bits_per_coded_sample)
@@ -708,13 +711,13 @@ static int config(struct vf_instance *vf,
         memcpy(mux_v->bih + 1, lavc_venc_context->extradata, lavc_venc_context->extradata_size);
         mux_v->bih->biSize= sizeof(BITMAPINFOHEADER) + lavc_venc_context->extradata_size;
     }
-
+    
     mux_v->decoder_delay = lavc_venc_context->max_b_frames ? 1 : 0;
-
+    
     return 1;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
 
     switch(request){
         case VFCTRL_FLUSH_FRAMES:
@@ -726,7 +729,7 @@ static int control(struct vf_instance *vf, int request, void* data){
     }
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt){
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
@@ -763,7 +766,7 @@ static double psnr(double d){
     return -10.0*log(d)/log(10);
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     AVFrame *pic= vf->priv->pic;
 
     pic->data[0]=mpi->planes[0];
@@ -776,9 +779,9 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     if(lavc_param_interlaced_dct){
         if((mpi->fields & MP_IMGFIELD_ORDERED) && (mpi->fields & MP_IMGFIELD_INTERLACED))
             pic->top_field_first= !!(mpi->fields & MP_IMGFIELD_TOP_FIRST);
-        else
+        else 
             pic->top_field_first= 1;
-
+    
         if(lavc_param_top!=-1)
             pic->top_field_first= lavc_param_top;
     }
@@ -786,7 +789,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     return encode_frame(vf, pic, pts) >= 0;
 }
 
-static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
+static int encode_frame(struct vf_instance_s* vf, AVFrame *pic, double pts){
     const char pict_type_char[5]= {'?', 'I', 'P', 'B', 'S'};
     int out_size;
     double dts;
@@ -808,7 +811,7 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
 	out_size = avcodec_encode_video(lavc_venc_context, mux_v->buffer, mux_v->buffer_size,
 	    pic);
 
-    if(pts != MP_NOPTS_VALUE)
+    if(pts != MP_NOPTS_VALUE) 
         dts= pts - lavc_venc_context->delay * av_q2d(lavc_venc_context->time_base);
     else
         dts= MP_NOPTS_VALUE;
@@ -828,12 +831,12 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
         ++mux_v->encoder_delay;
         return 0;
     }
-
-    muxer_write_chunk(mux_v,out_size,lavc_venc_context->coded_frame->key_frame?0x10:0,
+           
+    muxer_write_chunk(mux_v,out_size,lavc_venc_context->coded_frame->key_frame?0x10:0, 
                       dts, pts);
     free(lavc_venc_context->coded_frame->opaque);
     lavc_venc_context->coded_frame->opaque= NULL;
-
+        
     /* store psnr / pict size / type / qscale */
     if(lavc_param_psnr){
         static FILE *fvstats=NULL;
@@ -858,7 +861,7 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
                 /*exit(1);*/
             }
         }
-
+	
 	// average MB quantizer
 	q = lavc_venc_context->coded_frame->qscale_table;
 	if(q) {
@@ -871,7 +874,7 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
 		q += lavc_venc_context->coded_frame->qstride;
 	    }
 	    quality /= w * h;
-	} else
+	} else 
 	    quality = lavc_venc_context->coded_frame->quality / (float)FF_QP2LAMBDA;
 
         fprintf(fvstats, "%6d, %2.2f, %6d, %2.2f, %2.2f, %2.2f, %2.2f %c\n",
@@ -886,17 +889,17 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
             );
     }
     /* store stats if there are any */
-    if(lavc_venc_context->stats_out && stats_file)
+    if(lavc_venc_context->stats_out && stats_file) 
         fprintf(stats_file, "%s", lavc_venc_context->stats_out);
     return out_size;
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 
     if(lavc_param_psnr){
         double f= lavc_venc_context->width*lavc_venc_context->height*255.0*255.0;
         f*= lavc_venc_context->coded_frame->coded_picture_number;
-
+        
         mp_msg(MSGT_MENCODER, MSGL_INFO, "PSNR: Y:%2.2f, Cb:%2.2f, Cr:%2.2f, All:%2.2f\n",
             psnr(lavc_venc_context->error[0]/f),
             psnr(lavc_venc_context->error[1]*4/f),
@@ -908,11 +911,10 @@ static void uninit(struct vf_instance *vf){
     av_freep(&lavc_venc_context->intra_matrix);
     av_freep(&lavc_venc_context->inter_matrix);
 
-    if (lavc_venc_context->codec)
-        avcodec_close(lavc_venc_context);
+    avcodec_close(lavc_venc_context);
 
     if(stats_file) fclose(stats_file);
-
+    
     /* free rc_override */
     av_freep(&lavc_venc_context->rc_override);
 
@@ -1045,8 +1047,6 @@ static int vf_open(vf_instance_t *vf, char* args){
 
     vf->priv->pic = avcodec_alloc_frame();
     vf->priv->context = avcodec_alloc_context();
-    vf->priv->context->codec_type = CODEC_TYPE_VIDEO;
-    vf->priv->context->codec_id = vf->priv->codec->id;
 
     return 1;
 }

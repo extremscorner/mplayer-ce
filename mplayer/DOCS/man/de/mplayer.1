@@ -1,4 +1,4 @@
-.\" MPlayer (C) 2000-2010 MPlayer Team
+.\" MPlayer (C) 2000-2009 MPlayer Team
 .\" Diese Man-Page wurde/wird von Moritz Bunkus, Sebastian Krämer,
 .\" Tobias Diedrich gepflegt.
 .\" Encoding: iso-8859-1
@@ -297,8 +297,6 @@ Mache einen Schnappschuss.
 Beginne/beende die Aufnahme von Schnappschüssen.
 .IPs "I\ \ \ \ "
 Zeige den Dateinamen im OSD.
-.IPs "P\ \ \ \ "
-Zeige den Fortschrittsbalken, die abgelaufene Zeit und die Gesamtzeit im OSD.
 .IPs "! und @"
 Spult zum Anfang des vorigen/nächsten Kapitels.
 .IPs "D (nur bei \-vo xvmc, \-vf yadif, \-vf kerndeint)"
@@ -330,7 +328,7 @@ Passe Sättigung an.
 .PP
 .RS
 (Die folgenden Tasten sind nur gültig bei Benutzung der Videoausgabetreiber
-quartz und corevideo.)
+quartz und macosx.)
 .RE
 .PP
 .PD 0
@@ -2906,7 +2904,7 @@ Schätze die Audioverzögerung, sollte die Wiedergabe flüssiger machen
 Audioausgabe über NAS
 .
 .TP
-.B coreaudio (nur bei Mac OS X)
+.B macosx (nur bei Mac OS X)
 Nativer Mac OS X-Audioausgabetreiber.
 .
 .TP
@@ -3324,7 +3322,7 @@ Fenster-Seitenverhältnis verstehen.
 .B "\-ontop\ "
 Sorgt dafür, dass das Abspielfenster oberhalb von anderen Fenstern bleibt.
 Wird unterstützt von Videoausgabetreibern, die X11 benutzen, außer SDL,
-außerdem directx, corevideo, quartz, ggi und gl2.
+außerdem directx, macosx, quartz, ggi und gl2.
 .
 .TP
 .B \-panscan <0.0\-1.0>
@@ -3332,7 +3330,7 @@ Aktiviert Panscan.
 Dabei werden z.B.\& bei einem 16:9-Film und einem 4:3-Monitor die Seiten
 abgeschnitten, damit der komplette Bildbereich ausgefüllt wird.
 Der Bereich kontrolliert, wieviel vom Bild abgeschnitten wird.
-Dies funktioniert nur mit den xv-, xmga-, mga-, gl-, gl2, quartz-, corevideo- und
+Dies funktioniert nur mit den xv-, xmga-, mga-, gl-, gl2, quartz-, macosx- und
 xvidix-Videoausgabetreibern.
 .br
 .I ANMERKUNG:
@@ -3358,7 +3356,7 @@ Momentan nur unterstützt von \-vo directx kombiniert mit der Option \-vm.
 .B \-rootwin
 Spielt den Film im Hauptfenster (dem Desktophintergrund) ab.
 Desktophintergrundbilder können den Film allerdings verdecken.
-Funktioniert nur mit den x11-, xv-, xmga-, xvidix-, quartz-, corevideo- und
+Funktioniert nur mit den x11-, xv-, xmga-, xvidix-, quartz-, macosx- und
 directx-Videoausgabetreibern.
 .
 .TP
@@ -3716,7 +3714,7 @@ Gib die Auflösung im Vollbildmodus an (nützlich auf langsamen Systemen).
 .PD 1
 .
 .TP
-.B corevideo (Mac OS X 10.4 oder 10.3.9 mit QuickTime 7)
+.B macosx (Mac OS X 10.4 oder 10.3.9 mit QuickTime 7)
 Mac OS X CoreVideo-Videoausgabetreiber
 .PD 0
 .RSs
@@ -5899,7 +5897,7 @@ Drehe um 90 Grad gegen den Uhrzeigersinn und stelle es auf den Kopf.
 .RE
 .
 .TP
-.B scale[=b:h[:interlaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
+.B scale[=b:h[:ilaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
 Skaliert das Bild mit dem Softwareskalierer (langsam) und führt eine
 Farbraumkonvertierung zwischen YUV und RGB durch (siehe auch \-sws).
 .RSs
@@ -5924,7 +5922,7 @@ originalen Breiten-/Höhenverhältnis.
 \-(n+8): wie \-n oben, rundet aber die Abmessung auf das nächste Vielfache von
 16.
 .REss
-.IPs <interlaced>
+.IPs <ilaced>
 Schalte Interlaced-Skalierung an/\:aus.
 .RSss
 0: aus (Standard)
@@ -11391,6 +11389,12 @@ FIXME: Muss noch dokumentiert werden.
 .
 .TP
 .B USERPROFILE
+FIXME: Muss noch dokumentiert werden.
+.
+.SS libmpcodecs:
+.
+.TP
+.B XANIM_MOD_DIR
 FIXME: Muss noch dokumentiert werden.
 .
 .SS GUI:

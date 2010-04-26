@@ -1,7 +1,7 @@
 // MPlayer Turkish Translation
 // Synced with help_mp-en.h r26067
 // Translated by: Tuncer Altay, tunceraltay (at) yahoo.com and Kadir T. İri, centurium (at) gmx.net
-// Additions by Mehmet KÖSE <mehmetkse@gmail.com>
+// Additions by Mehmet KÖSE <mehmetkse@gmail.com> 
 // ~/Turkey/Ankara/Ankara University/Computer Engineering Department
 
 // ========================= MPlayer help ===========================
@@ -136,7 +136,7 @@ static const char help_text[]=
 "  Bunu doğrulayın!\n"
 #define MSGTR_Exit_SIGSEGV_SIGFPE \
 "- Mplayer CPU/FPU/RAM'in hatalı kullanımı nedeniyle çöktü.\n"\
-" Mplayer'ı --enable-debug seçeneğiyle yeniden derleyiniz. Bir 'gdb' backtrace ve\n"\
+" Mplayer'ı --enable-debug seçeneğiyle yeniden derleyiniz. Bir 'gdb' backtrace ve\n"\  
 " disassembly oluşturunuz. Ayrıntılar için DOCS/HTML/en/bugreports_what.html#bugreports_crash\n"
 #define MSGTR_Exit_SIGCRASH \
 "- Mplayer çöktü. Bu durum oluşmamalıydı.\n"\
@@ -291,7 +291,7 @@ static const char help_text[]=
 #define MSGTR_SettingAudioDelay "Ses gecikmesi %5.3fs olarak ayarlanıyor.\n"
 #define MSGTR_SettingVideoDelay "Video gecikmesi %5.3fs olarak ayarlanıyor.\n"
 #define MSGTR_SettingAudioInputGain "Ses giriş kazancı %f olarak ayarlanıyor.\n"
-#define MSGTR_LamePresetEquals "\nönayarlama=%s\n\n"
+#define MSGTR_LamePresetEquals "\nönayarlama=%s\n\n" 
 #define MSGTR_LimitingAudioPreload "Ses önyüklemesi 0.4s olarak sınırlanıyor\n"
 #define MSGTR_IncreasingAudioDensity "Ses yoğunluğu 4 olarak artırılıyor.\n"
 #define MSGTR_ZeroingAudioPreloadAndMaxPtsCorrection "Ses önyüklemesi 0 olarak, en yüksek pts düzeltmesi 0 olarak zorlanıyor.\n"
@@ -525,7 +525,7 @@ static const char help_text[]=
 #define MSGTR_Profile "%s profili: %s\n"
 
 // m_property.c
-#define MSGTR_PropertyListHeader "\n Ad                   Tür             En az      En çok\n\n"
+#define MSGTR_PropertyListHeader "\n Ad                   Tür             En az      En çok\n\n" 
 #define MSGTR_TotalProperties "\nToplam: %d özellik\n"
 
 // open.c, stream.c:
@@ -588,7 +588,7 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nAYRIŞTIRICI: Tamponda birçok (%d - %d baytta) ses paketi var!\n"
 #define MSGTR_TooManyVideoInBuffer "\nAYRIŞTIRICI: Tamponda birçok  (%d - %d baytta) video paketi var!\n"
 #define MSGTR_MaybeNI "Boşluksuz AVI yayını/dosyası oynatıyor olabilirsiniz veya kodek hatalı?\n" \
-                      "AVI dosyaları için -ni seçeneğiyle boşluksuz modu zorlamayı deneyiniz.\n"
+		      "AVI dosyaları için -ni seçeneğiyle boşluksuz modu zorlamayı deneyiniz.\n"
 #define MSGTR_WorkAroundBlockAlignHeaderBug "AVI: CBR-MP3 nBlockAlign başlık hatası etrafına çalışıyor!\n"
 #define MSGTR_SwitchToNi "\nHatalı boşluklandırılmış .AVI saptandı  -ni moduna geçiliyor...\n"
 #define MSGTR_InvalidAudioStreamNosound "AVI: geçersiz ses akışı ID: %d - gözardı ediliyor (ses yok)\n"
@@ -600,7 +600,7 @@ static const char help_text[]=
 #define MSGTR_NotSystemStream "MPEG Sistem Yayın biçimi değil...(İletim yayını olabilir?)\n"
 #define MSGTR_InvalidMPEGES "Geçersiz MPEG-ES biçimi??? Geliştiricilere bildiriniz, bu bir hata olabilir.:(\n"
 #define MSGTR_FormatNotRecognized "============ Üzgünüm, bu dosya biçimi desteklenmiyor  ===========\n"\
-                                  "=== Dosya bir AVI,ASF veya MPEG yayın biçimi ise, lütfen geliştiricilere bildiriniz. ===\n"
+				  "=== Dosya bir AVI,ASF veya MPEG yayın biçimi ise, lütfen geliştiricilere bildiriniz. ===\n"
 #define MSGTR_SettingProcessPriority "İşlem önceliği ayarlanıyor: %s\n"
 #define MSGTR_FilefmtFourccSizeFpsFtime "[V] filefmt:%d  fourcc:0x%X  boyut:%dx%d  fps:%5.3f  ftime:=%6.4f\n"
 #define MSGTR_CannotInitializeMuxer "Cannot initialize muxer."
@@ -696,6 +696,8 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Kodek ayarlanamadı: sh->disp_w ve sh->disp_h, çözülmeye çalışılıyor!\n"
+#define MSGTR_VoConfigRequest "VDec: vo ayar isteği - %d x %d (tercih csp: %s)\n"
+#define MSGTR_UsingXAsOutputCspNoY "VDec: çıkış csp'si olarak %s kullanılıyor (%d yok)\n"
 #define MSGTR_CouldNotFindColorspace "Renk biçimi bulunamadı.  -vf scale ile tekrar deneniyor...\n"
 #define MSGTR_MovieAspectIsSet "Video-Görünümü: %.2f:1 - doğru video görünümü için önölçekleniyor.\n"
 #define MSGTR_MovieAspectUndefined "Video-Görünümü tanımsız - önölçekleme onaylanamadı.\n"
@@ -1096,7 +1098,7 @@ static const char help_text[]=
 
 // ======================= AO Audio Output drivers ========================
 
-// libao2
+// libao2 
 
 // audio_out.c
 #define MSGTR_AO_ALSA9_1x_Removed "ses_çıkışı: alsa9 ve alsa1x modülleri silindi, yerine -ao seçeneğini kullanınız.\n"
@@ -1140,7 +1142,7 @@ static const char help_text[]=
 #define MSGTR_AO_PCM_FileInfo "[AO PCM] Dosya File: %s (%s)\nPCM: Örnekleme oranı: %iHz Kanallar: %s Biçim %s\n"
 #define MSGTR_AO_PCM_HintInfo "[AO PCM] Bilgi: Daha hızlı döküm -vc null -vo null -ao pcm:fast ile sağlanabilir.\n[AO PCM] Bilgi: WAVE dosyalarını yazmak için  -ao pcm:waveheader (default) seçeneğini kullanınız.\n"
 #define MSGTR_AO_PCM_CantOpenOutputFile "[AO PCM] Yazma için %s açılamadı!\n"
-
+ 
 // ao_sdl.c
 #define MSGTR_AO_SDL_INFO "[AO SDL] Örnekleme oranı: %iHz Kanallar: %s Biçim %s\n"
 #define MSGTR_AO_SDL_DriverInfo "[AO SDL] %s ses sürücüsü kullanılıyor.\n"
@@ -1256,7 +1258,7 @@ static const char help_text[]=
 
 // ======================= AF Audio Filters ================================
 
-// libaf
+// libaf 
 #define MSGTR_AF_ValueOutOfRange MSGTR_VO_ValueOutOfRange
 
 // af_ladspa.c
@@ -2017,7 +2019,7 @@ static const char help_text[]=
 #define MSGTR_LIBASS_ErrorRecodingFile "[ass] Dosyayı tekrar kodlamada hata.\n"
 #define MSGTR_LIBASS_FopenFailed "[ass] ass_read_file(%s): fopen başarısız\n"
 #define MSGTR_LIBASS_FseekFailed "[ass] ass_read_file(%s): fseek başarısız\n"
-#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan100M "[ass] ass_read_file(%s): 100 megabayttan büyük altyazıları yüklemeyi reddediyor\n"
+#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan10M "[ass] ass_read_file(%s): 10 megabayttan büyük altyazıları yüklemeyi reddediyor\n"
 #define MSGTR_LIBASS_ReadFailed "Okuma başarısız, %d: %s\n"
 #define MSGTR_LIBASS_AddedSubtitleFileMemory "[ass] Altyazı dosyasını ekledi: <bellek> (%d tarz, %d olay)\n"
 #define MSGTR_LIBASS_AddedSubtitleFileFname "[ass] Altyazı dosyasını ekledi: %s (%d tarz, %d olay)\n"

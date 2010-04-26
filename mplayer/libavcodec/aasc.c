@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/aasc.c
  * Autodesk RLE Video Decoder by Konstantin Shishkov
  */
 
@@ -52,6 +52,7 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     avctx->pix_fmt = PIX_FMT_BGR24;
+    s->frame.data[0] = NULL;
 
     return 0;
 }
@@ -111,7 +112,7 @@ static av_cold int aasc_decode_end(AVCodecContext *avctx)
 
 AVCodec aasc_decoder = {
     "aasc",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_AASC,
     sizeof(AascContext),
     aasc_decode_init,

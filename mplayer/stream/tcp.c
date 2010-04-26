@@ -1,23 +1,7 @@
 /*
  * Network layer for MPlayer
- *
- * Copyright (C) 2001 Bertrand BAUDET <bertrand_baudet@yahoo.com>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * by Bertrand BAUDET <bertrand_baudet@yahoo.com>
+ * (C) 2001, MPlayer team.
  */
 
 #include <stdlib.h>
@@ -51,12 +35,6 @@
 #include "network.h"
 #include "stream.h"
 #include "tcp.h"
-#include "libavutil/avstring.h"
-
-#if defined(GEKKO)
-#include <ogc/lwp_watchdog.h>
-#define IOS_O_NONBLOCK				0x04
-#endif
 
 /* IPv6 options */
 int   network_prefer_ipv4 = 0;
@@ -66,7 +44,7 @@ int   network_prefer_ipv4 = 0;
 static const char *af2String(int af) {
 	switch (af) {
 		case AF_INET:	return "AF_INET";
-
+		
 #ifdef HAVE_AF_INET6
 		case AF_INET6:	return "AF_INET6";
 #endif
@@ -98,25 +76,17 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 	void *our_s_addr;	// Pointer to sin_addr or sin6_addr
 	struct hostent *hp=NULL;
 	char buf[255];
-
+	
 #if HAVE_WINSOCK2_H
 	unsigned long val;
 	int to;
 #else
 	struct timeval to;
 #endif
-
-#if HAVE_WINSOCK2_H && defined(HAVE_AF_INET6)
-	// our winsock name resolution code can not handle IPv6
-	if (af == AF_INET6) {
-		mp_msg(MSGT_NETWORK, MSGL_WARN, "IPv6 not supported for winsock2\n");
-		return TCP_ERROR_FATAL;
-	}
-#endif
-
+	
 	socket_server_fd = socket(af, SOCK_STREAM, 0);
-
-
+	
+	
 	if( socket_server_fd==-1 ) {
 //		mp_msg(MSGT_NETWORK,MSGL_ERR,"Failed to create %s socket:\n", af2String(af));
 		return TCP_ERROR_FATAL;
@@ -143,10 +113,10 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 			mp_msg(MSGT_NETWORK,MSGL_ERR, MSGTR_MPDEMUX_NW_UnknownAF, af);
 			return TCP_ERROR_FATAL;
 	}
-
-
+	
+	
 	memset(&server_address, 0, sizeof(server_address));
-
+	
 #if HAVE_INET_PTON
 	if (inet_pton(af, host, our_s_addr)!=1)
 #elif HAVE_INET_ATON
@@ -156,7 +126,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 #endif
 	{
 		if(verb) mp_msg(MSGT_NETWORK,MSGL_STATUS,MSGTR_MPDEMUX_NW_ResolvingHostForAF, host, af2String(af));
-
+		
 #ifdef HAVE_GETHOSTBYNAME2
 		hp=(struct hostent*)gethostbyname2( host, af );
 #else
@@ -166,7 +136,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 			if(verb) mp_msg(MSGT_NETWORK,MSGL_ERR,MSGTR_MPDEMUX_NW_CantResolv, af2String(af), host);
 			return TCP_ERROR_FATAL;
 		}
-
+		
 		memcpy( our_s_addr, (void*)hp->h_addr_list[0], hp->h_length );
 	}
 #if HAVE_WINSOCK2_H
@@ -175,14 +145,14 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 		memcpy( our_s_addr, (void*)&addr, sizeof(addr) );
 	}
 #endif
-
+	
 	switch (af) {
 		case AF_INET:
 			server_address.four.sin_family=af;
-			server_address.four.sin_port=htons(port);
+			server_address.four.sin_port=htons(port);			
 			server_address_size = sizeof(server_address.four);
 			break;
-#ifdef HAVE_AF_INET6
+#ifdef HAVE_AF_INET6		
 		case AF_INET6:
 			server_address.six.sin6_family=af;
 			server_address.six.sin6_port=htons(port);
@@ -195,39 +165,21 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 	}
 
 #if HAVE_INET_ATON || defined(HAVE_WINSOCK2_H)
-	av_strlcpy( buf, inet_ntoa( *((struct in_addr*)our_s_addr) ), 255);
+	strncpy( buf, inet_ntoa( *((struct in_addr*)our_s_addr) ), 255);
 #else
 	inet_ntop(af, our_s_addr, buf, 255);
 #endif
 	if(verb) mp_msg(MSGT_NETWORK,MSGL_STATUS,MSGTR_MPDEMUX_NW_ConnectingToServer, host, buf , port );
 
 	// Turn the socket as non blocking so we can timeout on the connection
-#if defined(GEKKO)
-	net_fcntl(socket_server_fd, F_SETFL, net_fcntl(socket_server_fd, F_GETFL, 0) | IOS_O_NONBLOCK);
-	u64 t1,t2;
-	t1=ticks_to_millisecs(gettime());
-	do {
-		ret = net_connect(socket_server_fd,(struct sockaddr*)&server_address,server_address_size);
-		t2=ticks_to_millisecs(gettime());
-		if(t2-t1 > 5000) break; // 5 secs to try to connect
-		usleep(500);
-	}while(ret != -EISCONN);
-	if(ret != -EISCONN)
-	{		
-		closesocket(socket_server_fd);
-		return TCP_ERROR_PORT;
-	}
-	net_fcntl(socket_server_fd, F_SETFL, net_fcntl(socket_server_fd, F_GETFL, 0) & ~IOS_O_NONBLOCK);		
-#else
+//#if !defined(GEKKO)
 #if !HAVE_WINSOCK2_H
 	fcntl( socket_server_fd, F_SETFL, fcntl(socket_server_fd, F_GETFL) | O_NONBLOCK );
 #else
 	val = 1;
 	ioctlsocket( socket_server_fd, FIONBIO, &val );
 #endif
-#endif
-
-#if !defined(GEKKO)
+//#endif
 	if( connect( socket_server_fd, (struct sockaddr*)&server_address, server_address_size )==-1 ) {
 #if !HAVE_WINSOCK2_H
 		if( errno!=EINPROGRESS ) {
@@ -239,6 +191,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 			return TCP_ERROR_PORT;
 		}
 	}
+		
 	tv.tv_sec = 0;
 	tv.tv_usec = 500000;
 	FD_ZERO( &set );
@@ -261,6 +214,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 	if (ret < 0) mp_msg(MSGT_NETWORK,MSGL_ERR,MSGTR_MPDEMUX_NW_SelectFailed);
 
 	// Turn back the socket as blocking
+#if !defined(GEKKO)	
 #if !HAVE_WINSOCK2_H
 	fcntl( socket_server_fd, F_SETFL, fcntl(socket_server_fd, F_GETFL) & ~O_NONBLOCK );
 #else
@@ -293,15 +247,15 @@ connect2Server(char *host, int  port, int verb) {
 	int r;
 	int s = TCP_ERROR_FATAL;
 
-	r = connect2Server_with_af(host, port, network_prefer_ipv4 ? AF_INET:AF_INET6,verb);
+	r = connect2Server_with_af(host, port, network_prefer_ipv4 ? AF_INET:AF_INET6,verb);	
 	if (r >= 0) return r;
 
 	s = connect2Server_with_af(host, port, network_prefer_ipv4 ? AF_INET6:AF_INET,verb);
 	if (s == TCP_ERROR_FATAL) return r;
 	return s;
-#else
+#else	
 	return connect2Server_with_af(host, port, AF_INET,verb);
 #endif
 
-
+	
 }

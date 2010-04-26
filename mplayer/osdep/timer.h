@@ -22,23 +22,12 @@
 extern const char *timer_name;
 
 void InitTimer(void);
-#ifdef GEKKO
-#include <gctypes.h>
-#include <ogc/lwp_watchdog.h>
-inline static u64 GetTimer(void) {return ticks_to_microsecs(gettime());}
-inline static u64 GetTimerMS(void){return ticks_to_millisecs(gettime());}
-inline static int usec_sleep(unsigned int usec_delay){return usleep(usec_delay);}
-u64 GetRelativeTime(void);
-#else
 unsigned int GetTimer(void);
 unsigned int GetTimerMS(void);
-double GetRelativeTime(void);
-int usec_sleep(unsigned int usec_delay);
-#endif
-//int uGetTimer(void);
+//int uGetTimer();
+float GetRelativeTime(void);
 
-
-
+int usec_sleep(int usec_delay);
 
 /* timer's callback handling */
 typedef void timer_callback( void );

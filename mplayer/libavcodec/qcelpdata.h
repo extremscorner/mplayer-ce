@@ -23,7 +23,7 @@
 #define AVCODEC_QCELPDATA_H
 
 /**
- * @file
+ * @file libavcodec/qcelpdata.h
  * Data tables for the QCELP decoder
  * @author Reynaldo H. Verdejo Pinochet
  * @remark FFmpeg merging spearheaded by Kenan Gillet
@@ -425,6 +425,16 @@ static const qcelp_vector * const qcelp_lspvq[5] = {
 #define QCELP_SCALE 8192.
 
 /**
+ * the upper boundary of the clipping, depends on QCELP_SCALE
+ */
+#define QCELP_CLIP_UPPER_BOUND (8191.75/8192.)
+
+/**
+ * the lower boundary of the clipping, depends on QCELP_SCALE
+ */
+#define QCELP_CLIP_LOWER_BOUND -1.
+
+/**
  * table for computing Ga (decoded linear codebook gain magnitude)
  *
  * @note The table could fit in int16_t in x*8 form, but it seems
@@ -547,6 +557,6 @@ static const double qcelp_rnd_fir_coefs[11] = {
  *
  * TIA/EIA/IS-733 2.4.3.3.6 6
  */
-#define QCELP_BANDWIDTH_EXPANSION_COEFF 0.9883
+#define QCELP_BANDWITH_EXPANSION_COEFF 0.9883
 
 #endif /* AVCODEC_QCELPDATA_H */

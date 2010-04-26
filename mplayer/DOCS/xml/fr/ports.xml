@@ -282,14 +282,14 @@ x86 en utilisant GCC sans assembleur GNU&nbsp;:
 Erreur typique obtenue en construisant avec un compilateur C GNU qui n'utilise
 pas GNU as&nbsp;:
 <screen>
-% gmake
-...
-gcc -c -Iloader -Ilibvo -O4 -march=i686 -mcpu=i686 -pipe -ffast-math
-     -fomit-frame-pointer  -I/usr/local/include   -o mplayer.o mplayer.c
-Assembler: mplayer.c
-"(stdin)", line 3567 : Illegal mnemonic
-"(stdin)", line 3567 : Syntax error
-... more "Illegal mnemonic" and "Syntax error" errors ...
+   % gmake
+   ...
+   gcc -c -Iloader -Ilibvo -O4 -march=i686 -mcpu=i686 -pipe -ffast-math
+	-fomit-frame-pointer  -I/usr/local/include   -o mplayer.o mplayer.c
+   Assembler: mplayer.c
+   "(stdin)", line 3567 : Illegal mnemonic
+   "(stdin)", line 3567 : Syntax error
+   ... more "Illegal mnemonic" and "Syntax error" errors ...
 </screen>
 </para>
 </listitem>
@@ -305,7 +305,7 @@ Opening audio decoder: [acm] Win32/ACM decoders
 sysi86(SI86DSCR): Invalid argument
 Couldn't install fs segment, expect segfault
 
-
+ 
 MPlayer interrupted by signal 11 in module: init_audio_codec
 ...
 </screen>
@@ -381,11 +381,12 @@ Class          I            H/W   Path          Driver    S/W State    H/W Type 
 ...
 ext_bus 1    8/16/5      c720  CLAIMED INTERFACE  Built-in SCSI
 target  3    8/16/5.2    tgt   CLAIMED DEVICE
-disk    4    8/16/5.<emphasis role="bold">2</emphasis>.<emphasis role="bold">0</emphasis>  sdisk CLAIMED DEVICE     <emphasis role="bold">PIONEER DVD-ROM DVD-305</emphasis>
-                         /dev/dsk/c1t2d0 <emphasis role="bold">/dev/rdsk/c1t2d0</emphasis>
+disk    4    8/16/5.<emphasis role="bold">2</emphasis>.<emphasis role="bold">0</emphasis>  sdisk CLAIMED DEVICE
+					<emphasis role="bold">PIONEER DVD-ROM DVD-305</emphasis> /dev/dsk/c1t2d0
+					<emphasis role="bold">/dev/rdsk/c1t2d0</emphasis>
 target  4    8/16/5.7    tgt   CLAIMED DEVICE
 ctl     <emphasis role="bold">1</emphasis>    8/16/5.7.0  sctl  CLAIMED DEVICE     Initiator
-                         /dev/rscsi/c1t7d0 /dev/rscsi/c1t7l0 /dev/scsi/c1t7l0
+			/dev/rscsi/c1t7d0 /dev/rscsi/c1t7l0 /dev/scsi/c1t7l0
 ...
 </screen>
 
@@ -739,7 +740,7 @@ Le compilateur préféré étant la version Apple de GCC 3.x ou supérieure.
 Vous pouvez obtenir l'environement de compilation de base en
 installant <ulink url="http://developer.apple.com/tools/download/">Xcode</ulink> de Apple.
 Si vous avez Mac OS X 10.3.9 ou supérieur et QuickTime 7
-vous pouvez utiliser le pilote corevideo de sortie vidéo.
+vous pouvez utiliser le pilote macosx de sortie vidéo.
 </para>
 <para>
 Malheureusement, cet environement de base ne vous autorise pas à

@@ -32,7 +32,6 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/ac3.h"
-#include "libavutil/intreadwrite.h"
 
 // Data for specific instances of this filter
 typedef struct af_ac3enc_s {
@@ -59,7 +58,7 @@ static int control(struct af_instance_s *af, int cmd, void *arg)
 
     switch (cmd){
     case AF_CONTROL_REINIT:
-        if (AF_FORMAT_IS_AC3(data->format) || data->nch < s->min_channel_num)
+        if (data->format == AF_FORMAT_AC3 || data->nch < s->min_channel_num)
             return AF_DETACH;
 
         s->pending_len = 0;
@@ -103,7 +102,7 @@ static int control(struct af_instance_s *af, int cmd, void *arg)
                 return AF_ERROR;
             }
         }
-        af->data->format = AF_FORMAT_AC3_BE;
+        af->data->format = AF_FORMAT_AC3;
         af->data->nch = 2;
         return test_output_res;
     case AF_CONTROL_COMMAND_LINE:
@@ -213,7 +212,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
             if (c->nch >= 5)
                 reorder_channel_nch(s->pending_data,
                                     AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
-                                    AF_CHANNEL_LAYOUT_LAVC_DEFAULT,
+                                    AF_CHANNEL_LAYOUT_LAVC_AC3_DEFAULT,
                                     c->nch,
                                     s->expect_len / 2, 2);
 
@@ -225,7 +224,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
             if (c->nch >= 5)
                 reorder_channel_nch(src,
                                     AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
-                                    AF_CHANNEL_LAYOUT_LAVC_DEFAULT,
+                                    AF_CHANNEL_LAYOUT_LAVC_AC3_DEFAULT,
                                     c->nch,
                                     s->expect_len / 2, 2);
             len = avcodec_encode_audio(s->lavc_actx,dest,destsize,(void *)src);
@@ -236,13 +235,28 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
                len, s->pending_len);
 
         if (s->add_iec61937_header) {
+            int16_t *out = (int16_t *)buf;
             int bsmod = dest[5] & 0x7;
 
-            AV_WB16(buf,     0xF872);   // iec 61937 syncword 1
-            AV_WB16(buf + 2, 0x4E1F);   // iec 61937 syncword 2
-            buf[4] = bsmod;             // bsmod
-            buf[5] = 0x01;              // data-type ac3
-            AV_WB16(buf + 6, len << 3); // number of bits in payload
+#ifndef WORDS_BIGENDIAN
+            int i;
+            char tmp;
+            for (i = 0; i < len; i += 2) {
+                tmp = dest[i];
+                dest[i] = dest[i+1];
+                dest[i+1] = tmp;
+            }
+            if (len & 1) {
+                dest[len] = dest[len-1];
+                dest[len-1] = 0;
+                len++;
+            }
+#endif
+            out[0] = 0xF872;   // iec 61937 syncword 1
+            out[1] = 0x4E1F;   // iec 61937 syncword 2
+            out[2] = 0x0001;   // data-type ac3
+            out[2] |= bsmod << 8; // bsmod
+            out[3] = len << 3; // number of bits in payload
 
             memset(buf + 8 + len, 0, AC3_FRAME_SIZE * 2 * 2 - 8 - len);
             len = AC3_FRAME_SIZE * 2 * 2;

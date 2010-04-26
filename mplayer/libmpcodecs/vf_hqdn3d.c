@@ -44,14 +44,14 @@ struct vf_priv_s {
 
 /***************************************************************************/
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 	if(vf->priv->Line){free(vf->priv->Line);vf->priv->Line=NULL;}
 	if(vf->priv->Frame[0]){free(vf->priv->Frame[0]);vf->priv->Frame[0]=NULL;}
 	if(vf->priv->Frame[1]){free(vf->priv->Frame[1]);vf->priv->Frame[1]=NULL;}
 	if(vf->priv->Frame[2]){free(vf->priv->Frame[2]);vf->priv->Frame[2]=NULL;}
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 
@@ -64,7 +64,7 @@ static int config(struct vf_instance *vf,
 static inline unsigned int LowPassMul(unsigned int PrevMul, unsigned int CurrMul, int* Coef){
 //    int dMul= (PrevMul&0xFFFFFF)-(CurrMul&0xFFFFFF);
     int dMul= PrevMul-CurrMul;
-    unsigned int d=((dMul+0x10007FF)>>12);
+    int d=((dMul+0x10007FF)>>12);
     return CurrMul + Coef[d];
 }
 
@@ -75,7 +75,7 @@ static void deNoiseTemporal(
                     int W, int H, int sStride, int dStride,
                     int *Temporal)
 {
-    long X, Y;
+    int X, Y;
     unsigned int PixelDst;
 
     for (Y = 0; Y < H; Y++){
@@ -97,11 +97,11 @@ static void deNoiseSpacial(
                     int W, int H, int sStride, int dStride,
                     int *Horizontal, int *Vertical)
 {
-    long X, Y;
-    long sLineOffs = 0, dLineOffs = 0;
+    int X, Y;
+    int sLineOffs = 0, dLineOffs = 0;
     unsigned int PixelAnt;
     unsigned int PixelDst;
-
+    
     /* First pixel has no left nor top neighbor. */
     PixelDst = LineAnt[0] = PixelAnt = Frame[0]<<16;
     FrameDest[0]= ((PixelDst+0x10007FFF)>>16);
@@ -137,12 +137,12 @@ static void deNoise(unsigned char *Frame,        // mpi->planes[x]
                     int W, int H, int sStride, int dStride,
                     int *Horizontal, int *Vertical, int *Temporal)
 {
-    long X, Y;
-    long sLineOffs = 0, dLineOffs = 0;
+    int X, Y;
+    int sLineOffs = 0, dLineOffs = 0;
     unsigned int PixelAnt;
     unsigned int PixelDst;
     unsigned short* FrameAnt=(*FrameAntPtr);
-
+    
     if(!FrameAnt){
 	(*FrameAntPtr)=FrameAnt=malloc(W*H*sizeof(unsigned short));
 	for (Y = 0; Y < H; Y++){
@@ -202,7 +202,7 @@ static void deNoise(unsigned char *Frame,        // mpi->planes[x]
 }
 
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	int cw= mpi->w >> mpi->chroma_x_shift;
 	int ch= mpi->h >> mpi->chroma_y_shift;
         int W = mpi->w, H = mpi->h;
@@ -237,7 +237,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
 //===========================================================================//
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
         switch(fmt)
 	{
 	case IMGFMT_YV12:
@@ -273,7 +273,7 @@ static void PrecalcCoefs(int *Ct, double Dist25)
 }
 
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
         double LumSpac, LumTmp, ChromSpac, ChromTmp;
         double Param1, Param2, Param3, Param4;
 
@@ -360,7 +360,7 @@ const vf_info_t vf_info_hqdn3d = {
     "hqdn3d",
     "Daniel Moreno & A'rpi",
     "",
-    vf_open,
+    open,
     NULL
 };
 

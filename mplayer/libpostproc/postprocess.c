@@ -21,7 +21,7 @@
  */
 
 /**
- * @file
+ * @file libpostproc/postprocess.c
  * postprocessing.
  */
 
@@ -90,17 +90,6 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 unsigned postproc_version(void)
 {
     return LIBPOSTPROC_VERSION_INT;
-}
-
-const char *postproc_configuration(void)
-{
-    return FFMPEG_CONFIGURATION;
-}
-
-const char *postproc_license(void)
-{
-#define LICENSE_PREFIX "libpostproc license: "
-    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
 #if HAVE_ALTIVEC_H
@@ -962,7 +951,7 @@ static const AVClass av_codec_context_class = { "Postproc", context_to_name, NUL
 
 pp_context *pp_get_context(int width, int height, int cpuCaps){
     PPContext *c= av_malloc(sizeof(PPContext));
-    int stride= FFALIGN(width, 16);  //assumed / will realloc if needed
+    int stride= (width+15)&(~15);    //assumed / will realloc if needed
     int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
 
     memset(c, 0, sizeof(PPContext));

@@ -30,6 +30,11 @@
 
 #include "config.h"
 
+#ifdef CONFIG_DVB
+#include <poll.h>
+#include <sys/ioctl.h>
+#endif
+
 #include "audio_out.h"
 #include "audio_out_internal.h"
 
@@ -41,10 +46,13 @@
 #include "help_mp.h"
 
 #ifdef CONFIG_DVB
-#include <poll.h>
-#include <sys/ioctl.h>
+#ifndef CONFIG_DVB_HEAD
+#include <ost/audio.h>
+audioMixer_t dvb_mixer={255,255};
+#else
 #include <linux/dvb/audio.h>
 audio_mixer_t dvb_mixer={255,255};
+#endif
 #endif
 
 #define true 1
@@ -55,7 +63,7 @@ int vo_mpegpes_fd2 = -1;
 
 #include <errno.h>
 
-static const ao_info_t info =
+static const ao_info_t info = 
 {
 #ifdef CONFIG_DVB
 	"DVB audio output",
@@ -108,8 +116,13 @@ static int freq_id=0;
 static int init_device(int card)
 {
 	char ao_file[30];
+#ifndef CONFIG_DVB_HEAD
+	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/ost/audio\n");
+	sprintf(ao_file, "/dev/ost/audio");
+#else
 	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/dvb/adapter%d/audio0\n", card);
 	sprintf(ao_file, "/dev/dvb/adapter%d/audio0", card);
+#endif
 	if((vo_mpegpes_fd2 = open(ao_file,O_RDWR|O_NONBLOCK)) < 0)
 	{
         	mp_msg(MSGT_VO, MSGL_ERR, "DVB AUDIO DEVICE: %s\n", strerror(errno));
@@ -145,7 +158,7 @@ static int preinit(const char *arg)
 	int card = -1;
 	char *ao_file = NULL;
 
-	const opt_t subopts[] = {
+	opt_t subopts[] = {
 		{"card", OPT_ARG_INT, &card, NULL},
 		{"file", OPT_ARG_MSTRZ, &ao_file, NULL},
 		{NULL}
@@ -184,7 +197,7 @@ static int preinit(const char *arg)
 #ifdef CONFIG_DVB
 	if(!ao_file)
 		return init_device(card);
-#else
+#else	
 	if(!ao_file)
 		return vo_mpegpes_fd;	//video fd
 #endif
@@ -198,7 +211,7 @@ static int preinit(const char *arg)
 	return vo_mpegpes_fd2;
 }
 
-static int my_ao_write(const unsigned char* data,int len){
+static int my_ao_write(unsigned char* data,int len){
     int orig_len = len;
 #ifdef CONFIG_DVB
 #define NFD   1
@@ -240,11 +253,8 @@ static int init(int rate,int channels,int format,int flags){
     switch(format){
 	case AF_FORMAT_S16_BE:
 	case AF_FORMAT_MPEG2:
-	case AF_FORMAT_AC3_BE:
+	case AF_FORMAT_AC3:
 	    ao_data.format=format;
-	    break;
-	case AF_FORMAT_AC3_LE:
-	    ao_data.format=AF_FORMAT_AC3_BE;
 	    break;
 	default:
 	    ao_data.format=AF_FORMAT_S16_BE;
@@ -322,8 +332,12 @@ static int play(void* data,int len,int flags){
     if(ao_data.format==AF_FORMAT_MPEG2)
 	send_mpeg_pes_packet (data, len, 0x1C0, ao_data.pts, 1, my_ao_write);
     else {
+	int i;
+	unsigned short *s=data;
 //	if(len>2000) len=2000;
 //	printf("ao_mpegpes: len=%d  \n",len);
+	if(ao_data.format==AF_FORMAT_AC3)
+	    for(i=0;i<len/2;i++) s[i]=(s[i]>>8)|(s[i]<<8); // le<->be
 	send_mpeg_lpcm_packet(data, len, 0xA0, ao_data.pts, freq_id, my_ao_write);
     }
     return len;

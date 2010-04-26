@@ -100,7 +100,7 @@ If you have questions please contact with me: Nick Kurshev: nickols_k@mail.ru.
 /* for small memory blocks (<256 bytes) this version is faster */
 #define small_memcpy(to,from,n)\
 {\
-register x86_reg dummy;\
+register unsigned long int dummy;\
 __asm__ volatile(\
 	"rep; movsb"\
 	:"=&D"(to), "=&S"(from), "=&c"(dummy)\
@@ -180,9 +180,9 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 #endif
         if(len >= MIN_LEN)
 	{
-	  register x86_reg delta;
+	  register unsigned long int delta;
           /* Align destinition to MMREG_SIZE -boundary */
-          delta = ((intptr_t)to)&(MMREG_SIZE-1);
+          delta = ((unsigned long int)to)&(MMREG_SIZE-1);
           if(delta)
 	  {
 	    delta=MMREG_SIZE-delta;
@@ -201,7 +201,7 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
            processor's decoders, but it's not always possible.
         */
 #if HAVE_SSE /* Only P3 (may be Cyrix3) */
-	if(((intptr_t)from) & 15)
+	if(((unsigned long)from) & 15)
 	/* if SRC is misaligned */
 	for(; i>0; i--)
 	{
@@ -243,7 +243,7 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 	}
 #else
 	// Align destination at BLOCK_SIZE boundary
-	for(; ((intptr_t)to & (BLOCK_SIZE-1)) && i>0; i--)
+	for(; ((int)to & (BLOCK_SIZE-1)) && i>0; i--)
 	{
 		__asm__ volatile (
 #ifndef HAVE_ONLY_MMX1
@@ -277,10 +277,10 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 			"xor %%"REG_a", %%"REG_a"	\n\t"
 			ASMALIGN(4)
 			"1:			\n\t"
-				"movl (%0, %%"REG_a"), %%ecx 	\n\t"
-				"movl 32(%0, %%"REG_a"), %%ecx 	\n\t"
-				"movl 64(%0, %%"REG_a"), %%ecx 	\n\t"
-				"movl 96(%0, %%"REG_a"), %%ecx 	\n\t"
+				"movl (%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 32(%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 64(%0, %%"REG_a"), %%ebx 	\n\t"
+				"movl 96(%0, %%"REG_a"), %%ebx 	\n\t"
 				"add $128, %%"REG_a"		\n\t"
 				"cmp %3, %%"REG_a"		\n\t"
 				" jb 1b				\n\t"
@@ -313,10 +313,10 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 	// a few percent speedup on out of order executing CPUs
 			"mov %5, %%"REG_a"		\n\t"
 				"2:			\n\t"
-				"movl (%0), %%ecx	\n\t"
-				"movl (%0), %%ecx	\n\t"
-				"movl (%0), %%ecx	\n\t"
-				"movl (%0), %%ecx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
+				"movl (%0), %%ebx	\n\t"
 				"dec %%"REG_a"		\n\t"
 				" jnz 2b		\n\t"
 #endif
@@ -328,8 +328,8 @@ static void * RENAME(fast_memcpy)(void * to, const void * from, size_t len)
 			"cmp %4, %2		\n\t"
 			" jae 1b		\n\t"
 				: "+r" (from), "+r" (to), "+r" (i)
-				: "r" ((x86_reg)BLOCK_SIZE), "i" (BLOCK_SIZE/64), "i" ((x86_reg)CONFUSION_FACTOR)
-				: "%"REG_a, "%ecx"
+				: "r" ((long)BLOCK_SIZE), "i" (BLOCK_SIZE/64), "i" ((long)CONFUSION_FACTOR)
+				: "%"REG_a, "%ebx"
 		);
 
 	for(; i>0; i--)
@@ -400,9 +400,9 @@ static void * RENAME(mem2agpcpy)(void * to, const void * from, size_t len)
 #endif
         if(len >= MIN_LEN)
 	{
-	  register x86_reg delta;
+	  register unsigned long int delta;
           /* Align destinition to MMREG_SIZE -boundary */
-          delta = ((intptr_t)to)&7;
+          delta = ((unsigned long int)to)&7;
           if(delta)
 	  {
 	    delta=8-delta;
@@ -458,3 +458,4 @@ static void * RENAME(mem2agpcpy)(void * to, const void * from, size_t len)
 	if(len) small_memcpy(to, from, len);
 	return retval;
 }
+

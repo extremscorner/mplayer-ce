@@ -120,7 +120,7 @@ static void   init_osd_yuv_pal(void);
 
 static const struct{
     int id;//id as xvimages or as mplayer RGB|{8,15,16,24,32}
-    void (* init_func_ptr)(void);
+    void (* init_func_ptr)();
     void (* draw_func_ptr)();
     void (* clear_func_ptr)();
     } osd_render[]={
@@ -382,8 +382,8 @@ static int preinit(const char *arg){
     const opt_t subopts [] =
     {
         /* name         arg type      arg var           test */
-        {  "port",      OPT_ARG_INT,  &xv_port_request, int_pos },
-        {  "adaptor",   OPT_ARG_INT,  &xv_adaptor,      int_non_neg },
+        {  "port",      OPT_ARG_INT,  &xv_port_request, (opt_test_f)int_pos },
+        {  "adaptor",   OPT_ARG_INT,  &xv_adaptor,      (opt_test_f)int_non_neg },
         {  "ck",        OPT_ARG_STR,  &ck_src_arg,      xv_test_ck },
         {  "ck-method", OPT_ARG_STR,  &ck_method_arg,   xv_test_ckm },
         {  "benchmark", OPT_ARG_BOOL, &benchmark,       NULL },
@@ -1110,6 +1110,7 @@ static int draw_slice(uint8_t *image[], int stride[],
                             rndr->flags,
                             rndr->filled_mv_blocks_num,rndr->start_mv_blocks_num,
                             &mv_blocks,&data_blocks);
+#if 1
     if(rez != Success)
     {
     int i;
@@ -1135,6 +1136,7 @@ static int draw_slice(uint8_t *image[], int stride[],
                     testblock->PMV[0][0][0],testblock->PMV[0][0][1]);
         }
     }
+#endif
     assert(rez==Success);
     mp_msg(MSGT_VO,MSGL_DBG4,"vo_xvmc: flush surface\n");
     rez = XvMCFlushSurface(mDisplay, rndr->p_surface);

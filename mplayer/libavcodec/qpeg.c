@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/qpeg.c
  * QPEG codec.
  */
 
@@ -289,12 +289,9 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_init(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
 
-    if (!avctx->palctrl) {
-        av_log(avctx, AV_LOG_FATAL, "Missing required palette via palctrl\n");
-        return -1;
-    }
     a->avctx = avctx;
     avctx->pix_fmt= PIX_FMT_PAL8;
+    a->pic.data[0] = NULL;
     a->refdata = av_malloc(avctx->width * avctx->height);
 
     return 0;
@@ -313,7 +310,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
 
 AVCodec qpeg_decoder = {
     "qpeg",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_QPEG,
     sizeof(QpegContext),
     decode_init,

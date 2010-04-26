@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/rv40.c
  * RV40 decoder
  */
 
@@ -76,17 +76,17 @@ static av_cold void rv40_init_tables(void)
                  aic_mode2_vlc_codes[i], 2, 2, INIT_VLC_USE_NEW_STATIC);
     }
     for(i = 0; i < NUM_PTYPE_VLCS; i++){
-        ptype_vlc[i].table = &ptype_table[i << PTYPE_VLC_BITS];
-        ptype_vlc[i].table_allocated = 1 << PTYPE_VLC_BITS;
-        init_vlc_sparse(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
+         ptype_vlc[i].table = &ptype_table[i << PTYPE_VLC_BITS];
+         ptype_vlc[i].table_allocated = 1 << PTYPE_VLC_BITS;
+         init_vlc_sparse(&ptype_vlc[i], PTYPE_VLC_BITS, PTYPE_VLC_SIZE,
                          ptype_vlc_bits[i],  1, 1,
                          ptype_vlc_codes[i], 1, 1,
                          ptype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
     }
     for(i = 0; i < NUM_BTYPE_VLCS; i++){
-        btype_vlc[i].table = &btype_table[i << BTYPE_VLC_BITS];
-        btype_vlc[i].table_allocated = 1 << BTYPE_VLC_BITS;
-        init_vlc_sparse(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
+         btype_vlc[i].table = &btype_table[i << BTYPE_VLC_BITS];
+         btype_vlc[i].table_allocated = 1 << BTYPE_VLC_BITS;
+         init_vlc_sparse(&btype_vlc[i], BTYPE_VLC_BITS, BTYPE_VLC_SIZE,
                          btype_vlc_bits[i],  1, 1,
                          btype_vlc_codes[i], 1, 1,
                          btype_vlc_syms,     1, 1, INIT_VLC_USE_NEW_STATIC);
@@ -164,7 +164,7 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
     int pattern;
     int8_t *ptr;
 
-    for(i = 0; i < 4; i++, dst += r->intra_types_stride){
+    for(i = 0; i < 4; i++, dst += s->b4_stride){
         if(!i && s->first_slice_line){
             pattern = get_vlc2(gb, aic_top_vlc.table, AIC_TOP_BITS, 1);
             dst[0] = (pattern >> 2) & 2;
@@ -181,8 +181,8 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
              * The second one (used for retrieving only one coefficient) is
              * top + 10 * left.
              */
-            A = ptr[-r->intra_types_stride + 1]; // it won't be used for the last coefficient in a row
-            B = ptr[-r->intra_types_stride];
+            A = ptr[-s->b4_stride + 1]; // it won't be used for the last coefficient in a row
+            B = ptr[-s->b4_stride];
             C = ptr[-1];
             pattern = A + (B << 4) + (C << 8);
             for(k = 0; k < MODE2_PATTERNS_NUM; k++)
@@ -235,13 +235,13 @@ static int rv40_decode_mb_info(RV34DecContext *r)
     if(--r->s.mb_skip_run)
          return RV34_MB_SKIP;
 
-    if(r->avail_cache[6-1])
+    if(r->avail_cache[5-1])
         blocks[r->mb_type[mb_pos - 1]]++;
-    if(r->avail_cache[6-4]){
+    if(r->avail_cache[5-4]){
         blocks[r->mb_type[mb_pos - s->mb_stride]]++;
-        if(r->avail_cache[6-2])
+        if(r->avail_cache[5-2])
             blocks[r->mb_type[mb_pos - s->mb_stride + 1]]++;
-        if(r->avail_cache[6-5])
+        if(r->avail_cache[5-5])
             blocks[r->mb_type[mb_pos - s->mb_stride - 1]]++;
     }
 
@@ -668,7 +668,7 @@ static av_cold int rv40_decode_init(AVCodecContext *avctx)
 
 AVCodec rv40_decoder = {
     "rv40",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_RV40,
     sizeof(RV34DecContext),
     rv40_decode_init,

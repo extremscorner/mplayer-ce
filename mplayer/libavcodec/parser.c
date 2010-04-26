@@ -89,9 +89,8 @@ void ff_fetch_timestamp(AVCodecParserContext *s, int off, int remove){
     s->offset= 0;
     for(i = 0; i < AV_PARSER_PTS_NB; i++) {
         if (   s->cur_offset + off >= s->cur_frame_offset[i]
-            && (s->frame_offset < s->cur_frame_offset[i] ||
-              (!s->frame_offset && !s->next_frame_offset)) // first field/frame
-            //check is disabled  because mpeg-ts doesnt send complete PES packets
+            &&(s->     frame_offset       <  s->cur_frame_offset[i] || !s->frame_offset)
+            //check is disabled  becausue mpeg-ts doesnt send complete PES packets
             && /*s->next_frame_offset + off <*/  s->cur_frame_end[i]){
             s->dts= s->cur_frame_dts[i];
             s->pts= s->cur_frame_pts[i];
@@ -154,8 +153,7 @@ int av_parser_parse2(AVCodecParserContext *s,
         /* padding is always necessary even if EOF, so we add it here */
         memset(dummy_buf, 0, sizeof(dummy_buf));
         buf = dummy_buf;
-    } else if (s->cur_offset + buf_size !=
-               s->cur_frame_end[s->cur_frame_start_index]) { /* skip remainder packets */
+    } else {
         /* add a new packet descriptor */
             i = (s->cur_frame_start_index + 1) & (AV_PARSER_PTS_NB - 1);
             s->cur_frame_start_index = i;
@@ -244,7 +242,7 @@ void av_parser_close(AVCodecParserContext *s)
 
 /**
  * combines the (truncated) bitstream to a complete frame
- * @return -1 if no complete frame could be created, AVERROR(ENOMEM) if there was a memory allocation error
+ * @returns -1 if no complete frame could be created, AVERROR(ENOMEM) if there was a memory allocation error
  */
 int ff_combine_frame(ParseContext *pc, int next, const uint8_t **buf, int *buf_size)
 {

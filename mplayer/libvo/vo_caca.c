@@ -130,7 +130,7 @@ static void osdpercent(int duration, int min, int max, int val, const char *desc
 	else
 	    posbar[i] = '-';
     }
-
+    
     if (where != 0)
 	posbar[0] = '|';
 
@@ -140,7 +140,7 @@ static void osdpercent(int duration, int min, int max, int val, const char *desc
     posbar[screen_w] = '\0';
 }
 
-static int resize(void)
+static int resize ()
 {
     screen_w = caca_get_width();
     screen_h = caca_get_height();
@@ -164,7 +164,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     image_height = height;
     image_width = width;
     image_format = format;
-
+    
     showosdmessage = 0;
     posbar[0] = '\0';
 
@@ -194,7 +194,7 @@ static void flip_page(void)
 		posbar[0] = '\0';
 	} else {
 	    caca_putstr(osdx, osdy, osdmessagetext);
-
+	    
 	    if (*posbar)
 		caca_putstr(0, posbary, posbar);
 	}

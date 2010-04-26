@@ -104,7 +104,6 @@ int mLocalDisplay;
 int vo_mouse_autohide = 0;
 int vo_wm_type = 0;
 int vo_fs_type = 0; // needs to be accessible for GUI X11 code
-static int window_state;
 static int vo_fs_flip = 0;
 char **vo_fstype_list;
 
@@ -227,6 +226,7 @@ static int x11_errorhandler(Display * display, XErrorEvent * event)
            event->error_code, event->request_code, event->minor_code);
 
 //    abort();
+    //exit_player("X11 error");
     return 0;
 #undef MSGLEN
 }
@@ -336,7 +336,7 @@ static int vo_wm_detect(void)
                    "[x11] Using workaround for Metacity bugs.\n");
         }
     }
-// --- netwm
+// --- netwm 
     if (x11_get_property(XA_NET_SUPPORTED, &args, &nitems))
     {
         mp_msg(MSGT_VO, MSGL_V, "[x11] Detected wm supports NetWM.\n");
@@ -416,7 +416,7 @@ int vo_init(void)
 // Window    mRootWin;
     XWindowAttributes attribs;
     char *dispName;
-
+	
 	if (vo_rootwin)
 		WinID = 0; // use root window
 
@@ -609,7 +609,7 @@ static const struct keymap keymap[] = {
     {wsGrayRight, KEY_KP6}, {wsGrayHome, KEY_KP7}, {wsGrayUp, KEY_KP8},
     {wsGrayPgUp, KEY_KP9}, {wsGrayDelete, KEY_KPDEL},
 
-    {0, 0}
+    {0, 0} 
 };
 
 void vo_x11_putkey(int key)
@@ -733,12 +733,12 @@ void vo_x11_decoration(Display * vo_Display, Window w, int d)
     }
 }
 
-void vo_x11_classhint(Display * display, Window window, const char *name)
+void vo_x11_classhint(Display * display, Window window, char *name)
 {
     XClassHint wmClass;
     pid_t pid = getpid();
 
-    wmClass.res_name = vo_winname ? vo_winname : name;
+    wmClass.res_name = name;
     wmClass.res_class = "MPlayer";
     XSetClassHint(display, window, &wmClass);
     XChangeProperty(display, window, XA_NET_WM_PID, XA_CARDINAL, 32,
@@ -788,7 +788,6 @@ void vo_x11_uninit(void)
                 XEvent xev;
 
                 XUnmapWindow(mDisplay, vo_window);
-                XSelectInput(mDisplay, vo_window, StructureNotifyMask);
                 XDestroyWindow(mDisplay, vo_window);
                 do
                 {
@@ -847,9 +846,8 @@ int vo_x11_check_events(Display * mydisplay)
                     break;
                 {
                     int old_w = vo_dwidth, old_h = vo_dheight;
-		    int old_x = vo_dx, old_y = vo_dy;
                     vo_x11_update_geometry();
-                    if (vo_dwidth != old_w || vo_dheight != old_h || vo_dx != old_x || vo_dy != old_y)
+                    if (vo_dwidth != old_w || vo_dheight != old_h)
                         ret |= VO_EVENT_RESIZE;
                 }
                 break;
@@ -1087,14 +1085,14 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
 {
   XGCValues xgcv;
   if (WinID >= 0) {
-    vo_fs = flags & VOFLAG_FULLSCREEN;
     vo_window = WinID ? (Window)WinID : mRootWin;
     if (col_map != CopyFromParent) {
       unsigned long xswamask = CWColormap;
       XSetWindowAttributes xswa;
       xswa.colormap = col_map;
+      XUnmapWindow(mDisplay, vo_window);
       XChangeWindowAttributes(mDisplay, vo_window, xswamask, &xswa);
-      XInstallColormap(mDisplay, col_map);
+      XMapWindow(mDisplay, vo_window);
     }
     if (WinID) vo_x11_update_geometry();
     vo_x11_selectinput_witherr(mDisplay, vo_window,
@@ -1103,19 +1101,13 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
     goto final;
   }
   if (vo_window == None) {
+    XSizeHints hint;
+    XEvent xev;
     vo_fs = 0;
     vo_dwidth = width;
     vo_dheight = height;
     vo_window = vo_x11_create_smooth_window(mDisplay, mRootWin, vis->visual,
                       x, y, width, height, vis->depth, col_map);
-    window_state = VOFLAG_HIDDEN;
-  }
-  if (flags & VOFLAG_HIDDEN)
-    goto final;
-  if (window_state & VOFLAG_HIDDEN) {
-    XSizeHints hint;
-    XEvent xev;
-    window_state &= ~VOFLAG_HIDDEN;
     vo_x11_classhint(mDisplay, vo_window, classname);
     XStoreName(mDisplay, vo_window, title);
     vo_hidecursor(mDisplay, vo_window);
@@ -1124,10 +1116,11 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
     hint.width = width; hint.height = height;
     hint.flags = PPosition | PSize;
     XSetStandardProperties(mDisplay, vo_window, title, title, None, NULL, 0, &hint);
+    vo_x11_sizehint(x, y, width, height, 0);
     if (!vo_border) vo_x11_decoration(mDisplay, vo_window, 0);
     // map window
     XMapWindow(mDisplay, vo_window);
-    vo_x11_clearwindow(mDisplay, vo_window);
+    XClearWindow(mDisplay, vo_window);
     // wait for map
     do {
       XNextEvent(mDisplay, &xev);
@@ -1264,6 +1257,7 @@ static int vo_x11_get_fs_type(int supported)
 
     if (vo_fstype_list)
     {
+        i = 0;
         for (i = 0; vo_fstype_list[i]; i++)
         {
             int neg = 0;
@@ -1321,7 +1315,7 @@ static int vo_x11_get_fs_type(int supported)
                 else
                     type |= vo_wm_NETWM;
             } else if (!strcmp(arg, "none"))
-                type = 0; // clear; keep parsing
+                return 0;
         }
     }
 
@@ -1341,29 +1335,27 @@ int vo_x11_update_geometry(void) {
     if (w <= INT_MAX && h <= INT_MAX) { vo_dwidth = w; vo_dheight = h; }
     XTranslateCoordinates(mDisplay, vo_window, mRootWin, 0, 0, &vo_dx, &vo_dy,
                           &dummy_win);
-    if (vo_wintitle)
-        XStoreName(mDisplay, vo_window, vo_wintitle);
-
     return depth <= INT_MAX ? depth : 0;
 }
 
 void vo_x11_fullscreen(void)
 {
     int x, y, w, h;
-    x = vo_old_x;
-    y = vo_old_y;
-    w = vo_old_width;
-    h = vo_old_height;
 
-    if (WinID >= 0) {
-        vo_fs = !vo_fs;
-        return;
-    }
-    if (vo_fs_flip)
+    if (WinID >= 0 || vo_fs_flip)
         return;
 
     if (vo_fs)
     {
+        // fs->win
+        if ( ! (vo_fs_type & vo_wm_FULLSCREEN) ) // not needed with EWMH fs
+        {
+            x = vo_old_x;
+            y = vo_old_y;
+            w = vo_old_width;
+            h = vo_old_height;
+	}
+
         vo_x11_ewmh_fullscreen(_NET_WM_STATE_REMOVE);   // removes fullscreen state if wm supports EWMH
         vo_fs = VO_FALSE;
     } else
@@ -2123,7 +2115,7 @@ void vo_xv_get_max_img_dim( uint32_t * width, uint32_t * height )
  * Outputs the content of |ck_handling| as a readable message.
  *
  */
-static void vo_xv_print_ck_info(void)
+void vo_xv_print_ck_info(void)
 {
   mp_msg( MSGT_VO, MSGL_V, "[xv common] " );
 
@@ -2143,7 +2135,7 @@ static void vo_xv_print_ck_info(void)
 
   switch ( xv_ck_info.source )
   {
-    case CK_SRC_CUR:
+    case CK_SRC_CUR:      
       mp_msg( MSGT_VO, MSGL_V, "Using colorkey from Xv (0x%06lx).\n",
               xv_colorkey );
       break;
@@ -2206,12 +2198,12 @@ int vo_xv_init_colorkey(void)
     if ( xv_ck_info.source != CK_SRC_CUR )
     {
       xv_colorkey = vo_colorkey;
-
+  
       /* check if we have to set the colorkey too */
       if ( xv_ck_info.source == CK_SRC_SET )
       {
         xv_atom = XInternAtom(mDisplay, "XV_COLORKEY",False);
-
+  
         rez = XvSetPortAttribute( mDisplay, xv_port, xv_atom, vo_colorkey );
         if ( rez != Success )
         {
@@ -2221,7 +2213,7 @@ int vo_xv_init_colorkey(void)
         }
       }
     }
-    else
+    else 
     {
       int colorkey_ret;
 
@@ -2239,13 +2231,13 @@ int vo_xv_init_colorkey(void)
       }
     }
 
-    xv_atom = xv_intern_atom_if_exists( "XV_AUTOPAINT_COLORKEY" );
+    xv_atom = xv_intern_atom_if_exists( "XV_AUTOPAINT_COLORKEY" );    
 
     /* should we draw the colorkey ourselves or activate autopainting? */
     if ( xv_ck_info.method == CK_METHOD_AUTOPAINT )
     {
       rez = !Success; // reset rez to something different than Success
-
+ 
       if ( xv_atom != None ) // autopaint is supported
       {
         rez = XvSetPortAttribute( mDisplay, xv_port, xv_atom, 1 );
@@ -2389,11 +2381,11 @@ void xv_setup_colorkeyhandling( char const * ck_method_str,
     else if ( strncmp( ck_method_str, "man", 3 ) == 0 )
     {
       xv_ck_info.method = CK_METHOD_MANUALFILL;
-    }
+    }    
     else if ( strncmp( ck_method_str, "auto", 4 ) == 0 )
     {
       xv_ck_info.method = CK_METHOD_AUTOPAINT;
-    }
+    }    
   }
 }
 

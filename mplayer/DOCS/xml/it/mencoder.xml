@@ -401,9 +401,9 @@ Dovresti accertarti di rispettare i seguenti vincoli:
 <title>codificare per PSP</title>
 <para>
 <screen>
-mencoder -ofps 30000/1001 -af lavcresample=24000 -vf harddup -oac lavc \
-    -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=libfaac \
-    -of lavf -lavfopts format=psp \
+mencoder -ofps 30000/1001 -af lavcresample=24000 -vf harddup -of lavf \
+    -oac lavc -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=aac \
+    -lavfopts format=psp \
     <replaceable>input.video</replaceable> -o <replaceable>output.psp</replaceable>
 </screen>
 Nota che puoi impostare il titolo del video con
@@ -611,7 +611,7 @@ Creare un file MPEG-4 da una lista definita di file JPEG (lista.txt nella
 directory corrente contiene la lista dei file da usare come sorgente, uno per
 riga):
 <screen>
-mencoder mf://<replaceable>@lista.txt</replaceable> -mf w=800:h=600:fps=25:type=jpg \
+mencoder mf://<replaceable>@lista.txt</replaceable> -mf w=800:h=600:fps=25:type=jpg \ 
     -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell -oac copy -o <replaceable>output.avi</replaceable>
 </screen>
 </para>

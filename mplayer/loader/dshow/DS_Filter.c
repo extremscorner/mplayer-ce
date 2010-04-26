@@ -5,13 +5,12 @@
 
 #include "config.h"
 #include "DS_Filter.h"
-#include "graph.h"
-#include "loader/drv.h"
-#include "loader/com.h"
+#include "drv.h"
+#include "com.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "loader/win32.h" // printf macro
+#include "win32.h" // printf macro
 
 typedef long STDCALL (*GETCLASS) (const GUID*, const GUID*, void**);
 
@@ -27,9 +26,11 @@ const GUID IID_IClassFactory =
     {0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46}
 };
 
-HRESULT STDCALL CoInitialize(LPVOID pvReserved);
-void STDCALL CoUninitialize(void);
+HRESULT STDCALL CoInitialize(LPVOID pvReserved); 
+void STDCALL CoUninitialize(void); 
 #endif
+
+//void trapbug();
 
 static void DS_Filter_Start(DS_Filter* This)
 {
@@ -126,7 +127,6 @@ DS_Filter* DS_FilterCreate(const char* dllname, const GUID* id,
 //    char eb[250];
     const char* em = NULL;
     MemAllocator* tempAll;
-    FilterGraph* graph;
     ALLOCATOR_PROPERTIES props,props1;
     DS_Filter* This = malloc(sizeof(DS_Filter));
     if (!This)
@@ -139,9 +139,9 @@ DS_Filter* DS_FilterCreate(const char* dllname, const GUID* id,
 #endif
 
     /*
-        tempAll is not used  anywhere.
+        tempAll is not used  anywhere. 
 	MemAllocatorCreate() is called to ensure that RegisterComObject for IMemoryAllocator
-	will be	called before possible call
+	will be	called before possible call 
 	to CoCreateInstance(...,&IID_IMemoryAllocator,...) from binary codec.
     */
     tempAll=MemAllocatorCreate();
@@ -168,7 +168,6 @@ DS_Filter* DS_FilterCreate(const char* dllname, const GUID* id,
 	ULONG fetched;
         HRESULT result;
         unsigned int i;
-        static const uint16_t filter_name[] = { 'F', 'i', 'l', 't', 'e', 'r', 0 };
 
 	This->m_iHandle = LoadLibraryA(dllname);
 	if (!This->m_iHandle)
@@ -202,10 +201,6 @@ DS_Filter* DS_FilterCreate(const char* dllname, const GUID* id,
 	    em = "object does not provide IBaseFilter interface";
             break;
 	}
-
-	graph = FilterGraphCreate();
-	result = This->m_pFilter->vt->JoinFilterGraph(This->m_pFilter, (IFilterGraph*)graph, filter_name);
-
 	// enumerate pins
 	result = This->m_pFilter->vt->EnumPins(This->m_pFilter, &enum_pins);
 	if (result || !enum_pins)
@@ -216,7 +211,6 @@ DS_Filter* DS_FilterCreate(const char* dllname, const GUID* id,
 
 	enum_pins->vt->Reset(enum_pins);
 	result = enum_pins->vt->Next(enum_pins, (ULONG)256, (IPin**)array, &fetched);
-	enum_pins->vt->Release(enum_pins);
 	Debug printf("Pins enumeration returned %ld pins, error is %x\n", fetched, (int)result);
 
 	for (i = 0; i < fetched; i++)

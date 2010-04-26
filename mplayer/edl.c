@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "config.h"
@@ -40,12 +22,12 @@ static edl_record_ptr edl_alloc_new(edl_record_ptr next_edl_record)
         mp_msg(MSGT_CPLAYER, MSGL_FATAL, MSGTR_EdlOutOfMem);
         exit(1);
     }
-
+    
     if (next_edl_record) // if this isn't the first record, tell the previous one what the new one is.
         next_edl_record->next = new_record;
     new_record->prev = next_edl_record;
     new_record->next = NULL;
-
+    
     return new_record;
 }
 
@@ -99,14 +81,14 @@ edl_record_ptr edl_parse_file(void)
                 mp_msg(MSGT_CPLAYER, MSGL_WARN, MSGTR_EdlBadlyFormattedLine,
                        lineCount);
                 continue;
-            }
-
+            } 
+ 
             if (next_edl_record && start <= next_edl_record->stop_sec)
             {
                 mp_msg(MSGT_CPLAYER, MSGL_WARN, MSGTR_EdlNOValidLine, line);
                 mp_msg(MSGT_CPLAYER, MSGL_WARN, MSGTR_EdlBadLineOverlap,
                        next_edl_record->stop_sec, start);
-                continue;
+                continue;    
             }
 
             if (stop <= start)
@@ -128,9 +110,9 @@ edl_record_ptr edl_parse_file(void)
                 next_edl_record->length_sec = 0;
                 next_edl_record->start_sec = start;
                 next_edl_record->stop_sec = start;
-
+                
                 next_edl_record = edl_alloc_new(next_edl_record);
-
+                
                 next_edl_record->action = action;
                 next_edl_record->length_sec = 0;
                 next_edl_record->start_sec = stop;
@@ -146,11 +128,11 @@ edl_record_ptr edl_parse_file(void)
         }
 
         fclose(fd);
-    }
+    }        
 
-    if (edl_records)
+    if (edl_records) 
         mp_msg(MSGT_CPLAYER, MSGL_INFO, MSGTR_EdlRecordsNo, record_count);
-    else
+    else 
         mp_msg(MSGT_CPLAYER, MSGL_INFO, MSGTR_EdlQueueEmpty);
 
     return edl_records;

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/vmdav.c
  * Sierra VMD audio & video decoders
  * by Vladimir "VAG" Gneushev (vagsoft at mail.ru)
  * for more information on the Sierra VMD format, visit:
@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -358,6 +359,8 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
         palette32[i] = (r << 16) | (g << 8) | (b);
     }
 
+    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+
     return 0;
 }
 
@@ -567,7 +570,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
 
 AVCodec vmdvideo_decoder = {
     "vmdvideo",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_VMDVIDEO,
     sizeof(VmdVideoContext),
     vmdvideo_decode_init,
@@ -580,7 +583,7 @@ AVCodec vmdvideo_decoder = {
 
 AVCodec vmdaudio_decoder = {
     "vmdaudio",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_VMDAUDIO,
     sizeof(VmdAudioContext),
     vmdaudio_decode_init,

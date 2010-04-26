@@ -22,7 +22,7 @@ RM = rm -f
 
 
 # Programs used by "make install":
-INSTALL = /usr/bin/install -c
+INSTALL = /bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 mkinstalldirs = $(SHELL) ./build-aux/mkinstalldirs
 

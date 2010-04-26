@@ -47,15 +47,13 @@
  */
 #define MAX_SUBSTREAMS      3
 
-/** which multiple of 48000 the maximum sample rate is */
-#define MAX_RATEFACTOR      4
 /** maximum sample frequency seen in files */
-#define MAX_SAMPLERATE      (MAX_RATEFACTOR * 48000)
+#define MAX_SAMPLERATE      192000
 
 /** maximum number of audio samples within one access unit */
-#define MAX_BLOCKSIZE       (40 * MAX_RATEFACTOR)
+#define MAX_BLOCKSIZE       (40 * (MAX_SAMPLERATE / 48000))
 /** next power of two greater than MAX_BLOCKSIZE */
-#define MAX_BLOCKSIZE_POW2  (64 * MAX_RATEFACTOR)
+#define MAX_BLOCKSIZE_POW2  (64 * (MAX_SAMPLERATE / 48000))
 
 /** number of allowed filters */
 #define NUM_FILTERS         2
@@ -75,13 +73,13 @@ typedef struct {
     uint8_t     order; ///< number of taps in filter
     uint8_t     shift; ///< Right shift to apply to output of filter.
 
+    int32_t     coeff[MAX_FIR_ORDER];
     int32_t     state[MAX_FIR_ORDER];
 } FilterParams;
 
 /** sample data coding information */
 typedef struct {
     FilterParams filter_params[NUM_FILTERS];
-    int32_t     coeff[NUM_FILTERS][MAX_FIR_ORDER];
 
     int16_t     huff_offset;      ///< Offset to apply to residual values.
     int32_t     sign_huff_offset; ///< sign/rounding-corrected version of huff_offset

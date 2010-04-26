@@ -1,24 +1,8 @@
 /*
- * MAPDEV.h - include file for VxD MAPDEV
- * Copyright (c) 1996 Vireo Software, Inc.
- * Modified for libdha by Nick Kurshev.
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+  MAPDEV.h - include file for VxD MAPDEV
+  Copyright (c) 1996 Vireo Software, Inc.
+  Modified for libdha by Nick Kurshev.
+*/
 
 #include <windows.h>
 #include <ddk/ntddk.h>
@@ -48,17 +32,17 @@ typedef struct MapDevRequest
 #define FILE_DEVICE_UNKNOWN             0x00000022
 #define METHOD_NEITHER                  3
 
-
+    
 int IsWinNT(void) {
   OSVERSIONINFO OSVersionInfo;
   OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
   GetVersionEx(&OSVersionInfo);
   return OSVersionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT;
-}
+}  
 
-static HANDLE hDriver = INVALID_HANDLE_VALUE;
-
-
+static HANDLE hDriver = INVALID_HANDLE_VALUE;  
+    
+    
 /* Memory Map a piece of Real Memory */
 void *map_phys_mem(unsigned long base, unsigned long size) {
   if(!IsWinNT()){

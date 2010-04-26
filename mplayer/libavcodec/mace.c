@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mace.c
  * MACE decoder.
  */
 
@@ -281,7 +281,7 @@ static int mace_decode_frame(AVCodecContext *avctx,
 
 AVCodec mace3_decoder = {
     "mace3",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MACE3,
     sizeof(MACEContext),
     mace_decode_init,
@@ -293,7 +293,7 @@ AVCodec mace3_decoder = {
 
 AVCodec mace6_decoder = {
     "mace6",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MACE6,
     sizeof(MACEContext),
     mace_decode_init,

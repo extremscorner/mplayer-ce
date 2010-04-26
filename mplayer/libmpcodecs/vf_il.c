@@ -73,7 +73,7 @@ static void interleave(uint8_t *dst, uint8_t *src, int w, int h, int dstStride, 
 	}
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	int w;
 	FilterParam *luma  = &vf->priv->lumaParam;
 	FilterParam *chroma= &vf->priv->chromaParam;
@@ -87,19 +87,19 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	else
 		w= mpi->w * mpi->bpp/8;
 
-	interleave(dmpi->planes[0], mpi->planes[0],
+	interleave(dmpi->planes[0], mpi->planes[0], 
 		w, mpi->h, dmpi->stride[0], mpi->stride[0], luma->interleave, luma->swap);
 
 	if(mpi->flags&MP_IMGFLAG_PLANAR){
 		int cw= mpi->w >> mpi->chroma_x_shift;
 		int ch= mpi->h >> mpi->chroma_y_shift;
 
-		interleave(dmpi->planes[1], mpi->planes[1], cw,ch,
+		interleave(dmpi->planes[1], mpi->planes[1], cw,ch, 
 			dmpi->stride[1], mpi->stride[1], chroma->interleave, luma->swap);
-		interleave(dmpi->planes[2], mpi->planes[2], cw,ch,
+		interleave(dmpi->planes[2], mpi->planes[2], cw,ch, 
 			dmpi->stride[2], mpi->stride[2], chroma->interleave, luma->swap);
 	}
-
+    
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
@@ -119,13 +119,13 @@ static void parse(FilterParam *fp, char* args){
 	if(pos && pos<max) fp->interleave=-1;
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
 
 	vf->put_image=put_image;
 //	vf->get_image=get_image;
 	vf->priv=malloc(sizeof(struct vf_priv_s));
 	memset(vf->priv, 0, sizeof(struct vf_priv_s));
-
+	
 	if(args)
 	{
 		char *arg2= strchr(args,':');
@@ -141,7 +141,7 @@ const vf_info_t vf_info_il = {
     "il",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };
 

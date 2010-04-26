@@ -21,14 +21,13 @@
  */
 
 /**
- * @file
+ * @file libavcodec/h261dec.c
  * H.261 decoder.
  */
 
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
-#include "h263.h"
 #include "h261.h"
 #include "h261data.h"
 
@@ -171,7 +170,7 @@ static int ff_h261_resync(H261Context *h){
         //OK, it is not where it is supposed to be ...
         s->gb= s->last_resync_gb;
         align_get_bits(&s->gb);
-        left= get_bits_left(&s->gb);
+        left= s->gb.size_in_bits - get_bits_count(&s->gb);
 
         for(;left>15+1+4+5; left-=8){
             if(show_bits(&s->gb, 15)==0){
@@ -445,7 +444,7 @@ static int h261_decode_picture_header(H261Context *h){
     int format, i;
     uint32_t startcode= 0;
 
-    for(i= get_bits_left(&s->gb); i>24; i-=1){
+    for(i= s->gb.size_in_bits - get_bits_count(&s->gb); i>24; i-=1){
         startcode = ((startcode << 1) | get_bits(&s->gb, 1)) & 0x000FFFFF;
 
         if(startcode == 0x10)
@@ -553,8 +552,10 @@ static int h261_decode_frame(AVCodecContext *avctx,
     int ret;
     AVFrame *pict = data;
 
-    dprintf(avctx, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
-    dprintf(avctx, "bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+#ifdef DEBUG
+    av_log(avctx, AV_LOG_DEBUG, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
+    av_log(avctx, AV_LOG_DEBUG, "bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+#endif
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
 
@@ -643,7 +644,7 @@ static av_cold int h261_decode_end(AVCodecContext *avctx)
 
 AVCodec h261_decoder = {
     "h261",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_H261,
     sizeof(H261Context),
     h261_decode_init,

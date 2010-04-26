@@ -24,7 +24,7 @@
 
 #include "truespeech_data.h"
 /**
- * @file
+ * @file libavcodec/truespeech.c
  * TrueSpeech decoder.
  */
 
@@ -378,7 +378,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
 
 AVCodec truespeech_decoder = {
     "truespeech",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_TRUESPEECH,
     sizeof(TSContext),
     truespeech_decode_init,

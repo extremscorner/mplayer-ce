@@ -55,8 +55,8 @@ static int r3d_read_red1(AVFormatContext *s)
     int tmp, tmp2;
 
     if (!st)
-        return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        return -1;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_JPEG2000;
 
     tmp  = get_byte(s->pb); // major version
@@ -87,9 +87,7 @@ static int r3d_read_red1(AVFormatContext *s)
     dprintf(s, "audio channels %d\n", tmp);
     if (tmp > 0) {
         AVStream *ast = av_new_stream(s, 1);
-        if (!ast)
-            return AVERROR(ENOMEM);
-        ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        ast->codec->codec_type = CODEC_TYPE_AUDIO;
         ast->codec->codec_id = CODEC_ID_PCM_S32BE;
         ast->codec->channels = tmp;
         av_set_pts_info(ast, 32, 1, st->time_base.den);
@@ -212,7 +210,6 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     int tmp, tmp2;
     uint64_t pos = url_ftell(s->pb);
     unsigned dts;
-    int ret;
 
     dts = get_be32(s->pb);
 
@@ -244,8 +241,8 @@ static int r3d_read_redv(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     tmp = atom->size - 8 - (url_ftell(s->pb) - pos);
     if (tmp < 0)
         return -1;
-    ret = av_get_packet(s->pb, pkt, tmp);
-    if (ret < 0) {
+
+    if (av_get_packet(s->pb, pkt, tmp) != tmp) {
         av_log(s, AV_LOG_ERROR, "error reading video packet\n");
         return -1;
     }
@@ -266,7 +263,6 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     int tmp, tmp2, samples, size;
     uint64_t pos = url_ftell(s->pb);
     unsigned dts;
-    int ret;
 
     dts = get_be32(s->pb);
 
@@ -290,10 +286,9 @@ static int r3d_read_reda(AVFormatContext *s, AVPacket *pkt, Atom *atom)
     size = atom->size - 8 - (url_ftell(s->pb) - pos);
     if (size < 0)
         return -1;
-    ret = av_get_packet(s->pb, pkt, size);
-    if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "error reading audio packet\n");
-        return ret;
+    if (av_get_packet(s->pb, pkt, size) != size) {
+        av_log(s, AV_LOG_ERROR, "error reading video packet\n");
+        return -1;
     }
 
     pkt->stream_index = 1;

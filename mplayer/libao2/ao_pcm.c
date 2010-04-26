@@ -34,12 +34,8 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 
-#ifdef __MINGW32__
-// for GetFileType to detect pipes
-#include <windows.h>
-#endif
 
-static const ao_info_t info =
+static const ao_info_t info = 
 {
     "RAW PCM/WAVE file writer audio output",
     "pcm",
@@ -61,74 +57,29 @@ static int fast = 0;
 #define WAV_ID_DATA 0x61746164 /* "data" */
 #define WAV_ID_PCM  0x0001
 #define WAV_ID_FLOAT_PCM  0x0003
-#define WAV_ID_FORMAT_EXTENSIBLE 0xfffe
+
+struct WaveHeader
+{
+    uint32_t riff;
+    uint32_t file_length;
+    uint32_t wave;
+    uint32_t fmt;
+    uint32_t fmt_length;
+    uint16_t fmt_tag;
+    uint16_t channels;
+    uint32_t sample_rate;
+    uint32_t bytes_per_second;
+    uint16_t block_align;
+    uint16_t bits;
+    uint32_t data;
+    uint32_t data_length;
+};
 
 /* init with default values */
+static struct WaveHeader wavhdr;
 static uint64_t data_length;
+
 static FILE *fp = NULL;
-
-
-static void fput16le(uint16_t val, FILE *fp) {
-    uint8_t bytes[2] = {val, val >> 8};
-    fwrite(bytes, 1, 2, fp);
-}
-
-static void fput32le(uint32_t val, FILE *fp) {
-    uint8_t bytes[4] = {val, val >> 8, val >> 16, val >> 24};
-    fwrite(bytes, 1, 4, fp);
-}
-
-static void write_wave_header(FILE *fp, uint64_t data_length) {
-    int use_waveex = (ao_data.channels >= 5 && ao_data.channels <= 8);
-    uint16_t fmt = (ao_data.format == AF_FORMAT_FLOAT_LE) ? WAV_ID_FLOAT_PCM : WAV_ID_PCM;
-    uint32_t fmt_chunk_size = use_waveex ? 40 : 16;
-    int bits = af_fmt2bits(ao_data.format);
-
-    // Master RIFF chunk
-    fput32le(WAV_ID_RIFF, fp);
-    // RIFF chunk size: 'WAVE' + 'fmt ' + 4 + fmt_chunk_size + data chunk hdr (8) + data length
-    fput32le(12 + fmt_chunk_size + 8 + data_length, fp);
-    fput32le(WAV_ID_WAVE, fp);
-
-    // Format chunk
-    fput32le(WAV_ID_FMT, fp);
-    fput32le(fmt_chunk_size, fp);
-    fput16le(use_waveex ? WAV_ID_FORMAT_EXTENSIBLE : fmt, fp);
-    fput16le(ao_data.channels, fp);
-    fput32le(ao_data.samplerate, fp);
-    fput32le(ao_data.bps, fp);
-    fput16le(ao_data.channels * (bits / 8), fp);
-    fput16le(bits, fp);
-
-    if (use_waveex) {
-        // Extension chunk
-        fput16le(22, fp);
-        fput16le(bits, fp);
-        switch (ao_data.channels) {
-            case 5:
-                fput32le(0x0607, fp); // L R C Lb Rb
-                break;
-            case 6:
-                fput32le(0x060f, fp); // L R C Lb Rb LFE
-                break;
-            case 7:
-                fput32le(0x0727, fp); // L R C Cb Ls Rs LFE
-                break;
-            case 8:
-                fput32le(0x063f, fp); // L R C Lb Rb Ls Rs LFE
-                break;
-        }
-        // 2 bytes format + 14 bytes guid
-        fput32le(fmt, fp);
-        fput32le(0x00100000, fp);
-        fput32le(0xAA000080, fp);
-        fput32le(0x719B3800, fp);
-    }
-
-    // Data chunk
-    fput32le(WAV_ID_DATA, fp);
-    fput32le(data_length, fp);
-}
 
 // to set/get/query special features/parameters
 static int control(int cmd,void *arg){
@@ -138,7 +89,8 @@ static int control(int cmd,void *arg){
 // open & setup audio device
 // return: 1=success 0=fail
 static int init(int rate,int channels,int format,int flags){
-    const opt_t subopts[] = {
+    int bits;
+    opt_t subopts[] = {
         {"waveheader", OPT_ARG_BOOL, &ao_pcm_waveheader, NULL},
         {"file",       OPT_ARG_MSTRZ, &ao_outputfilename, NULL},
         {"fast",       OPT_ARG_BOOL, &fast, NULL},
@@ -155,23 +107,29 @@ static int init(int rate,int channels,int format,int flags){
             strdup(ao_pcm_waveheader?"audiodump.wav":"audiodump.pcm");
     }
 
-    if (ao_pcm_waveheader)
-    {
-        // WAV files must have one of the following formats
-
-        switch(format){
-        case AF_FORMAT_U8:
-        case AF_FORMAT_S16_LE:
-        case AF_FORMAT_S24_LE:
-        case AF_FORMAT_S32_LE:
-        case AF_FORMAT_FLOAT_LE:
-        case AF_FORMAT_AC3_BE:
-        case AF_FORMAT_AC3_LE:
-             break;
-        default:
-            format = AF_FORMAT_S16_LE;
-            break;
-        }
+    bits=8;
+    switch(format){
+    case AF_FORMAT_S32_BE:
+        format=AF_FORMAT_S32_LE;
+    case AF_FORMAT_S32_LE:
+        bits=32;
+        break;
+    case AF_FORMAT_FLOAT_BE:
+        format=AF_FORMAT_FLOAT_LE;
+    case AF_FORMAT_FLOAT_LE:
+        bits=32;
+        break;
+    case AF_FORMAT_S8:
+        format=AF_FORMAT_U8;
+    case AF_FORMAT_U8:
+        break;
+    case AF_FORMAT_AC3:
+        bits=16;
+        break;
+    default:
+        format=AF_FORMAT_S16_LE;
+        bits=16;
+        break;
     }
 
     ao_data.outburst = 65536;
@@ -179,41 +137,53 @@ static int init(int rate,int channels,int format,int flags){
     ao_data.channels=channels;
     ao_data.samplerate=rate;
     ao_data.format=format;
-    ao_data.bps=channels*rate*(af_fmt2bits(format)/8);
+    ao_data.bps=channels*rate*(bits/8);
 
-    mp_msg(MSGT_AO, MSGL_INFO, MSGTR_AO_PCM_FileInfo, ao_outputfilename,
-           (ao_pcm_waveheader?"WAVE":"RAW PCM"), rate,
+    wavhdr.riff = le2me_32(WAV_ID_RIFF);
+    wavhdr.wave = le2me_32(WAV_ID_WAVE);
+    wavhdr.fmt = le2me_32(WAV_ID_FMT);
+    wavhdr.fmt_length = le2me_32(16);
+    wavhdr.fmt_tag = le2me_16(format == AF_FORMAT_FLOAT_LE ? WAV_ID_FLOAT_PCM : WAV_ID_PCM);
+    wavhdr.channels = le2me_16(ao_data.channels);
+    wavhdr.sample_rate = le2me_32(ao_data.samplerate);
+    wavhdr.bytes_per_second = le2me_32(ao_data.bps);
+    wavhdr.bits = le2me_16(bits);
+    wavhdr.block_align = le2me_16(ao_data.channels * (bits / 8));
+    
+    wavhdr.data = le2me_32(WAV_ID_DATA);
+    wavhdr.data_length=le2me_32(0x7ffff000);
+    wavhdr.file_length = wavhdr.data_length + sizeof(wavhdr) - 8;
+
+    mp_msg(MSGT_AO, MSGL_INFO, MSGTR_AO_PCM_FileInfo, ao_outputfilename, 
+           (ao_pcm_waveheader?"WAVE":"RAW PCM"), rate, 
            (channels > 1) ? "Stereo" : "Mono", af_fmt2str_short(format));
     mp_msg(MSGT_AO, MSGL_INFO, MSGTR_AO_PCM_HintInfo);
 
     fp = fopen(ao_outputfilename, "wb");
     if(fp) {
         if(ao_pcm_waveheader){ /* Reserve space for wave header */
-            write_wave_header(fp, 0x7ffff000);
+            fwrite(&wavhdr,sizeof(wavhdr),1,fp);
         }
         return 1;
     }
-    mp_msg(MSGT_AO, MSGL_ERR, MSGTR_AO_PCM_CantOpenOutputFile,
+    mp_msg(MSGT_AO, MSGL_ERR, MSGTR_AO_PCM_CantOpenOutputFile, 
                ao_outputfilename);
     return 0;
 }
 
 // close audio device
 static void uninit(int immed){
-
+    
     if(ao_pcm_waveheader){ /* Rewrite wave header */
-        int broken_seek = 0;
-#ifdef __MINGW32__
-        // Windows, in its usual idiocy "emulates" seeks on pipes so it always looks
-        // like they work. So we have to detect them brute-force.
-        broken_seek = GetFileType((HANDLE)_get_osfhandle(_fileno(fp))) != FILE_TYPE_DISK;
-#endif
-        if (broken_seek || fseek(fp, 0, SEEK_SET) != 0)
+        if (fseek(fp, 0, SEEK_SET) != 0)
             mp_msg(MSGT_AO, MSGL_ERR, "Could not seek to start, WAV size headers not updated!\n");
         else if (data_length > 0x7ffff000)
             mp_msg(MSGT_AO, MSGL_ERR, "File larger than allowed for WAV files, may play truncated!\n");
         else {
-            write_wave_header(fp, data_length);
+            wavhdr.file_length = data_length + sizeof(wavhdr) - 8;
+            wavhdr.file_length = le2me_32(wavhdr.file_length);
+            wavhdr.data_length = le2me_32(data_length);
+            fwrite(&wavhdr,sizeof(wavhdr),1,fp);
         }
     }
     fclose(fp);
@@ -254,7 +224,7 @@ static int play(void* data,int len,int flags){
 
 // let libaf to do the conversion...
 #if 0
-//#if HAVE_BIGENDIAN
+//#ifdef WORDS_BIGENDIAN
     if (ao_data.format == AFMT_S16_LE) {
       unsigned short *buffer = (unsigned short *) data;
       register int i;
@@ -262,10 +232,10 @@ static int play(void* data,int len,int flags){
         buffer[i] = le2me_16(buffer[i]);
       }
     }
-#endif
+#endif 
 
-    if (ao_data.channels == 5 || ao_data.channels == 6 || ao_data.channels == 8) {
-        int frame_size = af_fmt2bits(ao_data.format) / 8;
+    if (ao_data.channels == 6 || ao_data.channels == 5) {
+        int frame_size = le2me_16(wavhdr.bits) / 8;
         len -= len % (frame_size * ao_data.channels);
         reorder_channel_nch(data, AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
                             AF_CHANNEL_LAYOUT_WAVEEX_DEFAULT,
@@ -278,7 +248,7 @@ static int play(void* data,int len,int flags){
 
     if(ao_pcm_waveheader)
         data_length += len;
-
+    
     return len;
 }
 
@@ -287,3 +257,9 @@ static float get_delay(void){
 
     return 0.0;
 }
+
+
+
+
+
+

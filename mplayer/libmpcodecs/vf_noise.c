@@ -36,7 +36,6 @@
 #include "mp_image.h"
 #include "vf.h"
 #include "libvo/fastmemcpy.h"
-#include "libavutil/mem.h"
 
 #define MAX_NOISE 4096
 #define MAX_SHIFT 1024
@@ -81,7 +80,7 @@ static int8_t *initNoise(FilterParam *fp){
 	int uniform= fp->uniform;
 	int averaged= fp->averaged;
 	int pattern= fp->pattern;
-	int8_t *noise= av_malloc(MAX_NOISE*sizeof(int8_t));
+	int8_t *noise= memalign(16, MAX_NOISE*sizeof(int8_t));
 	int i, j;
 
 	srand(123457);
@@ -111,7 +110,7 @@ static int8_t *initNoise(FilterParam *fp){
 				x2 = 2.0 * rand()/(float)RAND_MAX - 1.0;
 				w = x1 * x1 + x2 * x2;
 			} while ( w >= 1.0 );
-
+		
 			w = sqrt( (-2.0 * log( w ) ) / w );
 			y1= x1 * w;
 			y1*= strength / sqrt(3.0);
@@ -126,7 +125,7 @@ static int8_t *initNoise(FilterParam *fp){
 		}
 		if (RAND_N(6) == 0) j--;
 	}
-
+	
 
 	for (i = 0; i < MAX_RES; i++)
 	    for (j = 0; j < 3; j++)
@@ -247,7 +246,7 @@ static inline void lineNoiseAvg_MMX(uint8_t *dst, uint8_t *src, int len, int8_t 
 		"movq %%mm1, (%4, %%"REG_a")	\n\t"
 		"add $8, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
-		:: "r" (src+mmx_len), "r" (shift[0]+mmx_len), "r" (shift[1]+mmx_len), "r" (shift[2]+mmx_len),
+		:: "r" (src+mmx_len), "r" (shift[0]+mmx_len), "r" (shift[1]+mmx_len), "r" (shift[2]+mmx_len), 
                    "r" (dst+mmx_len), "g" (-mmx_len)
 		: "%"REG_a
 	);
@@ -262,7 +261,7 @@ static inline void lineNoiseAvg_MMX(uint8_t *dst, uint8_t *src, int len, int8_t 
 static inline void lineNoiseAvg_C(uint8_t *dst, uint8_t *src, int len, int8_t **shift){
 	int i;
         int8_t *src2= (int8_t*)src;
-
+	
 	for(i=0; i<len; i++)
 	{
 	    const int n= shift[0][i] + shift[1][i] + shift[2][i];
@@ -313,14 +312,14 @@ static void noise(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int 
 	if (fp->shiftptr == 3) fp->shiftptr = 0;
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi){
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     if(mpi->imgfmt!=vf->priv->outfmt) return; // colorspace differ
     // ok, we can do pp in-place (or pp disabled):
@@ -338,7 +337,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     mpi->flags|=MP_IMGFLAG_DIRECT;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	mp_image_t *dmpi;
 
 	if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
@@ -367,22 +366,22 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 	if(!vf->priv) return;
 
-	if(vf->priv->chromaParam.noise) av_free(vf->priv->chromaParam.noise);
+	if(vf->priv->chromaParam.noise) free(vf->priv->chromaParam.noise);
 	vf->priv->chromaParam.noise= NULL;
 
-	if(vf->priv->lumaParam.noise) av_free(vf->priv->lumaParam.noise);
+	if(vf->priv->lumaParam.noise) free(vf->priv->lumaParam.noise);
 	vf->priv->lumaParam.noise= NULL;
-
+	
 	free(vf->priv);
 	vf->priv=NULL;
 }
 
 //===========================================================================//
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
 	switch(fmt)
 	{
 	case IMGFMT_YV12:
@@ -417,14 +416,14 @@ static void parse(FilterParam *fp, char* args){
 	if(fp->strength) initNoise(fp);
 }
 
-static const unsigned int fmt_list[]={
+static unsigned int fmt_list[]={
     IMGFMT_YV12,
     IMGFMT_I420,
     IMGFMT_IYUV,
     0
 };
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
     vf->config=config;
     vf->put_image=put_image;
     vf->get_image=get_image;
@@ -447,7 +446,7 @@ static int vf_open(vf_instance_t *vf, char *args){
         return 0; // no csp match :(
     }
 
-
+ 
 #if HAVE_MMX
     if(gCpuCaps.hasMMX){
         lineNoise= lineNoise_MMX;
@@ -458,7 +457,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     if(gCpuCaps.hasMMX2) lineNoise= lineNoise_MMX2;
 //    if(gCpuCaps.hasMMX) lineNoiseAvg= lineNoiseAvg_MMX2;
 #endif
-
+    
     return 1;
 }
 
@@ -467,7 +466,7 @@ const vf_info_t vf_info_noise = {
     "noise",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };
 

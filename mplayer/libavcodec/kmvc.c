@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/kmvc.c
  * Karl Morton's Video Codec decoder
  */
 
@@ -346,6 +346,8 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     c->avctx = avctx;
 
+    c->pic.data[0] = NULL;
+
     if (avctx->width > 320 || avctx->height > 200) {
         av_log(avctx, AV_LOG_ERROR, "KMVC supports frames <= 320x200\n");
         return -1;
@@ -403,13 +405,12 @@ static av_cold int decode_end(AVCodecContext * avctx)
 
 AVCodec kmvc_decoder = {
     "kmvc",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_KMVC,
     sizeof(KmvcContext),
     decode_init,
     NULL,
     decode_end,
     decode_frame,
-    CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
 };

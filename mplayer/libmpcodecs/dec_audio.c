@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -46,7 +28,7 @@ int fakemono = 0;
 #endif
 
 /* used for ac3surround decoder - set using -channels option */
-int audio_output_channels = 6;
+int audio_output_channels = 2;
 af_cfg_t af_cfg = { 1, NULL };	// Configuration for audio filters
 
 void afm_help(void)
@@ -473,8 +455,6 @@ int decode_audio(sh_audio_t *sh_audio, int minlen)
 
 void resync_audio_stream(sh_audio_t *sh_audio)
 {
-    sh_audio->a_buffer_len = 0;
-    sh_audio->a_out_buffer_len = 0;
     sh_audio->a_in_buffer_len = 0;	// clear audio input buffer
     if (!sh_audio->initialized)
 	return;

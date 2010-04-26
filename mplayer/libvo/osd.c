@@ -391,3 +391,4 @@ void vo_draw_alpha_rgb16(int w,int h, unsigned char* src, unsigned char *srca, i
     }
     return;
 }
+

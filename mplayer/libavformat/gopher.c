@@ -24,7 +24,6 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
-#include "internal.h"
 #include "network.h"
 
 typedef struct {
@@ -90,13 +89,13 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
     h->priv_data = s;
 
     /* needed in any case to build the host string */
-    ff_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
-                 path, sizeof(path), uri);
+    url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
+              path, sizeof(path), uri);
 
     if (port < 0)
         port = 70;
 
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
+    snprintf(buf, sizeof(buf), "tcp://%s:%d", hostname, port);
 
     s->hd = NULL;
     err = url_open(&s->hd, buf, URL_RDWR);

@@ -138,7 +138,7 @@ static int write_tga( char *file, int bpp, int dx, int dy, uint8_t *buf, int str
                     s = buf;
                     d = line_buff;
                     for(x = 0; x < dx; x++) {
-                    #if HAVE_BIGENDIAN
+                    #ifdef WORDS_BIGENDIAN
                         d[0] = s[3];
                         d[1] = s[2];
                         d[2] = s[1];

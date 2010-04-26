@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -23,13 +5,13 @@
 #include "config.h"
 #include "mp_msg.h"
 #include "help_mp.h"
-#include "libmpdemux/aviprint.h"
+
 #include "loader/wineacm.h"
 
 #include "ad_internal.h"
 #include "osdep/timer.h"
 
-static const ad_info_t info =
+static ad_info_t info = 
 {
 	"Win32/ACM decoders",
 	"acm",
@@ -56,18 +38,20 @@ static int init(sh_audio_t *sh_audio)
   return 1;
 }
 
+void print_wave_header(WAVEFORMATEX *h, int verbose_level);
+
 static int preinit(sh_audio_t *sh_audio)
 {
     HRESULT ret;
     WAVEFORMATEX *in_fmt = sh_audio->wf;
     DWORD srcsize = 0;
     acm_context_t *priv;
-
+    
     priv = malloc(sizeof(acm_context_t));
     if (!priv)
 	return 0;
     sh_audio->context = priv;
-
+    
     mp_msg(MSGT_WIN32, MSGL_V, "======= Win32 (ACM) AUDIO Codec init =======\n");
 
 //    priv->handle = NULL;
@@ -87,7 +71,7 @@ static int preinit(sh_audio_t *sh_audio)
     priv->o_wf->wBitsPerSample = 16;
 //    priv->o_wf->wBitsPerSample = inf_fmt->wBitsPerSample;
     priv->o_wf->cbSize = 0;
-
+    
     if ( mp_msg_test(MSGT_DECAUDIO,MSGL_V) )
     {
 	mp_msg(MSGT_DECAUDIO, MSGL_V, "Input format:\n");
@@ -110,7 +94,7 @@ static int preinit(sh_audio_t *sh_audio)
 	return 0;
     }
     mp_msg(MSGT_WIN32, MSGL_V, "Audio codec opened OK! ;-)\n");
-
+    
     acmStreamSize(priv->handle, in_fmt->nBlockAlign, &srcsize, ACM_STREAMSIZEF_SOURCE);
     //if ( mp_msg_test(MSGT_DECAUDIO,MSGL_V) ) printf("Audio ACM output buffer min. size: %ld (reported by codec)\n", srcsize);
     srcsize *= 2;
@@ -138,7 +122,7 @@ static int preinit(sh_audio_t *sh_audio)
     mp_msg(MSGT_WIN32,MSGL_V,"Audio ACM input buffer min. size: %ld\n",srcsize);
 
     sh_audio->audio_in_minsize=2*srcsize; // audio input min. size
-
+    
     sh_audio->i_bps=sh_audio->wf->nAvgBytesPerSec;
     sh_audio->channels=priv->o_wf->nChannels;
     sh_audio->samplerate=priv->o_wf->nSamplesPerSec;
@@ -152,10 +136,10 @@ static void uninit(sh_audio_t *sh)
 {
     HRESULT ret;
     acm_context_t *priv = sh->context;
-
+    
 retry:
     ret = acmStreamClose(priv->handle, 0);
-
+    
     if (ret)
     switch(ret)
     {
@@ -171,7 +155,7 @@ retry:
 	    mp_msg(MSGT_WIN32, MSGL_WARN, "ACM_Decoder: unknown error occurred: %ld\n", ret);
 	    return;
     }
-
+    
     MSACM_UnregisterAllDrivers();
 
     free(priv->o_wf);
@@ -223,7 +207,7 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
     memset(&ash, 0, sizeof(ash));
     ash.cbStruct=sizeof(ash);
     ash.fdwStatus=0;
-    ash.dwUser=0;
+    ash.dwUser=0; 
     ash.pbSrc=sh_audio->a_in_buffer;
     ash.cbSrcLength=sh_audio->a_in_buffer_len;
     ash.pbDst=buf;

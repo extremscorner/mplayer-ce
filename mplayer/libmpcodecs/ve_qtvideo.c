@@ -30,9 +30,9 @@
 #include "mp_msg.h"
 #include "mpbswap.h"
 
-#ifdef WIN32_LOADER
+#ifdef WIN32_LOADER 
 #include "loader/ldt_keeper.h"
-#endif
+#endif 
 
 #include "loader/qtx/qtxsdk/components.h"
 #include "loader/wine/windef.h"
@@ -69,7 +69,7 @@ static OSErr        (*QTNewGWorldFromPtr)(GWorldPtr *gw,
                         GWorldFlags flags,
                         void *baseAddr,
                         long rowBytes);
-static Handle       (*NewHandleClear)(Size byteCount);
+static OSErr        (*NewHandleClear)(Size byteCount);
 static OSErr        (*CompressSequenceBegin) (
      ImageSequence             *seqID,
      PixMapHandle              src,
@@ -139,7 +139,7 @@ struct vf_priv_s {
 
 //===========================================================================//
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 //    OSErr cres;
@@ -177,19 +177,19 @@ static int config(struct vf_instance *vf,
     return 1;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
 
     return CONTROL_UNKNOWN;
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     if(fmt==IMGFMT_YUY2) return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW;
     return 0;
 }
 
 static int codec_initialized = 0;
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 
     OSErr cres;
     long framesizemax;
@@ -321,7 +321,7 @@ static int vf_open(vf_instance_t *vf, char* args){
         mp_msg(MSGT_MENCODER,MSGL_ERR,"unable to load QuickTime.qts\n" );
         return 0;
     }
-
+    
     handler = LoadLibraryA("qtmlClient.dll");
     if(!handler){
         mp_msg(MSGT_MENCODER,MSGL_ERR,"unable to load qtmlClient.dll\n");

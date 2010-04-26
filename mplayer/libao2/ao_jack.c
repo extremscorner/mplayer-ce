@@ -40,7 +40,7 @@
 
 #include <jack/jack.h>
 
-static const ao_info_t info =
+static const ao_info_t info = 
 {
   "JACK audio output",
   "jack",
@@ -208,7 +208,7 @@ static int init(int rate, int channels, int format, int flags) {
   char *port_name = NULL;
   char *client_name = NULL;
   int autostart = 0;
-  const opt_t subopts[] = {
+  opt_t subopts[] = {
     {"port", OPT_ARG_MSTRZ, &port_name, NULL},
     {"name", OPT_ARG_MSTRZ, &client_name, NULL},
     {"estimate", OPT_ARG_BOOL, &estimate, NULL},
@@ -360,3 +360,4 @@ static float get_delay(void) {
   }
   return (float)buffered / (float)ao_data.bps + in_jack;
 }
+

@@ -23,7 +23,7 @@
 ** For more info contact Ahead Software through Mpeg4AAClicense@nero.com.
 **
 ** Initially modified for use with MPlayer by Arpad Gereöffy on 2003/08/30
-** $Id: common.h 29443 2009-07-26 19:53:00Z diego $
+** $Id: common.h 28613 2009-02-16 17:05:58Z diego $
 ** detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
 ** local_changes.diff contains the exact changes to this file.
 **/
@@ -245,7 +245,7 @@ char *strchr(), *strrchr();
 
 #endif
 
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #define ARCH_IS_BIG_ENDIAN
 #endif
 

@@ -22,7 +22,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/dirac_parser.c
  * Dirac Parser
  * @author Marco Gerards <marco@gnu.org>
  */

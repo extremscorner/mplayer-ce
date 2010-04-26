@@ -21,7 +21,6 @@
    Boston, MA 02110-1301 USA.
 */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,7 +43,6 @@
 
 #include <gccore.h>
 
-
 static const vo_info_t info = {
 	"gekko video output",
 	"gekko",
@@ -53,106 +51,96 @@ static const vo_info_t info = {
 };
 
 const LIBVO_EXTERN (gekko)
-
-static u16 pitch[3];
+static	u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
 
-static f32 gx_width, gx_height;
-
-extern int screenwidth;
-extern int screenheight;
-
-
-void vo_draw_alpha_gekko(int w, int h, unsigned char *src, unsigned char *srca, int srcstride, unsigned char *dstbase, int dststride, int x0)
+void vo_draw_alpha_gekko(int w,int h, unsigned char* src, unsigned char *srca, 
+	int srcstride, unsigned char* dstbase,int dststride)
 {
-	// can be optimized
-	int x,y;
-	unsigned char* buf, *bufa, *tmp, *tmpa;
+// can be optimized
+    int y;
+ 	unsigned char* buf,*bufa, *tmp,*tmpa;
 	int buf_st;
-	int h1, w1, Yrowpitch, df1;
+	int h1,w1,Yrowpitch,df1;
+	
+	u8 *dst, 
+			*srca1,*src1,
+			*srca2,*src2,
+			*srca3,*src3,
+			*srca4,*src4;
 
-	u8 *dst, *srca1, *src1, *srca2, *src2, *srca3, *src3, *srca4, *src4;
 
-	getStrideInfo(&w1, &df1, &Yrowpitch);
-	Yrowpitch = Yrowpitch * 8;
-	df1 = df1 * 8;
-
-	h1 = ((h / 8.0) + 0.5) * 8;
+	h1 = ((h/8.0)+0.5)*8;
 	buf = malloc(dststride * h1);
 	bufa = malloc(dststride * h1);
 
 	memset(buf, 0, dststride * h1);
 	memset(bufa, 0, dststride * h1);
 
-	//	buf_st=(dststride-srcstride)/2; //center
-	//	buf_st=0; //align to left
-	buf_st = x0; // original pos
-	tmp = buf + buf_st;
-	tmpa = bufa + buf_st;
+	buf_st=(dststride-srcstride)/2;
+	tmp=buf+buf_st;
+	tmpa=bufa+buf_st;
+    
+    for(y=0;y<h;y++){
+    	memcpy(tmp, src, w);
+    	memcpy(tmpa, srca, w);
+        src+=srcstride;
+        srca+=srcstride;
+        tmp+=dststride;
+        tmpa+=dststride;        
+    }	
+	w=srcstride=dststride;
+	h=h1;
+	
+	src=buf;
+	srca=bufa;
+	h1 = h / 4 ;
 
-	for (y = 0; y < h; y++)
-	{
-		memcpy(tmp, src, w);
-		memcpy(tmpa, srca, w);
-		src += srcstride;
-		srca += srcstride;
-		tmp += dststride;
-		tmpa += dststride;
-	}
-	//w=srcstride=dststride;
-	//h=h1;
+	//if(dststride>image_width)w1 = image_width >> 3 ;
+	//else w1 = dststride >> 3 ;
+	getStrideInfo(&w1,&df1,&Yrowpitch);
+	Yrowpitch=Yrowpitch*8;
+	df1=df1*8;
+	
+	//w1 = dststride >> 3 ;
+    //Yrowpitch=GetYrowpitch()*8;
+    //df1 = ((image_width >> 3) - w1)*32;    
 
-	src = buf;
-	srca = bufa;
-	h1 = h / 4;
-
-	dst = dstbase;
-	srca1 = srca;
-	src1 = src;
-	srca2 = srca + dststride;
-	src2 = src + dststride;
-	srca3 = srca + dststride * 2;
-	src3 = src + dststride * 2;
-	srca4 = srca + dststride * 3;
-	src4 = src + dststride * 3;
-	for (y = 0; y < h1; y++)
-	{
-		for (w = 0; w < w1; w++)
-		{
-			for (x = 0; x < 8; x++)
+				
+	dst=dstbase;
+    srca1=srca;
+    src1=src;
+    srca2=srca+ dststride;
+    src2=src+ dststride;
+    srca3=srca+ dststride*2;
+    src3=src+ dststride*2;
+    srca4=srca+ dststride*3;
+    src4=src+ dststride*3;
+    int x;
+	for (y = 0; y < h1; y++) {
+		for (w = 0; w < w1; w++) {
+			for(x=0;x<8;x++)
 			{
-				if (*srca1)
-					*dst = (((*dst) * (*srca1)) >> 8) + (*src1);
-				dst++;
-				srca1++;
-				src1++;
+				if(*srca1) *dst =(((*dst)*(*srca1))>>8)+(*src1);
+				dst++;srca1++;src1++;
 			}
-			for (x = 0; x < 8; x++)
+			for(x=0;x<8;x++)
 			{
-				if (*srca2)
-					*dst = (((*dst) * (*srca2)) >> 8) + (*src2);
-				dst++;
-				srca2++;
-				src2++;
+				if(*srca2) *dst =(((*dst)*(*srca2))>>8)+(*src2);
+				dst++;srca2++;src2++;
 			}
-			for (x = 0; x < 8; x++)
+			for(x=0;x<8;x++)
 			{
-				if (*srca3)
-					*dst = (((*dst) * (*srca3)) >> 8) + (*src3);
-				dst++;
-				srca3++;
-				src3++;
+				if(*srca3) *dst=(((*dst)*(*srca3))>>8)+(*src3);
+				dst++;srca3++;src3++;
 			}
-			for (x = 0; x < 8; x++)
+			for(x=0;x<8;x++)
 			{
-				if (*srca4)
-					*dst = (((*dst) * (*srca4)) >> 8) + (*src4);
-				dst++;
-				srca4++;
-				src4++;
-			}
+				if(*srca4) *dst=(((*dst)*(*srca4))>>8)+(*src4);
+				dst++;srca4++;src4++;
+			}			
 		}
-		dst += df1;
+		dst+=df1;
 		srca1 += Yrowpitch;
 		src1 += Yrowpitch;
 		srca2 += Yrowpitch;
@@ -164,118 +152,127 @@ void vo_draw_alpha_gekko(int w, int h, unsigned char *src, unsigned char *srca, 
 	}
 	free(buf);
 	free(bufa);
+   
 }
 
-static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
-{
-	int rowpitch = MIN(ceil((float)image_width / 8) * 8, 1024);
-	int lines = (floor((float)y0 / 8) * 8) - 8;			// Ok...
-	
-	vo_draw_alpha_gekko(w, h, src, srca, stride, GetYtexture() + (lines * rowpitch), pitch[0], x0);
+
+static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src,
+						unsigned char *srca, int stride) {
+					
+	int p;
+	p=pitch[0];
+	p= (p / 16);
+	if(p % 2) p++;
+	p=p*16;
+
+	y0=((int)(y0/8.0))*8;
+					
+	vo_draw_alpha_gekko(w, h, src, srca, stride,
+						GetYtexture() + (y0 * p),
+						pitch[0]);
+
 }
 
-static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x, int y)
-{
-	if (y == 0)
+static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x,
+						int y) {
+	if(y==0) 
 	{
 		GX_ResetTextureYUVPointers();
-		
-		if (stride[0] != pitch[0])
+		if(stride[0]!=pitch[0])
 		{
-			pitch[0] = stride[0];
-			pitch[1] = stride[1];
-			pitch[2] = stride[2];
-			
-			GX_UpdatePitch(pitch);
+			pitch[0]=stride[0];
+			pitch[1]=stride[1];
+			pitch[2]=stride[2];
+			GX_UpdatePitch(image_width,pitch);
 		}
-	}
-	
-	GX_FillTextureYUV(h, image);
-	return VO_FALSE;
+		
+	} 
+	GX_FillTextureYUV(h,image,stride);  
+	return 0;	
 }
 
-static void draw_osd(void)
-{
-	vo_draw_text(image_width, image_height, draw_alpha);
+static void draw_osd(void) {
+vo_draw_text(image_width, image_height, draw_alpha);
 }
 
-static void flip_page(void)
-{
-	GX_RenderTexture(vo_vsync);
+static void flip_page(void) {
+	GX_RenderTexture();
 }
 
-static int draw_frame(uint8_t *src[])
-{
-	return VO_ERROR;
+static int draw_frame(uint8_t *src[]) {
+	return 0;
 }
 
-static int inline query_format(uint32_t format)
-{
-	switch (format)
-	{
-		case IMGFMT_YV12:
-			return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_OSD | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_ACCEPT_STRIDE;
-		default:
-			return VO_FALSE;
+static int inline query_format(uint32_t format) {
+
+	switch (format) {
+	case IMGFMT_YV12:
+		return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW |
+				VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_ACCEPT_STRIDE;
+	default:
+		return 0;
 	}
 }
 
-static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uint32_t flags, char *title, uint32_t format)
-{
+static int config(uint32_t width, uint32_t height, uint32_t d_width,
+          uint32_t d_height, uint32_t flags, char *title,
+          uint32_t format) {
+	float sar, par, iar;
+
 	image_width = width;
-	image_height = height;
-
-	pitch[0] = 0;
+	image_height = ((int)((height/8.0)))*8;
+	
+ 	pitch[0] = 0;
 	pitch[1] = 0;
 	pitch[2] = 0;
-	
-	float screen_aspect = (float)screenwidth / (float)screenheight;
-	float image_aspect = (float)d_width / (float)d_height;
 
-	if (image_aspect > screen_aspect)
-	{
-		gx_width = screenwidth;
-		gx_height = (f32)d_height * ((f32)screenwidth / (f32)d_width);
-	}
-	else
-	{
-		gx_width = (f32)d_width * ((f32)screenheight / (f32)d_height);
-		gx_height = screenheight;
-	}
 
-	GX_StartYUV(image_width, image_height, gx_width / 2, gx_height / 2);
-	GX_ConfigTextureYUV(image_width, image_height, pitch);
-	
-	return VO_FALSE;
+  if (CONF_GetAspectRatio())
+    sar = 16.0f / 9.0f;
+  else
+    sar = 4.0f / 3.0f;
+
+  iar = (float) d_width / (float) d_height;  
+  par = (float) d_width / (float) d_height;
+  par *= (float) vmode->fbWidth / (float) vmode->xfbHeight;
+  par /= sar;
+
+  if (iar > sar) {
+    width = vmode->viWidth;
+    height = (float) width / par;
+  } else {
+    height = vmode->viHeight;
+    width = (float) height * par + vmode->viWidth - vmode->fbWidth;
+  }
+  
+  GX_StartYUV(image_width, image_height, width / 2, height / 2 ); 
+  GX_ConfigTextureYUV(image_width, image_height, pitch);	
+  return 0;
 }
 
-static void uninit(void)
-{
+static void uninit(void) {
 	image_width = 0;
 	image_height = 0;
+	reset_nunchuk_positions();
 }
 
-static void check_events(void)
-{
+static void check_events(void) {
 }
 
-static int preinit(const char *arg)
-{
-	return VO_FALSE;
+static int preinit(const char *arg) {
+	log_console_enable_video(false);
+	reset_nunchuk_positions();
+	
+	return 0;
 }
 
-static int control(uint32_t request, void *data, ...)
-{
-	switch (request)
-	{
-		case VOCTRL_QUERY_FORMAT:
-			return query_format(*((uint32_t *)data));
-		case VOCTRL_UPDATE_SCREENINFO:
-            vo_screenwidth = screenwidth;
-            vo_screenheight = screenheight;
-            aspect_save_screenres(vo_screenwidth, vo_screenheight);
-            return VO_TRUE;
-		default:
-			return VO_NOTIMPL;
+static int control(uint32_t request, void *data, ...) {
+	switch (request) {
+	case VOCTRL_QUERY_FORMAT:
+		return query_format(*((uint32_t*) data));
 	}
+
+	return VO_NOTIMPL;
 }
+
+

@@ -21,7 +21,6 @@
  */
 
 #include "libavcodec/dsputil.h"
-#include "dsputil_sh4.h"
 #include "sh4.h"
 
 #define c1      1.38703984532214752434  /* sqrt(2)*cos(1*pi/16) */

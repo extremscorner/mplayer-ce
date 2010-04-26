@@ -34,28 +34,8 @@ For "set_mouse_pos" and "key_down_event", "pausing_keep_force" is the default
 since other values do not make much sense for them.
 
 
-Various tips and tricks (please help expand it!):
-
-- Try using something like
-    pausing_keep_force pt_step 1
-    get_property pause
-  to switch to the next file. It avoids audio playback starting to play
-  the old file for a short time before switching to the new one.
-
-
 Available commands ('mplayer -input cmdlist' will print a list):
 
-af_add <filter_arguments_list>  (comma separated list of audio filters with parameters)
-    (experimental) Load the given list of audio filters.
-
-af_clr
-    (experimental) Unload all loaded audio filters.
-
-af_del <filter_name_list> (comma separated list of audio filter's names)
-    (experimental) Unload the first occurrence of the filters, if loaded.
-
-af_switch <filter_arguments_list> (comma separated list of audio filters with parameters)
-    (experimental) Remove all the audio filters and replace them with the given list.
 
 alt_src_step <value> (ASX playlist only)
     When more than one source is available it selects the next/previous one.
@@ -212,10 +192,6 @@ mute [value]
 osd [level]
     Toggle OSD mode or set it to [level] when [level] >= 0.
 
-osd_show_progression
-    Show the progression bar, the elapsed time and the total duration of the
-    movie on the OSD.
-
 osd_show_property_text <string> [duration] [level]
     Show an expanded property string on the OSD, see -playing-msg for a
     description of the available expansions. If [duration] is >= 0 the text
@@ -261,7 +237,7 @@ radio_step_channel <-1|1>
     'channels' radio parameter was set.
 
 radio_step_freq <value>
-    Tune frequency by the <value> (positive - up, negative - down).
+    Tune frequency by the <value> (positive - up, negative - down). 
 
 seek <value> [type]
     Seek to some place in the movie.
@@ -565,8 +541,9 @@ teletext_page      int       0       799     X   X   X
 teletext_subpage   int       0       64      X   X   X
 teletext_mode      flag      0       1       X   X   X    0 - off, 1 - on
 teletext_format    int       0       3       X   X   X    0 - opaque,
-                                                          1 - transparent,
+                                                          1 - transparent, 
                                                           2 - opaque inverted,
                                                           3 - transp. inv.
 teletext_half_page int       0       2       X   X   X    0 - off, 1 - top half,
                                                           2- bottom half
+

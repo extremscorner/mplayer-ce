@@ -48,7 +48,7 @@
 #include "audio_out.h"
 #include "audio_out_internal.h"
 
-static const ao_info_t info =
+static const ao_info_t info = 
 {
 	"OSS/ioctl audio output",
 	"oss",
@@ -70,8 +70,17 @@ static int format2oss(int format)
     case AF_FORMAT_U16_BE: return AFMT_U16_BE;
     case AF_FORMAT_S16_LE: return AFMT_S16_LE;
     case AF_FORMAT_S16_BE: return AFMT_S16_BE;
-#ifdef AFMT_S24_PACKED
-    case AF_FORMAT_S24_LE: return AFMT_S24_PACKED;
+#ifdef AFMT_U24_LE
+    case AF_FORMAT_U24_LE: return AFMT_U24_LE;
+#endif
+#ifdef AFMT_U24_BE
+    case AF_FORMAT_U24_BE: return AFMT_U24_BE;
+#endif
+#ifdef AFMT_S24_LE
+    case AF_FORMAT_S24_LE: return AFMT_S24_LE;
+#endif
+#ifdef AFMT_S24_BE
+    case AF_FORMAT_S24_BE: return AFMT_S24_BE;
 #endif
 #ifdef AFMT_U32_LE
     case AF_FORMAT_U32_LE: return AFMT_U32_LE;
@@ -96,7 +105,7 @@ static int format2oss(int format)
     case AF_FORMAT_MPEG2: return AFMT_MPEG;
 #endif
 #ifdef AFMT_AC3
-    case AF_FORMAT_AC3_NE: return AFMT_AC3;
+    case AF_FORMAT_AC3: return AFMT_AC3;
 #endif
     }
     mp_msg(MSGT_AO, MSGL_V, "OSS: Unknown/not supported internal format: %s\n", af_fmt2str_short(format));
@@ -113,8 +122,17 @@ static int oss2format(int format)
     case AFMT_U16_BE: return AF_FORMAT_U16_BE;
     case AFMT_S16_LE: return AF_FORMAT_S16_LE;
     case AFMT_S16_BE: return AF_FORMAT_S16_BE;
-#ifdef AFMT_S24_PACKED
-    case AFMT_S24_PACKED: return AF_FORMAT_S24_LE;
+#ifdef AFMT_U24_LE
+    case AFMT_U24_LE: return AF_FORMAT_U24_LE;
+#endif
+#ifdef AFMT_U24_BE
+    case AFMT_U24_BE: return AF_FORMAT_U24_BE;
+#endif
+#ifdef AFMT_S24_LE
+    case AFMT_S24_LE: return AF_FORMAT_S24_LE;
+#endif
+#ifdef AFMT_S24_BE
+    case AFMT_S24_BE: return AF_FORMAT_S24_BE;
 #endif
 #ifdef AFMT_U32_LE
     case AFMT_U32_LE: return AF_FORMAT_U32_LE;
@@ -139,7 +157,7 @@ static int oss2format(int format)
     case AFMT_MPEG: return AF_FORMAT_MPEG2;
 #endif
 #ifdef AFMT_AC3
-    case AFMT_AC3: return AF_FORMAT_AC3_NE;
+    case AFMT_AC3: return AF_FORMAT_AC3;
 #endif
     }
     mp_msg(MSGT_GLOBAL,MSGL_ERR,MSGTR_AO_OSS_UnknownUnsupportedFormat, format);
@@ -179,9 +197,9 @@ static int control(int cmd,void *arg){
 	    ao_control_vol_t *vol = (ao_control_vol_t *)arg;
 	    int fd, v, devs;
 
-	    if(AF_FORMAT_IS_AC3(ao_data.format))
+	    if(ao_data.format == AF_FORMAT_AC3)
 		return CONTROL_TRUE;
-
+    
 	    if ((fd = open(oss_mixer_device, O_RDONLY)) > 0)
 	    {
 		ioctl(fd, SOUND_MIXER_READ_DEVMASK, &devs);
@@ -242,17 +260,17 @@ static int init(int rate,int channels,int format,int flags){
     oss_mixer_device=mdev;
   else
     oss_mixer_device=PATH_DEV_MIXER;
-
+  
   if(mchan){
     int fd, devs, i;
-
+    
     if ((fd = open(oss_mixer_device, O_RDONLY)) == -1){
       mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_OSS_CantOpenMixer,
         oss_mixer_device, strerror(errno));
     }else{
       ioctl(fd, SOUND_MIXER_READ_DEVMASK, &devs);
       close(fd);
-
+      
       for (i=0; i<SOUND_MIXER_NRDEVICES; i++){
         if(!strcasecmp(mixer_channels[i], mchan)){
           if(!(devs & (1 << i))){
@@ -290,25 +308,23 @@ static int init(int rate,int channels,int format,int flags){
   if(fcntl(audio_fd, F_SETFL, 0) < 0) {
    mp_msg(MSGT_AO,MSGL_ERR,MSGTR_AO_OSS_CantMakeFd, strerror(errno));
    return 0;
-  }
+  }  
 #endif
 
 #if defined(FD_CLOEXEC) && defined(F_SETFD)
   fcntl(audio_fd, F_SETFD, FD_CLOEXEC);
 #endif
-
-  if(AF_FORMAT_IS_AC3(format)) {
+  
+  if(format == AF_FORMAT_AC3) {
     ao_data.samplerate=rate;
     ioctl (audio_fd, SNDCTL_DSP_SPEED, &ao_data.samplerate);
   }
 
-ac3_retry:
-  if (AF_FORMAT_IS_AC3(format))
-    format = AF_FORMAT_AC3_NE;
+ac3_retry:  
   ao_data.format=format;
   oss_format=format2oss(format);
   if (oss_format == -1) {
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     oss_format=AFMT_S16_BE;
 #else
     oss_format=AFMT_S16_LE;
@@ -332,9 +348,9 @@ ac3_retry:
 
   mp_msg(MSGT_AO,MSGL_V,"audio_setup: sample format: %s (requested: %s)\n",
     af_fmt2str_short(ao_data.format), af_fmt2str_short(format));
-
+  
   ao_data.channels = channels;
-  if(!AF_FORMAT_IS_AC3(format)) {
+  if(format != AF_FORMAT_AC3) {
     // We only use SNDCTL_DSP_CHANNELS for >2 channels, in case some drivers don't have it
     if (ao_data.channels > 2) {
       if ( ioctl(audio_fd, SNDCTL_DSP_CHANNELS, &ao_data.channels) == -1 ||
@@ -398,19 +414,8 @@ ac3_retry:
   }
 
   ao_data.bps=ao_data.channels;
-  switch (ao_data.format & AF_FORMAT_BITS_MASK) {
-  case AF_FORMAT_8BIT:
-    break;
-  case AF_FORMAT_16BIT:
+  if(ao_data.format != AF_FORMAT_U8 && ao_data.format != AF_FORMAT_S8)
     ao_data.bps*=2;
-    break;
-  case AF_FORMAT_24BIT:
-    ao_data.bps*=3;
-    break;
-  case AF_FORMAT_32BIT:
-    ao_data.bps*=4;
-    break;
-  }
 
   ao_data.outburst-=ao_data.outburst % ao_data.bps; // round down
   ao_data.bps*=ao_data.samplerate;
@@ -449,10 +454,10 @@ static void reset(void){
 #endif
 
   oss_format = format2oss(ao_data.format);
-  if(AF_FORMAT_IS_AC3(ao_data.format))
+  if(ao_data.format == AF_FORMAT_AC3)
     ioctl (audio_fd, SNDCTL_DSP_SPEED, &ao_data.samplerate);
   ioctl (audio_fd, SNDCTL_DSP_SETFMT, &oss_format);
-  if(!AF_FORMAT_IS_AC3(ao_data.format)) {
+  if(ao_data.format != AF_FORMAT_AC3) {
     if (ao_data.channels > 2)
       ioctl (audio_fd, SNDCTL_DSP_CHANNELS, &ao_data.channels);
     else {

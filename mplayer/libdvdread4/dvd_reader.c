@@ -20,6 +20,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "config.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h> /* For the timing of dvdcss_title crack. */
@@ -51,7 +53,7 @@ static inline int _private_gettimeofday( struct timeval *tv, void *tz )
 #define lseek64 _lseeki64
 #endif
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__bsdi__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__bsdi__) || defined(__DARWIN__)
 #define SYS_BSD 1
 #endif
 
@@ -303,18 +305,12 @@ static char *sun_block2char( const char *path )
 
 #if defined(SYS_BSD)
 /* FreeBSD /dev/(r)(a)cd0c (a is for atapi), recommended to _not_ use r
-   update: FreeBSD and DragonFly no longer uses the prefix so don't add it.
    OpenBSD /dev/rcd0c, it needs to be the raw device
    NetBSD  /dev/rcd0[d|c|..] d for x86, c (for non x86), perhaps others
    Darwin  /dev/rdisk0,  it needs to be the raw device
-   BSD/OS  /dev/sr0c (if not mounted) or /dev/rsr0c ('c' any letter will do)
-   returns a string allocated with strdup. It should be freed when no longer
-   used. */
+   BSD/OS  /dev/sr0c (if not mounted) or /dev/rsr0c ('c' any letter will do) */
 static char *bsd_block2char( const char *path )
 {
-#if defined(__FreeBSD__) || defined(__DragonFly__)
-  return (char *) strdup( path );
-#else
   char *new_path;
 
   /* If it doesn't start with "/dev/" or does start with "/dev/r" exit */
@@ -327,7 +323,6 @@ static char *bsd_block2char( const char *path )
   strcat( new_path, path + strlen( "/dev/" ) );
 
   return new_path;
-#endif /* __FreeBSD__ || __DragonFly__ */
 }
 #endif
 
@@ -335,26 +330,26 @@ static char *bsd_block2char( const char *path )
 dvd_reader_t *DVDOpen( const char *ppath )
 {
   struct stat fileinfo;
-  int ret, have_css, retval, cdir = -1;
+  int ret, have_css;
   dvd_reader_t *ret_val = NULL;
   char *dev_name = NULL;
-  char *path = NULL, *new_path = NULL, *path_copy = NULL;
+  char *path;
 
-#ifdef _WIN32
+#ifdef _MSC_VER
       int len;
 #endif
 
   if( ppath == NULL )
-    goto DVDOpen_error;
+    return 0;
 
       path = strdup(ppath);
   if( path == NULL )
-    goto DVDOpen_error;
+    return 0;
 
   /* Try to open libdvdcss or fall back to standard functions */
   have_css = dvdinput_setup();
 
-#ifdef _WIN32
+#ifdef _MSC_VER
   /* Strip off the trailing \ if it is not a drive */
   len = strlen(path);
   if ((len > 1) &&
@@ -387,7 +382,8 @@ dvd_reader_t *DVDOpen( const char *ppath )
     /* If we can't stat the file, give up */
     fprintf( stderr, "libdvdread: Can't stat %s\n", path );
     perror("");
-    goto DVDOpen_error;
+    free(path);
+    return NULL;
   }
 
   /* First check if this is a block/char device or a file*/
@@ -398,20 +394,20 @@ dvd_reader_t *DVDOpen( const char *ppath )
     /**
      * Block devices and regular files are assumed to be DVD-Video images.
      */
-    dvd_reader_t *dvd = NULL;
 #if defined(__sun)
-    dev_name = sun_block2char( path );
+    ret_val = DVDOpenImageFile( sun_block2char( path ), have_css );
 #elif defined(SYS_BSD)
-    dev_name = bsd_block2char( path );
+    ret_val = DVDOpenImageFile( bsd_block2char( path ), have_css );
 #else
-    dev_name = strdup( path );
+    ret_val = DVDOpenImageFile( path, have_css );
 #endif
-    dvd = DVDOpenImageFile( dev_name, have_css );
-    free( dev_name );
+
     free(path);
-    return dvd;
+    return ret_val;
+
   } else if( S_ISDIR( fileinfo.st_mode ) ) {
     dvd_reader_t *auth_drive = 0;
+    char *path_copy;
 #if defined(SYS_BSD)
     struct fstab* fe;
 #elif defined(__sun) || defined(__linux__)
@@ -419,33 +415,31 @@ dvd_reader_t *DVDOpen( const char *ppath )
 #endif
 
     /* XXX: We should scream real loud here. */
-    if( !(path_copy = strdup( path ) ) )
-      goto DVDOpen_error;
+    if( !(path_copy = strdup( path ) ) ) {
+      free(path);
+      return NULL;
+    }
 #if !defined(WIN32) && !defined(GEKKO)
               /* don't have fchdir, and getcwd( NULL, ... ) is strange */
               /* Also WIN32 does not have symlinks, so we don't need this bit of code. */
 
     /* Resolve any symlinks and get the absolute dir name. */
     {
-      if( ( cdir  = open( ".", O_RDONLY ) ) >= 0 ) {
-        if( chdir( path_copy ) == -1 ) {
-          goto DVDOpen_error;
-        }
+      char *new_path;
+      int cdir = open( ".", O_RDONLY );
+
+      if( cdir >= 0 ) {
+        chdir( path_copy );
         new_path = malloc(PATH_MAX+1);
         if(!new_path) {
-          goto DVDOpen_error;
+          free(path);
+          return NULL;
         }
-        if( getcwd( new_path, PATH_MAX ) == NULL ) {
-          goto DVDOpen_error;
-        }
-        retval = fchdir( cdir );
+        getcwd(new_path, PATH_MAX );
+        fchdir( cdir );
         close( cdir );
-        cdir = -1;
-        if( retval == -1 ) {
-          goto DVDOpen_error;
-        }
-        path_copy = new_path;
-        new_path = NULL;
+          free( path_copy );
+          path_copy = new_path;
       }
     }
 #endif
@@ -522,11 +516,11 @@ dvd_reader_t *DVDOpen( const char *ppath )
       }
       fclose( mntfile );
     }
-#elif defined(_WIN32) || defined(__OS2__)
+#elif defined(_MSC_VER) || defined(__OS2__)
     auth_drive = DVDOpenImageFile( path, have_css );
 #endif
 
-#if !defined(_WIN32) && !defined(__OS2__)
+#if !defined(_MSC_VER) && !defined(__OS2__)
     if( !dev_name ) {
       fprintf( stderr, "libdvdread: Couldn't find device name.\n" );
     } else if( !auth_drive ) {
@@ -541,9 +535,7 @@ dvd_reader_t *DVDOpen( const char *ppath )
 #endif
 
     free( dev_name );
-    dev_name = NULL;
     free( path_copy );
-    path_copy = NULL;
 
     /**
      * If we've opened a drive, just use that.
@@ -560,17 +552,9 @@ dvd_reader_t *DVDOpen( const char *ppath )
       return ret_val;
   }
 
-DVDOpen_error:
   /* If it's none of the above, screw it. */
   fprintf( stderr, "libdvdread: Could not open %s\n", path );
-  if( path != NULL )
     free( path );
-  if ( path_copy != NULL )
-    free( path_copy );
-  if ( cdir >= 0 )
-    close( cdir );
-  if ( new_path != NULL )
-    free( new_path );
   return NULL;
 }
 
@@ -901,7 +885,9 @@ void DVDCloseFile( dvd_file_t *dvd_file )
   int i;
 
   if( dvd_file ) {
-    if( !dvd_file->dvd->isImageFile ) {
+    if( dvd_file->dvd->isImageFile ) {
+      ;
+    } else {
       for( i = 0; i < TITLES_MAX; ++i ) {
         if( dvd_file->title_devs[ i ] ) {
           dvdinput_close( dvd_file->title_devs[i] );
@@ -912,180 +898,6 @@ void DVDCloseFile( dvd_file_t *dvd_file )
     free( dvd_file );
     dvd_file = 0;
   }
-}
-
-static int DVDFileStatVOBUDF( dvd_reader_t *dvd, int title,
-                              int menu, dvd_stat_t *statbuf )
-{
-  char filename[ MAX_UDF_FILE_NAME_LEN ];
-  uint32_t size;
-  off_t tot_size;
-  off_t parts_size[ 9 ];
-  int nr_parts = 0;
-  int n;
-
-  if( title == 0 )
-    sprintf( filename, "/VIDEO_TS/VIDEO_TS.VOB" );
-  else
-    sprintf( filename, "/VIDEO_TS/VTS_%02d_%d.VOB", title, menu ? 0 : 1 );
-
-  if( !UDFFindFile( dvd, filename, &size ) )
-    return -1;
-
-  tot_size = size;
-  nr_parts = 1;
-  parts_size[ 0 ] = size;
-
-  if( !menu ) {
-    int cur;
-
-    for( cur = 2; cur < 10; cur++ ) {
-      sprintf( filename, "/VIDEO_TS/VTS_%02d_%d.VOB", title, cur );
-      if( !UDFFindFile( dvd, filename, &size ) )
-        break;
-
-      parts_size[ nr_parts ] = size;
-      tot_size += size;
-      nr_parts++;
-    }
-  }
-
-  statbuf->size = tot_size;
-  statbuf->nr_parts = nr_parts;
-  for( n = 0; n < nr_parts; n++ )
-    statbuf->parts_size[ n ] = parts_size[ n ];
-
-  return 0;
-}
-
-
-static int DVDFileStatVOBPath( dvd_reader_t *dvd, int title,
-                               int menu, dvd_stat_t *statbuf )
-{
-  char filename[ MAX_UDF_FILE_NAME_LEN ];
-  char full_path[ PATH_MAX + 1 ];
-  struct stat fileinfo;
-  off_t tot_size;
-  off_t parts_size[ 9 ];
-  int nr_parts = 0;
-  int n;
-
-  if( title == 0 )
-    sprintf( filename, "VIDEO_TS.VOB" );
-  else
-    sprintf( filename, "VTS_%02d_%d.VOB", title, menu ? 0 : 1 );
-
-  if( !findDVDFile( dvd, filename, full_path ) )
-    return -1;
-
-  if( stat( full_path, &fileinfo ) < 0 ) {
-    fprintf( stderr, "libdvdread: Can't stat() %s.\n", filename );
-    return -1;
-  }
-
-  tot_size = fileinfo.st_size;
-  nr_parts = 1;
-  parts_size[ 0 ] = fileinfo.st_size;
-
-  if( !menu ) {
-    int cur;
-    for( cur = 2; cur < 10; cur++ ) {
-      sprintf( filename, "VTS_%02d_%d.VOB", title, cur );
-      if( !findDVDFile( dvd, filename, full_path ) )
-        break;
-
-      if( stat( full_path, &fileinfo ) < 0 ) {
-        fprintf( stderr, "libdvdread: Can't stat() %s.\n", filename );
-        break;
-      }
-
-      parts_size[ nr_parts ] = fileinfo.st_size;
-      tot_size += parts_size[ nr_parts ];
-      nr_parts++;
-    }
-  }
-
-  statbuf->size = tot_size;
-  statbuf->nr_parts = nr_parts;
-  for( n = 0; n < nr_parts; n++ )
-    statbuf->parts_size[ n ] = parts_size[ n ];
-
-  return 0;
-}
-
-
-int DVDFileStat( dvd_reader_t *dvd, int titlenum,
-                 dvd_read_domain_t domain, dvd_stat_t *statbuf )
-{
-  char filename[ MAX_UDF_FILE_NAME_LEN ];
-  char full_path[ PATH_MAX + 1 ];
-  struct stat fileinfo;
-  uint32_t size;
-
-  /* Check arguments. */
-  if( dvd == NULL || titlenum < 0 ) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  switch( domain ) {
-  case DVD_READ_INFO_FILE:
-    if( titlenum == 0 )
-      sprintf( filename, "/VIDEO_TS/VIDEO_TS.IFO" );
-    else
-      sprintf( filename, "/VIDEO_TS/VTS_%02i_0.IFO", titlenum );
-
-    break;
-  case DVD_READ_INFO_BACKUP_FILE:
-    if( titlenum == 0 )
-      sprintf( filename, "/VIDEO_TS/VIDEO_TS.BUP" );
-    else
-      sprintf( filename, "/VIDEO_TS/VTS_%02i_0.BUP", titlenum );
-
-    break;
-  case DVD_READ_MENU_VOBS:
-    if( dvd->isImageFile )
-      return DVDFileStatVOBUDF( dvd, titlenum, 1, statbuf );
-    else
-      return DVDFileStatVOBPath( dvd, titlenum, 1, statbuf );
-
-    break;
-  case DVD_READ_TITLE_VOBS:
-    if( titlenum == 0 )
-      return -1;
-
-    if( dvd->isImageFile )
-      return DVDFileStatVOBUDF( dvd, titlenum, 0, statbuf );
-    else
-      return DVDFileStatVOBPath( dvd, titlenum, 0, statbuf );
-
-    break;
-  default:
-    fprintf( stderr, "libdvdread: Invalid domain for file stat.\n" );
-    errno = EINVAL;
-    return -1;
-  }
-
-  if( dvd->isImageFile ) {
-    if( UDFFindFile( dvd, filename, &size ) ) {
-      statbuf->size = size;
-      statbuf->nr_parts = 1;
-      statbuf->parts_size[ 0 ] = size;
-      return 0;
-    }
-  } else {
-    if( findDVDFile( dvd, filename, full_path ) ) {
-      if( stat( full_path, &fileinfo ) < 0 )
-        fprintf( stderr, "libdvdread: Can't stat() %s.\n", filename );
-      else {
-        statbuf->size = fileinfo.st_size;
-        statbuf->nr_parts = 1;
-        statbuf->parts_size[ 0 ] = statbuf->size;
-        return 0;
-      }
-    }
-  }
-  return -1;
 }
 
 /* Internal, but used from dvd_udf.c */

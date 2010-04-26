@@ -23,7 +23,7 @@
  *
  * Modified for use with MPlayer, see libmpeg2_changes.diff for the exact changes.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: header.c 29306 2009-05-13 15:22:13Z bircoph $
+ * $Id: header.c 27604 2008-09-13 17:31:45Z diego $
  */
 
 #include "config.h"
@@ -315,8 +315,8 @@ static inline void finalize_sequence (mpeg2_sequence_t * sequence)
 	height *= sequence->display_width;
 
     } else {
-	if (sequence->byte_rate == 50 * 0x3ffff)
-	    sequence->byte_rate = 0;        /* mpeg-1 VBR */
+	if (sequence->byte_rate == 50 * 0x3ffff) 
+	    sequence->byte_rate = 0;        /* mpeg-1 VBR */ 
 
 	switch (sequence->pixel_width) {
 	case 0:	case 15:	/* illegal */
@@ -860,7 +860,7 @@ int mpeg2_header_user_data (mpeg2dec_t * mpeg2dec)
 {
     mpeg2dec->user_data_len += mpeg2dec->chunk_ptr - 1 - mpeg2dec->chunk_start;
     mpeg2dec->chunk_start = mpeg2dec->chunk_ptr - 1;
-
+    
     return 0;
 }
 

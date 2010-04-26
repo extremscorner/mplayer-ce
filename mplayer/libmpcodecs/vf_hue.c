@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -76,14 +58,14 @@ static void (*process)(uint8_t *udst, uint8_t *vdst, uint8_t *usrc, uint8_t *vsr
 
 /* FIXME: add packed yuv version of process */
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
 	mp_image_t *dmpi;
 
 	dmpi=vf_get_image(vf->next, mpi->imgfmt,
 			  MP_IMGTYPE_EXPORT, 0,
 			  mpi->w, mpi->h);
-
+	
 	dmpi->planes[0] = mpi->planes[0];
 	dmpi->stride[0] = mpi->stride[0];
 	dmpi->stride[1] = mpi->stride[1];
@@ -93,7 +75,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 		vf->priv->buf[0] = malloc(mpi->stride[1]*mpi->h >> mpi->chroma_y_shift);
 		vf->priv->buf[1] = malloc(mpi->stride[2]*mpi->h >> mpi->chroma_y_shift);
 	}
-
+	
 	if (vf->priv->hue == 0 && vf->priv->saturation == 1){
 		dmpi->planes[1] = mpi->planes[1];
 		dmpi->planes[2] = mpi->planes[2];
@@ -103,14 +85,14 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 		process(dmpi->planes[1], dmpi->planes[2],
 			mpi->planes[1], mpi->planes[2],
 			dmpi->stride[1],mpi->stride[1],
-			mpi->w>> mpi->chroma_x_shift, mpi->h>> mpi->chroma_y_shift,
+			mpi->w>> mpi->chroma_x_shift, mpi->h>> mpi->chroma_y_shift, 
 			vf->priv->hue, vf->priv->saturation);
 	}
 
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static int control(struct vf_instance *vf, int request, void* data)
+static int control(struct vf_instance_s* vf, int request, void* data)
 {
 	vf_equalizer_t *eq;
 
@@ -139,7 +121,7 @@ static int control(struct vf_instance *vf, int request, void* data)
 	return vf_next_control(vf, request, data);
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
 	switch (fmt) {
 	case IMGFMT_YVU9:
@@ -156,20 +138,25 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
 	return 0;
 }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
 {
 	if (vf->priv->buf[0]) free(vf->priv->buf[0]);
 	if (vf->priv->buf[1]) free(vf->priv->buf[1]);
 	free(vf->priv);
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
 	vf->control=control;
 	vf->query_format=query_format;
 	vf->put_image=put_image;
 	vf->uninit=uninit;
-
+	
+	if(!vf->priv) {
+	vf->priv = malloc(sizeof(struct vf_priv_s));
+	memset(vf->priv, 0, sizeof(struct vf_priv_s));
+	}
+	if (args) sscanf(args, "%f:%f", &vf->priv->hue, &vf->priv->saturation);
         vf->priv->hue *= M_PI / 180.0;
 
 	process = process_C;
@@ -177,13 +164,13 @@ static int vf_open(vf_instance_t *vf, char *args)
 }
 
 #define ST_OFF(f) M_ST_OFF(struct vf_priv_s,f)
-static const m_option_t vf_opts_fields[] = {
+static m_option_t vf_opts_fields[] = {
   {"hue", ST_OFF(hue), CONF_TYPE_FLOAT, M_OPT_RANGE,-180.0 ,180.0, NULL},
   {"saturation", ST_OFF(saturation), CONF_TYPE_FLOAT, M_OPT_RANGE,-10.0 ,10.0, NULL},
   { NULL, NULL, 0, 0, 0, 0,  NULL }
 };
 
-static const m_struct_t vf_opts = {
+static m_struct_t vf_opts = {
   "hue",
   sizeof(struct vf_priv_s),
   &vf_priv_dflt,
@@ -195,6 +182,7 @@ const vf_info_t vf_info_hue = {
 	"hue",
 	"Michael Niedermayer",
 	"",
-	vf_open,
+	open,
 	&vf_opts
 };
+

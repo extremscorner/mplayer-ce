@@ -50,7 +50,7 @@ static const char help_text[]=
 
 // ========================= MPlayer messages ===========================
 
-// mplayer.c:
+// mplayer.c: 
 #define MSGTR_Exiting "\nВиходимо...\n"
 #define MSGTR_ExitingHow "\nВиходимо... (%s)\n"
 #define MSGTR_Exit_quit "Вихід"
@@ -455,7 +455,7 @@ static const char help_text[]=
 "                 найкраща: CBR кодування, найвища якость\n"\
 "                 (320 kbps бітрейт)\n"\
 "                 <8-320>: ABR кодування з вказаним приблизним бітрейтом.\n\n"
-
+   
 // codec-cfg.c
 #define MSGTR_DuplicateFourcc "подвоєні FourCC"
 #define MSGTR_TooManyFourccs "забагато FourCCs/форматів..."
@@ -776,7 +776,7 @@ static const char help_text[]=
 // --- messagebox
 #define MSGTR_MSGBOX_LABEL_FatalError "Фатальна помилка!"
 #define MSGTR_MSGBOX_LABEL_Error "Помилка!"
-#define MSGTR_MSGBOX_LABEL_Warning "Попередження!"
+#define MSGTR_MSGBOX_LABEL_Warning "Попередження!" 
 
 // bitmap.c
 #define MSGTR_NotEnoughMemoryC32To1 "[c32to1] недостатньо пам'яті для картинки\n"
@@ -1100,7 +1100,7 @@ static const char help_text[]=
 #define MSGTR_DetectedAudiofile "Аудіо файл детектовано.\n"
 #define MSGTR_NotSystemStream "Не в форматі MPEG System Stream... (можливо, Transport Stream?)\n"
 #define MSGTR_FormatNotRecognized "========= Вибачте, формат цього файлу не розпізнаний чи не підтримується ===========\n"\
-                                  "===== Якщо це AVI, ASF або MPEG потік, будь ласка зв'яжіться з автором! ======\n"
+				  "===== Якщо це AVI, ASF або MPEG потік, будь ласка зв'яжіться з автором! ======\n"
 #define MSGTR_MissingVideoStream "Відео потік не знайдений!\n"
 #define MSGTR_MissingAudioStream "Аудіо потік не знайдений...  -> програю без звуку\n"
 #define MSGTR_MissingVideoStreamBug "Відео потік загублений!? Зв'яжіться з автором, це мабуть помилка :(\n"
@@ -1179,6 +1179,8 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Кодек не встановив sh->disp_w та sh->disp_h, спробую обійти це.\n"
+#define MSGTR_VoConfigRequest "VDec: vo config запит - %d x %d (preferred csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Не можу підібрати підходящу схему кольорів - повтор з -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Відношення сторін %.2f:1 - масштабую аби скоректувати.\n"
 #define MSGTR_MovieAspectUndefined "Відношення сторін не вказано - масштабування не використовується.\n"
+

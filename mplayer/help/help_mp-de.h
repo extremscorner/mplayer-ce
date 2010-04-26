@@ -714,6 +714,8 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Codec hat sh->disp_w und sh->disp_h nicht gesetzt!\nVersuche Problem zu umgehen..\n"
+#define MSGTR_VoConfigRequest "VDec: VO wird versucht, auf %d x %d (Bevorzugter Farbraum: %s) zu setzen.\n"
+#define MSGTR_UsingXAsOutputCspNoY "VDec: Verwende %s als Ausgabefarbraum (Nummer %d).\n"
 #define MSGTR_CouldNotFindColorspace "Konnte keinen passenden Farbraum finden - neuer Versuch mit '-vf scale'...\n"
 #define MSGTR_MovieAspectIsSet "Film-Aspekt ist %.2f:1 - Vorskalierung zur Korrektur der Seitenverhältnisse.\n"
 #define MSGTR_MovieAspectUndefined "Film-Aspekt ist undefiniert - keine Vorskalierung durchgeführt.\n"
@@ -2042,7 +2044,7 @@ static const char help_text[]=
 #define MSGTR_LIBASS_ErrorRecodingFile "[ass] Fehler bei Recodierung der Datei.\n"
 #define MSGTR_LIBASS_FopenFailed "[ass] ass_read_file(%s): fopen fehlgeschlagen\n"
 #define MSGTR_LIBASS_FseekFailed "[ass] ass_read_file(%s): fseek fehlgeschlagen\n"
-#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan100M "[ass] ass_read_file(%s): Laden von Untertiteln größer als 100M verweigert.\n"
+#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan10M "[ass] ass_read_file(%s): Laden von Untertiteln größer als 10M verweigert.\n"
 #define MSGTR_LIBASS_ReadFailed "Lesen fehlgeschlagen, %d: %s\n"
 #define MSGTR_LIBASS_AddedSubtitleFileMemory "[ass] Hinzugefügte Untertiteldatei: <Speicher> (%d Styles, %d Ereignisse)\n"
 #define MSGTR_LIBASS_AddedSubtitleFileFname "[ass]  Hinzugefügte Untertiteldatei: %s (%d Styles, %d Ereignisse)\n"

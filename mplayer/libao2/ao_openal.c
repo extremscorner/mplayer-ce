@@ -42,7 +42,7 @@
 #include "osdep/timer.h"
 #include "subopt-helper.h"
 
-static const ao_info_t info =
+static const ao_info_t info = 
 {
   "OpenAL audio output",
   "openal",
@@ -52,7 +52,7 @@ static const ao_info_t info =
 
 LIBAO_EXTERN(openal)
 
-#define MAX_CHANS 8
+#define MAX_CHANS 6
 #define NUM_BUF 128
 #define CHUNK_SIZE 512
 static ALuint buffers[MAX_CHANS][NUM_BUF];
@@ -95,18 +95,17 @@ static void print_help(void) {
 static int init(int rate, int channels, int format, int flags) {
   float position[3] = {0, 0, 0};
   float direction[6] = {0, 0, 1, 0, -1, 0};
-  float sppos[MAX_CHANS][3] = {
+  float sppos[6][3] = {
     {-1, 0, 0.5}, {1, 0, 0.5},
     {-1, 0,  -1}, {1, 0,  -1},
     {0,  0,   1}, {0, 0, 0.1},
-    {-1, 0,   0}, {1, 0,   0},
   };
   ALCdevice *dev = NULL;
   ALCcontext *ctx = NULL;
   ALCint freq = 0;
   ALCint attribs[] = {ALC_FREQUENCY, rate, 0, 0};
   int i;
-  const opt_t subopts[] = {
+  opt_t subopts[] = {
     {NULL}
   };
   if (subopt_parse(ao_subdevice, subopts) != 0) {
@@ -252,3 +251,4 @@ static float get_delay(void) {
   alGetSourcei(sources[0], AL_BUFFERS_QUEUED, &queued);
   return queued * CHUNK_SIZE / 2 / (float)ao_data.samplerate;
 }
+

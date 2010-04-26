@@ -35,12 +35,12 @@ const char *timer_name = "Darwin accurate";
 
 
 /* the core sleep function, uses floats and is used in MPlayer G2 */
-static float sleep_accurate(float time_frame)
+float sleep_accurate(float time_frame)
 {
 	uint64_t deadline = time_frame / timebase_ratio + mach_absolute_time();
-
+	
 	mach_wait_until(deadline);
-
+	
 	return (mach_absolute_time() - deadline) * timebase_ratio;
 }
 
@@ -52,39 +52,39 @@ int usec_sleep(int usec_delay)
 
 
 /* current time in microseconds */
-unsigned int GetTimer(void)
+unsigned int GetTimer()
 {
   return (unsigned int)(uint64_t)(mach_absolute_time() * timebase_ratio * 1e6);
 }
 
 /* current time in milliseconds */
-unsigned int GetTimerMS(void)
+unsigned int GetTimerMS()
 {
   return (unsigned int)(uint64_t)(mach_absolute_time() * timebase_ratio * 1e3);
 }
 
 /* time spent between now and last call in seconds */
-float GetRelativeTime(void)
+float GetRelativeTime()
 {
   double last_time = relative_time;
-
+  
   if (!relative_time)
     InitTimer();
-
+  
   relative_time = mach_absolute_time() * timebase_ratio;
 
   return (float)(relative_time-last_time);
 }
 
 /* initialize timer, must be called at least once at start */
-void InitTimer(void)
+void InitTimer()
 {
   struct mach_timebase_info timebase;
 
   mach_timebase_info(&timebase);
-  timebase_ratio = (double)timebase.numer / (double)timebase.denom
+  timebase_ratio = (double)timebase.numer / (double)timebase.denom 
     * (double)1e-9;
-
+    
   relative_time = (double)(mach_absolute_time() * timebase_ratio);
 }
 
@@ -94,7 +94,7 @@ void InitTimer(void)
 int main(void) {
   int i,j, r, c = 200;
   long long t = 0;
-
+  
   InitTimer();
 
   for (i = 0; i < c; i++) {
