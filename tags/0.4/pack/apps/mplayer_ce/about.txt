@@ -1,0 +1,9 @@
+   MPlayer CE,
+   unofficial Edition v.0.4 28.03.2009 
+
+   MPlayer Wii port © 2008/09 Team Twiizers,
+   used code © MPlayerWii[rOn], GeeXboX,
+   Scip, tipolosko, rodries, AgentX, 
+   DJDynamite123, Tantric, Ludovic Orban etc...
+   Play Files from DATA - DVD SDHC USB SMB
+   & Radio...    !!!***Enjoy***!!!

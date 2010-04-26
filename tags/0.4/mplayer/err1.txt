@@ -1,0 +1,1 @@
+/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc -ffast-math -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -I. -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O4 -pipe -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -I/c/devkitPro/libogc/include -I/c/devkitPro/3rd/wii/include   -c -o libvo/gl_common.o libvo/gl_common.c
