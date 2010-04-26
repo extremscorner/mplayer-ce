@@ -1,20 +1,4 @@
-/* small program to test the features of vf_bmovl
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
+/* Small program to test the features of vf_bmovl */
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -31,10 +15,10 @@ blit(int fifo, unsigned char *bitmap, int width, int height,
 {
 	char str[100];
 	int  nbytes;
-
+	
 	sprintf(str, "RGBA32 %d %d %d %d %d %d\n",
 	        width, height, xpos, ypos, alpha, clear);
-
+	
 	if(DEBUG) printf("Sending %s", str);
 
 	write(fifo, str, strlen(str));
@@ -49,7 +33,7 @@ set_alpha(int fifo, int width, int height, int xpos, int ypos, int alpha) {
 
 	sprintf(str, "ALPHA %d %d %d %d %d\n",
 	        width, height, xpos, ypos, alpha);
-
+	
 	if(DEBUG) printf("Sending %s", str);
 
 	write(fifo, str, strlen(str));
@@ -104,7 +88,7 @@ int main(int argc, char **argv) {
 		blit(fifo, image->pixels, image->w, image->h, i, i, 0, 1);
 
 	// Create a 75x75 bitmap
-	bitmap = malloc(75 * 75 * 4);
+	bitmap = (unsigned char*)malloc(75*75*4);
 
 	// Paint bitmap red, 50% transparent and blit at position 50,50
 	paint(bitmap, (75*75*4), 255, 0, 0, 128);
@@ -126,7 +110,7 @@ int main(int argc, char **argv) {
 	for(i=-255; i <= 0; i++)
 		set_alpha(fifo, image->w, image->h,
 		          (width/2)-(image->w/2), (height/2)-(image->h/2), i);
-
+	
 
 	// Clean up
 	free(bitmap);

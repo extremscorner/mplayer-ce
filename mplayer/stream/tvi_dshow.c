@@ -49,7 +49,7 @@
  *       - ATI 9200 VIVO based card
  *       - ATI AIW 7500
  *       - nVidia Ti-4400
- *
+ * 
  *     Known bugs:
  *     * stream goes with 24.93 FPS (NTSC), while reporting 25 FPS (PAL) ?!
  *     * direct set frequency call does not work ('Insufficient Buffer' error)
@@ -76,7 +76,6 @@
 
 #include <stdio.h>
 #include "libmpcodecs/img_format.h"
-#include "libmpcodecs/dec_teletext.h"
 #include "libaf/af_format.h"
 #include "help_mp.h"
 #include "osdep/timer.h"
@@ -89,11 +88,6 @@
 
 #include "tvi_dshow.h"
 
-#ifndef STDCALL
-// mingw64 needs this
-#define STDCALL __stdcall
-#endif
-
 static tvi_handle_t *tvi_init_dshow(tv_param_t* tv_param);
 
 /*
@@ -103,7 +97,7 @@ static tvi_handle_t *tvi_init_dshow(tv_param_t* tv_param);
 *
 *---------------------------------------------------------------------------------------
 */
-/**
+/** 
     information about this file
 */
 const tvi_info_t tvi_info_dshow = {
@@ -176,7 +170,7 @@ typedef struct {
     int direct_getfreq_call;    ///< 0-find frequncy from frequency table (workaround),1-direct call to get frequency
 
     int fcc;                    ///< used video format code (FourCC)
-    int width;                  ///< picture width (default: auto)
+    int width;                  ///< picture width (default: auto) 
     int height;                 ///< picture height (default: auto)
 
     int channels;               ///< number of audio channels (default: auto)
@@ -214,7 +208,7 @@ typedef struct __attribute__((__packed__)) {
     WORD CountryCode;		///< Country code
     WORD CableFreqTable;	///< index of resource with frequencies for cable channels
     WORD BroadcastFreqTable;	///< index of resource with frequencies for broadcast channels
-    DWORD VideoStandard;	///< used video standard
+    DWORD VideoStandard;	///< used video standard 
 } TRCCountryList;
 /**
     information about image formats
@@ -237,7 +231,7 @@ typedef struct {
 static HRESULT init_ringbuffer(grabber_ringbuffer_t * rb, int buffersize,
 			       int blocksize);
 static HRESULT show_filter_info(IBaseFilter * pFilter);
-#if 0
+#if 0 
 //defined in current MinGW release
 HRESULT STDCALL GetRunningObjectTable(DWORD, IRunningObjectTable **);
 HRESULT STDCALL CreateItemMoniker(LPCOLESTR, LPCOLESTR, IMoniker **);
@@ -313,7 +307,7 @@ static const struct {
     {"us-cable-hrc", 1},
     {"japan-cable", 81},
     //default is USA
-    {NULL,           1}
+    {NULL,           1} 
 };
 
 /**
@@ -374,127 +368,86 @@ static int tv_available_inputs_count = 0;
 *
 *---------------------------------------------------------------------------------------
 */
-// selectany can not be used with "static", fixes compilation with mingw-w64
-#undef DECLSPEC_SELECTANY
-#define DECLSPEC_SELECTANY
 /// CLSID definitions (used for CoCreateInstance call)
-#define CLSID_SampleGrabber MP_CLSID_SampleGrabber
-static DEFINE_GUID(CLSID_SampleGrabber, 0xC1F400A0, 0x3F08, 0x11d3, 0x9F, 0x0B,
+DEFINE_GUID(CLSID_SampleGrabber, 0xC1F400A0, 0x3F08, 0x11d3, 0x9F, 0x0B,
 	    0x00, 0x60, 0x08, 0x03, 0x9E, 0x37);
-#define CLSID_NullRenderer MP_CLSID_NullRenderer
-static DEFINE_GUID(CLSID_NullRenderer, 0xC1F400A4, 0x3F08, 0x11d3, 0x9F, 0x0B,
+DEFINE_GUID(CLSID_NullRenderer, 0xC1F400A4, 0x3F08, 0x11d3, 0x9F, 0x0B,
 	    0x00, 0x60, 0x08, 0x03, 0x9E, 0x37);
-#define CLSID_SystemDeviceEnum MP_CLSID_SystemDeviceEnum
-static DEFINE_GUID(CLSID_SystemDeviceEnum, 0x62BE5D10, 0x60EB, 0x11d0, 0xBD, 0x3B,
+DEFINE_GUID(CLSID_SystemDeviceEnum, 0x62BE5D10, 0x60EB, 0x11d0, 0xBD, 0x3B,
 	    0x00, 0xA0, 0xC9, 0x11, 0xCE, 0x86);
-#define CLSID_CaptureGraphBuilder2 MP_CLSID_CaptureGraphBuilder2
-static DEFINE_GUID(CLSID_CaptureGraphBuilder2, 0xBF87B6E1, 0x8C27, 0x11d0, 0xB3,
+DEFINE_GUID(CLSID_CaptureGraphBuilder2, 0xBF87B6E1, 0x8C27, 0x11d0, 0xB3,
 	    0xF0, 0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define CLSID_VideoInputDeviceCategory MP_CLSID_VideoInputDeviceCategory
-static DEFINE_GUID(CLSID_VideoInputDeviceCategory, 0x860BB310, 0x5D01, 0x11d0,
+DEFINE_GUID(CLSID_VideoInputDeviceCategory, 0x860BB310, 0x5D01, 0x11d0,
 	    0xBD, 0x3B, 0x00, 0xA0, 0xC9, 0x11, 0xCE, 0x86);
-#define CLSID_AudioInputDeviceCategory MP_CLSID_AudioInputDeviceCategory
-static DEFINE_GUID(CLSID_AudioInputDeviceCategory, 0x33d9a762, 0x90c8, 0x11d0,
+DEFINE_GUID(CLSID_AudioInputDeviceCategory, 0x33d9a762, 0x90c8, 0x11d0,
 	    0xbd, 0x43, 0x00, 0xa0, 0xc9, 0x11, 0xce, 0x86);
-#define CLSID_FilterGraph MP_CLSID_FilterGraph
-static DEFINE_GUID(CLSID_FilterGraph, 0xe436ebb3, 0x524f, 0x11ce, 0x9f, 0x53,
+DEFINE_GUID(CLSID_FilterGraph, 0xe436ebb3, 0x524f, 0x11ce, 0x9f, 0x53,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define CLSID_SystemClock MP_CLSID_SystemClock
-static DEFINE_GUID(CLSID_SystemClock, 0xe436ebb1, 0x524f, 0x11ce, 0x9f, 0x53,
+DEFINE_GUID(CLSID_SystemClock, 0xe436ebb1, 0x524f, 0x11ce, 0x9f, 0x53,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
 #ifdef NOT_USED
-#define CLSID_CaptureGraphBuilder MP_CLSID_CaptureGraphBuilder
-static DEFINE_GUID(CLSID_CaptureGraphBuilder, 0xBF87B6E0, 0x8C27, 0x11d0, 0xB3,
+DEFINE_GUID(CLSID_CaptureGraphBuilder, 0xBF87B6E0, 0x8C27, 0x11d0, 0xB3,
 	    0xF0, 0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define CLSID_VideoPortManager MP_CLSID_VideoPortManager
-static DEFINE_GUID(CLSID_VideoPortManager, 0x6f26a6cd, 0x967b, 0x47fd, 0x87, 0x4a,
+DEFINE_GUID(CLSID_VideoPortManager, 0x6f26a6cd, 0x967b, 0x47fd, 0x87, 0x4a,
 	    0x7a, 0xed, 0x2c, 0x9d, 0x25, 0xa2);
-#define IID_IPin MP_IID_IPin
-static DEFINE_GUID(IID_IPin, 0x56a86891, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00, 0x20,
+DEFINE_GUID(IID_IPin, 0x56a86891, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00, 0x20,
 	    0xaf, 0x0b, 0xa7, 0x70);
-#define IID_ICaptureGraphBuilder MP_IID_ICaptureGraphBuilder
-static DEFINE_GUID(IID_ICaptureGraphBuilder, 0xbf87b6e0, 0x8c27, 0x11d0, 0xb3,
+DEFINE_GUID(IID_ICaptureGraphBuilder, 0xbf87b6e0, 0x8c27, 0x11d0, 0xb3,
 	    0xf0, 0x00, 0xaa, 0x00, 0x37, 0x61, 0xc5);
-#define IID_IFilterGraph MP_IID_IFilterGraph
-static DEFINE_GUID(IID_IFilterGraph, 0x56a8689f, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
+DEFINE_GUID(IID_IFilterGraph, 0x56a8689f, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
 	    0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define PIN_CATEGORY_PREVIEW MP_PIN_CATEGORY_PREVIEW
-static DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f,
 	    0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
 #endif
 
 /// IID definitions (used for QueryInterface call)
-#define IID_IReferenceClock MP_IID_IReferenceClock
-static DEFINE_GUID(IID_IReferenceClock, 0x56a86897, 0x0ad4, 0x11ce, 0xb0, 0x3a,
+DEFINE_GUID(IID_IReferenceClock, 0x56a86897, 0x0ad4, 0x11ce, 0xb0, 0x3a,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IAMBufferNegotiation MP_IID_IAMBufferNegotiation
-static DEFINE_GUID(IID_IAMBufferNegotiation, 0x56ED71A0, 0xAF5F, 0x11D0, 0xB3, 0xF0,
+DEFINE_GUID(IID_IAMBufferNegotiation, 0x56ED71A0, 0xAF5F, 0x11D0, 0xB3, 0xF0,
             0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define IID_IKsPropertySet MP_IID_IKsPropertySet
-static DEFINE_GUID(IID_IKsPropertySet, 0x31efac30, 0x515c, 0x11d0, 0xa9, 0xaa,
+DEFINE_GUID(IID_IKsPropertySet, 0x31efac30, 0x515c, 0x11d0, 0xa9, 0xaa,
 	    0x00, 0xaa, 0x00, 0x61, 0xbe, 0x93);
-#define IID_ISampleGrabber MP_IID_ISampleGrabber
-static DEFINE_GUID(IID_ISampleGrabber, 0x6B652FFF, 0x11FE, 0x4fce, 0x92, 0xAD,
+DEFINE_GUID(IID_ISampleGrabber, 0x6B652FFF, 0x11FE, 0x4fce, 0x92, 0xAD,
 	    0x02, 0x66, 0xB5, 0xD7, 0xC7, 0x8F);
-#define IID_ISampleGrabberCB MP_IID_ISampleGrabberCB
-static DEFINE_GUID(IID_ISampleGrabberCB, 0x0579154A, 0x2B53, 0x4994, 0xB0, 0xD0,
+DEFINE_GUID(IID_ISampleGrabberCB, 0x0579154A, 0x2B53, 0x4994, 0xB0, 0xD0,
 	    0xE7, 0x73, 0x14, 0x8E, 0xFF, 0x85);
-#define IID_ICaptureGraphBuilder2 MP_IID_ICaptureGraphBuilder2
-static DEFINE_GUID(IID_ICaptureGraphBuilder2, 0x93e5a4e0, 0x2d50, 0x11d2, 0xab,
+DEFINE_GUID(IID_ICaptureGraphBuilder2, 0x93e5a4e0, 0x2d50, 0x11d2, 0xab,
 	    0xfa, 0x00, 0xa0, 0xc9, 0xc6, 0xe3, 0x8d);
-#define IID_ICreateDevEnum MP_IID_ICreateDevEnum
-static DEFINE_GUID(IID_ICreateDevEnum, 0x29840822, 0x5b84, 0x11d0, 0xbd, 0x3b,
+DEFINE_GUID(IID_ICreateDevEnum, 0x29840822, 0x5b84, 0x11d0, 0xbd, 0x3b,
 	    0x00, 0xa0, 0xc9, 0x11, 0xce, 0x86);
-#define IID_IGraphBuilder MP_IID_IGraphBuilder
-static DEFINE_GUID(IID_IGraphBuilder, 0x56a868a9, 0x0ad4, 0x11ce, 0xb0, 0x3a,
+DEFINE_GUID(IID_IGraphBuilder, 0x56a868a9, 0x0ad4, 0x11ce, 0xb0, 0x3a,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IAMVideoProcAmp MP_IID_IAMVideoProcAmp
-static DEFINE_GUID(IID_IAMVideoProcAmp, 0xC6E13360, 0x30AC, 0x11d0, 0xA1, 0x8C,
+DEFINE_GUID(IID_IAMVideoProcAmp, 0xC6E13360, 0x30AC, 0x11d0, 0xA1, 0x8C,
 	    0x00, 0xA0, 0xC9, 0x11, 0x89, 0x56);
-#define IID_IVideoWindow MP_IID_IVideoWindow
-static DEFINE_GUID(IID_IVideoWindow, 0x56a868b4, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
+DEFINE_GUID(IID_IVideoWindow, 0x56a868b4, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
 	    0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IMediaControl MP_IID_IMediaControl
-static DEFINE_GUID(IID_IMediaControl, 0x56a868b1, 0x0ad4, 0x11ce, 0xb0, 0x3a,
+DEFINE_GUID(IID_IMediaControl, 0x56a868b1, 0x0ad4, 0x11ce, 0xb0, 0x3a,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IAMTVTuner MP_IID_IAMTVTuner
-static DEFINE_GUID(IID_IAMTVTuner, 0x211A8766, 0x03AC, 0x11d1, 0x8D, 0x13, 0x00,
+DEFINE_GUID(IID_IAMTVTuner, 0x211A8766, 0x03AC, 0x11d1, 0x8D, 0x13, 0x00,
 	    0xAA, 0x00, 0xBD, 0x83, 0x39);
-#define IID_IAMCrossbar MP_IID_IAMCrossbar
-static DEFINE_GUID(IID_IAMCrossbar, 0xc6e13380, 0x30ac, 0x11d0, 0xa1, 0x8c, 0x00,
+DEFINE_GUID(IID_IAMCrossbar, 0xc6e13380, 0x30ac, 0x11d0, 0xa1, 0x8c, 0x00,
 	    0xa0, 0xc9, 0x11, 0x89, 0x56);
-#define IID_IAMStreamConfig MP_IID_IAMStreamConfig
-static DEFINE_GUID(IID_IAMStreamConfig, 0xc6e13340, 0x30ac, 0x11d0, 0xa1, 0x8c,
+DEFINE_GUID(IID_IAMStreamConfig, 0xc6e13340, 0x30ac, 0x11d0, 0xa1, 0x8c,
 	    0x00, 0xa0, 0xc9, 0x11, 0x89, 0x56);
-#define IID_IAMAudioInputMixer MP_IID_IAMAudioInputMixer
-static DEFINE_GUID(IID_IAMAudioInputMixer, 0x54C39221, 0x8380, 0x11d0, 0xB3, 0xF0,
+DEFINE_GUID(IID_IAMAudioInputMixer, 0x54C39221, 0x8380, 0x11d0, 0xB3, 0xF0,
 	    0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define IID_IAMTVAudio MP_IID_IAMTVAudio
-static DEFINE_GUID(IID_IAMTVAudio, 0x83EC1C30, 0x23D1, 0x11d1, 0x99, 0xE6, 0x00,
+DEFINE_GUID(IID_IAMTVAudio, 0x83EC1C30, 0x23D1, 0x11d1, 0x99, 0xE6, 0x00,
 	    0xA0, 0xC9, 0x56, 0x02, 0x66);
-#define IID_IAMAnalogVideoDecoder MP_IID_IAMAnalogVideoDecoder
-static DEFINE_GUID(IID_IAMAnalogVideoDecoder, 0xC6E13350, 0x30AC, 0x11d0, 0xA1,
+DEFINE_GUID(IID_IAMAnalogVideoDecoder, 0xC6E13350, 0x30AC, 0x11d0, 0xA1,
 	    0x8C, 0x00, 0xA0, 0xC9, 0x11, 0x89, 0x56);
-#define IID_IPropertyBag MP_IID_IPropertyBag
-static DEFINE_GUID(IID_IPropertyBag, 0x55272a00, 0x42cb, 0x11ce, 0x81, 0x35, 0x00,
+DEFINE_GUID(IID_IPropertyBag, 0x55272a00, 0x42cb, 0x11ce, 0x81, 0x35, 0x00,
 	    0xaa, 0x00, 0x4b, 0xb8, 0x51);
-#define PIN_CATEGORY_CAPTURE MP_PIN_CATEGORY_CAPTURE
-static DEFINE_GUID(PIN_CATEGORY_CAPTURE, 0xfb6c4281, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_CAPTURE, 0xfb6c4281, 0x0353, 0x11d1, 0x90, 0x5f,
 	    0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PIN_CATEGORY_VIDEOPORT MP_PIN_CATEGORY_VIDEOPORT
-static DEFINE_GUID(PIN_CATEGORY_VIDEOPORT, 0xfb6c4285, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_VIDEOPORT, 0xfb6c4285, 0x0353, 0x11d1, 0x90, 0x5f,
 	    0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PIN_CATEGORY_PREVIEW MP_PIN_CATEGORY_PREVIEW
-static DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f, 
             0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PIN_CATEGORY_VBI MP_PIN_CATEGORY_VBI
-static DEFINE_GUID(PIN_CATEGORY_VBI, 0xfb6c4284, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_VBI, 0xfb6c4284, 0x0353, 0x11d1, 0x90, 0x5f,
             0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PROPSETID_TUNER MP_PROPSETID_TUNER
-static DEFINE_GUID(PROPSETID_TUNER, 0x6a2e0605, 0x28e4, 0x11d0, 0xa1, 0x8c, 0x00,
+DEFINE_GUID(PROPSETID_TUNER, 0x6a2e0605, 0x28e4, 0x11d0, 0xa1, 0x8c, 0x00,
 	    0xa0, 0xc9, 0x11, 0x89, 0x56);
-#define MEDIATYPE_VBI MP_MEDIATYPE_VBI
-static DEFINE_GUID(MEDIATYPE_VBI,   0xf72a76e1, 0xeb0a, 0x11d0, 0xac, 0xe4, 0x00,
+DEFINE_GUID(MEDIATYPE_VBI,   0xf72a76e1, 0xeb0a, 0x11d0, 0xac, 0xe4, 0x00,
             0x00, 0xc0, 0xcc, 0x16, 0xba);
 
 #define INSTANCEDATA_OF_PROPERTY_PTR(x) (((KSPROPERTY*)(x)) + 1)
@@ -518,7 +471,7 @@ void set_buffer_preference(int nDiv,WAVEFORMATEX* pWF,IPin* pOutPin,IPin* pInPin
     prop.cbBuffer += pWF->nBlockAlign - 1;
     prop.cbBuffer -= prop.cbBuffer % pWF->nBlockAlign;
     prop.cbPrefix = -1;
-    prop.cBuffers = -1;
+    prop.cBuffers = -1;    
 
     hr=OLE_QUERYINTERFACE(pOutPin,IID_IAMBufferNegotiation,pBN);
     if(FAILED(hr))
@@ -690,7 +643,7 @@ static CSampleGrabberCB *CSampleGrabberCB_Create(grabber_ringbuffer_t *
 *
 *---------------------------------------------------------------------------------------
 */
-/**
+/** 
 Registering graph in ROT. User will be able to connect to graph from GraphEdit.
 */
 static HRESULT AddToRot(IUnknown * pUnkGraph, DWORD * pdwRegister)
@@ -777,7 +730,7 @@ static void destroy_ringbuffer(grabber_ringbuffer_t * rb)
  * \param buffersize size of buffer in blocks
  * \param blocksize size of buffer's block
  *
- * \return S_OK if success
+ * \return S_OK if success 
  * \return E_OUTOFMEMORY not enough memory
  *
  * \note routine does not allocates memory for grabber_rinbuffer_s structure
@@ -796,19 +749,19 @@ static HRESULT init_ringbuffer(grabber_ringbuffer_t * rb, int buffersize,
     mp_msg(MSGT_TV, MSGL_DBG2, "tvi_dshow: Capture buffer: %d blocks of %d bytes.\n",
 	   rb->buffersize, rb->blocksize);
 
-    rb->ringbuffer = malloc(rb->buffersize * sizeof(char *));
+    rb->ringbuffer = (char **) malloc(rb->buffersize * sizeof(char *));
     if (!rb)
 	return E_POINTER;
     memset(rb->ringbuffer, 0, rb->buffersize * sizeof(char *));
 
     for (i = 0; i < rb->buffersize; i++) {
-	rb->ringbuffer[i] = malloc(rb->blocksize * sizeof(char));
+	rb->ringbuffer[i] = (char *) malloc(rb->blocksize * sizeof(char));
 	if (!rb->ringbuffer[i]) {
 	    destroy_ringbuffer(rb);
 	    return E_OUTOFMEMORY;
 	}
     }
-    rb->dpts = malloc(rb->buffersize * sizeof(double));
+    rb->dpts = (double*) malloc(rb->buffersize * sizeof(double));
     if (!rb->dpts) {
 	destroy_ringbuffer(rb);
 	return E_OUTOFMEMORY;
@@ -817,7 +770,7 @@ static HRESULT init_ringbuffer(grabber_ringbuffer_t * rb, int buffersize,
     rb->tail = 0;
     rb->count = 0;
     rb->tStart = -1;
-    rb->pMutex = malloc(sizeof(CRITICAL_SECTION));
+    rb->pMutex = (CRITICAL_SECTION *) malloc(sizeof(CRITICAL_SECTION));
     if (!rb->pMutex) {
 	destroy_ringbuffer(rb);
 	return E_OUTOFMEMORY;
@@ -860,7 +813,7 @@ static char *physcon2str(const long lPhysicalType)
  * \return system country code
  *
  * \remarks
- * After call to IAMTVTuner::put_CountryCode with returned value tuner switches to frequency table used in specified
+ * After call to IAMTVTuner::put_CountryCode with returned value tuner switches to frequency table used in specified 
  * country (which is usually larger then MPlayer's one, so workaround will work fine).
  *
  * \todo
@@ -910,14 +863,14 @@ static void *GetRC(HMODULE hDLL, int index)
  * \param[in] nCountry - country code
  * \param[in] nInputType (TunerInputCable or TunerInputAntenna)
  * \param[out] pplFreqTable - address of variable that receives pointer to array, containing frequencies
- * \param[out] pnLen length of array
+ * \param[out] pnLen length of array 
  * \param[out] pnFirst - channel number of first entry in array (nChannelMax)
  *
  * \return S_OK if success
  * \return E_POINTER pplFreqTable==NULL || plFirst==NULL || pnLen==NULL
  * \return E_FAIL error occured during load
  *
- * \remarks
+ * \remarks 
  * - array must be freed by caller
  * - MSDN says that it is not neccessery to unlock or free resource. It will be done after unloading DLL
  */
@@ -930,7 +883,7 @@ static HRESULT load_freq_table(int nCountry, int nInputType,
     TRCCountryList *pCountryList;
     int i, index;
 
-    mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: load_freq_table called %d (%s)\n",nCountry,nInputType == TunerInputAntenna ? "broadcast" : "cable");
+    mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: load_freq_table called %d (%d)\n",nCountry,nInputType);
     /* ASSERT(sizeof(TRCCountryList)==10); // need properly aligned structure */
 
     if (!pplFreqTable || !pnFirst || !pnLen)
@@ -966,14 +919,13 @@ static HRESULT load_freq_table(int nCountry, int nInputType,
     }
     *pnFirst = plFreqTable[0];
     *pnLen = (int) (plFreqTable[1] - plFreqTable[0] + 1);
-    *pplFreqTable = malloc((*pnLen) * sizeof(long));
+    *pplFreqTable = (long *) malloc((*pnLen) * sizeof(long));
     if (!*pplFreqTable) {
 	FreeLibrary(hDLL);
 	return E_FAIL;
     }
     for (i = 0; i < *pnLen; i++) {
 	(*pplFreqTable)[i] = plFreqTable[i + 2];
-	mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: load_freq_table #%d => (%ld)\n",i+*pnFirst,(*pplFreqTable)[i]);
     }
     FreeLibrary(hDLL);
     return S_OK;
@@ -989,7 +941,7 @@ static HRESULT load_freq_table(int nCountry, int nInputType,
  * \return apropriate error code otherwise
  *
  * \note
- * Due to either bug in driver or error in following code calll to IKsProperty::Set
+ * Due to either bug in driver or error in following code calll to IKsProperty::Set 
  * in this methods always fail with error 0x8007007a.
  *
  * \todo test code on other machines and an error
@@ -1076,7 +1028,7 @@ static HRESULT set_nearest_freq(priv_t * priv, long lFreq)
     TunerInputType tunerInput;
     long lInput;
 
-    mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: set_nearest_freq called: %ld\n", lFreq);
+    mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: set_nearest_freq called\n");
     if(priv->freq_table_len == -1 && !priv->freq_table) {
 
         hr = OLE_CALL_ARGS(priv->pTVTuner, get_ConnectInput, &lInput);
@@ -1106,13 +1058,11 @@ static HRESULT set_nearest_freq(priv_t * priv, long lFreq)
 	    nChannel = priv->first_channel + i;
 	    lFreqDiff = labs(lFreq - priv->freq_table[i]);
 	}
-	mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: set_nearest_freq #%d (%ld) => %d (%ld)\n",i+priv->first_channel,priv->freq_table[i], nChannel,lFreqDiff);
     }
     if (nChannel == -1) {
 	mp_msg(MSGT_TV,MSGL_ERR, MSGTR_TVI_DS_UnableFindNearestChannel);
 	return E_FAIL;
     }
-    mp_msg(MSGT_TV, MSGL_V, "tvi_dshow: set_nearest_freq #%d (%ld)\n",nChannel,priv->freq_table[nChannel - priv->first_channel]);
     hr = OLE_CALL_ARGS(priv->pTVTuner, put_Channel, nChannel,
 		   AMTUNER_SUBCHAN_DEFAULT, AMTUNER_SUBCHAN_DEFAULT);
     if (FAILED(hr)) {
@@ -1137,7 +1087,7 @@ static int set_frequency(priv_t * priv, long lFreq)
 {
     HRESULT hr;
 
-    mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: set_frequency called: %ld\n", lFreq);
+    mp_msg(MSGT_TV, MSGL_DBG4, "tvi_dshow: set_frequency called\n");
     if (!priv->pTVTuner)
 	return TVI_CONTROL_FALSE;
     if (priv->direct_setfreq_call) {	//using direct call to set frequency
@@ -1199,9 +1149,9 @@ static HRESULT get_frequency_direct(IAMTVTuner * pTVTuner, long *plFreq)
 }
 
 /**
- * \brief gets current frequency
+ * \brief gets current frequency 
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  * \param plFreq - pointer to long int to store frequency to (in Hz)
  *
  * \return TVI_CONTROL_TRUE if success, TVI_CONTROL_FALSE otherwise
@@ -1273,7 +1223,7 @@ static void get_capabilities(priv_t * priv)
 	OLE_CALL_ARGS(priv->pCrossbar, get_PinCounts, &lOutputPins,
 		  &lInputPins);
 
-	tv_available_inputs = malloc(sizeof(long) * lInputPins);
+	tv_available_inputs = (long *) malloc(sizeof(long) * lInputPins);
 	tv_available_inputs_count = 0;
 
 	mp_msg(MSGT_TV, MSGL_V, MSGTR_TVI_DS_AvailableVideoInputs);
@@ -1345,6 +1295,52 @@ static void get_capabilities(priv_t * priv)
 *
 *---------------------------------------------------------------------------------------
 */
+/**
+ * \brief routine for reconnecting two pins with new media type
+ * \param pGraph IGraphBuilder interface
+ * \param chan chain data
+ * \param pmt [in/out] new mediatype for pin connection
+ *
+ * \return S_OK if operation successfult, error code otherwise
+ * will also return media type of new connection into pmt variable
+ */
+static HRESULT reconnect_pins(IGraphBuilder *pGraph, chain_t *chain, AM_MEDIA_TYPE *pmt)
+{
+    AM_MEDIA_TYPE old_mt;
+    HRESULT hr;
+
+    do {
+        /* save old media type for reconnection in case of error */
+        hr = OLE_CALL_ARGS(chain->pCapturePin, ConnectionMediaType, &old_mt);
+        if(FAILED(hr))
+            return hr;
+
+        hr = OLE_CALL(chain->pCapturePin, Disconnect);
+        if(FAILED(hr))
+            return hr;
+
+        hr = OLE_CALL_ARGS(chain->pSG, SetMediaType, pmt);
+        if(FAILED(hr))
+            return hr;
+
+        hr = OLE_CALL_ARGS(pGraph, Connect, chain->pCapturePin, chain->pSGIn);
+        if(FAILED(hr))
+        {
+            OLE_CALL_ARGS(chain->pSG, SetMediaType, &old_mt);
+            OLE_CALL_ARGS(pGraph, Connect, chain->pCapturePin, chain->pSGIn);
+            break;
+        }
+        hr = OLE_CALL_ARGS(chain->pCapturePin, ConnectionMediaType, &old_mt);
+
+        hr = S_OK;
+    } while(0);
+
+    FreeMediaType(pmt);
+    CopyMediaType(pmt, &old_mt);
+    FreeMediaType(&old_mt);
+    return hr;
+}
+
 /**
  * \brief building in graph audio/video capture chain
  *
@@ -1492,7 +1488,7 @@ static HRESULT build_sub_graph(priv_t * priv, chain_t * chain, const GUID* ppin_
             /*
                Code below is disabled, because terminating chain with NullRenderer leads to jerky video.
                Perhaps, this happens because  NullRenderer filter discards each received
-               frame while discarded frames causes live source filter to dramatically reduce frame rate.
+               frame while discarded frames causes live source filter to dramatically reduce frame rate. 
             */
             /* adding sink for video stream */
             hr = CoCreateInstance((GUID *) & CLSID_NullRenderer, NULL,CLSCTX_INPROC_SERVER, &IID_IBaseFilter,(void *) &pNR);
@@ -1825,10 +1821,10 @@ static int check_audio_format(AM_MEDIA_TYPE * pmt, int samplerate,
  * \return 1 if AM_MEDIA_TYPE compatible
  & \return 0 if not
  *
- * \note
+ * \note 
  * width and height are currently not used
  *
- * \todo
+ * \todo 
  * add width/height check
  */
 static int check_video_format(AM_MEDIA_TYPE * pmt, int fcc, int width,
@@ -1916,7 +1912,7 @@ static HRESULT show_filter_info(IBaseFilter * pFilter)
  * \brief gets device's frendly in ANSI encoding
  *
  * \param pM IMoniker interface, got in enumeration process
- * \param category device category
+ * \param category device category 
  *
  * \return TVI_CONTROL_TRUE if operation succeded, TVI_CONTROL_FALSE - otherwise
  */
@@ -1949,10 +1945,10 @@ static int get_device_name(IMoniker * pM, char *pBuf, int nLen)
  * \brief find capture device at given index
  *
  * \param index device index to search for (-1 mean only print available)
- * \param category device category
+ * \param category device category 
  *
  * \return IBaseFilter interface for capture device with given index
- *
+ * 
  * Sample values for category:
  *  CLSID_VideoInputDeviceCategory - Video Capture Sources
  *  CLSID_AudioInputDeviceCategory - Audio Capture Sources
@@ -2063,11 +2059,11 @@ static HRESULT get_available_formats_stream(chain_t *chain)
     }
     done = 0;
 
-    arpmt = malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
+    arpmt = (AM_MEDIA_TYPE **) malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
     if (arpmt) {
 	memset(arpmt, 0, (count + 1) * sizeof(AM_MEDIA_TYPE *));
 
-	pBuf = malloc((count + 1) * sizeof(void *));
+	pBuf = (void **) malloc((count + 1) * sizeof(void *));
 	if (pBuf) {
 	    memset(pBuf, 0, (count + 1) * sizeof(void *));
 
@@ -2110,8 +2106,8 @@ static HRESULT get_available_formats_stream(chain_t *chain)
 }
 
 /**
- * \brief returns allocates an array and store available media formats for given pin type to it
- *
+ * \brief returns allocates an array and store available media formats for given pin type to it 
+ * 
  * \param pBuilder ICaptureGraphBuilder2 interface of graph builder
  * \param chain chain data structure
  *
@@ -2170,7 +2166,8 @@ static HRESULT get_available_formats_pin(ICaptureGraphBuilder2 * pBuilder,
     OLE_CALL(pEnum,Reset);
 
     count = i;
-    arpmt = malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
+    arpmt =
+	(AM_MEDIA_TYPE **) malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
     if (!arpmt)
 	return E_OUTOFMEMORY;
     memset(arpmt, 0, (count + 1) * sizeof(AM_MEDIA_TYPE *));
@@ -2183,7 +2180,7 @@ static HRESULT get_available_formats_pin(ICaptureGraphBuilder2 * pBuilder,
     OLE_RELEASE_SAFE(pEnum);
 
 
-    pBuf = malloc((count + 1) * sizeof(void *));
+    pBuf = (void **) malloc((count + 1) * sizeof(void *));
     if (!pBuf) {
 	for (i = 0; i < count; i++)
 	    if (arpmt[i])
@@ -2244,7 +2241,7 @@ static HRESULT get_available_formats_pin(ICaptureGraphBuilder2 * pBuilder,
 /**
  * \brief fills given buffer with audio data (usually one block)
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  * \param buffer buffer to store data to
  * \param len buffer's size in bytes (usually one block size)
  *
@@ -2297,18 +2294,19 @@ static double grab_audio_frame(priv_t * priv, char *buffer, int len)
 /**
  * \brief returns audio frame size
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  *
  * \return audio block size if audio enabled and 1 - otherwise
  */
 static int get_audio_framesize(priv_t * priv)
 {
     if (!priv->chains[1]->rbuf)
-	return 1;		//no audio
+	return 1;		//no audio       
     mp_msg(MSGT_TV,MSGL_DBG3,"get_audio_framesize: %d\n",priv->chains[1]->rbuf->blocksize);
     return priv->chains[1]->rbuf->blocksize;
 }
 
+#ifdef CONFIG_TV_TELETEXT
 static int vbi_get_props(priv_t* priv,tt_stream_props* ptsp)
 {
     if(!priv || !ptsp)
@@ -2326,7 +2324,7 @@ static int vbi_get_props(priv_t* priv,tt_stream_props* ptsp)
 //END STUBS!!!
     ptsp->bufsize = ptsp->samples_per_line * (ptsp->count[0] + ptsp->count[1]);
 
-    mp_msg(MSGT_TV,MSGL_V,"vbi_get_props: sampling_rate=%d,offset:%d,samples_per_line: %d\n interlaced:%s, count=[%d,%d]\n",
+    mp_msg(MSGT_TV,MSGL_V,"vbi_get_props: sampling_rate=%d,offset:%d,samples_per_line: %d\n interlaced:%s, count=[%d,%d]\n",    
         ptsp->sampling_rate,
         ptsp->offset,
         ptsp->samples_per_line,
@@ -2354,11 +2352,12 @@ static void vbi_grabber(priv_t* priv)
     }
     free(buf);
 }
+#endif /* CONFIG_TV_TELETEXT */
 
 /**
  * \brief fills given buffer with video data (usually one frame)
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  * \param buffer buffer to store data to
  * \param len buffer's size in bytes (usually one frame size)
  *
@@ -2398,23 +2397,25 @@ static double grab_video_frame(priv_t * priv, char *buffer, int len)
       rb->count--;
     LeaveCriticalSection(rb->pMutex);
 
+#ifdef CONFIG_TV_TELETEXT
     vbi_grabber(priv);
+#endif
     return pts;
 }
 
 /**
  * \brief returns frame size
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  *
  * \return frame size if video present, 0 - otherwise
  */
 static int get_video_framesize(priv_t * priv)
 {
-//      if(!priv->pmtVideo) return 1; //no video
+//      if(!priv->pmtVideo) return 1; //no video       
 //      return priv->pmtVideo->lSampleSize;
     if (!priv->chains[0]->rbuf)
-	return 1;		//no video
+	return 1;		//no video       
 mp_msg(MSGT_TV,MSGL_DBG3,"geT_video_framesize: %d\n",priv->chains[0]->rbuf->blocksize);
     return priv->chains[0]->rbuf->blocksize;
 }
@@ -2472,8 +2473,8 @@ static HRESULT init_chain_common(ICaptureGraphBuilder2 *pBuilder, chain_t *chain
     if (FAILED(hr))
         chain->pStreamConfig = NULL;
 
-    /*
-       Getting available video formats (last pointer in array  will be NULL)
+    /* 
+       Getting available video formats (last pointer in array  will be NULL) 
        First tryin to call IAMStreamConfig::GetStreamCaos. this will give us additional information such as
        min/max picture dimensions, etc. If this call fails trying IPIn::EnumMediaTypes with default
        min/max values.
@@ -2587,12 +2588,13 @@ static HRESULT build_audio_chain(priv_t *priv)
  */
 static HRESULT build_vbi_chain(priv_t *priv)
 {
+#ifdef CONFIG_TV_TELETEXT
     HRESULT hr;
 
     if(priv->chains[2]->rbuf)
         return S_OK;
 
-    if(priv->tv_param->teletext.device)
+    if(priv->tv_param->tdevice)
     {
         priv->chains[2]->rbuf=calloc(1,sizeof(grabber_ringbuffer_t));
         if(!priv->chains[2]->rbuf)
@@ -2606,18 +2608,19 @@ static HRESULT build_vbi_chain(priv_t *priv)
             return 0;
         }
     }
+#endif
     return S_OK;
 }
 
 /**
  * \brief playback/capture real start
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  *
  * \return 1 if success, 0 - otherwise
  *
  * TODO: move some code from init() here
- */
+ */                          
 static int start(priv_t * priv)
 {
     HRESULT hr;
@@ -2660,7 +2663,7 @@ static int start(priv_t * priv)
 /**
  * \brief driver initialization
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  *
  * \return 1 if success, 0 - otherwise
  */
@@ -2711,13 +2714,13 @@ static int init(priv_t * priv)
             mp_msg(MSGT_TV,MSGL_DBG2, "tvi_dshow: CoCreateInstance(CaptureGraphBuilder) call failed. Error:0x%x\n", (unsigned int)hr);
             break;
         }
-
+    
         hr = OLE_CALL_ARGS(priv->pBuilder, SetFiltergraph, priv->pGraph);
         if(FAILED(hr)){
             mp_msg(MSGT_TV,MSGL_ERR, "tvi_dshow: SetFiltergraph call failed. Error:0x%x\n",(unsigned int)hr);
             break;
         }
-
+    
         mp_msg(MSGT_TV, MSGL_DBG2, "tvi_dshow: Searching for available video capture devices\n");
         priv->chains[0]->pCaptureFilter = find_capture_device(priv->dev_index, &CLSID_VideoInputDeviceCategory);
         if(!priv->chains[0]->pCaptureFilter){
@@ -2941,8 +2944,10 @@ static int init(priv_t * priv)
             OLE_QUERYINTERFACE(priv->pBuilder,IID_IBaseFilter,pBF);
             OLE_CALL_ARGS(pBF,SetSyncSource,rc);
         }
+#ifdef CONFIG_TV_TELETEXT
        if(vbi_get_props(priv,&(priv->tsp))!=TVI_CONTROL_TRUE)
            break;
+#endif
         result = 1;
     } while(0);
 
@@ -2999,7 +3004,7 @@ static void destroy_chain(chain_t *chain)
 /**
  * \brief driver uninitialization
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  *
  * \return always 1
  */
@@ -3012,7 +3017,9 @@ static int uninit(priv_t * priv)
     if (priv->dwRegister) {
         RemoveFromRot(priv->dwRegister);
     }
+#ifdef CONFIG_TV_TELETEXT
     teletext_control(priv->priv_vbi,TV_VBI_CONTROL_STOP,(void*)1);
+#endif
     //stop audio grabber thread
 
     if (priv->state && priv->pMediaControl) {
@@ -3107,11 +3114,11 @@ static tvi_handle_t *tvi_init_dshow(tv_param_t* tv_param)
 /**
  * \brief driver's ioctl handler
  *
- * \param priv driver's private data structure
+ * \param priv driver's private data structure 
  * \param cmd ioctl command
  * \param arg ioct command's parameter
  *
- * \return TVI_CONTROL_TRUE if success
+ * \return TVI_CONTROL_TRUE if success 
  * \return TVI_CONTROL_FALSE if failure
  * \return TVI_CONTROL_UNKNOWN if unknowm cmd called
  */
@@ -3348,13 +3355,13 @@ static int control(priv_t * priv, int cmd, void *arg)
 	    if (!priv->chains[1]->arpmt[0])
 		return TVI_CONTROL_FALSE;
 
-	    samplerate = *(int *) arg;
+	    samplerate = *(int *) arg;;
 
 	    for (i = 0; priv->chains[1]->arpmt[i]; i++)
 		if (check_audio_format
 		    (priv->chains[1]->arpmt[i], samplerate, 16, priv->channels))
 		    break;
-	    if (!priv->chains[1]->arpmt[i]) {
+	    if (!priv->chains[1]->arpmt[i]) {	
                 //request not found. failing back to first available
 		mp_msg(MSGT_TV, MSGL_WARN, MSGTR_TVI_DS_SamplerateNotsupported, samplerate);
 		i = 0;
@@ -3408,7 +3415,7 @@ static int control(priv_t * priv, int cmd, void *arg)
 	    lAnalogFormat = tv_norms[tv_available_norms[i]].index;
 
 	    hr = OLE_QUERYINTERFACE(priv->chains[0]->pCaptureFilter,IID_IAMAnalogVideoDecoder, pVD);
-	    if (hr != S_OK)
+	    if (hr != S_OK)                            
 		return TVI_CONTROL_FALSE;
 	    hr = OLE_CALL_ARGS(pVD, put_TVFormat, lAnalogFormat);
 	    OLE_RELEASE_SAFE(pVD);
@@ -3471,7 +3478,7 @@ static int control(priv_t * priv, int cmd, void *arg)
 		return TVI_CONTROL_FALSE;
 
 	    ret = get_frequency(priv, &lFreq);
-	    lFreq = lFreq / (1000000/16);	//convert from Hz to 1/16 MHz units
+	    lFreq = lFreq * 16 / 1000000;	//convert from Hz to 1/16 MHz units
 
 	    *(unsigned long *) arg = lFreq;
 	    return ret;
@@ -3482,7 +3489,7 @@ static int control(priv_t * priv, int cmd, void *arg)
 	    if (!priv->pTVTuner)
 		return TVI_CONTROL_FALSE;
 	    //convert to Hz
-	    nFreq = (1000000/16) * nFreq;	//convert from 1/16 MHz units to Hz
+	    nFreq = 1000000 * nFreq / 16;	//convert from 1/16 MHz units to Hz
 	    return set_frequency(priv, nFreq);
 	}
     case TVI_CONTROL_VID_SET_HUE:
@@ -3517,19 +3524,20 @@ static int control(priv_t * priv, int cmd, void *arg)
     case TVI_CONTROL_IMMEDIATE:
 	priv->immediate_mode = 1;
 	return TVI_CONTROL_TRUE;
+#ifdef CONFIG_TV_TELETEXT
     case TVI_CONTROL_VBI_INIT:
     {
         void* ptr;
         ptr=&(priv->tsp);
-        if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==VBI_CONTROL_TRUE)
+        if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==TVI_CONTROL_TRUE)
             priv->priv_vbi=ptr;
         else
             priv->priv_vbi=NULL;
         return TVI_CONTROL_TRUE;
     }
-    case TVI_CONTROL_GET_VBI_PTR:
-        *(void **)arg=priv->priv_vbi;
-        return TVI_CONTROL_TRUE;
+    default:
+        return teletext_control(priv->priv_vbi,cmd,arg);
+#endif
     }
     return TVI_CONTROL_UNKNOWN;
 }

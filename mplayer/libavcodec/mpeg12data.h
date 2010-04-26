@@ -21,12 +21,12 @@
  */
 
 /**
- * @file
+ * @file mpeg12data.h
  * MPEG1/2 tables.
  */
 
-#ifndef AVCODEC_MPEG12DATA_H
-#define AVCODEC_MPEG12DATA_H
+#ifndef FFMPEG_MPEG12DATA_H
+#define FFMPEG_MPEG12DATA_H
 
 #include <stdint.h>
 #include "libavutil/rational.h"
@@ -53,4 +53,4 @@ extern const AVRational ff_frame_rate_tab[];
 extern const float ff_mpeg1_aspect[16];
 extern const AVRational ff_mpeg2_aspect[16];
 
-#endif /* AVCODEC_MPEG12DATA_H */
+#endif /* FFMPEG_MPEG12DATA_H */

@@ -1,21 +1,19 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: layer3.c 31032 2010-04-12 10:56:17Z diego $
+ * $Id: layer3.c 23485 2007-06-06 05:16:08Z zuxy $
  */
 
-/*
- * Mpeg Layer-3 audio decoder
+/* 
+ * Mpeg Layer-3 audio decoder 
  * --------------------------
  * copyright (c) 1995-1999 by Michael Hipp.
  * All rights reserved. See also 'README'
  *
- * Optimize-TODO: put short bands into the band-field without the stride
+ * Optimize-TODO: put short bands into the band-field without the stride 
  *                of 3 reals
  * Length-optimze: unify long and short band code where it is possible
- */
-
-#include "mpg123.h"
+ */ 
 
 #if 0
 #define L3_DEBUG 1
@@ -25,7 +23,7 @@
 #define CUT_HF
 #endif
 
-#define REAL_MUL(x, y) ((x) * (y))
+# define REAL_MUL(x, y)		((x) * (y))
 
 static real ispow[8207];
 static real aa_ca[8],aa_cs[8];
@@ -46,16 +44,16 @@ static real cos9[3],cos18[3];
 #endif
 
 struct bandInfoStruct {
-  uint16_t longIdx[23];
-  uint8_t  longDiff[22];
-  uint16_t shortIdx[14];
-  uint8_t  shortDiff[13];
+  int longIdx[23];
+  int longDiff[22];
+  int shortIdx[14];
+  int shortDiff[13];
 };
 
 static int longLimit[9][23];
 static int shortLimit[9][14];
 
-static const struct bandInfoStruct bandInfo[9] = {
+static struct bandInfoStruct bandInfo[9] = { 
 
 /* MPEG 1.0 */
  { {0,4,8,12,16,20,24,30,36,44,52,62,74, 90,110,134,162,196,238,288,342,418,576},
@@ -134,7 +132,7 @@ static void init_layer3(int down_sample_sblimit)
 
   for (i=0;i<8;i++)
   {
-    static const double Ci[8]={-0.6,-0.535,-0.33,-0.185,-0.095,-0.041,-0.0142,-0.0037};
+    static double Ci[8]={-0.6,-0.535,-0.33,-0.185,-0.095,-0.041,-0.0142,-0.0037};
     double sq=sqrt(1.0+Ci[i]*Ci[i]);
     aa_cs[i] = 1.0/sq;
     aa_ca[i] = Ci[i]/sq;
@@ -182,7 +180,7 @@ static void init_layer3(int down_sample_sblimit)
   }
 
   for(j=0;j<4;j++) {
-    static const int len[4] = { 36,36,12,36 };
+    static int len[4] = { 36,36,12,36 };
     for(i=0;i<len[j];i+=2)
       win1[j][i] = + win[j][i];
     for(i=1;i<len[j];i+=2)
@@ -215,10 +213,10 @@ static void init_layer3(int down_sample_sblimit)
 
   for(j=0;j<9;j++)
   {
-   const struct bandInfoStruct *bi = &bandInfo[j];
+   struct bandInfoStruct *bi = &bandInfo[j];
    int *mp;
    int cb,lwin;
-   const uint8_t *bdf;
+   int *bdf;
 
    mp = map[j][0] = mapbuf0[j];
    bdf = bi->longDiff;
@@ -333,11 +331,11 @@ static int III_get_side_info(struct III_sideinfo *si,int stereo,
 
    static const int tabs[2][5] = { { 2,9,5,3,4 } , { 1,8,1,2,9 } };
    const int *tab = tabs[lsf];
-
+   
    si->main_data_begin = getbits(tab[1]);
    if (stereo == 1)
      si->private_bits = getbits_fast(tab[2]);
-   else
+   else 
      si->private_bits = getbits_fast(tab[3]);
 
    if(!lsf) {
@@ -385,8 +383,8 @@ if(2*gr_info->big_values > bandInfo[sfreq].shortIdx[12])
              fprintf(stderr,"Blocktype == 0 and window-switching == 1 not allowed.\n");
            return 0;
          }
-
-         /* region_count/start parameters are implicit in this case. */
+      
+         /* region_count/start parameters are implicit in this case. */       
          if(!lsf || gr_info->block_type == 2)
            gr_info->region1start = 36>>1;
          else {
@@ -476,7 +474,7 @@ static int III_get_scale_factors_1(int *scf,struct gr_info_s *gr_info)
           numbits += num0 * 6;
         }
         else {
-          scf += 6;
+          scf += 6; 
         }
 
         if(!(scfsi & 0x4)) {
@@ -494,7 +492,7 @@ static int III_get_scale_factors_1(int *scf,struct gr_info_s *gr_info)
           numbits += num1 * 5;
         }
         else {
-          scf += 5;
+          scf += 5; 
         }
 
         if(!(scfsi & 0x1)) {
@@ -525,7 +523,7 @@ static int III_get_scale_factors_2(int *scf,struct gr_info_s *gr_info,int i_ster
    { { 9, 9, 9,9 } , { 9, 9,12,6 } , { 18,18,0,0} ,
      {12,12,12,0 } , {12, 9, 9,6 } , { 15,12,9,0} } ,
    { { 6, 9, 9,9 } , { 6, 9,12,6 } , { 15,18,0,0} ,
-     { 6,15,12,0 } , { 6,12, 9,6 } , {  6,18,9,0} } };
+     { 6,15,12,0 } , { 6,12, 9,6 } , {  6,18,9,0} } }; 
 
   if(i_stereo) /* i_stereo AND second channel -> do_layer3() checks this */
     slen = i_slen2[gr_info->scalefac_compress>>1];
@@ -534,7 +532,7 @@ static int III_get_scale_factors_2(int *scf,struct gr_info_s *gr_info,int i_ster
 
   gr_info->preflag = (slen>>15) & 0x1;
 
-  n = 0;
+  n = 0;  
   if( gr_info->block_type == 2 ) {
     n++;
     if(gr_info->mixed_block_flag) n++;
@@ -553,7 +551,7 @@ static int III_get_scale_factors_2(int *scf,struct gr_info_s *gr_info,int i_ster
       for(j=0;j<(int)(pnt[i]);j++) *scf++ = 0;
     }
   }
-
+  
   n = (n << 1) + 1;
   for(i=0;i<n;i++) *scf++ = 0;
 
@@ -598,10 +596,10 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
     int region1  = gr_info->region1start;
     int region2  = gr_info->region2start;
 
-    l3 = ((576>>1)-bv)>>1;
+    l3 = ((576>>1)-bv)>>1;   
 /*
- * we may lose the 'odd' bit here !!
- * check this later again
+ * we may lose the 'odd' bit here !! 
+ * check this later again 
  */
     if(bv <= region1) {
       l[0] = bv; l[1] = l[2] = 0;
@@ -616,10 +614,10 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
       }
     }
   }
-
+ 
   if(gr_info->block_type == 2) {
     /*
-     * decoding with short or mixed mode BandIndex table
+     * decoding with short or mixed mode BandIndex table 
      */
     int i,max[4];
     int step=0,lwin=3,cb=0;
@@ -734,8 +732,8 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
         mask <<= 1;
       }
       if(part2remain+num <= 0) {
-        num -= part2remain+num;
-        break;
+	num -= part2remain+num;
+	break;
       }
 
       for(i=0;i<4;i++) {
@@ -761,7 +759,7 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
           if(part2remain+num <= 0) {
             break;
           }
-          if(mask < 0)
+          if(mask < 0) 
             *xrpnt = -v;
           else
             *xrpnt = v;
@@ -851,7 +849,7 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
 
         if (x == 15 && h->linbits) {
           max = cb;
-          REFRESH_MASK;
+	  REFRESH_MASK;
           x += ((unsigned long) mask) >> (BITSHIFT+8-h->linbits);
           num -= h->linbits+1;
           mask <<= h->linbits;
@@ -875,7 +873,7 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
 
         if (y == 15 && h->linbits) {
           max = cb;
-          REFRESH_MASK;
+	  REFRESH_MASK;
           y += ((unsigned long) mask) >> (BITSHIFT+8-h->linbits);
           num -= h->linbits+1;
           mask <<= h->linbits;
@@ -914,7 +912,7 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
         mask <<= 1;
       }
       if(part2remain+num <= 0) {
-        num -= part2remain+num;
+	num -= part2remain+num;
         break;
       }
 
@@ -924,7 +922,7 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
             mc = *m++;
             cb = *m++;
 #ifdef CUT_HF
-            if(cb == 21) {
+            if(cb == 21) { 
               fprintf(stderr,"c");
               v = 0.0;
             }
@@ -960,7 +958,7 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
   bitindex -= num; wordpointer += (bitindex>>3); bitindex &= 0x7;
   num = 0;
 
-  while(xrpnt < &xr[SBLIMIT][0])
+  while(xrpnt < &xr[SBLIMIT][0]) 
     *xrpnt++ = 0.0;
 
   while( part2remain > 16 ) {
@@ -979,22 +977,22 @@ static int III_dequantize_sample(real xr[SBLIMIT][SSLIMIT],int *scf,
 
 
 
-/*
+/* 
  * III_stereo: calculate real channel values for Joint-I-Stereo-mode
  */
 static void III_i_stereo(real xr_buf[2][SBLIMIT][SSLIMIT],int *scalefac,
    struct gr_info_s *gr_info,int sfreq,int ms_stereo,int lsf)
 {
       real (*xr)[SBLIMIT*SSLIMIT] = (real (*)[SBLIMIT*SSLIMIT] ) xr_buf;
-      const struct bandInfoStruct *bi = &bandInfo[sfreq];
+      struct bandInfoStruct *bi = &bandInfo[sfreq];
 
       const real *tab1,*tab2;
 
       int tab;
-      static const real *tabs[3][2][2] = {
+      static const real *tabs[3][2][2] = { 
          { { tan1_1,tan2_1 }     , { tan1_2,tan2_2 } },
          { { pow1_1[0],pow2_1[0] } , { pow1_2[0],pow2_2[0] } } ,
-         { { pow1_1[1],pow2_1[1] } , { pow1_2[1],pow2_2[1] } }
+         { { pow1_1[1],pow2_1[1] } , { pow1_2[1],pow2_2[1] } } 
       };
 
       tab = lsf + (gr_info->scalefac_compress & lsf);
@@ -1003,7 +1001,7 @@ static void III_i_stereo(real xr_buf[2][SBLIMIT][SSLIMIT],int *scalefac,
 #if 0
       if(lsf) {
         int p = gr_info->scalefac_compress & 0x1;
-        if(ms_stereo) {
+	if(ms_stereo) {
           tab1 = pow1_2[p]; tab2 = pow2_2[p];
         }
         else {
@@ -1034,7 +1032,7 @@ static void III_i_stereo(real xr_buf[2][SBLIMIT][SSLIMIT],int *scalefac,
              do_l = 0;
 
            for(;sfb<12;sfb++) {
-             is_p = scalefac[sfb*3+lwin-gr_info->mixed_block_flag]; /* scale: 0-15 */
+             is_p = scalefac[sfb*3+lwin-gr_info->mixed_block_flag]; /* scale: 0-15 */ 
              if(is_p != 7) {
                real t1,t2;
                sb  = bi->shortDiff[sfb];
@@ -1049,7 +1047,7 @@ static void III_i_stereo(real xr_buf[2][SBLIMIT][SSLIMIT],int *scalefac,
            }
 
 #if 1
-/* in the original: copy 10 to 11 , here: copy 11 to 12
+/* in the original: copy 10 to 11 , here: copy 11 to 12 
 maybe still wrong??? (copy 12 to 13?) */
            is_p = scalefac[11*3+lwin-gr_info->mixed_block_flag]; /* scale: 0-15 */
            sb   = bi->shortDiff[12];
@@ -1062,7 +1060,7 @@ maybe still wrong??? (copy 12 to 13?) */
            if(is_p != 7) {
              real t1,t2;
              t1 = tab1[is_p]; t2 = tab2[is_p];
-             for ( ; sb > 0; sb--,idx+=3 ) {
+             for ( ; sb > 0; sb--,idx+=3 ) {  
                real v = xr[0][idx];
                xr[0][idx] = REAL_MUL(v, t1);
                xr[1][idx] = REAL_MUL(v, t2);
@@ -1071,7 +1069,7 @@ maybe still wrong??? (copy 12 to 13?) */
          } /* end for(lwin; .. ; . ) */
 
 /* also check l-part, if ALL bands in the three windows are 'empty'
- * and mode = mixed_mode
+ * and mode = mixed_mode 
  */
          if (do_l) {
            int sfb = gr_info->maxbandl;
@@ -1089,17 +1087,17 @@ maybe still wrong??? (copy 12 to 13?) */
                  xr[1][idx] = REAL_MUL(v, t2);
                }
              }
-             else
+             else 
                idx += sb;
            }
-         }
-      }
+         }     
+      } 
       else { /* ((gr_info->block_type != 2)) */
        int sfb = gr_info->maxbandl;
        int is_p,idx = bi->longIdx[sfb];
 
 /* hmm ... maybe the maxbandl stuff for i-stereo is buggy? */
-       if(sfb <= 21) {
+       if(sfb <= 21) { 
         for ( ; sfb<21; sfb++) {
           int sb = bi->longDiff[sfb];
           is_p = scalefac[sfb]; /* scale: 0-15 */
@@ -1119,7 +1117,7 @@ maybe still wrong??? (copy 12 to 13?) */
         is_p = scalefac[20];
         if(is_p != 7) {  /* copy l-band 20 to l-band 21 */
           int sb;
-          real t1 = tab1[is_p],t2 = tab2[is_p];
+          real t1 = tab1[is_p],t2 = tab2[is_p]; 
 
           for ( sb = bi->longDiff[21]; sb > 0; sb--,idx++ ) {
             real v = xr[0][idx];
@@ -1135,9 +1133,9 @@ static void III_antialias(real xr[SBLIMIT][SSLIMIT],struct gr_info_s *gr_info) {
    int sblim;
 
    if(gr_info->block_type == 2) {
-      if(!gr_info->mixed_block_flag)
+      if(!gr_info->mixed_block_flag) 
         return;
-      sblim = 1;
+      sblim = 1; 
    }
    else {
      sblim = gr_info->maxb-1;
@@ -1161,7 +1159,7 @@ static void III_antialias(real xr[SBLIMIT][SSLIMIT],struct gr_info_s *gr_info) {
          *xr1++ = (bd * (*cs++) ) + (bu * (*ca++) );
        }
      }
-
+     
   }
 }
 
@@ -1174,9 +1172,9 @@ static void III_antialias(real xr[SBLIMIT][SSLIMIT],struct gr_info_s *gr_info) {
 /*
  * III_hybrid
  */
-
+ 
 static dct36_func_t dct36_func;
-
+  
 static void III_hybrid(real fsIn[SBLIMIT][SSLIMIT],real tsOut[SSLIMIT][SBLIMIT],
    int ch,struct gr_info_s *gr_info)
 {
@@ -1201,7 +1199,7 @@ static void III_hybrid(real fsIn[SBLIMIT][SSLIMIT],real tsOut[SSLIMIT][SBLIMIT],
      (*dct36_func)(fsIn[1],rawout1+18,rawout2+18,win1[0],tspnt+1);
      rawout1 += 36; rawout2 += 36; tspnt += 2;
    }
-
+ 
    bt = gr_info->block_type;
    if(bt == 2) {
      for (; sb<gr_info->maxb; sb+=2,tspnt+=2,rawout1+=36,rawout2+=36) {
@@ -1257,7 +1255,7 @@ static int do_layer3(struct frame *fr,int single){
 
   if(!III_get_side_info(&sideinfo,stereo,ms_stereo,sfreq,single,fr->lsf))
     return -1;
-
+  
   set_pointer(sideinfo.main_data_begin);
 
   granules = (fr->lsf) ? 1 : 2;
@@ -1277,9 +1275,9 @@ static int do_layer3(struct frame *fr,int single){
 
     if(stereo == 2) {
       struct gr_info_s *gr_info = &(sideinfo.ch[1].gr[gr]);
-
+      
       int part2bits;
-      if(fr->lsf)
+      if(fr->lsf) 
         part2bits = III_get_scale_factors_2(scalefacs[1],gr_info,i_stereo);
       else
         part2bits = III_get_scale_factors_1(scalefacs[1],gr_info);
@@ -1304,7 +1302,7 @@ static int do_layer3(struct frame *fr,int single){
         III_i_stereo(hybridIn,scalefacs[1],gr_info,sfreq,ms_stereo,fr->lsf);
 
       if(ms_stereo || i_stereo || (single == 3) ) {
-        if(gr_info->maxb > sideinfo.ch[0].gr[gr].maxb)
+        if(gr_info->maxb > sideinfo.ch[0].gr[gr].maxb) 
           sideinfo.ch[0].gr[gr].maxb = gr_info->maxb;
         else
           gr_info->maxb = sideinfo.ch[0].gr[gr].maxb;
@@ -1315,7 +1313,7 @@ static int do_layer3(struct frame *fr,int single){
           register int i;
           register real *in0 = (real *) hybridIn[0],*in1 = (real *) hybridIn[1];
           for(i=0;i<SSLIMIT*gr_info->maxb;i++,in0++)
-            *in0 = (*in0 + *in1++); /* *0.5 done by pow-scale */
+            *in0 = (*in0 + *in1++); /* *0.5 done by pow-scale */ 
           break; }
         case 1: {
           register int i;
@@ -1329,21 +1327,23 @@ static int do_layer3(struct frame *fr,int single){
 
     for(ch=0;ch<stereo1;ch++) {
       struct gr_info_s *gr_info = &(sideinfo.ch[ch].gr[gr]);
-                  III_antialias(hybridIn[ch],gr_info);
-                  III_hybrid(hybridIn[ch], hybridOut[ch], ch,gr_info);
+		  III_antialias(hybridIn[ch],gr_info);
+		  III_hybrid(hybridIn[ch], hybridOut[ch], ch,gr_info);
     }
 
     for(ss=0;ss<SSLIMIT;ss++) {
       if(single >= 0) {
-                    clip += (fr->synth_mono)(hybridOut[0][ss],pcm_sample,&pcm_point);
-                } else {
-                  int p1 = pcm_point;
-                    clip += (fr->synth)(hybridOut[0][ss],0,pcm_sample,&p1);
-                    clip += (fr->synth)(hybridOut[1][ss],1,pcm_sample,&pcm_point);
+		    clip += (fr->synth_mono)(hybridOut[0][ss],pcm_sample,&pcm_point);
+  		} else {
+	  	  int p1 = pcm_point;
+		    clip += (fr->synth)(hybridOut[0][ss],0,pcm_sample,&p1);
+		    clip += (fr->synth)(hybridOut[1][ss],1,pcm_sample,&pcm_point);
       }
     }
-
+    
   }
 
   return clip;
 }
+
+

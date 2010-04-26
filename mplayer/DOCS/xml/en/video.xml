@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 31032 $ -->
+<!-- $Revision: 27044 $ -->
 <chapter id="video">
 <title>Video output devices</title>
 
@@ -1549,14 +1549,19 @@ to enable driver autodetection.
 Since VIDIX requires direct hardware access you can either run it as root
 or set the SUID bit on the <application>MPlayer</application> binary
 (<emphasis role="bold">Warning: This is a security risk!</emphasis>).
-Alternatively, you can use a special kernel module, like this:
+Alternatively, if you are running Linux kernel 2.4.x, you can use a
+special kernel module, like this:
 </para>
 
 <procedure>
 <step><para>
   Download the
   <ulink url="http://www.arava.co.il/matan/svgalib/">development version</ulink>
-  of svgalib (1.9.x).
+  of svgalib (for example 1.9.17), <emphasis role="bold">OR</emphasis>
+  download a version made by Alex especially for usage with
+  <application>MPlayer</application> (it doesn't need the svgalib source to
+  compile) from
+  <ulink url="http://www.mplayerhq.hu/MPlayer/contrib/svgalib/svgalib_helper-1.9.17-mplayer.tar.bz2">here</ulink>.
 </para></step>
 <step><para>
   Compile the module in the
@@ -1574,8 +1579,7 @@ Alternatively, you can use a special kernel module, like this:
 <step><para>
   Then run <filename>configure</filename> again and pass the parameter
   <option>--enable-svgalib_helper</option> as well as
-  <option>--with-extraincdir=<replaceable>/path/to/svgalib_helper/sources/</replaceable>kernel/svgalib_helper</option>,
-  where <replaceable>/path/to/svgalib_helper/sources/</replaceable> has to be
+  <option>--with-extraincdir=/path/to/svgalib_helper/sources</option>,
   adjusted to wherever you extracted svgalib_helper sources.
 </para></step>
 <step><para>
@@ -1754,6 +1758,10 @@ If you want to do software transcoding you should have at least a 1GHz CPU.
 <para>
 Configure should detect your DVB card. If it did not, force detection with
 <screen>./configure --enable-dvb</screen>
+If you have ost headers at a non-standard path, set the path with
+<screen>
+./configure --with-extraincdir=<replaceable>DVB source directory</replaceable>/ost/include
+</screen>
 Then compile and install as usual.</para>
 
 <formalpara><title>USAGE</title>
@@ -2003,7 +2011,7 @@ the native OSD feature of DVB cards.
 <application>MPlayer</application> supports hardware accelerated playback
 with the Creative DXR2 card.
 </para>
-
+  
 <para>
 First of all you will need properly installed DXR2 drivers. You can find
 the drivers and installation instructions at the
@@ -2255,7 +2263,7 @@ issue the following command
 <screen>
 mplayer -vo zr -zrdev /dev/video0 -zrcrop 352x288+352+0 -zrxdoff 0 -zrbw \
     -zrcrop 352x288+0+0 -zrdev /dev/video1 -zrquality 10 \
-        <replaceable>movie.avi</replaceable>
+	<replaceable>movie.avi</replaceable>
 </screen>
 </para>
 

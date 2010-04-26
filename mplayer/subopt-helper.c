@@ -1,22 +1,4 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
-/**
+/** 
  * \file subopt-helper.c
  *
  * \brief Compensates the suboption parsing code duplication a bit.
@@ -63,10 +45,17 @@ static char const * parse_float( char const * const str, float * const valp );
  *         else a non-zero value is returned.
  *
  */
-int subopt_parse( char const * const str, const opt_t * opts )
+int subopt_parse( char const * const str, opt_t * opts )
 {
   int parse_err = 0, idx;
   unsigned int parse_pos = 0;
+
+  /* Initialize set member to false.          *
+   * It is set to true if it was found in str */
+  for ( idx=0; opts[idx].name; ++idx )
+  {
+    opts[idx].set = 0;
+  }
 
   if ( str )
   {
@@ -87,7 +76,7 @@ int subopt_parse( char const * const str, const opt_t * opts )
         {
           char * delim, * arg_delim;
 
-          /* search nearest delimiter ( option or argument delimiter ) */
+          /* search nearest delimiter ( option or argument delimiter ) */ 
           delim = strchr( &str[parse_pos], ':' );
           arg_delim = strchr( &str[parse_pos], '=' );
 
@@ -96,7 +85,7 @@ int subopt_parse( char const * const str, const opt_t * opts )
           {
             delim = strchr( &str[parse_pos], '=' );
           }
-
+          
           substr_len = delim ? // is a delim present
                          delim - &str[parse_pos] : // yes
                          strlen( &str[parse_pos] ); // no, end of string
@@ -112,7 +101,7 @@ int subopt_parse( char const * const str, const opt_t * opts )
         if( strncmp( &str[parse_pos], opts[idx].name, opt_len ) == 0 )
         {
           /* option was found */
-          next = 1;
+          opts[idx].set = 1; next = 1;
 
           assert( opts[idx].valp && "Need a pointer to store the arg!" );
 
@@ -207,7 +196,7 @@ else if ( substr_len == opt_len+2 )
                   strncmp( &str[parse_pos+2], opts[idx].name, opt_len ) == 0 )
         {
           /* option was found but negated */
-          next = 1;
+          opts[idx].set = 1; next = 1;
 
           /* set arg to false */
           *((int *)(opts[idx].valp)) = 0;
@@ -222,7 +211,7 @@ else if ( substr_len == opt_len+2 )
         /* break out of the loop, if this subopt is processed */
         if ( next ) { break; }
       }
-
+      
       /* if we had a valid suboption the current pos should *
        * equal the delimiter char, which should be ':' for  *
        * suboptions.                                        */
@@ -318,16 +307,18 @@ static char const * parse_str( char const * str, strarg_t * const valp )
 /*** common test functions ***/
 
 /** \brief Test if i is not negative */
-int int_non_neg(void *iptr)
+int int_non_neg( int * i )
 {
-  int *i = iptr;
-  return *i >= 0;
+  if ( *i < 0 ) { return 0; }
+
+  return 1;
 }
 /** \brief Test if i is positive. */
-int int_pos(void *iptr)
+int int_pos( int * i )
 {
-  int *i = iptr;
-  return *i > 0;
+  if ( *i > 0 ) { return 1; }
+
+  return 0;
 }
 
 /*** little helpers */
@@ -347,3 +338,4 @@ int strargcasecmp(strarg_t *arg, char *str) {
     res = arg->len - strlen(str);
   return res;
 }
+

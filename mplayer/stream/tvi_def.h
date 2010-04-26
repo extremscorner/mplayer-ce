@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_TVI_DEF_H
 #define MPLAYER_TVI_DEF_H
 
@@ -33,6 +15,8 @@ static int get_video_framesize(priv_t *priv);
 static double grab_audio_frame(priv_t *priv, char *buffer, int len);
 static int get_audio_framesize(priv_t *priv);
 
+int teletext_control(void* p, int cmd, void *arg);
+
 static const tvi_functions_t functions =
 {
     init,
@@ -47,11 +31,11 @@ static const tvi_functions_t functions =
 
 static tvi_handle_t *new_handle(void)
 {
-    tvi_handle_t *h = malloc(sizeof(tvi_handle_t));
+    tvi_handle_t *h = (tvi_handle_t *)malloc(sizeof(tvi_handle_t));
 
     if (!h)
 	return NULL;
-    h->priv = malloc(sizeof(priv_t));
+    h->priv = (priv_t *)malloc(sizeof(priv_t));
     if (!h->priv)
     {
 	free(h);
@@ -81,11 +65,11 @@ static void free_handle(tvi_handle_t *h)
 
 /**
  Fills video frame in given buffer with blue color for yv12,i420,uyvy,yuy2.
- Other formats will be filled with 0xC0
+ Other formats will be filled with 0xC0 
 */
 static inline void fill_blank_frame(char* buffer,int len,int fmt){
     int i;
-    // RGB(0,0,255) <-> YVU(41,110,240)
+    // RGB(0,0,255) <-> YVU(41,110,240) 
 
     switch(fmt){
     case IMGFMT_YV12:

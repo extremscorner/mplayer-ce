@@ -13,7 +13,9 @@
  * http://svn.mplayerhq.hu/mplayer/trunk/
  */
 
-#include "wine/winbase.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void free_registry(void);
 
@@ -35,6 +37,9 @@ long __stdcall RegEnumKeyExA(HKEY hKey, DWORD dwIndex, LPSTR lpName, LPDWORD lpc
 		   LPFILETIME lpftLastWriteTime);
 long __stdcall RegEnumValueA(HKEY hkey, DWORD index, LPSTR value, LPDWORD val_count,
 		   LPDWORD reserved, LPDWORD type, LPBYTE data, LPDWORD count);
+#endif
+#ifdef __cplusplus
+};
 #endif
 
 #endif /* MPLAYER_REGISTRY_H */

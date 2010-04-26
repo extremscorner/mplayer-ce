@@ -1,26 +1,7 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 
 #include "config.h"
 #include "mp_msg.h"
-#include "mp3_hdr.h"
 
 //----------------------- mp3 audio frame header parser -----------------------
 
@@ -38,6 +19,18 @@ static long freqs[9] = { 44100, 48000, 32000,	// MPEG 1.0
 			 22050, 24000, 16000,   // MPEG 2.0
 			 11025, 12000,  8000};  // MPEG 2.5
 
+int mp_mp3_get_lsf(unsigned char* hbuf){
+    unsigned long newhead = 
+      hbuf[0] << 24 |
+      hbuf[1] << 16 |
+      hbuf[2] <<  8 |
+      hbuf[3];
+    if( newhead & ((long)1<<20) ) {
+      return (newhead & ((long)1<<19)) ? 0x0 : 0x1;
+    }
+    return 1;
+}
+
 /*
  * return frame size or -1 (bad frame)
  */
@@ -45,7 +38,7 @@ int mp_get_mp3_header(unsigned char* hbuf,int* chans, int* srate, int* spf, int*
     int stereo,ssize,lsf,framesize,padding,bitrate_index,sampling_frequency, divisor;
     int bitrate;
     int layer, mult[3] = { 12000, 144000, 144000 };
-    unsigned long newhead =
+    unsigned long newhead = 
       hbuf[0] << 24 |
       hbuf[1] << 16 |
       hbuf[2] <<  8 |
@@ -53,15 +46,17 @@ int mp_get_mp3_header(unsigned char* hbuf,int* chans, int* srate, int* spf, int*
 
 //    printf("head=0x%08X\n",newhead);
 
+#if 1
     // head_check:
     if( (newhead & 0xffe00000) != 0xffe00000 ){
 	mp_msg(MSGT_DEMUXER,MSGL_DBG2,"head_check failed\n");
 	return -1;
     }
+#endif
 
     layer = 4-((newhead>>17)&3);
-    if(layer==4){
-      mp_msg(MSGT_DEMUXER,MSGL_DBG2,"not layer-1/2/3\n");
+    if(layer==4){ 
+      mp_msg(MSGT_DEMUXER,MSGL_DBG2,"not layer-1/2/3\n"); 
       return -1;
     }
 
@@ -108,14 +103,14 @@ int mp_get_mp3_header(unsigned char* hbuf,int* chans, int* srate, int* spf, int*
     bitrate = tabsel_123[lsf][layer-1][bitrate_index];
     framesize = bitrate * mult[layer-1];
 
-    mp_msg(MSGT_DEMUXER,MSGL_DBG2,"FRAMESIZE: %d, layer: %d, bitrate: %d, mult: %d\n",
+    mp_msg(MSGT_DEMUXER,MSGL_DBG2,"FRAMESIZE: %d, layer: %d, bitrate: %d, mult: %d\n", 
     	framesize, layer, tabsel_123[lsf][layer-1][bitrate_index], mult[layer-1]);
     if(!framesize){
 	mp_msg(MSGT_DEMUXER,MSGL_DBG2,"invalid framesize/bitrate_index\n");
 	return -1;
     }
 
-    divisor = (layer == 3 ? (freqs[sampling_frequency] << lsf) : freqs[sampling_frequency]);
+    divisor = (layer == 3 ? (freqs[sampling_frequency] << lsf) : freqs[sampling_frequency]); 
     framesize /= divisor;
     if(layer==1)
       framesize = (framesize+padding)*4;
@@ -142,3 +137,4 @@ int mp_get_mp3_header(unsigned char* hbuf,int* chans, int* srate, int* spf, int*
 
     return framesize;
 }
+

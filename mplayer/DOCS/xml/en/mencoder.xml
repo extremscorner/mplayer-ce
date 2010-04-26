@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 30982 $ -->
+<!-- $Revision: 26990 $ -->
 <chapter id="mencoder">
 <title>Basic usage of <application>MEncoder</application></title>
 
@@ -326,8 +326,7 @@ The name comes from the fact that this method encodes the file
 <emphasis>twice</emphasis>.  The first encoding (dubbed pass) creates some
 temporary files (<filename>*.log</filename>) with a size of few megabytes, do
 not delete them yet (you can delete the AVI or rather just not create any video
-by redirecting it into <filename>/dev/null</filename>
-or on Windows into <filename>NUL</filename>).
+by redirecting it into <filename>/dev/null</filename>).
 In the second pass, the two pass output
 file is created, using the bitrate data from the temporary files. The
 resulting file will have much better image quality. If this is the first
@@ -401,9 +400,9 @@ You should be safe if you respect the following constraints:
 <title>encode for PSP</title>
 <para>
 <screen>
-mencoder -ofps 30000/1001 -af lavcresample=24000 -vf harddup -oac lavc \
-    -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=libfaac \
-    -of lavf -lavfopts format=psp \
+mencoder -ofps 30000/1001 -af lavcresample=24000 -vf harddup -of lavf \
+    -oac lavc -ovc lavc -lavcopts aglobal=1:vglobal=1:vcodec=mpeg4:acodec=aac \
+    -lavfopts format=psp \
     <replaceable>input.video</replaceable> -o <replaceable>output.psp</replaceable>
 </screen>
 Note that you can set the title of the video with
@@ -608,14 +607,14 @@ mencoder mf://<replaceable>frame001.jpg,frame002.jpg</replaceable> -mf w=800:h=6
 Creating an MPEG-4 file from explicit list of JPEG files (list.txt in current
 directory contains the list of files to use as source, one per line):
 <screen>
-mencoder mf://<replaceable>@list.txt</replaceable> -mf w=800:h=600:fps=25:type=jpg \
+mencoder mf://<replaceable>@list.txt</replaceable> -mf w=800:h=600:fps=25:type=jpg \ 
     -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell -oac copy -o <replaceable>output.avi</replaceable>
 </screen>
 </para>
 </informalexample>
 
 You can mix different types of images, regardless of the method you use
-t &mdash; individual filenames, wildcard or file with list &mdash; provided of
+&mdash; individual filenames, wildcard or file with list &mdash; provided of
 course they have the same dimensions.
 So you can e.g. take title frame from PNG file,
 and then put a slideshow of your JPEG photos.
@@ -757,7 +756,7 @@ support this MPEG-4 attribute.
 
 <para>
 This feature can be used only with
-<systemitem class="library">libavcodec</systemitem>'s
+<link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>'s
 <systemitem>mpeg4</systemitem> codec. Keep in mind: although
 <application>MPlayer</application> will correctly play the created file,
 other players may use the wrong aspect ratio.

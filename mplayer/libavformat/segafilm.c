@@ -20,14 +20,13 @@
  */
 
 /**
- * @file
+ * @file segafilm.c
  * Sega FILM (.cpk) file demuxer
  * by Mike Melanson (melanson@pcisys.net)
  * For more information regarding the Sega FILM file format, visit:
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 
 #define FILM_TAG MKBETAG('F', 'I', 'L', 'M')
@@ -37,24 +36,24 @@
 
 typedef struct {
   int stream;
-  int64_t sample_offset;
+  offset_t sample_offset;
   unsigned int sample_size;
   int64_t pts;
   int keyframe;
-} film_sample;
+} film_sample_t;
 
 typedef struct FilmDemuxContext {
     int video_stream_index;
     int audio_stream_index;
 
-    enum CodecID audio_type;
+    unsigned int audio_type;
     unsigned int audio_samplerate;
     unsigned int audio_bits;
     unsigned int audio_channels;
 
-    enum CodecID video_type;
+    unsigned int video_type;
     unsigned int sample_count;
-    film_sample *sample_table;
+    film_sample_t *sample_table;
     unsigned int current_sample;
 
     unsigned int base_clock;
@@ -116,7 +115,7 @@ static int film_read_header(AVFormatContext *s,
         else if (film->audio_bits == 16)
             film->audio_type = CODEC_ID_PCM_S16BE;
         else
-            film->audio_type = CODEC_ID_NONE;
+            film->audio_type = 0;
     }
 
     if (AV_RB32(&scratch[0]) != FDSC_TAG)
@@ -125,7 +124,7 @@ static int film_read_header(AVFormatContext *s,
     if (AV_RB32(&scratch[8]) == CVID_TAG) {
         film->video_type = CODEC_ID_CINEPAK;
     } else
-        film->video_type = CODEC_ID_NONE;
+        film->video_type = 0;
 
     /* initialize the decoder streams */
     if (film->video_type) {
@@ -133,7 +132,7 @@ static int film_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR(ENOMEM);
         film->video_stream_index = st->index;
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
         st->codec->codec_id = film->video_type;
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->width = AV_RB32(&scratch[16]);
@@ -145,16 +144,16 @@ static int film_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR(ENOMEM);
         film->audio_stream_index = st->index;
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = film->audio_type;
         st->codec->codec_tag = 1;
         st->codec->channels = film->audio_channels;
-        st->codec->bits_per_coded_sample = film->audio_bits;
+        st->codec->bits_per_sample = film->audio_bits;
         st->codec->sample_rate = film->audio_samplerate;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
-            st->codec->bits_per_coded_sample;
+            st->codec->bits_per_sample;
         st->codec->block_align = st->codec->channels *
-            st->codec->bits_per_coded_sample / 8;
+            st->codec->bits_per_sample / 8;
     }
 
     /* load the sample table */
@@ -164,9 +163,9 @@ static int film_read_header(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
     film->base_clock = AV_RB32(&scratch[8]);
     film->sample_count = AV_RB32(&scratch[12]);
-    if(film->sample_count >= UINT_MAX / sizeof(film_sample))
+    if(film->sample_count >= UINT_MAX / sizeof(film_sample_t))
         return -1;
-    film->sample_table = av_malloc(film->sample_count * sizeof(film_sample));
+    film->sample_table = av_malloc(film->sample_count * sizeof(film_sample_t));
 
     for(i=0; i<s->nb_streams; i++)
         av_set_pts_info(s->streams[i], 33, 1, film->base_clock);
@@ -206,7 +205,7 @@ static int film_read_packet(AVFormatContext *s,
 {
     FilmDemuxContext *film = s->priv_data;
     ByteIOContext *pb = s->pb;
-    film_sample *sample;
+    film_sample_t *sample;
     int ret = 0;
     int i;
     int left, right;

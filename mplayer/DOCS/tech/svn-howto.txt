@@ -21,13 +21,9 @@ http://svnbook.org/
 
 For more information about the Subversion project, visit
 
-http://subversion.apache.org/
+http://subversion.tigris.org/
 
 Consult these resources whenever you have problems, they are quite exhaustive.
-
-You do not need a special checkout that works through ssh or similar in order
-to be able to commit changes. All you need is the username and password pair
-that you received from the MPlayer Subversion server admin.
 
 What follows now is a basic introduction to Subversion and some MPlayer-specific
 guidelines. Read it at least once, if you are granted commit privileges to the
@@ -40,8 +36,8 @@ I. BASICS:
 
 0. Get Subversion:
 
-  The MPlayer project server runs Subversion 1.5. For optimal compatibility
-  you should use version 1.5 or later.
+  The MPlayer project server runs Subversion 1.4. For optimal compatibility
+  you should use version 1.4 or later.
 
 
 1. Checking out the source tree:
@@ -108,7 +104,7 @@ I. BASICS:
 
   For cosmetics-only commits you should get (almost) empty output from
 
-    svn diff -x -uwb <filename(s)>
+    svn diff --diff-cmd diff -x '-duwbBE' <filename(s)>
 
   Also check the output of
 
@@ -317,15 +313,6 @@ II. POLICY / RULES:
 13. Try to keep important discussions and requests (also) on the mplayer-dev-eng
     mailing list, so that all developers can benefit from them.
     IRC is good for quick discussions, but nobody is there 24/7.
-
-
-14. MPlayer contains some external code that is partly patched, partly copied
-    verbatim (see Copyright for details). This code should not be modified
-    unless there is a very good reason. Much of it is maintained upstream.
-    We should be good open source citizens, submit our fixes upstream and keep
-    the differences as small as possible.
-    If you have to modify external code, do not forget to update the diff file
-    with our local changes.
 
 
 Also read DOCS/tech/patches.txt !!!!

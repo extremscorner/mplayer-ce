@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
 #define RT_OLD          0
@@ -43,8 +42,7 @@ static av_cold int sunrast_init(AVCodecContext *avctx) {
 }
 
 static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
-                                int *data_size, AVPacket *avpkt) {
-    const uint8_t *buf = avpkt->data;
+                                int *data_size, const uint8_t *buf, int buf_size) {
     SUNRASTContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
@@ -64,7 +62,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     maptype   = AV_RB32(buf+24);
     maplength = AV_RB32(buf+28);
 
-    if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF) {
+    if (type > RT_BYTE_ENCODED && type <= RT_FORMAT_IFF) {
         av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
         return -1;
     }
@@ -87,7 +85,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             avctx->pix_fmt = PIX_FMT_PAL8;
             break;
         case 24:
-            avctx->pix_fmt = (type == RT_FORMAT_RGB) ? PIX_FMT_RGB24 : PIX_FMT_BGR24;
+            avctx->pix_fmt = PIX_FMT_BGR24;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "invalid depth\n");
@@ -185,14 +183,14 @@ static av_cold int sunrast_end(AVCodecContext *avctx) {
 
 AVCodec sunrast_decoder = {
     "sunrast",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_SUNRAST,
     sizeof(SUNRASTContext),
     sunrast_init,
     NULL,
     sunrast_end,
     sunrast_decode_frame,
-    CODEC_CAP_DR1,
+    0,
     NULL,
     .long_name = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
 };

@@ -7,7 +7,7 @@
 // ========================= MPlayer help ===========================
 
 #ifdef HELP_MP_DEFINE_STATIC
-static const char help_text[]=
+static char help_text[]=
 "Benyt:   mplayer [indstillinger] [URL|sti/]filnavn\n"
 "\n"
 "Basale indstillinger (se manualen for en komplet liste):\n"
@@ -50,7 +50,7 @@ static const char help_text[]=
 
 // ========================= MPlayer messages ===========================
 
-// mplayer.c:
+// mplayer.c: 
 
 #define MSGTR_Exiting "\n Afslutter...\n"
 #define MSGTR_ExitingHow "\n Afslutter... (%s)\n"
@@ -239,7 +239,7 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nDEMUXER: For mange (%d i %d bytes) lydpakker i bufferen!\n"
 #define MSGTR_TooManyVideoInBuffer "\nDEMUXER: For mange (%d i %d bytes) videopakker i bufferen!\n"
 #define MSGTR_MaybeNI "Måske afspiller du en 'ikke-interleaved' stream/fil ellers der kan være en fejl i afspilleren\n"\
-                      "For AVI filer, prøv at påtvinge non-interleaved tilstand med -ni.\n"
+		      "For AVI filer, prøv at påtvinge non-interleaved tilstand med -ni.\n"
 #define MSGTR_SwitchToNi "\nDefekt .AVI - skifter til ikke-interleaved (-ni)...\n"
 #define MSGTR_Detected_XXX_FileFormat "Filformat er %s\n"
 #define MSGTR_DetectedAudiofile "Filen er en lydfil!\n"
@@ -325,6 +325,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDek: codec satte ikke sh->disp_w og sh->disp_h, prøver en anden løsning!\n"
+#define MSGTR_VoConfigRequest "VDek: vo konfig. anmodning - %d x %d (foretrukket csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Kunne ikke finde colorspace som matcher - prøver med -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Størrelsesforhold er %.2f:1 - præskalerer for at rette størrelsesforholdet.\n"
 #define MSGTR_MovieAspectUndefined "Størrelsesforholdet er ikke defineret - ingen præskalering benyttet.\n"
@@ -368,7 +369,7 @@ static const char help_text[]=
 #define MSGTR_NEEDLAVC "For at afspille ikke-mpeg filer med dit DXR3/H+ skal du kode filmen igen.\nVenligst aktiver lavc i DXR3/H+ configboxen."
 
 // --- skin loader error messages
-#define MSGTR_SKIN_ERRORMESSAGE "[tema] fejl i konfigurationsfilen til temaet på linje %d: %s"
+#define MSGTR_SKIN_ERRORMESSAGE "[tema] fejl i konfigurationsfilen til temaet på linje %d: %s" 
 #define MSGTR_SKIN_WARNING1 "[tema] advarsel i konfigurationsfilen til temaet på linje %d: widget fundet men før \"section\" ikke fundet (%s)"
 #define MSGTR_SKIN_WARNING2 "[tema] advarsel i konfigurationsfilen til temaet på linje %d: widget fundet men før \"subsection\" ikke fundet (%s)"
 #define MSGTR_SKIN_WARNING3 "[tema] advarsel i konfigurationsfilen til temaet på linje %d: denne undersektion er ikke understøttet af dette widget (%s)"
@@ -559,6 +560,6 @@ static const char help_text[]=
 // --- messagebox
 #define MSGTR_MSGBOX_LABEL_FatalError "Fatal fejl!"
 #define MSGTR_MSGBOX_LABEL_Error "Fejl!"
-#define MSGTR_MSGBOX_LABEL_Warning "Advarsel!"
+#define MSGTR_MSGBOX_LABEL_Warning "Advarsel!" 
 
 #endif

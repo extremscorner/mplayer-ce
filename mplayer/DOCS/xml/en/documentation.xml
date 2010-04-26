@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 30414 $ -->
+<!-- $Revision: 27211 $ -->
 
 <bookinfo id="toc">
 <title><application>MPlayer</application> - The Movie Player</title>
@@ -15,8 +15,6 @@
   <year>2006</year>
   <year>2007</year>
   <year>2008</year>
-  <year>2009</year>
-  <year>2010</year>
   <holder>MPlayer team</holder>
 </copyright>
 <legalnotice>
@@ -112,7 +110,7 @@ PCM/MP3/VBR MP3 audio.
 </para></listitem>
 <listitem><para>
   Encoding to all the codecs of FFmpeg's
-  <systemitem class="library">libavcodec</systemitem>
+  <link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
 </para></listitem>
 <listitem><para>
   Video encoding from V4L compatible TV tuners
@@ -168,12 +166,19 @@ can be distributed under the terms of the GNU General Public License Version 2.
 
 &usage.xml;
 &cd-dvd.xml;
+&faq.xml;
+
+&containers.xml;
+&codecs.xml;
+&video.xml;
+&audio.xml;
 &tvinput.xml;
 &radio.xml;
-&video.xml;
+
 &ports.xml;
 &mencoder.xml;
 &encoding-guide.xml;
-&faq.xml;
 &bugreports.xml;
+&bugs.xml;
 &skin.xml;
+&history.xml;

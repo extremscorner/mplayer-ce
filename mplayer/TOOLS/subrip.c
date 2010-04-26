@@ -5,19 +5,6 @@
  *
  * HINT: you can view the subtitle that is being decoded with "display subtitle-*.pgm"
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 /* Make sure this accesses the CVS version of JOCR/GOCR */
@@ -33,6 +20,8 @@
 #include "libvo/video_out.h"
 #include "vobsub.h"
 #include "spudec.h"
+
+void guiMessageBox(int level, char * str) {};
 
 /* XXX Kludge ahead, this MUST be the same as the definitions found in ../spudec.c */
 typedef struct packet_t packet_t;
@@ -85,6 +74,9 @@ typedef struct {
   int spu_changed;
 } spudec_handle_t;
 
+int use_gui;
+int gtkMessageBox;
+int identify=0;
 int vobsub_id=0;
 int sub_pos=0;
 
@@ -223,7 +215,7 @@ main(int argc, char **argv)
 	spudec_assemble(spudec, packet, packet_len, pts100);
 	if (spudec->queue_head) {
 		spudec_heartbeat(spudec, spudec->queue_head->start_pts);
-	if (spudec_changed(spudec))
+	if (spudec_changed(spudec)) 
 	    spudec_draw(spudec, draw_alpha);
 	}
     }

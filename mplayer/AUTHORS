@@ -12,9 +12,10 @@ ___________________
 The MPlayer project
 ~~~~~~~~~~~~~~~~~~~
 
-MPlayer was originally written by Árpád Gereöffy and later extended by
-a bunch of other people, some of whom are listed here in alphabetical
-order. If you think you are missing, feel free to send a patch.
+MPlayer was originally written by Árpád Gereöffy (for a more complete history
+see DOCS/HTML/en/history.html) and later extended by a bunch of other people,
+some of which are listed here in alphabetical order. If you think you are
+missing, feel free to send a patch.
 
 Ackermann, Andreas (Acki) <asackerm@stud.informatik.uni-erlangen.de>
     * LIRC support
@@ -168,7 +169,7 @@ Bunkus, Moritz (Mosu) <moritz@bunkus.org>
 
 Christiansen, Dan Villiom Podlaski (danchr) <danchr@daimi.au.dk>
     * timer-darwin.c
-    * CoreAudio audio output driver for Mac OS X
+    * ao_macosx
     * build system cleanups for Darwin
 
 Clagg, Jeff (snacky) <snacky@ikaruga.co.uk>
@@ -385,9 +386,6 @@ Hůrka, Tomáš <tom@hukatronic.cz>
     * Darwin DVD support (mpdvdkit2)
     * various fixes
 
-Hysseo, Jehan <hysseo@zemarmot.net>
-    * af_add, af_switch, af_del, af_clr commands.
-
 Isani, Sidik <lksi@cfht.hawaii.edu>
     * get_delay() smoothing code (-autosync)
     * RTC initialization fixes
@@ -408,7 +406,6 @@ Jelveh, Reza (timebomb) <reza.jelveh@tu-harburg.de>
     * savage_vid VIDIX driver
     * miscellaneous small fixes and improvements
     * first musepack decoding patch
-    * swscale AltiVec fixes
 
 Jermann, Jonas (g0th) <jjermann@gmx.net>
     * manual page rewrite
@@ -630,9 +627,6 @@ Parrish, Joey <joey@nicewarrior.org>
     * Windows support improvements
     * Cygwin installer package
 
-Petrov, Georgi (gogothebee) <gogothebee@gmail.com>
-    * Direct3D VO driver
-
 Pietrzak, Dariusz (Eyck) <eyck@ghost.anime.pl>
     * Debian packaging support (see debian/* and the documentation)
     * support for vplayer subtitle format
@@ -640,7 +634,7 @@ Pietrzak, Dariusz (Eyck) <eyck@ghost.anime.pl>
 
 Plourde, Nicolas <nicolas.plourde@gmail.com>
     * quartz video output driver for Mac OS X
-    * CoreVideo video output driver for Mac OS X
+    * macosx CoreVideo output driver for Mac OS X
     * Darwin VCD/SVCD support
 
 Poettering, Lennart <mzzcynlre@0pointer.de>
@@ -701,12 +695,6 @@ Sanderson, Mark <mmp@kiora.ath.cx>
 
 Sauerbeck, Tilman <tsauerbeck@users.sourceforge.net>
     * TGA decoder (RLE/uncomp), -mf tga support
-
-Savchenko, Andrew <bircoph@gmail.com>
-    * build system enhancements
-    * improvements in config/command line parser
-    * Russian documentation translation
-    * various bug fixes, testing
 
 Scherthan, Frank <scherthan@uni-landau.de>
     * added OSD handling for live changing playback speed
@@ -771,11 +759,8 @@ Syrjälä, Ville <syrjala@sci.fi>
 Szecsi, Gabor <deje@miki.hu>
     * directsound AO driver
 
-Tackaberry, Jason <tack@urandom.ca>
+Tackaberry, Jason <tack@sault.org>
     * second DVD ripping guide
-    * multichannel audio fixes
-    * support for 8 channel audio
-    * various minor features and bug fixes
 
 Tam, Howell (Pigeon) <pigeon@pigeond.net>
     * native libcaca driver (-vo caca)
@@ -800,7 +785,6 @@ Togni, Roberto (rxt) <r_togni@tiscali.it>
 
 Tresoldi, Paolo "PaulTT" (ptt) <mplayer@paultt.org>
     * mplayer -endpos option
-    * -name, -title and -use-filename-title options
     * Italian man page and console messages translations
     * Italian documentation translation
 
@@ -815,7 +799,7 @@ Ulion <ulion2002 gmail.com>
 Urpala, Uoti (uau) <uoti.urpala@pp1.inet.fi>
     * A/V sync fixes
 
-Vajna, Miklós (VMiklos) <vmiklos@frugalware.org>
+Vajna, Miklós (VMiklos) <mamajom@axelero.hu>
     * TOOLS/divx2svcd author
     * TOOLS/ directory documentation
 
@@ -963,8 +947,8 @@ MPlayerPL - Polish MPlayer Translation Team (http://mplayerpl.emdej.com)
     * Marek Jarycki (Emdej) <emdej@emdej.com>
     * Leszek Kaplita (Flex) <flex@tenbit.pl>
 
-Zhu Tian (JRaSH) <jrash06@gmail.com>
-    * Simplified Chinese documentation translation
+Savchenko, Andrew <bircoph@list.ru>
+    * Russian documentation translation
 
 Zubimendi, Andoni <andoni@lpsat.net>.
     * Spanish documentation translation

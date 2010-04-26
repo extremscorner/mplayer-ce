@@ -116,7 +116,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
         avctx->width = c->width = width;
         avctx->height = c->height = height;
         c->decomp_size = c->height * c->width * 3 / 2;
-        c->decomp_buf = av_realloc(c->decomp_buf, c->decomp_size + AV_LZO_OUTPUT_PADDING);
+        c->decomp_buf = av_realloc(c->decomp_buf, c->decomp_size + LZO_OUTPUT_PADDING);
         if (!c->decomp_buf) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
             return 0;
@@ -128,14 +128,10 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                        AVPacket *avpkt) {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+                        const uint8_t *buf, int buf_size) {
     NuvContext *c = avctx->priv_data;
     AVFrame *picture = data;
     int orig_size = buf_size;
-    int keyframe;
-    int result;
     enum {NUV_UNCOMPRESSED = '0', NUV_RTJPEG = '1',
           NUV_RTJPEG_IN_LZO = '2', NUV_LZO = '3',
           NUV_BLACK = 'N', NUV_COPY_LAST = 'L'} comptype;
@@ -163,21 +159,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return -1;
     }
     comptype = buf[1];
-    switch (comptype) {
-        case NUV_RTJPEG_IN_LZO:
-        case NUV_RTJPEG:
-            keyframe = !buf[2]; break;
-        case NUV_COPY_LAST:
-            keyframe = 0; break;
-        default:
-            keyframe = 1; break;
-    }
     // skip rest of the frameheader.
     buf = &buf[12];
     buf_size -= 12;
     if (comptype == NUV_RTJPEG_IN_LZO || comptype == NUV_LZO) {
         int outlen = c->decomp_size, inlen = buf_size;
-        if (av_lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
+        if (lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
             av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
         buf = c->decomp_buf;
         buf_size = c->decomp_size;
@@ -197,19 +184,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         buf_size -= 12;
     }
 
-    if (keyframe && c->pic.data[0])
+    if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
-    c->pic.reference = 3;
+    c->pic.reference = 1;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
                           FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    result = avctx->reget_buffer(avctx, &c->pic);
-    if (result < 0) {
+    if (avctx->get_buffer(avctx, &c->pic) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
-    c->pic.pict_type = keyframe ? FF_I_TYPE : FF_P_TYPE;
-    c->pic.key_frame = keyframe;
+    c->pic.pict_type = FF_I_TYPE;
+    c->pic.key_frame = 1;
     // decompress/copy/whatever data
     switch (comptype) {
         case NUV_LZO:
@@ -234,6 +220,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             break;
         }
         case NUV_COPY_LAST: {
+            c->pic.pict_type = FF_P_TYPE;
+            c->pic.key_frame = 0;
             /* nothing more to do here */
             break;
         }
@@ -274,7 +262,7 @@ static av_cold int decode_end(AVCodecContext *avctx) {
 
 AVCodec nuv_decoder = {
     "nuv",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_NUV,
     sizeof(NuvContext),
     decode_init,
@@ -282,6 +270,6 @@ AVCodec nuv_decoder = {
     decode_end,
     decode_frame,
     CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("NuppelVideo/RTJPEG"),
+    .long_name = NULL_IF_CONFIG_SMALL("NuppelVideo"),
 };
 

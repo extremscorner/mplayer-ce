@@ -22,7 +22,7 @@
 
 #include "config.h"
 
-#if ARCH_SPARC
+#ifdef ARCH_SPARC
 
 #include <inttypes.h>
 

@@ -1,24 +1,10 @@
 /*
- * ALSA 0.5.x audio output driver
- *
- * Copyright (C) 2001 Alex Beregszaszi
- *
- * Thanks to Arpi for helping me ;)
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+  ao_alsa5 - ALSA-0.5.x output plugin for MPlayer
+
+  (C) Alex Beregszaszi
+
+  Thanks to Arpi for helping me ;)
+*/
 
 #include <errno.h>
 #include <sys/asoundlib.h>
@@ -32,7 +18,7 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 
-static const ao_info_t info =
+static ao_info_t info = 
 {
     "ALSA-0.5.x audio output",
     "alsa5",
@@ -101,11 +87,15 @@ static int init(int rate_hz, int channels, int format, int flags)
 	case AF_FORMAT_U16_BE:
 	    alsa_format.format = SND_PCM_SFMT_U16_BE;
 	    break;
-	case AF_FORMAT_AC3_LE:
+#ifndef WORDS_BIGENDIAN
+	case AF_FORMAT_AC3:
+#endif
 	case AF_FORMAT_S16_LE:
 	    alsa_format.format = SND_PCM_SFMT_S16_LE;
 	    break;
-	case AF_FORMAT_AC3_BE:
+#ifdef WORDS_BIGENDIAN
+	case AF_FORMAT_AC3:
+#endif
 	case AF_FORMAT_S16_BE:
 	    alsa_format.format = SND_PCM_SFMT_S16_BE;
 	    break;
@@ -113,7 +103,7 @@ static int init(int rate_hz, int channels, int format, int flags)
 	    alsa_format.format = SND_PCM_SFMT_MPEG;
 	    break;
     }
-
+    
     switch(alsa_format.format)
     {
 	case SND_PCM_SFMT_S16_LE:
@@ -226,7 +216,7 @@ static int init(int rate_hz, int channels, int format, int flags)
     setup.format = alsa_format;
     setup.buf.stream.queue_size = ao_data.buffersize;
     setup.msbits_per_sample = ao_data.bps;
-
+    
     if ((err = snd_pcm_channel_setup(alsa_handler, &setup)) < 0)
     {
 	mp_msg(MSGT_AO, MSGL_ERR, MSGTR_AO_ALSA5_CantSetChan, snd_strerror(err));
@@ -329,10 +319,10 @@ static void audio_resume(void)
 static int play(void* data, int len, int flags)
 {
     int got_len;
-
+    
     if (!len)
 	return 0;
-
+    
     if ((got_len = snd_pcm_write(alsa_handler, data, len)) < 0)
     {
 	if (got_len == -EPIPE) /* underrun? */
@@ -361,7 +351,7 @@ static int play(void* data, int len, int flags)
 static int get_space(void)
 {
     snd_pcm_channel_status_t ch_stat;
-
+    
     ch_stat.channel = SND_PCM_CHANNEL_PLAYBACK;
 
     if (snd_pcm_channel_status(alsa_handler, &ch_stat) < 0)
@@ -374,9 +364,9 @@ static int get_space(void)
 static float get_delay(void)
 {
     snd_pcm_channel_status_t ch_stat;
-
+    
     ch_stat.channel = SND_PCM_CHANNEL_PLAYBACK;
-
+    
     if (snd_pcm_channel_status(alsa_handler, &ch_stat) < 0)
 	return (float)ao_data.buffersize/(float)ao_data.bps; /* error occurred */
     else

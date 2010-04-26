@@ -28,7 +28,7 @@
 #include "mp_msg.h"
 #include "cpudetect.h"
 
-#if HAVE_MALLOC_H
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
 
@@ -85,7 +85,7 @@ static void unsharp( uint8_t *dst, uint8_t *src, int dstStride, int srcStride, i
     if( !fp->amount ) {
 	if( src == dst )
 	    return;
-	if( dstStride == srcStride )
+	if( dstStride == srcStride ) 
 	    fast_memcpy( dst, src, srcStride*height );
 	else
 	    for( y=0; y<height; y++, dst+=dstStride, src+=srcStride )
@@ -112,7 +112,7 @@ static void unsharp( uint8_t *dst, uint8_t *src, int dstStride, int srcStride, i
 	    if( x>=stepsX && y>=stepsY ) {
 		uint8_t* srx = src - stepsY*srcStride + x - stepsX;
 		uint8_t* dsx = dst - stepsY*dstStride + x - stepsX;
-
+		
 		res = (int32_t)*srx + ( ( ( (int32_t)*srx - (int32_t)((Tmp1+halfscale) >> scalebits) ) * amount ) >> 16 );
 		*dsx = res>255 ? 255 : res<0 ? 0 : (uint8_t)res;
 	    }
@@ -126,7 +126,7 @@ static void unsharp( uint8_t *dst, uint8_t *src, int dstStride, int srcStride, i
 
 //===========================================================================//
 
-static int config( struct vf_instance *vf,
+static int config( struct vf_instance_s* vf,
 		   int width, int height, int d_width, int d_height,
 		   unsigned int flags, unsigned int outfmt ) {
 
@@ -143,7 +143,7 @@ static int config( struct vf_instance *vf,
     stepsX = fp->msizeX/2;
     stepsY = fp->msizeY/2;
     for( z=0; z<2*stepsY; z++ )
-	fp->SC[z] = av_malloc(sizeof(*(fp->SC[z])) * (width+2*stepsX));
+	fp->SC[z] = memalign( 16, sizeof(*(fp->SC[z])) * (width+2*stepsX) );
 
     fp = &vf->priv->chromaParam;
     effect = fp->amount == 0 ? "don't touch" : fp->amount < 0 ? "blur" : "sharpen";
@@ -152,15 +152,15 @@ static int config( struct vf_instance *vf,
     stepsX = fp->msizeX/2;
     stepsY = fp->msizeY/2;
     for( z=0; z<2*stepsY; z++ )
-	fp->SC[z] = av_malloc(sizeof(*(fp->SC[z])) * (width+2*stepsX));
+	fp->SC[z] = memalign( 16, sizeof(*(fp->SC[z])) * (width+2*stepsX) );
 
     return vf_next_config( vf, width, height, d_width, d_height, flags, outfmt );
 }
 
 //===========================================================================//
 
-static void get_image( struct vf_instance *vf, mp_image_t *mpi ) {
-    if( mpi->flags & MP_IMGFLAG_PRESERVE )
+static void get_image( struct vf_instance_s* vf, mp_image_t *mpi ) {
+    if( mpi->flags & MP_IMGFLAG_PRESERVE ) 
 	return; // don't change
     if( mpi->imgfmt!=vf->priv->outfmt )
 	return; // colorspace differ
@@ -178,33 +178,33 @@ static void get_image( struct vf_instance *vf, mp_image_t *mpi ) {
     mpi->flags |= MP_IMGFLAG_DIRECT;
 }
 
-static int put_image( struct vf_instance *vf, mp_image_t *mpi, double pts) {
+static int put_image( struct vf_instance_s* vf, mp_image_t *mpi, double pts) {
     mp_image_t *dmpi;
 
     if( !(mpi->flags & MP_IMGFLAG_DIRECT) )
 	// no DR, so get a new image! hope we'll get DR buffer:
 	vf->dmpi = vf_get_image( vf->next,vf->priv->outfmt, MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE, mpi->w, mpi->h);
     dmpi= vf->dmpi;
-
+    
     unsharp( dmpi->planes[0], mpi->planes[0], dmpi->stride[0], mpi->stride[0], mpi->w,   mpi->h,   &vf->priv->lumaParam );
     unsharp( dmpi->planes[1], mpi->planes[1], dmpi->stride[1], mpi->stride[1], mpi->w/2, mpi->h/2, &vf->priv->chromaParam );
     unsharp( dmpi->planes[2], mpi->planes[2], dmpi->stride[2], mpi->stride[2], mpi->w/2, mpi->h/2, &vf->priv->chromaParam );
-
+    
     vf_clone_mpi_attributes(dmpi, mpi);
-
-#if HAVE_MMX
+    
+#ifdef HAVE_MMX
     if(gCpuCaps.hasMMX)
-	__asm__ volatile ("emms\n\t");
+	asm volatile ("emms\n\t");
 #endif
-#if HAVE_MMX2
+#ifdef HAVE_MMX2
     if(gCpuCaps.hasMMX2)
-	__asm__ volatile ("sfence\n\t");
+	asm volatile ("sfence\n\t");
 #endif
-
+    
     return vf_next_put_image( vf, dmpi, pts);
 }
 
-static void uninit( struct vf_instance *vf ) {
+static void uninit( struct vf_instance_s* vf ) {
     unsigned int z;
     FilterParam *fp;
 
@@ -212,12 +212,12 @@ static void uninit( struct vf_instance *vf ) {
 
     fp = &vf->priv->lumaParam;
     for( z=0; z<sizeof(fp->SC)/sizeof(fp->SC[0]); z++ ) {
-	if( fp->SC[z] ) av_free( fp->SC[z] );
+	if( fp->SC[z] ) free( fp->SC[z] );
 	fp->SC[z] = NULL;
     }
     fp = &vf->priv->chromaParam;
     for( z=0; z<sizeof(fp->SC)/sizeof(fp->SC[0]); z++ ) {
-	if( fp->SC[z] ) av_free( fp->SC[z] );
+	if( fp->SC[z] ) free( fp->SC[z] );
 	fp->SC[z] = NULL;
     }
 
@@ -227,7 +227,7 @@ static void uninit( struct vf_instance *vf ) {
 
 //===========================================================================//
 
-static int query_format( struct vf_instance *vf, unsigned int fmt ) {
+static int query_format( struct vf_instance_s* vf, unsigned int fmt ) {
     switch(fmt) {
     case IMGFMT_YV12:
     case IMGFMT_I420:
@@ -263,14 +263,14 @@ static void parse( FilterParam *fp, char* args ) {
 
 //===========================================================================//
 
-static const unsigned int fmt_list[] = {
+static unsigned int fmt_list[] = {
     IMGFMT_YV12,
     IMGFMT_I420,
     IMGFMT_IYUV,
     0
 };
 
-static int vf_open( vf_instance_t *vf, char *args ) {
+static int open( vf_instance_t *vf, char* args ) {
     vf->config       = config;
     vf->put_image    = put_image;
     vf->get_image    = get_image;
@@ -284,17 +284,17 @@ static int vf_open( vf_instance_t *vf, char *args ) {
 	if( args2 )
 	    parse( &vf->priv->lumaParam, args2 );
 	else {
-	    vf->priv->lumaParam.amount =
-	    vf->priv->lumaParam.msizeX =
+	    vf->priv->lumaParam.amount = 
+	    vf->priv->lumaParam.msizeX = 
 	    vf->priv->lumaParam.msizeY = 0;
 	}
 
 	args2 = strchr( args, 'c' );
-	if( args2 )
+	if( args2 ) 
 	    parse( &vf->priv->chromaParam, args2 );
 	else {
-	    vf->priv->chromaParam.amount =
-	    vf->priv->chromaParam.msizeX =
+	    vf->priv->chromaParam.amount = 
+	    vf->priv->chromaParam.msizeX = 
 	    vf->priv->chromaParam.msizeY = 0;
 	}
 
@@ -317,7 +317,7 @@ const vf_info_t vf_info_unsharp = {
     "unsharp",
     "Remi Guyomarch",
     "",
-    vf_open,
+    open,
     NULL
 };
 

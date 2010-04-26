@@ -37,7 +37,7 @@ struct vf_priv_s {
 	mp_image_t *dmpi;
 };
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
 	int ret = 0;
 	mp_image_t *dmpi;
@@ -124,13 +124,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 		// rate and preserving image height.
 
 		dmpi = vf->priv->dmpi;
-
+		
 		// @@ Need help:  Should I set dmpi->fields to indicate
 		// that the (new) frame will be interlaced!?  E.g. ...
 		// dmpi->fields |= MP_IMGFIELD_INTERLACED;
 		// dmpi->fields |= MP_IMGFIELD_TOP_FIRST;
 		// etc.
-
+		
 		if (dmpi == NULL) {
 			dmpi = vf_get_image(vf->next, mpi->imgfmt,
 					    MP_IMGTYPE_STATIC, MP_IMGFLAG_ACCEPT_STRIDE |
@@ -152,16 +152,16 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 		} else {
 			vf->priv->dmpi = NULL;
 
-			my_memcpy_pic(dmpi->planes[0]+dmpi->stride[0],
+			my_memcpy_pic(dmpi->planes[0]+dmpi->stride[0], 
 				      mpi->planes[0]+mpi->stride[0],
-				      mpi->w, mpi->h/2,
+				      mpi->w, mpi->h/2, 
 				      dmpi->stride[0]*2, mpi->stride[0]*2);
 			if (mpi->flags & MP_IMGFLAG_PLANAR) {
-				my_memcpy_pic(dmpi->planes[1]+dmpi->stride[1],
+				my_memcpy_pic(dmpi->planes[1]+dmpi->stride[1], 
 					      mpi->planes[1]+mpi->stride[1],
 					      mpi->chroma_width, mpi->chroma_height/2,
 					      dmpi->stride[1]*2, mpi->stride[1]*2);
-				my_memcpy_pic(dmpi->planes[2]+dmpi->stride[2],
+				my_memcpy_pic(dmpi->planes[2]+dmpi->stride[2], 
 					      mpi->planes[2]+mpi->stride[2],
 					      mpi->chroma_width, mpi->chroma_height/2,
 					      dmpi->stride[2]*2, mpi->stride[2]*2);
@@ -176,7 +176,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 	return ret;
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
 	/* FIXME - figure out which other formats work */
 	switch (fmt) {
@@ -188,7 +188,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
 	return 0;
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt)
 {
@@ -204,12 +204,12 @@ static int config(struct vf_instance *vf,
 	return 0;
 }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
 {
 	free(vf->priv);
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
 	struct vf_priv_s *p;
 	vf->config = config;
@@ -230,6 +230,6 @@ const vf_info_t vf_info_tinterlace = {
 	"tinterlace",
 	"Michael Zucchi",
 	"",
-	vf_open,
+	open,
 	NULL
 };

@@ -19,8 +19,6 @@
 #ifndef MPLAYER_GUI_CFG_H
 #define MPLAYER_GUI_CFG_H
 
-#include "config.h"
-
 extern int gtkEnableAudioEqualizer;
 
 extern int    gtkVfPP;
@@ -75,7 +73,7 @@ typedef struct {
 extern gtkASS_t gtkASS;
 #endif
 
-int cfg_read( void );
-int cfg_write( void );
+extern int cfg_read( void );
+extern int cfg_write( void );
 
 #endif /* MPLAYER_GUI_CFG_H */

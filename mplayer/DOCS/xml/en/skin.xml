@@ -1,12 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 31032 $ -->
+<!-- $Revision: 26990 $ -->
 <appendix id="skin">
 <title><application>MPlayer</application> skin format</title>
 
 <sect1 id="skin-overview">
 <title>Overview</title>
 
+<para>
+It does not really have anything to do with the skin format, but you should
+know that <application>MPlayer</application> has
+<emphasis role="bold">no</emphasis> builtin skin, so
+<emphasis role="bold">at least one skin must be installed in order to be able
+to use the GUI.</emphasis>
+</para>
+
 <!-- ********** -->
+
+<sect2 id="skin-overview-directories">
+<title>Directories</title>
+
+<para>
+The directories searched for skins are (in order):
+<orderedlist>
+<listitem><para>
+  <filename class="directory">$(DATADIR)/skins/</filename>
+</para></listitem>
+<listitem><para>
+  <filename class="directory">$(PREFIX)/share/mplayer/skins/</filename>
+</para></listitem>
+<listitem><para>
+  <filename class="directory">~/.mplayer/skins/</filename>
+</para></listitem>
+</orderedlist>
+</para>
+
+<para>
+Note that the first path may vary according to the way
+<application>MPlayer</application> was configured (see the
+<option>--prefix</option> and <option>--datadir</option>
+arguments of the <command>configure</command> script).
+</para>
+
+<para>
+Every skin is installed into its own directory under one of the directories
+listed above, for example:
+<screen>$(PREFIX)/share/mplayer/skins/default/</screen>
+</para>
+</sect2>
+
+<!-- ********** -->
+
+<sect2 id="skin-overview-formats">
+<title>Image formats</title>
+
+<para>Images must be truecolor (24 or 32 bpp) PNGs.</para>
+<para>
+In the main window and in the playbar (see below) you can use images with
+`transparency': Regions filled with the color #FF00FF (magenta) are fully
+transparent when viewed by <application>MPlayer</application>. This means
+that you can even have shaped windows if your X server has the XShape extension.
+</para>
+</sect2>
 
 <sect2 id="skin-overview-components">
 <title>Skin components</title>
@@ -36,13 +90,13 @@ by a right click).
   <emphasis>labels</emphasis>.
   For every item, you must specify its position and size.
   </para>
-
+  
   <para>
   A <emphasis role="bold">button</emphasis> has three states (pressed, released,
   disabled), thus its image must be divided into three parts vertically. See the
   <link linkend="skin-button">button</link> item for details.
   </para>
-
+  
   <para>
   A <emphasis role="bold">potmeter</emphasis> (mainly used for the seek bar and
   volume/balance control) can have any number of phases by dividing its image
@@ -50,7 +104,7 @@ by a right click).
   <link linkend="skin-hpotmeter">hpotmeter</link> and
   <link linkend="skin-potmeter">potmeter</link> for details.
   </para>
-
+  
   <para>
   <emphasis role="bold">Labels</emphasis> are a bit special: The characters
   needed to draw them are taken from an image file, and the characters in the
@@ -105,18 +159,6 @@ menu entries to work, <application>MPlayer</application> must know what to
 do if they are clicked. This is done by <link linkend="skin-gui">messages</link>
 (events). For these items you must define the messages to be generated when
 they are clicked.
-</para>
-</sect2>
-
-<sect2 id="skin-overview-formats">
-<title>Image formats</title>
-
-<para>Images must be truecolor (24 or 32 bpp) PNGs.</para>
-<para>
-In the main window and in the playbar (see below) you can use images with
-`transparency': Regions filled with the color #FF00FF (magenta) are fully
-transparent when viewed by <application>MPlayer</application>. This means
-that you can even have shaped windows if your X server has the XShape extension.
 </para>
 </sect2>
 
@@ -496,7 +538,7 @@ blocks.
   <informaltable>
   <tgroup cols="2">
   <thead>
-    <row><entry>Variable</entry><entry>Meaning</entry></row>
+	<row><entry>Variable</entry><entry>Meaning</entry></row>
   </thead>
   <tbody>
   <row>
@@ -504,84 +546,84 @@ blocks.
     <entry>play time in <emphasis>hh:mm:ss</emphasis> format</entry>
   </row>
   <row>
-    <entry>$2</entry>
-    <entry>play time in <emphasis>mmmm:ss</emphasis> format</entry>
+	<entry>$2</entry>
+	<entry>play time in <emphasis>mmmm:ss</emphasis> format</entry>
   </row>
   <row>
-    <entry>$3</entry>
-    <entry>play time in <emphasis>hh</emphasis> format (hours)</entry>
+	<entry>$3</entry>
+	<entry>play time in <emphasis>hh</emphasis> format (hours)</entry>
   </row>
   <row>
-    <entry>$4</entry>
-    <entry>play time in <emphasis>mm</emphasis> format (minutes)</entry>
+	<entry>$4</entry>
+	<entry>play time in <emphasis>mm</emphasis> format (minutes)</entry>
   </row>
   <row>
-    <entry>$5</entry>
-    <entry>play time in <emphasis>ss</emphasis> format (seconds)</entry>
+	<entry>$5</entry>
+	<entry>play time in <emphasis>ss</emphasis> format (seconds)</entry>
   </row>
   <row>
-    <entry>$6</entry>
-    <entry>movie length in <emphasis>hh:mm:ss</emphasis> format</entry>
+	<entry>$6</entry>
+	<entry>movie length in <emphasis>hh:mm:ss</emphasis> format</entry>
   </row>
   <row>
-    <entry>$7</entry>
-    <entry>movie length in <emphasis>mmmm:ss</emphasis> format</entry>
+	<entry>$7</entry>
+	<entry>movie length in <emphasis>mmmm:ss</emphasis> format</entry>
   </row>
   <row>
-    <entry>$8</entry>
-    <entry>play time in <emphasis>h:mm:ss</emphasis> format</entry>
+	<entry>$8</entry>
+	<entry>play time in <emphasis>h:mm:ss</emphasis> format</entry>
   </row>
   <row>
-    <entry>$v</entry>
-    <entry>volume in <emphasis>xxx.xx</emphasis>% format</entry>
+	<entry>$v</entry>
+	<entry>volume in <emphasis>xxx.xx</emphasis>% format</entry>
   </row>
   <row>
-    <entry>$V</entry>
-    <entry>volume in <emphasis>xxx.xx</emphasis> format</entry>
+	<entry>$V</entry>
+	<entry>volume in <emphasis>xxx.xx</emphasis> format</entry>
   </row>
   <row>
-    <entry>$b</entry>
-    <entry>balance in <emphasis>xxx.xx</emphasis>% format</entry>
+	<entry>$b</entry>
+	<entry>balance in <emphasis>xxx.xx</emphasis>% format</entry>
   </row>
   <row>
-    <entry>$B</entry>
-    <entry>balance in <emphasis>xxx.xx</emphasis> format</entry>
+	<entry>$B</entry>
+	<entry>balance in <emphasis>xxx.xx</emphasis> format</entry>
   </row>
   <row>
-    <entry>$$</entry>
-    <entry>the $ character</entry>
+	<entry>$$</entry>
+	<entry>the $ character</entry>
   </row>
   <row>
-    <entry>$a</entry>
-    <entry>a character according to the audio type (none: <literal>n</literal>,
-    mono: <literal>m</literal>, stereo: <literal>t</literal>)</entry>
+	<entry>$a</entry>
+	<entry>a character according to the audio type (none: <literal>n</literal>,
+	mono: <literal>m</literal>, stereo: <literal>t</literal>)</entry>
   </row>
   <row>
-    <entry>$t</entry>
-    <entry>track number (in playlist)</entry>
+	<entry>$t</entry>
+	<entry>track number (in playlist)</entry>
   </row>
   <row>
-    <entry>$o</entry>
-    <entry>filename</entry>
+	<entry>$o</entry>
+	<entry>filename</entry>
   </row>
   <row>
-    <entry>$f</entry>
-    <entry>filename in lower case</entry>
+	<entry>$f</entry>
+	<entry>filename in lower case</entry>
   </row>
   <row>
-    <entry>$F</entry>
-    <entry>filename in upper case</entry>
+	<entry>$F</entry>
+	<entry>filename in upper case</entry>
   </row>
   <row>
-    <entry>$T</entry>
-    <entry>
-    a character according to the stream type (file: <literal>f</literal>,
-    Video CD: <literal>v</literal>, DVD: <literal>d</literal>,
-    URL: <literal>u</literal>)
-    </entry>
+	<entry>$T</entry>
+	<entry>
+	a character according to the stream type (file: <literal>f</literal>,
+	Video CD: <literal>v</literal>, DVD: <literal>d</literal>,
+	URL: <literal>u</literal>)
+	</entry>
   </row>
   <row>
-    <entry>$p</entry>
+	<entry>$p</entry>
     <entry>the <keycap>p</keycap> character (if a movie is playing and the font
     has the <keycap>p</keycap> character)</entry>
   </row>

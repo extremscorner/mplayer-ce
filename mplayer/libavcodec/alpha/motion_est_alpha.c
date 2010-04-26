@@ -20,7 +20,6 @@
  */
 
 #include "libavcodec/dsputil.h"
-#include "dsputil_alpha.h"
 #include "asm.h"
 
 void get_pixels_mvi(DCTELEM *restrict block,

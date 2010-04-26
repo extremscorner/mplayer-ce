@@ -3,13 +3,13 @@
 //... Okay enough of the hw, now send the other two!
 //
 // Updated by: Gabrov <gabrov@freemail.hu>
-// Sync'ed with help_mp-en.h r30515 (2010. 02. 06.)
+// Sync'ed with help_mp-en.h r27402 (2008. 08. 06.)
 
 
 // ========================= MPlayer help ===========================
 
 #ifdef HELP_MP_DEFINE_STATIC
-static const char help_text[]=
+static char help_text[]=
 "Indítás:   mplayer [opciók] [url|útvonal/]fájlnév\n"
 "\n"
 "Alapvető opciók: (az összes opció listájához lásd a man lapot)\n"
@@ -40,10 +40,10 @@ static const char help_text[]=
 " < vagy >         1 fájllal előre/hátra lépés a lejátszási listában\n"
 " p vagy SPACE     pillanatállj (bármely billentyűre továbbmegy)\n"
 " q vagy ESC       lejátszás vége és kilépés\n"
-" + vagy -         audio késleltetése ± 0.1 másodperccel\n"
+" + vagy -         audio késleltetése ą 0.1 másodperccel\n"
 " o                OSD-mód váltása:  nincs / keresősáv / keresősáv + idő\n"
 " * vagy /         hangerő fel/le\n"
-" x vagy z         felirat késleltetése ± 0.1 másodperccel\n"
+" x vagy z         felirat késleltetése ą 0.1 másodperccel\n"
 " r vagy t         felirat pozíciójának megváltoztatása, lásd -vf expand-ot is\n"
 "\n"
 " * * * A MANPAGE TOVÁBBI RÉSZLETEKET, OPCIÓKAT, BILLENTYŰKET TARTALMAZ! * * *\n"
@@ -52,7 +52,7 @@ static const char help_text[]=
 
 // ========================= MPlayer messages ===========================
 
-// mplayer.c
+// mplayer.c: 
 #define MSGTR_Exiting "\nKilépés...\n"
 #define MSGTR_ExitingHow "\nKilépés... (%s)\n"
 #define MSGTR_Exit_quit "Kilépés"
@@ -71,6 +71,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "Az FPS (képkocka/mp) érték nincs megadva, vagy hibás! Használd az -fps opciót!\n"
 #define MSGTR_TryForceAudioFmtStr "Megpróbálom a(z) %s audio codec-családot használni...\n"
 #define MSGTR_CantFindAudioCodec "Nem találok codecet a(z) 0x%X audio-formátumhoz!\n"
+#define MSGTR_RTFMCodecs "Olvasd el a DOCS/HTML/hu/codecs.html fájlt!\n"
 #define MSGTR_TryForceVideoFmtStr "Megpróbálom a(z) %s video codec-családot használni...\n"
 #define MSGTR_CantFindVideoCodec "Nem találok codec-et ami megfelel a kivalasztott vo-hoz és 0x%X video-formátumhoz!\n"
 #define MSGTR_CannotInitVO "VÉGZETES HIBA: Nem tudom elindítani a video-meghajtót!\n"
@@ -182,7 +183,6 @@ static const char help_text[]=
 #define MSGTR_DvdnavNavSeekDone "DVDNAV esemény: Nav keresés kész\n"
 #define MSGTR_MenuCall "Menü hívás\n"
 
-// --- edit decision lists
 #define MSGTR_EdlOutOfMem "Nem lehet elegendő memóriát foglalni az EDL adatoknak.\n"
 #define MSGTR_EdlRecordsNo "%d EDL akciók olvasása.\n"
 #define MSGTR_EdlQueueEmpty "Nincs olyan EDL akció, amivel foglalkozni kellene.\n"
@@ -210,7 +210,6 @@ static const char help_text[]=
 #define MSGTR_OSDosd "OSD: %s"
 #define MSGTR_OSDChapter "Fejezet: (%d) %s"
 #define MSGTR_OSDAngle "Szög: %d/%d"
-#define MSGTR_OSDDeinterlace "Deinterlace: %s"
 
 // property values
 #define MSGTR_Enabled "bekapcsolva"
@@ -253,7 +252,7 @@ static const char help_text[]=
 #define MSGTR_SubVisibleStatus "Feliratok: %s"
 #define MSGTR_SubForcedOnlyStatus "Csak kényszerített felirat: %s"
 
-// mencoder.c
+// mencoder.c:
 #define MSGTR_UsingPass3ControlFile "Pass3 vezérlő fájl használata: %s\n"
 #define MSGTR_MissingFilename "\nHiányzó fájlnév!\n\n"
 #define MSGTR_CannotOpenFile_Device "Fájl/eszköz megnyitása sikertelen.\n"
@@ -418,7 +417,7 @@ static const char help_text[]=
 #define MSGTR_CouldntOpenCodec "A(z) %s codec nem nyitható meg, br=%d.\n"
 #define MSGTR_CantCopyAudioFormat "A(z) 0x%x audió formátum nem kompatibilis a '-oac copy'-val, kérlek próbáld meg a '-oac pcm' helyette vagy használd a '-fafmttag'-ot a felülbírálásához.\n"
 
-// cfg-mencoder.h
+// cfg-mencoder.h:
 #define MSGTR_MEncoderMP3LameHelp "\n\n"\
 " vbr=<0-4>     a változó bitrátájú kódolás módja\n"\
 "                0: cbr (konstans bitráta)\n"\
@@ -467,7 +466,7 @@ static const char help_text[]=
 "                 (320 kbps bitráta)\n"\
 "                 <8-320>: ABR kódolás átlagban a megadott bitrátával.\n\n"
 
-// codec-cfg.c
+//codec-cfg.c:
 #define MSGTR_DuplicateFourcc "dupla FourCC"
 #define MSGTR_TooManyFourccs "túl sok FourCCs/formátum..."
 #define MSGTR_ParseError "értelmezési hiba"
@@ -602,23 +601,23 @@ static const char help_text[]=
 #define MSGTR_MENU_AboutMPlayer "Az MPlayer-ről"
 #define MSGTR_MENU_Open "Megnyitás..."
 #define MSGTR_MENU_PlayFile "Fájl lejátszás..."
-#define MSGTR_MENU_PlayVCD "VCD lejátszás..."
-#define MSGTR_MENU_PlayDVD "DVD lejátszás..."
-#define MSGTR_MENU_PlayURL "URL lejátszás..."
+#define MSGTR_MENU_PlayVCD "VCD lejátszás..."  
+#define MSGTR_MENU_PlayDVD "DVD lejátszás..."  
+#define MSGTR_MENU_PlayURL "URL lejátszás..."  
 #define MSGTR_MENU_LoadSubtitle "Felirat betöltése..."
 #define MSGTR_MENU_DropSubtitle "Felirat eldobása..."
 #define MSGTR_MENU_LoadExternAudioFile "Külső hang betöltése..."
 #define MSGTR_MENU_Playing "Lejátszás"
 #define MSGTR_MENU_Play "Lejátszás"
 #define MSGTR_MENU_Pause "Pillanatállj"
-#define MSGTR_MENU_Stop "Állj"
+#define MSGTR_MENU_Stop "Állj"  
 #define MSGTR_MENU_NextStream "Következő fájl"
 #define MSGTR_MENU_PrevStream "Előző fájl"
 #define MSGTR_MENU_Size "Méret"
 #define MSGTR_MENU_HalfSize   "Fél méret"
 #define MSGTR_MENU_NormalSize "Normál méret"
 #define MSGTR_MENU_DoubleSize "Dupla méret"
-#define MSGTR_MENU_FullScreen "Teljesképernyő"
+#define MSGTR_MENU_FullScreen "Teljesképernyő" 
 #define MSGTR_MENU_DVD "DVD"
 #define MSGTR_MENU_VCD "VCD"
 #define MSGTR_MENU_PlayDisc "Lemez megnyitása..."
@@ -678,6 +677,7 @@ static const char help_text[]=
 #define MSGTR_PREFERENCES_Codecs "Kodekek és demuxerek"
 // Megjegyzés: Ha megváltoztatod az MSGTR_PREFERENCES_Misc-et, nézd meg, hogy megfelel-e az MSGTR_PREFERENCES_FRAME_Misc-nek is!
 #define MSGTR_PREFERENCES_Misc "Egyéb"
+
 #define MSGTR_PREFERENCES_None "Egyik sem"
 #define MSGTR_PREFERENCES_DriverDefault "alapértelmezett vezérlő"
 #define MSGTR_PREFERENCES_AvailableDrivers "Driverek:"
@@ -778,7 +778,6 @@ static const char help_text[]=
 #define MSGTR_PREFERENCES_ArtsBroken "Az újabb aRts verziók inkompatibilisek "\
            "a GTK 1.x-szel és összeomlasztják a GMPlayert!"
 
-// -- aboutbox
 #define MSGTR_ABOUT_UHU "GUI fejlesztést az UHU Linux támogatta\n"
 #define MSGTR_ABOUT_Contributors "Kód és dokumentáció közreműködői\n"
 #define MSGTR_ABOUT_Codecs_libs_contributions "Codec-ek és third party könyvtárak\n"
@@ -823,6 +822,7 @@ static const char help_text[]=
 #define MSGTR_WS_NotAFile "Úgy tűnik, hogy ez nem fájl...\n"
 #define MSGTR_WS_DDNothing "D&D: Semmi sem jött vissza!\n"
 
+
 // ======================= video output drivers ========================
 
 #define MSGTR_VOincompCodec "A kiválasztott video_out eszköz nem kompatibilis ezzel a codec-kel.\n"\
@@ -855,7 +855,6 @@ static const char help_text[]=
 #define MSGTR_LIBVO_FONT_LOAD_FT_CannotPrepareOSDFont "Nem lehet előkészíteni az OSD betűtípusát.\n"
 #define MSGTR_LIBVO_FONT_LOAD_FT_CannotGenerateTables "Nem generálhatóak a táblázatok.\n"
 #define MSGTR_LIBVO_FONT_LOAD_FT_DoneFreeTypeFailed "FT_Done_FreeType sikertelen.\n"
-#define MSGTR_LIBVO_FONT_LOAD_FT_FontconfigNoMatch "A Fontconfig-nak nem sikerült kiválasztani a betűtípust. Megpróbálom fontconfig nélkül...\n"
 
 // sub.c
 #define MSGTR_VO_SUB_Seekbar "Keresősáv"
@@ -955,8 +954,8 @@ static const char help_text[]=
 #define MSGTR_LIBVO_MGA_InvalidOutputFormat "[MGA] Hibás kimeneti formátum %0X\n"
 #define MSGTR_LIBVO_MGA_IncompatibleDriverVersion "[MGA] Az mga_vid vezérlőd verziója nem kompatibilis ezzel az MPlayer verzióval!\n"
 #define MSGTR_LIBVO_MGA_CouldntOpen "[MGA] Nem nyitható meg: %s\n"
-#define MSGTR_LIBVO_MGA_ResolutionTooHigh "[MGA] A forrás felbontása legalább egy dimenzióban nagyobb, mint 1023x1023. Méretezd át szoftveresen vagy használd a -lavdopts lowres=1-t\n"
-#define MSGTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] különbség a kernel (%u) és az MPlayer (%u) mga_vid verziói között\n"
+#define MGSTR_LIBVO_MGA_ResolutionTooHigh "[MGA] A forrás felbontása legalább egy dimenzióban nagyobb, mint 1023x1023. Méretezd át szoftveresen vagy használd a -lavdopts lowres=1-t\n"
+#define MGSTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] különbség a kernel (%u) és az MPlayer (%u) mga_vid verziói között\n"
 
 // vo_null.c
 #define MSGTR_LIBVO_NULL_UnknownSubdevice "[VO_NULL] Ismeretlen aleszköz: %s.\n"
@@ -1187,7 +1186,7 @@ static const char help_text[]=
 #define MSGTR_AO_ESD_CantOpenPBStream "[AO ESD] nem sikerült megnyitni az ESD playback folyamot: %s\n"
 
 // ao_mpegpes.c
-#define MSGTR_AO_MPEGPES_CantSetMixer "[AO MPEGPES] DVB audio keverő beállítása sikertelen: %s.\n"
+#define MSGTR_AO_MPEGPES_CantSetMixer "[AO MPEGPES] DVB audio keverő beállítása sikertelen: %s.\n" 
 #define MSGTR_AO_MPEGPES_UnsupSamplerate "[AO MPEGPES] %d Hz nem támogatott, új mintavételt próbálok.\n"
 
 // ao_pcm.c
@@ -1279,7 +1278,10 @@ static const char help_text[]=
 #define MSGTR_AO_ALSA_UnableToDisableResampling "[AO_ALSA] A resampling letiltása sikertelen: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetSamplerate2 "[AO_ALSA] Sikerteln a samplerate-2 beállítása: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetBufferTimeNear "[AO_ALSA] Sikertelen a buffer idő beállítása: %s\n"
-#define MSGTR_AO_ALSA_UnableToGetPeriodSize "[AO ALSA] Sikertelen a periódus méret lekérdezése: %s\n"
+#define MSGTR_AO_ALSA_UnableToSetPeriodTime "[AO_ALSA] Sikertelen a periódusidő beállítása: %s\n"
+#define MSGTR_AO_ALSA_BufferTimePeriodTime "[AO_ALSA] buffer_time: %d, period_time :%d\n"
+#define MSGTR_AO_ALSA_UnableToGetPeriodSize "[AO ALSA] Sikertelen a periódus idő lekérdezése: %s\n"
+#define MSGTR_AO_ALSA_UnableToSetPeriodSize "[AO ALSA] Sikertelen a periódus méret beállítása (%ld): %s\n"
 #define MSGTR_AO_ALSA_UnableToSetPeriods "[AO_ALSA] Sikertelen a periódusok beállítása: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetHwParameters "[AO_ALSA] Sikerteln a hw-paraméter-ek beállítása: %s\n"
 #define MSGTR_AO_ALSA_UnableToGetBufferSize "[AO_ALSA] Sikerteln a buffer méret lekérdezése: %s\n"
@@ -1373,7 +1375,7 @@ static const char help_text[]=
 #define MSGTR_INPUT_INPUT_ErrCantOpenFile "Nem nyitható meg %s: %s\n"
 #define MSGTR_INPUT_INPUT_ErrCantInitAppleRemote "Apple Remote inicializálása nem sikerült.\n"
 
-// lirc.c
+// lirc.c:
 #define MSGTR_SettingUpLIRC "LIRC támogatás indítása...\n"
 #define MSGTR_LIRCopenfailed "Nem tudtam megnyitni a lirc támogatást. Nem fogod tudni használni a távirányítót.\n"
 #define MSGTR_LIRCcfgerr "Nem tudom olvasni a LIRC konfigurációs fájlt: %s \n"
@@ -1381,7 +1383,7 @@ static const char help_text[]=
 
 // ========================== LIBMPDEMUX ===================================
 
-// muxer.c, muxer_*.c
+// muxer.c, muxer_*.c:
 #define MSGTR_TooManyStreams "Túl sok stream!"
 #define MSGTR_RawMuxerOnlyOneStream "A rawaudio muxer csak egy audió folyamot támogat!\n"
 #define MSGTR_IgnoringVideoStream "Videó folyam figyelmen kívül hagyva!\n"
@@ -1393,13 +1395,13 @@ static const char help_text[]=
 #define MSGTR_WritingHeader "Fejléc írása...\n"
 #define MSGTR_WritingTrailer "Index írása...\n"
 
-// demuxer.c, demux_*.c
+// demuxer.c, demux_*.c:
 #define MSGTR_AudioStreamRedefined "Vigyázat! Többszörösen definiált Audio-folyam: %d (Hibás fájl?)\n"
 #define MSGTR_VideoStreamRedefined "Vigyázat! Többszörösen definiált Video-folyam: %d (Hibás fájl?)\n"
 #define MSGTR_TooManyAudioInBuffer "\nDEMUXER: Túl sok (%d db, %d bájt) audio-csomag a pufferben!\n"
 #define MSGTR_TooManyVideoInBuffer "\nDEMUXER: Túl sok (%d db, %d bájt) video-csomag a pufferben!\n"
 #define MSGTR_MaybeNI "Talán ez egy nem összefésült (interleaved) fájl vagy a codec nem működik jól?\n" \
-                      "AVI fájloknál próbáld meg a non-interleaved mód kényszerítését a -ni opcióval.\n"
+		      "AVI fájloknál próbáld meg a non-interleaved mód kényszerítését a -ni opcióval.\n"
 #define MSGTR_WorkAroundBlockAlignHeaderBug "AVI: CBR-MP3 nBlockAlign fejléc hiba megkerülése!\n"
 #define MSGTR_SwitchToNi "\nRosszul összefésült (interleaved) fájl, átváltás -ni módba!\n"
 #define MSGTR_InvalidAudioStreamNosound "AVI: hibás audió folyam ID: %d - figyelmen kívül hagyva (nosound)\n"
@@ -1410,7 +1412,7 @@ static const char help_text[]=
 #define MSGTR_NotSystemStream "Nem MPEG System Stream formátum... (talán Transport Stream?)\n"
 #define MSGTR_InvalidMPEGES "Hibás MPEG-ES-folyam? Lépj kapcsolatba a készítőkkel, lehet, hogy hiba!\n"
 #define MSGTR_FormatNotRecognized "========= Sajnos ez a fájlformátum ismeretlen vagy nem támogatott ===========\n"\
-                                  "= Ha ez egy AVI, ASF vagy MPEG fájl, lépj kapcsolatba a készítőkkel (hiba)! =\n"
+				  "= Ha ez egy AVI, ASF vagy MPEG fájl, lépj kapcsolatba a készítőkkel (hiba)! =\n"
 #define MSGTR_SettingProcessPriority "Folyamat priorításának beállítása: %s\n"
 #define MSGTR_FilefmtFourccSizeFpsFtime "[V] filefmt:%d  fourcc:0x%X  méret:%dx%d  fps:%5.3f  ftime:=%6.4f\n"
 #define MSGTR_CannotInitializeMuxer "A muxer nem inicializálható."
@@ -1635,6 +1637,8 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: a codec nem állította be az sh->disp_w és az sh_disp_h izéket, megpróbálom workaroundolni!\n"
+#define MSGTR_VoConfigRequest "VDec: vo config kérés - %d x %d (preferált színtér: %s)\n"
+#define MSGTR_UsingXAsOutputCspNoY "VDec: %s használata kimeneti színtérként (nincs %d)\n"
 #define MSGTR_CouldNotFindColorspace "Nem találok egyező colorspace-t - újra próbálom a -vf scale filterrel...\n"
 #define MSGTR_MovieAspectIsSet "A film aspect értéke %.2f:1 - aspect arány javítása.\n"
 #define MSGTR_MovieAspectUndefined "A film aspect értéke nem definiált - nincs arányjavítás.\n"
@@ -1718,7 +1722,7 @@ static const char help_text[]=
 #define MSGTR_LIBASS_ErrorRecodingFile "[ass] hiba a fájl rögzítésekor.\n"
 #define MSGTR_LIBASS_FopenFailed "[ass] ass_read_file(%s): fopen sikertelen\n"
 #define MSGTR_LIBASS_FseekFailed "[ass] ass_read_file(%s): fseek sikertelen\n"
-#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan100M "[ass] ass_read_file(%s): 100M-nél nagyobb felirat fájl betöltése visszautasítva\n"
+#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan10M "[ass] ass_read_file(%s): 10M-nél nagyobb felirat fájl betöltése visszautasítva\n"
 #define MSGTR_LIBASS_ReadFailed "Olvasás sikertelen, %d: %s\n"
 #define MSGTR_LIBASS_AddedSubtitleFileMemory "[ass] Felirat fájl hozzáadása: <memória> (%d stílus, %d esemény)\n"
 #define MSGTR_LIBASS_AddedSubtitleFileFname "[ass] Felirat fájl hozzáadása: %s (%d stílus, %d esemény)\n"
@@ -2114,3 +2118,4 @@ static const char help_text[]=
 
 // url.c
 #define MSGTR_MPDEMUX_URL_StringAlreadyEscaped "A karakterlánc már escape-ltnek tűnik az url_escape-ben %c%c1%c2\n"
+

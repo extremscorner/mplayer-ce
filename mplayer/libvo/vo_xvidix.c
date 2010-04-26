@@ -1,28 +1,12 @@
 /*
- * VIDIX-accelerated overlay in an X window
- *
- * copyright (C) Alex Beregszaszi & Zoltan Ponekker & Nick Kurshev
- *
- * WS window manager by Pontscho/Fresh!
- *
- * based on vo_gl.c and vo_vesa.c and vo_xmga.c (.so mastah! ;))
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+    VIDIX accelerated overlay in a X window
+    
+    (C) Alex Beregszaszi & Zoltan Ponekker & Nick Kurshev
+    
+    WS window manager by Pontscho/Fresh!
+
+    Based on vo_gl.c and vo_vesa.c and vo_xmga.c (.so mastah! ;))
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +49,7 @@ LIBVO_EXTERN(xvidix)
 #define UNUSED(x) ((void)(x))   /* Removes warning about unused arguments */
 /* X11 related variables */
 /* Colorkey handling */
+static XGCValues mGCV;
 static int colorkey;
 static vidix_grkey_t gr_key;
 
@@ -84,7 +69,7 @@ static uint32_t window_width, window_height;
 static uint32_t drwX, drwY, drwWidth, drwHeight, drwBorderWidth,
     drwDepth, drwcX, drwcY, dwidth, dheight;
 
-void set_video_eq(int cap);
+extern void set_video_eq(int cap);
 
 
 static void set_window(int force_update)
@@ -139,9 +124,44 @@ static void set_window(int force_update)
     vo_dwidth = drwWidth;
     vo_dheight = drwHeight;
 
-    update_xinerama_info();
-    drwcX -= xinerama_x;
-    drwcY -= xinerama_y;
+#ifdef CONFIG_XINERAMA
+    if (XineramaIsActive(mDisplay))
+    {
+        XineramaScreenInfo *screens;
+        int num_screens;
+        int i = 0;
+
+        screens = XineramaQueryScreens(mDisplay, &num_screens);
+
+        /* find the screen we are on */
+        while (i < num_screens &&
+               ((screens[i].x_org < drwcX) || (screens[i].y_org < drwcY) ||
+                (screens[i].x_org + screens[i].width >= drwcX) ||
+                (screens[i].y_org + screens[i].height >= drwcY)))
+        {
+            i++;
+        }
+
+        if (i < num_screens)
+        {
+            /* save the screen we are on */
+            xinerama_screen = i;
+        } else
+        {
+            /* oops.. couldnt find the screen we are on
+             * because the upper left corner left the
+             * visual range. assume we are still on the
+             * same screen
+             */
+            i = xinerama_screen;
+        }
+
+        /* set drwcX and drwcY to the right values */
+        drwcX = drwcX - screens[i].x_org;
+        drwcY = drwcY - screens[i].y_org;
+        XFree(screens);
+    }
+#endif
 
     if (vo_panscan > 0.0f && vo_fs)
     {
@@ -220,6 +240,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     image_height = height;
     image_width = width;
     image_format = format;
+    vo_mouse_autohide = 1;
 
     window_width = d_width;
     window_height = d_height;
@@ -282,13 +303,44 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
         xswa.colormap =
             XCreateColormap(mDisplay, RootWindow(mDisplay, mScreen),
                             vinfo.visual, AllocNone);
-        xswamask = CWBackPixel | CWBorderPixel | CWColormap;
+        xswa.event_mask =
+            StructureNotifyMask | ExposureMask | KeyPressMask |
+            PropertyChangeMask | ((WinID == 0) ? 0
+                                  : (ButtonPressMask | ButtonReleaseMask |
+                                     PointerMotionMask));
+        xswamask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
 
+        if (WinID >= 0)
+        {
+            vo_window =
+                WinID ? ((Window) WinID) : RootWindow(mDisplay, mScreen);
+            if (WinID)
+            {
+                XUnmapWindow(mDisplay, vo_window);
+                XChangeWindowAttributes(mDisplay, vo_window, xswamask,
+                                        &xswa);
+                vo_x11_selectinput_witherr(mDisplay, vo_window,
+                                           StructureNotifyMask |
+                                           KeyPressMask |
+                                           PropertyChangeMask |
+                                           PointerMotionMask |
+                                           ButtonPressMask |
+                                           ButtonReleaseMask |
+                                           ExposureMask);
+                XMapWindow(mDisplay, vo_window);
+            } else
+                XSelectInput(mDisplay, vo_window, ExposureMask);
+        } else
+        {
             vo_x11_create_vo_window(&vinfo, vo_dx, vo_dy,
                     window_width, window_height, flags,
                     CopyFromParent, "xvidix", title);
             XChangeWindowAttributes(mDisplay, vo_window, xswamask, &xswa);
+        }
 
+        if (vo_gc != None)
+            XFreeGC(mDisplay, vo_gc);
+        vo_gc = XCreateGC(mDisplay, vo_window, GCForeground, &mGCV);
 #ifdef CONFIG_GUI
     }
 #endif
@@ -322,6 +374,9 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     XSync(mDisplay, False);
 
     panscan_calc();
+
+    if (vo_ontop)
+        vo_x11_setlayer(mDisplay, vo_window, vo_ontop);
 
     return 0;
 }

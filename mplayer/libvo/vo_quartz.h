@@ -1,4 +1,4 @@
-/*
+/* 
  * vo_quartz.h
  * Mac keyboard def taken from SDL
  * See the Subversion log for a list of changes.
@@ -9,16 +9,16 @@
     Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002  Sam Lantinga
 
     This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
+    modify it under the terms of the GNU Library General Public
     License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
+    version 2 of the License, or (at your option) any later version.
 
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
+    Library General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public
+    You should have received a copy of the GNU Library General Public
     License along with this library; if not, write to the Free
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
@@ -118,7 +118,7 @@
 #define QZ_PERIOD		0x2F
 #define QZ_SLASH		0x2C
 /* These are the same as the left versions - use left by default */
-#if 0
+#if 0				
 #define QZ_RSHIFT		0x38
 #endif
 #define QZ_UP			0x7E
@@ -131,7 +131,7 @@
 #define QZ_LMETA		0x37
 #define QZ_SPACE		0x31
 /* These are the same as the left versions - use left by default */
-#if 0
+#if 0				
 #define QZ_RMETA		0x37
 #define QZ_RALT			0x3A
 #define QZ_RCTRL		0x3B

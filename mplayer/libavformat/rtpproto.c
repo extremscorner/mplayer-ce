@@ -1,6 +1,6 @@
 /*
  * RTP network protocol
- * Copyright (c) 2002 Fabrice Bellard
+ * Copyright (c) 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
  *
@@ -20,24 +20,19 @@
  */
 
 /**
- * @file
+ * @file rtpproto.c
  * RTP protocol
  */
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
-#include "rtpdec.h"
 
 #include <unistd.h>
 #include <stdarg.h>
-#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include <fcntl.h>
-#if HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#endif
-#include <sys/time.h>
 
 #define RTP_TX_BUF_SIZE  (64 * 1024)
 #define RTP_RX_BUF_SIZE  (128 * 1024)
@@ -66,13 +61,13 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
     char buf[1024];
     char path[1024];
 
-    ff_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
-                 path, sizeof(path), uri);
+    url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
+              path, sizeof(path), uri);
 
-    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port, "%s", path);
+    snprintf(buf, sizeof(buf), "udp://%s:%d%s", hostname, port, path);
     udp_set_remote_url(s->rtp_hd, buf);
 
-    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port + 1, "%s", path);
+    snprintf(buf, sizeof(buf), "udp://%s:%d%s", hostname, port + 1, path);
     udp_set_remote_url(s->rtcp_hd, buf);
     return 0;
 }
@@ -103,7 +98,7 @@ static void build_udp_url(char *buf, int buf_size,
                           int local_port, int ttl,
                           int max_packet_size)
 {
-    ff_url_join(buf, buf_size, "udp", NULL, hostname, port, NULL);
+    snprintf(buf, buf_size, "udp://%s:%d", hostname, port);
     if (local_port >= 0)
         url_add_option(buf, buf_size, "localport=%d", local_port);
     if (ttl >= 0)
@@ -114,26 +109,16 @@ static void build_udp_url(char *buf, int buf_size,
 
 /**
  * url syntax: rtp://host:port[?option=val...]
- * option: 'ttl=n'            : set the ttl value (for multicast only)
- *         'rtcpport=n'       : set the remote rtcp port to n
- *         'localrtpport=n'   : set the local rtp port to n
- *         'localrtcpport=n'  : set the local rtcp port to n
- *         'pkt_size=n'       : set max packet size
- * deprecated option:
- *         'localport=n'      : set the local port to n
+ * option: 'ttl=n'       : set the ttl value (for multicast only)
+ *         'localport=n' : set the local port to n
+ *         'pkt_size=n'  : set max packet size
  *
- * if rtcpport isn't set the rtcp port will be the rtp port + 1
- * if local rtp port isn't set any available port will be used for the local
- * rtp and rtcp ports
- * if the local rtcp port is not set it will be the local rtp port + 1
  */
 
 static int rtp_open(URLContext *h, const char *uri, int flags)
 {
     RTPContext *s;
-    int rtp_port, rtcp_port,
-        is_output, ttl,
-        local_rtp_port, local_rtcp_port, max_packet_size;
+    int port, is_output, ttl, local_port, max_packet_size;
     char hostname[256];
     char buf[1024];
     char path[1024];
@@ -146,13 +131,11 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         return AVERROR(ENOMEM);
     h->priv_data = s;
 
-    ff_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
-                 path, sizeof(path), uri);
+    url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
+              path, sizeof(path), uri);
     /* extract parameters */
     ttl = -1;
-    rtcp_port = rtp_port+1;
-    local_rtp_port = -1;
-    local_rtcp_port = -1;
+    local_port = -1;
     max_packet_size = -1;
 
     p = strchr(uri, '?');
@@ -160,17 +143,8 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         if (find_info_tag(buf, sizeof(buf), "ttl", p)) {
             ttl = strtol(buf, NULL, 10);
         }
-        if (find_info_tag(buf, sizeof(buf), "rtcpport", p)) {
-            rtcp_port = strtol(buf, NULL, 10);
-        }
         if (find_info_tag(buf, sizeof(buf), "localport", p)) {
-            local_rtp_port = strtol(buf, NULL, 10);
-        }
-        if (find_info_tag(buf, sizeof(buf), "localrtpport", p)) {
-            local_rtp_port = strtol(buf, NULL, 10);
-        }
-        if (find_info_tag(buf, sizeof(buf), "localrtcpport", p)) {
-            local_rtcp_port = strtol(buf, NULL, 10);
+            local_port = strtol(buf, NULL, 10);
         }
         if (find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
             max_packet_size = strtol(buf, NULL, 10);
@@ -178,21 +152,23 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     }
 
     build_udp_url(buf, sizeof(buf),
-                  hostname, rtp_port, local_rtp_port, ttl, max_packet_size);
+                  hostname, port, local_port, ttl, max_packet_size);
     if (url_open(&s->rtp_hd, buf, flags) < 0)
         goto fail;
-    if (local_rtp_port>=0 && local_rtcp_port<0)
-        local_rtcp_port = udp_get_local_port(s->rtp_hd) + 1;
+    local_port = udp_get_local_port(s->rtp_hd);
+    /* XXX: need to open another connection if the port is not even */
+
+    /* well, should suppress localport in path */
 
     build_udp_url(buf, sizeof(buf),
-                  hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size);
+                  hostname, port + 1, local_port + 1, ttl, max_packet_size);
     if (url_open(&s->rtcp_hd, buf, flags) < 0)
         goto fail;
 
     /* just to ease handle access. XXX: need to suppress direct handle
        access */
-    s->rtp_fd = url_get_file_handle(s->rtp_hd);
-    s->rtcp_fd = url_get_file_handle(s->rtcp_hd);
+    s->rtp_fd = udp_get_file_handle(s->rtp_hd);
+    s->rtcp_fd = udp_get_file_handle(s->rtcp_hd);
 
     h->max_packet_size = url_get_max_packet_size(s->rtp_hd);
     h->is_streamed = 1;
@@ -214,7 +190,6 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     socklen_t from_len;
     int len, fd_max, n;
     fd_set rfds;
-    struct timeval tv;
 #if 0
     for(;;) {
         from_len = sizeof(from);
@@ -230,8 +205,6 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     }
 #else
     for(;;) {
-        if (url_interrupt_cb())
-            return AVERROR(EINTR);
         /* build fdset to listen to RTP and RTCP packets */
         FD_ZERO(&rfds);
         fd_max = s->rtp_fd;
@@ -239,9 +212,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         if (s->rtcp_fd > fd_max)
             fd_max = s->rtcp_fd;
         FD_SET(s->rtcp_fd, &rfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 100 * 1000;
-        n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
+        n = select(fd_max + 1, &rfds, NULL, NULL, NULL);
         if (n > 0) {
             /* first try RTCP */
             if (FD_ISSET(s->rtcp_fd, &rfds)) {
@@ -269,10 +240,6 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 }
                 break;
             }
-        } else if (n < 0) {
-            if (ff_neterrno() == FF_NETERROR(EINTR))
-                continue;
-            return AVERROR(EIO);
         }
     }
 #endif
@@ -316,19 +283,7 @@ static int rtp_close(URLContext *h)
 }
 
 /**
- * Return the local rtp port used by the RTP connection
- * @param s1 media file context
- * @return the local port number
- */
-
-int rtp_get_local_rtp_port(URLContext *h)
-{
-    RTPContext *s = h->priv_data;
-    return udp_get_local_port(s->rtp_hd);
-}
-
-/**
- * Return the local rtp port used by the RTP connection
+ * Return the local port used by the RTP connection
  * @param s1 media file context
  * @return the local port number
  */
@@ -339,19 +294,6 @@ int rtp_get_local_port(URLContext *h)
     return udp_get_local_port(s->rtp_hd);
 }
 
-/**
- * Return the local rtcp port used by the RTP connection
- * @param s1 media file context
- * @return the local port number
- */
-
-int rtp_get_local_rtcp_port(URLContext *h)
-{
-    RTPContext *s = h->priv_data;
-    return udp_get_local_port(s->rtcp_hd);
-}
-
-#if (LIBAVFORMAT_VERSION_MAJOR <= 52)
 /**
  * Return the rtp and rtcp file handles for select() usage to wait for
  * several RTP streams at the same time.
@@ -365,13 +307,6 @@ void rtp_get_file_handles(URLContext *h, int *prtp_fd, int *prtcp_fd)
     *prtp_fd = s->rtp_fd;
     *prtcp_fd = s->rtcp_fd;
 }
-#endif
-
-static int rtp_get_file_handle(URLContext *h)
-{
-    RTPContext *s = h->priv_data;
-    return s->rtp_fd;
-}
 
 URLProtocol rtp_protocol = {
     "rtp",
@@ -380,5 +315,4 @@ URLProtocol rtp_protocol = {
     rtp_write,
     NULL, /* seek */
     rtp_close,
-    .url_get_file_handle = rtp_get_file_handle,
 };

@@ -1,23 +1,9 @@
 /*
- * This is a small DLL that works as a wrapper for the actual real28_8.so.6.0
- * DLL from RealPlayer 8.0.
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+   GPL v2 blah blah
+   
+   This is a small dll that works as a wrapper for the actual 14_4.so.6.0
+   dll from real player 8.0. 
+*/
 
 /*
    Assuming that RACloseCodec is the last call.
@@ -44,7 +30,7 @@ int b_dlOpened=0;
 void *handle=NULL;
 
 /* exits program when failure */
-void loadSyms(void) {
+void loadSyms() {
 	fputs("loadSyms()\n", stderr);
 	if (!b_dlOpened) {
 		char *error;
@@ -100,7 +86,7 @@ void loadSyms(void) {
 	}
 }
 
-void closeDll(void) {
+void closeDll() {
 	if (handle) {
 		b_dlOpened=0;
 		dlclose(handle);
@@ -115,11 +101,11 @@ void _init(void) {
 struct timezone tz;
 struct timeval tv1, tv2;
 
-void tic(void) {
+void tic() {
 	gettimeofday(&tv1, &tz);
 }
 
-void toc(void) {
+void toc() {
 	long secs, usecs;
 	gettimeofday(&tv2, &tz);
 	secs=tv2.tv_sec-tv1.tv_sec;
@@ -137,7 +123,7 @@ void hexdump(void *pos, int len) {
 	int lines=(len+15)>>4;
 	while(lines--) {
 		int len1=len, i;
-		fprintf(stderr, "%0x  ", cpos);
+		fprintf(stderr, "%0x  ", cpos); 
 		cpos1=cpos;
 		for (i=0;i<16;i++) {
 			if (len1>0) {
@@ -157,7 +143,7 @@ void hexdump(void *pos, int len) {
 			}
 			len--;
 		}
-		fputs("\n", stderr);
+		fputs("\n", stderr);		
 	}
 	fputc('\n', stderr);
 }
@@ -177,7 +163,7 @@ static int pkno=0;
 ulong RADecode(ulong p1,ulong p2,ulong p3,ulong p4,ulong* p5,ulong p6) {
 	ulong result;
 	int x,y;
-
+	
 	fprintf(stderr, "RADecode(ulong ctx=0x%0lx, ", p1);
 	fprintf(stderr, "ulong src=0x%0lx,\n", p2);
 	fprintf(stderr, "ulong len=0x%0lx,", p3);
@@ -261,7 +247,7 @@ ulong RAInitDecoder(ulong p1,ulong p2) {
 //	memset(temp2,0x77,256);
 //	memcpy(temp2,temp[6],16);
 //	temp[6]=temp2;
-
+	
 	result=(*raInitDecoder)(p1,/*temp*/p2);
 //	hexdump((void*)temp[6], 32);
 //	memcpy(p2,temp,4*11);
@@ -310,6 +296,6 @@ ulong RASetFlavor(ulong p1) {
 
 	fputs("######################## FLAVOR PROPERTIES ###################\n\n", stderr);
 #endif
-
+	
 	return result;
 }

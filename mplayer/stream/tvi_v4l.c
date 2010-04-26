@@ -1,35 +1,19 @@
 /*
- * Video 4 Linux input
- *
- * Copyright (C) 2001 Alex Beregszaszi
- *
- * Some ideas are based on xawtv/libng's grab-v4l.c written by
- *   Gerd Knorr <kraxel@bytesex.org>
- *
- * Multithreading, a/v sync and native ALSA support by
- *   Jindrich Makovicka <makovick@gmail.com>
- *
- * MJPEG hardware encoding support by
- *   Ivan Szanto <szivan@freemail.hu>
- *
- * CODE IS UNDER DEVELOPMENT, NO FEATURE REQUESTS PLEASE!
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+  Video 4 Linux input
+
+  (C) Alex Beregszaszi
+
+  Some ideas are based on xawtv/libng's grab-v4l.c written by
+    Gerd Knorr <kraxel@bytesex.org>
+
+  Multithreading, a/v sync and native ALSA support by
+    Jindrich Makovicka <makovick@gmail.com>
+
+  Mjpeg hardware encoding support by
+    Ivan Szanto <szivan@freemail.hu>
+
+  CODE IS UNDER DEVELOPMENT, NO FEATURE REQUESTS PLEASE!
+*/
 
 #include "config.h"
 
@@ -56,7 +40,6 @@
 #include "mp_msg.h"
 #include "libaf/af_format.h"
 #include "libmpcodecs/img_format.h"
-#include "libmpcodecs/dec_teletext.h"
 #include "libvo/fastmemcpy.h"
 #include "libvo/videodev_mjpeg.h"
 
@@ -158,12 +141,14 @@ typedef struct {
     long                        audio_recv_blocks_total;
     long                        audio_sent_blocks_total;
     long                        mjpeg_bufsize;
+#ifdef CONFIG_TV_TELETEXT
     char                        *vbi_dev;
     int                         vbi_fd;
     int                         vbi_bufsize;
     int                         vbi_shutdown;
     pthread_t                   vbi_grabber_thread;
     void                        *priv_vbi;
+#endif
 
     tv_param_t                  *tv_param;
 } priv_t;
@@ -690,6 +675,7 @@ static int uninit(priv_t *priv)
 {
     unsigned long num;
 
+#ifdef CONFIG_TV_TELETEXT
     priv->vbi_shutdown=1;
     if(priv->vbi_grabber_thread)
         pthread_join(priv->vbi_grabber_thread, NULL);
@@ -706,6 +692,8 @@ static int uninit(priv_t *priv)
         free(priv->vbi_dev);
         priv->vbi_dev=0;
     }
+
+#endif
 
     priv->shutdown = 1;
 
@@ -793,6 +781,7 @@ static int get_capture_buffer_size(priv_t *priv)
     return cnt;
 }
 
+#ifdef CONFIG_TV_TELETEXT
 static int vbi_init(priv_t* priv,char* device)
 {
     int vbi_fd=0;
@@ -808,7 +797,7 @@ static int vbi_init(priv_t* priv,char* device)
         mp_msg(MSGT_TV,MSGL_ERR,"vbi: could not open device %s\n",priv->vbi_dev);
         return  TVI_CONTROL_FALSE;
     }
-
+    
     if(ioctl(vbi_fd,VIDIOCGCAP,&cap)<0){
         mp_msg(MSGT_TV,MSGL_ERR,"vbi: Query capatibilities failed for %s\n",priv->vbi_dev);
         close(vbi_fd);
@@ -856,7 +845,7 @@ static int vbi_get_props(priv_t* priv,tt_stream_props* ptsp)
     ptsp->count[1]=fmt.count[1];
     ptsp->bufsize = ptsp->samples_per_line * (ptsp->count[0] + ptsp->count[1]);
 
-    mp_msg(MSGT_TV,MSGL_V,"vbi_get_props: sampling_rate=%d,offset:%d,samples_per_line: %d\n interlaced:%s, count=[%d,%d]\n",
+    mp_msg(MSGT_TV,MSGL_V,"vbi_get_props: sampling_rate=%d,offset:%d,samples_per_line: %d\n interlaced:%s, count=[%d,%d]\n",    
         ptsp->sampling_rate,
         ptsp->offset,
         ptsp->samples_per_line,
@@ -908,6 +897,7 @@ static void *vbi_grabber(void *data)
     free(buf);
     return NULL;
 }
+#endif /* CONFIG_TV_TELETEXT */
 
 static int start(priv_t *priv)
 {
@@ -1121,11 +1111,13 @@ static int start(priv_t *priv)
         ioctl(priv->video_fd, VIDIOCSAUDIO, &priv->audio[priv->audio_id]);
     }
 
+#ifdef CONFIG_TV_TELETEXT
     /* start vbi thread */
     if(priv->priv_vbi){
         priv->vbi_shutdown = 0;
         pthread_create(&priv->vbi_grabber_thread, NULL, vbi_grabber, priv);
     }
+#endif
 
     /* launch capture threads */
     priv->shutdown = 0;
@@ -1519,6 +1511,7 @@ static int control(priv_t *priv, int cmd, void *arg)
             priv->immediate_mode = 1;
             return TVI_CONTROL_TRUE;
         }
+#ifdef CONFIG_TV_TELETEXT
         case TVI_CONTROL_VBI_INIT:
         {
             void* ptr;
@@ -1529,16 +1522,16 @@ static int control(priv_t *priv, int cmd, void *arg)
             if(vbi_get_props(priv,&tsp)==TVI_CONTROL_TRUE)
             {
                 ptr=&tsp;
-                if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==VBI_CONTROL_TRUE)
+                if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==TVI_CONTROL_TRUE)
                     priv->priv_vbi=ptr;
                 else
                     priv->priv_vbi=NULL;
             }
             return TVI_CONTROL_TRUE;
         }
-        case TVI_CONTROL_GET_VBI_PTR:
-            *(void **)arg=priv->priv_vbi;
-            return TVI_CONTROL_TRUE;
+        default:
+            return teletext_control(priv->priv_vbi,cmd,arg);
+#endif
     }
 
     return TVI_CONTROL_UNKNOWN;
@@ -1548,7 +1541,7 @@ static int set_mute(priv_t* priv,int value)
 {
     if (!priv->capability.audios) {
         return 0;
-
+	
     if(value)
         priv->audio[priv->audio_id].flags |=VIDEO_AUDIO_MUTE;
     else

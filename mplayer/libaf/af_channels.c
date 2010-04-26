@@ -1,25 +1,7 @@
-/*
- * Audio filter that adds and removes channels, according to the
- * command line parameter channels. It is stupid and can only add
- * silence or copy channels, not mix or filter.
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
+/* Audio filter that adds and removes channels, according to the
+   command line parameter channels. It is stupid and can only add
+   silence or copy channels not mix or filter.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -108,7 +90,7 @@ static void copy(void* in, void* out, int ins, int inos,int outs, int outos, int
     break;
   }
   default:
-    mp_msg(MSGT_AFILTER, MSGL_ERR, "[channels] Unsupported number of bytes/sample: %i"
+    af_msg(AF_MSG_ERROR,"[channels] Unsupported number of bytes/sample: %i" 
 	   " please report this error on the MPlayer mailing list. \n",bps);
   }
 }
@@ -118,14 +100,14 @@ static int check_routes(af_channels_t* s, int nin, int nout)
 {
   int i;
   if((s->nr < 1) || (s->nr > AF_NCH)){
-    mp_msg(MSGT_AFILTER, MSGL_ERR, "[channels] The number of routing pairs must be"
+    af_msg(AF_MSG_ERROR,"[channels] The number of routing pairs must be" 
 	   " between 1 and %i. Current value is %i\n",AF_NCH,s->nr);
     return AF_ERROR;
   }
-
+	
   for(i=0;i<s->nr;i++){
     if((s->route[i][FR] >= nin) || (s->route[i][TO] >= nout)){
-      mp_msg(MSGT_AFILTER, MSGL_ERR, "[channels] Invalid routing in pair nr. %i.\n", i);
+      af_msg(AF_MSG_ERROR,"[channels] Invalid routing in pair nr. %i.\n", i);
       return AF_ERROR;
     }
   }
@@ -142,7 +124,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     // Set default channel assignment
     if(!s->router){
       int i;
-      // Make sure this filter isn't redundant
+      // Make sure this filter isn't redundant 
       if(af->data->nch == ((af_data_t*)arg)->nch)
 	return AF_DETACH;
 
@@ -180,14 +162,14 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       int ch = 0;
       // Sanity check
       if((s->nr < 1) || (s->nr > AF_NCH)){
-	mp_msg(MSGT_AFILTER, MSGL_ERR, "[channels] The number of routing pairs must be"
+	af_msg(AF_MSG_ERROR,"[channels] The number of routing pairs must be" 
 	     " between 1 and %i. Current value is %i\n",AF_NCH,s->nr);
-      }
+      }	
       s->router = 1;
       // Scan for pairs on commandline
       while((*cp == ':') && (ch < s->nr)){
 	sscanf(cp, ":%i:%i%n" ,&s->route[ch][FR], &s->route[ch][TO], &n);
-	mp_msg(MSGT_AFILTER, MSGL_V, "[channels] Routing from channel %i to"
+	af_msg(AF_MSG_VERBOSE,"[channels] Routing from channel %i to" 
 	       " channel %i\n",s->route[ch][FR],s->route[ch][TO]);
 	cp = &cp[n];
 	ch++;
@@ -197,20 +179,20 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     if(AF_OK != af->control(af,AF_CONTROL_CHANNELS | AF_CONTROL_SET ,&nch))
       return AF_ERROR;
     return AF_OK;
-  }
-  case AF_CONTROL_CHANNELS | AF_CONTROL_SET:
+  }    
+  case AF_CONTROL_CHANNELS | AF_CONTROL_SET: 
     // Reinit must be called after this function has been called
-
+    
     // Sanity check
     if(((int*)arg)[0] <= 0 || ((int*)arg)[0] > AF_NCH){
-      mp_msg(MSGT_AFILTER, MSGL_ERR, "[channels] The number of output channels must be"
+      af_msg(AF_MSG_ERROR,"[channels] The number of output channels must be" 
 	     " between 1 and %i. Current value is %i\n",AF_NCH,((int*)arg)[0]);
       return AF_ERROR;
     }
 
-    af->data->nch=((int*)arg)[0];
+    af->data->nch=((int*)arg)[0]; 
     if(!s->router)
-      mp_msg(MSGT_AFILTER, MSGL_V, "[channels] Changing number of channels"
+      af_msg(AF_MSG_VERBOSE,"[channels] Changing number of channels" 
 	     " to %i\n",af->data->nch);
     return AF_OK;
   case AF_CONTROL_CHANNELS | AF_CONTROL_GET:
@@ -246,7 +228,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   return AF_UNKNOWN;
 }
 
-// Deallocate memory
+// Deallocate memory 
 static void uninit(struct af_instance_s* af)
 {
   free(af->setup);
@@ -262,18 +244,18 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
   af_data_t*   	 l = af->data;	 		// Local data
   af_channels_t* s = af->setup;
   int 		 i;
-
+  
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
     return NULL;
 
   // Reset unused channels
   memset(l->audio,0,c->len / c->nch * l->nch);
-
+  
   if(AF_OK == check_routes(s,c->nch,l->nch))
     for(i=0;i<s->nr;i++)
       copy(c->audio,l->audio,c->nch,s->route[i][FR],
 	   l->nch,s->route[i][TO],c->len,c->bps);
-
+  
   // Set output data
   c->audio = l->audio;
   c->len   = c->len / c->nch * l->nch;

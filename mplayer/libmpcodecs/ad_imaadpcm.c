@@ -1,37 +1,20 @@
 /*
- * IMA ADPCM decoder
- *
- * This file is in charge of decoding all of the various IMA ADPCM data
- * formats that various entities have created. Details about the data
- * formats can be found here:
- *   http://www.pcisys.net/~melanson/codecs/
- *
- * So far, this file handles these formats:
- *   'ima4': IMA ADPCM found in QT files
- *     0x11: IMA ADPCM found in MS AVI/ASF/WAV files
- *     0x61: DK4 ADPCM found in certain AVI files on Sega Saturn CD-ROMs;
- *           note that this is a 'rogue' format number in that it was
- *           never officially registered with Microsoft
- * 0x1100736d: IMA ADPCM coded like in MS AVI/ASF/WAV found in QT files
- *
- * Copyright (c) 2002 Mike Melanson
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+    IMA ADPCM Decoder for MPlayer
+      by Mike Melanson
+
+    This file is in charge of decoding all of the various IMA ADPCM data
+    formats that various entities have created. Details about the data
+    formats can be found here:
+      http://www.pcisys.net/~melanson/codecs/
+
+    So far, this file handles these formats:
+      'ima4': IMA ADPCM found in QT files
+        0x11: IMA ADPCM found in MS AVI/ASF/WAV files
+        0x61: DK4 ADPCM found in certain AVI files on Sega Saturn CD-ROMs;
+              note that this is a 'rogue' format number in that it was
+              never officially registered with Microsoft
+    0x1100736d: IMA ADPCM coded like in MS AVI/ASF/WAV found in QT files
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,7 +62,7 @@ static const int8_t adpcm_index[8] =
 // clamp a number above 16
 #define CLAMP_ABOVE_16(x)  if (x < 16) x = 16;
 
-static const ad_info_t info =
+static ad_info_t info = 
 {
 	"IMA ADPCM audio decoder",
 	"imaadpcm",
@@ -101,7 +84,7 @@ static int preinit(sh_audio_t *sh_audio)
   if ((sh_audio->format == 0x11) || (sh_audio->format == 0x61) ||
       (sh_audio->format == 0x1100736d))
   {
-    sh_audio->ds->ss_div = (sh_audio->wf->nBlockAlign -
+    sh_audio->ds->ss_div = (sh_audio->wf->nBlockAlign - 
       (MS_IMA_ADPCM_PREAMBLE_SIZE * sh_audio->wf->nChannels)) * 2;
     sh_audio->ds->ss_mul = sh_audio->wf->nBlockAlign;
   }
@@ -120,7 +103,7 @@ static int init(sh_audio_t *sh_audio)
   sh_audio->channels=sh_audio->wf->nChannels;
   sh_audio->samplerate=sh_audio->wf->nSamplesPerSec;
   /* decodes 34 byte -> 64 short*/
-  sh_audio->i_bps =
+  sh_audio->i_bps = 
     (sh_audio->ds->ss_mul * sh_audio->samplerate) / sh_audio->ds->ss_div;
   sh_audio->samplesize=2;
 
@@ -180,8 +163,8 @@ static void decode_nibbles(unsigned short *output,
 static int qt_ima_adpcm_decode_block(unsigned short *output,
   unsigned char *input, int channels, int block_size)
 {
-  int initial_predictor[2] = {0};
-  int initial_index[2] = {0};
+  int initial_predictor[2];
+  int initial_index[2];
   int i;
 
   if (channels != 1) channels = 2;
@@ -280,7 +263,7 @@ static int ms_ima_adpcm_decode_block(unsigned short *output,
       }
     }
   }
-
+  
   decode_nibbles(output,
     (block_size - MS_IMA_ADPCM_PREAMBLE_SIZE * channels) * 2,
     channels,
@@ -327,8 +310,8 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
   int res = -1;
   int (*decode_func)(unsigned short *output, unsigned char *input, int channels, int block_size) = qt_ima_adpcm_decode_block;
   if (demux_read_data(sh_audio->ds, sh_audio->a_in_buffer,
-    sh_audio->ds->ss_mul) !=
-    sh_audio->ds->ss_mul)
+    sh_audio->ds->ss_mul) != 
+    sh_audio->ds->ss_mul) 
     return -1;
 
   if ((sh_audio->format == 0x11) || (sh_audio->format == 0x1100736d))

@@ -2,14 +2,14 @@
  * ioctl.c: DVD ioctl replacement function
  *****************************************************************************
  * Copyright (C) 1999-2001 VideoLAN
- * $Id: ioctl.c 27494 2008-08-29 20:22:36Z diego $
+ * $Id: ioctl.c 20629 2006-11-03 12:25:56Z diego $
  *
  * Authors: Markus Kuespert <ltlBeBoy@beosmail.com>
- *          Sam Hocevar <sam@zoy.org>
+ *          Samuel Hocevar <sam@zoy.org>
  *          Jon Lech Johansen <jon-vl@nanocrew.net>
- *          HÃ¥kan Hjort <d95hjort@dtek.chalmers.se>
+ *          Håkan Hjort <d95hjort@dtek.chalmers.se>
  *          Eugenio Jarosiewicz <ej0@cise.ufl.edu>
- *          David SiebÃ¶rger <drs-videolan@rucus.ru.ac.za>
+ *          David Siebörger <drs-videolan@rucus.ru.ac.za>
  *          Alex Strelnikov <lelik@os2.ru>
  *          Gildas Bazin <gbazin@netcourrier.com>
  *
@@ -270,7 +270,7 @@ int ioctl_ReadCopyright( int i_fd, int i_layer, int *pi_copyright )
                         p_buffer, sizeof(p_buffer), &ulDataLen);
 
     *pi_copyright = p_buffer[ 4 ];
-    
+
 #elif defined( GEKKO )
 	return -1;
 #else
@@ -613,7 +613,7 @@ int ioctl_ReadTitleKey( int i_fd, int *pi_agid, int i_pos, uint8_t *p_key )
     memcpy( p_key, p_buffer + 5, DVD_KEY_SIZE );
 
 #elif defined( GEKKO )
-return -1;
+	return -1;
 #else
 #   error "DVD ioctls are unavailable on this system"
 

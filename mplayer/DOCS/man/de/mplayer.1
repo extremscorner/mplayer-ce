@@ -1,9 +1,9 @@
-.\" MPlayer (C) 2000-2010 MPlayer Team
+.\" MPlayer (C) 2000-2008 MPlayer Team
 .\" Diese Man-Page wurde/wird von Moritz Bunkus, Sebastian Krämer,
 .\" Tobias Diedrich gepflegt.
 .\" Encoding: iso-8859-1
 .\"
-.\" In sync with r28126
+.\" In sync with r27182
 .
 .\" --------------------------------------------------------------------------
 .\" Makrodefinitionen
@@ -64,7 +64,7 @@ mencoder \- Movie Encoder
 .
 .br
 .B mplayer
-[dvd|dvdnav]://[Titel|[Starttitel]\-Endtitel][/Gerät]
+[dvd|dvdnav]://[Titel|[Starttitel]\-Endtitel]
 [Optionen]
 .
 .br
@@ -108,7 +108,7 @@ cue://Datei[:Titel]
 .
 .br
 .B mplayer
-[file|mms[t]|http|http_proxy|rt[s]p|ftp|udp|unsv|icyx|noicyx|smb]://
+[file|mms[t]|http|http_proxy|rt[s]p|ftp|udp|unsv|smb]://
 [Benutzer:Passwort@]URL[:Port] [Optionen]
 .
 .br
@@ -297,8 +297,6 @@ Mache einen Schnappschuss.
 Beginne/beende die Aufnahme von Schnappschüssen.
 .IPs "I\ \ \ \ "
 Zeige den Dateinamen im OSD.
-.IPs "P\ \ \ \ "
-Zeige den Fortschrittsbalken, die abgelaufene Zeit und die Gesamtzeit im OSD.
 .IPs "! und @"
 Spult zum Anfang des vorigen/nächsten Kapitels.
 .IPs "D (nur bei \-vo xvmc, \-vf yadif, \-vf kerndeint)"
@@ -330,7 +328,7 @@ Passe Sättigung an.
 .PP
 .RS
 (Die folgenden Tasten sind nur gültig bei Benutzung der Videoausgabetreiber
-quartz und corevideo.)
+quartz und macosx.)
 .RE
 .PP
 .PD 0
@@ -955,7 +953,7 @@ Verantwortung sicherzustellen, dass dies keine Sicherheitsrisiken birgt
 Windows "." in deinem Pfad ist).
 .sp 1
 Dies kann "missbraucht" werden, um Bildschirmschoner zu deaktiveren, die
-die passende X-API nicht unterstützen (siehe auch \-stop\-xscreensaver).
+die passende X-API nicht unterstützen.
 Wenn du meinst, dass dies zu kompliziert ist, bitte den Autor deines
 Bildschirmschonerprogramms darum, die X-API entsprechend zu unterstützen.
 .sp 1
@@ -978,7 +976,7 @@ identify=6.
 Zum Beispiel listet es für eine DVD die Kapitel die zeitliche Länge jedes
 Titels sowie die Disc-ID.
 Kombiniere dies mit \-frames 0, um alle Ausgaben zu unterdrücken.
-Das Wrapper-Script TOOLS/\:midentify unterdrückt die anderen Ausgaben von
+Das Wrapper-Script TOOLS/\:midentify.sh unterdrückt die anderen Ausgaben von
 MPlayer
 und führt (hoffentlich) Shell-Escaping für die Dateinamen aus.
 .
@@ -1100,10 +1098,6 @@ gesendet werden (momentan werden nur die Derivate von X11 unterstützt).
 Nötig, um in DVD-Menüs Schaltflächen auszuwählen.
 .
 .TP
-.B \-noar
-Schaltet Unterstützung für Apple-Infrarotfernbedienung ab.
-.
-.TP
 .B \-noconsolecontrols
 Für Ereignisse wird von MPlayer nicht die Standardeingabe (stdin) verwendet.
 Das ist nützlich beim Lesen von Daten von der Standardeingabe.
@@ -1121,6 +1115,10 @@ Schaltet die Joystickunterstützung aus.
 .TP
 .B \-nolirc
 Schaltet Unterstützung für LIRC aus.
+.
+.TP
+.B \-noar
+Schaltet Unterstützung für Apple-Infrarotfernbedienung ab.
 .
 .TP
 .B \-nomouseinput
@@ -2790,12 +2788,6 @@ Maximum sein, was z.B.\& das OSD nicht korrekt darstellen kann.
 Setzt die Schrittweite der Mixer-Lautstärkeänderungen in Prozent der
 Gesamtweite (Standard: 3).
 .
-.TP
-.B \-volume <-1\-100> (siehe auch \-af volume)
-Setze die Lautstärke im Mixer zum Programmstart, entweder in Hardware oder
-Software (in Verbindung mit \-softvol).
-Ein Wert von -1 (Standard) ändert die Lautstärke nicht.
-.
 .
 .
 .SH "AUDIOAUSGABETREIBER (NUR BEI MPLAYER)"
@@ -2906,7 +2898,7 @@ Schätze die Audioverzögerung, sollte die Wiedergabe flüssiger machen
 Audioausgabe über NAS
 .
 .TP
-.B coreaudio (nur bei Mac OS X)
+.B macosx (nur bei Mac OS X)
 Nativer Mac OS X-Audioausgabetreiber.
 .
 .TP
@@ -3036,6 +3028,7 @@ Wird nur von fbdev-, dga2-, svga- und vesa-Videoausgabetreibern unterstützt.
 Spiele den Film mit Fensterrand und Dekoration.
 Da dies standardmäßig an ist, benutze \-noborder um die normale
 Fensterdekoration abzuschalten.
+Wird vom directx-Videoausgabetreiber unterstützt.
 .
 .TP
 .B \-brightness <\-100\-100>
@@ -3236,7 +3229,7 @@ der des Bildschirms.
 .br
 .I ANMERKUNG:
 Diese Option wird nur von x11-, xmga-, xv-, xvmc-, xvidix-, gl, gl2,
-directx-, fbdev- und tdfxfb-Videoausgabetreibern unterstützt.
+directx- und tdfxfb-Videoausgabetreibern unterstützt.
 .sp 1
 .I BEISPIEL:
 .PD 0
@@ -3324,7 +3317,7 @@ Fenster-Seitenverhältnis verstehen.
 .B "\-ontop\ "
 Sorgt dafür, dass das Abspielfenster oberhalb von anderen Fenstern bleibt.
 Wird unterstützt von Videoausgabetreibern, die X11 benutzen, außer SDL,
-außerdem directx, corevideo, quartz, ggi und gl2.
+außerdem directx, macosx, quartz, ggi und gl2.
 .
 .TP
 .B \-panscan <0.0\-1.0>
@@ -3332,7 +3325,7 @@ Aktiviert Panscan.
 Dabei werden z.B.\& bei einem 16:9-Film und einem 4:3-Monitor die Seiten
 abgeschnitten, damit der komplette Bildbereich ausgefüllt wird.
 Der Bereich kontrolliert, wieviel vom Bild abgeschnitten wird.
-Dies funktioniert nur mit den xv-, xmga-, mga-, gl-, gl2, quartz-, corevideo- und
+Dies funktioniert nur mit den xv-, xmga-, mga-, gl-, gl2, quartz-, macosx- und
 xvidix-Videoausgabetreibern.
 .br
 .I ANMERKUNG:
@@ -3358,7 +3351,7 @@ Momentan nur unterstützt von \-vo directx kombiniert mit der Option \-vm.
 .B \-rootwin
 Spielt den Film im Hauptfenster (dem Desktophintergrund) ab.
 Desktophintergrundbilder können den Film allerdings verdecken.
-Funktioniert nur mit den x11-, xv-, xmga-, xvidix-, quartz-, corevideo- und
+Funktioniert nur mit den x11-, xv-, xmga-, xvidix-, quartz-, macosx- und
 directx-Videoausgabetreibern.
 .
 .TP
@@ -3369,20 +3362,18 @@ Wird nicht von allen Videoausgabetreibern unterstützt.
 .
 .TP
 .B \-screenh <Pixel>
-Gib die Bildschirmhöhe für Videoausgabetreiber an, die die
+Gib die horizontale Bildauflösung für Videoausgabetreiber an, die die
 Bildschirmauflösung nicht kennen, wie fbdev, x11 und TV-Ausgabe.
 .
 .TP
 .B \-screenw <Pixel>
-Gib die Bildschirmbreite für Videoausgabetreiber an, die die
+Gib die vertikale Bildauflösung für Videoausgabetreiber an, die die
 Bildschirmauflösung nicht kennen, wie fbdev, x11 und TV-Ausgang.
 .
 .TP
 .B \-stop\-xscreensaver (nur bei X11)
 Deaktiviert den Bildschirmschoner beim Start von MPlayer und aktiviert ihn
 beim Beenden wieder.
-Wenn dein Bildschirmschoner weder XSS- noch XResetScreensaver-API unterstützt,
-verwende statt dessen die Option \-hearbeat\-cmd.
 .
 .TP
 .B "\-vm \ \ \ "
@@ -3403,7 +3394,7 @@ beispielsweise nützlich ist, um MPlayer in einen Browser einzubetten (z.B.\&
 mit der plugger-Erweiterung).
 .
 .TP
-.B \-xineramascreen <\-2\-...>
+.B \-xineramascreen <\-2\-...> (nur bei X11)
 Bei Xinerama-Konfigurationen (z.B.\& bei einem einzigen Desktop, der sich
 über mehrere Monitore erstreckt) gibt diese Option an, auf welchem Schirm
 das Video angezeigt werden soll.
@@ -3414,11 +3405,6 @@ Die mit der Option \-geometry gesetzte Initialposition ist relativ zum
 angegebenen Bildschirm.
 Wird normalerweise nur mit "\-fstype \-fullscreen" oder "\-fstype none"
 funktionieren.
-Diese Option ist nicht geeignet, nur das Startbild zu setzen (denn es wird auf
-dem angegebenen Bildschirm immer im Vollbildmodus dargestellt), \-geometry ist
-für diesen Zweck momentan die beste
-zur Verfügung stehende Option.
-Unterstützt von den Videoausgabetreibern gl, gl2, x11 und xv.
 .
 .TP
 .B \-zrbw (nur bei \-vo zr)
@@ -3619,15 +3605,11 @@ Gib das Video über die Direct Graphics Access-Erweiterung von XFree86 aus.
 Wird als veraltet betrachtet.
 .
 .TP
-.B sdl (nur bei SDL, fehlerhaft/veraltet)
+.B sdl (nur bei SDL)
 Höchst-plattformunabhängiger Videoausgabetreiber der SDL-Bibliothek (Simple
 Directmedia Layer).
 Da SDL einen eigenen X11-Layer benutzt, haben die X11-Optionen von MPlayer
 keine Wirkung auf SDL.
-Beachte, dass es mehrere kleine Bugs gibt (\-vm/\-novm wird größtenteils
-ignoriert, \-fs verhält sich so wie \-novm es sollte, das Fenster ist
-in der oberen linken Ecke, wenn man aus dem Vollbildmodus
-zurückkehrt, Panscan wird nicht unterstützt...)
 .PD 0
 .RSs
 .IPs driver=<Treiber>
@@ -3649,9 +3631,8 @@ Sehr schneller Videoausgabetreiber bei Karten, die dies unterstützen.
 .RSs
 .IPs <Subdevice>
 Wähle explizit einen VIDIX-Subdevice-Treiber, der benutzt werden soll.
-Verfügbare Subdevice-Treiber sind cyberblade, ivtv, mach64,
-mga_crtc2, mga, nvidia, pm2, pm3, radeon, rage128, s3, sh_veu,
-sis_vid und unichrome.
+Verfügbare Subdevice-Treiber sind cyberblade, mach64,
+mga_crtc2, mga, nvidia, pm2, pm3, radeon, rage128, sis und unichrome.
 .RE
 .PD 1
 .
@@ -3687,10 +3668,6 @@ das gleich wie bei vidix
 .PD 1
 .
 .TP
-.B direct3d (nur bei Windows) (BETA-Code!)
-Videoausgabetreiber, der das Direct3D-Interface verwendet (nützlich für Vista).
-.
-.TP
 .B directx (nur bei Windows)
 Videoausgabetreiber, der die DirectX-Schnittstelle benutzt.
 .PD 0
@@ -3716,7 +3693,7 @@ Gib die Auflösung im Vollbildmodus an (nützlich auf langsamen Systemen).
 .PD 1
 .
 .TP
-.B corevideo (Mac OS X 10.4 oder 10.3.9 mit QuickTime 7)
+.B macosx (Mac OS X 10.4 oder 10.3.9 mit QuickTime 7)
 Mac OS X CoreVideo-Videoausgabetreiber
 .PD 0
 .RSs
@@ -3802,7 +3779,7 @@ funktionieren, benutzt aber auch neuere Erweiterungen, die mehr Farbräume
 und direct rendering ermöglichen.
 Probiere für optimale Geschwindigkeit etwas ähnliches wie
 .br
-\-vo gl:yuv=2:rectangle=2:force\-pbo:ati\-hack \-dr \-noslices
+\-vo gl:yuv=2:force\-pbo:ati\-hack \-dr \-noslices
 .br
 Dieser Code macht nur sehr wenige Fehlerüberprüfungen, falls also ein Feature
 nicht funktioniert liegt das vieleicht an fehlender Unterstützung durch deine
@@ -3906,10 +3883,6 @@ Gamma kann außerdem unabhängig für rot, grün und blau gesetzt werden.
 Die Geschwindigkeit hängt mehr von der Speicherbandbreite der GPU ab als
 andere Methoden.
 .RE
-.IPs ycbcr
-Verwende die GL_MESA_ycbcr_texture-Erweiterung, um YUV nach RGB zu konvertieren.
-Dies ist in den meisten Fällen vermutlich langsamer als eine Konvertierung zu
-RGB in Software.
 .IPs lscale=<n>
 Wählt die zu benutzende Skalierungsmethode für Luminanzskalierung.
 Nur gültig für yuv-Modi 2, 3, 4 und 6.
@@ -3929,16 +3902,13 @@ Funktioniert auf ein paar mehr Karten als Methode 1.
 Ist auf manchen Karten möglicherweise schneller.
 .br
 4: Verwende experimentelle unscharfe Maskierung mit 3x3-Unterstützung und einer
-Standardstärke von 0.5.
+Stärke von 0.5.
 5: Verwende experimentelle unscharfe Maskierung mit 5x5-Unterstützung und einer
-Standardstärke von 0.5.
+Stärke von 0.5.
 .RE
 .IPs cscale=<n>
 Wählt die zu benutzende Skalierungsmethode für Chrominanzskalierung.
 Für Details siehe lscale.
-.IPs filter-strength=<Wert>
-Setze die Effektstärke für diejenigen lscale/cscale-Filter, die dies
-unterstützen.
 .IPs customprog=<Dateiname>
 Lädt ein eigenes Fragmentprogramm aus <Dateiname>.
 Siehe TOOLS/\:edgedetect.fp als Beispiel.
@@ -4156,10 +4126,6 @@ dieser Karte wesentlich schneller als YV12 ist.
 Wähle das zu verwendende fbdev-Gerät explizit (Standard: /dev/\:fb0).
 .RE
 .PD 1
-.
-.TP
-.B wii (nur bei Linux)
-Nintendo Wii/GameCube-spezifischer Videoausgabetreiber.
 .
 .TP
 .B 3dfx (nur bei Linux)
@@ -4437,13 +4403,6 @@ Unterstützt die RGB- und BGR-Formate mit 24 bpp.
 .IPs z=<0\-9>
 Gibt die Kompressionsstufe an.
 0 steht für keine, 9 für maximale Kompression.
-.IPs outdir=<Verzeichnisname>
-Gib das Verzeichnis an, in das die PNG-Dateien gespeichert werden sollen
-(Standard: ./).
-.IPs alpha (Standard: noalpha)
-Erstelle PNG-Dateien mit Alpha-Kanal.
-Beachte, dass MPlayer Alpha-Kanäle im allgemeinen nicht unterstützt, so dass
-dies nur in manchen Fällen sinnvoll ist.
 .RE
 .PD 1
 .
@@ -4742,21 +4701,8 @@ Auflösung.
 Falls <b> angegeben wurde, wird die Decodierung bei niedriger Auflösungen nur
 dann benutzt, falls die Breite des Videos größer oder gleich dem Wert <b> ist.
 .RE
-.B o=<Schlüssel>=<Wert>[,<Schlüssel>=<Wert>[,...]]
-Übergib AVOptions an den libavcodec-Decoder.
-Beachte, ein Patch, um o= überflüssig zu machen und alle unbekannten Optionen
-durch das AVOption-System zu übergeben, ist willkommen.
-Eine komplette Liste der AVOptions findest du im FFmpeg-Handbuch.
-Beachte, dass manche Optionen mit MEncoder-Optionen in Konflikt stehen können.
-.sp 1
-.RS
-.I BEISPIEL:
-.RE
-.RSs
-.PD 0
-.IPs o=debug=pict
-.PD 1
-.RE
+.IPs "o\ \ \ \ "
+FIXME: nicht dokumentiert
 .IPs "sb=<Nummer> (nur bei MPEG-2)"
 Überspringe unten die angegebene Anzahl von Makroblockreihen.
 .IPs "st=<Nummer> (nur bei MPEG-2)"
@@ -5899,7 +5845,7 @@ Drehe um 90 Grad gegen den Uhrzeigersinn und stelle es auf den Kopf.
 .RE
 .
 .TP
-.B scale[=b:h[:interlaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
+.B scale[=b:h[:ilaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
 Skaliert das Bild mit dem Softwareskalierer (langsam) und führt eine
 Farbraumkonvertierung zwischen YUV und RGB durch (siehe auch \-sws).
 .RSs
@@ -5924,7 +5870,7 @@ originalen Breiten-/Höhenverhältnis.
 \-(n+8): wie \-n oben, rundet aber die Abmessung auf das nächste Vielfache von
 16.
 .REss
-.IPs <interlaced>
+.IPs <ilaced>
 Schalte Interlaced-Skalierung an/\:aus.
 .RSss
 0: aus (Standard)
@@ -7791,11 +7737,11 @@ folgende Syntax benutzt:
 .B \-<codec>opts <Option1[=Wert1]:Option2[=Wert2]:...>
 .
 .PP
-Wobei <Codec> einer der folgenden sein kann: lavc, xvidenc, mp3lame,
+Wobei <Codec> einer der folgenden sein kann: lavc, xvidenc, lame,
 toolame, twolame, nuv, xvfw, faac, x264enc, mpeg und lavf.
 .
 .
-.SS mp3lame (\-lameopts)
+.SS lame (\-lameopts)
 .
 .TP
 .B "help\ \ \ "
@@ -8027,24 +7973,6 @@ Lies die Sourcen für alle Details.
 .IPs vcodec=msmpeg4:vbitrate=1800:vhq:keyint=250
 .RE
 .PD 1
-.
-.TP
-.B o=<Schlüssel>=<Wert>[,<Schlüssel>=<Wert>[,...]]
-Übergib AVOptions an den libavcodec-Encoder.
-Beachte, ein Patch, um o= überflüssig zu machen und alle unbekannten Optionen
-durch das AVOption-System zu übergeben, ist willkommen.
-Eine komplette Liste der AVOptions findest du im FFmpeg-Handbuch.
-Beachte, dass manche Optionen mit MEncoder-Optionen in Konflikt stehen
-können.
-.sp 1
-.RS
-.I BEISPIEL:
-.RE
-.RSs
-.PD 0
-.IPs o=bt=100k
-.PD 1
-.RE
 .
 .TP
 .B acodec=<Wert>
@@ -8658,15 +8586,25 @@ bilden den Durchschnitt über längere Zeit (langsamerer Wechsel).
 .B vqcomp=<Wert>
 Kompression des Quantisierungsparameters, vrc_eq hängt davon ab
 (Standard: 0.5).
+Sei beispielsweise angenommen, dass die Standard-Bitratenkontrollgleichung
+benutzt wird, so wird die Bitratenkontrolle bei vqcomp=1.0 für jeden Frame so
+viele Bits reservieren, dass sie alle mit dem selben Quantisierungsparameter
+encodiert werden können.
+Bei vqcomp=0.0 reserviert die Bitratenkontrolle für jeden Frame dieselbe
+Anzahl Bits, also striktes CBR.
 .I ANMERKUNG:
-Die wahrgenommene Qualität ist optimal irgendwo zwischen den Extremen des
-Bereichs.
+Dies sind extreme Einstellungen und sollten nie benutzt werden.
+Die wahrgenommene Qualität ist optimal irgendwo zwischen diesen beiden Extremen.
 .
 .TP
 .B vrc_eq=<Gleichung>
 hauptsächlich verwendete Gleichung für die Bitratenkontrolle
 .RE
 .RSs
+.IPs "1\ \ \ \ "
+konstante Bitrate
+.IPs "tex\ \ "
+konstante Qualität
 .IPs 1+(tex/\:avgTex-1)*qComp
 ungefähr die Gleichung des Codes der alten Bitratenkontrolle
 .IPs tex^qComp
@@ -9555,6 +9493,11 @@ FIXME: Dokumentiere diese Option.
 .TP
 .B skip_threshold=<0\-1000000>
 FIXME: Dokumentiere diese Option.
+.
+.TP
+.B "o\ \ \ \ \ \ "
+FIXME: Dokumentiere diese Option.
+.
 .
 .
 .SS nuv (\-nuvopts)
@@ -10557,50 +10500,37 @@ Gründliche Suche (sehr langsam und nicht besser als umh)
 Radius der gründlichen bzw. Multi-Hexagon-Bewegungssuche (Standard: 16)
 .
 .TP
-.B subq=<0\-9>
+.B subq=<1\-7>
 Anpassen der Verfeinerungsqualität von subpel.
 Dieser Parameter kontrolliert das Gleichgewicht von Qualität und
 Geschwindigkeit beim Prozess der Bewegungsschätzung.
 subq=5 kann bis zu 10% besser als subq=1 komprimieren.
 .PD 0
 .RSs
-.IPs 0
-Wendet Vollpixel-Präzisionsbewegungsschätzung auf alle in Frage kommenden
-Makroblock-Typen an, wählt dann den besten Typen anhand einer SATD-Metrik
-(schneller als subq=1, nicht zu empfehlen, wenn du nicht ultra-schnelle
-Encodierung brauchst).
 .IPs 1
-Macht das gleiche wie 0 und verfeinert die Bewegung dieses Typs auf schnelle
-Viertelpixel-Präzision (schnell).
+Wendet Vollpixel-Präzisionsbewegungsschätzung auf alle in Frage kommenden
+Makroblock-Typen an, wählt dann den besten Typen und verfeinert schließlich die
+Bewegung dieses Typen auf schnelle Viertelpixel-Präzision (am schnellsten).
 .IPs 2
 Wendet Halbpixel-Präzisionsbewegungsschätzung auf alle in Frage kommenden
-Makroblock-Typen an, wählt dann den besten Typen anhand einer SATD-Metrik und
-verfeinert schließlich die
+Makroblock-Typen an, wählt dann den besten Typen und verfeinert schließlich die
 Bewegung dieses Typen auf schnelle Viertelpixel-Präzision.
 .IPs 3
 Wie 2, verwendet jedoch langsamere Viertelpixel-Verfeinerung.
 .IPs 4
 Wendet schnelle Viertelpixel-Präzisionsbewegungsschätzung auf alle in Frage
-kommenden Makroblock-Typen an, wählt dann den besten Typen anhand einer
-SATD-Metrik und schließt dann
+kommenden Makroblock-Typen an, wählt dann den besten Typen und schließt dann
 die Viertelpixel-Verfeinerung für diesen Typen ab.
 .IPs 5
 Wendet die bestmögliche Viertelpixel-Präzisionsbewegungsschätzung auf alle in
-Frage kommenden Makroblock-Typen an und wählt dann den besten Typen.
-Außerdem werden anstatt die Vektoren von Vorwärts- und Rückwärtssuche
-wiederzuverwenden die beiden Bewegungsvektoren, die in bidirektionalen
-Makroblöcken verwendet werden, anhand einer SATD-Metrik verfeinert.
+Frage kommenden Makroblock-Typen an, und wählt dann den besten Typen
+(Standard).
 .IPs 6
 Aktiviert Rate-Distortion-Optimierung von Makroblock-Typen in Intra- und
-P-Frames an (Standard).
+P-Frames an.
 .IPs 7
-Aktiviert Rate-Distortion-Optimierung von Makroblock-Typen in allen Frames.
-.IPs 8
-Aktiviert Rate-Distortion-Optimierung von Bewegungsvektoren und
-Intra-Prediction-Modi in Intra- und P-Frames.
-.IPs 9
-Aktiviert Rate-Distortion-Optimierung von Bewegungsvektoren und
-Intra-Prediction-Modi in allen Frames (am besten).
+Aktiviert Rate-Distortion-Optimierung von Bewegungsvektoren und Intra-Modi (am
+besten).
 .RE
 .PD 1
 .RS
@@ -10622,7 +10552,18 @@ Ohne diese Option muss ein gesamter Makroblock dieselbe Referenz benutzen.
 Benötigt frameref>1.
 .
 .TP
-.B trellis=<0\-2> (nur bei Cabac)
+.B (no)brdo
+Aktiviert die Rate-Distortion-Optimierung von Makroblock-Typen in B-Frames.
+Benötigt subq>=6.
+.
+.TP
+.B (no)bime
+Verfeinert die zwei Bewegungsvektoren in bidirektionalen Makroblöcken anstatt
+Vektoren aus Vorwärts- und Rückwärtssuchen wiederzuverwenden.
+Diese Option hat ohne B-Frames keinerlei Wirkung.
+.
+.TP
+.B trellis=<0\-2>
 Optimale Quantisierung der Rate-Distortion
 .PD 0
 .RSs
@@ -10634,19 +10575,6 @@ nur bei abschließender Encodierung aktiviert
 während allen Modus-Entscheidungen aktiviert (langsam, benötigt subq>=6)
 .RE
 .PD 1
-.
-.TP
-.B psy-rd=rd[,trell]
-Setzt die Stärke der psychovisuellen Optimierung.
-.PD 0
-.RSs
-.IPs rd=<0.0\-10.0>
-Optimierungsstärke (benötigt subq>=6) (Standard: 1.0)
-.IPs trell=<0.0\-10.0>
-Trellis (benötigt trellis, experimentell) (Standard: 0.0)
-.RE
-.PD 1
-.
 .
 .TP
 .B deadzone_inter=<0\-32>
@@ -11017,6 +10945,7 @@ Setzt die Größe des Puffers des Audiodecoders in Kilobytes.
 Es gilt das gleiche Prinzip wie für vbuf_size.
 .
 .
+.
 .SS FFmpeg-libavformat-Demuxer (\-lavfdopts)
 .
 .TP
@@ -11029,22 +10958,8 @@ zu analysieren.
 Gib einen speziellen libavformat-Demuxer an.
 .
 .TP
-.B o=<Schlüssel>=<Wert>[,<Schlüssel>=<Wert>[,...]]
-Übergib AVOptions an den libavformat-Demuxer.
-Beachte, ein Patch, um o= überflüssig zu machen und alle unbekannten Optionen
-durch das AVOption-System zu übergeben, ist willkommen.
-Eine komplette Liste der AVOptions findest du im FFmpeg-Handbuch.
-Beachte, dass manche Optionen mit MEncoder-Optionen in Konflikt stehen
-können.
-.sp 1
-.RS
-.I BEISPIEL:
-.RE
-.RSs
-.PD 0
-.IPs o=ignidx
-.PD 1
-.RE
+.B "o\ \ \ \ \ \ "
+FIXME: Dokumentiere diese Option.
 .
 .TP
 .B probesize=<Wert>
@@ -11057,6 +10972,7 @@ TS-Pakete an.
 Verschlüsselungsschlüssel, den der Demuxer verwenden soll.
 Dies sind die binären Rohdaten des Schlüssels in eine hexadezimale
 Zeichenkette konvertiert.
+.
 .
 .
 .SS FFmpeg-libavformat-Muxer (\-lavfopts) (siehe auch \-of lavf)
@@ -11103,8 +11019,6 @@ MPEG-4-Format mit speziellen Header-Flags, die von der Apple
 iPod-Firmware benötigt werden
 .IPs "dv\ \ \ "
 Sony Digital Video Container
-.IPs "matroska\ \ \ "
-Matroska
 .RE
 .PD 1
 .TP
@@ -11112,24 +11026,6 @@ Matroska
 Nominale Bitrate des Multiplex in Bits pro Sekunde;
 momentan nur für MPEG[12] von Bedeutung.
 Manchmal ist es nötig, diese zu erhöhen, um "Buffer Underflows" zu verweiden.
-.
-.TP
-.B o=<Schlüssel>=<Wert>[,<Schlüssel>=<Wert>[,...]]
-Übergib AVOptions an den libavformat-Muxer.
-Beachte, ein Patch, um o= überflüssig zu machen und alle unbekannten Optionen
-durch das AVOption-System zu übergeben, ist willkommen.
-Eine komplette Liste der AVOptions findest du im FFmpeg-Handbuch.
-Beachte, dass manche Optionen mit MEncoder-Optionen in Konflikt stehen
-können.
-.sp 1
-.RS
-.I BEISPIEL:
-.RE
-.RSs
-.PD 0
-.IPs o=packetsize=100
-.PD 1
-.RE
 .
 .TP
 .B packetsize=<Größe>
@@ -11145,6 +11041,9 @@ Decodierungszeitstempels (DTS) für jeden vorhandenen Stream
 (Verzögerung von Demuxing zu Decodierung).
 .
 .TP
+.B "o\ \ \ \ \ \ "
+FIXME: Dokumentiere diese Option.
+.
 .
 .
 .\" --------------------------------------------------------------------------
@@ -11391,6 +11290,12 @@ FIXME: Muss noch dokumentiert werden.
 .
 .TP
 .B USERPROFILE
+FIXME: Muss noch dokumentiert werden.
+.
+.SS libmpcodecs:
+.
+.TP
+.B XANIM_MOD_DIR
 FIXME: Muss noch dokumentiert werden.
 .
 .SS GUI:
@@ -11707,7 +11612,7 @@ erstellt.
 MPlayer wurde ursprünglich von Arpad Gereöffy geschrieben.
 Siehe Datei AUTHORS für eine Liste einiger der vielen anderen Beitragenden.
 .PP
-MPlayer is (C) 2000\-2009 The MPlayer Team
+MPlayer is (C) 2000\-2008 The MPlayer Team
 .PP
 Diese Manpage wurde zum größten Teil von Gabucino, Diego Biurrun und
 Jonas Jermann geschrieben und von Moritz Bunkus und Sebastian Krämer

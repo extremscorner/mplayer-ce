@@ -1,20 +1,4 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+// SAMPLE audio decoder - you can use this file as template when creating new codec!
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +8,7 @@
 
 #include "ad_internal.h"
 
-static const ad_info_t info =  {
+static ad_info_t info =  {
 	"libmad mpeg audio decoder",
 	"libmad",
 	"A'rpi",
@@ -38,10 +22,10 @@ LIBAD_EXTERN(libmad)
 
 typedef struct mad_decoder_s {
 
-  struct mad_synth  synth;
+  struct mad_synth  synth; 
   struct mad_stream stream;
   struct mad_frame  frame;
-
+  
   int have_frame;
 
   int               output_sampling_rate;
@@ -52,17 +36,17 @@ typedef struct mad_decoder_s {
 
 static int preinit(sh_audio_t *sh){
 
-  mad_decoder_t *this = malloc(sizeof(mad_decoder_t));
+  mad_decoder_t *this = (mad_decoder_t *) malloc(sizeof(mad_decoder_t));
   memset(this,0,sizeof(mad_decoder_t));
   sh->context = this;
-
+  
   mad_synth_init  (&this->synth);
   mad_stream_init (&this->stream);
   mad_frame_init  (&this->frame);
-
+  
   sh->audio_out_minsize=2*4608;
   sh->audio_in_minsize=4096;
-
+  
   return 1;
 }
 
@@ -98,12 +82,12 @@ static int init(sh_audio_t *sh){
 
   this->have_frame=read_frame(sh);
   if(!this->have_frame) return 0; // failed to sync...
-
+  
   sh->channels=(this->frame.header.mode == MAD_MODE_SINGLE_CHANNEL) ? 1 : 2;
   sh->samplerate=this->frame.header.samplerate;
   sh->i_bps=this->frame.header.bitrate/8;
   sh->samplesize=2;
-
+  
   return 1;
 }
 
@@ -153,19 +137,19 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
 
 	  len+=2*nchannels*nsamples;
 	  buf+=2*nchannels*nsamples;
-
+	  
 	  while (nsamples--) {
 	    /* output sample(s) in 16-bit signed little-endian PCM */
-
+	    
 	    *output++ = scale(*left_ch++);
-
-	    if (nchannels == 2)
+	    
+	    if (nchannels == 2) 
 	      *output++ = scale(*right_ch++);
 
 	  }
 	}
   }
-
+  
   return len?len:-1;
 }
 

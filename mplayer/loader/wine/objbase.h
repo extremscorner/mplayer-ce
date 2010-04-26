@@ -1,8 +1,6 @@
 #ifndef MPLAYER_OBJBASE_H
 #define MPLAYER_OBJBASE_H
 
-#include "windef.h"
-
 #ifndef STDCALL
 #define STDCALL __attribute__((__stdcall__))
 #endif

@@ -1,28 +1,11 @@
 /*
- * MS ADPCM decoder
- *
- * This file is responsible for decoding Microsoft ADPCM data.
- * Details about the data format can be found here:
- *   http://www.pcisys.net/~melanson/codecs/
- *
- * Copyright (c) 2002 Mike Melanson
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+    MS ADPCM Decoder for MPlayer
+      by Mike Melanson
+
+    This file is responsible for decoding Microsoft ADPCM data.
+    Details about the data format can be found here:
+      http://www.pcisys.net/~melanson/codecs/
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +17,7 @@
 #include "mpbswap.h"
 #include "ad_internal.h"
 
-static const ad_info_t info =
+static ad_info_t info = 
 {
 	"MS ADPCM audio decoder",
 	"msadpcm",
@@ -77,7 +60,7 @@ static const int8_t ms_adapt_coeff2[] =
 static int preinit(sh_audio_t *sh_audio)
 {
   sh_audio->audio_out_minsize = sh_audio->wf->nBlockAlign * 4;
-  sh_audio->ds->ss_div =
+  sh_audio->ds->ss_div = 
     (sh_audio->wf->nBlockAlign - MS_ADPCM_PREAMBLE_SIZE) * 2;
   sh_audio->audio_in_minsize =
   sh_audio->ds->ss_mul = sh_audio->wf->nBlockAlign;
@@ -225,8 +208,8 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
 {
   int res;
   if (demux_read_data(sh_audio->ds, sh_audio->a_in_buffer,
-    sh_audio->ds->ss_mul) !=
-    sh_audio->ds->ss_mul)
+    sh_audio->ds->ss_mul) != 
+    sh_audio->ds->ss_mul) 
       return -1; /* EOF */
 
   res = ms_adpcm_decode_block(

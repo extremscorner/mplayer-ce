@@ -1,26 +1,10 @@
-/*
+/**
  * Musepack audio files decoder for MPlayer
  * by Reza Jelveh <reza.jelveh@tuhh.de> and
  * Reimar Döffinger <Reimar.Doeffinger@stud.uni-karlsruhe.de>
- *
+ * License: GPL
  * This code may be be relicensed under the terms of the GNU LGPL when it
  * becomes part of the FFmpeg project (ffmpeg.org)
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include <stdio.h>
@@ -32,7 +16,7 @@
 #include "libaf/af_format.h"
 #include "libvo/fastmemcpy.h"
 
-static const ad_info_t info =
+static ad_info_t info = 
 {
 	"Musepack audio decoder",
 	"mpcdec",
@@ -174,7 +158,7 @@ static int decode_audio(sh_audio_t *sh, unsigned char *buf,
   int status, len;
   MPC_SAMPLE_FORMAT *sample_buffer = (MPC_SAMPLE_FORMAT *)buf;
   mpc_uint32_t *packet = NULL;
-
+  
   context_t *cd = (context_t *) sh->context;
   if (maxlen < MAX_FRAMESIZE) {
     mp_msg(MSGT_DECAUDIO, MSGL_V, "maxlen too small in decode_audio\n");
@@ -231,3 +215,4 @@ static int control(sh_audio_t *sh, int cmd, void* arg, ...) {
   }
   return CONTROL_UNKNOWN;
 }
+
