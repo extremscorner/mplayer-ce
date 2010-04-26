@@ -1,27 +1,14 @@
 /*
- * video output driver for libcaca
- *
+ * MPlayer
+ * 
+ * Video driver for libcaca
+ * 
  * by Pigeon <pigeon@pigeond.net>
  *
  * Some functions/codes/ideas are from x11 and aalib vo
  *
- * TODO: support draw_alpha?
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * TODO: support those draw_alpha stuff?
+ * 
  */
 
 #include <stdio.h>
@@ -130,7 +117,7 @@ static void osdpercent(int duration, int min, int max, int val, const char *desc
 	else
 	    posbar[i] = '-';
     }
-
+    
     if (where != 0)
 	posbar[0] = '|';
 
@@ -140,7 +127,7 @@ static void osdpercent(int duration, int min, int max, int val, const char *desc
     posbar[screen_w] = '\0';
 }
 
-static int resize(void)
+static int resize ()
 {
     screen_w = caca_get_width();
     screen_h = caca_get_height();
@@ -164,7 +151,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     image_height = height;
     image_width = width;
     image_format = format;
-
+    
     showosdmessage = 0;
     posbar[0] = '\0';
 
@@ -194,7 +181,7 @@ static void flip_page(void)
 		posbar[0] = '\0';
 	} else {
 	    caca_putstr(osdx, osdy, osdmessagetext);
-
+	    
 	    if (*posbar)
 		caca_putstr(0, posbary, posbar);
 	}

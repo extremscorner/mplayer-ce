@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_MMX_H
 #define MPLAYER_MMX_H
 
@@ -75,24 +57,24 @@ typedef union {
 
 
 #define mmx_i2r(op,imm,reg) \
-        __asm__ volatile (#op " %0, %%" #reg \
+        __asm__ __volatile__ (#op " %0, %%" #reg \
                               : /* nothing */ \
                               : "i" (imm) )
 
 #define mmx_m2r(op, mem, reg) \
-        __asm__ volatile (#op " %0, %%" #reg \
+        __asm__ __volatile__ (#op " %0, %%" #reg \
                               : /* nothing */ \
                               : "m" (mem))
 
 #define mmx_r2m(op, reg, mem) \
-        __asm__ volatile (#op " %%" #reg ", %0" \
+        __asm__ __volatile__ (#op " %%" #reg ", %0" \
                               : "=m" (mem) \
                               : /* nothing */ )
 
 #define mmx_r2r(op, regs, regd) \
-        __asm__ volatile (#op " %" #regs ", %" #regd)
+        __asm__ __volatile__ (#op " %" #regs ", %" #regd)
 
 
-#define emms() __asm__ volatile ("emms")
+#define emms() __asm__ __volatile__ ("emms")
 
 #endif /* MPLAYER_MMX_H */

@@ -1,6 +1,6 @@
 /*
  * FFM (ffserver live feed) common header
- * Copyright (c) 2001 Fabrice Bellard
+ * Copyright (c) 2001 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
  *
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_FFM_H
-#define AVFORMAT_FFM_H
+#ifndef FFMPEG_FFM_H
+#define FFMPEG_FFM_H
 
 #include <stdint.h>
 #include "avformat.h"
@@ -42,7 +42,7 @@ enum {
 
 typedef struct FFMContext {
     /* only reading mode */
-    int64_t write_index, file_size;
+    offset_t write_index, file_size;
     int read_state;
     uint8_t header[FRAME_HEADER_SIZE+4];
 
@@ -55,4 +55,4 @@ typedef struct FFMContext {
     uint8_t packet[FFM_PACKET_SIZE];
 } FFMContext;
 
-#endif /* AVFORMAT_FFM_H */
+#endif /* FFMPEG_FFM_H */

@@ -2541,7 +2541,7 @@ vcodec=mpeg2video:vbitrate=6000:ilme:ildct:acodec=mp2:abitrate=224</screen>
       Codecfamilie</title>
 
     <para>
-      <systemitem class="library">libavcodec</systemitem>
+      <link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
       stellt einfache Encodierung für eine Menge interessanter Video- und Audioformate
       zur Verfügung.
       Du kannst folgende Codecs encodieren (mehr oder weniger aktuell):
@@ -3191,7 +3191,7 @@ vcodec=mpeg2video:vbitrate=6000:ilme:ildct:acodec=mp2:abitrate=224</screen>
     <sect2 id="custommatrices"><title>Maßgeschneiderte inter/intra-Matrizen</title>
 
       <para>
-        Mit diesem Feature von <systemitem class="library">libavcodec</systemitem>
+        Mit diesem Feature von <link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
         bist du in der Lage, eigene inter- (I-Frames/Keyframes) und intra-Matrizen
         (P-Frames/predicted Frames) zu setzen. Es wird von vielen Codecs unterstützt:
         <systemitem>mpeg1video</systemitem> und <systemitem>mpeg2video</systemitem>
@@ -4224,7 +4224,7 @@ vcodec=mpeg2video:intra_matrix=8,9,12,22,26,27,29,34,9,10,14,26,27,29,34,37,
               <emphasis role="bold">partitions=all</emphasis>:
               Diese Option aktiviert die Verwendung von 8x4, 4x8 und 4x4 Unterteilungen
               in den vorhergesagten Macroblöcken (zusätzlich zu den Standardunterteilungen).
-              Sie zu aktivieren führt zu einem
+	      Sie zu aktivieren führt zu einem
               recht beständigen Geschwindigkeitsverlust von 10%-15%. Sie ist
               ziemlich nutzlos bei Quellen, die nur langsame Bewegungen enthalten,
               obwohl in manchen Quellen mit sehr viel Bewegung und vielen kleinen,

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file mp3lameaudio.c
  * Interface to libmp3lame for mp3 encoding.
  */
 
@@ -28,7 +28,7 @@
 #include "mpegaudio.h"
 #include <lame/lame.h>
 
-#define BUFFER_SIZE (7200 + 2*MPA_FRAME_SIZE + MPA_FRAME_SIZE/4)
+#define BUFFER_SIZE (7200 + MPA_FRAME_SIZE + MPA_FRAME_SIZE/4)
 typedef struct Mp3AudioContext {
     lame_global_flags *gfp;
     int stereo;
@@ -81,8 +81,8 @@ err:
     return -1;
 }
 
-static const int sSampleRates[] = {
-    44100, 48000,  32000, 22050, 24000, 16000, 11025, 12000, 8000, 0
+static const int sSampleRates[3] = {
+    44100, 48000,  32000
 };
 
 static const int sBitRates[2][3][15] = {
@@ -174,12 +174,10 @@ static int MP3lame_encode_frame(AVCodecContext *avctx,
                 );
     }
 
-    if(lame_result < 0){
-        if(lame_result==-1) {
-            /* output buffer too small */
-            av_log(avctx, AV_LOG_ERROR, "lame: output buffer too small (buffer index: %d, free bytes: %d)\n", s->buffer_index, BUFFER_SIZE - s->buffer_index);
-        }
-        return -1;
+    if(lame_result==-1) {
+        /* output buffer too small */
+        av_log(avctx, AV_LOG_ERROR, "lame: output buffer too small (buffer index: %d, free bytes: %d)\n", s->buffer_index, BUFFER_SIZE - s->buffer_index);
+        return 0;
     }
 
     s->buffer_index += lame_result;
@@ -187,20 +185,20 @@ static int MP3lame_encode_frame(AVCodecContext *avctx,
     if(s->buffer_index<4)
         return 0;
 
-    len= mp3len(s->buffer, NULL, NULL);
+        len= mp3len(s->buffer, NULL, NULL);
 //av_log(avctx, AV_LOG_DEBUG, "in:%d packet-len:%d index:%d\n", avctx->frame_size, len, s->buffer_index);
-    if(len <= s->buffer_index){
-        memcpy(frame, s->buffer, len);
-        s->buffer_index -= len;
+        if(len <= s->buffer_index){
+            memcpy(frame, s->buffer, len);
+            s->buffer_index -= len;
 
-        memmove(s->buffer, s->buffer+len, s->buffer_index);
+            memmove(s->buffer, s->buffer+len, s->buffer_index);
             //FIXME fix the audio codec API, so we do not need the memcpy()
 /*for(i=0; i<len; i++){
     av_log(avctx, AV_LOG_DEBUG, "%2X ", frame[i]);
 }*/
-        return len;
-    }else
-        return 0;
+            return len;
+        }else
+            return 0;
 }
 
 static av_cold int MP3lame_encode_close(AVCodecContext *avctx)
@@ -216,14 +214,13 @@ static av_cold int MP3lame_encode_close(AVCodecContext *avctx)
 
 AVCodec libmp3lame_encoder = {
     "libmp3lame",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MP3,
     sizeof(Mp3AudioContext),
     MP3lame_encode_init,
     MP3lame_encode_frame,
     MP3lame_encode_close,
     .capabilities= CODEC_CAP_DELAY,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
-    .supported_samplerates= sSampleRates,
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
 };

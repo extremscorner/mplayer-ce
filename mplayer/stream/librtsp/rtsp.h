@@ -28,7 +28,7 @@
  *    2006, Benjamin Zores and Vincent Mussard
  *      fixed a lot of RFC compliance issues.
  */
-
+ 
 #ifndef MPLAYER_RTSP_H
 #define MPLAYER_RTSP_H
 
@@ -47,7 +47,7 @@
 #define RTSP_METHOD_SET_PARAMETER "SET_PARAMETER"
 
 #define BUF_SIZE 4096
-#define RTSP_HEADER_SIZE 1024
+#define HEADER_SIZE 1024
 #define MAX_FIELDS 256
 
 
@@ -65,7 +65,7 @@ struct rtsp_s {
   char         *server;
   unsigned int  server_state;
   uint32_t      server_caps;
-
+  
   unsigned int  cseq;
   char         *session;
 

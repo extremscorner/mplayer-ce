@@ -6,10 +6,10 @@
 #include <inttypes.h>
 
 //#define FATAL(a)  // you don't need exception - if you want - just fill more code
-#include "loader/wine/mmreg.h"
-#include "loader/wine/winreg.h"
-#include "loader/wine/vfw.h"
-#include "loader/com.h"
+#include "wine/mmreg.h"
+#include "wine/winreg.h"
+#include "wine/vfw.h"
+#include "com.h"
 
 typedef uint32_t fourcc_t;
 
@@ -17,7 +17,7 @@ typedef uint32_t fourcc_t;
 typedef struct FatalError
 {
     FatalError();
-    void PrintAll(void) {}
+    void PrintAll() {}
 }FatalError;
 */
 
@@ -31,7 +31,7 @@ typedef struct CodecInfo
 typedef struct CImage // public  your_libvo_mem
 {
     char* ptr;
-
+    
     /*char* (*Data)();
     {
 	return 0;
@@ -40,7 +40,7 @@ typedef struct CImage // public  your_libvo_mem
     /*int (*Supported)(fourcc_t csp, int bits);
     {
 	return true;
-	// if you support such surface
+	// if you support such surface 
     }*/
 }CImage;
 
@@ -109,7 +109,7 @@ typedef struct BitmapInfo
     long  	biYPelsPerMeter;
     long 	biClrUsed;
     long 	biClrImportant;
-    int 	colors[3];
+    int 	colors[3];    
 } BitmapInfo;
 
 typedef struct IVideoDecoder

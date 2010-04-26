@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 30862 $ -->
+<!-- $Revision: 27230 $ -->
 <chapter id="faq" xreflabel="FAQ">
 <title>Frequently Asked Questions</title>
 
@@ -111,7 +111,7 @@ How can I build a 32 bit <application>MPlayer</application> on a 64 bit Athlon?
 <answer><para>
 Try the following configure options:
 <screen>
-./configure --target=i386-linux --cc="gcc -m32" --as="as --32" --with-extralibdir=/usr/lib
+./configure --target=athlon_xp --cc="gcc -m32" --as="as --32" --with-extralibdir=/usr/lib
 </screen>
 </para></answer>
 </qandaentry>
@@ -185,7 +185,7 @@ Uncompress the files somewhere that is not in your System folder.
 <filename class="directory">/System/Library/Frameworks</filename>!
 Using this older copy is only meant to get around link errors!)
 <screen>gunzip &lt; CompatFrameworks.tgz | tar xvf -</screen>
-In config.mak, you should append
+In config.mak, you should append 
 <systemitem>-F/path/to/where/you/extracted</systemitem>
 to the <systemitem>OPTFLAGS</systemitem> variable.
 If you use <application>X-Code</application>, you can just select these
@@ -230,13 +230,13 @@ and follow the instructions.
 
 <qandaentry>
 <question><para>
-I get a core dump when trying to dump streams, what's wrong?
+I have problems playing files with the ... codec. Can I use them?
 </para></question>
 <answer><para>
-Don't panic. Make sure you know where your towel is.</para>
-<para>
-Seriously, notice the smiley and start looking for files that end in
-<filename>.dump</filename>.
+Check the <ulink url="../../codecs-status.html">codec status</ulink>,
+if it doesn't contain your codec, read the
+<link linkend="codecs">codec documentation</link>, especially the
+<link linkend="codec-importing">codec importing HOWTO</link> and contact us.
 </para></answer>
 </qandaentry>
 
@@ -379,6 +379,27 @@ After running <filename>./configure</filename>,
 edit <filename>config.h</filename> and replace
 <systemitem>#undef FAST_OSD</systemitem> with
 <systemitem>#define FAST_OSD</systemitem>. Then recompile.
+</para></answer>
+</qandaentry>
+
+<qandaentry>
+<question><para>
+I can't access the GUI menu. I press right click, but I can't
+access any menu items!
+</para></question>
+<answer><para>
+Are you using FVWM? Try the following:
+<orderedlist>
+<listitem><para>
+  <menuchoice><guimenu>Start</guimenu><guisubmenu>Settings</guisubmenu>
+    <guisubmenu>Configuration</guisubmenu>
+    <guimenuitem>Base Configuration</guimenuitem></menuchoice>
+</para></listitem>
+<listitem><para>
+  Set <systemitem>Use Applications position hints</systemitem>
+  to <systemitem>Yes</systemitem>
+</para></listitem>
+</orderedlist>
 </para></answer>
 </qandaentry>
 
@@ -590,7 +611,7 @@ It works normal when i run it as a user.
 <answer><para>
 This is again a power management effect (see above). Plug the external power
 connector in <emphasis role="bold">before</emphasis> you power on your notebook
-or make sure you do not use the <option>-rtc</option> option.
+or use the <option>-nortc</option> option.
 </para></answer>
 </qandaentry>
 
@@ -678,6 +699,18 @@ and upload the file to FTP.
 
 <qandaentry>
 <question><para>
+My computer plays MS DivX AVIs with resolutions ~ 640x300 and stereo MP3 sound
+too slow.
+When I use the <option>-nosound</option> option, everything is OK (but quiet).
+</para></question>
+<answer><para>
+Your machine is too slow or your sound card driver is broken. Consult the
+documentation to see if you can improve performance.
+</para></answer>
+</qandaentry>
+
+<qandaentry>
+<question><para>
 How can I use <application>dmix</application> with
 <application>MPlayer</application>?
 </para></question>
@@ -693,10 +726,10 @@ you have to use <option>-ao alsa:device=dmix</option>.
 I have no sound when playing a video and get error messages similar to this one:
 <screen>
 AO: [oss] 44100Hz 2ch Signed 16-bit (Little-Endian)
-[AO OSS] audio_setup: Can't open audio device /dev/dsp: Device or resource busy
-Could not open/initialize audio device -> no sound.
-Audio: no sound
-Starting playback...
+audio_setup: Can't open audio device /dev/dsp: Device or resource busy
+couldn't open/init audio device -> NOSOUND
+Audio: no sound!!!
+Start playing...
 </screen>
 </para></question>
 <answer><para>
@@ -742,7 +775,7 @@ try to play a file which has 22050Hz audio. Try the
 When I play this movie I get video-audio desync and/or
 <application>MPlayer</application> crashes with the following message:
 <screen>
-Too many (945 in 8390980 bytes) video packets in the buffer!
+DEMUXER: Too many (945 in 8390980 bytes) video packets in the buffer!
 </screen>
 </para></question>
 <answer><para>
@@ -767,6 +800,7 @@ This can have multiple reasons.
 </para></listitem>
 <listitem><para>
   Your sound driver is buggy.
+  See the <link linkend="audio">audio section</link>.
 </para></listitem>
 </itemizedlist>
 </para></answer>
@@ -793,8 +827,29 @@ while seeking through RealMedia streams?
 What about DVD navigation/menus?
 </para></question>
 <answer><para>
-<application>MPlayer</application> should support DVD menus nowadays.
-Your mileage may vary.
+<application>MPlayer</application> does not support DVD menus due to serious
+architectural limitations that prevent proper handling of still images and
+interactive content. If you want to have fancy menus, you will have to use
+another player like <application>xine</application>,
+<application>VLC</application> or <application>Ogle</application>.
+If you want to see DVD navigation in <application>MPlayer</application> you
+will have to implement it yourself, but be aware that it is a major
+undertaking.
+</para></answer>
+</qandaentry>
+
+<qandaentry>
+<question><para>
+I can't watch any recent DVDs from Sony Pictures/BMG.
+</para></question>
+<answer><para>
+This is normal; you've been ripped off and sold an intentionally defective disk.
+The only way to play these DVDs is to circumvent the bad blocks of the disk
+by using DVDnav instead of mpdvdkit2.
+You can do so by compiling <application>MPlayer</application> with DVDnav
+support and then replacing dvd:// by dvdnav:// on the command line.
+DVDnav is so far mutually exclusive with mpdvdkit2, so make sure you pass
+<option>--disable-mpdvdkit</option> to the configure script.
 </para></answer>
 </qandaentry>
 
@@ -1223,7 +1278,7 @@ Use <filename>avisubdump.c</filename> from the
 
 <qandaentry>
 <question><para>
-MEncoder won't...
+MPlayer won't...
 </para></question>
 <answer><para>
 Have a look at the <filename class="directory">TOOLS</filename>

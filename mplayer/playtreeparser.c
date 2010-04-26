@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 /// \file
 /// \ingroup PlaytreeParser
@@ -23,15 +6,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef MP_DEBUG
 #include <assert.h>
+#endif
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <limits.h>
-#include "asxparser.h"
 #include "m_config.h"
 #include "playtree.h"
 #include "playtreeparser.h"
@@ -40,11 +23,12 @@
 #include "mp_msg.h"
 
 
+extern play_tree_t*
+asx_parser_build_tree(char* buffer, int ref);
+
 #define BUF_STEP 1024
 
 #define WHITES " \n\r\t"
-
-#define mp_pretty_title(s) (strrchr((s),',')==NULL?(char*)(s):(strrchr((s),',')+1))
 
 static void
 strstrip(char* str) {
@@ -71,44 +55,32 @@ play_tree_parser_get_line(play_tree_parser_t* p) {
   if(p->buffer == NULL) {
     p->buffer = malloc(BUF_STEP);
     p->buffer_size = BUF_STEP;
-    p->buffer[0] = 0;
     p->iter = p->buffer;
   }
 
   if(p->stream->eof && (p->buffer_end == 0 || p->iter[0] == '\0'))
     return NULL;
-
-  assert(p->buffer_end < p->buffer_size);
-  assert(!p->buffer[p->buffer_end]);
+    
   while(1) {
 
     if(resize) {
-      char *tmp;
       r = p->iter - p->buffer;
-      end = p->buffer + p->buffer_end;
-      if (p->buffer_size > INT_MAX - BUF_STEP)
-        break;
-      tmp = realloc(p->buffer, p->buffer_size + BUF_STEP);
-      if (!tmp)
-        break;
-      p->buffer = tmp;
+      p->buffer = (char*)realloc(p->buffer,p->buffer_size+BUF_STEP);
       p->iter = p->buffer + r;
       p->buffer_size += BUF_STEP;
       resize = 0;
     }
-
+    
     if(p->buffer_size - p->buffer_end > 1 && ! p->stream->eof) {
       r = stream_read(p->stream,p->buffer + p->buffer_end,p->buffer_size - p->buffer_end - 1);
       if(r > 0) {
 	p->buffer_end += r;
-	assert(p->buffer_end < p->buffer_size);
 	p->buffer[p->buffer_end] = '\0';
 	while(strlen(p->buffer + p->buffer_end - r) != r)
 	  p->buffer[p->buffer_end - r + strlen(p->buffer + p->buffer_end - r)] = '\n';
       }
-      assert(!p->buffer[p->buffer_end]);
     }
-
+    
     end = strchr(p->iter,'\n');
     if(!end) {
       if(p->stream->eof) {
@@ -123,7 +95,7 @@ play_tree_parser_get_line(play_tree_parser_t* p) {
 
   line_end = (end > p->iter && *(end-1) == '\r') ? end-1 : end;
   if(line_end - p->iter >= 0)
-    p->line = realloc(p->line, line_end - p->iter + 1);
+    p->line = (char*)realloc(p->line,line_end - p->iter+1);
   else
     return NULL;
   if(line_end - p->iter > 0)
@@ -136,9 +108,9 @@ play_tree_parser_get_line(play_tree_parser_t* p) {
     if(end[0] != '\0') {
       p->buffer_end -= end-p->iter;
       memmove(p->buffer,end,p->buffer_end);
+      p->buffer[p->buffer_end] = '\0';
     } else
       p->buffer_end = 0;
-    p->buffer[p->buffer_end] = '\0';
     p->iter = p->buffer;
   } else
     p->iter = end;
@@ -158,7 +130,6 @@ play_tree_parser_stop_keeping(play_tree_parser_t* p) {
     p->buffer_end -= p->iter -p->buffer;
     if(p->buffer_end)
       memmove(p->buffer,p->iter,p->buffer_end);
-    p->buffer[p->buffer_end] = 0;
     p->iter = p->buffer;
   }
 }
@@ -170,7 +141,7 @@ parse_asx(play_tree_parser_t* p) {
   char* line = NULL;
 
   mp_msg(MSGT_PLAYTREE,MSGL_V,"Trying asx...\n");
-
+  
   while(1) {
     if(get_line) {
       line = play_tree_parser_get_line(p);
@@ -215,7 +186,7 @@ parse_asx(play_tree_parser_t* p) {
 	get_line = 1;
     }
   }
-
+	
   mp_msg(MSGT_PLAYTREE,MSGL_V,"Detected asx format\n");
 
   // We have an asx : load it in memory and parse
@@ -230,7 +201,7 @@ parse_asx(play_tree_parser_t* p) {
 static char*
 pls_entry_get_value(char* line) {
   char* i;
-
+  
   i = strchr(line,'=');
   if(!i || i[1] == '\0')
     return NULL;
@@ -248,28 +219,21 @@ static int
 pls_read_entry(char* line,pls_entry_t** _e,int* _max_entry,char** val) {
   int num,max_entry = (*_max_entry);
   pls_entry_t* e = (*_e);
-  int limit = INT_MAX / sizeof(*e);
   char* v;
 
   v = pls_entry_get_value(line);
   if(!v) {
     mp_msg(MSGT_PLAYTREE,MSGL_ERR,"No value in entry %s\n",line);
-    return -1;
+    return 0;
   }
 
   num = atoi(line);
-  if(num <= 0 || num > limit) {
-    if (max_entry >= limit) {
-        mp_msg(MSGT_PLAYTREE, MSGL_WARN, "Too many index entries\n");
-        return -1;
-    }
+  if(num < 0) {
     num = max_entry+1;
-    mp_msg(MSGT_PLAYTREE,MSGL_WARN,"No or invalid entry index in entry %s\nAssuming %d\n",line,num);
+    mp_msg(MSGT_PLAYTREE,MSGL_WARN,"No entry index in entry %s\nAssuming %d\n",line,num);
   }
   if(num > max_entry) {
-    e = realloc(e, num * sizeof(pls_entry_t));
-    if (!e)
-      return -1;
+    e = (pls_entry_t*)realloc(e,num*sizeof(pls_entry_t));
     memset(&e[max_entry],0,(num-max_entry)*sizeof(pls_entry_t));
     max_entry = num;
   }
@@ -338,7 +302,7 @@ parse_pls(play_tree_parser_t* p) {
 	mp_msg(MSGT_PLAYTREE,MSGL_ERR,"No value in entry %s\n",line);
       else
 	entries[num-1].length = strdup(v);
-    } else
+    } else 
       mp_msg(MSGT_PLAYTREE,MSGL_WARN,"Unknown entry type %s\n",line);
     line = play_tree_parser_get_line(p);
   }
@@ -370,7 +334,7 @@ parse_pls(play_tree_parser_t* p) {
   free(entries);
 
   entry = play_tree_new();
-  play_tree_set_child(entry,list);
+  play_tree_set_child(entry,list);	
   return entry;
 }
 
@@ -416,14 +380,13 @@ parse_ref_ini(play_tree_parser_t* p) {
 
   if(!list) return NULL;
   entry = play_tree_new();
-  play_tree_set_child(entry,list);
+  play_tree_set_child(entry,list);	
   return entry;
 }
 
 static play_tree_t*
 parse_m3u(play_tree_parser_t* p) {
-  char *line, *title = NULL;
-  
+  char* line;
   play_tree_t *list = NULL, *entry = NULL, *last_entry = NULL;
 
   mp_msg(MSGT_PLAYTREE,MSGL_V,"Trying extended m3u playlist...\n");
@@ -452,47 +415,29 @@ parse_m3u(play_tree_parser_t* p) {
           strtol(line+8,&line,10), line+2);
       }
 #endif
- 	  /// start denper's changes
-	  // Get the title of .m3u entry
-	  title = realloc(title, strlen(mp_pretty_title(line))+1);
-	  strcpy(title, mp_pretty_title(line));
-	  /// end denper's changes
-	  
       continue;
     }
     entry = play_tree_new();
     play_tree_add_file(entry,line);
-	
-	/// start denper's changes
-	// Add the title parameter if it exists
-	play_tree_set_param(entry, PLAY_TREE_PARAM_PRETTYFORMAT_TITLE, title);
-	/// end denper's changes
-		
     if(!list)
       list = entry;
     else
       play_tree_append_entry(last_entry,entry);
     last_entry = entry;
   }
-  /// start denper's changes
-  // Free the memory of title pointer
-  free(title); 
-  title = NULL;
-  /// end denper's changes
-
+   
   if(!list) return NULL;
   entry = play_tree_new();
   play_tree_set_child(entry,list);
-  return entry;
+  return entry;    
 }
 
 static play_tree_t*
 parse_smil(play_tree_parser_t* p) {
   int entrymode=0;
-  char* line,source[512],title[128],*pos,*pos1,*s_start,*s_end,*src_line;
+  char* line,source[512],*pos,*s_start,*s_end,*src_line;
   play_tree_t *list = NULL, *entry = NULL, *last_entry = NULL;
   int is_rmsmil = 0;
-  int exists_title = 0;
   unsigned int npkt, ttlpkt;
 
   mp_msg(MSGT_PLAYTREE,MSGL_V,"Trying smil playlist...\n");
@@ -503,8 +448,6 @@ parse_smil(play_tree_parser_t* p) {
     if(line[0] == '\0') // Ignore empties
       continue;
     if (strncasecmp(line,"<?xml",5)==0) // smil in xml
-      continue;
-    if (strncasecmp(line,"<!DOCTYPE smil",13)==0) // smil in xml
       continue;
     if (strncasecmp(line,"<smil",5)==0 || strncasecmp(line,"<?wpl",5)==0 ||
       strncasecmp(line,"(smil-document",14)==0)
@@ -531,7 +474,7 @@ parse_smil(play_tree_parser_t* p) {
     }
   }
 
-  //Get entries from smil
+  //Get entries from smil 
   src_line = line;
   line = NULL;
   do {
@@ -577,7 +520,7 @@ parse_smil(play_tree_parser_t* p) {
     }
     pos = line;
    while (pos) {
-    if (!entrymode) { // all entries filled so far
+    if (!entrymode) { // all entries filled so far 
      while ((pos=strchr(pos, '<'))) {
       if (strncasecmp(pos,"<video",6)==0  || strncasecmp(pos,"<audio",6)==0 || strncasecmp(pos,"<media",6)==0) {
           entrymode=1;
@@ -587,36 +530,6 @@ parse_smil(play_tree_parser_t* p) {
      }
     }
     if (entrymode) { //Entry found but not yet filled
-    
-	  /// start denper's changes	  
-	  // Get the title of .smi entry
-	  exists_title = 0;
-	  pos1 = strstr(pos,"title=");
-	  if (pos1 != NULL) {
-		while(1) {
-			if (pos1[6] != '"' && pos1[6] != '\'') {
-			  mp_msg(MSGT_PLAYTREE,MSGL_V,"Unknown delimiter %c in source line %s\n", pos1[6], line);
-			  break;
-			}
-			s_start=pos1+7;
-			s_end=strchr(s_start,pos1[6]);
-			if (s_end == NULL) {
-			  mp_msg(MSGT_PLAYTREE,MSGL_V,"Error parsing this source line %s\n",line);
-			  break;
-			}
-			if (s_end-s_start> 127) {
-			  mp_msg(MSGT_PLAYTREE,MSGL_V,"Cannot store such a large source %s\n",line);
-			  break;
-			}
-			strncpy(title,s_start,s_end-s_start);
-			title[(s_end-s_start)]='\0'; // Null terminate
-			exists_title = 1;
-			break;
-		}
-		
-      }
-	  /// end denper's changes   
-	   
       pos = strstr(pos,"src=");   // Is source present on this line
       if (pos != NULL) {
         entrymode=0;
@@ -638,13 +551,6 @@ parse_smil(play_tree_parser_t* p) {
         source[(s_end-s_start)]='\0'; // Null terminate
         entry = play_tree_new();
         play_tree_add_file(entry,source);
-
-		/// start denper's changes
-		// Add the title parameter if it exists
-		if(exists_title)
-			play_tree_set_param(entry, PLAY_TREE_PARAM_PRETTYFORMAT_TITLE, title);
-		/// end denper's changes
-
         if(!list)  //Insert new entry
           list = entry;
         else
@@ -711,11 +617,11 @@ parse_textplain(play_tree_parser_t* p) {
     if (strlen(line) > 5)
       for(c = line; c[0]; c++ )
         if ( ((c[0] == '.') && //start with . and next have smil with optional ? or &
-           (tolower(c[1]) == 's') && (tolower(c[2])== 'm') &&
+           (tolower(c[1]) == 's') && (tolower(c[2])== 'm') && 
            (tolower(c[3]) == 'i') && (tolower(c[4]) == 'l') &&
            (!c[5] || c[5] == '?' || c[5] == '&')) || // or
           ((c[0] == '.') && // start with . and next have smi or ram with optional ? or &
-          ( ((tolower(c[1]) == 's') && (tolower(c[2])== 'm') && (tolower(c[3]) == 'i')) ||
+          ( ((tolower(c[1]) == 's') && (tolower(c[2])== 'm') && (tolower(c[3]) == 'i')) || 
             ((tolower(c[1]) == 'r') && (tolower(c[2])== 'a') && (tolower(c[3]) == 'm')) )
            && (!c[4] || c[4] == '?' || c[4] == '&')) ){
           entry=embedded_playlist_parse(line);
@@ -736,11 +642,11 @@ parse_textplain(play_tree_parser_t* p) {
       last_entry = entry;
     }
   }
-
+   
   if(!list) return NULL;
   entry = play_tree_new();
   play_tree_set_child(entry,list);
-  return entry;
+  return entry;    
 }
 
 play_tree_t*
@@ -786,12 +692,12 @@ play_tree_add_basepath(play_tree_t* pt, char* bp) {
     if (pt->files[i][0] == '\\') {
       if (pt->files[i][1] == '\\')
         continue;
-      pt->files[i] = realloc(pt->files[i], 2 + fl + 1);
+      pt->files[i] = (char*)realloc(pt->files[i],2+fl+1);
       memmove(pt->files[i] + 2,pt->files[i],fl+1);
       memcpy(pt->files[i],bp,2);
       continue;
     }
-    pt->files[i] = realloc(pt->files[i], bl + fl + 1);
+    pt->files[i] = (char*)realloc(pt->files[i],bl+fl+1);
     memmove(pt->files[i] + bl,pt->files[i],fl+1);
     memcpy(pt->files[i],bp,bl);
   }
@@ -801,7 +707,7 @@ play_tree_add_basepath(play_tree_t* pt, char* bp) {
 void play_tree_add_bpf(play_tree_t* pt, char* filename)
 {
   char *ls, *file;
-
+  
   if (pt && filename)
   {
     file = strdup(filename);
@@ -833,11 +739,7 @@ parse_playlist_file(char* file) {
 
   mp_msg(MSGT_PLAYTREE,MSGL_V,"Parsing playlist file %s...\n",file);
 
-#ifdef GEKKO
-  ret = parse_playtree(stream,0);
-#else
   ret = parse_playtree(stream,1);
-#endif
   free_stream(stream);
 
   play_tree_add_bpf(ret, file);
@@ -897,7 +799,7 @@ play_tree_parser_get_play_tree(play_tree_parser_t* p, int forced) {
     tree = parse_m3u(p);
     if(tree) break;
     play_tree_parser_reset(p);
-
+    
     tree = parse_ref_ini(p);
     if(tree) break;
     play_tree_parser_reset(p);
@@ -905,7 +807,7 @@ play_tree_parser_get_play_tree(play_tree_parser_t* p, int forced) {
     tree = parse_smil(p);
     if(tree) break;
     play_tree_parser_reset(p);
-
+     
     // Here come the others formats ( textplain must stay the last one )
     if (forced)
     {
@@ -917,12 +819,12 @@ play_tree_parser_get_play_tree(play_tree_parser_t* p, int forced) {
 
   if(tree)
     mp_msg(MSGT_PLAYTREE,MSGL_V,"Playlist successfully parsed\n");
-  else
+  else 
     mp_msg(MSGT_PLAYTREE,((forced==1)?MSGL_ERR:MSGL_V),"Error while parsing playlist\n");
 
   if(tree)
     tree = play_tree_cleanup(tree);
-
+  
   if(!tree) mp_msg(MSGT_PLAYTREE,((forced==1)?MSGL_WARN:MSGL_V),"Warning: empty playlist\n");
 
   return tree;

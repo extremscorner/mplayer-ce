@@ -9,8 +9,8 @@
  *
  */
 
-#include "loader/dshow/iunk.h"
-#include "loader/dshow/guids.h"
+#include "dshow/iunk.h"
+#include "dshow/guids.h"
 
 typedef AM_MEDIA_TYPE DMO_MEDIA_TYPE;
 

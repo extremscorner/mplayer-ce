@@ -1,6 +1,6 @@
 /*
  * cpu_accel.c
- * Copyright (C) 2000-2004 Michel Lespinasse <walken@zoy.org>
+ * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of mpeg2dec, a free MPEG-2 video stream decoder.
@@ -20,12 +20,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Modified for use with MPlayer, see libmpeg2_changes.diff for the exact changes.
+ * Modified for use with MPlayer, see libmpeg-0.4.1.diff for the exact changes.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: cpu_accel.c 29306 2009-05-13 15:22:13Z bircoph $
+ * $Id: cpu_accel.c 27372 2008-07-30 11:48:01Z diego $
  */
 
 #include "config.h"
+#include "cpudetect.h"
 
 #include <inttypes.h>
 
@@ -33,26 +34,21 @@
 #include "attributes.h"
 #include "mpeg2_internal.h"
 
-#include "cpudetect.h"
-
-#if ARCH_X86 || ARCH_X86_64
-static inline uint32_t arch_accel (uint32_t accel)
-{
-/* Use MPlayer CPU detection instead of libmpeg2 variant. */
-#if 0
-    if (accel & (MPEG2_ACCEL_X86_3DNOW | MPEG2_ACCEL_X86_MMXEXT))
-	accel |= MPEG2_ACCEL_X86_MMX;
-
-    if (accel & (MPEG2_ACCEL_X86_SSE2 | MPEG2_ACCEL_X86_SSE3))
-	accel |= MPEG2_ACCEL_X86_MMXEXT;
-
-    if (accel & (MPEG2_ACCEL_X86_SSE3))
-	accel |= MPEG2_ACCEL_X86_SSE2;
-
 #ifdef ACCEL_DETECT
-    if (accel & MPEG2_ACCEL_DETECT) {
-	uint32_t eax, ebx, ecx, edx;
-	int AMD;
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
+
+/* MPlayer imports libmpeg2 as decoder, which detects MMX / 3DNow!
+ * instructions via assembly. However, it is regarded as duplicated work
+ * in MPlayer, so that we enforce using MPlayer's implementation.
+ */
+#define MPLAYER_CPUDETECT
+
+static inline uint32_t arch_accel (void)
+{
+#if !defined(MPLAYER_CPUDETECT)
+    uint32_t eax, ebx, ecx, edx;
+    int AMD;
+    uint32_t caps;
 
 #if defined(__x86_64__) || (!defined(PIC) && !defined(__PIC__))
 #define cpuid(op,eax,ebx,ecx,edx)	\
@@ -63,7 +59,7 @@ static inline uint32_t arch_accel (uint32_t accel)
 	       "=d" (edx)		\
 	     : "a" (op)			\
 	     : "cc")
-#else	/* PIC version : save ebx (not needed on x86_64) */
+#else  /* PIC version : save ebx (not needed on x86_64) */
 #define cpuid(op,eax,ebx,ecx,edx)	\
     __asm__ ("pushl %%ebx\n\t"		\
 	     "cpuid\n\t"		\
@@ -78,79 +74,70 @@ static inline uint32_t arch_accel (uint32_t accel)
 #endif
 
 #ifndef __x86_64__ /* x86_64 supports the cpuid op */
-	__asm__ ("pushf\n\t"
-		 "pushf\n\t"
-		 "pop %0\n\t"
-		 "movl %0,%1\n\t"
-		 "xorl $0x200000,%0\n\t"
-		 "push %0\n\t"
-		 "popf\n\t"
-		 "pushf\n\t"
-		 "pop %0\n\t"
-		 "popf"
-		 : "=r" (eax),
-		 "=r" (ebx)
-		 :
-		 : "cc");
+    __asm__ ("pushf\n\t"
+	     "pushf\n\t"
+	     "pop %0\n\t"
+	     "movl %0,%1\n\t"
+	     "xorl $0x200000,%0\n\t"
+	     "push %0\n\t"
+	     "popf\n\t"
+	     "pushf\n\t"
+	     "pop %0\n\t"
+	     "popf"
+	     : "=r" (eax),
+	       "=r" (ebx)
+	     :
+	     : "cc");
 
-	if (eax == ebx)			/* no cpuid */
-	    return accel;
+    if (eax == ebx)		/* no cpuid */
+	return 0;
 #endif
 
-	cpuid (0x00000000, eax, ebx, ecx, edx);
-	if (!eax)			/* vendor string only */
-	    return accel;
+    cpuid (0x00000000, eax, ebx, ecx, edx);
+    if (!eax)			/* vendor string only */
+	return 0;
 
-	AMD = (ebx == 0x68747541 && ecx == 0x444d4163 && edx == 0x69746e65);
+    AMD = (ebx == 0x68747541) && (ecx == 0x444d4163) && (edx == 0x69746e65);
 
-	cpuid (0x00000001, eax, ebx, ecx, edx);
-	if (! (edx & 0x00800000))	/* no MMX */
-	    return accel;
+    cpuid (0x00000001, eax, ebx, ecx, edx);
+    if (! (edx & 0x00800000))	/* no MMX */
+	return 0;
 
-	accel |= MPEG2_ACCEL_X86_MMX;
-	if (edx & 0x02000000)		/* SSE - identical to AMD MMX ext. */
-	    accel |= MPEG2_ACCEL_X86_MMXEXT;
+    caps = MPEG2_ACCEL_X86_MMX;
+    if (edx & 0x02000000)	/* SSE - identical to AMD MMX extensions */
+	caps = MPEG2_ACCEL_X86_MMX | MPEG2_ACCEL_X86_MMXEXT;
 
-	if (edx & 0x04000000)		/* SSE2 */
-	    accel |= MPEG2_ACCEL_X86_SSE2;
+    cpuid (0x80000000, eax, ebx, ecx, edx);
+    if (eax < 0x80000001)	/* no extended capabilities */
+	return caps;
 
-	if (ecx & 0x00000001)		/* SSE3 */
-	    accel |= MPEG2_ACCEL_X86_SSE3;
+    cpuid (0x80000001, eax, ebx, ecx, edx);
 
-	cpuid (0x80000000, eax, ebx, ecx, edx);
-	if (eax < 0x80000001)		/* no extended capabilities */
-	    return accel;
+    if (edx & 0x80000000)
+	caps |= MPEG2_ACCEL_X86_3DNOW;
 
-	cpuid (0x80000001, eax, ebx, ecx, edx);
+    if (AMD && (edx & 0x00400000))	/* AMD MMX extensions */
+	caps |= MPEG2_ACCEL_X86_MMXEXT;
 
-	if (edx & 0x80000000)
-	    accel |= MPEG2_ACCEL_X86_3DNOW;
-
-	if (AMD && (edx & 0x00400000))	/* AMD MMX extensions */
-	    accel |= MPEG2_ACCEL_X86_MMXEXT;
-    }
-#endif /* ACCEL_DETECT */
-
-    return accel;
-
-#else /* 0 */
-    accel = 0;
+    return caps;
+#else /* MPLAYER_CPUDETECT: Use MPlayer's CPU capability property. */
+    caps = 0;
     if (gCpuCaps.hasMMX)
-        accel |= MPEG2_ACCEL_X86_MMX;
+        caps |= MPEG2_ACCEL_X86_MMX;
     if (gCpuCaps.hasSSE2)
-	accel |= MPEG2_ACCEL_X86_SSE2;
+	caps |= MPEG2_ACCEL_X86_SSE2;
     if (gCpuCaps.hasMMX2)
-	accel |= MPEG2_ACCEL_X86_MMXEXT;
+	caps |= MPEG2_ACCEL_X86_MMXEXT;
     if (gCpuCaps.has3DNow)
-	accel |= MPEG2_ACCEL_X86_3DNOW;
+	caps |= MPEG2_ACCEL_X86_3DNOW;
 
-    return accel;
+    return caps;
 
-#endif /* 0 */
+#endif /* MPLAYER_CPUDETECT */
 }
 #endif /* ARCH_X86 || ARCH_X86_64 */
 
-#if defined(ACCEL_DETECT) && (ARCH_PPC || ARCH_SPARC)
+#if defined(ARCH_PPC) || defined(ARCH_SPARC)
 #include <signal.h>
 #include <setjmp.h>
 
@@ -167,117 +154,96 @@ static RETSIGTYPE sigill_handler (int sig)
     canjump = 0;
     siglongjmp (jmpbuf, 1);
 }
-#endif /* ACCEL_DETECT && (ARCH_PPC || ARCH_SPARC) */
 
-#if ARCH_PPC
-static uint32_t arch_accel (uint32_t accel)
+#ifdef ARCH_PPC
+static uint32_t arch_accel (void)
 {
-#ifdef ACCEL_DETECT
-    if ((accel & (MPEG2_ACCEL_PPC_ALTIVEC | MPEG2_ACCEL_DETECT)) ==
-	MPEG2_ACCEL_DETECT) {
-	static RETSIGTYPE (* oldsig) (int);
+    static RETSIGTYPE (* oldsig) (int);
 
-	oldsig = signal (SIGILL, sigill_handler);
-	if (sigsetjmp (jmpbuf, 1)) {
-	    signal (SIGILL, oldsig);
-	    return accel;
-	}
+    oldsig = signal (SIGILL, sigill_handler);
+    if (sigsetjmp (jmpbuf, 1)) {
+	signal (SIGILL, oldsig);
+	return 0;
+    }
 
-	canjump = 1;
+    canjump = 1;
 
 #if defined(__APPLE_CC__)	/* apple */
 #define VAND(a,b,c) "vand v" #a ",v" #b ",v" #c "\n\t"
-#else				/* gnu */
+#else			/* gnu */
 #define VAND(a,b,c) "vand " #a "," #b "," #c "\n\t"
 #endif
-	asm volatile ("mtspr 256, %0\n\t"
-		      VAND (0, 0, 0)
-		      :
-		      : "r" (-1));
+    asm volatile ("mtspr 256, %0\n\t"
+		  VAND (0, 0, 0)
+		  :
+		  : "r" (-1));
 
-	canjump = 0;
-	accel |= MPEG2_ACCEL_PPC_ALTIVEC;
+    canjump = 0;
 
-	signal (SIGILL, oldsig);
-    }
-#endif /* ACCEL_DETECT */
-
-    return accel;
+    signal (SIGILL, oldsig);
+    return MPEG2_ACCEL_PPC_ALTIVEC;
 }
 #endif /* ARCH_PPC */
 
-#if ARCH_SPARC
-static uint32_t arch_accel (uint32_t accel)
+#ifdef ARCH_SPARC
+static uint32_t arch_accel (void)
 {
-    if (accel & MPEG2_ACCEL_SPARC_VIS2)
-	accel |= MPEG2_ACCEL_SPARC_VIS;
+    static RETSIGTYPE (* oldsig) (int);
 
-#ifdef ACCEL_DETECT
-    if ((accel & (MPEG2_ACCEL_SPARC_VIS2 | MPEG2_ACCEL_DETECT)) ==
-	MPEG2_ACCEL_DETECT) {
-	static RETSIGTYPE (* oldsig) (int);
-
-	oldsig = signal (SIGILL, sigill_handler);
-	if (sigsetjmp (jmpbuf, 1)) {
-	    signal (SIGILL, oldsig);
-	    return accel;
-	}
-
-	canjump = 1;
-
-	/* pdist %f0, %f0, %f0 */
-	__asm__ __volatile__(".word\t0x81b007c0");
-
-	canjump = 0;
-	accel |= MPEG2_ACCEL_SPARC_VIS;
-
-	if (sigsetjmp (jmpbuf, 1)) {
-	    signal (SIGILL, oldsig);
-	    return accel;
-	}
-
-	canjump = 1;
-
-	/* edge8n %g0, %g0, %g0 */
-	__asm__ __volatile__(".word\t0x81b00020");
-
-	canjump = 0;
-	accel |= MPEG2_ACCEL_SPARC_VIS2;
-
+    oldsig = signal (SIGILL, sigill_handler);
+    if (sigsetjmp (jmpbuf, 1)) {
 	signal (SIGILL, oldsig);
+	return 0;
     }
-#endif /* ACCEL_DETECT */
 
-    return accel;
+    canjump = 1;
+
+    /* pdist %f0, %f0, %f0 */
+    __asm__ __volatile__(".word\t0x81b007c0");
+
+    canjump = 0;
+
+    if (sigsetjmp (jmpbuf, 1)) {
+	signal (SIGILL, oldsig);
+	return MPEG2_ACCEL_SPARC_VIS;
+    }
+
+    canjump = 1;
+
+    /* edge8n %g0, %g0, %g0 */
+    __asm__ __volatile__(".word\t0x81b00020");
+
+    canjump = 0;
+
+    signal (SIGILL, oldsig);
+    return MPEG2_ACCEL_SPARC_VIS | MPEG2_ACCEL_SPARC_VIS2;
 }
 #endif /* ARCH_SPARC */
+#endif /* ARCH_PPC || ARCH_SPARC */
 
-#if ARCH_ALPHA
-static inline uint32_t arch_accel (uint32_t accel)
+#ifdef ARCH_ALPHA
+static uint32_t arch_accel (void)
 {
-    if (accel & MPEG2_ACCEL_ALPHA_MVI)
-	accel |= MPEG2_ACCEL_ALPHA;
+    uint64_t no_mvi;
 
-#ifdef ACCEL_DETECT
-    if (accel & MPEG2_ACCEL_DETECT) {
-	uint64_t no_mvi;
-
-	asm volatile ("amask %1, %0"
-		      : "=r" (no_mvi)
-		      : "rI" (256));	/* AMASK_MVI */
-	accel |= no_mvi ? MPEG2_ACCEL_ALPHA : (MPEG2_ACCEL_ALPHA |
-					       MPEG2_ACCEL_ALPHA_MVI);
-    }
-#endif /* ACCEL_DETECT */
-
-    return accel;
+    asm volatile ("amask %1, %0"
+		  : "=r" (no_mvi)
+		  : "rI" (256));	/* AMASK_MVI */
+    return no_mvi ? MPEG2_ACCEL_ALPHA : (MPEG2_ACCEL_ALPHA |
+					 MPEG2_ACCEL_ALPHA_MVI);
 }
 #endif /* ARCH_ALPHA */
+#endif /* ACCEL_DETECT */
 
-uint32_t mpeg2_detect_accel (uint32_t accel)
+uint32_t mpeg2_detect_accel (void)
 {
-#if ARCH_X86 || ARCH_X86_64 || ARCH_PPC || ARCH_ALPHA || ARCH_SPARC
-    accel = arch_accel (accel);
+    uint32_t accel;
+
+    accel = 0;
+#ifdef ACCEL_DETECT
+#if defined (ARCH_X86) || defined (ARCH_X86_64) || defined (ARCH_PPC) || defined (ARCH_ALPHA) || defined (ARCH_SPARC)
+    accel = arch_accel ();
+#endif
 #endif
     return accel;
 }

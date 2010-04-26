@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -32,9 +14,9 @@
 
 typedef struct {
 	int last_pts; // FIXME
-	nut_context_tt * nut;
-	nut_stream_header_tt * s;
-} nut_priv_tt;
+	nut_context_t * nut;
+	nut_stream_header_t * s;
+} nut_priv_t;
 
 static size_t mp_read(void * h, size_t len, uint8_t * buf) {
 	stream_t * stream = (stream_t*)h;
@@ -82,7 +64,8 @@ static int nut_check_file(demuxer_t * demuxer) {
 }
 
 static demuxer_t * demux_open_nut(demuxer_t * demuxer) {
-	nut_demuxer_opts_tt dopts = {
+	extern int index_mode;
+	nut_demuxer_opts_t dopts = {
 		.input = {
 			.priv = demuxer->stream,
 			.seek = mp_seek,
@@ -94,15 +77,17 @@ static demuxer_t * demux_open_nut(demuxer_t * demuxer) {
 		.read_index = index_mode,
 		.cache_syncpoints = 1,
 	};
-	nut_priv_tt * priv = demuxer->priv = calloc(1, sizeof(nut_priv_tt));
-	nut_context_tt * nut = priv->nut = nut_demuxer_init(&dopts);
-	nut_stream_header_tt * s;
+	nut_priv_t * priv = demuxer->priv = calloc(1, sizeof(nut_priv_t));
+	nut_context_t * nut = priv->nut = nut_demuxer_init(&dopts);
+	nut_stream_header_t * s;
 	int ret;
 	int i;
 
 	while ((ret = nut_read_headers(nut, &s, NULL)) == NUT_ERR_EAGAIN);
 	if (ret) {
 		mp_msg(MSGT_HEADER, MSGL_ERR, "NUT error: %s\n", nut_error(ret));
+		nut_demuxer_uninit(nut);
+		free(priv);
 		return NULL;
 	}
 
@@ -114,8 +99,8 @@ static demuxer_t * demux_open_nut(demuxer_t * demuxer) {
 				calloc(sizeof(WAVEFORMATEX) +
 				              s[i].codec_specific_len, 1);
 			sh_audio_t* sh_audio = new_sh_audio(demuxer, i);
-			int j;
 			mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "nut", i);
+			int j;
 
 			sh_audio->wf= wf; sh_audio->ds = demuxer->audio;
 			sh_audio->audio.dwSampleSize = 0; // FIXME
@@ -150,8 +135,8 @@ static demuxer_t * demux_open_nut(demuxer_t * demuxer) {
 				calloc(sizeof(BITMAPINFOHEADER) +
 				              s[i].codec_specific_len, 1);
 			sh_video_t * sh_video = new_sh_video(demuxer, i);
-			int j;
 			mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_VideoID, "nut", i);
+			int j;
 
 			sh_video->bih = bih;
 			sh_video->ds = demuxer->video;
@@ -193,11 +178,11 @@ static demuxer_t * demux_open_nut(demuxer_t * demuxer) {
 }
 
 static int demux_nut_fill_buffer(demuxer_t * demuxer, demux_stream_t * dsds) {
-	nut_priv_tt * priv = demuxer->priv;
-	nut_context_tt * nut = priv->nut;
+	nut_priv_t * priv = demuxer->priv;
+	nut_context_t * nut = priv->nut;
 	demux_packet_t *dp;
 	demux_stream_t *ds;
-	nut_packet_tt pd;
+	nut_packet_t pd;
 	int ret;
 	double pts;
 
@@ -255,8 +240,9 @@ static int demux_nut_fill_buffer(demuxer_t * demuxer, demux_stream_t * dsds) {
 }
 
 static void demux_seek_nut(demuxer_t * demuxer, float time_pos, float audio_delay, int flags) {
-	nut_context_tt * nut = ((nut_priv_tt*)demuxer->priv)->nut;
-	nut_priv_tt * priv = demuxer->priv;
+	nut_context_t * nut = ((nut_priv_t*)demuxer->priv)->nut;
+	nut_priv_t * priv = demuxer->priv;
+	sh_audio_t * sh_audio = demuxer->audio->sh;
 	int nutflags = 0;
 	int ret;
 	const int tmp[] = { 0, -1 };
@@ -274,11 +260,12 @@ static void demux_seek_nut(demuxer_t * demuxer, float time_pos, float audio_dela
 	while ((ret = nut_seek(nut, time_pos, nutflags, tmp)) == NUT_ERR_EAGAIN);
 	priv->last_pts = -1;
 	if (ret) mp_msg(MSGT_HEADER, MSGL_ERR, "NUT error: %s\n", nut_error(ret));
+	if (sh_audio) resync_audio_stream(sh_audio);
 	demuxer->filepos = stream_tell(demuxer->stream);
 }
 
 static int demux_control_nut(demuxer_t * demuxer, int cmd, void * arg) {
-	nut_priv_tt * priv = demuxer->priv;
+	nut_priv_t * priv = demuxer->priv;
 	switch (cmd) {
 		case DEMUXER_CTRL_GET_TIME_LENGTH:
 			*((double *)arg) = priv->s[0].max_pts *
@@ -297,7 +284,7 @@ static int demux_control_nut(demuxer_t * demuxer, int cmd, void * arg) {
 }
 
 static void demux_close_nut(demuxer_t *demuxer) {
-	nut_priv_tt * priv = demuxer->priv;
+	nut_priv_t * priv = demuxer->priv;
 	if (!priv) return;
 	nut_demuxer_uninit(priv->nut);
 	free(demuxer->priv);

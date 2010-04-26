@@ -38,18 +38,18 @@ int (* a52_resample) (float * _f, int16_t * s16)=NULL;
 
 #include "resample_c.c"
 
-#if ARCH_X86 || ARCH_X86_64
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 #include "resample_mmx.c"
 #endif
 
-#if HAVE_ALTIVEC
+#ifdef HAVE_ALTIVEC
 #include "resample_altivec.c"
 #endif
 
 void* a52_resample_init(uint32_t mm_accel,int flags,int chans){
 void* tmp;
 
-#if ARCH_X86 || ARCH_X86_64
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
     if(mm_accel&MM_ACCEL_X86_MMX){
 	tmp=a52_resample_MMX(flags,chans);
 	if(tmp){
@@ -59,7 +59,7 @@ void* tmp;
 	}
     }
 #endif
-#if HAVE_ALTIVEC
+#ifdef HAVE_ALTIVEC
     if(mm_accel&MM_ACCEL_PPC_ALTIVEC){
       tmp=a52_resample_altivec(flags,chans);
       if(tmp){
@@ -72,7 +72,7 @@ void* tmp;
 
     tmp=a52_resample_C(flags,chans);
     if(tmp){
-	if(a52_resample==NULL) fprintf(stderr, "No accelerated resampler found, flags: 0x%X chans: %i\n",flags,chans);
+	if(a52_resample==NULL) fprintf(stderr, "No accelerated resampler found\n");
 	a52_resample=tmp;
 	return tmp;
     }

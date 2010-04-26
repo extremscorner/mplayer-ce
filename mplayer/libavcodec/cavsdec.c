@@ -20,13 +20,13 @@
  */
 
 /**
- * @file
+ * @file cavs.c
  * Chinese AVS video (AVS1-P2, JiZhun profile) decoder
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "golomb.h"
 #include "cavs.h"
 
@@ -53,15 +53,15 @@ static const uint8_t cbp_tab[64][2] = {
  ****************************************************************************/
 
 static inline void store_mvs(AVSContext *h) {
-    h->col_mv[h->mbidx*4 + 0] = h->mv[MV_FWD_X0];
-    h->col_mv[h->mbidx*4 + 1] = h->mv[MV_FWD_X1];
-    h->col_mv[h->mbidx*4 + 2] = h->mv[MV_FWD_X2];
-    h->col_mv[h->mbidx*4 + 3] = h->mv[MV_FWD_X3];
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 0] = h->mv[MV_FWD_X0];
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 1] = h->mv[MV_FWD_X1];
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 2] = h->mv[MV_FWD_X2];
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 3] = h->mv[MV_FWD_X3];
 }
 
-static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
-                                  cavs_vector *col_mv) {
-    cavs_vector *pmv_bw = pmv_fw + MV_BWD_OFFS;
+static inline void mv_pred_direct(AVSContext *h, vector_t *pmv_fw,
+                                  vector_t *col_mv) {
+    vector_t *pmv_bw = pmv_fw + MV_BWD_OFFS;
     int den = h->direct_den[col_mv->ref];
     int m = col_mv->x >> 31;
 
@@ -77,8 +77,8 @@ static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
     pmv_bw->y = m-(((den+(den*col_mv->y*pmv_bw->dist^m)-m-1)>>14)^m);
 }
 
-static inline void mv_pred_sym(AVSContext *h, cavs_vector *src, enum cavs_block size) {
-    cavs_vector *dst = src + MV_BWD_OFFS;
+static inline void mv_pred_sym(AVSContext *h, vector_t *src, enum block_t size) {
+    vector_t *dst = src + MV_BWD_OFFS;
 
     /* backward mv is the scaled and negated forward mv */
     dst->x = -((src->x * h->sym_factor + 256) >> 9);
@@ -113,7 +113,7 @@ static inline int get_ue_code(GetBitContext *gb, int order) {
  * @param stride line stride in frame buffer
  */
 static int decode_residual_block(AVSContext *h, GetBitContext *gb,
-                                 const struct dec_2dvlc *r, int esc_golomb_order,
+                                 const dec_2dvlc_t *r, int esc_golomb_order,
                                  int qp, uint8_t *dst, int stride) {
     int i, level_code, esc_code, level, run, mask;
     DCTELEM level_buf[65];
@@ -144,7 +144,6 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                ff_cavs_dequant_shift[qp], i))
         return -1;
     h->s.dsp.cavs_idct8_add(dst,block,stride);
-    h->s.dsp.clear_block(block);
     return 0;
 }
 
@@ -253,7 +252,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     return 0;
 }
 
-static void decode_mb_p(AVSContext *h, enum cavs_mb mb_type) {
+static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
     GetBitContext *gb = &h->s.gb;
     int ref[4];
 
@@ -294,12 +293,12 @@ static void decode_mb_p(AVSContext *h, enum cavs_mb mb_type) {
     if(mb_type != P_SKIP)
         decode_residual_inter(h);
     ff_cavs_filter(h,mb_type);
-    h->col_type_base[h->mbidx] = mb_type;
+    *h->col_type = mb_type;
 }
 
-static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
+static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
     int block;
-    enum cavs_sub_mb sub_type[4];
+    enum sub_mb_t sub_type[4];
     int flags;
 
     ff_cavs_init_mb(h);
@@ -312,7 +311,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
     switch(mb_type) {
     case B_SKIP:
     case B_DIRECT:
-        if(!h->col_type_base[h->mbidx]) {
+        if(!(*h->col_type)) {
             /* intra MB at co-location, do in-plane prediction */
             ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_BSKIP, BLK_16X16, 1);
             ff_cavs_mv(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_BSKIP, BLK_16X16, 0);
@@ -320,7 +319,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
             /* direct prediction from co-located P MB, block-wise */
             for(block=0;block<4;block++)
                 mv_pred_direct(h,&h->mv[mv_scan[block]],
-                                 &h->col_mv[h->mbidx*4 + block]);
+                            &h->col_mv[(h->mby*h->mb_width+h->mbx)*4 + block]);
         break;
     case B_FWD_16X16:
         ff_cavs_mv(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
@@ -338,7 +337,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
         for(block=0;block<4;block++) {
             switch(sub_type[block]) {
             case B_SUB_DIRECT:
-                if(!h->col_type_base[h->mbidx]) {
+                if(!(*h->col_type)) {
                     /* intra MB at co-location, do in-plane prediction */
                     ff_cavs_mv(h, mv_scan[block], mv_scan[block]-3,
                             MV_PRED_BSKIP, BLK_8X8, 1);
@@ -347,7 +346,7 @@ static void decode_mb_b(AVSContext *h, enum cavs_mb mb_type) {
                             MV_PRED_BSKIP, BLK_8X8, 0);
                 } else
                     mv_pred_direct(h,&h->mv[mv_scan[block]],
-                                   &h->col_mv[h->mbidx*4 + block]);
+                                   &h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + block]);
                 break;
             case B_SUB_FWD:
                 ff_cavs_mv(h, mv_scan[block], mv_scan[block]-3,
@@ -415,10 +414,6 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb) {
     if(h->stc > 0xAF)
         av_log(h->s.avctx, AV_LOG_ERROR, "unexpected start code 0x%02x\n", h->stc);
     h->mby = h->stc;
-    h->mbidx = h->mby*h->mb_width;
-
-    /* mark top macroblocks as unavailable */
-    h->flags &= ~(B_AVAIL|C_AVAIL);
     if((h->mby == 0) && (!h->qp_fixed)){
         h->qp_fixed = get_bits1(gb);
         h->qp = get_bits(gb,6);
@@ -432,23 +427,15 @@ static inline int decode_slice_header(AVSContext *h, GetBitContext *gb) {
     return 0;
 }
 
-static inline int check_for_slice(AVSContext *h) {
+static inline void check_for_slice(AVSContext *h) {
     GetBitContext *gb = &h->s.gb;
     int align;
-
-    if(h->mbx)
-        return 0;
     align = (-get_bits_count(gb)) & 7;
-    /* check for stuffing byte */
-    if(!align && (show_bits(gb,8) == 0x80))
-        align = 8;
     if((show_bits_long(gb,24+align) & 0xFFFFFF) == 0x000001) {
         skip_bits_long(gb,24+align);
         h->stc = get_bits(gb,8);
         decode_slice_header(h,gb);
-        return 1;
     }
-    return 0;
 }
 
 /*****************************************************************************
@@ -459,8 +446,8 @@ static inline int check_for_slice(AVSContext *h) {
 
 static int decode_pic(AVSContext *h) {
     MpegEncContext *s = &h->s;
-    int skip_count = -1;
-    enum cavs_mb mb_type;
+    int skip_count;
+    enum mb_t mb_type;
 
     if (!s->context_initialized) {
         s->avctx->idct_algo = FF_IDCT_CAVS;
@@ -482,16 +469,7 @@ static int decode_pic(AVSContext *h) {
     } else {
         h->pic_type = FF_I_TYPE;
         if(get_bits1(&s->gb))
-            skip_bits(&s->gb,24);//time_code
-        /* old sample clips were all progressive and no low_delay,
-           bump stream revision if detected otherwise */
-        if((s->low_delay) || !(show_bits(&s->gb,9) & 1))
-            h->stream_revision = 1;
-        /* similarly test top_field_first and repeat_first_field */
-        else if(show_bits(&s->gb,11) & 3)
-            h->stream_revision = 1;
-        if(h->stream_revision > 0)
-            skip_bits(&s->gb,1); //marker_bit
+            skip_bits(&s->gb,16);//time_code
     }
     /* release last B frame */
     if(h->picture.data[0])
@@ -520,10 +498,9 @@ static int decode_pic(AVSContext *h) {
     if(s->low_delay)
         get_ue_golomb(&s->gb); //bbv_check_times
     h->progressive             = get_bits1(&s->gb);
-    h->pic_structure = 1;
-    if(!h->progressive)
-        h->pic_structure = get_bits1(&s->gb);
-    if(!h->pic_structure && h->stc == PIC_PB_START_CODE)
+    if(h->progressive)
+        h->pic_structure = 1;
+    else if(!(h->pic_structure = get_bits1(&s->gb) && (h->stc == PIC_PB_START_CODE)) )
         skip_bits1(&s->gb);     //advanced_pred_mode_disable
     skip_bits1(&s->gb);        //top_field_first
     skip_bits1(&s->gb);        //repeat_first_field
@@ -546,49 +523,52 @@ static int decode_pic(AVSContext *h) {
     } else {
         h->alpha_offset = h->beta_offset  = 0;
     }
+    check_for_slice(h);
     if(h->pic_type == FF_I_TYPE) {
         do {
-            check_for_slice(h);
             decode_mb_i(h, 0);
         } while(ff_cavs_next_mb(h));
     } else if(h->pic_type == FF_P_TYPE) {
         do {
-            if(check_for_slice(h))
-                skip_count = -1;
-            if(h->skip_mode_flag && (skip_count < 0))
+            if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
-            if(h->skip_mode_flag && skip_count--) {
-                decode_mb_p(h,P_SKIP);
-            } else {
-                mb_type = get_ue_golomb(&s->gb) + P_SKIP + h->skip_mode_flag;
-                if(mb_type > P_8X8)
-                    decode_mb_i(h, mb_type - P_8X8 - 1);
-                else
-                    decode_mb_p(h,mb_type);
-            }
+                while(skip_count--) {
+                    decode_mb_p(h,P_SKIP);
+                    if(!ff_cavs_next_mb(h))
+                        goto done;
+                }
+                mb_type = get_ue_golomb(&s->gb) + P_16X16;
+            } else
+                mb_type = get_ue_golomb(&s->gb) + P_SKIP;
+            if(mb_type > P_8X8) {
+                decode_mb_i(h, mb_type - P_8X8 - 1);
+            } else
+                decode_mb_p(h,mb_type);
         } while(ff_cavs_next_mb(h));
     } else { /* FF_B_TYPE */
         do {
-            if(check_for_slice(h))
-                skip_count = -1;
-            if(h->skip_mode_flag && (skip_count < 0))
+            if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
-            if(h->skip_mode_flag && skip_count--) {
-                decode_mb_b(h,B_SKIP);
-            } else {
-                mb_type = get_ue_golomb(&s->gb) + B_SKIP + h->skip_mode_flag;
-                if(mb_type > B_8X8)
-                    decode_mb_i(h, mb_type - B_8X8 - 1);
-                else
-                    decode_mb_b(h,mb_type);
-            }
+                while(skip_count--) {
+                    decode_mb_b(h,B_SKIP);
+                    if(!ff_cavs_next_mb(h))
+                        goto done;
+                }
+                mb_type = get_ue_golomb(&s->gb) + B_DIRECT;
+            } else
+                mb_type = get_ue_golomb(&s->gb) + B_SKIP;
+            if(mb_type > B_8X8) {
+                decode_mb_i(h, mb_type - B_8X8 - 1);
+            } else
+                decode_mb_b(h,mb_type);
         } while(ff_cavs_next_mb(h));
     }
+ done:
     if(h->pic_type != FF_B_TYPE) {
         if(h->DPB[1].data[0])
             s->avctx->release_buffer(s->avctx, (AVFrame *)&h->DPB[1]);
-        h->DPB[1] = h->DPB[0];
-        h->DPB[0] = h->picture;
+        memcpy(&h->DPB[1], &h->DPB[0], sizeof(Picture));
+        memcpy(&h->DPB[0], &h->picture, sizeof(Picture));
         memset(&h->picture,0,sizeof(Picture));
     }
     return 0;
@@ -634,9 +614,7 @@ static void cavs_flush(AVCodecContext * avctx) {
 }
 
 static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
-                             AVPacket *avpkt) {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+                             const uint8_t * buf, int buf_size) {
     AVSContext *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
     int input_size;
@@ -700,7 +678,8 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
             //mpeg_decode_user_data(avctx,buf_ptr, input_size);
             break;
         default:
-            if (stc <= SLICE_MAX_START_CODE) {
+            if (stc >= SLICE_MIN_START_CODE &&
+                stc <= SLICE_MAX_START_CODE) {
                 init_get_bits(&s->gb, buf_ptr, input_size);
                 decode_slice_header(h, &s->gb);
             }
@@ -711,7 +690,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
 
 AVCodec cavs_decoder = {
     "cavs",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_CAVS,
     sizeof(AVSContext),
     ff_cavs_init,

@@ -17,9 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * $Id: pnm.c 29305 2009-05-13 02:58:57Z diego $
+ * $Id: pnm.c 25729 2008-01-13 13:25:07Z reimar $
  *
- * pnm protocol implementation
+ * pnm protocol implementation 
  * based upon code from joschka
  */
 
@@ -36,7 +36,8 @@
 #include <sys/time.h>
 #include <inttypes.h>
 #if !defined(GEKKO)
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
+#define closesocket close
 #include <sys/socket.h>
 //#include <netinet/in.h>
 //#include <netdb.h>
@@ -51,7 +52,7 @@
 #include "libmpdemux/demuxer.h"
 #include "help_mp.h"
 #include "osdep/timer.h"
-#include "network.h"
+
 #include "pnm.h"
 #include "tcp.h"
 //#include "libreal/rmff.h"
@@ -154,26 +155,26 @@ static const unsigned char pnm_header[] = {
         0x00, 0x01 };
 
 static const unsigned char pnm_client_caps[] = {
-    0x07, 0x8a, 'p','n','r','v',
-       0, 0x90, 'p','n','r','v',
-       0, 0x64, 'd','n','e','t',
-       0, 0x46, 'p','n','r','v',
-       0, 0x32, 'd','n','e','t',
-       0, 0x2b, 'p','n','r','v',
-       0, 0x28, 'd','n','e','t',
-       0, 0x24, 'p','n','r','v',
-       0, 0x19, 'd','n','e','t',
-       0, 0x18, 'p','n','r','v',
-       0, 0x14, 's','i','p','r',
-       0, 0x14, 'd','n','e','t',
-       0, 0x24, '2','8','_','8',
-       0, 0x12, 'p','n','r','v',
-       0, 0x0f, 'd','n','e','t',
-       0, 0x0a, 's','i','p','r',
-       0, 0x0a, 'd','n','e','t',
-       0, 0x08, 's','i','p','r',
-       0, 0x06, 's','i','p','r',
-       0, 0x12, 'l','p','c','J',
+    0x07, 0x8a, 'p','n','r','v', 
+       0, 0x90, 'p','n','r','v', 
+       0, 0x64, 'd','n','e','t', 
+       0, 0x46, 'p','n','r','v', 
+       0, 0x32, 'd','n','e','t', 
+       0, 0x2b, 'p','n','r','v', 
+       0, 0x28, 'd','n','e','t', 
+       0, 0x24, 'p','n','r','v', 
+       0, 0x19, 'd','n','e','t', 
+       0, 0x18, 'p','n','r','v', 
+       0, 0x14, 's','i','p','r', 
+       0, 0x14, 'd','n','e','t', 
+       0, 0x24, '2','8','_','8', 
+       0, 0x12, 'p','n','r','v', 
+       0, 0x0f, 'd','n','e','t', 
+       0, 0x0a, 's','i','p','r', 
+       0, 0x0a, 'd','n','e','t', 
+       0, 0x08, 's','i','p','r', 
+       0, 0x06, 's','i','p','r', 
+       0, 0x12, 'l','p','c','J', 
        0, 0x07, '0','5','_','6' };
 
 static const uint32_t pnm_default_bandwidth=10485800;
@@ -187,7 +188,7 @@ static const unsigned char pnm_twentyfour[]={
 /* now other data follows. marked with 0x0000 at the beginning */
 static const unsigned char after_chunks[]={
     0x00, 0x00, /* mark */
-
+    
     0x50, 0x84, /* seems to be fixated */
     0x1f, 0x3a  /* varies on each request (checksum ?)*/
     };
@@ -198,7 +199,7 @@ static int rm_write(int s, const char *buf, int len) {
   int total, timeout;
 
   total = 0; timeout = 30;
-  while (total < len){
+  while (total < len){ 
     int n;
 
     n = send (s, &buf[total], len - total, 0);
@@ -206,7 +207,7 @@ static int rm_write(int s, const char *buf, int len) {
     if (n > 0)
       total += n;
     else if (n < 0) {
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
       if (timeout>0 && (errno == EAGAIN || errno == EINPROGRESS)) {
 #else
       if (timeout>0 && (errno == EAGAIN || WSAGetLastError() == WSAEINPROGRESS)) {
@@ -221,26 +222,26 @@ static int rm_write(int s, const char *buf, int len) {
 }
 
 static ssize_t rm_read(int fd, void *buf, size_t count) {
-
+  
   ssize_t ret, total;
 
   total = 0;
 
   while (total < count) {
-
+  
     fd_set rset;
     struct timeval timeout;
 
     FD_ZERO (&rset);
     FD_SET  (fd, &rset);
-
+    
     timeout.tv_sec  = 3;
     timeout.tv_usec = 0;
-
+    
     if (select (fd+1, &rset, NULL, NULL, &timeout) <= 0) {
       return -1;
     }
-
+    
     ret=recv (fd, ((uint8_t*)buf)+total, count-total, 0);
 
     if (ret<=0) {
@@ -256,7 +257,7 @@ static ssize_t rm_read(int fd, void *buf, size_t count) {
 /*
  * debugging utilities
  */
-
+ 
 static void hexdump (char *buf, int length) {
 
   int i;
@@ -290,10 +291,10 @@ static void hexdump (char *buf, int length) {
 
 /*
  * pnm_get_chunk gets a chunk from stream
- * and returns number of bytes read
+ * and returns number of bytes read 
  */
 
-static int pnm_get_chunk(pnm_t *p,
+static int pnm_get_chunk(pnm_t *p, 
                          unsigned int max,
                          unsigned int *chunk_type,
                          char *data, int *need_response) {
@@ -301,7 +302,7 @@ static int pnm_get_chunk(pnm_t *p,
   unsigned int chunk_size;
   unsigned int n;
   char *ptr;
-
+ 
   if (max < PREAMBLE_SIZE)
     return -1;
 
@@ -311,7 +312,7 @@ static int pnm_get_chunk(pnm_t *p,
     rm_read (p->s, data, PREAMBLE_SIZE);
   else
     rm_read (p->s, data+CHECKSUM_SIZE, PREAMBLE_SIZE-CHECKSUM_SIZE);
-
+  
   max -= PREAMBLE_SIZE;
 
   *chunk_type = AV_RB32(data);
@@ -349,7 +350,7 @@ static int pnm_get_chunk(pnm_t *p,
 	  mp_msg(MSGT_OPEN, MSGL_WARN, "%s\n",ptr+3);
 	  return -1;
 	}
-
+	
 	if (*ptr == 'F') /* checking for server error */
 	{
 	  mp_msg(MSGT_OPEN, MSGL_ERR, "input_pnm: server error.\n");
@@ -393,7 +394,7 @@ static int pnm_get_chunk(pnm_t *p,
       break;
     default:
       *chunk_type = 0;
-      chunk_size  = PREAMBLE_SIZE;
+      chunk_size  = PREAMBLE_SIZE; 
       break;
   }
 
@@ -404,13 +405,13 @@ static int pnm_get_chunk(pnm_t *p,
  * writes a chunk to a buffer, returns number of bytes written
  */
 
-static int pnm_write_chunk(uint16_t chunk_id, uint16_t length,
+static int pnm_write_chunk(uint16_t chunk_id, uint16_t length, 
     const char *chunk, char *data) {
 
   AV_WB16(&data[0], chunk_id);
   AV_WB16(&data[2], length);
   memcpy(&data[4],chunk,length);
-
+  
   return length+4;
 }
 
@@ -448,7 +449,7 @@ static void pnm_send_request(pnm_t *p, uint32_t bandwidth) {
           pnm_guid,&p->buffer[c]);
   c+=pnm_write_chunk(PNA_TWENTYFOUR,sizeof(pnm_twentyfour),
           pnm_twentyfour,&p->buffer[c]);
-
+  
   /* data after chunks */
   memcpy(&p->buffer[c],after_chunks,sizeof(after_chunks));
   c+=sizeof(after_chunks);
@@ -470,7 +471,7 @@ static void pnm_send_request(pnm_t *p, uint32_t bandwidth) {
   /* some trailing bytes */
   p->buffer[c]='y';
   p->buffer[c+1]='B';
-
+  
   rm_write(p->s,p->buffer,c+2);
 }
 
@@ -535,12 +536,12 @@ static int pnm_get_headers(pnm_t *p, int *need_response) {
     size+=chunk_size;
     ptr+=chunk_size;
   }
-
+  
   if (!prop_hdr) {
     mp_msg(MSGT_OPEN, MSGL_ERR, "input_pnm: error while parsing headers.\n");
     return 0;
   }
-
+  
   /* set data offset */
   AV_WB32(&prop_hdr[42], size - 1);
 
@@ -551,18 +552,18 @@ static int pnm_get_headers(pnm_t *p, int *need_response) {
   /* now write a data header */
   memcpy(ptr, pnm_data_header, sizeof(pnm_data_header));
   size+=sizeof(pnm_data_header);
-/*
+/*  
   h=rmff_scan_header(p->header);
   rmff_fix_header(h);
   p->header_len=rmff_get_header_size(h);
   rmff_dump_header(h, p->header, HEADER_SIZE);
 */
   p->header_len=size;
-
+  
   return 1;
 }
 
-/*
+/* 
  * determine correct stream number by looking at indices
  */
 
@@ -640,7 +641,7 @@ static int pnm_get_stream_chunk(pnm_t *p) {
 
   /* send a keepalive                               */
   /* realplayer seems to do that every 43th package */
-  if (p->packet%43 == 42)
+  if (p->packet%43 == 42)  
     rm_write(p->s,&keepalive,1);
 
   /* data chunks begin with: 'Z' <o> <o> <i1> 'Z' <i2>
@@ -648,11 +649,11 @@ static int pnm_get_stream_chunk(pnm_t *p) {
    * <i1> is a 16 bit index
    * <i2> is a 8 bit index which counts from 0x10 to somewhere
    */
-
+  
   n = rm_read (p->s, p->buffer, 8);
   if (n<0) return -1;
   if (n<8) return 0;
-
+  
   /* skip 8 bytes if 0x62 is read */
   if (p->buffer[0] == 0x62)
   {
@@ -662,7 +663,7 @@ static int pnm_get_stream_chunk(pnm_t *p) {
     mp_msg(MSGT_OPEN, MSGL_WARN, "input_pnm: had to seek 8 bytes on 0x62\n");
 #endif
   }
-
+  
   /* a server message */
   if (p->buffer[0] == 'X')
   {
@@ -715,7 +716,7 @@ static int pnm_get_stream_chunk(pnm_t *p) {
 
   /* get first index */
   p->seq_current[0]=AV_RB16(&p->buffer[5]);
-
+  
   /* now read the rest of stream chunk */
   n = rm_read (p->s, &p->recv[5], fof1-5);
   if (n<fof1-5) return 0;
@@ -725,15 +726,15 @@ static int pnm_get_stream_chunk(pnm_t *p) {
 
   /* get timestamp */
   p->ts_current=AV_RB32(&p->recv[6]);
-
+  
   /* get stream number */
   stream=pnm_calc_stream(p);
 
   /* saving timestamp */
   p->ts_last[stream]=p->ts_current;
-
+  
   /* constructing a data packet header */
-
+  
   p->recv[0]=0;        /* object version */
   p->recv[1]=0;
 
@@ -741,7 +742,7 @@ static int pnm_get_stream_chunk(pnm_t *p) {
 
   p->recv[4]=0;         /* stream number */
   p->recv[5]=stream;
-
+  
   p->recv[10] &= 0xfe; /* streambox seems to do that... */
 
   p->packet++;
@@ -753,10 +754,10 @@ static int pnm_get_stream_chunk(pnm_t *p) {
 
 // pnm_t *pnm_connect(const char *mrl) {
 static pnm_t *pnm_connect(int fd, char *path) {
-
+  
   pnm_t *p=malloc(sizeof(pnm_t));
   int need_response=0;
-
+  
   p->path=strdup(path);
   p->s=fd;
 
@@ -771,7 +772,7 @@ static pnm_t *pnm_connect(int fd, char *path) {
     pnm_send_response(p, pnm_response);
   p->ts_last[0]=0;
   p->ts_last[1]=0;
-
+  
   /* copy header to recv */
 
   memcpy(p->recv, p->header, p->header_len);
@@ -782,16 +783,16 @@ static pnm_t *pnm_connect(int fd, char *path) {
 }
 
 static int pnm_read (pnm_t *this, char *data, int len) {
-
+  
   int to_copy=len;
   char *dest=data;
   char *source=this->recv + this->recv_read;
   int fill=this->recv_size - this->recv_read;
   int retval;
-
+  
   if (len < 0) return 0;
   while (to_copy > fill) {
-
+    
     memcpy(dest, source, fill);
     to_copy -= fill;
     dest += fill;
@@ -841,12 +842,12 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
 
   fd = connect2Server( stream->streaming_ctrl->url->hostname,
     stream->streaming_ctrl->url->port ? stream->streaming_ctrl->url->port : 7070,1 );
-
+  
   if(fd<0)
     goto fail;
 
   pnm = pnm_connect(fd,stream->streaming_ctrl->url->file);
-  if(!pnm)
+  if(!pnm) 
     goto fail;
   stream->type = STREAMTYPE_STREAM;
   stream->fd=fd;

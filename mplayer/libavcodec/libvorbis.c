@@ -19,7 +19,7 @@
  */
 
 /**
- * @file
+ * @file oggvorbis.c
  * Ogg Vorbis codec support via libvorbisenc.
  * @author Mark Hills <mark@pogo.org.uk>
  */
@@ -42,7 +42,6 @@ typedef struct OggVorbisContext {
     vorbis_block vb ;
     uint8_t buffer[BUFFER_SIZE];
     int buffer_index;
-    int eof;
 
     /* decoder */
     vorbis_comment vc ;
@@ -50,14 +49,14 @@ typedef struct OggVorbisContext {
 } OggVorbisContext ;
 
 
-static av_cold int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
+static int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
     double cfreq;
 
     if(avccontext->flags & CODEC_FLAG_QSCALE) {
         /* variable bitrate */
         if(vorbis_encode_setup_vbr(vi, avccontext->channels,
                 avccontext->sample_rate,
-                avccontext->global_quality / (float)FF_QP2LAMBDA / 10.0))
+                avccontext->global_quality / (float)FF_QP2LAMBDA))
             return -1;
     } else {
         /* constant bitrate */
@@ -90,7 +89,7 @@ static av_cold int oggvorbis_encode_init(AVCodecContext *avccontext) {
 
     vorbis_info_init(&context->vi) ;
     if(oggvorbis_init_encoder(&context->vi, avccontext) < 0) {
-        av_log(avccontext, AV_LOG_ERROR, "oggvorbis_encode_init: init_encoder failed\n") ;
+        av_log(avccontext, AV_LOG_ERROR, "oggvorbis_encode_init: init_encoder failed") ;
         return -1 ;
     }
     vorbis_analysis_init(&context->vd, &context->vi) ;
@@ -137,30 +136,24 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
                            int buf_size, void *data)
 {
     OggVorbisContext *context = avccontext->priv_data ;
+    float **buffer ;
     ogg_packet op ;
     signed short *audio = data ;
-    int l;
+    int l, samples = data ? OGGVORBIS_FRAME_SIZE : 0;
 
-    if(data) {
-        int samples = OGGVORBIS_FRAME_SIZE;
-        float **buffer ;
+    buffer = vorbis_analysis_buffer(&context->vd, samples) ;
 
-        buffer = vorbis_analysis_buffer(&context->vd, samples) ;
-        if(context->vi.channels == 1) {
-            for(l = 0 ; l < samples ; l++)
-                buffer[0][l]=audio[l]/32768.f;
-        } else {
-            for(l = 0 ; l < samples ; l++){
-                buffer[0][l]=audio[l*2]/32768.f;
-                buffer[1][l]=audio[l*2+1]/32768.f;
-            }
-        }
-        vorbis_analysis_wrote(&context->vd, samples) ;
+    if(context->vi.channels == 1) {
+        for(l = 0 ; l < samples ; l++)
+            buffer[0][l]=audio[l]/32768.f;
     } else {
-        if(!context->eof)
-            vorbis_analysis_wrote(&context->vd, 0) ;
-        context->eof = 1;
+        for(l = 0 ; l < samples ; l++){
+            buffer[0][l]=audio[l*2]/32768.f;
+            buffer[1][l]=audio[l*2+1]/32768.f;
+        }
     }
+
+    vorbis_analysis_wrote(&context->vd, samples) ;
 
     while(vorbis_analysis_blockout(&context->vd, &context->vb) == 1) {
         vorbis_analysis(&context->vb, NULL);
@@ -217,13 +210,13 @@ static av_cold int oggvorbis_encode_close(AVCodecContext *avccontext) {
 
 AVCodec libvorbis_encoder = {
     "libvorbis",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_VORBIS,
     sizeof(OggVorbisContext),
     oggvorbis_encode_init,
     oggvorbis_encode_frame,
     oggvorbis_encode_close,
     .capabilities= CODEC_CAP_DELAY,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("libvorbis Vorbis"),
 } ;

@@ -20,42 +20,40 @@
  */
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 
 
 typedef struct {
     AVFrame picture;
-} AvsContext;
+} avs_context_t;
 
 typedef enum {
     AVS_VIDEO     = 0x01,
     AVS_AUDIO     = 0x02,
     AVS_PALETTE   = 0x03,
     AVS_GAME_DATA = 0x04,
-} AvsBlockType;
+} avs_block_type_t;
 
 typedef enum {
     AVS_I_FRAME     = 0x00,
     AVS_P_FRAME_3X3 = 0x01,
     AVS_P_FRAME_2X2 = 0x02,
     AVS_P_FRAME_2X3 = 0x03,
-} AvsVideoSubType;
+} avs_video_sub_type_t;
 
 
 static int
 avs_decode_frame(AVCodecContext * avctx,
-                 void *data, int *data_size, AVPacket *avpkt)
+                 void *data, int *data_size, const uint8_t * buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    AvsContext *const avs = avctx->priv_data;
+    avs_context_t *const avs = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame *const p = (AVFrame *) & avs->picture;
     const uint8_t *table, *vect;
     uint8_t *out;
     int i, j, x, y, stride, vect_w = 3, vect_h = 3;
-    AvsVideoSubType sub_type;
-    AvsBlockType type;
+    int sub_type;
+    avs_block_type_t type;
     GetBitContext change_map;
 
     if (avctx->reget_buffer(avctx, p)) {
@@ -152,9 +150,9 @@ static av_cold int avs_decode_init(AVCodecContext * avctx)
 
 AVCodec avs_decoder = {
     "avs",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_AVS,
-    sizeof(AvsContext),
+    sizeof(avs_context_t),
     avs_decode_init,
     NULL,
     NULL,

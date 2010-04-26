@@ -25,7 +25,7 @@ Known Issues:
   frames are created purely based on spatial interpolation then for example
   a thin black line or another random and not interpolateable pattern
   will cause problems
-  Note: completly ignoring the "unavailable" lines during motion estimation
+  Note: completly ignoring the "unavailable" lines during motion estimation 
   didnt look any better, so the most obvious solution would be to improve
   tfields or penalize problematic motion vectors ...
 
@@ -33,7 +33,7 @@ Known Issues:
   and as a result sometimes creates artifacts
 
 * only past frames are used, we should ideally use future frames too, something
-  like filtering the whole movie in forward and then backward direction seems
+  like filtering the whole movie in forward and then backward direction seems 
   like a interresting idea but the current filter framework is FAR from
   supporting such things
 
@@ -51,17 +51,18 @@ Known Issues:
 #include <inttypes.h>
 #include <math.h>
 
+#include "config.h"
+
 #include "mp_msg.h"
 #include "cpudetect.h"
 
-#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 
-#undef fprintf
-#undef free
-#undef malloc
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 #include "img_format.h"
 #include "mp_image.h"
@@ -178,7 +179,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst[3], uint8_t *src[3], int ds
 
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
         int i;
@@ -235,7 +236,7 @@ static int config(struct vf_instance *vf,
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi){
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
 return; //caused problems, dunno why
     // ok, we can do pp in-place (or pp disabled):
@@ -253,7 +254,7 @@ return; //caused problems, dunno why
     mpi->flags|=MP_IMGFLAG_DIRECT;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     mp_image_t *dmpi;
 
     if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
@@ -272,7 +273,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     return vf_next_put_image(vf,dmpi, pts);
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
     if(!vf->priv) return;
 
 #if 0
@@ -294,7 +295,7 @@ static void uninit(struct vf_instance *vf){
 }
 
 //===========================================================================//
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt){
 	case IMGFMT_YV12:
 	case IMGFMT_I420:
@@ -306,7 +307,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     return 0;
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
 
     vf->config=config;
     vf->put_image=put_image;
@@ -333,6 +334,6 @@ const vf_info_t vf_info_mcdeint = {
     "mcdeint",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };

@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "fastmemcpy.h"
 #include "cpudetect.h"
@@ -100,11 +83,11 @@ draw_slice_g400(uint8_t *image[], int stride[], int w,int h,int x,int y)
 
     dest = vid_data + bespitch * y + x;
     mem2agpcpy_pic(dest, image[0], w, h, bespitch, stride[0]);
-
+    
     w/=2;h/=2;x/=2;y/=2;
 
     dest = vid_data + bespitch*mga_vid_config.src_height + bespitch2 * y + x;
-    dest2= dest + bespitch2*mga_vid_config.src_height / 2;
+    dest2= dest + bespitch2*mga_vid_config.src_height / 2; 
 
   if(mga_vid_config.format==MGA_VID_FORMAT_YV12){
     // mga_vid's YV12 assumes Y,U,V order (insteda of Y,V,U) :(
@@ -142,9 +125,11 @@ vo_mga_flip_page(void)
 
 //    printf("-- flip to %d --\n",mga_next_frame);
 
+#if 1
 	ioctl(f,MGA_VID_FSEL,&mga_next_frame);
 	mga_next_frame=(mga_next_frame+1)%mga_vid_config.num_frames;
 	vid_data=frames[mga_next_frame];
+#endif
 
 }
 
@@ -223,7 +208,7 @@ query_format(uint32_t format)
 }
 
 #ifndef VO_XMGA
-static void mga_fullscreen(void)
+static void mga_fullscreen()
 {
 	uint32_t w,h;
 	if ( !vo_fs ) {
@@ -263,7 +248,7 @@ static int control(uint32_t request, void *data, ...)
 
      if (ioctl(f,MGA_VID_GET_LUMA,&prev)) {
 	perror("Error in mga_vid_config ioctl()");
-    mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule);
+    mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule);    
 	return VO_FALSE;
      }
 
@@ -272,7 +257,7 @@ static int control(uint32_t request, void *data, ...)
      va_start(ap, data);
      value = va_arg(ap, int);
      va_end(ap);
-
+     
 //     printf("value: %d -> ",value);
      value=((value+100)*255)/200-128; // maps -100=>-128 and +100=>127
 //     printf("%d  \n",value);
@@ -281,7 +266,7 @@ static int control(uint32_t request, void *data, ...)
          luma = (prev&0xFFFF0000)|(value&0xFFFF);
      else
          luma = (prev&0xFFFF)|(value<<16);
-
+     
      if (ioctl(f,MGA_VID_SET_LUMA,luma)) {
 	perror("Error in mga_vid_config ioctl()");
         mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_MGA_CouldNotSetLumaValuesFromTheKernelModule);
@@ -297,7 +282,7 @@ static int control(uint32_t request, void *data, ...)
      int * value;
      short val;
      uint32_t luma;
-
+     
      if ( strcmp( data,"brightness" ) && strcmp( data,"contrast" ) ) return VO_FALSE;
 
      if (ioctl(f,MGA_VID_GET_LUMA,&luma)) {
@@ -305,12 +290,12 @@ static int control(uint32_t request, void *data, ...)
         mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule);
 	return VO_FALSE;
      }
-
+     
      if ( !strcmp( data,"contrast" ) )
 	 val=(luma & 0xFFFF);
      else
 	 val=(luma >> 16);
-
+	 
      va_start(ap, data);
      value = va_arg(ap, int*);
      va_end(ap);
@@ -319,7 +304,7 @@ static int control(uint32_t request, void *data, ...)
 
      return VO_TRUE;
     }
-
+														       
 #ifndef VO_XMGA
   case VOCTRL_FULLSCREEN:
     if (vo_screenwidth && vo_screenheight)
@@ -354,7 +339,7 @@ static int control(uint32_t request, void *data, ...)
        {
 //        int old_y = vo_panscan_y;
 	panscan_calc();
-//        if ( old_y != vo_panscan_y )
+//        if ( old_y != vo_panscan_y ) 
 	set_window();
        }
       return VO_TRUE;
@@ -381,7 +366,7 @@ static int mga_init(int width,int height,unsigned int format){
         case IMGFMT_UYVY:
 	    mga_vid_config.frame_size = ((width + 31) & ~31) * height * 2;
             mga_vid_config.format=MGA_VID_FORMAT_UYVY; break;
-        default:
+        default: 
             mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_MGA_InvalidOutputFormat,format);
             return -1;
         }
@@ -394,13 +379,13 @@ static int mga_init(int width,int height,unsigned int format){
 	    mga_vid_config.dest_height= height;
 
 	mga_vid_config.colkey_on=0;
-
+	
 	mga_vid_config.num_frames=(vo_directrendering && !vo_doublebuffering)?1:3;
 	mga_vid_config.version=MGA_VID_VERSION;
 
 	if(width > 1024 && height > 1024)
 	{
-		mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_MGA_ResolutionTooHigh);
+		mp_msg(MSGT_VO,MSGL_ERR, MGSTR_LIBVO_MGA_ResolutionTooHigh);
 		return -1;
 	} else if(height <= 1024)
 	{
@@ -411,7 +396,7 @@ static int mga_init(int width,int height,unsigned int format){
 			if(mga_vid_config.card_type != MGA_G550)
 			{
 				// we don't have a G550, so our resolution is too high
-				mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_MGA_ResolutionTooHigh);
+				mp_msg(MSGT_VO,MSGL_ERR, MGSTR_LIBVO_MGA_ResolutionTooHigh);
 				return -1;
 			} else {
 				// there is a deeper problem
@@ -432,7 +417,7 @@ static int mga_init(int width,int height,unsigned int format){
 			return -1;
 		}
 	}
-
+	
 	mp_msg(MSGT_VO,MSGL_V,"[MGA] Using %d buffers.\n",mga_vid_config.num_frames);
 
 	frames[0] = (char*)mmap(0,mga_vid_config.frame_size*mga_vid_config.num_frames,PROT_WRITE,MAP_SHARED,f,0);
@@ -452,7 +437,7 @@ static int mga_init(int width,int height,unsigned int format){
   return 0;
 }
 
-static int mga_uninit(void){
+static int mga_uninit(){
   if(f>=0){
 	ioctl( f,MGA_VID_OFF,0 );
 	munmap(frames[0],mga_vid_config.frame_size*mga_vid_config.num_frames);
@@ -475,14 +460,14 @@ static int preinit(const char *vo_subdevice)
 		mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_MGA_CouldntOpen,devname);
 		return -1;
 	}
-
+	
 	// check whether the mga_vid driver has the same
 	// version as we expect
-
+	
 	ioctl(f,MGA_VID_GET_VERSION,&ver);
 	if(MGA_VID_VERSION != ver)
 	{
-		mp_msg(MSGT_VO, MSGL_ERR, MSGTR_LIBVO_MGA_mgavidVersionMismatch, ver, MGA_VID_VERSION);
+		mp_msg(MSGT_VO, MSGL_ERR, MGSTR_LIBVO_MGA_mgavidVersionMismatch, ver, MGA_VID_VERSION);
 		return -1;
 	}
 

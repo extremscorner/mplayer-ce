@@ -1,23 +1,5 @@
 // SAMPLE audio decoder - you can use this file as template when creating new codec!
 
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -25,7 +7,7 @@
 #include "config.h"
 #include "ad_internal.h"
 
-static const ad_info_t info =  {
+static ad_info_t info =  {
 	"Sample audio decoder",  // name of the driver
 	"sample",    // driver name. should be the same as filename without ad_
 	"A'rpi",     // writer/maintainer of _this_ file
@@ -41,18 +23,18 @@ static int preinit(sh_audio_t *sh){
   // let's check if the driver is available, return 0 if not.
   // (you should do that if you use external lib(s) which is optional)
   ...
-
+  
   // there are default values set for buffering, but you can override them:
-
+  
   // minimum output buffer size (should be the uncompressed max. frame size)
   sh->audio_out_minsize=4*2*1024; // in this sample, we assume max 4 channels,
                                   // 2 bytes/sample and 1024 samples/frame
 				  // Default: 8192
-
+  
   // minimum input buffer size (set only if you need input buffering)
   // (should be the max compressed frame size)
   sh->audio_in_minsize=2048; // Default: 0 (no input buffer)
-
+  
   // if you set audio_in_minsize non-zero, the buffer will be allocated
   // before the init() call by the core, and you can access it via
   // pointer: sh->audio_in_buffer
@@ -61,17 +43,17 @@ static int preinit(sh_audio_t *sh){
   // the next few parameters define the audio format (channels, sample type,
   // in/out bitrate etc.). it's OK to move these to init() if you can set
   // them only after some initialization:
-
+  
   sh->samplesize=2;              // bytes (not bits!) per sample per channel
   sh->channels=2;                // number of channels
   sh->samplerate=44100;          // samplerate
   sh->sample_format=AF_FORMAT_S16_LE; // sample format, see libao2/afmt.h
-
+  
   sh->i_bps=64000/8; // input data rate (compressed bytes per second)
   // Note: if you have VBR or unknown input rate, set it to some common or
   // average value, instead of zero. it's used to predict time delay of
   // buffered compressed bytes, so it must be more-or-less real!
-
+  
 //sh->o_bps=...     // output data rate (uncompressed bytes per second)
   // Note: you DON'T need to set o_bps in most cases, as it defaults to:
   //   sh->samplesize*sh->channels*sh->samplerate;
@@ -80,7 +62,7 @@ static int preinit(sh_audio_t *sh){
   // set the compressed and uncompressed packet size (used by the demuxer):
   sh->ds->ss_mul = 34; // compressed packet size
   sh->ds->ss_div = 64; // samples per packet
-
+  
   return 1; // return values: 1=OK 0=ERROR
 }
 
@@ -89,7 +71,7 @@ static int init(sh_audio_t *sh_audio){
 
   // you can store HANDLE or private struct pointer at sh->context
   // you can access WAVEFORMATEX header at sh->wf
-
+  
   // set sample format/rate parameters if you didn't do it in preinit() yet.
 
   return 1; // return values: 1=OK 0=ERROR
@@ -104,7 +86,7 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
 
   // audio decoding. the most important thing :)
   // parameters you get:
-  //  buf = pointer to the output buffer, you have to store uncompressed
+  //  buf = pointer to the output buffer, you have to store uncompressed 
   //        samples there
   //  minlen = requested minimum size (in bytes!) of output. it's just a
   //        _recommendation_, you can decode more or less, it just tell you that
@@ -114,8 +96,8 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
   //        buffer, it's the upper-most limit!
   //        note: maxlen will be always greater or equal to sh->audio_out_minsize
 
-  // now, let's decode...
-
+  // now, let's decode...  
+  
   // you can read the compressed stream using the demux stream functions:
   //  demux_read_data(sh->ds, buffer, length) - read 'length' bytes to 'buffer'
   //  ds_get_packet(sh->ds, &buffer) - set ptr buffer to next data packet

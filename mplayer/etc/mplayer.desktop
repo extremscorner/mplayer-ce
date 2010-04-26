@@ -1,12 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=MPlayer Media Player
-Name[ca]=Reproductor multimèdia MPlayer
+Encoding=UTF-8
+Name=MPlayer
 GenericName=Multimedia player
-Comment=Play movies and songs
-Comment[ca]=Reproduïu vídeos i cançons
-Comment[de]=Filme und Musik abspielen
-Comment[es]=Reproduzca vídeos y canciones
+Comment=Multimedia player
+Comment[de]=Multimedia-Player
+Comment[es]=Reproductor multimedia
 Comment[fr]=Lecteur multimédia
 Comment[it]=Lettore multimediale
 Comment[zh]=多媒体播放器

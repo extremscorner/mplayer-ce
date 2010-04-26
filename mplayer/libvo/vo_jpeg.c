@@ -44,7 +44,7 @@
 #include "mp_msg.h"
 #include "video_out.h"
 #include "video_out_internal.h"
-#include "mp_core.h"
+#include "mplayer.h"			/* for exit_player() */
 #include "help_mp.h"
 
 /* ------------------------------------------------------------------------- */
@@ -105,10 +105,10 @@ static int framenum = 0;
  *                  returns, everything went well.
  */
 
-static void jpeg_mkdir(char *buf, int verbose) {
+static void jpeg_mkdir(char *buf, int verbose) { 
     struct stat stat_p;
 
-#ifndef __MINGW32__
+#ifndef __MINGW32__	
     if ( mkdir(buf, 0755) < 0 ) {
 #else
     if ( mkdir(buf) < 0 ) {
@@ -121,19 +121,19 @@ static void jpeg_mkdir(char *buf, int verbose) {
                             MSGTR_VO_GenericError, strerror(errno) );
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s %s\n", info.short_name,
                             MSGTR_VO_UnableToAccess,buf);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
                 if ( !S_ISDIR(stat_p.st_mode) ) {
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s %s\n", info.short_name,
                             buf, MSGTR_VO_ExistsButNoDirectory);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
                 if ( !(stat_p.st_mode & S_IWUSR) ) {
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s - %s\n", info.short_name,
                             buf, MSGTR_VO_DirExistsButNotWritable);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
-
+                
                 mp_msg(MSGT_VO, MSGL_INFO, "%s: %s - %s\n", info.short_name,
                         buf, MSGTR_VO_DirExistsAndIsWritable);
                 break;
@@ -143,9 +143,9 @@ static void jpeg_mkdir(char *buf, int verbose) {
                         MSGTR_VO_GenericError, strerror(errno) );
                 mp_msg(MSGT_VO, MSGL_ERR, "%s: %s - %s\n", info.short_name,
                         buf, MSGTR_VO_CantCreateDirectory);
-                exit_player(EXIT_ERROR);
+                exit_player(MSGTR_Exit_error);
         } /* end switch */
-    } else if ( verbose ) {
+    } else if ( verbose ) {  
         mp_msg(MSGT_VO, MSGL_INFO, "%s: %s - %s\n", info.short_name,
                 buf, MSGTR_VO_DirectoryCreateSuccess);
     } /* end if */
@@ -160,9 +160,9 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     char buf[BUFLENGTH];
 
     /* Create outdir. */
-
+    
     snprintf(buf, BUFLENGTH, "%s", jpeg_outdir);
-
+ 
     jpeg_mkdir(buf, 1); /* This function only returns if creation was
                            successful. If not, the player will exit. */
 
@@ -171,7 +171,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     /* Save for JFIF-Header PAR */
     image_d_width = d_width;
     image_d_height = d_height;
-
+    
     return 0;
 }
 
@@ -185,20 +185,20 @@ static uint32_t jpeg_write(uint8_t * name, uint8_t * buffer)
     JSAMPROW row_pointer[1];
     int row_stride;
 
-    if ( !buffer ) return 1;
+    if ( !buffer ) return 1; 
     if ( (outfile = fopen(name, "wb") ) == NULL ) {
         mp_msg(MSGT_VO, MSGL_ERR, "\n%s: %s\n", info.short_name,
                 MSGTR_VO_CantCreateFile);
         mp_msg(MSGT_VO, MSGL_ERR, "%s: %s: %s\n",
                 info.short_name, MSGTR_VO_GenericError,
                 strerror(errno) );
-        exit_player(EXIT_ERROR);
+        exit_player(MSGTR_Exit_error);
     }
-
+ 
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_compress(&cinfo);
     jpeg_stdio_dest(&cinfo, outfile);
-
+    
     cinfo.image_width = image_width;
     cinfo.image_height = image_height;
     cinfo.input_components = 3;
@@ -223,9 +223,9 @@ static uint32_t jpeg_write(uint8_t * name, uint8_t * buffer)
     if ( jpeg_progressive_mode ) {
         jpeg_simple_progression(&cinfo);
     }
-
+    
     jpeg_start_compress(&cinfo, TRUE);
-
+    
     row_stride = image_width * 3;
     while (cinfo.next_scanline < cinfo.image_height) {
         row_pointer[0] = &buffer[cinfo.next_scanline * row_stride];
@@ -235,7 +235,7 @@ static uint32_t jpeg_write(uint8_t * name, uint8_t * buffer)
     jpeg_finish_compress(&cinfo);
     fclose(outfile);
     jpeg_destroy_compress(&cinfo);
-
+    
     return 0;
 }
 
@@ -262,15 +262,15 @@ static int draw_frame(uint8_t *src[])
         jpeg_mkdir(buf, 0); /* This function only returns if creation was
                                successful. If not, the player will exit. */
     }
-
+    
     framenum++;
 
     /* snprintf the full pathname of the outputfile */
     snprintf(buf, BUFLENGTH, "%s/%s/%08d.jpg", jpeg_outdir, subdirname,
                                                                     framenum);
-
+    
     framecounter++;
-
+    
     return jpeg_write(buf, src[0]);
 }
 
@@ -301,7 +301,7 @@ static int query_format(uint32_t format)
     if (format == IMGFMT_RGB24) {
         return VFCAP_CSP_SUPPORTED|VFCAP_CSP_SUPPORTED_BY_HW;
     }
-
+    
     return 0;
 }
 
@@ -330,28 +330,29 @@ static void check_events(void)
 /** \brief Validation function for values [0-100]
  */
 
-static int int_zero_hundred(void *valp)
+static int int_zero_hundred(int *val)
 {
-    int *val = valp;
-    return *val >= 0 && *val <= 100;
+    if ( (*val >=0) && (*val<=100) )
+        return 1;
+    return 0;
 }
 
 static int preinit(const char *arg)
 {
-    const opt_t subopts[] = {
-        {"progressive", OPT_ARG_BOOL,   &jpeg_progressive_mode, NULL},
-        {"baseline",    OPT_ARG_BOOL,   &jpeg_baseline,         NULL},
+    opt_t subopts[] = {
+        {"progressive", OPT_ARG_BOOL,   &jpeg_progressive_mode, NULL, 0},
+        {"baseline",    OPT_ARG_BOOL,   &jpeg_baseline,         NULL, 0},
         {"optimize",    OPT_ARG_INT,    &jpeg_optimize,
-                                            int_zero_hundred},
+                                            (opt_test_f)int_zero_hundred, 0},
         {"smooth",      OPT_ARG_INT,    &jpeg_smooth,
-                                            int_zero_hundred},
+                                            (opt_test_f)int_zero_hundred, 0},
         {"quality",     OPT_ARG_INT,    &jpeg_quality,
-                                            int_zero_hundred},
-        {"dpi",         OPT_ARG_INT,    &jpeg_dpi,              NULL},
-        {"outdir",      OPT_ARG_MSTRZ,  &jpeg_outdir,           NULL},
-        {"subdirs",     OPT_ARG_MSTRZ,  &jpeg_subdirs,          NULL},
-        {"maxfiles",    OPT_ARG_INT,    &jpeg_maxfiles, int_pos},
-        {NULL, 0, NULL, NULL}
+                                            (opt_test_f)int_zero_hundred, 0},
+        {"dpi",         OPT_ARG_INT,    &jpeg_dpi,              NULL, 0},
+        {"outdir",      OPT_ARG_MSTRZ,  &jpeg_outdir,           NULL, 0},
+        {"subdirs",     OPT_ARG_MSTRZ,  &jpeg_subdirs,          NULL, 0},
+        {"maxfiles",    OPT_ARG_INT,    &jpeg_maxfiles, (opt_test_f)int_pos, 0},
+        {NULL, 0, NULL, NULL, 0}
     };
     const char *info_message = NULL;
 
@@ -417,3 +418,4 @@ static int control(uint32_t request, void *data, ...)
 #undef BUFLENGTH
 
 /* ------------------------------------------------------------------------- */
+

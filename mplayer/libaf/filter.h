@@ -1,22 +1,12 @@
-/*
- * Copyright (C) 2001 Anders Johansson ajh@atri.curtin.edu.au
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/*=============================================================================
+//	
+//  This software has been released under the terms of the GNU General Public
+//  license. See http://www.gnu.org/copyleft/gpl.html for details.
+//
+//  Copyright 2001 Anders Johansson ajh@atri.curtin.edu.au
+//
+//=============================================================================
+*/
 
 #if !defined MPLAYER_DSP_H
 # error Never use filter.h directly; include dsp.h instead.
@@ -26,7 +16,7 @@
 #define MPLAYER_FILTER_H
 
 
-// Design and implementation of different types of digital filters
+// Design and implementation of different types of digital filters 
 
 
 // Flags used for filter design
@@ -54,32 +44,33 @@
 #define ODD         0x00000010 // Make filter HP
 
 // Exported functions
-FLOAT_TYPE af_filter_fir(unsigned int n, const FLOAT_TYPE* w, const FLOAT_TYPE* x);
+extern FLOAT_TYPE af_filter_fir(unsigned int n, const FLOAT_TYPE* w, const FLOAT_TYPE* x);
 
-FLOAT_TYPE* af_filter_pfir(unsigned int n, unsigned int k,
-                           unsigned int xi, const FLOAT_TYPE** w,
-                           const FLOAT_TYPE** x, FLOAT_TYPE* y,
-                           unsigned int s);
+extern FLOAT_TYPE* af_filter_pfir(unsigned int n, unsigned int k,
+                                  unsigned int xi, const FLOAT_TYPE** w,
+                                  const FLOAT_TYPE** x, FLOAT_TYPE* y,
+                                  unsigned int s);
 
-//int af_filter_updateq(unsigned int n, unsigned int xi,
-//                      FLOAT_TYPE* xq, FLOAT_TYPE* in);
-int af_filter_updatepq(unsigned int n, unsigned int k, unsigned int xi,
-                       FLOAT_TYPE** xq, const FLOAT_TYPE* in, unsigned int s);
+//extern int af_filter_updateq(unsigned int n, unsigned int xi,
+//                             FLOAT_TYPE* xq, FLOAT_TYPE* in);
+extern int af_filter_updatepq(unsigned int n, unsigned int k, unsigned int xi,
+                              FLOAT_TYPE** xq, const FLOAT_TYPE* in, unsigned int s);
 
-int af_filter_design_fir(unsigned int n, FLOAT_TYPE* w, const FLOAT_TYPE* fc,
-                         unsigned int flags, FLOAT_TYPE opt);
+extern int af_filter_design_fir(unsigned int n, FLOAT_TYPE* w, const FLOAT_TYPE* fc,
+                                unsigned int flags, FLOAT_TYPE opt);
 
-int af_filter_design_pfir(unsigned int n, unsigned int k, const FLOAT_TYPE* w,
-                          FLOAT_TYPE** pw, FLOAT_TYPE g, unsigned int flags);
+extern int af_filter_design_pfir(unsigned int n, unsigned int k, const FLOAT_TYPE* w,
+                                 FLOAT_TYPE** pw, FLOAT_TYPE g,
+                                 unsigned int flags);
 
-int af_filter_szxform(const FLOAT_TYPE* a, const FLOAT_TYPE* b, FLOAT_TYPE Q,
-                      FLOAT_TYPE fc, FLOAT_TYPE fs, FLOAT_TYPE *k,
-                      FLOAT_TYPE *coef);
+extern int af_filter_szxform(const FLOAT_TYPE* a, const FLOAT_TYPE* b, FLOAT_TYPE Q,
+                             FLOAT_TYPE fc, FLOAT_TYPE fs, FLOAT_TYPE *k,
+                             FLOAT_TYPE *coef);
 
 /* Add new data to circular queue designed to be used with a FIR
    filter. xq is the circular queue, in pointing at the new sample, xi
    current index for xq and n the length of the filter. xq must be n*2
-   long.
+   long. 
 */
 #define af_filter_updateq(n,xi,xq,in)\
   xq[xi]=(xq)[(xi)+(n)]=*(in);\

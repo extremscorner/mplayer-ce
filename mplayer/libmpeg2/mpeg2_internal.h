@@ -20,15 +20,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Modified for use with MPlayer, see libmpeg2_changes.diff for the exact changes.
+ * Modified for use with MPlayer, see libmpeg-0.4.1.diff for the exact changes.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: mpeg2_internal.h 28325 2009-01-16 09:21:21Z reimar $
+ * $Id: mpeg2_internal.h 26425 2008-04-12 22:42:00Z diego $
  */
-
-#ifndef LIBMPEG2_MPEG2_INTERNAL_H
-#define LIBMPEG2_MPEG2_INTERNAL_H
-
-#define STATE_INTERNAL_NORETURN ((mpeg2_state_t)-1)
 
 /* macroblock modes */
 #define MACROBLOCK_INTRA 1
@@ -154,9 +149,6 @@ struct mpeg2_decoder_s {
 
     int mpeg1;
 
-    /* XXX: stuff due to xine shit */
-    int8_t q_scale_type;
-
     int quantizer_scales[32];
     int quantizer_scale;
     char* quant_store;
@@ -228,8 +220,7 @@ struct mpeg2dec_s {
     int16_t display_offset_x, display_offset_y;
 
     int copy_matrix;
-    int8_t scaled[4]; /* XXX: MOVED */
-    //int8_t q_scale_type, scaled[4];
+    int8_t q_scale_type, scaled[4];
     uint8_t quantizer_matrix[4][64];
     uint8_t new_quantizer_matrix[4][64];
 
@@ -238,14 +229,14 @@ struct mpeg2dec_s {
 };
 
 typedef struct {
-#if ARCH_PPC
+#ifdef ARCH_PPC
     uint8_t regv[12*16];
 #endif
     int dummy;
 } cpu_state_t;
 
 /* cpu_accel.c */
-uint32_t mpeg2_detect_accel (uint32_t accel);
+uint32_t mpeg2_detect_accel (void);
 
 /* cpu_state.c */
 void mpeg2_cpu_state_init (uint32_t accel);
@@ -271,9 +262,7 @@ mpeg2_state_t mpeg2_header_end (mpeg2dec_t * mpeg2dec);
 void mpeg2_set_fbuf (mpeg2dec_t * mpeg2dec, int b_type);
 
 /* idct.c */
-extern void mpeg2_idct_init (uint32_t accel);
-extern uint8_t mpeg2_scan_norm[64];
-extern uint8_t mpeg2_scan_alt[64];
+void mpeg2_idct_init (uint32_t accel);
 
 /* idct_mmx.c */
 void mpeg2_idct_copy_sse2 (int16_t * block, uint8_t * dest, int stride);
@@ -325,5 +314,4 @@ extern mpeg2_mc_t mpeg2_mc_altivec;
 extern mpeg2_mc_t mpeg2_mc_alpha;
 extern mpeg2_mc_t mpeg2_mc_vis;
 extern mpeg2_mc_t mpeg2_mc_arm;
-
-#endif /* LIBMPEG2_MPEG2_INTERNAL_H */
+extern mpeg2_mc_t mpeg2_mc_iwmmxt;

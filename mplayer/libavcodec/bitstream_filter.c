@@ -20,7 +20,7 @@
 
 #include "avcodec.h"
 
-static AVBitStreamFilter *first_bitstream_filter= NULL;
+AVBitStreamFilter *first_bitstream_filter= NULL;
 
 AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f){
     if(f) return f->next;
