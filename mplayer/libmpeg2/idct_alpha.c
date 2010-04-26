@@ -24,7 +24,7 @@
 
 #include "config.h"
 
-#if ARCH_ALPHA
+#ifdef ARCH_ALPHA
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -221,7 +221,7 @@ void mpeg2_idct_add_mvi (const int last, int16_t * block,
 	    shorts0 ^= signs0;
 	    /* clamp. */
 	    shorts0 = maxsw4 (shorts0, 0);
-	    shorts0 = minsw4 (shorts0, clampmask);
+	    shorts0 = minsw4 (shorts0, clampmask);	
 
 	    /* next 4.  */
 	    pix1 = unpkbw (ldl (dest + 4));
@@ -364,6 +364,8 @@ void mpeg2_idct_add_alpha (const int last, int16_t * block,
 
 void mpeg2_idct_alpha_init (void)
 {
+    extern uint8_t mpeg2_scan_norm[64];
+    extern uint8_t mpeg2_scan_alt[64];
     int i, j;
 
     for (i = 0; i < 64; i++) {

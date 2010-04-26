@@ -19,31 +19,33 @@
 #ifndef MPLAYER_GUI_PLAY_H
 #define MPLAYER_GUI_PLAY_H
 
+#include "config.h"
+
 extern int mplGotoTheNext;
 
-void mplEnd( void );
-void mplFullScreen( void );
-void mplPlay( void );
-void mplPause( void );
-void mplState( void );
-void mplPrev( void );
-void mplNext( void );
-void mplCurr( void );
+extern void mplEnd( void );
+extern void mplFullScreen( void );
+extern void mplPlay( void );
+extern void mplPause( void );
+extern void mplState( void );
+extern void mplPrev( void );
+extern void mplNext( void );
+extern void mplCurr( void );
 
-void mplIncAudioBufDelay( void );
-void mplDecAudioBufDelay( void );
+extern void mplIncAudioBufDelay( void );
+extern void mplDecAudioBufDelay( void );
 
-void  mplRelSeek( float s );
-void  mplAbsSeek( float s );
-float mplGetPosition( void );
+extern void  mplRelSeek( float s );
+extern void  mplAbsSeek( float s );
+extern float mplGetPosition( void );
 
-void mplPlayFork( void );
-void mplSigHandler( int s );
-void mplPlayerThread( void );
+extern void mplPlayFork( void );
+extern void mplSigHandler( int s );
+extern void mplPlayerThread( void );
 
-void ChangeSkin( char * name );
-void EventHandling( void );
+extern void ChangeSkin( char * name );
+extern void EventHandling( void );
 
-void mplSetFileName( char * dir, char * name, int type );
+extern void mplSetFileName( char * dir,char * name,int type );
 
 #endif /* MPLAYER_GUI_PLAY_H */

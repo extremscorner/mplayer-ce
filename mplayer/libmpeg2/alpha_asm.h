@@ -20,8 +20,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307	 USA
  */
 
-#ifndef LIBMPEG2_ALPHA_ASM_H
-#define LIBMPEG2_ALPHA_ASM_H
+#ifndef ALPHA_ASM_H
+#define ALPHA_ASM_H
 
 #include <inttypes.h>
 
@@ -122,7 +122,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define minsw4	__builtin_alpha_minsw4
 #define maxub8	__builtin_alpha_maxub8
 #define maxsb8	__builtin_alpha_maxsb8
-#define maxuw4	__builtin_alpha_maxuw4
+#define maxuw4	__builtin_alpha_maxuw4	
 #define maxsw4	__builtin_alpha_maxsw4
 #define perr	__builtin_alpha_perr
 #define pklb	__builtin_alpha_pklb
@@ -178,4 +178,4 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #error "Unknown compiler!"
 #endif
 
-#endif /* LIBMPEG2_ALPHA_ASM_H */
+#endif /* ALPHA_ASM_H */

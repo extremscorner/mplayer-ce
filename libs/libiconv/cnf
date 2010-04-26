@@ -1,1 +1,0 @@
-RANLIB=/c/devkitPro/devkitPPC/bin/powerpc-gekko-ranlib.exe AR=/c/devkitPro/devkitPPC/bin/powerpc-gekko-ar CFLAGS=-mcpu=750 CC=/c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc ./configure --host=ppc

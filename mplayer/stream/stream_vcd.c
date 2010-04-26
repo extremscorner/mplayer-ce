@@ -1,28 +1,9 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#ifdef WIN32
 #include <windows.h>
 #endif
-
-#include "osdep/osdep.h"
 
 #include "mp_msg.h"
 #include "stream.h"
@@ -33,19 +14,17 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#if !defined(__MINGW32__) && !defined(__CYGWIN__)
+#ifndef WIN32
 #include <sys/ioctl.h>
 #endif
 #include <errno.h>
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__DragonFly__) || defined(__NetBSD__) || defined(__OpenBSD__)
-#include "vcd_read_fbsd.h"
+#include "vcd_read_fbsd.h" 
 #elif defined(__APPLE__)
-#include "vcd_read_darwin.h"
-#elif defined(__MINGW32__) || defined(__CYGWIN__)
+#include "vcd_read_darwin.h" 
+#elif defined(WIN32)
 #include "vcd_read_win32.h"
-#elif defined(__OS2__)
-#include "vcd_read_os2.h"
 #else
 #include "vcd_read.h"
 #endif
@@ -91,64 +70,24 @@ static int seek(stream_t *s,off_t newpos) {
   return 1;
 }
 
-static int control(stream_t *stream, int cmd, void *arg) {
-  struct stream_priv_s *p = stream->priv;
-  switch(cmd) {
-    case STREAM_CTRL_GET_NUM_CHAPTERS:
-    {
-      mp_vcd_priv_t *vcd = vcd_read_toc(stream->fd);
-      if (!vcd)
-        break;
-      *(unsigned int *)arg = vcd_end_track(vcd);
-      return STREAM_OK;
-    }
-    case STREAM_CTRL_SEEK_TO_CHAPTER:
-    {
-      int r;
-      unsigned int track = *(unsigned int *)arg + 1;
-      mp_vcd_priv_t *vcd = vcd_read_toc(stream->fd);
-      if (!vcd)
-        break;
-      r = vcd_seek_to_track(vcd, track);
-      if (r >= 0) {
-        p->track = track;
-        return STREAM_OK;
-      }
-      break;
-    }
-    case STREAM_CTRL_GET_CURRENT_CHAPTER:
-    {
-      *(unsigned int *)arg = p->track - 1;
-      return STREAM_OK;
-    }
-  }
-  return STREAM_UNSUPPORTED;
-}
-
 static void close_s(stream_t *stream) {
   free(stream->priv);
 }
 
 static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
-  struct stream_priv_s* p = opts;
+  struct stream_priv_s* p = (struct stream_priv_s*)opts;
   int ret,ret2,f,sect,tmp;
   mp_vcd_priv_t* vcd;
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
   int bsize = VCD_SECTOR_SIZE;
 #endif
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#ifdef WIN32
   HANDLE hd;
   char device[] = "\\\\.\\?:";
 #endif
-#if defined(__OS2__)
-  char device[] = "X:";
-  HFILE hcd;
-  ULONG ulAction;
-  ULONG rc;
-#endif
 
   if(mode != STREAM_READ
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#ifdef WIN32
       || GetVersion() > 0x80000000 // Win9x
 #endif
       ) {
@@ -163,23 +102,16 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
       p->device = strdup(DEFAULT_CDROM_DEVICE);
   }
 
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#ifdef WIN32
   device[4] = p->device[0];
   /* open() can't be used for devices so do it the complicated way */
   hd = CreateFile(device, GENERIC_READ, FILE_SHARE_READ, NULL,
 	  OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
   f = _open_osfhandle((long)hd, _O_RDONLY);
-#elif defined(__OS2__)
-  device[0] = p->device[0];
-  rc = DosOpen(device, &hcd, &ulAction, 0, FILE_NORMAL,
-               OPEN_ACTION_OPEN_IF_EXISTS | OPEN_ACTION_FAIL_IF_NEW,
-               OPEN_ACCESS_READONLY | OPEN_SHARE_DENYNONE | OPEN_FLAGS_DASD,
-               NULL);
-  f = rc ? -1 : hcd;
 #else
   f=open(p->device,O_RDONLY);
 #endif
-  if(f<0){
+  if(f<0){ 
     mp_msg(MSGT_OPEN,MSGL_ERR,MSGTR_CdDevNotfound,p->device);
     m_struct_free(&stream_opts,opts);
     return STREAM_ERROR;
@@ -237,7 +169,6 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
 
   stream->fill_buffer = fill_buffer;
   stream->seek = seek;
-  stream->control = control;
   stream->close = close_s;
   *file_format = DEMUXER_TYPE_MPEG_PS;
 

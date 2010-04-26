@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +12,6 @@
 
 #include "aviheader.h"
 #include "ms_hdr.h"
-#include "aviprint.h"
 
 //#include "codec-cfg.h"
 //#include "stheader.h"
@@ -89,16 +71,10 @@ void print_wave_header(WAVEFORMATEX *h, int verbose_level){
       mp_msg(MSGT_HEADER, verbose_level, "mp3.nFramesPerBlock=%d\n",h2->nFramesPerBlock);
       mp_msg(MSGT_HEADER, verbose_level, "mp3.nCodecDelay=%d\n",h2->nCodecDelay);
   }
-  else if (h->wFormatTag == 0xfffe && h->cbSize >= 22) {
-      WAVEFORMATEXTENSIBLE *h2 = (WAVEFORMATEXTENSIBLE *)h;
-      mp_msg(MSGT_HEADER, verbose_level, "ex.wValidBitsPerSample=%d\n", h2->wValidBitsPerSample);
-      mp_msg(MSGT_HEADER, verbose_level, "ex.dwChannelMask=0x%X\n", h2->dwChannelMask);
-      mp_msg(MSGT_HEADER, verbose_level, "ex.SubFormat=%d (0x%X)\n", h2->SubFormat, h2->SubFormat);
-  }
   else if (h->cbSize > 0)
   {
     int i;
-    uint8_t* p = (uint8_t*)(h + 1);
+    uint8_t* p = ((uint8_t*)h) + sizeof(WAVEFORMATEX);
     mp_msg(MSGT_HEADER, verbose_level, "Unknown extra header dump: ");
     for (i = 0; i < h->cbSize; i++)
 	mp_msg(MSGT_HEADER, verbose_level, "[%x] ", p[i]);
@@ -120,7 +96,7 @@ void print_video_header(BITMAPINFOHEADER *h, int verbose_level){
   if (h->biSize > sizeof(BITMAPINFOHEADER))
   {
     int i;
-    uint8_t* p = (uint8_t*)(h + 1);
+    uint8_t* p = ((uint8_t*)h) + sizeof(BITMAPINFOHEADER);
     mp_msg(MSGT_HEADER, verbose_level, "Unknown extra header dump: ");
     for (i = 0; i < h->biSize-sizeof(BITMAPINFOHEADER); i++)
 	mp_msg(MSGT_HEADER, verbose_level, "[%x] ", *(p+i));
@@ -159,8 +135,7 @@ void print_index(AVIINDEXENTRY *idx, int idx_size, int verbose_level){
   int i;
   unsigned int pos[256];
   unsigned int num[256];
-  memset(pos, 0, sizeof(pos));
-  memset(num, 0, sizeof(num));
+  for(i=0;i<256;i++) num[i]=pos[i]=0;
   for(i=0;i<idx_size;i++){
     int id=avi_stream_id(idx[i].ckid);
     if(id<0 || id>255) id=255;
@@ -191,7 +166,8 @@ void print_avisuperindex_chunk(avisuperindex_chunk *h, int verbose_level){
     mp_msg (MSGT_HEADER, verbose_level, "  FCC (%.4s) dwSize (%d) wLongsPerEntry(%d)\n", h->fcc, h->dwSize, h->wLongsPerEntry);
     mp_msg (MSGT_HEADER, verbose_level, "  bIndexSubType (%d) bIndexType (%d)\n", h->bIndexSubType, h->bIndexType);
     mp_msg (MSGT_HEADER, verbose_level, "  nEntriesInUse (%d) dwChunkId (%.4s)\n", h->nEntriesInUse, h->dwChunkId);
-    mp_msg (MSGT_HEADER, verbose_level, "  dwReserved[0] (%d) dwReserved[1] (%d) dwReserved[2] (%d)\n",
+    mp_msg (MSGT_HEADER, verbose_level, "  dwReserved[0] (%d) dwReserved[1] (%d) dwReserved[2] (%d)\n", 
 	    h->dwReserved[0], h->dwReserved[1], h->dwReserved[2]);
     mp_msg (MSGT_HEADER, verbose_level, "===========================\n");
 }
+

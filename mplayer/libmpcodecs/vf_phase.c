@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,7 +36,7 @@ static void do_plane(unsigned char *to, unsigned char *from,
    {
    unsigned char *buf, *end;
    int top;
-
+ 
    if(!*bufp)
       {
       mode=PROGRESSIVE;
@@ -99,7 +81,7 @@ static enum mode analyze_plane(unsigned char *old, unsigned char *new,
    else if(mode==AUTO_ANALYZE)
       mode=fields&MP_IMGFIELD_ORDERED?fields&MP_IMGFIELD_TOP_FIRST?
 	 TOP_FIRST_ANALYZE:BOTTOM_FIRST_ANALYZE:FULL_ANALYZE;
-
+   
    if(fixed_mode(mode))
       bdiff=pdiff=tdiff=65536.0;
    else
@@ -134,7 +116,7 @@ static enum mode analyze_plane(unsigned char *old, unsigned char *new,
 		     pdif+=diff(new, ns, new, ns),
 		     bdif+=diff(new, ns, old, os);
 	       break;
-
+	       
 	    case ANALYZE:
 	       if(top)
 		  for(rend=new+w; new<rend; new++, old++)
@@ -162,20 +144,20 @@ static enum mode analyze_plane(unsigned char *old, unsigned char *new,
 	 pdiff+=(double)pdif;
 	 tdiff+=(double)tdif;
 	 bdiff+=(double)bdif;
-	 }
+	 }      
 
       scale=1.0/(w*(h-3))/25.0;
       pdiff*=scale;
       tdiff*=scale;
       bdiff*=scale;
-
+      
       if(mode==TOP_FIRST_ANALYZE)
 	 bdiff=65536.0;
       else if(mode==BOTTOM_FIRST_ANALYZE)
 	 tdiff=65536.0;
       else if(mode==ANALYZE)
 	 pdiff=65536.0;
-
+      
       if(bdiff<pdiff && bdiff<tdiff)
 	 mode=BOTTOM_FIRST;
       else if(tdiff<pdiff && tdiff<bdiff)
@@ -196,7 +178,7 @@ static enum mode analyze_plane(unsigned char *old, unsigned char *new,
    return mode;
    }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
    {
    mp_image_t *dmpi;
    int w;
@@ -223,7 +205,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
    do_plane(dmpi->planes[0], mpi->planes[0],
 	    w, dmpi->h,
 	    dmpi->stride[0], mpi->stride[0],
-	    &vf->priv->buf[0], mode);
+	    &vf->priv->buf[0], mode);      
 
    if(dmpi->flags&MP_IMGFLAG_PLANAR)
       {
@@ -240,7 +222,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
    return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
    }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
    {
    free(vf->priv->buf[0]);
    free(vf->priv->buf[1]);
@@ -248,7 +230,7 @@ static void uninit(struct vf_instance *vf)
    free(vf->priv);
    }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
    {
    vf->put_image = put_image;
    vf->uninit = uninit;
@@ -259,10 +241,10 @@ static int vf_open(vf_instance_t *vf, char *args)
       uninit(vf);
       return 0;
       }
-
+   
    vf->priv->mode=AUTO_ANALYZE;
    vf->priv->verbose=0;
-
+      
    while(args && *args)
       {
       switch(*args)
@@ -296,6 +278,6 @@ const vf_info_t vf_info_phase =
    "phase",
    "Ville Saari",
    "",
-   vf_open,
+   open,
    NULL
    };

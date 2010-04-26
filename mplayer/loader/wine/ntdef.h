@@ -6,7 +6,11 @@
 
 #include "pshpack1.h"
 
-#define NTAPI   __stdcall
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define NTAPI   __stdcall 
 
 #ifndef IN
 #define IN
@@ -28,7 +32,7 @@ typedef LONG NTSTATUS;
 typedef NTSTATUS *PNTSTATUS;
 
 typedef short CSHORT;
-typedef CSHORT *PCSHORT;
+typedef CSHORT *PCSHORT;  
 
 typedef WCHAR * PWCHAR;
 
@@ -87,6 +91,10 @@ typedef OBJECT_ATTRIBUTES *POBJECT_ATTRIBUTES;
 	(p)->SecurityQualityOfService = NULL; \
 }
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "poppack.h"
 

@@ -1,22 +1,12 @@
-/*
- * Copyright (C) 2002 Anders Johansson ajh@atri.curtin.edu.au
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/*=============================================================================
+//	
+//  This software has been released under the terms of the GNU General Public
+//  license. See http://www.gnu.org/copyleft/gpl.html for details.
+//
+//  Copyright 2002 Anders Johansson ajh@atri.curtin.edu.au
+//
+//=============================================================================
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,21 +33,21 @@ typedef struct af_comp_s
 // Initialization and runtime control
 static int control(struct af_instance_s* af, int cmd, void* arg)
 {
-  af_comp_t* s   = (af_comp_t*)af->setup;
+  af_comp_t* s   = (af_comp_t*)af->setup; 
   int i;
 
   switch(cmd){
   case AF_CONTROL_REINIT:
     // Sanity check
     if(!arg) return AF_ERROR;
-
+    
     af->data->rate   = ((af_data_t*)arg)->rate;
     af->data->nch    = ((af_data_t*)arg)->nch;
     af->data->format = AF_FORMAT_FLOAT_NE;
     af->data->bps    = 4;
 
     // Time constant set to 0.1s
-    //    s->alpha = (1.0/0.2)/(2.0*M_PI*(float)((af_data_t*)arg)->rate);
+    //    s->alpha = (1.0/0.2)/(2.0*M_PI*(float)((af_data_t*)arg)->rate); 
     return af_test_output(af,(af_data_t*)arg);
   case AF_CONTROL_COMMAND_LINE:{
 /*     float v=-10.0; */
@@ -76,10 +66,10 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   }
   case AF_CONTROL_COMP_ON_OFF | AF_CONTROL_SET:
     memcpy(s->enable,(int*)arg,AF_NCH*sizeof(int));
-    return AF_OK;
+    return AF_OK; 
   case AF_CONTROL_COMP_ON_OFF | AF_CONTROL_GET:
     memcpy((int*)arg,s->enable,AF_NCH*sizeof(int));
-    return AF_OK;
+    return AF_OK; 
   case AF_CONTROL_COMP_THRESH | AF_CONTROL_SET:
     return af_from_dB(AF_NCH,(float*)arg,s->tresh,20.0,-60.0,-1.0);
   case AF_CONTROL_COMP_THRESH | AF_CONTROL_GET:
@@ -93,18 +83,18 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   case AF_CONTROL_COMP_RELEASE | AF_CONTROL_GET:
     return af_to_ms(AF_NCH,s->release,(float*)arg,af->data->rate);
   case AF_CONTROL_COMP_RATIO | AF_CONTROL_SET:
-    for(i=0;i<AF_NCH;i++)
+    for(i=0;i<AF_NCH;i++) 
       s->ratio[i] = clamp(((float*)arg)[i],1.0,10.0);
     return AF_OK;
   case AF_CONTROL_COMP_RATIO | AF_CONTROL_GET:
-    for(i=0;i<AF_NCH;i++)
+    for(i=0;i<AF_NCH;i++) 
       ((float*)arg)[i] = s->ratio[i];
-    return AF_OK;
+    return AF_OK; 
   }
   return AF_UNKNOWN;
 }
 
-// Deallocate memory
+// Deallocate memory 
 static void uninit(struct af_instance_s* af)
 {
   if(af->data)
@@ -121,7 +111,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
   float*   	a   = (float*)c->audio;		// Audio data
   int       	len = c->len/4;			// Number of samples
   int           ch  = 0;			// Channel counter
-  register int	nch = c->nch;			// Number of channels
+  register int	nch = c->nch;			// Number of channels	
   register int  i   = 0;
 
   // Compress/expand
@@ -130,8 +120,8 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
       float	t   = 1.0 - s->time[ch];
       for(i=ch;i<len;i+=nch){
 	register float x 	= a[i];
-	register float pow 	= x*x;
-	s->pow[ch] = t*s->pow[ch] +
+	register float pow 	= x*x;	
+	s->pow[ch] = t*s->pow[ch] + 
 	  pow*s->time[ch]; // LP filter
 	if(pow < s->pow[ch]){
 	  ;

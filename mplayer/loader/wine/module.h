@@ -48,7 +48,7 @@ typedef struct
     FARPROC16 BootApp;       /* startup procedure */
     FARPROC16 LoadAppSeg;    /* procedure to load a segment */
     FARPROC16 reserved2;
-    FARPROC16 MyAlloc;       /* memory allocation procedure,
+    FARPROC16 MyAlloc;       /* memory allocation procedure, 
                               * wine must write this field */
     FARPROC16 EntryAddrProc;
     FARPROC16 ExitProc;      /* exit procedure */
@@ -65,7 +65,7 @@ typedef struct
     SEGPTR    reserved WINE_PACKED;
 } LOADPARAMS16;
 
-typedef struct
+typedef struct 
 {
     LPSTR lpEnvAddress;
     LPSTR lpCmdLine;
@@ -139,11 +139,11 @@ typedef struct modref_list_t
 
 
 /* module.c */
-FARPROC MODULE_GetProcAddress( HMODULE hModule, LPCSTR function, WIN_BOOL snoop );
-WINE_MODREF *MODULE32_LookupHMODULE( HMODULE hModule );
-WINE_MODREF *MODULE_FindModule( LPCSTR path );
+extern FARPROC MODULE_GetProcAddress( HMODULE hModule, LPCSTR function, WIN_BOOL snoop );
+extern WINE_MODREF *MODULE32_LookupHMODULE( HMODULE hModule );
+extern WINE_MODREF *MODULE_FindModule( LPCSTR path );
 
 /* resource.c */
-INT WINAPI AccessResource( HMODULE, HRSRC );
+extern INT       WINAPI AccessResource(HMODULE,HRSRC); 
 
 #endif /* MPLAYER_MODULE_H */

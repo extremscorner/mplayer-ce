@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,12 +19,12 @@ static void demux_seek_mf(demuxer_t *demuxer,float rel_seek_secs,float audio_del
   mf_t * mf = (mf_t *)demuxer->priv;
   sh_video_t   * sh_video = demuxer->video->sh;
   int newpos = (flags & SEEK_ABSOLUTE)?0:mf->curr_frame - 1;
-
+  
   if ( flags & SEEK_FACTOR ) newpos+=rel_seek_secs*(mf->nr_of_files - 1);
    else newpos+=rel_seek_secs * sh_video->fps;
   if ( newpos < 0 ) newpos=0;
   if( newpos >= mf->nr_of_files) newpos=mf->nr_of_files - 1;
-  demuxer->filepos=mf->curr_frame=newpos;
+  mf->curr_frame=newpos;
 }
 
 // return value:
@@ -71,25 +54,17 @@ static int demux_mf_fill_buffer(demuxer_t *demuxer, demux_stream_t *ds){
   }
   fclose( f );
 
-  demuxer->filepos=mf->curr_frame++;
+  mf->curr_frame++;
   return 1;
 }
-
-// force extension/type to have a fourcc
 
 static const struct {
   const char *type;
   uint32_t format;
 } type2format[] = {
   { "bmp",  mmioFOURCC('b', 'm', 'p', ' ') },
-  { "dpx",  mmioFOURCC('d', 'p', 'x', ' ') },
-  { "j2k",  mmioFOURCC('M', 'J', '2', 'C') },
-  { "jp2",  mmioFOURCC('M', 'J', '2', 'C') },
   { "jpeg", mmioFOURCC('I', 'J', 'P', 'G') },
   { "jpg",  mmioFOURCC('I', 'J', 'P', 'G') },
-  { "jls",  mmioFOURCC('I', 'J', 'P', 'G') },
-  { "thm",  mmioFOURCC('I', 'J', 'P', 'G') },
-  { "db",   mmioFOURCC('I', 'J', 'P', 'G') },
   { "pcx",  mmioFOURCC('p', 'c', 'x', ' ') },
   { "png",  mmioFOURCC('M', 'P', 'N', 'G') },
   { "ptx",  mmioFOURCC('p', 't', 'x', ' ') },
@@ -110,7 +85,7 @@ static demuxer_t* demux_open_mf(demuxer_t* demuxer){
   sh_video_t   *sh_video = NULL;
   mf_t         *mf = NULL;
   int i;
-
+  
   if(!demuxer->stream->url) return NULL;
   if(strncmp(demuxer->stream->url, "mf://", 5)) return NULL;
 
@@ -128,7 +103,7 @@ static demuxer_t* demux_open_mf(demuxer_t* demuxer){
     mp_msg(MSGT_DEMUX, MSGL_INFO, "[demux_mf] file type was not set! trying 'type=%s'...\n", mf_type);
   }
 
-  demuxer->filepos=mf->curr_frame=0;
+  mf->curr_frame=0;
 
   demuxer->movi_start = 0;
   demuxer->movi_end = mf->nr_of_files - 1;
@@ -143,7 +118,7 @@ static demuxer_t* demux_open_mf(demuxer_t* demuxer){
   // parent video demuxer stream (this is getting wacky), or else
   // video_read_properties() will choke
   sh_video->ds = demuxer->video;
-
+  
   for (i = 0; type2format[i].type; i++)
     if (strcasecmp(mf_type, type2format[i].type) == 0)
       break;
@@ -183,7 +158,7 @@ static void demux_close_mf(demuxer_t* demuxer) {
 
   if(!mf)
     return;
-  free(mf);
+  free(mf);  
 }
 
 static int demux_control_mf(demuxer_t *demuxer, int cmd, void *arg) {

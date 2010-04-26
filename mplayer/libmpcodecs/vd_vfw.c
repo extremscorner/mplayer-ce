@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,11 +6,11 @@
 #include "help_mp.h"
 
 #include "vd_internal.h"
-#include "libmpdemux/aviprint.h"
+
 #include "loader/wine/driver.h"
 #include "loader/wine/vfw.h"
 
-static const vd_info_t info = {
+static vd_info_t info = {
 #ifdef BUILD_VFWEX
 	"Win32/VfWex video codecs",
 	"vfwex",
@@ -127,6 +109,7 @@ static int control(sh_video_t *sh,int cmd,void* arg,...){
     case VDCTRL_SET_PP_LEVEL:
 	vfw_set_postproc(sh,10*(*((int*)arg)));
 	return CONTROL_OK;
+#if 1
     // FIXME: make this optional...
     case VDCTRL_QUERY_FORMAT:
       {
@@ -146,9 +129,12 @@ static int control(sh_video_t *sh,int cmd,void* arg,...){
 	}
 	return CONTROL_TRUE;
       }
+#endif
     }
     return CONTROL_UNKNOWN;
 }
+
+extern void print_video_header(BITMAPINFOHEADER *h, int verbose_level);
 
 // init driver
 static int init(sh_video_t *sh){
@@ -156,7 +142,7 @@ static int init(sh_video_t *sh){
 //    unsigned int outfmt=sh->codec->outfmt[sh->outfmtidx];
     int i, o_bih_len;
     vd_vfw_ctx *priv;
-
+  
     /* Hack for VSSH codec: new dll can't decode old files
      * In my samples old files have no extradata, so use that info
      * to decide what dll should be used (here and in vd_dshow).
@@ -185,7 +171,7 @@ static int init(sh_video_t *sh){
 //    sh->bih->biBitCount=32;
 
     o_bih_len = ICDecompressGetFormatSize(priv->handle, sh->bih);
-
+  
     if(o_bih_len < sizeof(BITMAPINFOHEADER)){
        mp_msg(MSGT_WIN32,MSGL_ERR,"ICDecompressGetFormatSize returned a bogus value: %d\n", o_bih_len);
        return 0;
@@ -226,6 +212,7 @@ static int init(sh_video_t *sh){
 	priv->o_bih->biCompression = 0;
 
     // sanity check:
+#if 1
 #ifdef BUILD_VFWEX
     ret = ICDecompressQueryEx(priv->handle, sh->bih, priv->o_bih);
 #else
@@ -237,6 +224,7 @@ static int init(sh_video_t *sh){
 //	return 0;
     } else
 	mp_msg(MSGT_WIN32,MSGL_V,"ICDecompressQuery OK\n");
+#endif
 
 #ifdef BUILD_VFWEX
     ret = ICDecompressBeginEx(priv->handle, sh->bih, priv->o_bih);
@@ -280,7 +268,7 @@ static int init(sh_video_t *sh){
 static void uninit(sh_video_t *sh){
     HRESULT ret;
     vd_vfw_ctx *priv = sh->context;
-
+    
 #ifdef BUILD_VFWEX
     ret = ICDecompressEndEx(priv->handle);
 #else
@@ -298,7 +286,7 @@ static void uninit(sh_video_t *sh){
 	mp_msg(MSGT_WIN32, MSGL_WARN, "ICClose failed: %ld\n", ret);
 	return;
     }
-
+    
     free(priv->o_bih);
     free(priv);
 }
@@ -311,9 +299,9 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
 
     if(len<=0) return NULL; // skipped frame
 
-    mpi=mpcodecs_get_image(sh,
+    mpi=mpcodecs_get_image(sh, 
 	(sh->codec->outflags[sh->outfmtidx] & CODECS_FLAG_STATIC) ?
-	MP_IMGTYPE_STATIC : MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_WIDTH,
+	MP_IMGTYPE_STATIC : MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_WIDTH, 
 	sh->disp_w, sh->disp_h);
     if(!mpi){	// temporary!
 	mp_msg(MSGT_DECVIDEO,MSGL_WARN,MSGTR_MPCODECS_CouldntAllocateImageForCinepakCodec);
@@ -327,9 +315,9 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
     sh->bih->biSizeImage = len;
 
 #ifdef BUILD_VFWEX
-    ret = ICDecompressEx(priv->handle,
+    ret = ICDecompressEx(priv->handle, 
 #else
-    ret = ICDecompress(priv->handle,
+    ret = ICDecompress(priv->handle, 
 #endif
 	  ( (sh->ds->flags&1) ? 0 : ICDECOMPRESS_NOTKEYFRAME ) |
 	  ( ((flags&3)==2 && !(sh->ds->flags&1))?(ICDECOMPRESS_HURRYUP|ICDECOMPRESS_PREROL):0 ),
@@ -339,17 +327,18 @@ static mp_image_t* decode(sh_video_t *sh,void* data,int len,int flags){
       mp_msg(MSGT_DECVIDEO,MSGL_WARN,"Error decompressing frame, err=%ld\n",ret);
       return NULL;
     }
-
+    
     // export palette:
     if(mpi->imgfmt==IMGFMT_RGB8 || mpi->imgfmt==IMGFMT_BGR8){
 	if (priv->palette)
 	{
 	    mpi->planes[1] = priv->palette;
+	    mpi->flags |= MP_IMGFLAG_RGB_PALETTE;
 	    mp_dbg(MSGT_DECVIDEO, MSGL_DBG2, "Found and copied palette\n");
 	}
 	else
 	    mpi->planes[1]=NULL;
     }
-
+        
     return mpi;
 }

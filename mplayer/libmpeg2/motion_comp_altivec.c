@@ -23,7 +23,7 @@
 
 #include "config.h"
 
-#if ARCH_PPC
+#ifdef ARCH_PPC
 
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>

@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -87,7 +70,7 @@ void menu_list_draw(menu_t* menu,mp_image_t* mpi) {
     if(m) mpriv->current = m;
     else ptr_l = 0;
   }
-
+  
   for(i = 0, m = mpriv->menu ; m ; m = m->next, i++) {
     int ll;
     if(m->hide) continue;
@@ -101,7 +84,7 @@ void menu_list_draw(menu_t* menu,mp_image_t* mpi) {
     x += mpriv->minb;
   if(y > 0)
     y += mpriv->minb;
-  else
+  else 
     y = mpriv->minb;
 
   need_h = count * line_h - mpriv->vspace;
@@ -151,7 +134,7 @@ void menu_list_draw(menu_t* menu,mp_image_t* mpi) {
 			MENU_TEXT_TOP|(x < 0 ? MENU_TEXT_HCENTER :MENU_TEXT_LEFT));
     dy += th;
   }
-
+  
   dx = x < 0 ? (mpi->w - need_w) / 2 : x;
   bx = x < 0 ? (mpi->w - bg_w) / 2 : x - mpriv->minb;
 
@@ -216,14 +199,6 @@ void menu_list_draw(menu_t* menu,mp_image_t* mpi) {
 void menu_list_read_cmd(menu_t* menu,int cmd) {
   list_entry_t* m;
   int i;
-  #ifdef GEKKO
-  if(mpriv->current == NULL) 
-  {
-    printf("mpriv->current == NULL  ??\n");
-    mpriv->current = mpriv->menu;  //strange
-    return;
-  }
-  #endif
   switch(cmd) {
   case MENU_CMD_UP:
     while(mpriv->current->prev) {
@@ -281,7 +256,7 @@ void menu_list_read_cmd(menu_t* menu,int cmd) {
         mouse_y >= selection_y && mouse_y < selection_y + selection_h)
       menu_read_cmd(menu, MENU_CMD_OK);
     break;
-  }
+  }    
 }
 
 int menu_list_jump_to_key(menu_t* menu,int c) {
@@ -319,7 +294,7 @@ void menu_list_add_entry(menu_t* menu,list_entry_t* entry) {
   l->next = entry;
   entry->prev = l;
 }
-
+    
 void menu_list_init(menu_t* menu) {
   if(!mpriv)
     mpriv = calloc(1,sizeof(struct menu_priv_s));
@@ -336,7 +311,8 @@ void menu_list_uninit(menu_t* menu,free_entry_t free_func) {
     free_func(i);
     i = j;
   }
-
+  
   mpriv->menu = mpriv->current = NULL;
 
 }
+

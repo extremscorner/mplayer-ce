@@ -1,33 +1,8 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_X11_COMMON_H
 #define MPLAYER_X11_COMMON_H
 
-#include <stdint.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
-#include "config.h"
-
-#if defined(CONFIG_GL) || defined(CONFIG_X11) || defined(CONFIG_XV)
-#define X11_FULLSCREEN 1
-#endif
 
 #ifdef X11_FULLSCREEN
 
@@ -59,36 +34,35 @@ extern int mLocalDisplay;
 
 extern int vo_mouse_autohide;
 
-int vo_init( void );
-void vo_uninit( void );
-void vo_hidecursor ( Display* , Window );
-void vo_showcursor( Display *disp, Window win );
-void vo_x11_decoration( Display * vo_Display,Window w,int d );
-void vo_x11_classhint( Display * display,Window window,const char *name );
-void vo_x11_nofs_sizepos(int x, int y, int width, int height);
-void vo_x11_sizehint( int x, int y, int width, int height, int max );
-int vo_x11_check_events(Display *mydisplay);
-void vo_x11_selectinput_witherr(Display *display, Window w, long event_mask);
-int vo_x11_update_geometry(void);
-void vo_x11_fullscreen( void );
-void vo_x11_setlayer( Display * mDisplay,Window vo_window,int layer );
-void vo_x11_uninit(void);
-Colormap vo_x11_create_colormap(XVisualInfo *vinfo);
-uint32_t vo_x11_set_equalizer(char *name, int value);
-uint32_t vo_x11_get_equalizer(char *name, int *value);
-void fstype_help(void);
-Window vo_x11_create_smooth_window( Display *mDisplay, Window mRoot,
+extern int vo_init( void );
+extern void vo_uninit( void );
+extern void vo_hidecursor ( Display* , Window );
+extern void vo_showcursor( Display *disp, Window win );
+extern void vo_x11_decoration( Display * vo_Display,Window w,int d );
+extern void vo_x11_classhint( Display * display,Window window,char *name );
+extern void vo_x11_nofs_sizepos(int x, int y, int width, int height);
+extern void vo_x11_sizehint( int x, int y, int width, int height, int max );
+extern int vo_x11_check_events(Display *mydisplay);
+extern void vo_x11_selectinput_witherr(Display *display, Window w, long event_mask);
+extern void vo_x11_fullscreen( void );
+extern void vo_x11_setlayer( Display * mDisplay,Window vo_window,int layer );
+extern void vo_x11_uninit(void);
+extern Colormap vo_x11_create_colormap(XVisualInfo *vinfo);
+extern uint32_t vo_x11_set_equalizer(char *name, int value);
+extern uint32_t vo_x11_get_equalizer(char *name, int *value);
+extern void fstype_help(void);
+extern Window vo_x11_create_smooth_window( Display *mDisplay, Window mRoot,
 	Visual *vis, int x, int y, unsigned int width, unsigned int height,
 	int depth, Colormap col_map);
-void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
+extern void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
 	unsigned int width, unsigned int height, int flags,
 	Colormap col_map, const char *classname, const char *title);
-void vo_x11_clearwindow_part(Display *mDisplay, Window vo_window,
+extern void vo_x11_clearwindow_part(Display *mDisplay, Window vo_window,
 	int img_width, int img_height, int use_fs);
-void vo_x11_clearwindow( Display *mDisplay, Window vo_window );
-void vo_x11_ontop(void);
-void vo_x11_border(void);
-void vo_x11_ewmh_fullscreen( int action );
+extern void vo_x11_clearwindow( Display *mDisplay, Window vo_window );
+extern void vo_x11_ontop(void);
+extern void vo_x11_border(void);
+extern void vo_x11_ewmh_fullscreen( int action );
 
 #endif
 
@@ -100,12 +74,12 @@ extern XSizeHints vo_hint;
 //XvPortID xv_port;
 extern unsigned int xv_port;
 
-int vo_xv_set_eq(uint32_t xv_port, char * name, int value);
-int vo_xv_get_eq(uint32_t xv_port, char * name, int *value);
+extern int vo_xv_set_eq(uint32_t xv_port, char * name, int value);
+extern int vo_xv_get_eq(uint32_t xv_port, char * name, int *value);
 
-int vo_xv_enable_vsync(void);
+extern int vo_xv_enable_vsync(void);
 
-void vo_xv_get_max_img_dim( uint32_t * width, uint32_t * height );
+extern void vo_xv_get_max_img_dim( uint32_t * width, uint32_t * height );
 
 /*** colorkey handling ***/
 typedef struct xv_ck_info_s
@@ -125,25 +99,24 @@ typedef struct xv_ck_info_s
 extern xv_ck_info_t xv_ck_info;
 extern unsigned long xv_colorkey;
 
-int vo_xv_init_colorkey(void);
-void vo_xv_draw_colorkey(int32_t x, int32_t y, int32_t w, int32_t h);
-void xv_setup_colorkeyhandling(char const * ck_method_str, char const * ck_str);
+extern int vo_xv_init_colorkey(void);
+extern void vo_xv_draw_colorkey(int32_t x, int32_t y, int32_t w, int32_t h);
+extern void xv_setup_colorkeyhandling(char const * ck_method_str, char const * ck_str);
 
 /*** test functions for common suboptions ***/
 int xv_test_ck( void * arg );
 int xv_test_ckm( void * arg );
 #endif
 
-void vo_setwindow( Window w,GC g );
-void vo_x11_putkey(int key);
+ extern void vo_setwindow( Window w,GC g );
+ extern void vo_x11_putkey(int key);
 
-void xscreensaver_heartbeat(void);
 void saver_off( Display * );
 void saver_on( Display * );
 
 #ifdef CONFIG_XF86VM
-void vo_vm_switch(void);
-void vo_vm_close(void);
+void vo_vm_switch(uint32_t, uint32_t, int*, int*);
+void vo_vm_close(Display*);
 #endif
 
 void update_xinerama_info(void);

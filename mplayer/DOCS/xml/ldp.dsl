@@ -38,7 +38,7 @@
 ;; ------------------------------------------------------------------------
 
 <style-specification id="print" use="docbook">
-<style-specification-body>
+<style-specification-body> 
 
 ;; customize the print stylesheet
 
@@ -125,12 +125,12 @@
 
 
 <!--
-;; customize the html stylesheet; parts borrowed from
+;; customize the html stylesheet; parts borrowed from 
 ;; Cygnus at http://sourceware.cygnus.com/ (cygnus-both.dsl)
 -->
 
 <style-specification id="html" use="docbook">
-<style-specification-body>
+<style-specification-body> 
 
 (declare-characteristic preserve-sdata?
   ;; this is necessary because right now jadetex does not understand
@@ -165,7 +165,7 @@
   ;; Should a Table of Contents be produced for books?
   #t)
 
-(define %generate-article-toc%
+(define %generate-article-toc% 
   ;; Should a Table of Contents be produced for articles?
   #t)
 
@@ -205,7 +205,7 @@
   ;; graphic extensions allowed
   '("gif" "png" "jpg" "jpeg" "tif" "tiff" "eps" "epsf" ))
 
-(define %graphic-default-extension%
+(define %graphic-default-extension% 
   "gif")
 
 (define %section-autolabel%
@@ -324,7 +324,7 @@
               attributes: (shade-verbatim-attr-element verbatim-element)
               (make element gi: "TR"
                     (make element gi: "TD"
-                          (make element gi: "FONT"
+                          (make element gi: "FONT" 
                                 attributes: (list
                                              (list "COLOR" (car (shade-verbatim-element-colors
                                                                  verbatim-element))))
@@ -347,10 +347,10 @@
 
 (define (shade-verbatim-attr-element element)
   (list
-   (list "BORDER"
-         (cond
-          ((equal? element (normalize "SCREEN")) "1")
-          (else "0")))
+   (list "BORDER" 
+	(cond
+		((equal? element (normalize "SCREEN")) "1")
+		(else "0")))
    (list "BGCOLOR" (car (cdr (shade-verbatim-element-colors element))))
    (list "WIDTH" ($table-width$))))
 
@@ -362,3 +362,4 @@
 <external-specification id="docbook" document="docbook.dsl">
 
 </style-sheet>
+

@@ -1,7 +1,7 @@
 /*
  * Faad decoder
- * Copyright (c) 2003 Zdenek Kabelac
- * Copyright (c) 2004 Thomas Raivio
+ * Copyright (c) 2003 Zdenek Kabelac.
+ * Copyright (c) 2004 Thomas Raivio.
  *
  * This file is part of FFmpeg.
  *
@@ -21,7 +21,7 @@
  */
 
 /**
- * @file
+ * @file faad.c
  * AAC decoder.
  *
  * still a bit unfinished - but it plays something
@@ -35,15 +35,14 @@
 #endif
 
 /*
- * when CONFIG_LIBFAADBIN is true libfaad will be opened at runtime
+ * when CONFIG_LIBFAADBIN is defined the libfaad will be opened at runtime
  */
 //#undef CONFIG_LIBFAADBIN
-//#define CONFIG_LIBFAADBIN 0
-//#define CONFIG_LIBFAADBIN 1
+//#define CONFIG_LIBFAADBIN
 
-#if CONFIG_LIBFAADBIN
+#ifdef CONFIG_LIBFAADBIN
 #include <dlfcn.h>
-static const char* const libfaadname = "libfaad.so";
+static const char* libfaadname = "libfaad.so";
 #else
 #define dlopen(a)
 #define dlclose(a)
@@ -117,7 +116,7 @@ static void channel_setup(AVCodecContext *avctx)
 #endif
 }
 
-static av_cold int faac_init_mp4(AVCodecContext *avctx)
+static int faac_init_mp4(AVCodecContext *avctx)
 {
     FAACContext *s = avctx->priv_data;
     unsigned long samplerate;
@@ -149,10 +148,8 @@ static av_cold int faac_init_mp4(AVCodecContext *avctx)
 
 static int faac_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
-                             AVPacket *avpkt)
+                             uint8_t *buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     FAACContext *s = avctx->priv_data;
 #ifndef FAAD2_VERSION
     unsigned long bytesconsumed;
@@ -183,7 +180,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
         unsigned char channels;
         int r = s->faacDecInit(s->faac_handle, buf, buf_size, &srate, &channels);
         if(r < 0){
-            av_log(avctx, AV_LOG_ERROR, "libfaad: codec init failed.\n");
+            av_log(avctx, AV_LOG_ERROR, "faac: codec init failed.\n");
             return -1;
         }
         avctx->sample_rate = srate;
@@ -195,7 +192,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
     out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf, (unsigned long)buf_size);
 
     if (frame_info.error > 0) {
-        av_log(avctx, AV_LOG_ERROR, "libfaad: frame decoding failed: %s\n",
+        av_log(avctx, AV_LOG_ERROR, "faac: frame decoding failed: %s\n",
                s->faacDecGetErrorMessage(frame_info.error));
         return -1;
     }
@@ -227,7 +224,7 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
     FAACContext *s = avctx->priv_data;
     faacDecConfigurationPtr faac_cfg;
 
-#if CONFIG_LIBFAADBIN
+#ifdef CONFIG_LIBFAADBIN
     const char* err = 0;
 
     s->handle = dlopen(libfaadname, RTLD_LAZY);
@@ -262,7 +259,7 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
 
 #undef dfaac
 
-#if CONFIG_LIBFAADBIN
+#ifdef CONFIG_LIBFAADBIN
     if (err) {
         dlclose(s->handle);
         av_log(avctx, AV_LOG_ERROR, "FAAD library: cannot resolve %s in %s!\n",
@@ -282,8 +279,8 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
     faac_cfg = s->faacDecGetCurrentConfiguration(s->faac_handle);
 
     if (faac_cfg) {
-        switch (avctx->bits_per_coded_sample) {
-        case 8: av_log(avctx, AV_LOG_ERROR, "FAADlib unsupported bps %d\n", avctx->bits_per_coded_sample); break;
+        switch (avctx->bits_per_sample) {
+        case 8: av_log(avctx, AV_LOG_ERROR, "FAADlib unsupported bps %d\n", avctx->bits_per_sample); break;
         default:
         case 16:
 #ifdef FAAD2_VERSION
@@ -320,14 +317,24 @@ static av_cold int faac_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec libfaad_decoder = {
-    "libfaad",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AAC,
-    sizeof(FAACContext),
-    faac_decode_init,
-    NULL,
-    faac_decode_end,
-    faac_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("libfaad AAC (Advanced Audio Codec)"),
-};
+#define AAC_CODEC(id, name, long_name_) \
+AVCodec name ## _decoder = {    \
+    #name,                      \
+    CODEC_TYPE_AUDIO,           \
+    id,                         \
+    sizeof(FAACContext),        \
+    faac_decode_init,           \
+    NULL,                       \
+    faac_decode_end,            \
+    faac_decode_frame,          \
+    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
+}
+
+// FIXME - raw AAC files - maybe just one entry will be enough
+AAC_CODEC(CODEC_ID_AAC, libfaad, "libfaad AAC (Advanced Audio Codec)");
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+// If it's mp4 file - usually embeded into Qt Mov
+AAC_CODEC(CODEC_ID_MPEG4AAC, mpeg4aac, "libfaad AAC (Advanced Audio Codec)");
+#endif
+
+#undef AAC_CODEC

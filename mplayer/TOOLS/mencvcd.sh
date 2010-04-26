@@ -4,7 +4,7 @@
 #
 # Licence:          GPL
 #
-# 2002/09/21        JÃ¼rgen Hammelmann <juergen.hammelmann@gmx.de>
+# 2002/09/21        Jürgen Hammelmann <juergen.hammelmann@gmx.de>
 #
 # Script:           MPlayer Sources (DVD) to (S)VCD ripping and burning
 #
@@ -31,7 +31,7 @@ done
 ################################################################################
 #
 # 2002/04/11        v0.1.0: first version
-# 2002/04/12        v0.1.1:
+# 2002/04/12        v0.1.1: 
 # 2002/04/14        v0.1.2:
 #                     - handles now multiple vcd's
 #                     - support's mp3 audio as option
@@ -81,7 +81,7 @@ done
 TMPDIR="." # path to directory for creating temporary files, recommended 2-3GB space
 
 CDDRV="generic-mmc"    # cdrdao: cdwriter driver
-CDDEV="--device 0,1,0" # or comment out and create link /dev/cdrecorder
+CDDEV="--device 0,1,0" # or comment out and create link /dev/cdrecorder 
                        # to your cdwriter dev
 CDMAXSIZE=800
 
@@ -170,7 +170,7 @@ usage() {
 
 HOWCALLED=`basename $0`
 if [ $# -le 1 ]; then
-   usage
+   usage 
    exit 1
 fi
 case $1 in
@@ -345,8 +345,8 @@ fi
 [ $mp3 -eq 1 -a $abrset -eq 0 ] && abr=128
 
 # audio sample rate in kHz
-a=$(($a=$asr / 1000))
-b=$(($b=$asr % 1000))
+((a=$asr / 1000))
+((b=$asr % 1000))
 [ $b -le 9 ] && b="00$b00"
 [ $b -le 99 ] && b="0$b00"
 kasr="$a.$b"
@@ -359,19 +359,19 @@ if [ $burnonly -eq 0 ]; then
       command="mplayer -noframedrop -vo yuv4mpeg -ao pcm:waveheader -v -osdlevel 0 $sub $params"
       echo "$command"
       $command &
-
+      
       # mjpegtools
       ($denoise < $VIDEO | \
          yuvscaler -v 0 $wide -O $vnorm $size $yuvin | \
          mpeg2enc -v 0 -s $mpegnorm $aratio -S $CDMAXSIZE -g 6 -G 15 -r 16 \
 	          $pd $framerate $yuvin -4 2 -2 1 -o $NAME.mpv) &
-
+   
       # wait for finishing the subprocesses
       wait
 
       # normalize sound
       [ $norm -eq 1 ] && (echo "normalizing sound..."; normalize $AUDIO)
-
+      
       # do resampling with sox
       if [ $sox -ne 0 ]; then
 	echo "wait, do resampling with sox..."
@@ -384,7 +384,7 @@ if [ $burnonly -eq 0 ]; then
 	echo "wait, encoding to mp2 audio with toolame..."
 	toolame -b $abr $AUDIO
 	mv -f `basename $AUDIO .wav`.mp2 $NAME.mpa
-      elif [ $toolame -eq 0 -a $mp3 -eq 0 ]; then
+      elif [ $toolame -eq 0 -a $mp3 -eq 0 ]; then 
         # mp2enc/lame can't read audiodump.wav directly from named pipe,
         # we have to read the whole file.
 	echo "wait, encoding to mp2 audio with mp2enc..."
@@ -405,12 +405,12 @@ if [ $burnonly -eq 0 ]; then
 
    # remove pipe, won't need anymore!
    rm -f $VIDEO
-
+   
    # should i create only the mpeg file?
    [ $mpgonly -eq 1 ] && exit 0
 
    # create cd images
-   for mpg in ${NAME}*.mpg; do
+   for mpg in ${NAME}*.mpg; do 
       [ -f $mpg ] || exit 1
       cue="`basename $mpg .mpg`.cue"
       bin="`basename $mpg .mpg`.bin"

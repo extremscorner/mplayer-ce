@@ -1,7 +1,7 @@
 /*
  * FFT/IFFT transforms
  * Copyright (c) 2008 Loren Merritt
- * Copyright (c) 2002 Fabrice Bellard
+ * Copyright (c) 2002 Fabrice Bellard.
  * Partly based on libdjbfft by D. J. Bernstein
  *
  * This file is part of FFmpeg.
@@ -22,33 +22,27 @@
  */
 
 /**
- * @file
+ * @file fft.c
  * FFT/IFFT transforms.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include "libavutil/mathematics.h"
-#include "fft.h"
+#include "dsputil.h"
 
 /* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
-#if !CONFIG_HARDCODED_TABLES
-COSTABLE(16);
-COSTABLE(32);
-COSTABLE(64);
-COSTABLE(128);
-COSTABLE(256);
-COSTABLE(512);
-COSTABLE(1024);
-COSTABLE(2048);
-COSTABLE(4096);
-COSTABLE(8192);
-COSTABLE(16384);
-COSTABLE(32768);
-COSTABLE(65536);
-#endif
-COSTABLE_CONST FFTSample * const ff_cos_tabs[] = {
-    NULL, NULL, NULL, NULL,
+DECLARE_ALIGNED_16(FFTSample, ff_cos_16[8]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_32[16]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_64[32]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_128[64]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_256[128]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_512[256]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_1024[512]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_2048[1024]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_4096[2048]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_8192[4096]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_16384[8192]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_32768[16384]);
+DECLARE_ALIGNED_16(FFTSample, ff_cos_65536[32768]);
+static FFTSample *ff_cos_tabs[] = {
     ff_cos_16, ff_cos_32, ff_cos_64, ff_cos_128, ff_cos_256, ff_cos_512, ff_cos_1024,
     ff_cos_2048, ff_cos_4096, ff_cos_8192, ff_cos_16384, ff_cos_32768, ff_cos_65536,
 };
@@ -64,24 +58,15 @@ static int split_radix_permutation(int i, int n, int inverse)
     else                  return split_radix_permutation(i, m, inverse)*4 - 1;
 }
 
-av_cold void ff_init_ff_cos_tabs(int index)
-{
-#if !CONFIG_HARDCODED_TABLES
-    int i;
-    int m = 1<<index;
-    double freq = 2*M_PI/m;
-    FFTSample *tab = ff_cos_tabs[index];
-    for(i=0; i<=m/4; i++)
-        tab[i] = cos(i*freq);
-    for(i=1; i<m/4; i++)
-        tab[m/2-i] = tab[i];
-#endif
-}
-
-av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
+/**
+ * The size of the FFT is 2^nbits. If inverse is TRUE, inverse FFT is
+ * done
+ */
+int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, m, n;
     float alpha, c1, s1, s2;
+    int split_radix = 1;
     int av_unused has_vectors;
 
     if (nbits < 2 || nbits > 16)
@@ -90,7 +75,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     n = 1 << nbits;
 
     s->tmp_buf = NULL;
-    s->exptab  = av_malloc((n / 2) * sizeof(FFTComplex));
+    s->exptab = av_malloc((n / 2) * sizeof(FFTComplex));
     if (!s->exptab)
         goto fail;
     s->revtab = av_malloc(n * sizeof(uint16_t));
@@ -101,22 +86,47 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s2 = inverse ? 1.0 : -1.0;
 
     s->fft_permute = ff_fft_permute_c;
-    s->fft_calc    = ff_fft_calc_c;
-#if CONFIG_MDCT
-    s->imdct_calc  = ff_imdct_calc_c;
-    s->imdct_half  = ff_imdct_half_c;
-    s->mdct_calc   = ff_mdct_calc_c;
+    s->fft_calc = ff_fft_calc_c;
+    s->imdct_calc = ff_imdct_calc_c;
+    s->imdct_half = ff_imdct_half_c;
+    s->exptab1 = NULL;
+
+#if defined HAVE_MMX && defined HAVE_YASM
+    has_vectors = mm_support();
+    if (has_vectors & MM_SSE) {
+        /* SSE for P3/P4/K8 */
+        s->imdct_calc = ff_imdct_calc_sse;
+        s->imdct_half = ff_imdct_half_sse;
+        s->fft_permute = ff_fft_permute_sse;
+        s->fft_calc = ff_fft_calc_sse;
+    } else if (has_vectors & MM_3DNOWEXT) {
+        /* 3DNowEx for K7 */
+        s->imdct_calc = ff_imdct_calc_3dn2;
+        s->imdct_half = ff_imdct_half_3dn2;
+        s->fft_calc = ff_fft_calc_3dn2;
+    } else if (has_vectors & MM_3DNOW) {
+        /* 3DNow! for K6-2/3 */
+        s->imdct_calc = ff_imdct_calc_3dn;
+        s->imdct_half = ff_imdct_half_3dn;
+        s->fft_calc = ff_fft_calc_3dn;
+    }
+#elif defined HAVE_ALTIVEC && !defined ALTIVEC_USE_REFERENCE_C_CODE
+    has_vectors = mm_support();
+    if (has_vectors & MM_ALTIVEC) {
+        s->fft_calc = ff_fft_calc_altivec;
+        split_radix = 0;
+    }
 #endif
-    s->exptab1     = NULL;
-    s->split_radix = 1;
 
-    if (ARCH_ARM)     ff_fft_init_arm(s);
-    if (HAVE_ALTIVEC) ff_fft_init_altivec(s);
-    if (HAVE_MMX)     ff_fft_init_mmx(s);
-
-    if (s->split_radix) {
+    if (split_radix) {
         for(j=4; j<=nbits; j++) {
-            ff_init_ff_cos_tabs(j);
+            int m = 1<<j;
+            double freq = 2*M_PI/m;
+            FFTSample *tab = ff_cos_tabs[j-4];
+            for(i=0; i<=m/4; i++)
+                tab[i] = cos(i*freq);
+            for(i=1; i<m/4; i++)
+                tab[m/2-i] = tab[i];
         }
         for(i=0; i<n; i++)
             s->revtab[-split_radix_permutation(i, n, s->inverse) & (n-1)] = i;
@@ -175,6 +185,9 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     return -1;
 }
 
+/**
+ * Do the permutation needed BEFORE calling ff_fft_calc()
+ */
 void ff_fft_permute_c(FFTContext *s, FFTComplex *z)
 {
     int j, k, np;
@@ -200,7 +213,7 @@ void ff_fft_permute_c(FFTContext *s, FFTComplex *z)
     }
 }
 
-av_cold void ff_fft_end(FFTContext *s)
+void ff_fft_end(FFTContext *s)
 {
     av_freep(&s->revtab);
     av_freep(&s->exptab);
@@ -323,7 +336,7 @@ static void fft8(FFTComplex *z)
     TRANSFORM(z[1],z[3],z[5],z[7],sqrthalf,sqrthalf);
 }
 
-#if !CONFIG_SMALL
+#ifndef CONFIG_SMALL
 static void fft16(FFTComplex *z)
 {
     FFTSample t1, t2, t3, t4, t5, t6;
@@ -345,7 +358,7 @@ DECL_FFT(64,32,16)
 DECL_FFT(128,64,32)
 DECL_FFT(256,128,64)
 DECL_FFT(512,256,128)
-#if !CONFIG_SMALL
+#ifndef CONFIG_SMALL
 #define pass pass_big
 #endif
 DECL_FFT(1024,512,256)
@@ -356,11 +369,16 @@ DECL_FFT(16384,8192,4096)
 DECL_FFT(32768,16384,8192)
 DECL_FFT(65536,32768,16384)
 
-static void (* const fft_dispatch[])(FFTComplex*) = {
+static void (*fft_dispatch[])(FFTComplex*) = {
     fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512, fft1024,
     fft2048, fft4096, fft8192, fft16384, fft32768, fft65536,
 };
 
+/**
+ * Do a complex FFT with the parameters defined in ff_fft_init(). The
+ * input data must be permuted before with s->revtab table. No
+ * 1.0/sqrt(n) normalization is done.
+ */
 void ff_fft_calc_c(FFTContext *s, FFTComplex *z)
 {
     fft_dispatch[s->nbits-2](z);

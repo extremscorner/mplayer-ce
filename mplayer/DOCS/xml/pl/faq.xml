@@ -110,7 +110,7 @@ bitowym Athlonie?
 <answer><para>
 Zastosuj następujące opcje konfiguracyjne.
 <screen>
-./configure --target=i386-linux --cc="gcc -m32" --as="as --32" --with-extralibdir=/usr/lib
+./configure --target=athlon_xp --cc="gcc -m32" --as="as --32" --with-extralibdir=/usr/lib
 </screen>
 </para></answer>
 </qandaentry>
@@ -239,7 +239,8 @@ Mam problemy z odtwarzaniem plików przy użyciu kodeka ... Czy mogę ich używa
 <answer><para>
 Sprawdź <ulink url="../../codecs-status.html">status kodeków</ulink>,
 jeżeli nie zawiera on Twojego kodeka przeczytaj
-<ulink url="../../tech/win32-codec-howto">HOWTO importowania kodeków Win32</ulink>
+<link linkend="codecs">dokumentację kodeków</link>, a w szczególności
+<link linkend="codec-importing">HOWTO importowania kodeków</link>
 i skontaktuj się z nami.
 </para></answer>
 </qandaentry>
@@ -408,8 +409,8 @@ Czy używasz FVWM? Spróbuj tego:
 <orderedlist>
 <listitem><para>
   <menuchoice><guimenu>Start</guimenu> <guisubmenu>Settings</guisubmenu>
-    <guisubmenu>Configuration</guisubmenu>
-    <guimenuitem>Base Configuration</guimenuitem></menuchoice>
+    <guisubmenu>Configuration</guisubmenu> 
+	<guimenuitem>Base Configuration</guimenuitem></menuchoice>
 </para></listitem>
 <listitem><para>
   Ustaw <systemitem>Use Applications position hints</systemitem>
@@ -533,7 +534,7 @@ współdziałają ze sobą dobrze w Fedorze.
 <para>
 Problem powoduje exec-shield, który ustawia losowy adres, pod który będą
 ładowane biblioteki systemowe. Dzieje się to podczas prelinkowania (raz
-na dwa tygodnie)
+na dwa tygodnie)    
 </para>
 <para>
 <application>MPlayer</application> próbuje załadować windowsowy DLL pod
@@ -813,6 +814,7 @@ Może istnieć kilka powodów.
 </para></listitem>
 <listitem><para>
   Twój sterownik dźwięku jest wadliwy.
+  Spójrz do <link linkend="audio">sekcji kart dźwiękowych</link>.
 </para></listitem>
 </itemizedlist>
 </para></answer>

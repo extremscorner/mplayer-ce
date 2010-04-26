@@ -28,11 +28,22 @@
 #include "cpudetect.h"
 
 #include "mp_msg.h"
+
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
 #include "libvo/fastmemcpy.h"
-#include "libavutil/common.h"
+
+#define MIN(a,b) ((a) > (b) ? (b) : (a))
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#define ABS(a) ((a) > 0 ? (a) : (-(a)))
+
+#define MIN3(a,b,c) MIN(MIN(a,b),c)
+#define MAX3(a,b,c) MAX(MAX(a,b),c)
 
 //===========================================================================//
 
@@ -63,7 +74,7 @@ static void store_ref(struct vf_priv_s *p, uint8_t *src[3], int src_stride[3], i
     }
 }
 
-#if HAVE_MMX && defined(NAMED_ASM_ARGS)
+#if defined(HAVE_MMX) && defined(NAMED_ASM_ARGS)
 
 #define LOAD4(mem,dst) \
             "movd      "mem", "#dst" \n\t"\
@@ -131,7 +142,7 @@ static void filter_line_mmx2(struct vf_priv_s *p, uint8_t *dst, uint8_t *prev, u
 
 #define FILTER\
     for(x=0; x<w; x+=4){\
-        __asm__ volatile(\
+        asm volatile(\
             "pxor      %%mm7, %%mm7 \n\t"\
             LOAD4("(%[cur],%[mrefs])", %%mm0) /* c = cur[x-refs] */\
             LOAD4("(%[cur],%[prefs])", %%mm1) /* e = cur[x+refs] */\
@@ -242,13 +253,13 @@ static void filter_line_mmx2(struct vf_priv_s *p, uint8_t *dst, uint8_t *prev, u
             :[prev] "r"(prev),\
              [cur]  "r"(cur),\
              [next] "r"(next),\
-             [prefs]"r"((x86_reg)refs),\
-             [mrefs]"r"((x86_reg)-refs),\
+             [prefs]"r"((long)refs),\
+             [mrefs]"r"((long)-refs),\
              [pw1]  "m"(pw_1),\
              [pb1]  "m"(pb_1),\
              [mode] "g"(mode)\
         );\
-        __asm__ volatile("movd %%mm1, %0" :"=m"(*dst));\
+        asm volatile("movd %%mm1, %0" :"=m"(*dst));\
         dst += 4;\
         prev+= 4;\
         cur += 4;\
@@ -276,7 +287,7 @@ static void filter_line_mmx2(struct vf_priv_s *p, uint8_t *dst, uint8_t *prev, u
 #undef CHECK2
 #undef FILTER
 
-#endif /* HAVE_MMX && defined(NAMED_ASM_ARGS) */
+#endif /* defined(HAVE_MMX) && defined(NAMED_ASM_ARGS) */
 
 static void filter_line_c(struct vf_priv_s *p, uint8_t *dst, uint8_t *prev, uint8_t *cur, uint8_t *next, int w, int refs, int parity){
     int x;
@@ -286,18 +297,18 @@ static void filter_line_c(struct vf_priv_s *p, uint8_t *dst, uint8_t *prev, uint
         int c= cur[-refs];
         int d= (prev2[0] + next2[0])>>1;
         int e= cur[+refs];
-        int temporal_diff0= FFABS(prev2[0] - next2[0]);
-        int temporal_diff1=( FFABS(prev[-refs] - c) + FFABS(prev[+refs] - e) )>>1;
-        int temporal_diff2=( FFABS(next[-refs] - c) + FFABS(next[+refs] - e) )>>1;
-        int diff= FFMAX3(temporal_diff0>>1, temporal_diff1, temporal_diff2);
+        int temporal_diff0= ABS(prev2[0] - next2[0]);
+        int temporal_diff1=( ABS(prev[-refs] - c) + ABS(prev[+refs] - e) )>>1;
+        int temporal_diff2=( ABS(next[-refs] - c) + ABS(next[+refs] - e) )>>1;
+        int diff= MAX3(temporal_diff0>>1, temporal_diff1, temporal_diff2);
         int spatial_pred= (c+e)>>1;
-        int spatial_score= FFABS(cur[-refs-1] - cur[+refs-1]) + FFABS(c-e)
-                         + FFABS(cur[-refs+1] - cur[+refs+1]) - 1;
+        int spatial_score= ABS(cur[-refs-1] - cur[+refs-1]) + ABS(c-e)
+                         + ABS(cur[-refs+1] - cur[+refs+1]) - 1;
 
 #define CHECK(j)\
-    {   int score= FFABS(cur[-refs-1+j] - cur[+refs-1-j])\
-                 + FFABS(cur[-refs  +j] - cur[+refs  -j])\
-                 + FFABS(cur[-refs+1+j] - cur[+refs+1-j]);\
+    {   int score= ABS(cur[-refs-1+j] - cur[+refs-1-j])\
+                 + ABS(cur[-refs  +j] - cur[+refs  -j])\
+                 + ABS(cur[-refs+1+j] - cur[+refs+1-j]);\
         if(score < spatial_score){\
             spatial_score= score;\
             spatial_pred= (cur[-refs  +j] + cur[+refs  -j])>>1;\
@@ -311,14 +322,14 @@ static void filter_line_c(struct vf_priv_s *p, uint8_t *dst, uint8_t *prev, uint
 #if 0
             int a= cur[-3*refs];
             int g= cur[+3*refs];
-            int max= FFMAX3(d-e, d-c, FFMIN3(FFMAX(b-c,f-e),FFMAX(b-c,b-a),FFMAX(f-g,f-e)) );
-            int min= FFMIN3(d-e, d-c, FFMAX3(FFMIN(b-c,f-e),FFMIN(b-c,b-a),FFMIN(f-g,f-e)) );
+            int max= MAX3(d-e, d-c, MIN3(MAX(b-c,f-e),MAX(b-c,b-a),MAX(f-g,f-e)) );
+            int min= MIN3(d-e, d-c, MAX3(MIN(b-c,f-e),MIN(b-c,b-a),MIN(f-g,f-e)) );
 #else
-            int max= FFMAX3(d-e, d-c, FFMIN(b-c, f-e));
-            int min= FFMIN3(d-e, d-c, FFMAX(b-c, f-e));
+            int max= MAX3(d-e, d-c, MIN(b-c, f-e));
+            int min= MIN3(d-e, d-c, MAX(b-c, f-e));
 #endif
 
-            diff= FFMAX3(diff, min, -max);
+            diff= MAX3(diff, min, -max);
         }
 
         if(spatial_pred > d + diff)
@@ -358,12 +369,12 @@ static void filter(struct vf_priv_s *p, uint8_t *dst[3], int dst_stride[3], int 
             }
         }
     }
-#if HAVE_MMX && defined(NAMED_ASM_ARGS)
-    if(gCpuCaps.hasMMX2) __asm__ volatile("emms \n\t" : : : "memory");
+#if defined(HAVE_MMX) && defined(NAMED_ASM_ARGS)
+    if(gCpuCaps.hasMMX2) asm volatile("emms \n\t" : : : "memory");
 #endif
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
         int i, j;
@@ -381,10 +392,10 @@ static int config(struct vf_instance *vf,
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static int continue_buffered_image(struct vf_instance *vf);
+static int continue_buffered_image(struct vf_instance_s *vf);
 extern int correct_pts;
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     int tff;
 
     if(vf->priv->parity < 0) {
@@ -411,7 +422,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
         return continue_buffered_image(vf);
 }
 
-static int continue_buffered_image(struct vf_instance *vf)
+static int continue_buffered_image(struct vf_instance_s *vf)
 {
     mp_image_t *mpi = vf->priv->buffered_mpi;
     int tff = vf->priv->buffered_tff;
@@ -435,13 +446,13 @@ static int continue_buffered_image(struct vf_instance *vf)
         if (correct_pts)
             break;
         if(i<(vf->priv->mode&1))
-            vf_extra_flip(vf);
+            vf_next_control(vf, VFCTRL_FLIP_PAGE, NULL);
     }
     vf->priv->buffered_i = 1;
     return ret;
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
     int i;
     if(!vf->priv) return;
 
@@ -455,7 +466,7 @@ static void uninit(struct vf_instance *vf){
 }
 
 //===========================================================================//
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt){
 	case IMGFMT_YV12:
 	case IMGFMT_I420:
@@ -467,7 +478,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     return 0;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
     switch (request){
       case VFCTRL_GET_DEINTERLACE:
         *(int*)data = vf->priv->do_deinterlace;
@@ -479,7 +490,7 @@ static int control(struct vf_instance *vf, int request, void* data){
     return vf_next_control (vf, request, data);
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
 
     vf->config=config;
     vf->put_image=put_image;
@@ -496,7 +507,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     if (args) sscanf(args, "%d:%d", &vf->priv->mode, &vf->priv->parity);
 
     filter_line = filter_line_c;
-#if HAVE_MMX && defined(NAMED_ASM_ARGS)
+#if defined(HAVE_MMX) && defined(NAMED_ASM_ARGS)
     if(gCpuCaps.hasMMX2) filter_line = filter_line_mmx2;
 #endif
 
@@ -508,6 +519,6 @@ const vf_info_t vf_info_yadif = {
     "yadif",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };

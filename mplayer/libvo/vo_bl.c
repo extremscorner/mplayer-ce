@@ -1,30 +1,21 @@
-/*
- * playback using the Blinkenlights UDP protocol (and to files)
- *
- * UDP socket handling copied from bsender.c part of blib-0.6:
+/* 
+ * vo_bl.c - playback using the Blinkenlights UPD protocol (and to files)
+ * 
+ * UDP socket handling copied from bsender.c part of blib-0.6: 
  * http://sven.gimp.org/blinkenlights/
- * copyright (c)  2001-2001 The Blinkenlights Crew:
+ * Copyright (c)  2001-2001 The Blinkenlights Crew:
  * 	Sven Neumann <sven@gimp.org>
  * 	Michael Natterer <mitch@gimp.org>
  * 	Daniel Mack <daniel@yoobay.net>
- * copyright (C) 2004 Stefan Schuermans <1stein@schuermans.info>
- * other stuff: copyright (C) 2002 Rik Snel
+ * (these portions are licensed under GNU GPL v2 or "(at your option)
+ * any later version")
+ * 
+ * Other stuff: Copyright (C) Rik Snel 2002, License GNU GPL v2 or later
  *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * patch from Stefan Schuermans <1stein@schuermans.info>:
+ *   - correction of "maxval" in Blinkenlights UDP protcol
+ *   - new scheme for new HDL
+ *   - new scheme for grayscale in arbitrary size
  */
 
 #include <stdio.h>
@@ -43,9 +34,14 @@
 
 #include "config.h"
 
+#ifndef HAVE_WINSOCK2
+#define closesocket close
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#else
+#include <winsock2.h>
+#endif
 
 #include "video_out.h"
 #include "video_out_internal.h"
@@ -53,7 +49,7 @@
 #include "m_option.h"
 #include "fastmemcpy.h"
 
-static const vo_info_t info =
+static const vo_info_t info = 
 {
 	"Blinkenlights driver: http://www.blinkenlights.de",
 	"bl",
@@ -140,7 +136,7 @@ static void bml_write_frame(bl_file_t *f, unsigned char *i, int duration) {
 	int j, k;
 	if( ! f->header_written )
 	{
-		fprintf(f->fp,
+		fprintf(f->fp, 
 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 "<blm width=\"%d\" height=\"%d\" bits=\"%d\" channels=\"%d\">\n"
 "    <header>\n"
@@ -152,7 +148,7 @@ static void bml_write_frame(bl_file_t *f, unsigned char *i, int duration) {
 	fprintf(f->fp, "    <frame duration=\"%d\">\n", duration);
 	for (j = 0; j < bl->height; j++) {
 		fprintf(f->fp, "        <row>");
-		for (k = 0; k < bl->width; k++)
+		for (k = 0; k < bl->width; k++) 
 			fprintf(f->fp, "%02x", *(i + j * bl->width + k));
 		fprintf(f->fp, "</row>\n");
 	}
@@ -171,13 +167,12 @@ static int udp_init(bl_host_t *h) {
 
 	dest = gethostbyname(h->name);
 	if (!dest) {
-		mp_msg(MSGT_VO, MSGL_ERR,
+		mp_msg(MSGT_VO, MSGL_ERR, 
 				"unable to resolve host %s\n", h->name);
 		return 1;
 	}
 
 	h->fd = -1;
-	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(h->port);
 
@@ -185,26 +180,26 @@ static int udp_init(bl_host_t *h) {
 
 	h->fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (h->fd < 0) {
-		mp_msg(MSGT_VO, MSGL_ERR,
+		mp_msg(MSGT_VO, MSGL_ERR, 
 				"couldn't create socket for %s\n", h->name);
 		return 1;
 	}
 	if (connect(h->fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		mp_msg(MSGT_VO, MSGL_ERR, "couldn't connect socket for %s\n",
+		mp_msg(MSGT_VO, MSGL_ERR, "couldn't connect socket for %s\n", 
 				h->name);
-		close(h->fd);
+		closesocket(h->fd);
 		return 1;
 	}
 	return 0;
 }
 
 static void udp_send(bl_host_t *h) {
-	if (send(h->fd, bl_packet, bl_size, 0) != bl_size)
+	if (send(h->fd, bl_packet, bl_size, 0) != bl_size) 
 		mp_msg(MSGT_VO, MSGL_ERR, "unable to send to %s\n", h->name);
 }
 
 static void udp_close(bl_host_t *h) {
-	close(h->fd);
+	closesocket(h->fd);
 }
 
 #define NO_BLS 3
@@ -220,7 +215,7 @@ static bl_properties_t bls[NO_BLS] = {
 	&bml_init, &bml_write_frame, &bml_close,
 	&udp_init, &udp_send, &udp_close } };
 
-static int config(uint32_t width, uint32_t height, uint32_t d_width,
+static int config(uint32_t width, uint32_t height, uint32_t d_width, 
 	uint32_t d_height, uint32_t flags, char *title, uint32_t format)
 {
 	void * ptr;
@@ -268,11 +263,11 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 	if (width > bl->width) {
 		mp_msg(MSGT_VO, MSGL_ERR, "bl: width of movie too large %d > %d\n", width, bl->width);
 		return 1;
-	}
+	}	
 	if (height > bl->height) {
 		mp_msg(MSGT_VO, MSGL_ERR, "bl: height of movie too large %d > %d\n", height, bl->height);
 		return 1;
-	}
+	}	
 	if (!image) {
 		mp_msg(MSGT_VO, MSGL_ERR, "bl: image should be initialized, internal error\n");
 		return 1;
@@ -305,7 +300,7 @@ static int draw_frame(uint8_t * src[]) {
 }
 
 static int query_format(uint32_t format) {
-	if (format == bl->img_format)
+	if (format == bl->img_format) 
 		return VFCAP_CSP_SUPPORTED|VFCAP_CSP_SUPPORTED_BY_HW;
 	return 0;
 }
@@ -352,7 +347,7 @@ static int preinit(const char *arg) {
 		mp_msg(MSGT_VO, MSGL_ERR, "bl: subdevice must be given, example: -vo bl:arcade:host=localhost:2323\n");
 		return 1;
 	}
-
+	
 	bl_subdevice = malloc(strlen(arg) + 1);
 	if (!bl_subdevice) {
 		mp_msg(MSGT_VO, MSGL_ERR, "bl: out of memory error\n");
@@ -400,7 +395,7 @@ static int preinit(const char *arg) {
 			if (*q == '\0') end = 1;
 			*q = '\0';
 			bl_files[no_bl_files].name = p;
-			mp_msg(MSGT_VO, MSGL_V, "blfile[%d]: %s\n",
+			mp_msg(MSGT_VO, MSGL_V, "blfile[%d]: %s\n", 
 					no_bl_files, p);
 			no_bl_files++;
 		} else if (!strncmp(p, "host=", 5)) {
@@ -421,10 +416,10 @@ static int preinit(const char *arg) {
 				if (*q == '\0') end = 1;
 				*q = '\0';
 				bl_hosts[no_bl_hosts].name = p;
-				bl_hosts[no_bl_hosts].port = 2323;
+				bl_hosts[no_bl_hosts].port = 2323; 
 			}
-			mp_msg(MSGT_VO, MSGL_V,
-					"blhost[%d]: %s:%d\n",
+			mp_msg(MSGT_VO, MSGL_V, 
+					"blhost[%d]: %s:%d\n", 
 					no_bl_hosts, p,
 					bl_hosts[no_bl_hosts].port);
 			no_bl_hosts++;
@@ -447,7 +442,7 @@ static int preinit(const char *arg) {
 		image = ((unsigned char*)bl_packet + 12); /* pointer to image data */
 		tmp = malloc(3); /* space for a pixel only */
 	}
-
+	
 	if (!bl_packet || !tmp) {
 		mp_msg(MSGT_VO, MSGL_ERR, "bl: out of memory error\n");
 		return 1;
@@ -459,11 +454,11 @@ static int preinit(const char *arg) {
 	bl_packet->maxval = htons((1 << bl->bpc) - 1);
 
 	/* open all files */
-	for (i = 0; i < no_bl_files; i++)
+	for (i = 0; i < no_bl_files; i++) 
 		if (bl->init_file(&bl_files[i])) return 1;
 
 	/* open all sockets */
-	for (i = 0; i < no_bl_hosts; i++)
+	for (i = 0; i < no_bl_hosts; i++) 
 		if (bl->init_connection(&bl_hosts[i])) return 1;
 
 

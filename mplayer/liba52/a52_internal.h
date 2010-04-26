@@ -8,7 +8,7 @@
  *
  * Modified for use with MPlayer, changes contained in liba52_changes.diff.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: a52_internal.h 28325 2009-01-16 09:21:21Z reimar $
+ * $Id: a52_internal.h 18786 2006-06-22 13:34:00Z diego $
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -107,7 +107,7 @@ struct a52_state_s {
 #define DELTA_BIT_NONE (2)
 #define DELTA_BIT_RESERVED (3)
 
-#if ARCH_X86_64
+#ifdef ARCH_X86_64
 # define REG_a "rax"
 # define REG_d "rdx"
 # define REG_S "rsi"

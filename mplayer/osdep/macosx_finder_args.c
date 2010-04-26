@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <Carbon/Carbon.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include "stream/url.h"
@@ -23,15 +5,14 @@
 #include "m_option.h"
 #include "m_config.h"
 #include "playtree.h"
-#include "macosx_finder_args.h"
 
 static play_tree_t *files=NULL;
 
 static inline void add_entry(play_tree_t **last_parentp, play_tree_t **last_entryp, play_tree_t *entry) {
 
 	if(*last_entryp==NULL)
-		play_tree_set_child(*last_parentp, entry);
-	else
+		play_tree_set_child(*last_parentp, entry);		      
+	else 
 		play_tree_append_entry(*last_entryp, entry);
 
 	*last_entryp=entry;
@@ -98,7 +79,7 @@ long itemsInList;
 		}
 		else
 			mp_msg(MSGT_CFGPARSER, MSGL_ERR, "AECountItems() error %d\n", res);
-
+		
 		AEDisposeDesc(&docList);
 	}
 	else

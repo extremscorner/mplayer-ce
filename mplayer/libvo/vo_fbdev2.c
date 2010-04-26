@@ -1,22 +1,7 @@
 /*
- * video driver for framebuffer device
- * copyright (C) 2003 Joey Parrish <joey@nicewarrior.org>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * Video driver for Framebuffer device
+ * by Joey Parrish <joey@nicewarrior.org> 
+ * (C) 2003
  */
 
 #include <stdio.h>
@@ -109,15 +94,15 @@ static struct fb_cmap *make_directcolor_cmap(struct fb_var_screeninfo *var)
   int i, cols, rcols, gcols, bcols;
   uint16_t *red, *green, *blue;
   struct fb_cmap *cmap;
-
+        
   rcols = 1 << var->red.length;
   gcols = 1 << var->green.length;
   bcols = 1 << var->blue.length;
-
+  
   /* Make our palette the length of the deepest color */
   cols = (rcols > gcols ? rcols : gcols);
   cols = (cols > bcols ? cols : bcols);
-
+  
   red = malloc(cols * sizeof(red[0]));
   if(!red) {
 	  mp_msg(MSGT_VO, MSGL_ERR, "[fbdev2] Can't allocate red palette with %d entries.\n", cols);
@@ -125,7 +110,7 @@ static struct fb_cmap *make_directcolor_cmap(struct fb_var_screeninfo *var)
   }
   for(i=0; i< rcols; i++)
     red[i] = (65535/(rcols-1)) * i;
-
+  
   green = malloc(cols * sizeof(green[0]));
   if(!green) {
 	  mp_msg(MSGT_VO, MSGL_ERR, "[fbdev2] Can't allocate green palette with %d entries.\n", cols);
@@ -134,7 +119,7 @@ static struct fb_cmap *make_directcolor_cmap(struct fb_var_screeninfo *var)
   }
   for(i=0; i< gcols; i++)
     green[i] = (65535/(gcols-1)) * i;
-
+  
   blue = malloc(cols * sizeof(blue[0]));
   if(!blue) {
 	  mp_msg(MSGT_VO, MSGL_ERR, "[fbdev2] Can't allocate blue palette with %d entries.\n", cols);
@@ -144,7 +129,7 @@ static struct fb_cmap *make_directcolor_cmap(struct fb_var_screeninfo *var)
   }
   for(i=0; i< bcols; i++)
     blue[i] = (65535/(bcols-1)) * i;
-
+  
   cmap = malloc(sizeof(struct fb_cmap));
   if(!cmap) {
 	  mp_msg(MSGT_VO, MSGL_ERR, "[fbdev2] Can't allocate color map\n");
@@ -160,7 +145,7 @@ static struct fb_cmap *make_directcolor_cmap(struct fb_var_screeninfo *var)
   cmap->blue = blue;
   cmap->green = green;
   cmap->transp = NULL;
-
+  
   return cmap;
 }
 
@@ -173,7 +158,7 @@ static int fb_preinit(int reset)
 		fb_preinit_done = 0;
 		return 0;
 	}
-
+	
 	if (fb_preinit_done)
 		return fb_err;
 	fb_preinit_done = 1;
@@ -300,7 +285,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
 		 ( (out_height - in_height) / 2 ) * fb_line_len;
 
 #ifndef USE_CONVERT2FB
-	if (!(next_frame = realloc(next_frame, in_width * in_height * fb_pixel_size))) {
+	if (!(next_frame = (uint8_t *) realloc(next_frame, in_width * in_height * fb_pixel_size))) {
 		mp_msg(MSGT_VO, MSGL_ERR, "[fbdev2] Can't malloc next_frame: %s\n", strerror(errno));
 		return 1;
 	}
@@ -319,17 +304,13 @@ static int query_format(uint32_t format)
 		set_bpp(&fb_vinfo, fb_target_bpp);
 		fb_vinfo.xres_virtual = fb_vinfo.xres;
 		fb_vinfo.yres_virtual = fb_vinfo.yres;
-		if (ioctl(fb_dev_fd, FBIOPUT_VSCREENINFO, &fb_vinfo))
-			// Needed for Intel framebuffer with 32 bpp
-			fb_vinfo.transp.length = fb_vinfo.transp.offset = 0;
 		if (ioctl(fb_dev_fd, FBIOPUT_VSCREENINFO, &fb_vinfo)) {
 			mp_msg(MSGT_VO, MSGL_ERR, "[fbdev2] Can't put VSCREENINFO: %s\n", strerror(errno));
 			return 0;
 		}
 		fb_pixel_size = fb_vinfo.bits_per_pixel / 8;
-		fb_bpp = fb_vinfo.bits_per_pixel;
-		if (fb_bpp == 16)
-			fb_bpp = fb_vinfo.red.length + fb_vinfo.green.length + fb_vinfo.blue.length;
+		fb_bpp = fb_vinfo.red.length + fb_vinfo.green.length +
+			fb_vinfo.blue.length + fb_vinfo.transp.length;
 		if (fb_bpp == fb_target_bpp)
 			return VFCAP_CSP_SUPPORTED|VFCAP_CSP_SUPPORTED_BY_HW|VFCAP_ACCEPT_STRIDE;
 	}

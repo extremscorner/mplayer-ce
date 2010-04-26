@@ -1,4 +1,4 @@
-// $Revision: 31032 $
+// $Revision: 27402 $
 // MASTER FILE. Use this file as base for translations.
 // Translated files should be sent to the mplayer-DOCS mailing list or
 // to the help messages maintainer, see DOCS/tech/MAINTAINERS.
@@ -13,7 +13,7 @@
 // ========================= MPlayer help ===========================
 
 #ifdef HELP_MP_DEFINE_STATIC
-static const char help_text[]=
+static char help_text[]=
 "Usage:   mplayer [options] [url|path/]filename\n"
 "\n"
 "Basic options: (complete list in the man page)\n"
@@ -56,7 +56,7 @@ static const char help_text[]=
 
 // ========================= MPlayer messages ===========================
 
-// mplayer.c
+// mplayer.c:
 #define MSGTR_Exiting "\nExiting...\n"
 #define MSGTR_ExitingHow "\nExiting... (%s)\n"
 #define MSGTR_Exit_quit "Quit"
@@ -75,6 +75,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "FPS not specified in the header or invalid, use the -fps option.\n"
 #define MSGTR_TryForceAudioFmtStr "Trying to force audio codec driver family %s...\n"
 #define MSGTR_CantFindAudioCodec "Cannot find codec for audio format 0x%X.\n"
+#define MSGTR_RTFMCodecs "Read DOCS/HTML/en/codecs.html!\n"
 #define MSGTR_TryForceVideoFmtStr "Trying to force video codec driver family %s...\n"
 #define MSGTR_CantFindVideoCodec "Cannot find codec matching selected -vo and video format 0x%X.\n"
 #define MSGTR_CannotInitVO "FATAL: Cannot initialize video driver.\n"
@@ -183,7 +184,6 @@ static const char help_text[]=
 #define MSGTR_DvdnavNavSeekDone "DVDNAV Event: Nav Seek Done\n"
 #define MSGTR_MenuCall "Menu call\n"
 
-// --- edit decision lists
 #define MSGTR_EdlOutOfMem "Can't allocate enough memory to hold EDL data.\n"
 #define MSGTR_EdlRecordsNo "Read %d EDL actions.\n"
 #define MSGTR_EdlQueueEmpty "There are no EDL actions to take care of.\n"
@@ -211,7 +211,6 @@ static const char help_text[]=
 #define MSGTR_OSDosd "OSD: %s"
 #define MSGTR_OSDChapter "Chapter: (%d) %s"
 #define MSGTR_OSDAngle "Angle: %d/%d"
-#define MSGTR_OSDDeinterlace "Deinterlace: %s"
 
 // property values
 #define MSGTR_Enabled "enabled"
@@ -254,7 +253,7 @@ static const char help_text[]=
 #define MSGTR_SubVisibleStatus "Subtitles: %s"
 #define MSGTR_SubForcedOnlyStatus "Forced sub only: %s"
 
-// mencoder.c
+// mencoder.c:
 #define MSGTR_UsingPass3ControlFile "Using pass3 control file: %s\n"
 #define MSGTR_MissingFilename "\nFilename missing.\n\n"
 #define MSGTR_CannotOpenFile_Device "Cannot open file/device.\n"
@@ -419,7 +418,7 @@ static const char help_text[]=
 #define MSGTR_CouldntOpenCodec "Couldn't open codec %s, br=%d.\n"
 #define MSGTR_CantCopyAudioFormat "Audio format 0x%x is incompatible with '-oac copy', please try '-oac pcm' instead or use '-fafmttag' to override it.\n"
 
-// cfg-mencoder.h
+// cfg-mencoder.h:
 #define MSGTR_MEncoderMP3LameHelp "\n\n"\
 " vbr=<0-4>     variable bitrate method\n"\
 "                0: cbr (constant bitrate)\n"\
@@ -468,7 +467,7 @@ static const char help_text[]=
 "                 (320 kbps bitrate)\n"\
 "                 <8-320>: ABR encoding at average given kbps bitrate.\n\n"
 
-// codec-cfg.c
+//codec-cfg.c:
 #define MSGTR_DuplicateFourcc "duplicated FourCC"
 #define MSGTR_TooManyFourccs "too many FourCCs/formats..."
 #define MSGTR_ParseError "parse error"
@@ -679,6 +678,7 @@ static const char help_text[]=
 #define MSGTR_PREFERENCES_Codecs "Codecs & demuxer"
 // Note: If you change MSGTR_PREFERENCES_Misc see if it still fits MSGTR_PREFERENCES_FRAME_Misc
 #define MSGTR_PREFERENCES_Misc "Misc"
+
 #define MSGTR_PREFERENCES_None "None"
 #define MSGTR_PREFERENCES_DriverDefault "driver default"
 #define MSGTR_PREFERENCES_AvailableDrivers "Available drivers:"
@@ -779,7 +779,6 @@ static const char help_text[]=
 #define MSGTR_PREFERENCES_ArtsBroken "Newer aRts versions are incompatible "\
            "with GTK 1.x and will crash GMPlayer!"
 
-// -- aboutbox
 #define MSGTR_ABOUT_UHU "GUI development sponsored by UHU Linux\n"
 #define MSGTR_ABOUT_Contributors "Code and documentation contributors\n"
 #define MSGTR_ABOUT_Codecs_libs_contributions "Codecs and third party libraries\n"
@@ -824,6 +823,7 @@ static const char help_text[]=
 #define MSGTR_WS_NotAFile "This does not seem to be a file...\n"
 #define MSGTR_WS_DDNothing "D&D: Nothing returned!\n"
 
+
 // ======================= video output drivers ========================
 
 #define MSGTR_VOincompCodec "The selected video_out device is incompatible with this codec.\n"\
@@ -856,7 +856,6 @@ static const char help_text[]=
 #define MSGTR_LIBVO_FONT_LOAD_FT_CannotPrepareOSDFont "Cannot prepare OSD font.\n"
 #define MSGTR_LIBVO_FONT_LOAD_FT_CannotGenerateTables "Cannot generate tables.\n"
 #define MSGTR_LIBVO_FONT_LOAD_FT_DoneFreeTypeFailed "FT_Done_FreeType failed.\n"
-#define MSGTR_LIBVO_FONT_LOAD_FT_FontconfigNoMatch "Fontconfig failed to select a font. Trying without fontconfig...\n"
 
 // sub.c
 #define MSGTR_VO_SUB_Seekbar "Seekbar"
@@ -956,8 +955,8 @@ static const char help_text[]=
 #define MSGTR_LIBVO_MGA_InvalidOutputFormat "[MGA] invalid output format %0X\n"
 #define MSGTR_LIBVO_MGA_IncompatibleDriverVersion "[MGA] Your mga_vid driver version is incompatible with this MPlayer version!\n"
 #define MSGTR_LIBVO_MGA_CouldntOpen "[MGA] Couldn't open: %s\n"
-#define MSGTR_LIBVO_MGA_ResolutionTooHigh "[MGA] Source resolution exceeds 1023x1023 in at least one dimension.\n[MGA] Rescale in software or use -lavdopts lowres=1.\n"
-#define MSGTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] mismatch between kernel (%u) and MPlayer (%u) mga_vid driver versions\n"
+#define MGSTR_LIBVO_MGA_ResolutionTooHigh "[MGA] Source resolution exceeds 1023x1023 in at least one dimension.\n[MGA] Rescale in software or use -lavdopts lowres=1.\n"
+#define MGSTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] mismatch between kernel (%u) and MPlayer (%u) mga_vid driver versions\n"
 
 // vo_null.c
 #define MSGTR_LIBVO_NULL_UnknownSubdevice "[VO_NULL] Unknown subdevice: %s.\n"
@@ -1280,7 +1279,10 @@ static const char help_text[]=
 #define MSGTR_AO_ALSA_UnableToDisableResampling "[AO_ALSA] Unable to disable resampling: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetSamplerate2 "[AO_ALSA] Unable to set samplerate-2: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetBufferTimeNear "[AO_ALSA] Unable to set buffer time near: %s\n"
+#define MSGTR_AO_ALSA_UnableToSetPeriodTime "[AO_ALSA] Unable to set period time: %s\n"
+#define MSGTR_AO_ALSA_BufferTimePeriodTime "[AO_ALSA] buffer_time: %d, period_time :%d\n"
 #define MSGTR_AO_ALSA_UnableToGetPeriodSize "[AO ALSA] Unable to get period size: %s\n"
+#define MSGTR_AO_ALSA_UnableToSetPeriodSize "[AO ALSA] Unable to set period size(%ld): %s\n"
 #define MSGTR_AO_ALSA_UnableToSetPeriods "[AO_ALSA] Unable to set periods: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetHwParameters "[AO_ALSA] Unable to set hw-parameters: %s\n"
 #define MSGTR_AO_ALSA_UnableToGetBufferSize "[AO_ALSA] Unable to get buffersize: %s\n"
@@ -1374,7 +1376,7 @@ static const char help_text[]=
 #define MSGTR_INPUT_INPUT_ErrCantOpenFile "Can't open %s: %s\n"
 #define MSGTR_INPUT_INPUT_ErrCantInitAppleRemote "Can't init Apple Remote.\n"
 
-// lirc.c
+// lirc.c:
 #define MSGTR_SettingUpLIRC "Setting up LIRC support...\n"
 #define MSGTR_LIRCopenfailed "Failed to open LIRC support. You will not be able to use your remote control.\n"
 #define MSGTR_LIRCcfgerr "Failed to read LIRC config file %s.\n"
@@ -1382,7 +1384,7 @@ static const char help_text[]=
 
 // ========================== LIBMPDEMUX ===================================
 
-// muxer.c, muxer_*.c
+// muxer.c, muxer_*.c:
 #define MSGTR_TooManyStreams "Too many streams!"
 #define MSGTR_RawMuxerOnlyOneStream "Rawaudio muxer supports only one audio stream!\n"
 #define MSGTR_IgnoringVideoStream "Ignoring video stream!\n"
@@ -1394,13 +1396,13 @@ static const char help_text[]=
 #define MSGTR_WritingHeader "Writing header...\n"
 #define MSGTR_WritingTrailer "Writing index...\n"
 
-// demuxer.c, demux_*.c
+// demuxer.c, demux_*.c:
 #define MSGTR_AudioStreamRedefined "WARNING: Audio stream header %d redefined.\n"
 #define MSGTR_VideoStreamRedefined "WARNING: Video stream header %d redefined.\n"
 #define MSGTR_TooManyAudioInBuffer "\nToo many audio packets in the buffer: (%d in %d bytes).\n"
 #define MSGTR_TooManyVideoInBuffer "\nToo many video packets in the buffer: (%d in %d bytes).\n"
 #define MSGTR_MaybeNI "Maybe you are playing a non-interleaved stream/file or the codec failed?\n" \
-                      "For AVI files, try to force non-interleaved mode with the -ni option.\n"
+		      "For AVI files, try to force non-interleaved mode with the -ni option.\n"
 #define MSGTR_WorkAroundBlockAlignHeaderBug "AVI: Working around CBR-MP3 nBlockAlign header bug!\n"
 #define MSGTR_SwitchToNi "\nBadly interleaved AVI file detected - switching to -ni mode...\n"
 #define MSGTR_InvalidAudioStreamNosound "AVI: invalid audio stream ID: %d - ignoring (nosound)\n"
@@ -1411,7 +1413,7 @@ static const char help_text[]=
 #define MSGTR_NotSystemStream "Not MPEG System Stream format... (maybe Transport Stream?)\n"
 #define MSGTR_InvalidMPEGES "Invalid MPEG-ES stream??? Contact the author, it may be a bug :(\n"
 #define MSGTR_FormatNotRecognized "============ Sorry, this file format is not recognized/supported =============\n"\
-                                  "=== If this file is an AVI, ASF or MPEG stream, please contact the author! ===\n"
+				  "=== If this file is an AVI, ASF or MPEG stream, please contact the author! ===\n"
 #define MSGTR_SettingProcessPriority "Setting process priority: %s\n"
 #define MSGTR_FilefmtFourccSizeFpsFtime "[V] filefmt:%d  fourcc:0x%X  size:%dx%d  fps:%5.3f  ftime:=%6.4f\n"
 #define MSGTR_CannotInitializeMuxer "Cannot initialize muxer."
@@ -1636,6 +1638,8 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Codec did not set sh->disp_w and sh->disp_h, trying workaround.\n"
+#define MSGTR_VoConfigRequest "VDec: vo config request - %d x %d (preferred colorspace: %s)\n"
+#define MSGTR_UsingXAsOutputCspNoY "VDec: using %s as output csp (no %d)\n"
 #define MSGTR_CouldNotFindColorspace "Could not find matching colorspace - retrying with -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Movie-Aspect is %.2f:1 - prescaling to correct movie aspect.\n"
 #define MSGTR_MovieAspectUndefined "Movie-Aspect is undefined - no prescaling applied.\n"
@@ -1719,7 +1723,7 @@ static const char help_text[]=
 #define MSGTR_LIBASS_ErrorRecodingFile "[ass] error recoding file.\n"
 #define MSGTR_LIBASS_FopenFailed "[ass] ass_read_file(%s): fopen failed\n"
 #define MSGTR_LIBASS_FseekFailed "[ass] ass_read_file(%s): fseek failed\n"
-#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan100M "[ass] ass_read_file(%s): Refusing to load subtitles larger than 100M\n"
+#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan10M "[ass] ass_read_file(%s): Refusing to load subtitles larger than 10M\n"
 #define MSGTR_LIBASS_ReadFailed "Read failed, %d: %s\n"
 #define MSGTR_LIBASS_AddedSubtitleFileMemory "[ass] Added subtitle file: <memory> (%d styles, %d events)\n"
 #define MSGTR_LIBASS_AddedSubtitleFileFname "[ass] Added subtitle file: %s (%d styles, %d events)\n"

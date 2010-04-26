@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Revision: 29902 $ -->
+<!-- $Revision: 26990 $ -->
 <appendix id="bugreports">
 <title>How to report bugs</title>
 
@@ -113,8 +113,6 @@ you need to go back.
 earlier version, so if you do not make a backup copy of your original
 source tree, you will have to recompile everything in it when you come
 back to the present.)
-Alternatively you may use <ulink url="http://ccache.samba.org/">ccache</ulink>
-to speed up compilation.
 </para>
 
 <para>
@@ -131,7 +129,7 @@ This will allow you to easily find the exact patch that did it.
 If you find the patch that is the cause of the problem, you have almost won;
 report about it to the
 <ulink url="http://bugzilla.mplayerhq.hu/">MPlayer Bugzilla</ulink> or
-subscribe to
+subscribe to 
 <ulink url="http://lists.mplayerhq.hu/mailman/listinfo/mplayer-users">MPlayer-users</ulink>
 and post it there.
 There is a chance that the author will jump in to suggest a fix.
@@ -156,7 +154,8 @@ so please use <emphasis role="bold">only Subversion</emphasis> to report bugs.
 This includes binary packages of <application>MPlayer</application>.
 Subversion instructions can be found at the bottom of
 <ulink url="http://www.mplayerhq.hu/dload.html">this page</ulink> or in
-the README. If this did not help please refer to the rest of the documentation.
+the README. If this did not help please refer to the list of
+<link linkend="bugs">known bugs</link> and the rest of the documentation.
 If your problem is not known or not solvable by our instructions,
 then please report the bug.
 </para>
@@ -220,7 +219,7 @@ Please follow the standard
 and <emphasis role="bold">do not send HTML mail</emphasis> to any of our
 mailing lists. You will only get ignored or
 banned. If you do not know what HTML mail is or why it is evil, read this
-<ulink url="http://efn.no/html-bad.html">fine document</ulink>.
+<ulink url="http://expita.com/nomime.html">fine document</ulink>.
 It explains all the details and has instructions for turning HTML off. Also
 note that we will not individually CC (carbon-copy) people so it is a good idea
 to subscribe to actually receive your answer.

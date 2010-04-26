@@ -1,24 +1,4 @@
-/*
- * KEY code definitions for GyS-TermIO v2.0
- *
- * copyright (C) 1999 A'rpi/ESP-team
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/*  KEY code definitions for GyS-TermIO v2.0  (C) 1999 A'rpi/ESP-team */
 
 #ifndef MPLAYER_KEYCODES_H
 #define MPLAYER_KEYCODES_H
@@ -72,7 +52,7 @@
 #define KEY_VOLUME_UP (KEY_MM_BASE+10)
 #define KEY_VOLUME_DOWN (KEY_MM_BASE+11)
 #define KEY_MUTE (KEY_MM_BASE+12)
-
+  
 /* Keypad keys */
 #define KEY_KEYPAD (KEY_BASE+32)
 #define KEY_KP0 (KEY_KEYPAD+0)

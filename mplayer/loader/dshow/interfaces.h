@@ -8,7 +8,7 @@
  */
 
 #include "iunk.h"
-#include "loader/com.h"
+#include "com.h"
 
 /*    Sh*t. MSVC++ and g++ use different methods of storing vtables.    */
 
@@ -328,33 +328,5 @@ struct IDivxFilterInterface_vt
     HRESULT STDCALL ( *put_AspectRatio )(IDivxFilterInterface* This, int x, IDivxFilterInterface* Thisit, int y);
     HRESULT STDCALL ( *get_AspectRatio )(IDivxFilterInterface* This, int* x, IDivxFilterInterface* Thisit, int* y);
 };
-
-typedef struct IEnumFilters IEnumFilters;
-
-typedef struct IFilterGraph_vt
-{
-    INHERIT_IUNKNOWN();
-
-    HRESULT STDCALL ( *AddFilter )(IFilterGraph* This,
-                                   /* [in] */ IBaseFilter* pFilter,
-                                   /* [string][in] */ unsigned short* pName);
-    HRESULT STDCALL ( *RemoveFilter )(IFilterGraph* This,
-                                      /* [in] */ IBaseFilter* pFilter);
-    HRESULT STDCALL ( *EnumFilters )(IFilterGraph* This,
-                                     /* [out] */ IEnumFilters** ppEnum);
-    HRESULT STDCALL ( *FindFilterByName )(IFilterGraph* This,
-                                          /* [string][in] */ unsigned short* pName,
-                                          /* [out] */ IBaseFilter** ppFilter);
-    HRESULT STDCALL ( *ConnectDirect )(IFilterGraph* This,
-                                       /* [in] */ IPin* ppinOut,
-                                       /* [in] */ IPin* ppinIn,
-                                       /* [in] */ const AM_MEDIA_TYPE* pmt);
-    HRESULT STDCALL ( *Reconnect )(IFilterGraph* This,
-                                   /* [in] */ IPin* ppin);
-    HRESULT STDCALL ( *Disconnect )(IFilterGraph* This,
-                                    /* [in] */ IPin* ppin);
-    HRESULT STDCALL ( *SetDefaultSyncSource )(IFilterGraph* This);
-} IFilterGraph_vt;
-struct IFilterGraph { IFilterGraph_vt *vt; };
 
 #endif  /*MPLAYER_INTERFACES_H */

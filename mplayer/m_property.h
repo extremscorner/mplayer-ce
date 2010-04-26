@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_M_PROPERTY_H
 #define MPLAYER_M_PROPERTY_H
 
@@ -146,7 +128,7 @@ void m_properties_print_help_list(const m_option_t* list);
  *  ${NAME} is expanded to the value of property NAME or an empty
  *  string in case of error. $(NAME:STR) expand STR only if the property
  *  NAME is available.
- *
+ * 
  *  \param prop_list An array of \ref m_option describing the available
  *                   properties.
  *  \param str The string to expand.
@@ -186,9 +168,6 @@ int m_property_int_range(const m_option_t* prop,int action,
 /// Same as m_property_int_range but cycle.
 int m_property_choice(const m_option_t* prop,int action,
                       void* arg,int* var);
-
-int m_property_flag_ro(const m_option_t* prop,int action,
-                    void* arg,int var);
 
 /// Switch betwen min and max.
 int m_property_flag(const m_option_t* prop,int action,

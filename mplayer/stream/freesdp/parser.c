@@ -1,7 +1,7 @@
 /*
   This file is part of FreeSDP
   Copyright (C) 2001,2002,2003 Federico Montesino Pouzols <fedemp@altern.org>
-
+  
   FreeSDP is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
@@ -380,7 +380,7 @@ fsdp_parse (const char *text_description, fsdp_description_t * dsc)
   }
 
   /* `k=' line (encryption key) [optional] */
-  /* k=<method>
+  /* k=<method> 
      k=<method>:<encryption key> */
   result = fsdp_parse_k (&p, &(dsc->k_encryption_method),
 			 &(dsc->k_encryption_content));
@@ -687,7 +687,7 @@ fsdp_parse (const char *text_description, fsdp_description_t * dsc)
         return result;
 
       /* `k=' line (encryption key) [optional] */
-      /* k=<method>
+      /* k=<method> 
          k=<method>:<encryption key> */
       result = fsdp_parse_k (&p, &(media->k_encryption_method),
                              &(media->k_encryption_content));
@@ -1440,6 +1440,50 @@ fsdp_get_encryption_content (const fsdp_description_t * dsc)
   return dsc->k_encryption_content;
 }
 
+unsigned int
+fsdp_get_rtpmap_count (const fsdp_description_t * dsc)
+{
+  if (!dsc)
+    return 0;
+  return dsc->a_rtpmaps_count;
+}
+
+const char *
+fsdp_get_rtpmap_payload_type (const fsdp_description_t * dsc,
+			      unsigned int index)
+{
+  if ((!dsc) || (index >= dsc->a_rtpmaps_count))
+    return NULL;
+  return dsc->a_rtpmaps[index]->pt;
+}
+
+const char *
+fsdp_get_rtpmap_encoding_name (const fsdp_description_t * dsc,
+			       unsigned int index)
+{
+  if ((!dsc) || (index >= dsc->a_rtpmaps_count))
+    return NULL;
+  return dsc->a_rtpmaps[index]->encoding_name;
+}
+
+unsigned int
+fsdp_get_rtpmap_clock_rate (const fsdp_description_t * dsc,
+			    unsigned int index)
+{
+  if ((!dsc) || (index >= dsc->a_rtpmaps_count))
+    return 0;
+  return dsc->a_rtpmaps[index]->clock_rate;
+}
+
+const char *
+fsdp_get_rtpmap_encoding_parameters (const fsdp_description_t * dsc,
+				     unsigned int index)
+{
+  if ((!dsc) || (index >= dsc->a_rtpmaps_count))
+    return NULL;
+  return dsc->a_rtpmaps[index]->parameters;
+}
+
 const char *
 fsdp_get_str_att (const fsdp_description_t * dsc, fsdp_session_str_att_t att)
 {
@@ -1484,6 +1528,22 @@ fsdp_get_sdplang (const fsdp_description_t * dsc, unsigned int index)
   if ((!dsc) || (index >= dsc->a_sdplangs_count))
     return NULL;
   return dsc->a_sdplangs[index];
+}
+
+unsigned int
+fsdp_get_lang_count (const fsdp_description_t * dsc)
+{
+  if (!dsc)
+    return 0;
+  return dsc->a_langs_count;
+}
+
+const char *
+fsdp_get_lang (const fsdp_description_t * dsc, unsigned int index)
+{
+  if ((!dsc) || (index >= dsc->a_langs_count))
+    return NULL;
+  return dsc->a_langs[index];
 }
 
 unsigned int
@@ -1584,7 +1644,7 @@ const char *
 fsdp_get_media_format (const fsdp_media_description_t * dsc,
 		       unsigned int index)
 {
-  if (!dsc || (index < dsc->formats_count - 1))
+  if (!dsc && (index < dsc->formats_count))
     return NULL;
   return dsc->formats[index];
 }

@@ -3,9 +3,9 @@
  * Collection of useful common types and macros definitions
  *****************************************************************************
  * Copyright (C) 1998, 1999, 2000 VideoLAN
- * $Id: common.h 27494 2008-08-29 20:22:36Z diego $
+ * $Id: common.h 20746 2006-11-07 16:42:39Z diego $
  *
- * Authors: Sam Hocevar <sam@via.ecp.fr>
+ * Authors: Samuel Hocevar <sam@via.ecp.fr>
  *          Vincent Seguin <seguin@via.ecp.fr>
  *          Gildas Bazin <gbazin@netcourrier.com>
  *
