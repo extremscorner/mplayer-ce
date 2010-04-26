@@ -1,23 +1,8 @@
 /*
- * DXR3/H+ video output
+ * vo_dxr3.c - DXR3/H+ video out
  *
  * Copyright (C) 2002-2003 David Holm <david@realityrift.com>
  *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include <linux/em8300.h>
@@ -37,6 +22,9 @@
 #include "config.h"
 #include "mp_msg.h"
 #include "help_mp.h"
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 #include "fastmemcpy.h"
 
 #include "video_out.h"
@@ -54,7 +42,7 @@
 
 #define SPU_SUPPORT
 
-static const vo_info_t info =
+static const vo_info_t info = 
 {
 	"DXR3/H+ video out",
 	"dxr3",
@@ -70,7 +58,7 @@ static int osd_w, osd_h;
 static int img_format;
 
 /* Configuration values
- * Don't declare these static, they
+ * Don't declare these static, they 
  * should be accessible from the gui.
  */
 int dxr3_prebuf = 0;
@@ -212,7 +200,7 @@ static int control(uint32_t request, void *data, ...)
 				pts_offset = 0;
 			}
 		}
-
+		
 		if (dxr3_prebuf) {
 			ioval = EM8300_PLAYMODE_PLAY;
 			if (ioctl(fd_control, EM8300_IOCTL_SET_PLAYMODE, &ioval) < 0) {
@@ -255,7 +243,7 @@ static int control(uint32_t request, void *data, ...)
 		va_list ap;
 		int value;
 		em8300_bcs_t bcs;
-
+		
 		va_start(ap, data);
 		value = va_arg(ap, int);
 		va_end(ap);
@@ -269,7 +257,7 @@ static int control(uint32_t request, void *data, ...)
 		else if (!strcasecmp(data, "saturation"))
 		    bcs.saturation = (value+100)*5;
 		else return VO_FALSE;
-
+        
 		if (ioctl(fd_control, EM8300_IOCTL_SETBCS, &bcs) < 0)
 		    return VO_FALSE;
 		return VO_TRUE;
@@ -279,14 +267,14 @@ static int control(uint32_t request, void *data, ...)
 		va_list ap;
 		int *value;
 		em8300_bcs_t bcs;
-
+		
 		va_start(ap, data);
 		value = va_arg(ap, int*);
 		va_end(ap);
 
 		if (ioctl(fd_control, EM8300_IOCTL_GETBCS, &bcs) < 0)
 		    return VO_FALSE;
-
+		
 		if (!strcasecmp(data, "brightness"))
 		    *value = (bcs.brightness/5)-100;
 		else if (!strcasecmp(data, "contrast"))
@@ -294,7 +282,7 @@ static int control(uint32_t request, void *data, ...)
 		else if (!strcasecmp(data, "saturation"))
 		    *value = (bcs.saturation/5)-100;
 		else return VO_FALSE;
-
+        
 		return VO_TRUE;
 	    }
 	}
@@ -306,12 +294,12 @@ void calculate_cvals(unsigned long mask, int *shift, int *prec)
 	/* Calculate shift and precision */
 	(*shift) = 0;
 	(*prec) = 0;
-
+	
 	while (!(mask & 0x1)) {
 		(*shift)++;
 		mask >>= 1;
 	}
-
+	
 	while (mask & 0x1) {
 		(*prec)++;
 		mask >>= 1;
@@ -340,7 +328,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 	if (ioctl(fd_control, EM8300_IOCTL_SET_PLAYMODE, &ioval) < 0) {
 		mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_DXR3_UnableToSetPlaymode);
 	}
-
+	
 	/* Start em8300 prebuffering and sync engine */
 	reg.microcode_register = 1;
 	reg.reg = 0;
@@ -373,7 +361,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 		mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_DXR3_UnableToGetTVNorm);
 		old_vmode = -1;
 	}
-
+	
 	/* adjust TV norm */
 	if (dxr3_norm != 0) {
 	    if (dxr3_norm == 5) {
@@ -388,10 +376,10 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 			} else {
 			    ioval = EM8300_VIDEOMODE_PAL;
 			}
-
+			
 			mp_msg(MSGT_VO,MSGL_INFO, MSGTR_LIBVO_DXR3_AutoSelectedTVNormByFrameRate);
 			ioval == EM8300_VIDEOMODE_PAL60 ? mp_msg(MSGT_VO,MSGL_INFO, "PAL-60") : mp_msg(MSGT_VO,MSGL_INFO, "PAL");
-			printf(".\n");
+			printf(".\n"); 
 		} else {
 			if (vo_fps > 28) {
 			    ioval = EM8300_VIDEOMODE_NTSC;
@@ -401,17 +389,17 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 
 			mp_msg(MSGT_VO,MSGL_INFO, MSGTR_LIBVO_DXR3_AutoSelectedTVNormByFrameRate);
 			ioval == EM8300_VIDEOMODE_NTSC ? mp_msg(MSGT_VO,MSGL_INFO, "NTSC") : mp_msg(MSGT_VO,MSGL_INFO, "PAL");
-			printf(".\n");
+			printf(".\n"); 
 	    }
-
+	
 		if (old_vmode != ioval) {
 	    	if (ioctl(fd_control, EM8300_IOCTL_SET_VIDEOMODE, &ioval) < 0) {
 				mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_DXR3_UnableToSetTVNorm);
 	    	}
 		}
 	}
-
-
+	
+	
 	/* libavcodec requires a width and height that is x|16 */
 	aspect_save_orig(width, height);
 	aspect_save_prescale(d_width, d_height);
@@ -426,7 +414,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 	aspect(&s_width, &s_height, A_ZOOM);
 	s_width -= s_width % 16;
 	s_height -= s_height % 16;
-
+	
 	/* Try to figure out whether to use widescreen output or not */
 	/* Anamorphic widescreen modes makes this a pain in the ass */
 	tmp1 = abs(d_height - ((d_width / 4) * 3));
@@ -458,13 +446,13 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 		mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_DXR3_OutOfMemory);
 		return -1;
 	}
-	spued = malloc(sizeof(encodedata));
+	spued = (encodedata *) malloc(sizeof(encodedata));
 	if (spued == NULL) {
 	        free( osdpicbuf );
 		mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_DXR3_OutOfMemory);
 		return -1;
 	}
-	spubuf = malloc(sizeof(encodedata));
+	spubuf = (encodedata *) malloc(sizeof(encodedata));
 	if (spubuf == NULL) {
 	        free( osdpicbuf );
 		free( spued );
@@ -475,7 +463,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 	osd_h = s_height;
 	osdpicbuf_w = s_width;
 	osdpicbuf_h = s_height;
-
+	
 	spubuf->count=0;
 	pixbuf_encode_rle( 0,0,osdpicbuf_w,osdpicbuf_h - 1,osdpicbuf,osdpicbuf_w,spubuf );
 
@@ -527,7 +515,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 			xswamask = CWBackPixel | CWBorderPixel;
 			XChangeWindowAttributes(mDisplay, vo_window, xswamask, &xswa);
 		}
-
+		
 		/* Start setting up overlay */
 		XGetWindowAttributes(mDisplay, mRootWin, &xwin_attribs);
 		overlay_set_screen(overlay_data, xwin_attribs.width, xwin_attribs.height, xwin_attribs.depth);
@@ -538,7 +526,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 		calculate_cvals(vinfo.red_mask, &red_shift, &red_prec);
 		calculate_cvals(vinfo.green_mask, &green_shift, &green_prec);
 		calculate_cvals(vinfo.blue_mask, &blue_shift, &blue_prec);
-
+		
 		key_color.red = ((KEY_COLOR >> 16) & 0xff) * 256;
 		key_color.green = ((KEY_COLOR >> 8) & 0xff) * 256;
 		key_color.blue = (KEY_COLOR & 0xff) * 256;
@@ -550,12 +538,12 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 			mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_DXR3_UnableToAllocateKeycolor);
 			return -1;
 		}
-
+		
 		acq_color = ((key_color.red / 256) << 16) | ((key_color.green / 256) << 8) | key_color.blue;
 		if (key_color.pixel != KEY_COLOR) {
-			mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_DXR3_UnableToAllocateExactKeycolor, key_color.pixel);
+			mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_DXR3_UnableToAllocateExactKeycolor, key_color.pixel);	
 		}
-
+		
 		/* Set keycolor and activate overlay */
 		XSetWindowBackground(mDisplay, vo_window, key_color.pixel);
 		XClearWindow(mDisplay, vo_window);
@@ -563,6 +551,9 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 		overlay_set_mode(overlay_data, EM8300_OVERLAY_MODE_OVERLAY);
 		overlay_set_mode(overlay_data, EM8300_OVERLAY_MODE_RECTANGLE);
 	}
+
+	if (vo_ontop) vo_x11_setlayer(mDisplay, vo_window, vo_ontop);
+
 #endif
 
 	return 0;
@@ -575,8 +566,8 @@ static void draw_alpha(int x, int y, int w, int h, unsigned char* src, unsigned 
 	int by = 0;
 	register int lx, ly;
 	register int stride = 0;
-
-	for (ly = 0; ly < h - 1; ly++)
+	
+	for (ly = 0; ly < h - 1; ly++) 
 	 {
 	  for(lx = 0; lx < w; lx++ )
 	   if ( ( srca[stride + lx] )&&( src[stride + lx] >= 128 ) ) buf[by + lx] = 3;
@@ -596,7 +587,7 @@ static void draw_osd(void)
  static int cleared = 0;
         int changed = 0;
 
-	if ((disposd % 15) == 0)
+	if ((disposd % 15) == 0) 
 	{
 		{
 		 mp_osd_obj_t* obj = vo_osd_list;
@@ -630,7 +621,9 @@ static void draw_osd(void)
 		 */
 /*		Subpics are not stable yet =(
 		expect lockups if you enable */
+#if 1
 		write(fd_spu, spued->data, spued->count);
+#endif
 	}
 	disposd++;
 #endif
@@ -710,7 +703,7 @@ static void uninit(void)
 	if (dxr3_overlay) {
 		overlay_set_mode(overlay_data, EM8300_OVERLAY_MODE_OFF);
 		overlay_release(overlay_data);
-
+		
 #ifdef CONFIG_GUI
 		if (!use_gui) {
 #endif
@@ -726,7 +719,7 @@ static void uninit(void)
 			mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_DXR3_FailedRestoringTVNorm);
 		}
 	}
-
+	
 	if (fd_video) {
 		close(fd_video);
 	}
@@ -776,7 +769,7 @@ static int preinit(const char *arg)
 			// but maybe someone changes this in the future
 
 			mp_msg(MSGT_VO,MSGL_INFO, MSGTR_LIBVO_DXR3_WillSetTVNormTo);
-
+			
 			if (*arg == '5') {
 			    dxr3_norm = 5;
 			    mp_msg(MSGT_VO,MSGL_INFO, "NTSC");
@@ -799,18 +792,18 @@ static int preinit(const char *arg)
 			    dxr3_norm = 0;
 			    mp_msg(MSGT_VO,MSGL_INFO, MSGTR_LIBVO_DXR3_UseUnknownNormSuppliedCurrentNorm);
 			}
-
+			
 			mp_msg(MSGT_VO,MSGL_INFO, ".\n");
 		} else if (arg[0] == '0' || arg[0] == '1' || arg[0] == '2' || arg[0] == '3') {
 			dxr3_device_num = arg[0];
 		}
-
+		
 		arg = strchr(arg, ':');
 		if (arg) {
 			arg++;
 		}
 	}
-
+	
 
 	/* Open the control interface */
 	sprintf(devname, "/dev/em8300-%d", dxr3_device_num);
@@ -845,7 +838,7 @@ static int preinit(const char *arg)
 		mp_msg(MSGT_VO,MSGL_INFO, MSGTR_LIBVO_DXR3_Opened, devname);
 	}
 	strcpy(fdv_name, devname);
-
+	
 	/* Open the subpicture interface */
 	sprintf(devname, "/dev/em8300_sp-%d", dxr3_device_num);
 	fd_spu = open(devname, fdflags);
@@ -863,10 +856,10 @@ static int preinit(const char *arg)
 		mp_msg(MSGT_VO,MSGL_INFO, MSGTR_LIBVO_DXR3_Opened, devname);
 	}
 	strcpy(fds_name, devname);
-
+	
 #ifdef CONFIG_X11
 	if (dxr3_overlay) {
-
+	
 		/* Fucked up hack needed to enable overlay.
 		 * Will be removed as soon as I figure out
 		 * how to make it work like it should
@@ -874,7 +867,7 @@ static int preinit(const char *arg)
 		Display *dpy;
 		overlay_t *ov;
 		XWindowAttributes attribs;
-
+		
 		dpy = XOpenDisplay(NULL);
 	    	if (!dpy) {
 			mp_msg(MSGT_VO,MSGL_ERR, MSGTR_LIBVO_DXR3_UnableToOpenDisplayDuringHackSetup);
@@ -890,7 +883,7 @@ static int preinit(const char *arg)
 		overlay_release(ov);
 		XCloseDisplay(dpy);
 		/* End of fucked up hack */
-
+		
 		/* Initialize overlay and X11 */
 		overlay_data = overlay_init(fd_control);
 #ifdef CONFIG_GUI
@@ -931,7 +924,7 @@ static int update_parameters(overlay_t *o)
 static int overlay_set_attribute(overlay_t *o, int attribute, int value)
 {
     em8300_attribute_t attr;
-
+    
     attr.attribute = attribute;
     attr.value = value;
     if (ioctl(o->dev, EM8300_IOCTL_OVERLAY_SET_ATTRIBUTE, &attr)==-1)
@@ -947,7 +940,7 @@ static overlay_t *overlay_init(int dev)
 {
     overlay_t *o;
 
-    o = malloc(sizeof(overlay_t));
+    o = (overlay_t *) malloc(sizeof(overlay_t));
 
     if(!o)
 	return NULL;
@@ -1021,13 +1014,13 @@ static int overlay_read_state(overlay_t *o, char *p)
     void *ptr;
     int type;
     int j;
-
+	
     if(!p) {
 	av_strlcpy(fname, getenv("HOME"), sizeof( fname ));
-	av_strlcat(fname,"/.overlay", sizeof( fname ));
+	av_strlcat(fname,"/.overlay", sizeof( fname ));	    
     } else
 	av_strlcpy(fname, p, sizeof( fname ));
-
+    
     sprintf(tmp,"/res_%dx%dx%d",o->xres,o->yres,o->depth);
     av_strlcat(fname, tmp, sizeof( fname ));
 
@@ -1035,7 +1028,7 @@ static int overlay_read_state(overlay_t *o, char *p)
 	return -1;
 
     lut = new_lookuptable(o);
-
+    
     while(!feof(fp)) {
 	if(!fgets(line,256,fp))
 	    break;
@@ -1059,14 +1052,14 @@ static int overlay_read_state(overlay_t *o, char *p)
 		    sscanf(tok,"%f",&((struct coeff *)ptr)[j].m);
 		    tok=strtok(NULL," ");
 		}
-		break;
+		break;	    
 	    }
-
-	}
+	    
+	}	
     }
 
     update_parameters(o);
-
+    
     free(lut);
     fclose(fp);
     return 0;
@@ -1076,7 +1069,7 @@ static void overlay_update_params(overlay_t *o) {
     update_parameters(o);
 }
 
-static int overlay_write_state(overlay_t *o, char *p)
+static int overlay_write_state(overlay_t *o, char *p)	
 {
     char *a;
     char path[128],fname[128],tmp[128];
@@ -1084,27 +1077,27 @@ static int overlay_write_state(overlay_t *o, char *p)
     char line[256],*tok;
     struct lut_entry *lut;
     int i,j;
-
+	
     if(!p) {
 	av_strlcpy(fname, getenv("HOME"), sizeof( fname ));
-	av_strlcat(fname,"/.overlay", sizeof( fname ));
+	av_strlcat(fname,"/.overlay", sizeof( fname ));	    
     } else
 	av_strlcpy(fname, p, sizeof( fname ));
 
     if(access(fname, W_OK|X_OK|R_OK)) {
 	if(mkdir(fname,0766))
 	    return -1;
-    }
-
+    }	
+    
     sprintf(tmp,"/res_%dx%dx%d",o->xres,o->yres,o->depth);
     av_strlcat(fname, tmp, sizeof( fname ));
-
+    
     if(!(fp=fopen(fname,"w")))
 	return -1;
-
+    
     lut = new_lookuptable(o);
 
-    for(i=0; lut[i].name; i++) {
+    for(i=0; lut[i].name; i++) {	
 	fprintf(fp,"%s ",lut[i].name);
 	switch(lut[i].type) {
 	case TYPE_INT:
@@ -1117,11 +1110,11 @@ static int overlay_write_state(overlay_t *o, char *p)
 	    fprintf(fp,"%f\n",*(float *)lut[i].ptr);
 	    break;
 	case TYPE_COEFF:
-	    for(j=0;j<3;j++)
+	    for(j=0;j<3;j++) 
 		fprintf(fp,"%f %f ",((struct coeff *)lut[i].ptr)[j].k,
 			((struct coeff *)lut[i].ptr)[j].m);
 	    fprintf(fp,"\n");
-	    break;
+	    break;	    
 	}
     }
 
@@ -1139,7 +1132,7 @@ static int overlay_set_screen(overlay_t *o, int xres, int yres, int depth)
 
    scr.xsize = xres;
    scr.ysize = yres;
-
+   
    if (ioctl(o->dev, EM8300_IOCTL_OVERLAY_SETSCREEN, &scr)==-1)
         {
             mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_DXR3_FailedSettingOverlayScreen);
@@ -1214,7 +1207,7 @@ static int overlay_set_keycolor(overlay_t *o, int color) {
     rl = r-o->color_interval;
     gl = g-o->color_interval;
     bl = b-o->color_interval;
-
+    
     upper = (col_interp(ru, o->colcal_upper[0]) << 16) |
 	    (col_interp(gu, o->colcal_upper[1]) << 8) |
 	    (col_interp(bu, o->colcal_upper[2]));

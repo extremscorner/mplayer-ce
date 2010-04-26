@@ -1,26 +1,11 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+//#ifndef GEKKO
 #include <dirent.h>
+//#endif
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
@@ -60,7 +45,7 @@ struct menu_priv_s {
   char* na;
   int hide_na;
 };
-
+ 
 static struct menu_priv_s cfg_dflt = {
   MENU_LIST_PRIV_DFLT,
   NULL,
@@ -69,7 +54,7 @@ static struct menu_priv_s cfg_dflt = {
   1
 };
 
-static const m_option_t cfg_fields[] = {
+static m_option_t cfg_fields[] = {
   MENU_LIST_PRIV_FIELDS,
   { "title", M_ST_OFF(menu_list_priv_t,title),  CONF_TYPE_STRING, 0, 0, 0, NULL },
   { "na", M_ST_OFF(struct menu_priv_s,na), CONF_TYPE_STRING, 0, 0, 0, NULL },
@@ -112,7 +97,7 @@ static int parse_args(menu_t* menu,char* args) {
   int r;
   m_option_t* opt;
   ASX_Parser_t* parser = asx_parser_new();
-
+  
 
   while(1) {
     r = asx_get_element(parser,&args,&element,&body,&attribs);
@@ -120,7 +105,7 @@ static int parse_args(menu_t* menu,char* args) {
       mp_msg(MSGT_OSD_MENU,MSGL_ERR,MSGTR_LIBMENU_SyntaxErrorAtLine,parser->line);
       asx_parser_free(parser);
       return -1;
-    } else if(r == 0) {
+    } else if(r == 0) {      
       asx_parser_free(parser);
       if(!m)
         mp_msg(MSGT_OSD_MENU,MSGL_WARN,MSGTR_LIBMENU_NoEntryFoundInTheMenuDefinition);
@@ -200,7 +185,7 @@ static void read_cmd(menu_t* menu,int cmd) {
       if(mp_property_do(e->prop,M_PROPERTY_STEP_DOWN,NULL,menu->ctx) > 0)
         update_entries(menu, 0);
       return;
-
+      
     case MENU_CMD_OK:
       // check that the property is writable
       if(mp_property_do(e->prop,M_PROPERTY_SET,NULL,menu->ctx) < 0) return;
@@ -281,7 +266,7 @@ static int openMenu(menu_t* menu, char* args) {
     mp_msg(MSGT_OSD_MENU,MSGL_ERR,MSGTR_LIBMENU_PrefMenuNeedsAnArgument);
     return 0;
   }
-
+ 
   menu_list_init(menu);
   return parse_args(menu,args);
 }

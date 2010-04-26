@@ -1,23 +1,5 @@
-/*
- * requires libdv-0.9.5 !!!
- * (v0.9.0 is too old and has no encoding functionality exported!)
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+// requires libdv-0.9.5 !!!
+// (v0.9.0 is too old and has no encoding functionality exported!)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,20 +31,20 @@
 struct vf_priv_s {
     muxer_stream_t* mux;
     dv_encoder_t* enc;
-
+    
 };
 #define mux_v (vf->priv->mux)
 
 //===========================================================================//
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 
     if(width!=DV_WIDTH || (height!=DV_PAL_HEIGHT && height!=DV_NTSC_HEIGHT)){
 	mp_msg(MSGT_VFILTER,MSGL_ERR,"DV: only 720x480 (NTSC) and 720x576 (PAL) resolutions allowed! Try with -vf scale=720:480\n");
     }
-
+    
     vf->priv->enc->isPAL=(height==DV_PAL_HEIGHT);
     vf->priv->enc->is16x9=(d_width/(float)d_height > 1.7); // 16:9=1.777777
     vf->priv->enc->vlc_encode_passes=3;
@@ -77,20 +59,20 @@ static int config(struct vf_instance *vf,
     return 1;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
 
     return CONTROL_UNKNOWN;
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     if(fmt==IMGFMT_YUY2) return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW;
     if(fmt==IMGFMT_RGB24) return VFCAP_CSP_SUPPORTED;
     return 0;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 
-    dv_encode_full_frame(vf->priv->enc, mpi->planes,
+    dv_encode_full_frame(vf->priv->enc, mpi->planes, 
 	(mpi->flags&MP_IMGFLAG_YUV) ? e_dv_color_yuv : e_dv_color_rgb,
 	mux_v->buffer);
 
@@ -109,10 +91,10 @@ static int vf_open(vf_instance_t *vf, char* args){
     vf->priv=malloc(sizeof(struct vf_priv_s));
     memset(vf->priv,0,sizeof(struct vf_priv_s));
     vf->priv->mux=(muxer_stream_t*)args;
-
+    
     vf->priv->enc=dv_encoder_new(0,1,1); // FIXME, parse some options!
     if(!vf->priv->enc) return 0;
-
+    
     mux_v->bih=calloc(1, sizeof(BITMAPINFOHEADER));
     mux_v->bih->biSize=sizeof(BITMAPINFOHEADER);
     mux_v->bih->biWidth=0;

@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 #include "mp_msg.h"
@@ -59,7 +42,7 @@ static struct menu_priv_s cfg_dflt = {
   MENU_LIST_PRIV_DFLT,
 };
 
-static const m_option_t cfg_fields[] = {
+static m_option_t cfg_fields[] = {
   MENU_LIST_PRIV_FIELDS,
   { "title",M_ST_OFF(struct menu_priv_s,p.title), CONF_TYPE_STRING, 0, 0, 0, NULL },
   { NULL, NULL, NULL, 0,0,0,NULL }
@@ -122,7 +105,7 @@ static int parse_args(menu_t* menu,char* args) {
       mp_msg(MSGT_GLOBAL,MSGL_WARN,MSGTR_LIBMENU_SyntaxErrorAtLine,parser->line);
       asx_parser_free(parser);
       return -1;
-    } else if(r == 0) {
+    } else if(r == 0) {      
       asx_parser_free(parser);
       if(!m)
 	mp_msg(MSGT_GLOBAL,MSGL_WARN,MSGTR_LIBMENU_NoEntryFoundInTheMenuDefinition);
@@ -160,7 +143,7 @@ static int open_cmdlist(menu_t* menu, char* args) {
     mp_msg(MSGT_GLOBAL,MSGL_WARN,MSGTR_LIBMENU_ListMenuNeedsAnArgument);
     return 0;
   }
-
+ 
   menu_list_init(menu);
   if(!parse_args(menu,args))
     return 0;

@@ -5,14 +5,14 @@
 
 #include "config.h"
 #include "DMO_Filter.h"
-#include "loader/drv.h"
-#include "loader/com.h"
+#include "drv.h"
+#include "com.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "loader/win32.h" // printf macro
+#include "win32.h" // printf macro
 
-void trapbug(void);
+void trapbug();
 typedef long STDCALL (*GETCLASS) (const GUID*, const GUID*, void**);
 
 void DMO_Filter_Destroy(DMO_Filter* This)
@@ -36,7 +36,7 @@ DMO_Filter* DMO_FilterCreate(const char* dllname, const GUID* id,
 {
     HRESULT hr = 0;
     const char* em = NULL;
-    DMO_Filter* This = malloc(sizeof(DMO_Filter));
+    DMO_Filter* This = (DMO_Filter*) malloc(sizeof(DMO_Filter));
     if (!This)
 	return NULL;
 
@@ -117,9 +117,9 @@ DMO_Filter* DMO_FilterCreate(const char* dllname, const GUID* id,
             //VIDEOINFOHEADER* vi;
 	    memset(&dmo, 0, sizeof(dmo));
 	    i = This->m_pMedia->vt->GetOutputType(This->m_pMedia, 0, 2, &dmo);
-	    Debug printf("GetOutputType %x \n", i);
-	    Debug printf("DMO  0x%x (%.4s) 0x%x (%.4s)\n"
-	    //Debug printf("DMO  0x%x 0x%x\n"
+	    printf("GetOutputType %x \n", i);
+	    printf("DMO  0x%x (%.4s) 0x%x (%.4s)\n"
+	    //printf("DMO  0x%x 0x%x\n"
 		   ":: fixszsamp:%d tempcomp:%d  sampsz:%ld\n"
 		   ":: formtype: 0x%x\n"
 		   ":: unk %p  cbform: %ld  pbform:%p\n",
@@ -135,7 +135,7 @@ DMO_Filter* DMO_FilterCreate(const char* dllname, const GUID* id,
 /*          vi =  (VIDEOINFOHEADER*) dmo.pbFormat;
 	    vi =  (VIDEOINFOHEADER*) out_fmt->pbFormat;
 	    for (i = 0; i < out_fmt->cbFormat; i++)
-                Debug printf("BYTE %d  %02x  %02x\n", i, ((uint8_t*)dmo.pbFormat)[i], ((uint8_t*)out_fmt->pbFormat)[i]);
+                printf("BYTE %d  %02x  %02x\n", i, ((uint8_t*)dmo.pbFormat)[i], ((uint8_t*)out_fmt->pbFormat)[i]);
 */
 	}
 
@@ -148,11 +148,11 @@ DMO_Filter* DMO_FilterCreate(const char* dllname, const GUID* id,
 
 	inputs = outputs = 0;
 	hr = This->m_pMedia->vt->GetOutputSizeInfo(This->m_pMedia, 0, &inputs, &outputs);
-	Debug printf("GetOutput r=0x%lx   size:%ld  align:%ld\n", hr, inputs, outputs);
+	printf("GetOutput r=0x%lx   size:%ld  align:%ld\n", hr, inputs, outputs);
 
 	// This->m_pMedia->vt->AllocateStreamingResources(This->m_pMedia);
 	hr = This->m_pMedia->vt->GetStreamCount(This->m_pMedia, &inputs, &outputs);
-	Debug printf("StreamCount r=0x%lx  %ld  %ld\n", hr, inputs, outputs);
+	printf("StreamCount r=0x%lx  %ld  %ld\n", hr, inputs, outputs);
 
         break;
     }

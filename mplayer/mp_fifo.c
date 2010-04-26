@@ -1,26 +1,8 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdlib.h>
 #include "osdep/timer.h"
 #include "input/input.h"
 #include "input/mouse.h"
-#include "mp_fifo.h"
+
 
 int key_fifo_size = 7;
 static int *key_fifo_data = NULL;
@@ -62,9 +44,9 @@ static void put_double(int code) {
 }
 
 void mplayer_put_key(int code) {
-  static u64 last_key_time[2];
+  static unsigned last_key_time[2];
   static int last_key[2];
-  u64 now = GetTimerMS();
+  unsigned now = GetTimerMS();
   // ignore system-doubleclick if we generate these events ourselves
   if (doubleclick_time &&
       (code & ~MP_KEY_DOWN) >= MOUSE_BTN0_DBL &&

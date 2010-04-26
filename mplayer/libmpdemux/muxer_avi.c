@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -310,7 +292,7 @@ static void avifile_write_header(muxer_t *muxer){
           mp_msg(MSGT_MUXER, MSGL_INFO, MSGTR_SettingVideoDelay, (float)s->h.dwStart * s->h.dwScale/s->h.dwRate);
       }
   }
-
+  
   if (isodml) {
       unsigned int rifflen, movilen;
       int i;
@@ -387,7 +369,7 @@ static void avifile_write_header(muxer_t *muxer){
       }
   }
   write_avi_list(muxer->stream,listtypeAVIHEADER,hdrsize);
-
+  
   le2me_MainAVIHeader(&muxer->avih);
   write_avi_chunk(muxer->stream,ckidAVIMAINHDR,sizeof(muxer->avih),&muxer->avih); /* MainAVIHeader */
   le2me_MainAVIHeader(&muxer->avih);
@@ -463,7 +445,7 @@ static void avifile_write_header(muxer_t *muxer){
           le2me_WAVEFORMATEX(s->wf);
           write_avi_chunk(muxer->stream,ckidSTREAMFORMAT,wfsize,s->wf); /* WAVEFORMATEX */
           le2me_WAVEFORMATEX(s->wf);
-}
+}	  
 	  break;
       }
       if (isodml && si && si->superidx && si->superidxsize) {

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -123,19 +105,19 @@ int ai_alsa_setup(audio_in_t *ai)
 int ai_alsa_init(audio_in_t *ai)
 {
     int err;
-
+    
     err = snd_pcm_open(&ai->alsa.handle, ai->alsa.device, SND_PCM_STREAM_CAPTURE, 0);
     if (err < 0) {
 	mp_msg(MSGT_TV, MSGL_ERR, MSGTR_MPDEMUX_AIALSA_ErrorOpeningAudio, snd_strerror(err));
 	return -1;
     }
-
+    
     err = snd_output_stdio_attach(&ai->alsa.log, stderr, 0);
-
+    
     if (err < 0) {
 	return -1;
     }
-
+    
     err = ai_alsa_setup(ai);
 
     return err;
@@ -157,7 +139,7 @@ int ai_alsa_xrun(audio_in_t *ai)
 {
     snd_pcm_status_t *status;
     int res;
-
+	
     snd_pcm_status_alloca(&status);
     if ((res = snd_pcm_status(ai->alsa.handle, status))<0) {
 	mp_msg(MSGT_TV, MSGL_ERR, MSGTR_MPDEMUX_AIALSA_AlsaStatusError, snd_strerror(res));

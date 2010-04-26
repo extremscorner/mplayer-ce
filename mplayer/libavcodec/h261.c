@@ -21,7 +21,7 @@
  */
 
 /**
- * @file
+ * @file h261.c
  * h261codec.
  */
 

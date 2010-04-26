@@ -18,29 +18,21 @@
 
 
 /**
- * @file
+ * @file check_altivec.c
  * Checks for AltiVec presence.
  */
 
 #ifdef __APPLE__
-#undef _POSIX_C_SOURCE
 #include <sys/sysctl.h>
-#elif defined(__OpenBSD__)
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#include <machine/cpu.h>
-#elif defined(__AMIGAOS4__)
+#elif __AMIGAOS4__
 #include <exec/exec.h>
 #include <interfaces/exec.h>
 #include <proto/exec.h>
 #endif /* __APPLE__ */
 
-#include "config.h"
-#include "dsputil_altivec.h"
-
 /**
- * This function MAY rely on signal() or fork() in order to make sure AltiVec
- * is present.
+ * This function MAY rely on signal() or fork() in order to make sure altivec
+ * is present
  */
 
 int has_altivec(void)
@@ -52,12 +44,8 @@ int has_altivec(void)
     IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
     if (result == VECTORTYPE_ALTIVEC) return 1;
     return 0;
-#elif defined(__APPLE__) || defined(__OpenBSD__)
-#ifdef __OpenBSD__
-    int sels[2] = {CTL_MACHDEP, CPU_ALTIVEC};
-#else
+#elif __APPLE__
     int sels[2] = {CTL_HW, HW_VECTORUNIT};
-#endif
     int has_vu = 0;
     size_t len = sizeof(has_vu);
     int err;
@@ -66,10 +54,10 @@ int has_altivec(void)
 
     if (err == 0) return has_vu != 0;
     return 0;
-#elif CONFIG_RUNTIME_CPUDETECT
+#elif defined(RUNTIME_CPUDETECT)
     int proc_ver;
-    // Support of mfspr PVR emulation added in Linux 2.6.17.
-    __asm__ volatile("mfspr %0, 287" : "=r" (proc_ver));
+    // support of mfspr PVR emulation added in Linux 2.6.17
+    asm volatile("mfspr %0, 287" : "=r" (proc_ver));
     proc_ver >>= 16;
     if (proc_ver  & 0x8000 ||
         proc_ver == 0x000c ||
@@ -79,7 +67,7 @@ int has_altivec(void)
         return 1;
     return 0;
 #else
-    // Since we were compiled for AltiVec, just assume we have it
+    // since we were compiled for altivec, just assume we have it
     // until someone comes up with a proper way (not involving signal hacks).
     return 1;
 #endif /* __AMIGAOS4__ */

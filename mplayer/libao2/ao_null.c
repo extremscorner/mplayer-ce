@@ -1,23 +1,3 @@
-/*
- * null audio output driver
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -27,7 +7,7 @@
 #include "audio_out.h"
 #include "audio_out_internal.h"
 
-static const ao_info_t info =
+static ao_info_t info = 
 {
 	"Null audio output",
 	"null",
@@ -41,14 +21,14 @@ struct	timeval last_tv;
 int	buffer;
 
 static void drain(void){
-
+ 
     struct timeval now_tv;
     int temp, temp2;
 
     gettimeofday(&now_tv, 0);
     temp = now_tv.tv_sec - last_tv.tv_sec;
     temp *= ao_data.bps;
-
+    
     temp2 = now_tv.tv_usec - last_tv.tv_usec;
     temp2 /= 1000;
     temp2 *= ao_data.bps;

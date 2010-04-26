@@ -22,8 +22,7 @@
  */
 
 /**
- *  @file
- *  IMC - Intel Music Coder
+ *  @file imc.c IMC - Intel Music Coder
  *  A mdct based codec using a 256 points large transform
  *  divied into 32 bands with some mix of scale factors.
  *  Only mono is supported.
@@ -37,9 +36,8 @@
 
 #define ALT_BITSTREAM_READER
 #include "avcodec.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "dsputil.h"
-#include "fft.h"
 
 #include "imcdata.h"
 
@@ -86,8 +84,8 @@ typedef struct {
 
     DSPContext dsp;
     FFTContext fft;
-    DECLARE_ALIGNED(16, FFTComplex, samples)[COEFFS/2];
-    DECLARE_ALIGNED(16, float, out_samples)[COEFFS];
+    DECLARE_ALIGNED_16(FFTComplex, samples[COEFFS/2]);
+    DECLARE_ALIGNED_16(float, out_samples[COEFFS]);
 } IMCContext;
 
 static VLC huffman_vlc[4][4];
@@ -145,7 +143,7 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
     /* initialize the VLC tables */
     for(i = 0; i < 4 ; i++) {
         for(j = 0; j < 4; j++) {
-            huffman_vlc[i][j].table = &vlc_tables[vlc_offsets[i * 4 + j]];
+            huffman_vlc[i][j].table = vlc_tables[vlc_offsets[i * 4 + j]];
             huffman_vlc[i][j].table_allocated = vlc_offsets[i * 4 + j + 1] - vlc_offsets[i * 4 + j];
             init_vlc(&huffman_vlc[i][j], 9, imc_huffman_sizes[i],
                      imc_huffman_lens[i][j], 1, 1,
@@ -157,7 +155,6 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
     ff_fft_init(&q->fft, 7, 1);
     dsputil_init(&q->dsp, avctx);
     avctx->sample_fmt = SAMPLE_FMT_S16;
-    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
     return 0;
 }
 
@@ -641,10 +638,8 @@ static int imc_get_coeffs (IMCContext* q) {
 
 static int imc_decode_frame(AVCodecContext * avctx,
                             void *data, int *data_size,
-                            AVPacket *avpkt)
+                            const uint8_t * buf, int buf_size)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
 
     IMCContext *q = avctx->priv_data;
 
@@ -824,7 +819,7 @@ static av_cold int imc_decode_close(AVCodecContext * avctx)
 
 AVCodec imc_decoder = {
     .name = "imc",
-    .type = AVMEDIA_TYPE_AUDIO,
+    .type = CODEC_TYPE_AUDIO,
     .id = CODEC_ID_IMC,
     .priv_data_size = sizeof(IMCContext),
     .init = imc_decode_init,

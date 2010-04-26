@@ -4,7 +4,7 @@
 // Alexander Strasser <eclipse7@gmx.net>
 // Sebastian Krämer <mail@kraymer.de>
 
-// In sync with r28122
+// In sync with r27123
 // TODO: cosmetic commit 27072
 // FIXME: improve wording/meaning of periodsize|timer.. for ao_alsa.c strings
 
@@ -12,7 +12,7 @@
 // ========================= MPlayer help ===========================
 
 #ifdef HELP_MP_DEFINE_STATIC
-static const char help_text[]=
+static char help_text[]=
 "Verwendung:   mplayer [Optionen] [URL|Verzeichnis/]Dateiname\n"
 "\n"
 "Basisoptionen: (siehe Manpage für eine vollständige Liste aller Optionen!)\n"
@@ -54,13 +54,13 @@ static const char help_text[]=
 "\n";
 #endif
 
-// libmpcodecs/ad_dvdpcm.c
+// libmpcodecs/ad_dvdpcm.c:
 #define MSGTR_SamplesWanted "Beispiele für dieses Format werden gebraucht, um die Unterstützung zu verbessern. Bitte kontaktiere die Entwickler.\n"
 
 
 // ========================= MPlayer Ausgaben ===========================
 
-// mplayer.c
+// mplayer.c:
 #define MSGTR_Exiting "\nBeenden...\n"
 #define MSGTR_ExitingHow "\nBeenden... (%s)\n"
 #define MSGTR_Exit_quit "Ende"
@@ -79,6 +79,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "FPS ist im Header nicht angegeben (oder ungültig)! Benutze die Option -fps!\n"
 #define MSGTR_TryForceAudioFmtStr "Versuche Audiocodecfamilie %s zu erzwingen...\n"
 #define MSGTR_CantFindAudioCodec "Kann Codec für Audioformat 0x%X nicht finden!\n"
+#define MSGTR_RTFMCodecs "Lies DOCS/HTML/de/codecs.html!\n"
 #define MSGTR_TryForceVideoFmtStr "Versuche Videocodecfamilie %s zu erzwingen...\n"
 #define MSGTR_CantFindVideoCodec "Kann keinen Codec finden, der zu gewählter Option -vo und Videoformat 0x%X passt!\n"
 #define MSGTR_CannotInitVO "FATAL: Kann Videoausgabetreiber nicht initialisieren!\n"
@@ -194,7 +195,6 @@ static const char help_text[]=
 #define MSGTR_DvdnavNavSeekDone "DVDNAV-Ereignis: Nav Suche beendet.\n"
 #define MSGTR_MenuCall "Menü-Aufruf\n"
 
-// --- edit decision lists
 #define MSGTR_EdlOutOfMem "Kann nicht genug Speicher für EDL-Daten reservieren.\n"
 #define MSGTR_EdlRecordsNo "%d EDL-Aktionen gelesen.\n"
 #define MSGTR_EdlQueueEmpty "Es gibt keine auszuführenden EDL-Aktionen.\n"
@@ -264,7 +264,7 @@ static const char help_text[]=
 #define MSGTR_SubVisibleStatus "Untertitel: %s"
 #define MSGTR_SubForcedOnlyStatus "Erzwungene Untertitel: %s"
 
-// mencoder.c
+// mencoder.c:
 #define MSGTR_UsingPass3ControlFile "Verwende Pass 3 Kontrolldatei: %s\n"
 #define MSGTR_MissingFilename "\nDateiname nicht angegeben.\n\n"
 #define MSGTR_CannotOpenFile_Device "Kann Datei/Gerät nicht öffnen.\n"
@@ -484,7 +484,7 @@ static const char help_text[]=
 "                 <8-320>: ABR-Encodierung mit der angegebenen durchschnittlichen\n"\
 "                          Bitrate\n\n"
 
-//codec-cfg.c
+//codec-cfg.c:
 #define MSGTR_DuplicateFourcc "Doppelter FourCC."
 #define MSGTR_TooManyFourccs "Zu viele FourCCs/Formate..."
 #define MSGTR_ParseError "Fehler beim Parsen."
@@ -543,7 +543,7 @@ static const char help_text[]=
 #define MSGTR_PropertyListHeader "\n Name                 Typ             Min        Max\n\n"
 #define MSGTR_TotalProperties "\nInsgesamt: %d Eigenschaften\n"
 
-// open.c, stream.c
+// open.c, stream.c:
 #define MSGTR_CdDevNotfound "CDROM-Laufwerk '%s' nicht gefunden.\n"
 #define MSGTR_ErrTrackSelect "Fehler beim Auswählen des VCD Tracks."
 #define MSGTR_ReadSTDIN "Lese von Standardeingabe (stdin)...\n"
@@ -584,7 +584,7 @@ static const char help_text[]=
 #define MSGTR_DVDsubtitleLanguage "Untertitel ( sid ): %d Sprache: %s\n"
 #define MSGTR_DVDnumSubtitles "Anzahl der Untertitel auf der Disc: %d\n"
 
-// muxer.c, muxer_*.c
+// muxer.c, muxer_*.c:
 #define MSGTR_TooManyStreams "Zu viele Streams!"
 #define MSGTR_RawMuxerOnlyOneStream "Der rawaudio-Muxer unterstützt nur einen Audiostream!\n"
 #define MSGTR_IgnoringVideoStream "Ignoriere Videostream!\n"
@@ -597,7 +597,7 @@ static const char help_text[]=
 #define MSGTR_WritingHeader "Schreibe Dateikopf...\n"
 #define MSGTR_WritingTrailer "Schreibe Dateiindex...\n"
 
-// demuxer.c, demux_*.c
+// demuxer.c, demux_*.c:
 #define MSGTR_AudioStreamRedefined "Warnung! Audiostream-Header %d neu definiert!\n"
 #define MSGTR_VideoStreamRedefined "Warnung! Videostream-Header %d neu definiert!\n"
 #define MSGTR_TooManyAudioInBuffer "\nZu viele Audiopakete im Puffer: (%d in %d Bytes).\n"
@@ -664,7 +664,7 @@ static const char help_text[]=
 #define MSGTR_AudioID "[%s] Audiostream gefunden, -aid %d\n"
 #define MSGTR_SubtitleID "[%s] Untertitelstream gefunden, -sid %d\n"
 
-// dec_video.c & dec_audio.c
+// dec_video.c & dec_audio.c:
 #define MSGTR_CantOpenCodec "Konnte Codec nicht öffnen.\n"
 #define MSGTR_CantCloseCodec "Konnte Codec nicht schließen.\n"
 
@@ -714,6 +714,8 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Codec hat sh->disp_w und sh->disp_h nicht gesetzt!\nVersuche Problem zu umgehen..\n"
+#define MSGTR_VoConfigRequest "VDec: VO wird versucht, auf %d x %d (Bevorzugter Farbraum: %s) zu setzen.\n"
+#define MSGTR_UsingXAsOutputCspNoY "VDec: Verwende %s als Ausgabefarbraum (Nummer %d).\n"
 #define MSGTR_CouldNotFindColorspace "Konnte keinen passenden Farbraum finden - neuer Versuch mit '-vf scale'...\n"
 #define MSGTR_MovieAspectIsSet "Film-Aspekt ist %.2f:1 - Vorskalierung zur Korrektur der Seitenverhältnisse.\n"
 #define MSGTR_MovieAspectUndefined "Film-Aspekt ist undefiniert - keine Vorskalierung durchgeführt.\n"
@@ -1248,7 +1250,7 @@ static const char help_text[]=
 #define MSGTR_AO_ALSA_ErrorSetBlockMode "[AL_ALSA] Fehler beim Setzen des block-Modus %s.\n"
 #define MSGTR_AO_ALSA_UnableToGetInitialParameters "[AO_ALSA] Kann Startparameter nicht ermitteln: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetAccessType "[AO_ALSA] Kann Zugriffstyp nicht setzen: %s\n"
-#define MSGTR_AO_ALSA_FormatNotSupportedByHardware "[AO_ALSA] Format %s wird von der Hardware nicht unterstützt, versuche Standard.\n"
+#define MSGTR_AO_ALSA_FormatNotSupportedByHardware "[AO_ALSA] Format %s wird von der Hardware nicht unterstütz, versuche Standard.\n"
 #define MSGTR_AO_ALSA_UnableToSetFormat "[AO_ALSA] Kann Format nicht setzen: %s\n"
 #define MSGTR_AO_ALSA_UnableToSetChannels "[AO_ALSA] Kann Kanäle nicht ermitteln: %s\n"
 #define MSGTR_AO_ALSA_UnableToDisableResampling "[AO_ALSA] Kann Resampling nicht deaktivieren: %s\n"
@@ -1421,7 +1423,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_MMST_UnknownObject "unbekanntes Objekt\n"
 #define MSGTR_MPDEMUX_MMST_MediaDataReadFailed "Konnte Mediendaten nicht lesen.\n"
 #define MSGTR_MPDEMUX_MMST_MissingSignature "fehlende Signatur\n"
-#define MSGTR_MPDEMUX_MMST_PatentedTechnologyJoke "Alles fertig. Vielen Dank, dass Du eine proprietäre und patentierte Technologie beinhaltende Mediendatei heruntergeladen hast.\n"
+#define MSGTR_MPDEMUX_MMST_PatentedTechnologyJoke "Alles fertig. Vielen dank, dass Du eine prorietäre und patentierte Technologie beinhaltende Mediendatei heruntergeladen hast.\n"
 #define MSGTR_MPDEMUX_MMST_UnknownCmd "Unbekanntes Kommando %02x\n"
 #define MSGTR_MPDEMUX_MMST_GetMediaPacketErr "get_media_packet lieferte Fehler zurück: %s\n"
 #define MSGTR_MPDEMUX_MMST_Connected "Verbunden.\n"
@@ -1722,8 +1724,8 @@ static const char help_text[]=
 #define MSGTR_LIBVO_MGA_InvalidOutputFormat "[MGA] ungültiges Ausgabeformat %0X\n"
 #define MSGTR_LIBVO_MGA_IncompatibleDriverVersion "[MGA] Die Treiberversion von mga_vid ist mit dieser MPlayer-Version nicht kompatibel!\n"
 #define MSGTR_LIBVO_MGA_CouldntOpen "[MGA] Konnte %s nicht öffnen\n"
-#define MSGTR_LIBVO_MGA_ResolutionTooHigh "[MGA] Auflösung der Quelle ist in mindestens einer Dimension größer als 1023x1023.\n[MGA] Bitte skaliere in Software oder verwende -lavdopts lowres=1.\n"
-#define MSGTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] Unterschiedliche Versionen des mga_vid-Treibers des Kernels (%u) und MPlayer (%u).\n"
+#define MGSTR_LIBVO_MGA_ResolutionTooHigh "[MGA] Auflösung der Quelle ist in mindestens einer Dimension größer als 1023x1023.\n[MGA] Bitte skaliere in Software oder verwende -lavdopts lowres=1.\n"
+#define MGSTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] Unterschiedliche Versionen des mga_vid-Treibers des Kernels (%u) und MPlayer (%u).\n"
 
 
 // libvo/vesa_lvo.c
@@ -2042,7 +2044,7 @@ static const char help_text[]=
 #define MSGTR_LIBASS_ErrorRecodingFile "[ass] Fehler bei Recodierung der Datei.\n"
 #define MSGTR_LIBASS_FopenFailed "[ass] ass_read_file(%s): fopen fehlgeschlagen\n"
 #define MSGTR_LIBASS_FseekFailed "[ass] ass_read_file(%s): fseek fehlgeschlagen\n"
-#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan100M "[ass] ass_read_file(%s): Laden von Untertiteln größer als 100M verweigert.\n"
+#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan10M "[ass] ass_read_file(%s): Laden von Untertiteln größer als 10M verweigert.\n"
 #define MSGTR_LIBASS_ReadFailed "Lesen fehlgeschlagen, %d: %s\n"
 #define MSGTR_LIBASS_AddedSubtitleFileMemory "[ass] Hinzugefügte Untertiteldatei: <Speicher> (%d Styles, %d Ereignisse)\n"
 #define MSGTR_LIBASS_AddedSubtitleFileFname "[ass]  Hinzugefügte Untertiteldatei: %s (%d Styles, %d Ereignisse)\n"

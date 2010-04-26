@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,7 +27,7 @@ struct list_entry_s {
   struct list_entry p;
   play_tree_t* pt;
 };
-
+  
 
 struct menu_priv_s {
   menu_list_priv_t p;
@@ -60,7 +43,7 @@ static struct menu_priv_s cfg_dflt = {
 
 #define ST_OFF(m) M_ST_OFF(struct menu_priv_s,m)
 
-static const m_option_t cfg_fields[] = {
+static m_option_t cfg_fields[] = {
   MENU_LIST_PRIV_FIELDS,
   { "title", ST_OFF(title),  CONF_TYPE_STRING, 0, 0, 0, NULL },
   { "auto-close", ST_OFF(auto_close), CONF_TYPE_FLAG, 0, 0, 1, NULL },
@@ -132,7 +115,7 @@ static int op(menu_t* menu, char* args) {
   play_tree_t* i;
   list_entry_t* e;
   play_tree_iter_t* playtree_iter = mpctx_get_playtree_iter(menu->ctx);
-
+  
   args = NULL; // Warning kill
 
   menu->draw = menu_list_draw;
@@ -150,30 +133,15 @@ static int op(menu_t* menu, char* args) {
     e->pt = playtree_iter->tree->parent;
     menu_list_add_entry(menu,e);
   }
-
+  
   for(i = playtree_iter->tree ; i->prev != NULL ; i = i->prev)
     /* NOP */;
   for( ; i != NULL ; i = i->next ) {
     e = calloc(1,sizeof(list_entry_t));
-    if(i->files) {
+    if(i->files)
       e->p.txt = mp_basename(i->files[0]);
-	  
-	  /// start denper's changes
-	  // If parameter mp_file_title exists, replaces the list_entry text with its value
-	  if(i->params) {
-		  for ( int n = 0; i->params[n].name != NULL ; n++ ) {
-			if(strcasecmp(i->params[n].name,PLAY_TREE_PARAM_PRETTYFORMAT_TITLE) == 0) {
-				if(i->params[n].value != NULL) {
-					e->p.txt = i->params[n].value;
-					break;
-				}
-			}
-		  }
-	  }
-	  /// end denper's changes
-    } else {
+    else
       e->p.txt = "Group ...";
-	}
     e->pt = i;
     menu_list_add_entry(menu,e);
   }

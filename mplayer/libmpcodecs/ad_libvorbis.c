@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,14 +9,10 @@
 #include "ad_internal.h"
 #include "libaf/reorder_ch.h"
 
-static const ad_info_t info =
+static ad_info_t info = 
 {
 	"Ogg/Vorbis audio decoder",
-#ifdef CONFIG_TREMOR
-	"tremor",
-#else
 	"libvorbis",
-#endif
 	"Felix Buenemann, A'rpi",
 	"libvorbis",
 	""
@@ -42,11 +21,7 @@ static const ad_info_t info =
 LIBAD_EXTERN(libvorbis)
 
 #ifdef CONFIG_TREMOR
-#ifdef GEKKO
-#include "../tremor/ivorbiscodec.h"
-#else
 #include <tremor/ivorbiscodec.h>
-#endif
 #else
 #include <vorbis/codec.h>
 #endif
@@ -183,7 +158,7 @@ static int init(sh_audio_t *sh)
     if(ov->rg_scale * rg_peak > 1.f)
       ov->rg_scale = 1.f / rg_peak;
     /* replaygain: security */
-    if(ov->rg_scale > 15.)
+    if(ov->rg_scale > 15.) 
       ov->rg_scale = 15.;
 #ifdef CONFIG_TREMOR
     ov->rg_scale_int = (int)(ov->rg_scale*64.f);
@@ -201,7 +176,7 @@ static int init(sh_audio_t *sh)
 //  printf("lower=%d  upper=%d  \n",(int)ov->vi.bitrate_lower,(int)ov->vi.bitrate_upper);
 
   // Setup the decoder
-  sh->channels=ov->vi.channels;
+  sh->channels=ov->vi.channels; 
   sh->samplerate=ov->vi.rate;
   sh->samplesize=2;
   // assume 128kbit if bitrate not specified in the header
@@ -229,7 +204,7 @@ static int control(sh_audio_t *sh,int cmd,void* arg, ...)
 {
     switch(cmd)
     {
-#if 0
+#if 0      
       case ADCTRL_RESYNC_STREAM:
 	  return CONTROL_TRUE;
       case ADCTRL_SKIP_FRAME:
@@ -270,7 +245,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
 	    int clipflag=0;
 	    int convsize=(maxlen-len)/(2*ov->vi.channels); // max size!
 	    int bout=((samples<convsize)?samples:convsize);
-
+	  
 	    if(bout<=0) break; // no buffer space
 
 	    /* convert floats to 16 bit signed ints (host order) and
@@ -328,7 +303,7 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
 	      }
 	    }
 	   }
-
+		
 	    if(clipflag)
 	      mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"Clipping in frame %ld\n",(long)(ov->vd.sequence));
 	    len+=2*ov->vi.channels*bout;

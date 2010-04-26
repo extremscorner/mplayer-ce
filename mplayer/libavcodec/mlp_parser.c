@@ -20,14 +20,14 @@
  */
 
 /**
- * @file
+ * @file mlp_parser.c
  * MLP parser
  */
 
 #include <stdint.h>
 
 #include "libavutil/crc.h"
-#include "get_bits.h"
+#include "bitstream.h"
 #include "parser.h"
 #include "mlp_parser.h"
 #include "mlp.h"
@@ -150,12 +150,6 @@ typedef struct MLPParseContext
     int num_substreams;
 } MLPParseContext;
 
-static av_cold int mlp_init(AVCodecParserContext *s)
-{
-    ff_mlp_init_crc();
-    return 0;
-}
-
 static int mlp_parse(AVCodecParserContext *s,
                      AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
@@ -176,9 +170,7 @@ static int mlp_parse(AVCodecParserContext *s,
 
         for (i = 0; i < buf_size; i++) {
             mp->pc.state = (mp->pc.state << 8) | buf[i];
-            if ((mp->pc.state & 0xfffffffe) == 0xf8726fba &&
-                // ignore if we do not have the data for the start of header
-                mp->pc.index + i >= 7) {
+            if ((mp->pc.state & 0xfffffffe) == 0xf8726fba) {
                 mp->in_sync = 1;
                 mp->bytes_left = 0;
                 break;
@@ -253,11 +245,11 @@ static int mlp_parse(AVCodecParserContext *s,
         if (ff_mlp_read_major_sync(avctx, &mh, &gb) < 0)
             goto lost_sync;
 
-        avctx->bits_per_raw_sample = mh.group1_bits;
-        if (avctx->bits_per_raw_sample > 16)
+#ifdef CONFIG_AUDIO_NONSHORT
+        avctx->bits_per_sample = mh.group1_bits;
+        if (avctx->bits_per_sample > 16)
             avctx->sample_fmt = SAMPLE_FMT_S32;
-        else
-            avctx->sample_fmt = SAMPLE_FMT_S16;
+#endif
         avctx->sample_rate = mh.group1_samplerate;
         avctx->frame_size = mh.access_unit_size;
 
@@ -289,9 +281,9 @@ lost_sync:
 }
 
 AVCodecParser mlp_parser = {
-    { CODEC_ID_MLP, CODEC_ID_TRUEHD },
+    { CODEC_ID_MLP },
     sizeof(MLPParseContext),
-    mlp_init,
+    ff_mlp_init_crc2D,
     mlp_parse,
-    ff_parse_close,
+    NULL,
 };

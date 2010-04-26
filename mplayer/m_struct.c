@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 /// \file
 /// \ingroup OptionsStruct
@@ -58,7 +41,7 @@ m_struct_alloc(const m_struct_t* st) {
 
   r = calloc(1,st->size);
   memcpy(r,st->defaults,st->size);
-
+ 
   for(i = 0 ; st->fields[i].name ; i++) {
     if(st->fields[i].type->flags & M_OPT_TYPE_DYNAMIC)
       memset(M_ST_MB_P(r,st->fields[i].p),0,st->fields[i].type->size);
@@ -68,21 +51,21 @@ m_struct_alloc(const m_struct_t* st) {
 }
 
 int
-m_struct_set(const m_struct_t* st, void* obj, const char* field, const char* param) {
+m_struct_set(const m_struct_t* st, void* obj, char* field, char* param) {
   const m_option_t* f = m_struct_get_field(st,field);
 
   if(!f) {
     mp_msg(MSGT_CFGPARSER, MSGL_ERR,"Struct %s doesn't have any %s field\n",
 	   st->name,field);
     return 0;
-  }
+  } 
 
   if(f->type->parse(f,field,param,M_ST_MB_P(obj,f->p),M_CONFIG_FILE) < 0) {
     mp_msg(MSGT_CFGPARSER, MSGL_ERR,"Struct %s, field %s parsing error: %s\n",
 	   st->name,field,param);
     return 0;
   }
-
+  
   return 1;
 }
 
@@ -99,7 +82,7 @@ m_struct_reset(const m_struct_t* st, void* obj, const char* field) {
 
   // Only one
   f = m_struct_get_field(st,field);
-  if(!f) {
+  if(!f) {    
     mp_msg(MSGT_CFGPARSER, MSGL_ERR,"Struct %s doesn't have any %s field\n",
 	   st->name,field);
     return;
@@ -121,7 +104,7 @@ void*
 m_struct_copy(const m_struct_t* st, void* obj) {
   void* r = malloc(st->size);
   int i;
-
+  
   memcpy(r,obj,st->size);
   for(i = 0 ; st->fields[i].name ; i++) {
     if(st->fields[i].type->flags & M_OPT_TYPE_DYNAMIC)

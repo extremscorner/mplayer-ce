@@ -1,6 +1,6 @@
 /*
  * "Real" compatible muxer.
- * Copyright (c) 2000, 2001 Fabrice Bellard
+ * Copyright (c) 2000, 2001 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
  *
@@ -20,25 +20,6 @@
  */
 #include "avformat.h"
 #include "rm.h"
-
-typedef struct {
-    int nb_packets;
-    int packet_total_size;
-    int packet_max_size;
-    /* codec related output */
-    int bit_rate;
-    float frame_rate;
-    int nb_frames;    /* current frame number */
-    int total_frames; /* total number of frames */
-    int num;
-    AVCodecContext *enc;
-} StreamInfo;
-
-typedef struct {
-    StreamInfo streams[2];
-    StreamInfo *audio_stream, *video_stream;
-    int data_pos; /* position of the data after the header */
-} RMMuxContext;
 
 /* in ms */
 #define BUFFER_DURATION 0
@@ -63,14 +44,13 @@ static void put_str8(ByteIOContext *s, const char *tag)
 static void rv10_write_header(AVFormatContext *ctx,
                               int data_size, int index_pos)
 {
-    RMMuxContext *rm = ctx->priv_data;
+    RMContext *rm = ctx->priv_data;
     ByteIOContext *s = ctx->pb;
     StreamInfo *stream;
     unsigned char *data_offset_ptr, *start_ptr;
     const char *desc, *mimetype;
     int nb_packets, packet_total_size, packet_max_size, size, packet_avg_size, i;
     int bit_rate, v, duration, flags, data_pos;
-    AVMetadataTag *tag;
 
     start_ptr = s->buf_ptr;
 
@@ -124,24 +104,21 @@ static void rv10_write_header(AVFormatContext *ctx,
     /* comments */
 
     put_tag(s,"CONT");
-    size =  4 * 2 + 10;
-    for(i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
-        tag = av_metadata_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
-        if(tag) size += strlen(tag->value);
-    }
+    size = strlen(ctx->title) + strlen(ctx->author) + strlen(ctx->copyright) +
+        strlen(ctx->comment) + 4 * 2 + 10;
     put_be32(s,size);
     put_be16(s,0);
-    for(i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
-        tag = av_metadata_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
-        put_str(s, tag ? tag->value : "");
-    }
+    put_str(s, ctx->title);
+    put_str(s, ctx->author);
+    put_str(s, ctx->copyright);
+    put_str(s, ctx->comment);
 
     for(i=0;i<ctx->nb_streams;i++) {
         int codec_data_size;
 
         stream = &rm->streams[i];
 
-        if (stream->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (stream->enc->codec_type == CODEC_TYPE_AUDIO) {
             desc = "The Audio Stream";
             mimetype = "audio/x-pn-realaudio";
             codec_data_size = 73;
@@ -177,7 +154,7 @@ static void rv10_write_header(AVFormatContext *ctx,
         put_str8(s, mimetype);
         put_be32(s, codec_data_size);
 
-        if (stream->enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (stream->enc->codec_type == CODEC_TYPE_AUDIO) {
             int coded_frame_size, fscode, sample_rate;
             sample_rate = stream->enc->sample_rate;
             coded_frame_size = (stream->enc->bit_rate *
@@ -294,7 +271,7 @@ static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
 
 static int rm_write_header(AVFormatContext *s)
 {
-    RMMuxContext *rm = s->priv_data;
+    RMContext *rm = s->priv_data;
     StreamInfo *stream;
     int n;
     AVCodecContext *codec;
@@ -309,7 +286,7 @@ static int rm_write_header(AVFormatContext *s)
         stream->enc = codec;
 
         switch(codec->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
+        case CODEC_TYPE_AUDIO:
             rm->audio_stream = stream;
             stream->frame_rate = (float)codec->sample_rate / (float)codec->frame_size;
             /* XXX: dummy values */
@@ -317,7 +294,7 @@ static int rm_write_header(AVFormatContext *s)
             stream->nb_packets = 0;
             stream->total_frames = stream->nb_packets;
             break;
-        case AVMEDIA_TYPE_VIDEO:
+        case CODEC_TYPE_VIDEO:
             rm->video_stream = stream;
             stream->frame_rate = (float)codec->time_base.den / (float)codec->time_base.num;
             /* XXX: dummy values */
@@ -338,7 +315,7 @@ static int rm_write_header(AVFormatContext *s)
 static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
     uint8_t *buf1;
-    RMMuxContext *rm = s->priv_data;
+    RMContext *rm = s->priv_data;
     ByteIOContext *pb = s->pb;
     StreamInfo *stream = rm->audio_stream;
     int i;
@@ -346,7 +323,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
     /* XXX: suppress this malloc */
     buf1= (uint8_t*) av_malloc( size * sizeof(uint8_t) );
 
-    write_packet_header(s, stream, size, !!(flags & AV_PKT_FLAG_KEY));
+    write_packet_header(s, stream, size, !!(flags & PKT_FLAG_KEY));
 
     /* for AC-3, the words seem to be reversed */
     for(i=0;i<size;i+=2) {
@@ -362,10 +339,10 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
 static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
-    RMMuxContext *rm = s->priv_data;
+    RMContext *rm = s->priv_data;
     ByteIOContext *pb = s->pb;
     StreamInfo *stream = rm->video_stream;
-    int key_frame = !!(flags & AV_PKT_FLAG_KEY);
+    int key_frame = !!(flags & PKT_FLAG_KEY);
 
     /* XXX: this is incorrect: should be a parameter */
 
@@ -408,7 +385,7 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
 static int rm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     if (s->streams[pkt->stream_index]->codec->codec_type ==
-        AVMEDIA_TYPE_AUDIO)
+        CODEC_TYPE_AUDIO)
         return rm_write_audio(s, pkt->data, pkt->size, pkt->flags);
     else
         return rm_write_video(s, pkt->data, pkt->size, pkt->flags);
@@ -416,7 +393,7 @@ static int rm_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int rm_write_trailer(AVFormatContext *s)
 {
-    RMMuxContext *rm = s->priv_data;
+    RMContext *rm = s->priv_data;
     int data_size, index_pos, i;
     ByteIOContext *pb = s->pb;
 
@@ -425,8 +402,16 @@ static int rm_write_trailer(AVFormatContext *s)
         index_pos = url_fseek(pb, 0, SEEK_CUR);
         data_size = index_pos - rm->data_pos;
 
-        /* FIXME: write index */
+        /* index */
+        put_tag(pb, "INDX");
+        put_be32(pb, 10 + 10 * s->nb_streams);
+        put_be16(pb, 0);
 
+        for(i=0;i<s->nb_streams;i++) {
+            put_be32(pb, 0); /* zero indexes */
+            put_be16(pb, i); /* stream number */
+            put_be32(pb, 0); /* next index */
+        }
         /* undocumented end header */
         put_be32(pb, 0);
         put_be32(pb, 0);
@@ -434,7 +419,7 @@ static int rm_write_trailer(AVFormatContext *s)
         url_fseek(pb, 0, SEEK_SET);
         for(i=0;i<s->nb_streams;i++)
             rm->streams[i].total_frames = rm->streams[i].nb_frames;
-        rv10_write_header(s, data_size, 0);
+        rv10_write_header(s, data_size, index_pos);
     } else {
         /* undocumented end header */
         put_be32(pb, 0);
@@ -447,10 +432,10 @@ static int rm_write_trailer(AVFormatContext *s)
 
 AVOutputFormat rm_muxer = {
     "rm",
-    NULL_IF_CONFIG_SMALL("RealMedia format"),
+    NULL_IF_CONFIG_SMALL("RM format"),
     "application/vnd.rn-realmedia",
     "rm,ra",
-    sizeof(RMMuxContext),
+    sizeof(RMContext),
     CODEC_ID_AC3,
     CODEC_ID_RV10,
     rm_write_header,

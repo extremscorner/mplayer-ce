@@ -3,8 +3,8 @@
  * http://svn.mplayerhq.hu/mplayer/trunk/
  */
 
-#include "loader/wine/winerror.h"
-#include "loader/wine/windef.h"
+#include "wine/winerror.h"
+#include "wine/windef.h"
 #include "outputpin.h"
 #include "mediatype.h"
 #include <stdio.h>
@@ -159,12 +159,12 @@ IMPLEMENT_IUNKNOWN(CEnumMediaTypes)
  */
 static CEnumMediaTypes* CEnumMediaTypesCreate(const AM_MEDIA_TYPE* amt)
 {
-    CEnumMediaTypes *This = malloc(sizeof(CEnumMediaTypes)) ;
+    CEnumMediaTypes *This = (CEnumMediaTypes*) malloc(sizeof(CEnumMediaTypes)) ;
 
     if (!This)
         return NULL;
 
-    This->vt = malloc(sizeof(IEnumMediaTypes_vt));
+    This->vt = (IEnumMediaTypes_vt*) malloc(sizeof(IEnumMediaTypes_vt));
     if (!This->vt)
     {
 	free(This);
@@ -493,9 +493,9 @@ static HRESULT STDCALL COutputPin_QueryInternalConnections(IPin * This,
  * \return S_OK - success
  * \return E_UNEXPECTED - The pin is output pin
  *
- * \note
- * IMemoryInputPin::Receive,IMemoryInputPin::ReceiveMultiple, IMemoryInputPin::EndOfStream,
- * IMemAllocator::GetBuffer runs in different (streaming) thread then other
+ * \note 
+ * IMemoryInputPin::Receive,IMemoryInputPin::ReceiveMultiple, IMemoryInputPin::EndOfStream, 
+ * IMemAllocator::GetBuffer runs in different (streaming) thread then other 
  * methods (application thread).
  * IMemoryInputPin::NewSegment runs either in streaming or application thread.
  * Developer must use critical sections for thread-safing work.
@@ -697,9 +697,9 @@ static HRESULT STDCALL COutputMemPin_GetAllocatorRequirements(IMemInputPin* This
  * In the last case method might block indefinitely. If this might
  * happen IMemInpuPin::ReceiveCAnBlock returns S_OK
  *
- * \note
- * IMemoryInputPin::Receive,IMemoryInputPin::ReceiveMultiple, IMemoryInputPin::EndOfStream,
- * IMemAllocator::GetBuffer runs in different (streaming) thread then other
+ * \note 
+ * IMemoryInputPin::Receive,IMemoryInputPin::ReceiveMultiple, IMemoryInputPin::EndOfStream, 
+ * IMemAllocator::GetBuffer runs in different (streaming) thread then other 
  * methods (application thread).
  * IMemoryInputPin::NewSegment runs either in streaming or application thread.
  * Developer must use critical sections for thread-safing work.
@@ -736,9 +736,9 @@ static HRESULT STDCALL COutputMemPin_Receive(IMemInputPin* This,
  * \remarks
  * This method behaves like IMemInputPin::Receive but for array of samples
  *
- * \note
- * IMemoryInputPin::Receive,IMemoryInputPin::ReceiveMultiple, IMemoryInputPin::EndOfStream,
- * IMemAllocator::GetBuffer runs in different (streaming) thread then other
+ * \note 
+ * IMemoryInputPin::Receive,IMemoryInputPin::ReceiveMultiple, IMemoryInputPin::EndOfStream, 
+ * IMemAllocator::GetBuffer runs in different (streaming) thread then other 
  * methods (application thread).
  * IMemoryInputPin::NewSegment runs either in streaming or application thread.
  * Developer must use critical sections for thread-safing work.
@@ -893,20 +893,19 @@ static HRESULT STDCALL COutputMemPin_Release(IUnknown* This)
  */
 COutputPin* COutputPinCreate(const AM_MEDIA_TYPE* amt,SAMPLEPROC SampleProc,void* pUserData)
 {
-    COutputPin* This = malloc(sizeof(COutputPin));
+    COutputPin* This = (COutputPin*) malloc(sizeof(COutputPin));
     IMemInputPin_vt* ivt;
 
     if (!This)
         return NULL;
 
-    This->vt = malloc(sizeof(IPin_vt));
-    This->mempin = malloc(sizeof(COutputMemPin));
-    ivt = malloc(sizeof(IMemInputPin_vt));
+    This->vt = (IPin_vt*) malloc(sizeof(IPin_vt));
+    This->mempin = (COutputMemPin*) malloc(sizeof(COutputMemPin));
+    ivt = (IMemInputPin_vt*) malloc(sizeof(IMemInputPin_vt));
 
     if (!This->vt || !This->mempin || !ivt)
     {
         COutputPin_Destroy(This);
-        free(ivt);
 	return NULL;
     }
 

@@ -1,24 +1,24 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: layer2.c 31032 2010-04-12 10:56:17Z diego $
+ * $Id: layer2.c 23484 2007-06-06 05:13:13Z zuxy $
  */
 
-/*
- * Mpeg Layer-2 audio decoder
+/* 
+ * Mpeg Layer-2 audio decoder 
  * --------------------------
  * copyright (c) 1995 by Michael Hipp, All rights reserved. See also 'README'
  *
  */
 
-#include "mpg123.h"
+//#include "mpg123.h"
 #include "l2tables.h"
 
 static int grp_3tab[32 * 3] = { 0, };   /* used: 27 */
 static int grp_5tab[128 * 3] = { 0, };  /* used: 125 */
 static int grp_9tab[1024 * 3] = { 0, }; /* used: 729 */
 
-static real muls[27][64];       /* also used by layer 1 */
+static real muls[27][64];	/* also used by layer 1 */
 
 static void init_layer2(void)
 {
@@ -56,10 +56,10 @@ static void init_layer2(void)
   {
     double m=mulmul[k];
     table = muls[k];
-    if(_has_mmx)
+    if(_has_mmx) 
     {
         for(j=3,i=0;i<63;i++,j--)
-          *table++ = 16384 * m * pow(2.0,(double) j / 3.0);
+	  *table++ = 16384 * m * pow(2.0,(double) j / 3.0);
     }
     else
     for(j=3,i=0;i<63;i++,j--)
@@ -116,21 +116,21 @@ static void II_step_one(unsigned int *bit_alloc,int *scale,struct frame *fr)
 
     bita = bit_alloc;
     scfsi=scfsi_buf;
-    for (i=sblimit2;i>0;i--)
+    for (i=sblimit2;i>0;i--) 
       if (*bita++)
-        switch (*scfsi++)
+        switch (*scfsi++) 
         {
-          case 0:
+          case 0: 
                 *scale++ = getbits_fast(6);
                 *scale++ = getbits_fast(6);
                 *scale++ = getbits_fast(6);
                 break;
-          case 1 :
+          case 1 : 
                 *scale++ = sc = getbits_fast(6);
                 *scale++ = sc;
                 *scale++ = getbits_fast(6);
                 break;
-          case 2:
+          case 2: 
                 *scale++ = sc = getbits_fast(6);
                 *scale++ = sc;
                 *scale++ = sc;
@@ -159,17 +159,17 @@ static void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int
       step = alloc1->bits;
       for (j=0;j<stereo;j++)
       {
-        if ( (ba=*bita++) )
+        if ( (ba=*bita++) ) 
         {
           k=(alloc2 = alloc1+ba)->bits;
-          if( (d1=alloc2->d) < 0)
+          if( (d1=alloc2->d) < 0) 
           {
             real cm=muls[k][scale[x1]];
             fraction[j][0][i] = ((real) ((int)getbits(k) + d1)) * cm;
             fraction[j][1][i] = ((real) ((int)getbits(k) + d1)) * cm;
             fraction[j][2][i] = ((real) ((int)getbits(k) + d1)) * cm;
-          }
-          else
+          }        
+          else 
           {
             static int *table[] = { 0,0,0,grp_3tab,0,grp_5tab,0,0,0,grp_9tab };
             unsigned int idx,*tab,m=scale[x1];
@@ -177,7 +177,7 @@ static void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int
             tab = (unsigned int *) (table[d1] + idx + idx + idx);
             fraction[j][0][i] = muls[*tab++][m];
             fraction[j][1][i] = muls[*tab++][m];
-            fraction[j][2][i] = muls[*tab][m];
+            fraction[j][2][i] = muls[*tab][m];  
           }
           scale+=3;
         }
@@ -189,7 +189,7 @@ static void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int
     for (i=jsbound;i<sblimit;i++,alloc1+=(1<<step))
     {
       step = alloc1->bits;
-      bita++;   /* channel 1 and channel 2 bitalloc are the same */
+      bita++;	/* channel 1 and channel 2 bitalloc are the same */
       if ( (ba=*bita++) )
       {
         k=(alloc2 = alloc1+ba)->bits;
@@ -220,13 +220,13 @@ static void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int
         fraction[0][0][i] = fraction[0][1][i] = fraction[0][2][i] =
         fraction[1][0][i] = fraction[1][1][i] = fraction[1][2][i] = 0.0;
       }
-/*
+/* 
    should we use individual scalefac for channel 2 or
    is the current way the right one , where we just copy channel 1 to
-   channel 2 ??
+   channel 2 ?? 
    The current 'strange' thing is, that we throw away the scalefac
    values for the second channel ...!!
--> changed .. now we use the scalefac values of channel one !!
+-> changed .. now we use the scalefac values of channel one !! 
 */
     }
 
@@ -299,10 +299,10 @@ static int do_layer2(struct frame *fr,int outmode)
 
   II_step_one(bit_alloc, scale, fr);
 
-  for (i=0;i<SCALE_BLOCK;i++)
+  for (i=0;i<SCALE_BLOCK;i++) 
   {
     II_step_two(bit_alloc,fraction,scale,fr,i>>2);
-    for (j=0;j<3;j++)
+    for (j=0;j<3;j++) 
     {
       if(single >= 0)
       {

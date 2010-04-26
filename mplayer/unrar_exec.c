@@ -233,3 +233,4 @@ void unrar_exec_freelist(ArchiveList_struct *list)
         list = tmp;
     }
 }
+

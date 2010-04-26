@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,7 +65,7 @@ static void mirror(unsigned char* dst,unsigned char* src,int dststride,int srcst
 
 //===========================================================================//
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     mp_image_t *dmpi;
 
     // hope we'll get DR buffer:
@@ -107,13 +89,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	       dmpi->w,dmpi->h,dmpi->bpp>>3,mpi->imgfmt);
 	dmpi->planes[1]=mpi->planes[1]; // passthrough rgb8 palette
     }
-
+    
     return vf_next_put_image(vf,dmpi, pts);
 }
 
 //===========================================================================//
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
     //vf->config=config;
     vf->put_image=put_image;
     return 1;
@@ -124,7 +106,7 @@ const vf_info_t vf_info_mirror = {
     "mirror",
     "Eyck",
     "",
-    vf_open,
+    open,
     NULL
 };
 

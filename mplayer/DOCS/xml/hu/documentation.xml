@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- synced with r29305 -->
+<!-- synced with r27211 -->
 
 <bookinfo id="toc">
 <title><application>MPlayer</application> - The Movie Player</title>
 <subtitle><ulink url="http://www.mplayerhq.hu"></ulink></subtitle>
-<date>2009. május 24.</date>
+<date>March 24, 2003</date>
 <copyright>
   <year>2000</year>
   <year>2001</year>
@@ -15,8 +15,6 @@
   <year>2006</year>
   <year>2007</year>
   <year>2008</year>
-  <year>2009</year>
-  <year>2010</year>
   <holder>MPlayer team</holder>
 </copyright>
 <legalnotice>
@@ -64,7 +62,7 @@ Az <application>MPlayer</application> egy Linuxon működő videolejátszó (fut
 számos más Unix-on és nem-x86 processzorokon is, lásd <xref linkend="ports"/>).
 Le tudja játszani a legtöbb MPEG, VOB, AVI, Ogg/OGM, VIVO, ASF/WMA/WMV, QT/MOV/MP4,
 FLI, RM, NuppelVideo, yuv4mpeg, FILM, RoQ, PVA, és Matroska file-t, és ezekhez
-felsorakoztat jónéhány natív, XAnim, RealPlayer és Win32 DLL codecet. Nézhetsz vele
+felsorakoztat jónéhány natív, XAnim, RealPlayer és Win32 DLL codecet. Nézhetsz vele 
 Video CD-t, SVCD-t, DVD-t, 3ivx, RealMedia, Sorenson, Theora
 és MPEG-4 (DivX) filmet is. Az <application>MPlayer</application>
 másik nagy előnye a megjelenítési módok széles választékában rejlik.
@@ -74,7 +72,7 @@ az SDL/GGI drivereit is), és néhány alacsony szintű kártyaspecifikus vezér
 (Matrox, 3dfx, Radeon, Mach64, Permedia3) is használható!
 Legtöbbjük támogat szoftveres vagy hardveres nagyítást, így a teljesképernyős
 mód is elérhető. Az <application>MPlayer</application> támogat továbbá hardveres
-MPEG kártyákkal történő dekódolást/megjelenítést, így például a
+MPEG kártyákkal történő dekódolást/megjelenítést, így például a 
 <link linkend="dvb">DVB</link> és <link linkend="dxr3">DXR3/Hollywood+</link>
 kártyákon!
 És még nem is szóltam a szép, élsímított, árnyékolt feliratozásról
@@ -113,7 +111,7 @@ alkotó codec-ekkel, audiót tekintve pedig PCM/MP3/VBR MP3 a választék.
   összes formátumból lehet kódolni
 </para></listitem>
 <listitem><para>
-  Az FFmpeg <systemitem class="library">libavcodec</systemitem>
+  Az FFmpeg <link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
   által támogatott összes formátumba tud tömöríteni
 </para></listitem>
 <listitem><para>
@@ -173,12 +171,19 @@ a GNU General Public License v2 értelmében terjeszthető.
 
 &usage.xml;
 &cd-dvd.xml;
+&faq.xml;
+
+&containers.xml;
+&codecs.xml;
+&video.xml;
+&audio.xml;
 &tvinput.xml;
 &radio.xml;
-&video.xml;
+
 &ports.xml;
 &mencoder.xml;
 &encoding-guide.xml;
-&faq.xml;
 &bugreports.xml;
+&bugs.xml;
 &skin.xml;
+&history.xml;

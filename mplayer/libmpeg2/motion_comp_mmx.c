@@ -19,11 +19,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Modified for use with MPlayer, see libmpeg-0.4.1.diff for the exact changes.
+ * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
+ * $Id: motion_comp_mmx.c 21542 2006-12-09 10:34:27Z henry $
  */
 
 #include "config.h"
 
-#if ARCH_X86 || ARCH_X86_64
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 
 #include <inttypes.h>
 
@@ -36,7 +40,6 @@
 #define CPU_3DNOW 1
 
 
-#if HAVE_MMX
 /* MMX code - needs a rewrite */
 
 /*
@@ -64,7 +67,7 @@ static mmx_t round4 = {0x0002000200020002LL};
  * unrolling will help
  */
 
-static inline void mmx_zero_reg (void)
+static inline void mmx_zero_reg ()
 {
     /* load 0 into mm0 */
     pxor_r2r (mm0, mm0);
@@ -497,7 +500,6 @@ static void MC_put_y_8_mmx (uint8_t * dest, const uint8_t * ref,
 
 MPEG2_MC_EXTERN (mmx)
 
-#endif /* HAVE_MMX */
 
 
 
@@ -804,8 +806,6 @@ static inline void MC_avg4_16 (int height, uint8_t * dest, const uint8_t * ref,
     } while (--height);
 }
 
-#if HAVE_MMX2
-
 static void MC_avg_o_16_mmxext (uint8_t * dest, const uint8_t * ref,
 				int stride, int height)
 {
@@ -905,9 +905,7 @@ static void MC_put_xy_8_mmxext (uint8_t * dest, const uint8_t * ref,
 
 MPEG2_MC_EXTERN (mmxext)
 
-#endif /* HAVE_MMX2 */
 
-#if HAVE_AMD3DNOW
 
 static void MC_avg_o_16_3dnow (uint8_t * dest, const uint8_t * ref,
 			       int stride, int height)
@@ -1007,7 +1005,5 @@ static void MC_put_xy_8_3dnow (uint8_t * dest, const uint8_t * ref,
 
 
 MPEG2_MC_EXTERN (3dnow)
-
-#endif /* HAVE_AMD3DNOW */
 
 #endif

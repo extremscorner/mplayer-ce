@@ -1,10 +1,10 @@
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: dct36.c 31032 2010-04-12 10:56:17Z diego $
+ * $Id: dct36.c 18786 2006-06-22 13:34:00Z diego $
  */
 
-/*
+/* 
 // This is an optimized DCT from Jeff Tsay's maplay 1.2+ package.
 // Saved one multiplication by doing the 'twiddle factor' stuff
 // together with the window mul. (MH)
@@ -187,23 +187,23 @@ static void dct36(real *inbuf,real *o1,real *o2,real *wintab,real *tsbuf)
     out2[8-(v)] = tmp * w[26-(v)];  } \
     sum0 -= sum1; \
     ts[SBLIMIT*(8-(v))] = out1[8-(v)] + sum0 * w[8-(v)]; \
-    ts[SBLIMIT*(9+(v))] = out1[9+(v)] + sum0 * w[9+(v)];
+    ts[SBLIMIT*(9+(v))] = out1[9+(v)] + sum0 * w[9+(v)]; 
 #define MACRO1(v) { \
-    real sum0, sum1; \
+	real sum0,sum1; \
     sum0 = tmp1a + tmp2a; \
-    sum1 = (tmp1b + tmp2b) * tfcos36[(v)]; \
-    MACRO0(v); }
+	sum1 = (tmp1b + tmp2b) * tfcos36[(v)]; \
+	MACRO0(v); }
 #define MACRO2(v) { \
-    real sum0, sum1; \
+    real sum0,sum1; \
     sum0 = tmp2a - tmp1a; \
     sum1 = (tmp2b - tmp1b) * tfcos36[(v)]; \
-    MACRO0(v); }
+	MACRO0(v); }
 
     register const real *c = COS9;
     register real *out2 = o2;
-    register real *w    = wintab;
-    register real *out1 = o1;
-    register real *ts   = tsbuf;
+	register real *w = wintab;
+	register real *out1 = o1;
+	register real *ts = tsbuf;
 
     real ta33,ta66,tb33,tb66;
 
@@ -212,7 +212,7 @@ static void dct36(real *inbuf,real *o1,real *o2,real *wintab,real *tsbuf)
     tb33 = in[2*3+1] * c[3];
     tb66 = in[2*6+1] * c[6];
 
-    {
+    { 
       real tmp1a,tmp2a,tmp1b,tmp2b;
       tmp1a =             in[2*1+0] * c[1] + ta33 + in[2*5+0] * c[5] + in[2*7+0] * c[7];
       tmp1b =             in[2*1+1] * c[1] + tb33 + in[2*5+1] * c[5] + in[2*7+1] * c[7];
@@ -256,14 +256,15 @@ static void dct36(real *inbuf,real *o1,real *o2,real *wintab,real *tsbuf)
       MACRO2(5);
     }
 
-    {
-      real sum0,sum1;
-      sum0 =  in[2*0+0] - in[2*2+0] + in[2*4+0] - in[2*6+0] + in[2*8+0];
-      sum1 = (in[2*0+1] - in[2*2+1] + in[2*4+1] - in[2*6+1] + in[2*8+1] ) * tfcos36[4];
-      MACRO0(4);
-    }
+	{
+		real sum0,sum1;
+    	sum0 =  in[2*0+0] - in[2*2+0] + in[2*4+0] - in[2*6+0] + in[2*8+0];
+    	sum1 = (in[2*0+1] - in[2*2+1] + in[2*4+1] - in[2*6+1] + in[2*8+1] ) * tfcos36[4];
+		MACRO0(4);
+	}
   }
 #endif
 
   }
 }
+

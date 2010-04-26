@@ -8,7 +8,7 @@
 // ========================= Aide MPlayer ===========================
 
 #ifdef HELP_MP_DEFINE_STATIC
-static const char help_text[]=
+static char help_text[]=
 "Utilisation :      mplayer [options] [url|répertoire/]fichier\n"
 "\n"
 "Options de base :  (liste complète dans la page de man)\n"
@@ -53,7 +53,7 @@ static const char help_text[]=
 
 // ========================= Messages MPlayer ===========================
 
-// mplayer.c:
+// mplayer.c: 
 
 #define MSGTR_Exiting "\nSortie...\n"
 #define MSGTR_ExitingHow "\nSortie... (%s)\n"
@@ -73,6 +73,7 @@ static const char help_text[]=
 #define MSGTR_FPSnotspecified "FPS non spécifié dans l'entête ou invalide ! Utilisez l'option -fps.\n"
 #define MSGTR_TryForceAudioFmtStr "Tente de forcer la famille de codecs audio %s ...\n"
 #define MSGTR_CantFindAudioCodec "Ne peut trouver de codec pour le format audio 0x%X.\n"
+#define MSGTR_RTFMCodecs "Veuillez lire DOCS/HTML/fr/codecs.html !\n"
 #define MSGTR_TryForceVideoFmtStr "Tente de forcer la famille de codecs vidéo %s  ...\n"
 #define MSGTR_CantFindVideoCodec "Ne peut trouver codec pour format -vo sélectionné et vidéo 0x%X.\n"
 #define MSGTR_CannotInitVO "FATAL : Ne peut initialiser le pilote vidéo.\n"
@@ -688,6 +689,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec : le codec n'a pas défini sh->disp_w et sh->disp_h, essai de contournement !\n"
+#define MSGTR_VoConfigRequest "VDec : requête de config de vo - %d x %d (espace colorimétrique préferé : %s)\n"
 #define MSGTR_CouldNotFindColorspace "N'a pas pu trouver espace colorimétrique correspondant - nouvel essai avec -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "L'aspect du film est %.2f:1 - pré-redimensionnement à l'aspect correct.\n"
 #define MSGTR_MovieAspectUndefined "L'aspect du film est indéfini - pas de pré-dimensionnement appliqué.\n"
@@ -1082,7 +1084,7 @@ static const char help_text[]=
 
 // ======================= AO Pilote Sortie Audio ========================
 
-// libao2
+// libao2 
 
 // audio_out.c
 #define MSGTR_AO_ALSA9_1x_Removed "audio_out : modules alsa9 et alsa1x enlevés, utiliser plutôt -ao alsa.\n"
@@ -1243,7 +1245,7 @@ static const char help_text[]=
 
 // ======================= AF Filtres Audio ================================
 
-// libaf
+// libaf 
 #define MSGTR_AF_ValueOutOfRange MSGTR_VO_ValueOutOfRange
 
 // af_ladspa.c
@@ -1693,8 +1695,8 @@ static const char help_text[]=
 #define MSGTR_LIBVO_MGA_InvalidOutputFormat "[MGA] Format de sortie invalide %0X\n"
 #define MSGTR_LIBVO_MGA_IncompatibleDriverVersion "[MGA] La version de votre pilote mga_vid est incompatible avec cette version de MPlayer !\n"
 #define MSGTR_LIBVO_MGA_CouldntOpen "[MGA] Impossible d'ouvrir : %s\n"
-#define MSGTR_LIBVO_MGA_ResolutionTooHigh "[MGA] La resolution à sa source est au moins dans une dimension plus large que 1023x1023. Veuillez remettre à l'échelle dans le logiciel ou utiliser -lavdopts lowres=1\n"
-#define MSGTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] La version du driver mga_vid (%u) ne correspond pas à celle utilisée lors de la compilation de MPlayer (%u)\n"
+#define MGSTR_LIBVO_MGA_ResolutionTooHigh "[MGA] La resolution à sa source est au moins dans une dimension plus large que 1023x1023. Veuillez remettre à l'échelle dans le logiciel ou utiliser -lavdopts lowres=1\n"
+#define MGSTR_LIBVO_MGA_mgavidVersionMismatch "[MGA] La version du driver mga_vid (%u) ne correspond pas à celle utilisée lors de la compilation de MPlayer (%u)\n"
 
 // libvo/vesa_lvo.c
 
@@ -2008,7 +2010,7 @@ static const char help_text[]=
 #define MSGTR_LIBASS_ErrorRecodingFile "[ass] erreur lors de l'enregistrement du fichier.\n"
 #define MSGTR_LIBASS_FopenFailed "[ass] ass_read_file(%s) : fopen a échoué\n"
 #define MSGTR_LIBASS_FseekFailed "[ass] ass_read_file(%s) : fseek à échoué\n"
-#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan100M "[ass] ass_read_file(%s) : Chargement des fichiers plus grands que 100Mo refusé\n"
+#define MSGTR_LIBASS_RefusingToLoadSubtitlesLargerThan10M "[ass] ass_read_file(%s) : Chargement des fichiers plus grands que 10Mo refusé\n"
 #define MSGTR_LIBASS_ReadFailed "Lecture impossible, %d: %s\n"
 #define MSGTR_LIBASS_AddedSubtitleFileMemory "[ass] Ajout d'un fichier de sous-titres : <memory> (%d styles, %d évènements)\n"
 #define MSGTR_LIBASS_AddedSubtitleFileFname "[ass] Ajout d'un fichier de sous-titres : %s (%d styles, %d events)\n"
