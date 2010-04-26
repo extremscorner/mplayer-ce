@@ -3,14 +3,13 @@
  * Copyright (C) 2007 Clemens Fruhwirth
  * Copyright (C) 2007 Alexis Ballier
  *
- * This file is based on flashsvenc.c.
- *
  * This file is part of FFmpeg.
+ *
+ * This file is based on flashsvenc.c
  *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * License, version 2.1, as published by the Free Software Foundation
  *
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -68,20 +67,17 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
     s->avctx=avctx;
 
     switch (avctx->pix_fmt) {
-    case PIX_FMT_RGB555BE:
+/*    case PIX_FMT_RGB555:
         s->pixel_size = 2;
-        break;
+        break;*/
     case PIX_FMT_RGB24:
         s->pixel_size = 3;
-        break;
-    case PIX_FMT_ARGB:
-        s->pixel_size = 4;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported colorspace.\n");
         break;
     }
-    avctx->bits_per_coded_sample = s->pixel_size*8;
+    avctx->bits_per_sample = s->pixel_size*8;
 
     s->rlecode_table = av_mallocz(s->avctx->width);
     s->skip_table    = av_mallocz(s->avctx->width);
@@ -119,7 +115,7 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
     unsigned int skipcount;
     /* This will be the number of consecutive equal pixels in the current
      * frame, starting from the ith one also */
-    unsigned int av_uninit(repeatcount);
+    unsigned int repeatcount;
 
     /* The cost of the three different possibilities */
     int total_bulk_cost;
@@ -129,10 +125,8 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
     int temp_cost;
     int j;
 
-    uint8_t *this_line = p->               data[0] + line*p->               linesize[0] +
-        (width - 1)*s->pixel_size;
-    uint8_t *prev_line = s->previous_frame.data[0] + line*s->previous_frame.linesize[0] +
-        (width - 1)*s->pixel_size;
+    uint8_t *this_line = p->               data[0] + line*p->linesize[0] + (width - 1)*s->pixel_size;
+    uint8_t *prev_line = s->previous_frame.data[0] + line*p->linesize[0] + (width - 1)*s->pixel_size;
 
     s->length_table[width] = 0;
     skipcount = 0;
@@ -205,6 +199,7 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
 
     i=0;
     this_line = p->               data[0] + line*p->linesize[0];
+    prev_line = s->previous_frame.data[0] + line*p->linesize[0];
 
     if (s->rlecode_table[0] == 0) {
         bytestream_put_byte(buf, s->skip_table[0] + 1);
@@ -244,17 +239,16 @@ static int encode_frame(QtrleEncContext *s, AVFrame *p, uint8_t *buf)
     uint8_t *orig_buf = buf;
 
     if (!s->frame.key_frame) {
-        unsigned line_size = s->avctx->width * s->pixel_size;
         for (start_line = 0; start_line < s->avctx->height; start_line++)
             if (memcmp(p->data[0] + start_line*p->linesize[0],
-                       s->previous_frame.data[0] + start_line*s->previous_frame.linesize[0],
-                       line_size))
+                       s->previous_frame.data[0] + start_line*p->linesize[0],
+                       p->linesize[0]))
                 break;
 
         for (end_line=s->avctx->height; end_line > start_line; end_line--)
             if (memcmp(p->data[0] + (end_line - 1)*p->linesize[0],
-                       s->previous_frame.data[0] + (end_line - 1)*s->previous_frame.linesize[0],
-                       line_size))
+                       s->previous_frame.data[0] + (end_line - 1)*p->linesize[0],
+                       p->linesize[0]))
                 break;
     }
 
@@ -322,12 +316,12 @@ static av_cold int qtrle_encode_end(AVCodecContext *avctx)
 
 AVCodec qtrle_encoder = {
     "qtrle",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_QTRLE,
     sizeof(QtrleEncContext),
     qtrle_encode_init,
     qtrle_encode_frame,
     qtrle_encode_end,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB555BE, PIX_FMT_ARGB, PIX_FMT_NONE},
+    .pix_fmts = (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
 };

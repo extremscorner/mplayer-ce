@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include "config.h"
 
 #include <stdio.h>
@@ -91,13 +73,13 @@ if ((dn = malloc(i+1))){
 }
 
 desc->fpath = dn; // search in the same dir as fonts.desc
-
+	
 // desc->fpath=get_path("font/");
 // if (stat(desc->fpath, &fstate)!=0) desc->fpath=DATADIR"/font";
 
-
-
-
+	
+	
+	
 // set up some defaults, and erase table
 desc->charspace=2;
 desc->spacewidth=12;
@@ -117,7 +99,7 @@ while(fgets(sor,1020,f)){
 
   /* skip files that look like: TTF (0x00, 0x01), PFM (0x00, 0x01), PFB
    * (0x80, 0x01), PCF (0x01, 0x66), fon ("MZ"), gzipped (0x1f, 0x8b) */
-
+  
   if (first) {
     if (!sor[0] || sor[1] == 1 || (sor[0] == 'M' && sor[1] == 'Z') || (sor[0] == 0x1f && sor[1] == 0x8b) || (sor[0] == 1 && sor[1] == 0x66)) {
       mp_msg(MSGT_OSD, MSGL_ERR, "%s doesn't look like a bitmap font description, ignoring.\n", fname);
@@ -125,7 +107,7 @@ while(fgets(sor,1020,f)){
     }
     first = 0;
   }
-
+  
   p[0]=d;++pdb;
   while(1){
       int c=*s++;
@@ -143,14 +125,14 @@ while(fgets(sor,1020,f)){
         }
       } else {
         if(id==c){ id=0;continue;} // idezojel
-
+          
       }
       *d=c;d++;
       ec=c;
   }
   if(d==sor2) continue; // skip empty lines
   *d=0;
-
+  
 //  printf("params=%d  sor=%s\n",pdb,sor);
 //  for(i=0;i<pdb;i++) printf("  param %d = '%s'\n",i,p[i]);
 
@@ -166,7 +148,7 @@ while(fgets(sor,1020,f)){
         continue;
       }
   }
-
+  
   if(strcmp(section,"[fpath]")==0){
       if(pdb==1){
 	  if (desc->fpath)
@@ -174,7 +156,7 @@ while(fgets(sor,1020,f)){
           desc->fpath=strdup(p[0]);
           continue;
       }
-  } else
+  } else    
 
 #ifdef __AMIGAOS4__
 #define FONT_PATH_SEP ""
@@ -184,10 +166,7 @@ while(fgets(sor,1020,f)){
 #endif
 
   if(strcmp(section,"[files]")==0){
-      //char *default_dir=MPLAYER_DATADIR FONT_PATH_SEP "font";
-      char default_dir[100];
-      sprintf(default_dir,"%s%s",MPLAYER_DATADIR,"/font");
-
+      char *default_dir=MPLAYER_DATADIR FONT_PATH_SEP "font";
       if(pdb==2 && strcmp(p[0],"alpha")==0){
     	  char *cp;
 	  if (!(cp=malloc(strlen(desc->fpath)+strlen(p[1])+2))) goto fail_out;
@@ -196,7 +175,7 @@ while(fgets(sor,1020,f)){
 		desc->fpath,p[1]);
           if(!((desc->pic_a[fontdb]=load_raw(cp,verbose)))){
 		free(cp);
-		if (!(cp=malloc(strlen(default_dir)+strlen(p[1])+2)))
+		if (!(cp=malloc(strlen(default_dir)+strlen(p[1])+2))) 
 		   goto fail_out;
 		snprintf(cp,strlen(default_dir)+strlen(p[1])+2,"%s" FONT_PATH_SEP "%s",
 			 default_dir,p[1]);
@@ -217,7 +196,7 @@ while(fgets(sor,1020,f)){
 		desc->fpath,p[1]);
           if(!((desc->pic_b[fontdb]=load_raw(cp,verbose)))){
 		free(cp);
-		if (!(cp=malloc(strlen(default_dir)+strlen(p[1])+2)))
+		if (!(cp=malloc(strlen(default_dir)+strlen(p[1])+2))) 
 		   goto fail_out;
 		snprintf(cp,strlen(default_dir)+strlen(p[1])+2,"%s" FONT_PATH_SEP "%s",
 			 default_dir,p[1]);
@@ -313,8 +292,8 @@ for(i=0;i<=fontdb;i++){
 	    //x^=255; // invert
 
 	    if(x+y>255) x=255-y; // to avoid overflows
-
-	    //x=0;
+	    
+	    //x=0;            
             //x=((x*f*(255-y))>>16);
             //x=((x*f*(255-y))>>16)+y;
             //x=(x*f)>>8;if(x<y) x=y;
@@ -357,7 +336,11 @@ fail_out:
   return NULL;
 }
 
-#ifndef CONFIG_FREETYPE
-void render_one_glyph(font_desc_t *desc, int c) {}
-int kerning(font_desc_t *desc, int prevc, int c) { return 0; }
+#if 0
+int main(void){
+
+read_font_desc("high_arpi.desc",1);
+
+}
 #endif
+

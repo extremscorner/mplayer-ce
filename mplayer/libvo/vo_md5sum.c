@@ -3,7 +3,7 @@
 /*
  * md5sum video output driver
  *
- * Copyright (C) 2004, 2005, 2006 Ivo van Poorten
+ * Written by Ivo van Poorten. (C) Copyright 2004, 2005, 2006.
  *
  * This file is part of MPlayer.
  *
@@ -40,7 +40,7 @@
 #include "mp_msg.h"
 #include "video_out.h"
 #include "video_out_internal.h"
-#include "mp_core.h"			/* for exit_player() */
+#include "mplayer.h"			/* for exit_player() */
 #include "help_mp.h"
 #include "libavutil/md5.h"
 
@@ -86,7 +86,7 @@ int framenum = 0;
 
 static void md5sum_write_error(void) {
     mp_msg(MSGT_VO, MSGL_ERR, MSGTR_ErrorWritingFile, info.short_name);
-    exit_player(EXIT_ERROR);
+    exit_player(MSGTR_Exit_error);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -107,9 +107,9 @@ static void md5sum_write_error(void) {
 
 static int preinit(const char *arg)
 {
-    const opt_t subopts[] = {
-        {"outfile",     OPT_ARG_MSTRZ,    &md5sum_outfile,   NULL},
-        {NULL, 0, NULL, NULL}
+    opt_t subopts[] = {
+        {"outfile",     OPT_ARG_MSTRZ,    &md5sum_outfile,   NULL, 0},
+        {NULL, 0, NULL, NULL, 0}
     };
 
     mp_msg(MSGT_VO, MSGL_INFO, "%s: %s\n", info.short_name,
@@ -152,7 +152,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
                 MSGTR_VO_CantCreateFile);
         mp_msg(MSGT_VO, MSGL_ERR, "%s: %s: %s\n",
                 info.short_name, MSGTR_VO_GenericError, strerror(errno) );
-        exit_player(EXIT_ERROR);
+        exit_player(MSGTR_Exit_error);
     }
 
     return 0;
@@ -229,7 +229,7 @@ static uint32_t draw_image(mp_image_t *mpi)
         }
     } else { /* Packed */
         if (mpi->flags & MP_IMGFLAG_YUV) { /* Packed YUV */
-
+            
             return VO_FALSE;
         } else { /* Packed RGB */
             av_md5_sum(md5sum, rgbimage, mpi->w * (mpi->bpp >> 3) * mpi->h);
@@ -311,3 +311,4 @@ static void flip_page (void)
 #undef MD5SUM_YUV_MODE
 
 /* ------------------------------------------------------------------------- */
+

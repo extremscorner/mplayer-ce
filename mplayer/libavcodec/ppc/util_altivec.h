@@ -17,18 +17,18 @@
  */
 
 /**
- * @file
+ * @file util_altivec.h
  * Contains misc utility macros and inline functions
  */
 
-#ifndef AVCODEC_PPC_UTIL_ALTIVEC_H
-#define AVCODEC_PPC_UTIL_ALTIVEC_H
+#ifndef FFMPEG_UTIL_ALTIVEC_H
+#define FFMPEG_UTIL_ALTIVEC_H
 
 #include <stdint.h>
 
 #include "config.h"
 
-#if HAVE_ALTIVEC_H
+#ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
 
@@ -102,4 +102,4 @@ static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
     return vec_perm(first, second, mask);
 }
 
-#endif /* AVCODEC_PPC_UTIL_ALTIVEC_H */
+#endif /* FFMPEG_UTIL_ALTIVEC_H */

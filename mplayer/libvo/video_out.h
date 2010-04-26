@@ -1,25 +1,12 @@
 /*
- * Copyright (C) Aaron Holtzman - Aug 1999
- * Strongly modified, most parts rewritten: A'rpi/ESP-team - 2000-2001
- * (C) MPlayer developers
+ *  video_out.h
  *
- * This file is part of MPlayer.
+ *      Copyright (C) Aaron Holtzman - Aug 1999
+ *	Strongly modified, most parts rewritten: A'rpi/ESP-team - 2000-2001
+ *	(C) MPlayer Developers
  *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
+ 
 #ifndef MPLAYER_VIDEO_OUT_H
 #define MPLAYER_VIDEO_OUT_H
 
@@ -74,7 +61,6 @@
 #define VOCTRL_GET_EOSD_RES 29
 typedef struct {
   int w, h; // screen dimensions, including black borders
-  int srcw, srch; // unscaled source dimensions
   int mt, mb, ml, mr; // borders (top, bottom, left, right)
 } mp_eosd_res_t;
 
@@ -108,7 +94,6 @@ typedef struct {
 #define VOFLAG_MODESWITCHING	0x02
 #define VOFLAG_SWSCALE		0x04
 #define VOFLAG_FLIPPING		0x08
-#define VOFLAG_HIDDEN		0x10  //< Use to create a hidden window
 #define VOFLAG_XOVERLAY_SUB_VO  0x10000
 
 typedef struct vo_info_s
@@ -252,37 +237,22 @@ extern char *vo_subdevice;
 
 extern int vo_colorkey;
 
-extern char *vo_winname;
-extern char *vo_wintitle;
+extern int WinID;
 
-extern int64_t WinID;
+#if defined(CONFIG_FBDEV) || defined(CONFIG_VESA)
 
 typedef struct {
         float min;
 	float max;
 	} range_t;
 
-float range_max(range_t *r);
-int in_range(range_t *r, float f);
-range_t *str2range(char *s);
+extern float range_max(range_t *r);
+extern int in_range(range_t *r, float f);
+extern range_t *str2range(char *s);
 extern char *monitor_hfreq_str;
 extern char *monitor_vfreq_str;
 extern char *monitor_dotclock_str;
 
-struct keymap {
-  int from;
-  int to;
-};
-int lookup_keymap_table(const struct keymap *map, int key);
-struct vo_rect {
-  int left, right, top, bottom, width, height;
-};
-void calc_src_dst_rects(int src_width, int src_height, struct vo_rect *src, struct vo_rect *dst,
-                        struct vo_rect *borders, const struct vo_rect *crop);
-
-static inline int aspect_scaling(void)
-{
-  return vo_fs;
-}
+#endif /* defined(CONFIG_FBDEV) || defined(CONFIG_VESA) */
 
 #endif /* MPLAYER_VIDEO_OUT_H */

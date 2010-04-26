@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 
@@ -72,7 +55,6 @@ static demuxer_t* demux_rawaudio_open(demuxer_t* demuxer) {
   demuxer->audio->id = 0;
   demuxer->audio->sh = sh_audio;
   sh_audio->ds = demuxer->audio;
-  sh_audio->needs_parsing = 1;
 
   return demuxer;
 }
@@ -113,6 +95,7 @@ static void demux_rawaudio_seek(demuxer_t *demuxer,float rel_seek_secs,float aud
 //  printf("demux_rawaudio: streamtell=%d\n",(int)stream_tell(demuxer->stream));
 }
 
+
 const demuxer_desc_t demuxer_desc_rawaudio = {
   "Raw audio demuxer",
   "rawaudio",
@@ -126,4 +109,5 @@ const demuxer_desc_t demuxer_desc_rawaudio = {
   demux_rawaudio_open,
   NULL,
   demux_rawaudio_seek,
+  NULL
 };

@@ -606,10 +606,10 @@ static uint8_t quant_to_spec(NeAACDecHandle hDecoder,
                     wb = wa + bin;
 
                     spec_data[wb+0] = iquant(quant_data[k+0], tab, &error) * scf;
-                    spec_data[wb+1] = iquant(quant_data[k+1], tab, &error) * scf;
-                    spec_data[wb+2] = iquant(quant_data[k+2], tab, &error) * scf;
+                    spec_data[wb+1] = iquant(quant_data[k+1], tab, &error) * scf;                        
+                    spec_data[wb+2] = iquant(quant_data[k+2], tab, &error) * scf;                        
                     spec_data[wb+3] = iquant(quant_data[k+3], tab, &error) * scf;
-
+                        
 #else
                     real_t iq0 = iquant(quant_data[k+0], tab, &error);
                     real_t iq1 = iquant(quant_data[k+1], tab, &error);
@@ -847,8 +847,7 @@ uint8_t reconstruct_single_channel(NeAACDecHandle hDecoder, ic_stream *ics,
     output_channels = 1;
 #endif
 
-    if (hDecoder->element_alloced[hDecoder->fr_ch_ele] == 0 ||
-        hDecoder->element_output_channels[hDecoder->fr_ch_ele] < output_channels) {
+    if (hDecoder->element_output_channels[hDecoder->fr_ch_ele] < output_channels) {
         hDecoder->element_output_channels[hDecoder->fr_ch_ele] = output_channels;
         retval = allocate_single_channel(hDecoder, sce->channel, output_channels);
         if (retval > 0)

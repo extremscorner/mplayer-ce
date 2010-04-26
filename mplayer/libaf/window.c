@@ -1,22 +1,12 @@
-/*
- * Copyright (C) 2001 Anders Johansson ajh@atri.curtin.edu.au
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/*=============================================================================
+//	
+//  This software has been released under the terms of the GNU General Public
+//  license. See http://www.gnu.org/copyleft/gpl.html for details.
+//
+//  Copyright 2001 Anders Johansson ajh@atri.curtin.edu.au
+//
+//=============================================================================
+*/
 
 /* Calculates a number of window functions. The following window
    functions are currently implemented: Boxcar, Triang, Hanning,
@@ -46,7 +36,7 @@ void af_window_boxcar(int n, FLOAT_TYPE* w)
 /*
 // Triang a.k.a Bartlett
 //
-//               |    (N-1)|
+//               |    (N-1)| 
 //           2 * |k - -----|
 //               |      2  |
 // w = 1.0 - ---------------
@@ -60,7 +50,7 @@ void af_window_triang(int n, FLOAT_TYPE* w)
   FLOAT_TYPE k2  = 1/((FLOAT_TYPE)n + k1);
   int      end = (n + 1) >> 1;
   int	   i;
-
+  
   // Calculate window coefficients
   for (i=0 ; i<end ; i++)
     w[i] = w[n-i-1] = (2.0*((FLOAT_TYPE)(i+1))-(1.0-k1))*k2;
@@ -79,7 +69,7 @@ void af_window_hanning(int n, FLOAT_TYPE* w)
 {
   int	   i;
   FLOAT_TYPE k = 2*M_PI/((FLOAT_TYPE)(n+1)); // 2*pi/(N+1)
-
+  
   // Calculate window coefficients
   for (i=0; i<n; i++)
     *w++ = 0.5*(1.0 - cos(k*(FLOAT_TYPE)(i+1)));
@@ -138,23 +128,23 @@ void af_window_flattop(int n,FLOAT_TYPE* w)
   int      i;
   FLOAT_TYPE k1 = 2*M_PI/((FLOAT_TYPE)(n-1)); // 2*pi/(N-1)
   FLOAT_TYPE k2 = 2*k1;                   // 4*pi/(N-1)
-
+  
   // Calculate window coefficients
   for (i=0; i<n; i++)
     *w++ = 0.2810638602 - 0.5208971735*cos(k1*(FLOAT_TYPE)i)
                         + 0.1980389663*cos(k2*(FLOAT_TYPE)i);
 }
 
-/* Computes the 0th order modified Bessel function of the first kind.
-// (Needed to compute Kaiser window)
-//
+/* Computes the 0th order modified Bessel function of the first kind.  
+// (Needed to compute Kaiser window) 
+//   
 // y = sum( (x/(2*n))^2 )
 //      n
 */
-#define BIZ_EPSILON 1E-21 // Max error acceptable
+#define BIZ_EPSILON 1E-21 // Max error acceptable 
 
 static FLOAT_TYPE besselizero(FLOAT_TYPE x)
-{
+{ 
   FLOAT_TYPE temp;
   FLOAT_TYPE sum   = 1.0;
   FLOAT_TYPE u     = 1.0;
@@ -183,10 +173,10 @@ static FLOAT_TYPE besselizero(FLOAT_TYPE x)
 // Gold (Theory and Application of DSP) under Kaiser windows for more
 // about Beta.  The following table from Rabiner and Gold gives some
 // feel for the effect of Beta:
-//
+// 
 // All ripples in dB, width of transition band = D*N where N = window
 // length
-//
+// 
 // BETA    D       PB RIP   SB RIP
 // 2.120   1.50  +-0.27      -30
 // 3.384   2.23    0.0864    -40
@@ -203,11 +193,12 @@ void af_window_kaiser(int n, FLOAT_TYPE* w, FLOAT_TYPE b)
   FLOAT_TYPE k1  = 1.0/besselizero(b);
   int	   k2  = 1 - (n & 1);
   int      end = (n + 1) >> 1;
-  int      i;
-
+  int      i; 
+  
   // Calculate window coefficients
   for (i=0 ; i<end ; i++){
     tmp = (FLOAT_TYPE)(2*i + k2) / ((FLOAT_TYPE)n - 1.0);
     w[end-(1&(!k2))+i] = w[end-1-i] = k1 * besselizero(b*sqrt(1.0 - tmp*tmp));
   }
 }
+

@@ -20,12 +20,13 @@
 #define MPLAYER_GUI_INTERFACE_H
 
 #include "config.h"
-#include "m_config.h"
-#include "playtree.h"
 #include "mplayer/play.h"
 #include "libvo/font_load.h"
 #include "cfg.h"
-#include "stream/stream.h"
+
+#ifdef CONFIG_DVDREAD
+ #include "stream/stream.h"
+#endif
 
 typedef struct
 {
@@ -72,7 +73,7 @@ typedef struct
    guiResizeStruct       resize;
    guiVideoStruct        videodata;
    guiUnknownErrorStruct error;
-
+   
    struct MPContext * mpcontext;
    void * sh_video;
    void * afilter;
@@ -118,10 +119,10 @@ typedef struct
 
    char * Subtitlename;
    int    SubtitleChanged;
-
+   
    char * Othername;
    int    OtherChanged;
-
+   
    char * AudioFile;
    int    AudioFileChanged;
 
@@ -161,13 +162,13 @@ extern guiInterface_t guiIntfStruct;
 
 extern int use_gui;
 
-void guiInit( void );
-void guiDone( void );
-int  guiGetEvent( int type,void * arg );
-void guiEventHandling( void );
-void guiLoadFont( void );
-void guiLoadSubtitle( char * name );
-void guiMessageBox(int level, char * str);
+extern void guiInit( void );
+extern void guiDone( void );
+extern int  guiGetEvent( int type,char * arg );
+extern void guiEventHandling( void );
+extern void guiLoadFont( void );
+extern void guiLoadSubtitle( char * name );
+extern void guiMessageBox(int level, char * str);
 
 typedef struct plItem
 {
@@ -222,18 +223,13 @@ extern char * fsHistory[fsPersistant_MaxPos];
 
 extern float gtkEquChannels[6][10];
 
-void * gtkSet( int cmd, float param, void * vparam );
+extern void * gtkSet( int cmd,float param, void * vparam );
 
-char * gstrdup( const char * str );
-int    gstrcmp( const char * a, const char * b );
-void   gfree( void ** p );
-void   gaddlist( char *** list, const char * entry );
-char * gstrchr( char * str, int c );
-
-int import_initial_playtree_into_gui(play_tree_t* my_playtree,
-                                     m_config_t* config, int enqueue);
-int import_playtree_playlist_into_gui(play_tree_t* my_playtree,
-                                      m_config_t* config);
+extern char * gstrdup( const char * str );
+extern int    gstrcmp( const char * a,const char * b );
+extern void   gfree( void ** p );
+extern void   gaddlist( char *** list,const char * entry );
+extern char * gstrchr( char * str,int c );
 
 #define guiSetFilename( s,n ) { gfree( (void **)&s ); s=gstrdup( n ); }
 

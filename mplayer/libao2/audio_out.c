@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,39 +7,35 @@
 
 #include "mp_msg.h"
 #include "help_mp.h"
-#include "mp_core.h" /* for exit_player() */
+#include "mplayer.h" /* for exit_player() */
 
 // there are some globals:
 ao_data_t ao_data={0,0,0,0,OUTBURST,-1,0};
 char *ao_subdevice = NULL;
 
-extern const ao_functions_t audio_out_oss;
-extern const ao_functions_t audio_out_coreaudio;
-extern const ao_functions_t audio_out_arts;
-extern const ao_functions_t audio_out_esd;
-extern const ao_functions_t audio_out_pulse;
-extern const ao_functions_t audio_out_jack;
-extern const ao_functions_t audio_out_openal;
-extern const ao_functions_t audio_out_null;
-extern const ao_functions_t audio_out_alsa5;
-extern const ao_functions_t audio_out_alsa;
-extern const ao_functions_t audio_out_nas;
-extern const ao_functions_t audio_out_sdl;
-extern const ao_functions_t audio_out_sun;
-extern const ao_functions_t audio_out_sgi;
-extern const ao_functions_t audio_out_win32;
-extern const ao_functions_t audio_out_dsound;
-extern const ao_functions_t audio_out_kai;
-extern const ao_functions_t audio_out_dart;
-extern const ao_functions_t audio_out_dxr2;
-extern const ao_functions_t audio_out_ivtv;
-extern const ao_functions_t audio_out_v4l2;
-extern const ao_functions_t audio_out_mpegpes;
-extern const ao_functions_t audio_out_pcm;
-extern const ao_functions_t audio_out_pss;
-#ifdef GEKKO
-extern const ao_functions_t audio_out_gekko;
-#endif
+extern ao_functions_t audio_out_oss;
+extern ao_functions_t audio_out_macosx;
+extern ao_functions_t audio_out_arts;
+extern ao_functions_t audio_out_esd;
+extern ao_functions_t audio_out_pulse;
+extern ao_functions_t audio_out_jack;
+extern ao_functions_t audio_out_openal;
+extern ao_functions_t audio_out_null;
+extern ao_functions_t audio_out_alsa5;
+extern ao_functions_t audio_out_alsa;
+extern ao_functions_t audio_out_nas;
+extern ao_functions_t audio_out_sdl;
+extern ao_functions_t audio_out_sun;
+extern ao_functions_t audio_out_sgi;
+extern ao_functions_t audio_out_win32;
+extern ao_functions_t audio_out_dsound;
+extern ao_functions_t audio_out_dxr2;
+extern ao_functions_t audio_out_ivtv;
+extern ao_functions_t audio_out_v4l2;
+extern ao_functions_t audio_out_mpegpes;
+extern ao_functions_t audio_out_pcm;
+extern ao_functions_t audio_out_pss;
+extern ao_functions_t audio_out_gekko;
 
 const ao_functions_t* const audio_out_drivers[] =
 {
@@ -68,14 +46,8 @@ const ao_functions_t* const audio_out_drivers[] =
 #ifdef CONFIG_WIN32WAVEOUT
         &audio_out_win32,
 #endif
-#ifdef CONFIG_KAI
-        &audio_out_kai,
-#endif
-#ifdef CONFIG_DART
-        &audio_out_dart,
-#endif
 #ifdef CONFIG_COREAUDIO
-        &audio_out_coreaudio,
+        &audio_out_macosx,
 #endif
 #ifdef CONFIG_OSS_AUDIO
         &audio_out_oss,
@@ -153,7 +125,7 @@ const ao_functions_t* init_best_audio_out(char** ao_list,int use_plugin,int rate
         int ao_len;
         if (strncmp(ao, "alsa9", 5) == 0 || strncmp(ao, "alsa1x", 6) == 0) {
             mp_msg(MSGT_AO, MSGL_FATAL, MSGTR_AO_ALSA9_1x_Removed);
-            exit_player(EXIT_NONE);
+            exit_player(NULL);
         }
         if (ao_subdevice) {
             free(ao_subdevice);
@@ -203,3 +175,4 @@ const ao_functions_t* init_best_audio_out(char** ao_list,int use_plugin,int rate
     }
     return NULL;
 }
+

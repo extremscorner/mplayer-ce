@@ -1,6 +1,10 @@
 #ifndef MPLAYER_WINDOWS_H
 #define MPLAYER_WINDOWS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "windef.h"
 #include "winbase.h"
 #include "winuser.h"
@@ -26,5 +30,9 @@ typedef KANJISTRUCT *PKANJISTRUCT;
 
 
 #endif /* 0 */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MPLAYER_WINDOWS_H */

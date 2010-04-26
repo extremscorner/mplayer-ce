@@ -17,8 +17,6 @@
     <year>2006</year>
     <year>2007</year>
     <year>2008</year>
-    <year>2009</year>
-    <year>2010</year>
     <holder>MPlayer-Team</holder>
   </copyright>
       <legalnotice>
@@ -121,7 +119,7 @@
         <listitem>
           <para>
             Encodierung zu allen Codecs von FFmpegs
-            <systemitem class="library">libavcodec</systemitem>
+            <link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
           </para>
         </listitem>
         <listitem>
@@ -215,12 +213,19 @@
 
 &usage.xml;
 &cd-dvd.xml;
+&faq.xml;
+
+&containers.xml;
+&codecs.xml;
+&video.xml;
+&audio.xml;
 &tvinput.xml;
 &radio.xml;
-&video.xml;
+
 &ports.xml;
 &mencoder.xml;
 &encoding-guide.xml;
-&faq.xml;
 &bugreports.xml;
+&bugs.xml;
 &skin.xml;
+&history.xml;

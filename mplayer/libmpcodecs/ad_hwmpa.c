@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +15,7 @@
 
 //based on ad_hwac3.c and ad_libmad.c
 
-static const ad_info_t info =
+static ad_info_t info = 
 {
 	"MPEG audio pass-through (fake decoder)",
 	"hwmpa",
@@ -92,7 +74,7 @@ static int init(sh_audio_t *sh)
 	sh->samplerate = srate;
 	sh->i_bps = br * 125;
 	sh->samplesize = 2;
-
+	
 	mp_msg(MSGT_DECAUDIO,MSGL_V,"AC_HWMPA initialized, bitrate: %d kb/s\r\n", len);
 	return 1;
 }
@@ -151,7 +133,7 @@ static int control(sh_audio_t *sh,int cmd,void* arg, ...)
 				return CONTROL_FALSE;
 		case ADCTRL_SKIP_FRAME:
 			start = mpa_sync(sh, 2, &len, NULL, NULL, NULL, NULL, NULL);
-			if(start < 0)
+			if(len < 0)
 				return CONTROL_FALSE;
 
 			sh->a_in_buffer_len -= start;

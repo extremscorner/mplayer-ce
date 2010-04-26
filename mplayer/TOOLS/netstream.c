@@ -28,7 +28,7 @@
 
 #include "config.h"
 
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -44,7 +44,7 @@
 #include "mpbswap.h"
 
 /// Netstream packets def and some helpers
-#include "stream/stream_netstream.h"
+#include "stream/netstream.h"
 
 // linking hacks
 char *info_name;
@@ -58,6 +58,11 @@ char *info_comment;
 char* out_filename = NULL;
 char* force_fourcc=NULL;
 char* passtmpfile="divx2pass.log";
+
+#ifdef __MINGW32__
+#define usleep sleep
+void strsep() {};
+#endif
 
 static unsigned short int port = 10000;
 
@@ -108,7 +113,7 @@ static int net_stream_open(client_t* cl,char* url) {
 static int net_stream_fill_buffer(client_t* cl,uint16_t max_len) {
   int r;
   mp_net_stream_packet_t *pack;
-
+  
   if(!cl->stream) {
     if(!write_error(cl->fd,"No stream is currently opened\n"))
       return 0;
@@ -132,7 +137,7 @@ static int net_stream_fill_buffer(client_t* cl,uint16_t max_len) {
 }
 
 static int net_stream_seek(client_t* cl, uint64_t pos) {
-
+  
   if(!cl->stream) {
     if(!write_error(cl->fd,"No stream is currently opened\n"))
       return 0;
@@ -180,7 +185,7 @@ static int handle_client(client_t* cl,mp_net_stream_packet_t* pack) {
 
   if(!pack)
     return 0;
-
+ 
   switch(pack->cmd) {
   case NET_STREAM_OPEN:
     if(((char*)pack)[pack->len-1] != '\0') {
@@ -239,7 +244,7 @@ static int make_fd_set(fd_set* fds, client_t** _cl, int listen) {
       if(cl->stream) free_stream(cl->stream);
       if(!cl->prev) // Remove the head
 	*_cl = cl->next;
-      cl = cl->next;
+      cl = cl->next;  
       free(f);
       continue;
     }
@@ -276,7 +281,7 @@ static int main_loop(int listen_fd) {
   signal(SIGHUP,exit_sig);  // kill -HUP  /  xterm closed
   signal(SIGINT,exit_sig);  // Interrupt from keyboard
   signal(SIGQUIT,exit_sig); // Quit from keyboard
-#endif
+#endif 
 
   while(run_server) {
     int sel_n = make_fd_set(&fds,&clients,listen_fd);
@@ -338,7 +343,7 @@ int main(void) {
 
   mp_msg_init();
   //  mp_msg_set_level(verbose+MSGL_STATUS);
-
+  
 #ifdef __MINGW32__
   WSADATA wsaData;
   WSAStartup(MAKEWORD(1,1), &wsaData);
@@ -356,7 +361,7 @@ int main(void) {
     mp_msg(MSGT_NETST,MSGL_FATAL,"Failed to bind listen socket: %s\n",strerror(errno));
     return -1;
   }
-
+  
 
   if(listen(listen_fd,1)) {
     mp_msg(MSGT_NETST,MSGL_FATAL,"Failed to turn the socket in listen state: %s\n",strerror(errno));

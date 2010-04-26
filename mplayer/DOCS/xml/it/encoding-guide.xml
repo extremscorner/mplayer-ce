@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 44% synced with r22753 (row 2377) -->
+<!-- 41% synced with r22753 (row 2212) -->
 <chapter id="encoding-guide">
 <title>La codifica con <application>MEncoder</application></title>
 
@@ -1398,7 +1398,7 @@ tecniche in gioco.
   codifica.
   Questo è semplicemente il contrappasso per usare la tecnologia di punta.
   </para>
-
+  
   <para>
   Inoltre iniziare ad utilizzare un codec nuovo richiede l'utilizzo di un po'
   di tempo per familiarizzare con le sue opzioni, affinché tu sappia cosa
@@ -1431,14 +1431,14 @@ tecniche in gioco.
   codifica. Tuttavia, possono avere delle opzioni avanzate che, quando
   abilitate, rendono la codifica molto lenta fornendo poco guadagno.
   </para>
-
+  
   <para>
   Se stai cercando di incrementare la velocità dovresti cercare di non
   modificare troppo le impostazioni di default del codec video (anche se
   dovresti comunque provare le altre opzioni che sono citate in altre sezioni
   di questa guida).
   </para>
-
+  
   <para>
   Puoi tenere in considerazione anche la scelta di un codec che possa eseguire
   elaborazioni multi-thread, anche se ciò è utile solo per utenti di macchine
@@ -1884,7 +1884,7 @@ campo dopo l'altro.
   non è lo scopo di questa documentazione.
 </para></listitem>
 <listitem><para>
-  Ci sono alcune note a piè di pagina specifiche di questa guida, così
+  Ci sono alcune note a piè di pagina specifiche di questa guida, così 
   indicate:
   <link linkend="menc-feat-telecine-footnotes">[1]</link>
 </para></listitem>
@@ -2023,10 +2023,10 @@ interlacciato.
 
 
 <sect3 id="menc-feat-telecine-ident-mixedpt">
-<title>Progressivo e telecine mescolati</title>
+<title>Progressivo e telecine miscelati</title>
 
 <para>
-Tutto il contenuto di un video "progressivo e telecine mescolati" è stato
+Tutto il contenuto di un video "progressivo e telecine miscelato" è stato
 in origine filmato a 24000/1001 fotogrammi al secondo, ma alcune parti alla
 fine hanno subito il telecine.
 </para>
@@ -2046,15 +2046,15 @@ davvero in telecine e non solamente interlacciate.
 
 
 <sect3 id="menc-feat-telecine-ident-mixedpi">
-<title>Progressivo e interlacciato mescolati</title>
+<title>Progressivo e interlacciato miscelati</title>
 
 <para>
-Nei contenuti con video "progressivo e interlacciato mescolati", il video
+Nei contenuti con video "progressivo e interlacciato miscelati", il video
 progressivo e interlacciato sono mescolati tra loro.
 </para>
 
 <para>
-Questa categoria è decisamente simile a "progressivo e telecine mescolati",
+Questa categoria è decisamente simile a "progressivo e telecine miscelato",
 fino a quando non controlli le parti a 30000/1001 fps e scopri che non hanno
 il pattern del telecine.
 </para>
@@ -2088,9 +2088,9 @@ Se non lo usi, <application>MEncoder</application> cercherà di codificare a
 
 <para>
 Spesso e volentieri capita che un video che sembra progressivo contenga anche
-alcune brevi parti di telecine mescolate. A meno che tu non sia sicuro,
-conviene trattare il video come
-<link linkend="menc-feat-telecine-encode-mixedpt">progressivo e telecine mescolati</link>.
+alcune brevi parti di telecine miscelate. A meno che tu non sia sicuro,
+conviene trattare il video come 
+<link linkend="menc-feat-telecine-encode-mixedpt">progressivo e telecine miscelati</link>.
 Il calo di prestazioni è piccolo
 <link linkend="menc-feat-telecine-footnotes">[3]</link>.
 </para>
@@ -2106,7 +2106,7 @@ Il telecine può essere invertito per ricavare il contenuto originario a
 <application>MPlayer</application> include vari filtri per ottenere ciò;
 il filtro migliore, <option>pullup</option>, è descritto nella sezione
 <link linkend="menc-feat-telecine-encode-mixedpt">progressivo e telecine
-mescolati</link>.
+miscelati</link>.
 </para>
 </sect3>
 
@@ -2193,10 +2193,10 @@ mencoder dvd://1 -oac copy -vf tfields=2 -ovc lavc \
 
 
 <sect3 id="menc-feat-telecine-encode-mixedpt">
-<title>Progressivo e telecine mescolati</title>
+<title>Progressivo e telecine miscelati</title>
 
 <para>
-Per poter portare un video progressivo e telecine mescolati in un video
+Per poter portare un video progressivo e telecine miscelati in un video
 completamente progressivo, le parti in telecine devono essere passate in
 telecine inverso. Ci son tre modi per ottenere ciò, e sono descritti qui sotto.
 Nota che dovresti <emphasis role="bold">sempre</emphasis> effettuare il
@@ -2209,40 +2209,43 @@ uscita sarà a 24000/1001 fotogrammi al secondo.
 
 <itemizedlist>
 <listitem><para>
-  <option>-vf pullup</option> è studiata per togliere il telecine da materiale
-  in telecine lasciando stare le parti in progressivo. Per poter funzionare
-  correttamente, <option>pullup</option> <emphasis role="bold">deve</emphasis>
-  essere seguita dal filtro <option>softskip</option> altrimenti
-  <application>MEncoder</application> andrà in crash.
-  <option>pullup</option> è tuttavia il modo migliore e più preciso disponibile
-  per codificare sia telecine che "progressivo e telecine mescolati".
+  <option>-vf pullup</option> is designed to inverse-telecine
+  telecined material while leaving progressive data alone. In order to
+  work properly, <option>pullup</option> <emphasis role="bold">must</emphasis>
+  be followed by the <option>softskip</option> filter or
+  else <application>MEncoder</application> will crash.
+  <option>pullup</option> is, however, the cleanest and most
+  accurate method available for encoding both telecine and
+  "mixed progressive and telecine".
   <screen>
-mencoder dvd://1 -oac copy -vf pullup,softskip
+mencoder dvd://1 -oac copy -vf pullup,softskip 
     -ovc lavc -ofps 24000/1001<!--
   --></screen>
 </para></listitem>
 <listitem><para>
-  Un metodo più vecchio, invece di togliere il telecine dove c'è, è portare
-  in telecine le parti che non lo sono e dopo invertire il telecine su tutto il
-  video. Sembra incasinato? softpulldown è un filtro che prende tutto il video
-  e lo porta in telecine. Se facciamo seguire a softpulldown
-  <option>detc</option> oppure <option>ivtc</option>, il risultato finale sarà
-  completamente progressivo. Serve <option>-ofps 24000/1001</option>.
+  An older method
+  is to, rather than inverse-telecine the telecined parts, telecine
+  the non-telecined parts and then inverse-telecine the whole
+  video. Sound confusing? softpulldown is a filter that goes through
+  a video and makes the entire file telecined. If we follow
+  softpulldown with either <option>detc</option> or
+  <option>ivtc</option>, the final result will be entirely
+  progressive. <option>-ofps 24000/1001</option> is needed.
   <screen>
 mencoder dvd://1 -oac copy -vf softpulldown,ivtc=1 -ovc lavc -ofps 24000/1001
   </screen>
 </para></listitem>
 
 <listitem><para>
-  Non ho usato <option>-vf filmdint</option>, ma questa è l'opinione che ne ha
-  D Richard Felker III:
+  I have not used <option>-vf filmdint</option> myself, but here is what
+  D Richard Felker III has to say:
 
-  <blockquote><para>E' OK, ma IMO cerca troppo spesso di deinterlacciare
-    piuttosto che invertire il telecine (come molti lettori DVD da tavolo &amp;
-    televisioni progressive), il che porta orrendi sfarfallii e altri
-    artefatti. Se vuoi utilizzarlo devi perlomeno spendere un po' di tempo ad
-    impostare le opzioni e controllare i risultati prima di esser certo che non
-    faccia danni.
+  <blockquote><para>It is OK, but IMO it tries to deinterlace rather
+     than doing inverse telecine too often (much like settop DVD
+     players &amp; progressive TVs) which gives ugly flickering and
+     other artifacts. If you are going to use it, you at least need to
+     spend some time tuning the options and watching the output first
+     to make sure it is not messing up.
   </para></blockquote>
 </para></listitem>
 </itemizedlist>
@@ -2250,57 +2253,59 @@ mencoder dvd://1 -oac copy -vf softpulldown,ivtc=1 -ovc lavc -ofps 24000/1001
 
 
 <sect3 id="menc-feat-telecine-encode-mixedpi">
-<title>Progressivo e interlacciato mescolati</title>
+<title>Mixed progressive and interlaced</title>
 
 <para>
-Ci sono due opzioni per gestire questa categoria, ognuna delle quali è un
-compromesso. Dovresti decidere basandoti sulla lunghezza/durata di uno dei due
-tipi.
+There are two options for dealing with this category, each of
+which is a compromise. You should decide based on the
+duration/location of each type.
 </para>
 
 <itemizedlist>
 <listitem>
   <para>
-  Trattarlo come progressivo. Le parti interlacciate sembreranno interlacciate,
-  e alcuni dei campi interlacciati dovranno essere scartati, apportando un
-  pelino di saltellamenti impari. Se vuoi puoi utilizzare un filtro di
-  postelaborazione, ma potrebbe leggermente inficiare le parti progressive.
+  Treat it as progressive. The interlaced parts will look interlaced,
+  and some of the interlaced fields will have to be dropped, resulting
+  in a bit of uneven jumpiness. You can use a postprocessing filter if
+  you want to, but it may slightly degrade the progressive parts.
   </para>
 
   <para>
-  Questa opzione non sarebbe decisamente da usare se casomai ti interessi
-  riprodurre il video su un dispositivo interlacciato (con una sche da TV, per
-  esempio). Se hai fotogrammi interlacciati in un video a 24000/1001 fotogrammi
-  al secondo, verranno messi in telecine con i fotogrammi progressivi.
-  Metà dei "fotogrammi" interlacciati saranno mostrati per la durata di tre
-  campi (3/(60000/1001) secondi), risultando in un effetto alla "salto indietro
-  nel tempo" che è bruttino. Se solo provi a far in questo modo,
-  <emphasis role="bold">devi</emphasis> usare in filtro di deinterlacciamento
-  come <option>lb</option> o <option>l5</option>.
+  This option should definitely not be used if you want to eventually
+  display the video on an interlaced device (with a TV card, for
+  example). If you have interlaced frames in a 24000/1001 frames per
+  second video, they will be telecined along with the progressive
+  frames. Half of the interlaced "frames" will be displayed for three
+  fields' duration (3/(60000/1001) seconds), resulting in a flicking
+  "jump back in time" effect that looks quite bad. If you
+  even attempt this, you <emphasis role="bold">must</emphasis> use a
+  deinterlacing filter like <option>lb</option> or
+  <option>l5</option>.
   </para>
 
   <para>
-  Può anche essere una brutta idea per un display progressivo. Scarterà coppie
-  di campi interlacciati consecutivi, dando una discontinuità che si vede
-  maggiormente con il secondo metodo, che mostra per due volte alcuni
-  fotogrammi progressivi. Il video interlacciato a 30000/1001 fotogrammi per
-  secondo è di suo un pochino zoppo dato che sarebbe da mostrare a 60000/1001
-  campi al secondo, quindi i fotogrammi duplicati non si notano così tanto.
+  It may also be a bad idea for progressive display, too. It will drop
+  pairs of consecutive interlaced fields, resulting in a discontinuity
+  that can be more visible than with the second method, which shows
+  some progressive frames twice. 30000/1001 frames per second interlaced
+  video is already a bit choppy because it really should be shown at
+  60000/1001 fields per second, so the duplicate frames do not stand out as
+  much.
   </para>
 
   <para>
-  In ogni modo è meglio tenere in considerazione il tuo contenuto e come
-  intendi riprodurlo. Se il tuo video è al 90% progressivo e non pensi di
-  riprodurlo mai su una TV, dovresti propendere per l'approccio progressivo.
-  Se è progressivo solo per metà, probabilmente ti converrà codificarlo come
-  se fosse interlacciato.
+  Either way, it is best to consider your content and how you intend to
+  display it. If your video is 90% progressive and you never intend to
+  show it on a TV, you should favor a progressive approach. If it is
+  only half progressive, you probably want to encode it as if it is all
+  interlaced.
   </para>
 </listitem>
 
 <listitem><para>
-  Trattarlo come interlacciato. Alcuni fotogrammi delle parti progressive
-  verranno duplicati, portando saltelli impari. Ancora, i filtri di
-  deinterlacciamento potrebbero inficiare le parti progressive.
+  Treat it as interlaced. Some frames of the progressive parts will
+  need to be duplicated, resulting in uneven jumpiness. Again,
+  deinterlacing filters may slightly degrade the progressive parts.
 </para></listitem>
 </itemizedlist>
 </sect3>
@@ -2309,69 +2314,69 @@ tipi.
 <!-- ********** -->
 
 <sect2 id="menc-feat-telecine-footnotes">
-<title>Note a pie' pagina</title>
+<title>Footnotes</title>
 
 <orderedlist>
 <listitem>
   <formalpara>
-  <title>Riguardo il taglio (crop):</title>
+  <title>About cropping:</title>
   <para>
-  I dati video sui DVD sono memorizzati in un formato conosciuto come YUV 4:2:0.
-  In un video YUV, la luminosità ("luma") e il colore ("chroma") vengono
-  salvati separatamente. Dato che l'occhio umano è in qualche modo meno
-  sensibile al colore che alla luminosità, in un'immagine YUV 4:2:0 c'è solo
-  un pixel chroma ogni quattro pixel luma. In un'immagine progressiva, ogni
-  quadrato di quattro pixel luma (due per lato) ha in comune un pixel chroma.
-  Devi prima ridimensionare lo YUV 4:2:0 progressivo a una risoluzione pari, e
-  anche utilizzare lo scostamento. Per esempio,
-  <option>crop=716:380:2:26</option> è OK ma
-  <option>crop=716:380:3:26 </option> non lo è.
+  Video data on DVDs are stored in a format called YUV 4:2:0. In YUV
+  video, luma ("brightness") and chroma ("color")
+  are stored separately. Because the human eye is somewhat less
+  sensitive to color than it is to brightness, in a YUV 4:2:0 picture
+  there is only one chroma pixel for every four luma pixels. In a
+  progressive picture, each square of four luma pixels (two on each
+  side) has one common chroma pixel. You must crop progressive YUV
+  4:2:0 to even resolutions, and use even offsets. For example,
+  <option>crop=716:380:2:26</option> is OK but
+  <option>crop=716:380:3:26 </option> is not.
   </para>
   </formalpara>
 
   <para>
-  Quando gestisci YUV 4:2:0 interlacciato, la situazione è un pelo più
-  complessa. Invece di avere quattro pixel luma nel
-  <emphasis>fotogramma</emphasis> che condividono un pixel chroma, quattro
-  pixel in ogni <emphasis>campo</emphasis> condividono un pixel chroma.
-  Quando i campi vengono interlacciati per formare un fotogramma, ogni
-  "scanline" è alta un pixel. Ora, invece di avere tutti i quattro pixel luma
-  in un quadrato, ci sono due pixel affiancati, e gli altri due pixel sono
-  affiancati due scanline più sotto. I due pixel luma nella scanline di mezzo
-  sono di un altro campo, e quindi condividono un pixel chroma differente con
-  due pixel due scanline dopo. Tutta questa confusione rende necessario avere
-  dimensione verticale pari e lo scostamento deve essere un multiplo di quattro.
-  La dimensione orizzontale può rimanere dispari.
+  When you are dealing with interlaced YUV 4:2:0, the situation is a
+  bit more complicated. Instead of every four luma pixels in the
+  <emphasis>frame</emphasis> sharing a chroma pixel, every four luma
+  pixels in each <emphasis> field</emphasis> share a chroma
+  pixel. When fields are interlaced to form a frame, each scanline is
+  one pixel high. Now, instead of all four luma pixels being in a
+  square, there are two pixels side-by-side, and the other two pixels
+  are side-by-side two scanlines down. The two luma pixels in the
+  intermediate scanline are from the other field, and so share a
+  different chroma pixel with two luma pixels two scanlines away. All
+  this confusion makes it necessary to have vertical crop dimensions
+  and offsets be multiples of four. Horizontal can stay even.
   </para>
 
   <para>
-  Per video in telecine, si consiglia di effettuare il taglio dopo l'inversione
-  del telecine. Una volta che il video è progressivo ti serve solo tagliare di
-  numeri dispari. Se davvero vuoi ottenere il piccolo aumento di velocità che
-  puoi avere tagliando prima, devi prima tagliare in verticale di multipli di
-  quattro, altrimenti il filtro di telecine inverso non riceverà dati corretti.
+  For telecined video, I recommend that cropping take place after
+  inverse telecining. Once the video is progressive you only need to
+  crop by even numbers. If you really want to gain the slight speedup
+  that cropping first may offer, you must crop vertically by multiples
+  of four or else the inverse-telecine filter will not have proper data.
   </para>
 
   <para>
-  Per video interlacciato (non in telecine), devi sempre tagliare
-  verticalmente di multipli di quattro a meno che tu non stia usando
-  <option>-vf field</option> prima del taglio.
+  For interlaced (not telecined) video, you must always crop
+  vertically by multiples of four unless you use <option>-vf
+  field</option> before cropping.
   </para>
 </listitem>
 
 <listitem><formalpara>
-  <title>Riguardo i parameti di codifica e la qualità:</title>
+  <title>About encoding parameters and quality:</title>
   <para>
-  Il fatto che qui venga cosigliata <option>mbd=2</option> non significa che
-  non si debba usare altrimenti. Insieme con <option>trell</option>,
-  <option>mbd=2</option> è una delle due opzioni di
-  <systemitem class="library">libavcodec</systemitem> che ottimizzano al
-  meglio la qualità e sarebbero sempre da utilizzare entrambe a meno che
-  l'aumento della velocità di codifica sua proibitivo (ad es. per la codifica
-  in tempo reale (realtime)). Ci sono molte altre opzioni di
-  <systemitem class="library">libavcodec</systemitem> che aumentano la
-  qualità (e rallentano la codifica), ma questo non è l'obiettivo di
-  questa documentaziione.
+  Just because I recommend <option>mbd=2</option> here does not mean it
+  should not be used elsewhere. Along with <option>trell</option>,
+  <option>mbd=2</option> is one of the two
+   <systemitem class="library">libavcodec</systemitem> options that
+  increases quality the most, and you should always use at least those
+  two unless the drop in encoding speed is prohibitive (e.g. realtime
+  encoding). There are many other options to
+  <systemitem class="library">libavcodec</systemitem> that increase
+  encoding quality (and decrease encoding speed) but that is beyond
+  the scope of this document.
   </para>
 </formalpara></listitem>
 
@@ -2401,7 +2406,7 @@ tipi.
   codec family</title>
 
 <para>
-<systemitem class="library">libavcodec</systemitem>
+<link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
 provides simple encoding to a lot of interesting video and audio formats.
 You can encode to the following codecs (more or less up to date):
 </para>
@@ -2570,48 +2575,16 @@ mencoder dvd://2 -o <replaceable>title2.avi</replaceable> -ovc lavc -lavcopts vc
 </thead>
 <tbody>
 <row>
-  <entry>ac3</entry>
-  <entry>Dolby Digital (AC-3)</entry>
-</row>
-<row>
-  <entry>adpcm_*</entry>
-  <entry>Adaptive PCM formats - see supplementary table</entry>
-</row>
-<row>
-  <entry>flac</entry>
-  <entry>Free Lossless Audio Codec (FLAC)</entry>
-</row>
-<row>
-  <entry>g726</entry>
-  <entry>G.726 ADPCM</entry>
-</row>
-<row>
-  <entry>libfaac</entry>
-  <entry>Advanced Audio Coding (AAC) - using FAAC</entry>
-</row>
-<row>
-  <entry>libgsm</entry>
-  <entry>ETSI GSM 06.10 full rate</entry>
-</row>
-<row>
-  <entry>libgsm_ms</entry>
-  <entry>Microsoft GSM</entry>
-</row>
-<row>
-  <entry>libmp3lame</entry>
-  <entry>MPEG-1 audio layer 3 (MP3) - using LAME</entry>
-</row>
-<row>
   <entry>mp2</entry>
-  <entry>MPEG-1 audio layer 2 (MP2)</entry>
+  <entry>MPEG Layer 2</entry>
 </row>
 <row>
-  <entry>pcm_*</entry>
-  <entry>PCM formats - see supplementary table</entry>
+  <entry>ac3</entry>
+  <entry>AC-3, AKA Dolby Digital</entry>
 </row>
 <row>
-  <entry>roq_dpcm</entry>
-  <entry>Id Software RoQ DPCM</entry>
+  <entry>adpcm_ima_wav</entry>
+  <entry>IMA adaptive PCM (4 bits per sample, 4:1 compression)</entry>
 </row>
 <row>
   <entry>sonic</entry>
@@ -2623,15 +2596,15 @@ mencoder dvd://2 -o <replaceable>title2.avi</replaceable> -ovc lavc -lavcopts vc
 </row>
 <row>
   <entry>vorbis</entry>
-  <entry>Vorbis</entry>
+  <entry>Xiph Ogg Vorbis codec</entry>
 </row>
 <row>
   <entry>wmav1</entry>
-  <entry>Windows Media Audio v1</entry>
+  <entry>Windows Media Audio v1 codec</entry>
 </row>
 <row>
   <entry>wmav2</entry>
-  <entry>Windows Media Audio v2</entry>
+  <entry>Windows Media Audio v2 codec</entry>
 </row>
 </tbody>
 </tgroup>
@@ -2866,7 +2839,7 @@ and development advancements, you may get very different results.
 
 <para>
 With this feature of
-<systemitem class="library">libavcodec</systemitem>
+<link linkend="ffmpeg"><systemitem class="library">libavcodec</systemitem></link>
 you are able to set custom inter (I-frames/keyframes) and intra
 (P-frames/predicted frames) matrices. It is supported by many of the codecs:
 <systemitem>mpeg1video</systemitem> and <systemitem>mpeg2video</systemitem>
@@ -3610,7 +3583,7 @@ and development advancements, you may get very different results.
 <systemitem class="library">x264</systemitem> is a free library for
 encoding H.264/AVC video streams.
 Before starting to encode, you need to
-<link linkend="x264">set up <application>MEncoder</application> to support it</link>.
+<link linkend="codec-x264-encode">set up <application>MEncoder</application> to support it</link>.
 </para>
 
 <!-- ********** -->
@@ -3801,7 +3774,7 @@ random differences in the achieved bitrate.
   This option is for choosing the motion estimation search method.
   Altering this option provides a straightforward quality-vs-speed
   tradeoff. <option>me=dia</option> is only a few percent faster than
-  the default search, at a cost of under 0.1dB global PSNR. The
+  the default search, at a cost of under 0.1dB global PSNR. The 
   default setting (<option>me=hex</option>) is a reasonable tradeoff
   between speed and quality. <option>me=umh</option> gains a little under
   0.1dB global PSNR, with a speed penalty that varies depending on
@@ -4030,7 +4003,7 @@ random differences in the achieved bitrate.
   (understanding that there are diminishing returns which may become
   vanishingly low, or even zero). The video stream will still have seekable
   points as long as there are some scene changes.
-</para></listitem>
+</para></listitem> 
 <listitem>
   <para>
   <emphasis role="bold">deblock</emphasis>:
@@ -4346,17 +4319,17 @@ and other options. This is known to work on x86 on both *NIX and Windows.
 </para>
 <para>
 First you must build the <application>vfw2menc</application> program.
-It is located in the <filename class="directory">TOOLS</filename> subdirectory
+It is located in the <filename class="directory">TOOLS</filename> subdirectory 
 of the MPlayer source tree.
 To build on Linux, this can be done using <application>Wine</application>:
 <screen>winegcc vfw2menc.c -o vfw2menc -lwinmm -lole32</screen>
 
-To build on Windows in <application>MinGW</application> or
+To build on Windows in <application>MinGW</application> or 
 <application>Cygwin</application> use:
 <screen>gcc vfw2menc.c -o vfw2menc.exe -lwinmm -lole32</screen>
 
 To build on <application>MSVC</application> you will need getopt.
-Getopt can be found in the original <application>vfw2menc</application>
+Getopt can be found in the original <application>vfw2menc</application> 
 archive available at:
 The <ulink url="http://oss.netfarm.it/mplayer-win32.php">MPlayer on win32</ulink> project.
 </para>
@@ -4366,13 +4339,13 @@ Below is an example with the VP6 codec.
 <screen>
 vfw2menc -f VP62 -d vp6vfw.dll -s firstpass.mcf
 </screen>
-This will open the VP6 codec dialog window.
+This will open the VP6 codec dialog window. 
 Repeat this step for the second pass
 and use <option>-s <replaceable>secondpass.mcf</replaceable></option>.
 </para>
 </informalexample>
 <para>
-Windows users can use
+Windows users can use 
 <option>-xvfwopts codec=vp6vfw.dll:compdata=dialog</option> to have
 the codec dialog display before encoding starts.
 </para>
@@ -4677,11 +4650,11 @@ mp4creator -optimize narnia.mp4</screen>
 <para>
   If you want to add tags to your video that show up in iTunes, you can use
   <ulink url="http://atomicparsley.sourceforge.net/">AtomicParsley</ulink>.
-
+  
   <screen>AtomicParsley narnia.mp4 --metaEnema --title "The Chronicles of Narnia" --year 2005 --stik Movie --freefree --overWrite</screen>
 
   The <option>--metaEnema</option> option removes any existing metadata
-  (<application>mp4creator</application> inserts its name in the
+  (<application>mp4creator</application> inserts its name in the 
   "encoding tool" tag), and <option>--freefree</option> reclaims the
   space from the deleted metadata.
   The <option>--stik</option> option sets the type of video (such as Movie
@@ -4749,7 +4722,7 @@ compliant.
 <tbody>
 <row>
   <entry>NTSC DVD</entry>
-  <entry>720x480, 704x480, 352x480, 352x240</entry>
+  <entry>720x480, 704x480, 352x480, 352x240</entry> 
   <entry>MPEG-2</entry>
   <entry>9800 kbps</entry>
   <entry>48000 Hz</entry>
@@ -4762,7 +4735,7 @@ compliant.
   <entry>NTSC DVD</entry>
   <entry>352x240<footnote id='fn-rare-resolutions'><para>
   These resolutions are rarely used for DVDs because
-  they are fairly low quality.</para></footnote></entry>
+  they are fairly low quality.</para></footnote></entry> 
   <entry>MPEG-1</entry>
   <entry>1856 kbps</entry>
   <entry>48000 Hz</entry>
@@ -4857,7 +4830,7 @@ highly bitrate-starved and require effort to obtain acceptable quality.
 <title>GOP Size Constraints</title>
 
 <para>
-DVD, VCD, and SVCD also constrain you to relatively low
+DVD, VCD, and SVCD also constrain you to relatively low 
 GOP (Group of Pictures) sizes.
 For 30 fps material the largest allowed GOP size is 18.
 For 25 or 24 fps, the maximum is 15.
@@ -4873,7 +4846,7 @@ The GOP size is set using the <option>keyint</option> option.
 VCD video is required to be CBR at 1152 kbps.
 This highly limiting constraint also comes along with an extremly low vbv
 buffer size of 327 kilobits.
-SVCD allows varying video bitrates up to 2500 kbps, and a somewhat less
+SVCD allows varying video bitrates up to 2500 kbps, and a somewhat less 
 restrictive vbv buffer size of 917 kilobits is allowed.
 DVD video bitrates may range anywhere up to 9800 kbps (though typical
 bitrates are about half that), and the vbv buffer size is 1835 kilobits.
@@ -4920,7 +4893,7 @@ DVD (with timestamps on every frame, if possible):
 <para>
 DVD with NTSC Pullup:
 <screen>-of mpeg -mpegopts format=dvd:tsaf:telecine -ofps 24000/1001</screen>
-This allows 24000/1001 fps progressive content to be encoded at 30000/1001
+This allows 24000/1001 fps progressive content to be encoded at 30000/1001 
 fps whilst maintaing DVD-compliance.
 </para>
 
@@ -4986,7 +4959,7 @@ or in the manual page.
 <para>
 If the audio sample rate in the original file is not the same as
 required by the target format, sample rate conversion is required.
-This is achieved using the <option>-srate</option> option and
+This is achieved using the <option>-srate</option> option and 
 the <option>-af lavcresample</option> audio filter together.
 </para>
 
@@ -5054,7 +5027,7 @@ or DVD:
   Used to set the GOP size.
   18 for 30fps material, or 15 for 25/24 fps material.
   Commercial producers seem to prefer keyframe intervals of 12.
-  It is possible to make this much larger and still retain compatibility
+  It is possible to make this much larger and still retain compatibility 
   with most players.
   A <option>keyint</option> of 25 should never cause any problems.
 </para></listitem>

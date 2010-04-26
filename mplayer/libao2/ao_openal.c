@@ -1,23 +1,10 @@
-/*
- * OpenAL audio output driver for MPlayer
+/* 
+ * ao_openal.c - OpenAL audio output driver for MPlayer
+ *
+ * This driver is under the same license as MPlayer.
+ * (http://www.mplayerhq.hu)
  *
  * Copyleft 2006 by Reimar Döffinger (Reimar.Doeffinger@stud.uni-karlsruhe.de)
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * along with MPlayer; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "config.h"
@@ -42,7 +29,7 @@
 #include "osdep/timer.h"
 #include "subopt-helper.h"
 
-static const ao_info_t info =
+static ao_info_t info = 
 {
   "OpenAL audio output",
   "openal",
@@ -52,7 +39,7 @@ static const ao_info_t info =
 
 LIBAO_EXTERN(openal)
 
-#define MAX_CHANS 8
+#define MAX_CHANS 6
 #define NUM_BUF 128
 #define CHUNK_SIZE 512
 static ALuint buffers[MAX_CHANS][NUM_BUF];
@@ -95,18 +82,17 @@ static void print_help(void) {
 static int init(int rate, int channels, int format, int flags) {
   float position[3] = {0, 0, 0};
   float direction[6] = {0, 0, 1, 0, -1, 0};
-  float sppos[MAX_CHANS][3] = {
+  float sppos[6][3] = {
     {-1, 0, 0.5}, {1, 0, 0.5},
     {-1, 0,  -1}, {1, 0,  -1},
     {0,  0,   1}, {0, 0, 0.1},
-    {-1, 0,   0}, {1, 0,   0},
   };
   ALCdevice *dev = NULL;
   ALCcontext *ctx = NULL;
   ALCint freq = 0;
   ALCint attribs[] = {ALC_FREQUENCY, rate, 0, 0};
   int i;
-  const opt_t subopts[] = {
+  opt_t subopts[] = {
     {NULL}
   };
   if (subopt_parse(ao_subdevice, subopts) != 0) {
@@ -252,3 +238,4 @@ static float get_delay(void) {
   alGetSourcei(sources[0], AL_BUFFERS_QUEUED, &queued);
   return queued * CHUNK_SIZE / 2 / (float)ao_data.samplerate;
 }
+

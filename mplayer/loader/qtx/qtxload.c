@@ -1,31 +1,13 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "qtxsdk/components.h"
 #include "qtxsdk/select.h"
-#include "loader/ldt_keeper.h"
+#include "ldt_keeper.h"
 #include "mp_msg.h"
 
-/* this is what a plain component looks like */
+/* ilyen egy sima komponens */
 ComponentResult ComponentDummy(
     ComponentParameters *params,
     void **globals,
@@ -45,13 +27,13 @@ void* GetProcAddress(void* handle,char* func);
 
 #define __stdcall __attribute__((__stdcall__))
 #define __cdecl   __attribute__((__cdecl__))
-#define APIENTRY
+#define APIENTRY 
 
 unsigned int* x_table[0x00001837];
 
 static    OSErr (*InitializeQTML)(long flags);
 
-int main(void) {
+int main(int argc, char *argv[]){
     void *handler;
     void *handler2;
     void* theqtdp=NULL;
@@ -78,7 +60,7 @@ int main(void) {
 
     InitializeQTML = 0x6299e590;//GetProcAddress(handler, "InitializeQTML");
     InitializeQTML(6+16);
-
+    
     printf("loading svq3\n");
     handler2= LoadLibraryA("/root/.wine/fake_windows/Windows/System/QuickTime/QuickTimeEssentials.qtx");
     printf("done\n");
@@ -100,7 +82,7 @@ int main(void) {
     desc.componentManufacturer=0;
     desc.componentFlags=0;
     desc.componentFlagsMask=0;
-
+    
     params = malloc(sizeof(ComponentParameters)+2048);
 
     params->flags = 0;
@@ -122,7 +104,7 @@ int main(void) {
     printf("params: flags: %d, paramSize: %d, what: %d, params[0] = %x\n",
         params->flags, params->paramSize, params->what, params->params[0]);
 
-//    __asm__ volatile ("movl %%esp, %0\n\t" : "=a" (esp) :: "memory" );
+//    __asm__ __volatile__ ("movl %%esp, %0\n\t" : "=a" (esp) :: "memory" );
 //    printf("ESP=%p\n",esp);
 
     *((void**)0x62b7d640) = &x_table[0]; //malloc(0x00001837 * 4); // ugly hack?
@@ -131,7 +113,7 @@ int main(void) {
 
     ret = dispatcher(params, &globals);
 
-//    __asm__ volatile ("movl %%esp, %0\n\t" : "=a" (esp) :: "memory" );
+//    __asm__ __volatile__ ("movl %%esp, %0\n\t" : "=a" (esp) :: "memory" );
 //    printf("ESP=%p\n",esp);
 
     printf("!!! CDComponentDispatch() => %d  glob=%p\n",ret,globals);

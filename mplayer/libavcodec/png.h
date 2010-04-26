@@ -1,6 +1,6 @@
 /*
  * PNG image format
- * Copyright (c) 2003 Fabrice Bellard
+ * Copyright (c) 2003 Fabrice Bellard.
  *
  * This file is part of FFmpeg.
  *
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PNG_H
-#define AVCODEC_PNG_H
+#ifndef FFMPEG_PNG_H
+#define FFMPEG_PNG_H
 
 #include <stdint.h>
 
@@ -64,15 +64,14 @@ extern const uint8_t ff_png_pass_xshift[NB_PASSES];
 /* Mask to determine which pixels are valid in a pass */
 extern const uint8_t ff_png_pass_mask[NB_PASSES];
 
-void *ff_png_zalloc(void *opaque, unsigned int items, unsigned int size);
+extern void *ff_png_zalloc(void *opaque, unsigned int items,
+                           unsigned int size);
 
-void ff_png_zfree(void *opaque, void *ptr);
+extern void ff_png_zfree(void *opaque, void *ptr);
 
-int ff_png_get_nb_channels(int color_type);
+extern int ff_png_get_nb_channels(int color_type);
 
 /* compute the row size of an interleaved pass */
-int ff_png_pass_row_size(int pass, int bits_per_pixel, int width);
+extern int ff_png_pass_row_size(int pass, int bits_per_pixel, int width);
 
-void ff_add_png_paeth_prediction(uint8_t *dst, uint8_t *src, uint8_t *top, int w, int bpp);
-
-#endif /* AVCODEC_PNG_H */
+#endif /* FFMPEG_PNG_H */

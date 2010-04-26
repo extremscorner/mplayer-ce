@@ -2,9 +2,9 @@
  * error.c: error management functions
  *****************************************************************************
  * Copyright (C) 1998-2002 VideoLAN
- * $Id: error.c 27494 2008-08-29 20:22:36Z diego $
+ * $Id: error.c 20629 2006-11-03 12:25:56Z diego $
  *
- * Author: Sam Hocevar <sam@zoy.org>
+ * Author: Samuel Hocevar <sam@zoy.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

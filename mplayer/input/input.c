@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include "config.h"
 
 #include <stdlib.h>
@@ -43,7 +25,7 @@
 #include "help_mp.h"
 #include "m_config.h"
 #include "m_option.h"
-#include "path.h"
+#include "get_path.h"
 
 #include "joystick.h"
 
@@ -94,7 +76,6 @@ static const mp_cmd_t mp_cmds[] = {
   { MP_CMD_OSD, "osd",0, { {MP_CMD_ARG_INT,{-1}}, {-1,{0}} } },
   { MP_CMD_OSD_SHOW_TEXT, "osd_show_text", 1, { {MP_CMD_ARG_STRING, {0}}, {MP_CMD_ARG_INT,{-1}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_OSD_SHOW_PROPERTY_TEXT, "osd_show_property_text",1, { {MP_CMD_ARG_STRING, {0}}, {MP_CMD_ARG_INT,{-1}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
-  { MP_CMD_OSD_SHOW_PROGRESSION, "osd_show_progression", 0, { {-1,{0}} } },
   { MP_CMD_VOLUME, "volume", 1, { { MP_CMD_ARG_FLOAT,{0} }, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_BALANCE, "balance", 1, { { MP_CMD_ARG_FLOAT,{0} }, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_MIXER_USEMASTER, "use_master", 0, { {-1,{0}} } },
@@ -173,8 +154,10 @@ static const mp_cmd_t mp_cmds[] = {
   { MP_CMD_LOADLIST, "loadlist", 1, { {MP_CMD_ARG_STRING, {0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_RUN, "run", 1, { {MP_CMD_ARG_STRING,{0}}, {-1,{0}} } },
   { MP_CMD_VF_CHANGE_RECTANGLE, "change_rectangle", 2, { {MP_CMD_ARG_INT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}}}},
+#ifdef CONFIG_TV_TELETEXT
   { MP_CMD_TV_TELETEXT_ADD_DEC, "teletext_add_dec", 1, { {MP_CMD_ARG_STRING,{0}}, {-1,{0}} } },
   { MP_CMD_TV_TELETEXT_GO_LINK, "teletext_go_link", 1, { {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
+#endif
 
 #ifdef CONFIG_GUI
   { MP_CMD_GUI_LOADFILE, "gui_loadfile", 0, { {-1,{0}} } },
@@ -198,22 +181,17 @@ static const mp_cmd_t mp_cmds[] = {
   { MP_CMD_CEXIT, "exit", 0, { {-1,{0}} } },
   { MP_CMD_CHIDE, "hide", 0, { {MP_CMD_ARG_INT,{3000}}, {-1,{0}} } },
 #endif
-
+ 
   { MP_CMD_GET_VO_FULLSCREEN, "get_vo_fullscreen", 0, { {-1,{0}} } },
   { MP_CMD_GET_SUB_VISIBILITY, "get_sub_visibility", 0, { {-1,{0}} } },
   { MP_CMD_KEYDOWN_EVENTS, "key_down_event", 1, { {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_SET_PROPERTY, "set_property", 2, { {MP_CMD_ARG_STRING, {0}},  {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
   { MP_CMD_GET_PROPERTY, "get_property", 1, { {MP_CMD_ARG_STRING, {0}},  {-1,{0}} } },
   { MP_CMD_STEP_PROPERTY, "step_property", 1, { {MP_CMD_ARG_STRING, {0}}, {MP_CMD_ARG_FLOAT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
-
+  
   { MP_CMD_SEEK_CHAPTER, "seek_chapter", 1, { {MP_CMD_ARG_INT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_SET_MOUSE_POS, "set_mouse_pos", 2, { {MP_CMD_ARG_INT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
-
-  { MP_CMD_AF_SWITCH, "af_switch", 1,  { {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
-  { MP_CMD_AF_ADD, "af_add", 1,  { {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
-  { MP_CMD_AF_DEL, "af_del", 1,  { {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
-  { MP_CMD_AF_CLR, "af_clr", 0, { {-1,{0}} } },
-
+  
   { 0, NULL, 0, {} }
 };
 
@@ -367,7 +345,7 @@ static const mp_cmd_bind_t def_cmd_binds[] = {
   { {  MOUSE_BTN4, 0 }, "seek -10" },
   { {  MOUSE_BTN5, 0 }, "volume 1" },
   { {  MOUSE_BTN6, 0 }, "volume -1" },
-
+  
 #ifdef CONFIG_DVDNAV
   { { KEY_KP8, 0 }, "dvdnav up" },   // up
   { { KEY_KP2, 0 }, "dvdnav down" },   // down
@@ -406,7 +384,6 @@ static const mp_cmd_bind_t def_cmd_binds[] = {
   { { KEY_DEL, 0 }, "alt_src_step -1" },
   { { 'o', 0 }, "osd" },
   { { 'I', 0 }, "osd_show_property_text \"${filename}\"" },
-  { { 'P', 0 }, "osd_show_progression" },
   { { 'z', 0 }, "sub_delay -0.1" },
   { { 'x', 0 }, "sub_delay +0.1" },
   { { 'g', 0 }, "sub_step -1" },
@@ -444,9 +421,11 @@ static const mp_cmd_bind_t def_cmd_binds[] = {
   { { 'n', 0 }, "tv_step_norm" },
   { { 'u', 0 }, "tv_step_chanlist" },
 #endif
+#ifdef CONFIG_TV_TELETEXT
   { { 'X', 0 }, "step_property teletext_mode 1" },
   { { 'W', 0 }, "step_property teletext_page 1" },
   { { 'Q', 0 }, "step_property teletext_page -1" },
+#endif
 #ifdef CONFIG_JOYSTICK
   { { JOY_AXIS0_PLUS, 0 }, "seek 10" },
   { { JOY_AXIS0_MINUS, 0 }, "seek -10" },
@@ -489,9 +468,9 @@ static const mp_cmd_bind_t def_cmd_binds[] = {
   { { KEY_VOLUME_UP, 0 }, "volume 1" },
   { { KEY_VOLUME_DOWN, 0 }, "volume -1" },
   { { KEY_MUTE, 0 }, "mute" },
-
+          
   { { KEY_CLOSE_WIN, 0 }, "quit" },
-
+  
   { { '!', 0 }, "seek_chapter -1" },
   { { '@', 0 }, "seek_chapter 1" },
   { { 'A', 0 }, "switch_angle 1" },
@@ -586,7 +565,6 @@ static mp_cmd_t* ar_cmd = NULL;
 static unsigned int ar_delay = 100, ar_rate = 8, last_ar = 0;
 
 static int use_joystick = 1, use_lirc = 1, use_lircc = 1;
-static int default_bindings = 1;
 static char* config_file = "input.conf";
 
 /* Apple Remote */
@@ -606,7 +584,7 @@ static int mp_input_print_key_list(m_option_t* cfg);
 static int mp_input_print_cmd_list(m_option_t* cfg);
 
 // Our command line options
-static const m_option_t input_conf[] = {
+static m_option_t input_conf[] = {
   { "conf", &config_file, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL },
   { "ar-dev", &ar_dev, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL },
   { "ar-delay", &ar_delay, CONF_TYPE_INT, CONF_GLOBAL, 0, 0, NULL },
@@ -615,12 +593,10 @@ static const m_option_t input_conf[] = {
   { "cmdlist", mp_input_print_cmd_list, CONF_TYPE_FUNC, CONF_GLOBAL, 0, 0, NULL },
   { "js-dev", &js_dev, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL },
   { "file", &in_file, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL },
-  { "default-bindings", &default_bindings, CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL },
-  { "nodefault-bindings", &default_bindings, CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL },
   { NULL, NULL, 0, 0, 0, 0, NULL}
 };
 
-static const m_option_t mp_input_opts[] = {
+static m_option_t mp_input_opts[] = {
   { "input", &input_conf, CONF_TYPE_SUBCONFIG, 0, 0, 0, NULL},
   { "nojoystick", &use_joystick,  CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL },
   { "joystick", &use_joystick,  CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL },
@@ -773,7 +749,7 @@ int mp_input_parse_and_queue_cmds(const char *str) {
 mp_cmd_t*
 mp_input_parse_cmd(char* str) {
   int i,l;
-  int pausing = -1;
+  int pausing = 0;
   char *ptr,*e;
   mp_cmd_t *cmd;
   const mp_cmd_t *cmd_def;
@@ -795,9 +771,6 @@ mp_input_parse_cmd(char* str) {
   } else if (strncmp(str, "pausing_toggle ", 15) == 0) {
     pausing = 3;
     str = &str[15];
-  } else if (strncmp(str, "pausing_keep_force ", 19) == 0) {
-    pausing = 4;
-    str = &str[19];
   }
 
   for(ptr = str ; ptr[0] != '\0'  && ptr[0] != '\t' && ptr[0] != ' ' ; ptr++)
@@ -823,15 +796,6 @@ mp_input_parse_cmd(char* str) {
   cmd = calloc(1, sizeof(mp_cmd_t));
   cmd->id = cmd_def->id;
   cmd->name = strdup(cmd_def->name);
-  if (pausing == -1) {
-    switch (cmd->id) {
-      case MP_CMD_KEYDOWN_EVENTS:
-      case MP_CMD_SET_MOUSE_POS:
-        pausing = 4; break;
-      default:
-        pausing = 0; break;
-    }
-  }
   cmd->pausing = pausing;
 
   ptr = str;
@@ -875,7 +839,7 @@ mp_input_parse_cmd(char* str) {
 	if(e <= ptr2 || *(e - 1) != '\\') break;
 	ptr2 = e + 1;
       }
-
+      
       if(term != ' ' && (!e || e[0] == '\0')) {
 	mp_msg(MSGT_INPUT,MSGL_ERR,MSGTR_INPUT_INPUT_ErrUnterminatedArg,cmd_def->name,i+1);
 	ptr = NULL;
@@ -921,7 +885,7 @@ mp_input_parse_cmd(char* str) {
   return cmd;
 }
 
-#define MP_CMD_MAX_SIZE 4096
+#define MP_CMD_MAX_SIZE 256
 
 static int
 mp_input_read_cmd(mp_input_fd_t* mp_fd, char** ret) {
@@ -933,8 +897,8 @@ mp_input_read_cmd(mp_input_fd_t* mp_fd, char** ret) {
     mp_fd->buffer = malloc(MP_CMD_MAX_SIZE);
     mp_fd->pos = 0;
     mp_fd->size = MP_CMD_MAX_SIZE;
-  }
-
+  } 
+  
   // Get some data if needed/possible
   while (!mp_fd->got_cmd && !mp_fd->eof && (mp_fd->size - mp_fd->pos > 1) ) {
     int r = ((mp_cmd_func_t)mp_fd->read_func)(mp_fd->fd,mp_fd->buffer+mp_fd->pos,mp_fd->size - 1 - mp_fd->pos);
@@ -964,8 +928,6 @@ mp_input_read_cmd(mp_input_fd_t* mp_fd, char** ret) {
     int l = 0;
     // Find the cmd end
     mp_fd->buffer[mp_fd->pos] = '\0';
-    end = strchr(mp_fd->buffer,'\r');
-    if (end) *end = '\n';
     end = strchr(mp_fd->buffer,'\n');
     // No cmd end ?
     if(!end) {
@@ -997,7 +959,7 @@ mp_input_read_cmd(mp_input_fd_t* mp_fd, char** ret) {
       memmove(mp_fd->buffer,end+1,mp_fd->pos-(l+1));
     mp_fd->pos -= l+1;
   }
-
+   
   if(*ret)
     return 1;
   else
@@ -1033,7 +995,7 @@ mp_input_add_cmd_filter(mp_input_cmd_filter func, void* ctx) {
   filter->next = cmd_filters;
   cmd_filters = filter;
 }
-
+  
 
 static char*
 mp_input_find_bind_for_key(const mp_cmd_bind_t* binds, int n,int* keys) {
@@ -1086,7 +1048,7 @@ mp_input_get_cmd_from_keys(int n,int* keys, int paused) {
     cmd = mp_input_find_bind_for_key(cmd_binds,n,keys);
   if(cmd_binds_default && cmd == NULL)
     cmd = mp_input_find_bind_for_key(cmd_binds_default,n,keys);
-  if(default_bindings && cmd == NULL)
+  if(cmd == NULL)
     cmd = mp_input_find_bind_for_key(def_cmd_binds,n,keys);
 
   if(cmd == NULL) {
@@ -1135,7 +1097,7 @@ interpret_key(int code, int paused)
       }
       code &= ~MP_KEY_DOWN;
       // Check if we don't already have this key as pushed
-      for(j = 0; j < num_key_down; j++) {
+      for(j = 0; j < num_key_down; j++) { 
 	if(key_down[j] == code)
 	  break;
       }
@@ -1150,7 +1112,7 @@ interpret_key(int code, int paused)
     // key released
     // Check if the key is in the down key, driver which can't send push event
     // send only release event
-    for(j = 0; j < num_key_down; j++) {
+    for(j = 0; j < num_key_down; j++) { 
       if(key_down[j] == code)
 	break;
     }
@@ -1162,7 +1124,7 @@ interpret_key(int code, int paused)
       key_down[num_key_down] = code;
       num_key_down++;
       last_key_down = 1;
-    }
+    } 
     // We ignore key from last combination
     ret = last_key_down ? mp_input_get_cmd_from_keys(num_key_down,key_down,paused) : NULL;
     // Remove the key
@@ -1185,7 +1147,7 @@ static mp_cmd_t *check_autorepeat(int paused)
     unsigned int t = GetTimer();
     // First time : wait delay
     if(ar_state == 0 && (t - last_key_down) >= ar_delay*1000) {
-      ar_cmd = mp_input_get_cmd_from_keys(num_key_down,key_down,paused);
+      ar_cmd = mp_input_get_cmd_from_keys(num_key_down,key_down,paused);      
       if(!ar_cmd) {
 	ar_state = -1;
 	return NULL;
@@ -1345,14 +1307,14 @@ mp_input_get_queued_cmd(int peek_only) {
     return NULL;
 
   ret = cmd_queue[cmd_queue_start];
-
-  if (!peek_only) {
+  
+  if (!peek_only) {  
   cmd_queue_length--;
   cmd_queue_start = (cmd_queue_start + 1) % CMD_QUEUE_SIZE;
   }
-
+  
   return ret;
-}
+}  
 
 /**
  * \param peek_only when set, the returned command stays in the queue.
@@ -1406,7 +1368,7 @@ mp_cmd_free(mp_cmd_t* cmd) {
 
   if(cmd->name)
     free(cmd->name);
-
+  
   for(i=0; i < MP_CMD_MAX_ARGS && cmd->args[i].type != -1; i++) {
     if(cmd->args[i].type == MP_CMD_ARG_STRING && cmd->args[i].v.s != NULL)
       free(cmd->args[i].v.s);
@@ -1444,7 +1406,7 @@ mp_input_get_key_name(int key) {
     if(key_names[i].key == key)
       return key_names[i].name;
   }
-
+  
   if(isascii(key)) {
     snprintf(key_str,12,"%c",(char)key);
     return key_str;
@@ -1503,7 +1465,7 @@ mp_input_get_input_from_name(char* name,int* keys) {
 #define BS_MAX 256
 #define SPACE_CHAR " \n\r\t"
 
-static void
+void
 mp_input_bind_keys(const int keys[MP_MAX_KEY_DOWN+1], char* cmd) {
   int i = 0,j;
   mp_cmd_bind_t* bind = NULL;
@@ -1535,7 +1497,7 @@ mp_input_bind_keys(const int keys[MP_MAX_KEY_DOWN+1], char* cmd) {
       }
     }
   }
-
+  
   if(!bind) {
     bind_section->cmd_binds = realloc(bind_section->cmd_binds,(i+2)*sizeof(mp_cmd_bind_t));
     memset(&bind_section->cmd_binds[i],0,2*sizeof(mp_cmd_bind_t));
@@ -1547,7 +1509,7 @@ mp_input_bind_keys(const int keys[MP_MAX_KEY_DOWN+1], char* cmd) {
   memcpy(bind->input,keys,(MP_MAX_KEY_DOWN+1)*sizeof(int));
 }
 
-static void
+void
 mp_input_add_binds(const mp_cmd_bind_t* list) {
   int i;
   for(i = 0 ; list[i].cmd ; i++)
@@ -1567,7 +1529,7 @@ mp_input_free_binds(mp_cmd_bind_t* binds) {
   free(binds);
 
 }
-
+  
 static int
 mp_input_parse_config(char *file) {
   int fd;
@@ -1741,18 +1703,17 @@ mp_input_get_section(void) {
 
 void
 mp_input_init(int use_gui) {
-  char *file;
-  
+  char* file;
 
 #ifdef CONFIG_GUI
   if(use_gui)
     mp_input_add_binds(gui_def_cmd_binds);
 #endif
-
+  
   file = config_file[0] != '/' ? get_path(config_file) : config_file;
   if(!file)
     return;
-
+  
   if( !mp_input_parse_config(file)) {
     // free file if it was allocated by get_path(),
     // before it gets overwritten
@@ -1761,9 +1722,7 @@ mp_input_init(int use_gui) {
       free(file);
     }
     // Try global conf dir
-    //file = MPLAYER_CONFDIR "/input.conf";
-    file = (char*)malloc(sizeof(char)*100);
-    sprintf(file,"%s%s",MPLAYER_CONFDIR,"/input.conf");
+    file = MPLAYER_CONFDIR "/input.conf";
     if(! mp_input_parse_config(file))
       mp_msg(MSGT_INPUT,MSGL_V,"Falling back on default (hardcoded) input config\n");
   }
@@ -1818,7 +1777,7 @@ mp_input_init(int use_gui) {
       mp_input_add_key_fd(fd,1,mp_input_appleir_read,(mp_close_func_t)close);
   }
 #endif
-
+  
   if(in_file) {
     struct stat st;
     if(stat(in_file,&st))
@@ -1913,11 +1872,6 @@ mp_input_check_interrupt(int time) {
   case MP_CMD_PLAY_TREE_UP_STEP:
   case MP_CMD_PLAY_ALT_SRC_STEP:
     // The cmd will be executed when we are back in the main loop
-    return 1;
-  case MP_CMD_PAUSE:
-	  // remove the cmd from the queue
-	  cmd = mp_input_get_cmd(time,0,0);
-	  mp_cmd_free(cmd);
     return 1;
   }
   // remove the cmd from the queue

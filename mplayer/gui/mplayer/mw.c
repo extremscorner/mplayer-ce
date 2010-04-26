@@ -42,20 +42,18 @@
 #include "libvo/sub.h"
 #include "access_mpcontext.h"
 
-#include "libmpcodecs/vd.h"
 #include "libmpdemux/demuxer.h"
 #include "libmpdemux/stheader.h"
 #include "codec-cfg.h"
 #include "m_option.h"
 #include "m_property.h"
-#include "mp_core.h"
 
 #define GUI_REDRAW_WAIT 375
 
 #include "play.h"
 #include "widgets.h"
 
-unsigned int GetTimerMS( void );
+extern unsigned int GetTimerMS( void );
 
 unsigned char * mplDrawBuffer = NULL;
 int             mplMainRender = 1;
@@ -74,8 +72,8 @@ int             i,pot = 0;
 void mplMainDraw( void )
 {
 
- if ( appMPlayer.mainWindow.State == wsWindowClosed ) exit_player( EXIT_QUIT );
-
+ if ( appMPlayer.mainWindow.State == wsWindowClosed ) exit_player( MSGTR_Exit_quit );
+ 
  if ( appMPlayer.mainWindow.Visible == wsWindowNotVisible ||
       !mainVisible ) return;
 //      !appMPlayer.mainWindow.Mapped ) return;
@@ -104,7 +102,7 @@ void mplEventHandling( int msg,float param )
   {
 // --- user events
    case evExit:
-        exit_player( EXIT_QUIT );
+        exit_player( "Exit" );
         break;
 
    case evPlayNetwork:
@@ -127,7 +125,7 @@ void mplEventHandling( int msg,float param )
 	goto play;
 
    case evSetSubtitle:
-        mp_property_do("sub",M_PROPERTY_SET,&iparam,guiIntfStruct.mpcontext);
+        mp_property_do("sub",M_PROPERTY_SET,&iparam,guiIntfStruct.mpcontext); 
 	break;
 
 #ifdef CONFIG_VCD
@@ -194,7 +192,7 @@ play:
 		 guiIntfStruct.Chapter=guiIntfStruct.DVD.current_chapter;
 		 guiIntfStruct.Angle=guiIntfStruct.DVD.current_angle;
                  guiIntfStruct.DiskChanged=1;
-		}
+		} 
                break;
 #endif
          }
@@ -228,9 +226,9 @@ NoPause:
         mplPause();
         break;
 
-   case evStop:
-	guiIntfStruct.Playing=guiSetStop;
-	mplState();
+   case evStop: 
+	guiIntfStruct.Playing=guiSetStop; 
+	mplState(); 
 	guiIntfStruct.NoWindow=False;
 	break;
 
@@ -271,7 +269,7 @@ NoPause:
    case evSetVolume:
         guiIntfStruct.Volume=param;
 	goto set_volume;
-   case evSetBalance:
+   case evSetBalance: 
         guiIntfStruct.Balance=param;
 set_volume:
         {
@@ -360,7 +358,7 @@ set_volume:
 	wsClearWindow( appMPlayer.subWindow );
 #ifdef CONFIG_DVDREAD
 	if ( guiIntfStruct.StreamType == STREAMTYPE_DVD || guiIntfStruct.StreamType == STREAMTYPE_VCD ) goto play_dvd_2;
-	 else
+	 else 
 #endif
 	 guiIntfStruct.NewPlay=1;
 	break;
@@ -426,7 +424,7 @@ void mplMainMouseHandle( int Button,int X,int Y,int RX,int RY )
           sx=X; sy=Y; boxMoved=1; itemtype=itPLMButton;
           SelectedItem=currentselected;
           if ( SelectedItem == -1 ) break;
-          boxMoved=0;
+          boxMoved=0; 
           item=&appMPlayer.Items[SelectedItem];
           itemtype=item->type;
           item->pressed=btnPressed;
@@ -519,7 +517,7 @@ void mplMainKeyHandle( int KeyCode,int Type,int Key )
  int msg = evNone;
 
  if ( Type != wsKeyPressed ) return;
-
+ 
  if ( !Key )
   {
    switch ( KeyCode )
@@ -546,11 +544,11 @@ void mplMainKeyHandle( int KeyCode,int Type,int Key )
       case wsXF86Prev:         msg=evPrev; break;
       case wsXF86Next:         msg=evNext; break;
       case wsXF86Media:        msg=evLoad; break;
-      case wsEscape:
+      case wsEscape: 
     	    if ( appMPlayer.subWindow.isFullScreen )
-	     {
-	      if ( guiIntfStruct.event_struct ) ((XEvent *)guiIntfStruct.event_struct)->type=None;
-	      mplEventHandling( evNormalSize,0 );
+	     { 
+	      if ( guiIntfStruct.event_struct ) ((XEvent *)guiIntfStruct.event_struct)->type=None; 
+	      mplEventHandling( evNormalSize,0 ); 
 	      return;
 	     }
       default:          vo_x11_putkey( Key ); return;
@@ -582,7 +580,7 @@ void mplDandDHandler(int num,char** files)
     if(stat(str,&buf) == 0 && S_ISDIR(buf.st_mode) == 0) {
       /* this is not a directory so try to play it */
       mp_msg( MSGT_GPLAYER,MSGL_V,"Received D&D %s\n",str );
-
+      
       /* check if it is a subtitle file */
       {
 	char* ext = strrchr(str,'.');
@@ -607,7 +605,7 @@ void mplDandDHandler(int num,char** files)
       }
 
       item = calloc(1,sizeof(plItem));
-
+      
       /* FIXME: decompose file name ? */
       /* yes -- Pontscho */
       if ( strrchr( str,'/' ) ) {

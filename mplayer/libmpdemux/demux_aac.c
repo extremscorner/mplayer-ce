@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +10,7 @@
 #include "demuxer.h"
 #include "parse_es.h"
 #include "stheader.h"
-#include "aac_hdr.h"
+
 #include "ms_hdr.h"
 
 typedef struct {
@@ -39,15 +21,21 @@ typedef struct {
 	int bitrate;	/// bitrate computed as size/time
 } aac_priv_t;
 
+/// \param srate (out) sample rate
+/// \param num (out) number of audio frames in this ADTS frame
+/// \return size of the ADTS frame in bytes
+/// aac_parse_frames needs a buffer at least 8 bytes long
+int aac_parse_frame(uint8_t *buf, int *srate, int *num);
+
 static int demux_aac_init(demuxer_t *demuxer)
 {
 	aac_priv_t *priv;
-
+	
 	priv = calloc(1, sizeof(aac_priv_t));
 	if(!priv)
 		return 0;
-
-	priv->buf = malloc(8);
+	
+	priv->buf = (uint8_t*) malloc(8);
 	if(!priv->buf)
 	{
 		free(priv);
@@ -61,7 +49,7 @@ static int demux_aac_init(demuxer_t *demuxer)
 static void demux_close_aac(demuxer_t *demuxer)
 {
 	aac_priv_t *priv = (aac_priv_t *) demuxer->priv;
-
+	
 	if(!priv)
 		return;
 
@@ -79,13 +67,13 @@ static int demux_aac_probe(demuxer_t *demuxer)
 	int cnt = 0, c, len, srate, num;
 	off_t init, probed;
 	aac_priv_t *priv;
-
+	
 	if(! demux_aac_init(demuxer))
 	{
 		mp_msg(MSGT_DEMUX, MSGL_ERR, "COULDN'T INIT aac_demux, exit\n");
 		return 0;
 	}
-
+	
 	priv = (aac_priv_t *) demuxer->priv;
 
 	init = probed = stream_tell(demuxer->stream);
@@ -101,7 +89,7 @@ static int demux_aac_probe(demuxer_t *demuxer)
 		priv->buf[0] = 0xFF;
 		if(stream_read(demuxer->stream, &(priv->buf[1]), 7) < 7)
 			goto fail;
-
+		
 		len = aac_parse_frame(priv->buf, &srate, &num);
 		if(len > 0)
 		{
@@ -114,7 +102,7 @@ static int demux_aac_probe(demuxer_t *demuxer)
 	stream_seek(demuxer->stream, init);
 	if(cnt < 8)
 		goto fail;
-
+	
 	mp_msg(MSGT_DEMUX, MSGL_V, "demux_aac_probe, INIT: %"PRIu64", PROBED: %"PRIu64", cnt: %d\n", init, probed, cnt);
 	return DEMUXER_TYPE_AAC;
 
@@ -134,7 +122,7 @@ static demuxer_t* demux_aac_open(demuxer_t *demuxer)
 	demuxer->audio->sh = sh;
 
 	demuxer->filepos = stream_tell(demuxer->stream);
-
+	
 	return demuxer;
 }
 
@@ -167,7 +155,7 @@ static int demux_aac_fill_buffer(demuxer_t *demuxer, demux_stream_t *ds)
 		priv->buf[1] = (unsigned char) c2;
 		if(stream_read(demuxer->stream, &(priv->buf[2]), 6) < 6)
 			return 0;
-
+		
 		len = aac_parse_frame(priv->buf, &srate, &num);
 		if(len > 0)
 		{
@@ -177,8 +165,8 @@ static int demux_aac_fill_buffer(demuxer_t *demuxer, demux_stream_t *ds)
 				mp_msg(MSGT_DEMUX, MSGL_ERR, "fill_buffer, NEW_ADD_PACKET(%d)FAILED\n", len);
 				return 0;
 			}
-
-
+			
+			
 			memcpy(dp->buffer, priv->buf, 8);
 			stream_read(demuxer->stream, &(dp->buffer[8]), len-8);
 			if(srate)
@@ -189,10 +177,10 @@ static int demux_aac_fill_buffer(demuxer_t *demuxer, demux_stream_t *ds)
 			ds_add_packet(demuxer->audio, dp);
 			priv->size += len;
 			priv->time += tm;
-
+			
 			priv->bitrate = (int) (priv->size / priv->time);
 			demuxer->filepos = stream_tell(demuxer->stream);
-
+			
 			return len;
 		}
 		else
@@ -214,7 +202,7 @@ static void demux_aac_seek(demuxer_t *demuxer, float rel_seek_secs, float audio_
 	ds_free_packs(d_audio);
 
 	time = (flags & SEEK_ABSOLUTE) ? rel_seek_secs - priv->last_pts : rel_seek_secs;
-	if(time < 0)
+	if(time < 0) 
 	{
 		stream_seek(demuxer->stream, demuxer->movi_start);
 		time = priv->last_pts + time;
@@ -226,13 +214,13 @@ static void demux_aac_seek(demuxer_t *demuxer, float rel_seek_secs, float audio_
 		int len, nf, srate, num;
 
 		nf = time * sh_audio->samplerate/1024;
-
-		while(nf > 0)
+		
+		while(nf > 0) 
 		{
 			if(stream_read(demuxer->stream,priv->buf, 8) < 8)
 				break;
 			len = aac_parse_frame(priv->buf, &srate, &num);
-			if(len <= 0)
+			if(len <= 0) 
 			{
 				stream_skip(demuxer->stream, -7);
 				continue;

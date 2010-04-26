@@ -197,7 +197,7 @@ má sice podporu xv, ale karta samotná je velmi pomalá, takže ji raději prod
 </para>
 
 <para>
-Pro karty S3 Virge nyní existuje nativní framebuffer ovladač podobný
+Pro karty S3 Virge nyní existuje nativní framebuffer ovladač podobný 
 tdfxfb. Nastavte si framebuffer (čili přidejte
 "<option>vga=792 video=vesa:mtrr</option>" do příkazového řádku kernelu) a
 použijte <option>-vo s3fb</option> (<option>-vf yuy2</option> a
@@ -2229,7 +2229,7 @@ následující příkaz
 <screen>
 mplayer -vo zr -zrdev /dev/video0 -zrcrop 352x288+352+0 -zrxdoff 0 -zrbw \
     -zrcrop 352x288+0+0 -zrdev /dev/video1 -zrquality 10 \
-        <replaceable>movie.avi</replaceable>
+	<replaceable>movie.avi</replaceable>
 </screen>
 </para>
 

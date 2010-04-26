@@ -3,60 +3,48 @@
 <head>
   <title>Codec Status Table - MPlayer - The Movie Player</title>
   <link rel="stylesheet" type="text/css" href="default.css">
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 </head>
 <body text="#000000" link="#666666" vlink="#666666" alink="#666666">
-
-<h1>Status of codecs support</h1>
-
-<ul>
-  <li><a href="#vc">Video codecs</a></li>
-  <li><a href="#ac">Audio codecs</a></li>
-</ul>
-
 <table width=750 border="0">
+  <tr> 
+    <td align="right"> 
+      <p>&nbsp;</p>
+
+      <p><b>Status of codecs support</b></p>
+    </td>
+  </tr>
   <tr>
-    <td align="center">
+    <td>
+      <p><a href="#vc">Video codecs</a><br><a href="#ac">Audio codecs</a><br></p>
+    </td>
+  </tr>
+  <tr> 
+    <td align="center"> 
       <b><font face="Verdana, Arial, Helvetica, sans-serif" size="5"><a name="vc">Video codecs:</a></font></b><br><br>
 
       <table width="100%" border="1" cellspacing="0" cellpadding="5">
 
-        <tr>
+        <tr> 
           <td colspan=6 bgcolor="#CCCCCC"><b>Working video codecs</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">fourcc</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
           <td width=40 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">out</font></b></td>
           <td align=center colspan=2><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Bink Video</b></td>
-          <td align=center><b>BIKf<br>BIKg<br>BIKh<br>BIKi</b></td>
-          <td align=center><b>binkvideo</b></td>
-          <td align=center><b>YV12<br>420A</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg CD-Graphics</b></td>
-          <td align=center><b>CDGR</b></td>
-          <td align=center><b>cdgraphics</b></td>
-          <td align=center><b>BGR8</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Motion Pixels</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Motion Pixels Decoder</b></td>
           <td align=center><b>MVI1</b></td>
           <td align=center><b>motionpixels</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8<br>YV12<br>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Sony PlayStation MDEC (Motion DECoder)</b></td>
           <td align=center><b>MDEC</b></td>
           <td align=center><b>mdec</b></td>
@@ -64,23 +52,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Beam Software SIFF</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Beam Software SIFF decoder</b></td>
           <td align=center><b>VBV1</b></td>
           <td align=center><b>vb</b></td>
           <td align=center><b>BGR8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Mimic video</b></td>
-          <td align=center><b>ML20<br>LM20</b></td>
+          <td align=center><b>ML20</b></td>
           <td align=center><b>mimic</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Karl Morton Video Codec</b></td>
           <td align=center><b>KMVC</b></td>
           <td align=center><b>kmvc</b></td>
@@ -88,7 +76,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Zip Motion-Block Video</b></td>
           <td align=center><b>ZMBV</b></td>
           <td align=center><b>zmbv</b></td>
@@ -96,7 +84,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Zip Motion-Block Video</b></td>
           <td align=center><b>ZMBV</b></td>
           <td align=center><b>zmbv.dll</b></td>
@@ -104,79 +92,47 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>YUV422 = Cb0 Y0 Cr0 Y1 Cb1 Y2 Cr1 Y3 (U Y V Y U Y V Y)</b></td>
-          <td align=center><b>yuv8</b></td>
-          <td align=center><b>kdvyuv8.dll</b></td>
-          <td align=center><b>YV12<br>I420<br>UYVY<br>BGR24<br>BGR15<br>BGR32</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg R210 - 10-bit RGB</b></td>
-          <td align=center><b>r210</b></td>
-          <td align=center><b>r210</b></td>
-          <td align=center><b>RGB48BE<br>RGB48LE</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Blackmagic 10-bit</b></td>
-          <td align=center><b>r210</b></td>
-          <td align=center><b>BMDCodecLib.dll</b></td>
-          <td align=center><b>BGR32<br>RGB32</b></td>
-          <td align=center colspan=2><b>requires libguide40.dll</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MPEG-PES output (.mpg or DXR3/IVTV/DVB/V4L2 card)</b></td>
-          <td align=center><b>-<br><br>mpg1<br>MPG1<br>mpg2<br>MPG2<br>MPEG<br>hdv1<br>hdv2<br>hdv3<br>hdv5<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf<br>xd5a<br>xd5b<br>xd5c<br>xd5d<br>xd5e<br>xd5f<br>xd59<br>mx5n<br>mx4n<br>mx4p<br>mx3n<br>mx3p<br>AVmp<br>mp2v<br>mpgv<br>m2v1<br>m1v1<br>PIM1<br>PIM2<br>LMP2</b></td>
+          <td align=center><b>-<br><br>mpg1<br>MPG1<br>mpg2<br>MPG2<br>MPEG<br>hdv1<br>hdv2<br>hdv3<br>hdv5<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>MPES</b></td>
           <td align=center colspan=2><b>for hardware decoding</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MPEG-1</b></td>
-          <td align=center><b>-<br>mpg1<br>PIM1<br>VCR2<br>MPEG<br>m1v1</b></td>
+          <td align=center><b>-<br>mpg1<br>PIM1<br>VCR2<br>MPEG</b></td>
           <td align=center><b>mpeg1video</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MPEG-2</b></td>
-          <td align=center><b>-<br>mpg2<br>MPG2<br>DVR <br>hdv1<br>hdv2<br>MPEG<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf<br>xd5a<br>xd5b<br>xd5c<br>xd5d<br>xd5e<br>xd5f<br>xd59<br>mx5n<br>mx4n<br>mx4p<br>mx3n<br>mx3p<br>AVmp<br>VCR2<br>mp2v<br>mpgv<br>m2v1<br>PIM2<br>LMP2<br>slif</b></td>
+          <td align=center><b>-<br>mpg2<br>MPG2<br>DVR <br>hdv1<br>hdv2<br>MPEG<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf</b></td>
           <td align=center><b>mpeg2video</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV<br>422P<br>444P</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MPEG-1/2</b></td>
-          <td align=center><b>-<br><br>mpg1<br>mpg2<br>MPG2<br>PIM1<br>PIM2<br>VCR2<br>DVR <br>hdv2<br>MPEG<br>hdv1<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf<br>xd5a<br>xd5b<br>xd5c<br>xd5d<br>xd5e<br>xd5f<br>xd59<br>mx5n<br>mx4n<br>mx4p<br>mx3n<br>mx3p<br>AVmp<br>mp2v<br>mpgv<br>m2v1<br>m1v1<br>LMP2<br>slif</b></td>
+          <td align=center><b>-<br><br>mpg1<br>mpg2<br>MPG2<br>PIM1<br>VCR2<br>DVR <br>hdv2<br>MPEG<br>hdv1<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf</b></td>
           <td align=center><b>mpegvideo</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV<br>422P<br>444P</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MPEG-1 or 2 (libmpeg2)</b></td>
-          <td align=center><b>-<br><br>DVR <br>hdv2<br>mpg1<br>PIM1<br>PIM2<br>mpg2<br>MPG2<br>MPEG<br>hdv1<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf<br>xd5a<br>xd5b<br>xd5c<br>xd5d<br>xd5e<br>xd5f<br>xd59<br>mx5n<br>mx4n<br>mx4p<br>mx3n<br>mx3p<br>AVmp<br>mp2v<br>mpgv<br>m2v1<br>m1v1<br>LMP2</b></td>
+          <td align=center><b>-<br><br>DVR <br>hdv2<br>mpg1<br>PIM1<br>VCR2<br>mpg2<br>MPG2<br>MPEG<br>hdv1<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV<br>422P</b></td>
           <td align=center colspan=2><b>with postprocessing</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MPEG-1/2 (VDPAU)</b></td>
-          <td align=center><b>-<br><br>mpg1<br>mpg2<br>MPG2<br>PIM1<br>PIM2<br>DVR <br>hdv2<br>MPEG<br>hdv1<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf<br>xd5a<br>xd5b<br>xd5c<br>xd5d<br>xd5e<br>xd5f<br>xd59<br>mx5n<br>mx4n<br>mx4p<br>mx3n<br>mx3p<br>AVmp<br>mp2v<br>mpgv<br>LMP2<br>m2v1<br>m1v1</b></td>
-          <td align=center><b>mpegvideo_vdpau</b></td>
-          <td align=center><b>VDPAU_MPEG1<br>VDPAU_MPEG2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>NuppelVideo</b></td>
           <td align=center><b>NUV1<br>RJPG</b></td>
           <td align=center><b>nuv</b></td>
@@ -184,103 +140,95 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg BMP</b></td>
+        <tr> 
+          <td align=center><b>NuppelVideo</b></td>
+          <td align=center><b>NUV1<br>RJPG</b></td>
+          <td align=center><b>-</b></td>
+          <td align=center><b>I420<br>IYUV</b></td>
+          <td align=center colspan=2><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr> 
+          <td align=center><b>FFmpeg BMP decoder</b></td>
           <td align=center><b>bmp <br></b></td>
           <td align=center><b>bmp</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg DPX</b></td>
-          <td align=center><b>dpx </b></td>
-          <td align=center><b>dpx</b></td>
-          <td align=center><b>RGB48BE<br>RGB48LE<br>RGB24<br>RGB32<br>BGR32</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg GIF</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg GIF decoder</b></td>
           <td align=center><b>gif </b></td>
           <td align=center><b>gif</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg TIFF</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg TIFF decoder</b></td>
           <td align=center><b>tiff</b></td>
           <td align=center><b>tiff</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg PCX</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg PCX decoder</b></td>
           <td align=center><b>pcx </b></td>
           <td align=center><b>pcx</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg PNG</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg PNG decoder</b></td>
           <td align=center><b>mpng<br>MPNG<br>png </b></td>
           <td align=center><b>png</b></td>
-          <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB48BE<br>RGB32<br>RGB24<br>RGB8</b></td>
+          <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>PNG image</b></td>
+        <tr> 
+          <td align=center><b>PNG image decoder</b></td>
           <td align=center><b>mpng<br>MPNG<br>png </b></td>
           <td align=center><b>libpng</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800</b></td>
           <td align=center colspan=2><b>Gray scaled PNG with Alpha channel not supported</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg V.Flash PTX</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg V.Flash PTX decoder</b></td>
           <td align=center><b>ptx </b></td>
           <td align=center><b>ptx</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>TGA image</b></td>
+        <tr> 
+          <td align=center><b>TGA image decoder</b></td>
           <td align=center><b>mtga<br>MTGA</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>BGR32<br>BGR24</b></td>
           <td align=center colspan=2><b>Only 24bpp and 32bpp RGB TGA files supported</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg SGI image</b></td>
-          <td align=center><b>SGI1</b></td>
-          <td align=center><b>sgi</b></td>
-          <td align=center><b>RGB24<br>Y800<br>RGB48BE</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>SGI image</b></td>
+        <tr> 
+          <td align=center><b>SGI image decoder</b></td>
           <td align=center><b>SGI1</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg SUN Rasterfile</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg SUN Rasterfile decoder</b></td>
           <td align=center><b>sun </b></td>
           <td align=center><b>sunrast</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Intel Indeo 3.1/3.2</b></td>
           <td align=center><b>IV31<br>iv31<br>IV32<br>iv32</b></td>
           <td align=center><b>indeo3</b></td>
@@ -288,7 +236,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Autodesk FLI/FLC Animation</b></td>
           <td align=center><b>FLIC</b></td>
           <td align=center><b>flic</b></td>
@@ -296,23 +244,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Autodesk RLE</b></td>
+        <tr> 
+          <td align=center><b>Autodesk RLE decoder</b></td>
           <td align=center><b>AASC</b></td>
           <td align=center><b>aasc</b></td>
           <td align=center><b>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>LOCO video</b></td>
+        <tr> 
+          <td align=center><b>LOCO video decoder</b></td>
           <td align=center><b>LOCO</b></td>
           <td align=center><b>loco</b></td>
           <td align=center><b>422P<br>YV12<br>BGR32<br>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>QuickTime Animation (RLE)</b></td>
           <td align=center><b>rle </b></td>
           <td align=center><b>qtrle</b></td>
@@ -320,15 +268,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>QuickTime Apple Video</b></td>
-          <td align=center><b>rpza<br>azpr<br>RPZA<br>AZPR</b></td>
+          <td align=center><b>rpza<br>azpr</b></td>
           <td align=center><b>rpza</b></td>
           <td align=center><b>BGR15</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Apple Graphics (SMC) codec</b></td>
           <td align=center><b>smc </b></td>
           <td align=center><b>smc</b></td>
@@ -336,7 +284,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Planar RGB (Photoshop)</b></td>
           <td align=center><b>8BPS</b></td>
           <td align=center><b>8bps</b></td>
@@ -344,7 +292,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Creative YUV (libavcodec)</b></td>
           <td align=center><b>cyuv<br>CYUV</b></td>
           <td align=center><b>cyuv</b></td>
@@ -352,23 +300,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Auravision Aura (libavcodec)</b></td>
-          <td align=center><b>aura<br>AURA</b></td>
-          <td align=center><b>aura</b></td>
-          <td align=center><b>411P</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Auravision Aura 2 (libavcodec)</b></td>
-          <td align=center><b>aur2<br>AUR2</b></td>
-          <td align=center><b>aura2</b></td>
-          <td align=center><b>422P</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Microsoft RLE</b></td>
           <td align=center><b>-<br><br>WRLE</b></td>
           <td align=center><b>msrle</b></td>
@@ -376,15 +308,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Id RoQ File Video</b></td>
+        <tr> 
+          <td align=center><b>Id RoQ File Video Decoder</b></td>
           <td align=center><b>RoQV</b></td>
           <td align=center><b>roqvideo</b></td>
           <td align=center><b>444P</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>LZO compressed</b></td>
           <td align=center><b>LZO1</b></td>
           <td align=center><b>liblzo</b></td>
@@ -392,39 +324,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Theora (free<br> reworked VP3)</b></td>
           <td align=center><b>theo<br>Thra</b></td>
           <td align=center><b>libtheora</b></td>
-          <td align=center><b>YV12<br>422P<br>444P</b></td>
+          <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>nogatech</b></td>
-          <td align=center><b>NTN1<br>NTN2</b></td>
-          <td align=center><b>nuvision.ax</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>YUY2 Lossless Codec</b></td>
-          <td align=center><b>YLC0</b></td>
-          <td align=center><b>ylc.vcm</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Verint Video Manager</b></td>
-          <td align=center><b>SN40<br>SN41<br>SJPG</b></td>
-          <td align=center><b>SN4Codec.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MSU Screen Capture Lossless Codec</b></td>
           <td align=center><b>SCLS</b></td>
           <td align=center><b>SCLS.DLL</b></td>
@@ -432,23 +340,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>wincam screen capture codec</b></td>
-          <td align=center><b>WCMV</b></td>
-          <td align=center><b>wcmv.dll</b></td>
-          <td align=center><b>BGR15</b></td>
-          <td align=center colspan=2><b>requires Zlib.dll</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Cinepak Video</b></td>
+        <tr> 
+          <td align=center><b>Cinepak Video (native codec)</b></td>
           <td align=center><b>cvid<br>CVID</b></td>
           <td align=center><b>cinepak</b></td>
           <td align=center><b>YV12<br>BGR8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Cinepak Video</b></td>
           <td align=center><b>cvid</b></td>
           <td align=center><b>iccvid.dll</b></td>
@@ -456,31 +356,31 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Microsoft Video 1</b></td>
+        <tr> 
+          <td align=center><b>Microsoft Video 1 (native codec)</b></td>
           <td align=center><b>cram<br>CRAM<br>msvc<br>MSVC<br>wham<br>WHAM</b></td>
           <td align=center><b>msvideo1</b></td>
           <td align=center><b>BGR15<br>BGR8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg AVImszh</b></td>
+        <tr> 
+          <td align=center><b>AVImszh (native codec)</b></td>
           <td align=center><b>MSZH</b></td>
           <td align=center><b>mszh</b></td>
           <td align=center><b>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg AVIzlib</b></td>
+        <tr> 
+          <td align=center><b>AVIzlib (native codec)</b></td>
           <td align=center><b>ZLIB</b></td>
           <td align=center><b>zlib</b></td>
           <td align=center><b>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg HuffYUV</b></td>
           <td align=center><b>HFYU<br>FFVH</b></td>
           <td align=center><b>huffyuv</b></td>
@@ -488,7 +388,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFV1 (lossless codec)</b></td>
           <td align=center><b>FFV1</b></td>
           <td align=center><b>ffv1</b></td>
@@ -496,7 +396,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFSNOW (Michael's wavelet codec)</b></td>
           <td align=center><b>snow<br>SNOW</b></td>
           <td align=center><b>snow</b></td>
@@ -504,7 +404,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg ASUS V1</b></td>
           <td align=center><b>ASV1</b></td>
           <td align=center><b>asv1</b></td>
@@ -512,7 +412,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg ASUS V2</b></td>
           <td align=center><b>ASV2</b></td>
           <td align=center><b>asv2</b></td>
@@ -520,7 +420,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg ATI VCR1</b></td>
           <td align=center><b>VCR1</b></td>
           <td align=center><b>vcr1</b></td>
@@ -528,7 +428,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Cirrus Logic AccuPak (CLJR)</b></td>
           <td align=center><b>CLJR</b></td>
           <td align=center><b>cljr</b></td>
@@ -536,7 +436,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Sorenson Video v1 (SVQ1)</b></td>
           <td align=center><b>SVQ1<br>svq1</b></td>
           <td align=center><b>svq1</b></td>
@@ -544,7 +444,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg 4XM video</b></td>
           <td align=center><b>4XMV</b></td>
           <td align=center><b>4xm</b></td>
@@ -552,7 +452,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Miro/Pinnacle VideoXL codec</b></td>
           <td align=center><b>VIXL<br>PIXL<br>XIXL</b></td>
           <td align=center><b>xl</b></td>
@@ -560,31 +460,31 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg QuickDraw</b></td>
+        <tr> 
+          <td align=center><b>QuickDraw native decoder</b></td>
           <td align=center><b>qdrw</b></td>
           <td align=center><b>qdraw</b></td>
           <td align=center><b>BGR8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Indeo 2</b></td>
-          <td align=center><b>RT21<br>IV20</b></td>
+        <tr> 
+          <td align=center><b>Indeo 2 native decoder</b></td>
+          <td align=center><b>RT21</b></td>
           <td align=center><b>indeo2</b></td>
           <td align=center><b>YVU9</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Flash video</b></td>
-          <td align=center><b>FLV1<br></b></td>
+          <td align=center><b>FLV1</b></td>
           <td align=center><b>flv</b></td>
           <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Flash Screen video</b></td>
           <td align=center><b>FSV1</b></td>
           <td align=center><b>flashsv</b></td>
@@ -592,31 +492,31 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg DivX ;-) (MSMPEG-4 v3)</b></td>
-          <td align=center><b>MPG3<br>mpg3<br>MP43<br>mp43<br>DIV5<br>div5<br>DIV6<br>div6<br>DIV3<br>div3<br>DIV4<br>div4<br>DIVF<br>divf<br>AP41<br>COL1<br>col1<br>COL0<br>col0<br>3IVD<br>3ivd<br>DVX3</b></td>
+          <td align=center><b>MPG3<br>mpg3<br>MP43<br>mp43<br>DIV5<br>div5<br>DIV6<br>div6<br>DIV3<br>div3<br>DIV4<br>div4<br>AP41<br>COL1<br>col1<br>COL0<br>col0<br>3IVD<br>3ivd</b></td>
           <td align=center><b>msmpeg4</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MSMPEG-4 v2</b></td>
-          <td align=center><b>DIV2<br>div2<br>MP42<br>mp42<br>Mp42</b></td>
+          <td align=center><b>DIV2<br>div2<br>MP42<br>mp42</b></td>
           <td align=center><b>msmpeg4v2</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MSMPEG-4 v1</b></td>
-          <td align=center><b>DIV1<br>div1<br>MPG4<br>mpg4<br>MP41</b></td>
+          <td align=center><b>DIV1<br>div1<br>MPG4<br>mpg4</b></td>
           <td align=center><b>msmpeg4v1</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg WMV1/WMV7</b></td>
           <td align=center><b>WMV1<br>wmv1</b></td>
           <td align=center><b>wmv1</b></td>
@@ -624,7 +524,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg WMV2/WMV8</b></td>
           <td align=center><b>WMV2<br>wmv2</b></td>
           <td align=center><b>wmv2</b></td>
@@ -632,7 +532,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg H.264</b></td>
           <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>AVC1<br>davc<br>DAVC<br></b></td>
           <td align=center><b>h264</b></td>
@@ -640,23 +540,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg H.264 (VDPAU)</b></td>
-          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>AVC1<br>davc<br>DAVC<br></b></td>
-          <td align=center><b>h264_vdpau</b></td>
-          <td align=center><b>VDPAU_H264</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>CoreAVC H.264 for x86 - http://corecodec.org/</b></td>
-          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>davc<br>DAVC<br>VSSH<br></b></td>
-          <td align=center><b>CoreAVCDecoder.ax</b></td>
-          <td align=center><b>YV12<br>IYUV<br>I420<br>YUY2</b></td>
-          <td align=center colspan=2><b>this codec will only work after purchasing it</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Sorenson Video v3 (SVQ3)</b></td>
           <td align=center><b>SVQ3</b></td>
           <td align=center><b>svq3</b></td>
@@ -664,23 +548,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MPEG-4</b></td>
-          <td align=center><b>FMP4<br>fmp4<br>DIVX<br>divx<br>DIV1<br>div1<br>MP4S<br>mp4s<br>M4S2<br>m4s2<br>xvid<br>XVID<br>XviD<br>XVIX<br>DX50<br>dx50<br>BLZ0<br>mp4v<br>MP4V<br><br>UMP4<br>RMP4<br>3IV2<br>3iv2<br>DXGM<br>SEDG<br>SMP4<br>smp4<br>VIDM<br><br>m4cc<br>M4CC<br>hdx4<br>HDX4<br>FVFW<br>fvfw<br>FFDS<br>DCOD<br>MVXM<br>EM4A<br>PM4V<br>M4T3<br>DMK2<br>DIGI<br>INMC<br>EPHV<br>SN40<br>uldx<br>ULDX<br>VSPX</b></td>
+          <td align=center><b>FMP4<br>fmp4<br>DIVX<br>divx<br>DIV1<br>div1<br>MP4S<br>mp4s<br>M4S2<br>m4s2<br>xvid<br>XVID<br>XviD<br>XVIX<br>DX50<br>dx50<br>BLZ0<br>mp4v<br>MP4V<br><br>UMP4<br>RMP4<br>3IV2<br>3iv2<br>DXGM<br>SEDG<br>SMP4<br>smp4<br>VIDM<br></b></td>
           <td align=center><b>mpeg4</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MPEG-4<br>DIVX-4/5 (VDPAU)</b></td>
-          <td align=center><b>FMP4<br>fmp4<br>DIVX<br>divx<br>DIV1<br>div1<br>MP4S<br>mp4s<br>M4S2<br>m4s2<br>xvid<br>XVID<br>XviD<br>XVIX<br>DX50<br>dx50<br>BLZ0<br>mp4v<br>MP4V<br><br>UMP4<br>RMP4<br>3IV2<br>3iv2<br>DXGM<br>SEDG<br>SMP4<br>smp4<br>VIDM<br><br>m4cc<br>M4CC<br>hdx4<br>HDX4<br>FVFW<br>fvfw<br>FFDS<br>DCOD<br>MVXM<br>EM4A<br>PM4V<br>M4T3<br>DMK2<br>DIGI<br>INMC<br>EPHV<br>SN40<br>uldx<br>ULDX<br>VSPX</b></td>
-          <td align=center><b>mpeg4_vdpau</b></td>
-          <td align=center><b>VDPAU_MPEG4</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>WV1F MPEG-4</b></td>
           <td align=center><b>WV1F</b></td>
           <td align=center><b>mpeg4</b></td>
@@ -688,7 +564,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Dirac (through FFmpeg libschroedinger)</b></td>
           <td align=center><b>drac</b></td>
           <td align=center><b>libschroedinger</b></td>
@@ -696,7 +572,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Dirac (through FFmpeg libdirac)</b></td>
           <td align=center><b>drac</b></td>
           <td align=center><b>libdirac</b></td>
@@ -704,15 +580,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Xvid (MPEG-4)</b></td>
-          <td align=center><b>FMP4<br>fmp4<br>DIVX<br>divx<br>xvid<br>XVID<br>XviD<br>XVIX<br>DIV1<br>div1<br>MP4S<br>mp4s<br>M4S2<br>m4s2<br>DX50<br>dx50<br>BLZ0<br>mp4v<br>MP4V<br><br>UMP4<br>RMP4<br>3IV2<br>3iv2<br>DXGM<br>SEDG<br>SMP4<br>smp4<br>VIDM<br>FFDS<br>DCOD<br>MVXM<br>EM4A<br>PM4V<br>M4T3<br>DMK2<br>DIGI<br>INMC<br>EPHV<br>SN40<br>uldx<br>ULDX<br>VSPX<br></b></td>
+          <td align=center><b>FMP4<br>fmp4<br>DIVX<br>divx<br>xvid<br>XVID<br>XviD<br>XVIX<br>DIV1<br>div1<br>MP4S<br>mp4s<br>M4S2<br>m4s2<br>DX50<br>dx50<br>BLZ0<br>mp4v<br>MP4V<br><br>UMP4<br>RMP4<br>3IV2<br>3iv2<br>DXGM<br>SEDG<br>SMP4<br>smp4<br>VIDM<br></b></td>
           <td align=center><b>libxvidcore.a</b></td>
           <td align=center><b>YV12<br>I420<br>YUY2<br>UYVY<br>YVYU<br>BGR32<br>BGR24<br>BGR16<br>BGR15</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DivX ;-) (MSMPEG-4 v3)</b></td>
           <td align=center><b>MP43<br>mp43<br>DIV5<br>div5<br>DIV6<br>div6<br>DIV3<br>div3<br>DIV4<br>div4<br>AP41</b></td>
           <td align=center><b>divx_c32.ax</b></td>
@@ -720,7 +596,7 @@
           <td align=center colspan=2><b>with postprocessing</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DivX ;-) (MSMPEG-4 v3)</b></td>
           <td align=center><b>MP43<br>mp43<br>DIV5<br>div5<br>DIV6<br>div6<br>DIV3<br>div3<br>DIV4<br>div4<br>AP41</b></td>
           <td align=center><b>divxc32.dll</b></td>
@@ -728,7 +604,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Microsoft MPEG-4 v1/v2</b></td>
           <td align=center><b>DIV2<br>div2<br>MP4S<br>mp4s<br>MPG4<br>mpg4<br>MP42<br>mp42</b></td>
           <td align=center><b>mpg4ds32.ax</b></td>
@@ -736,7 +612,7 @@
           <td align=center colspan=2><b>with postprocessing</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Microsoft MPEG-4 v1/v2</b></td>
           <td align=center><b>MPG4<br>mpg4<br>MP42<br>mp42<br>DIV2</b></td>
           <td align=center><b>mpg4c32.dll</b></td>
@@ -744,7 +620,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Video 9 DMO</b></td>
           <td align=center><b>WMV3<br>WMVP</b></td>
           <td align=center><b>wmv9dmod.dll</b></td>
@@ -752,7 +628,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Video DMO</b></td>
           <td align=center><b>WMV1<br>WMV2<br>WMV3<br>WMVP</b></td>
           <td align=center><b>wmvdmod.dll</b></td>
@@ -760,7 +636,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Video 8</b></td>
           <td align=center><b>WMV2</b></td>
           <td align=center><b>wmv8ds32.ax</b></td>
@@ -768,7 +644,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Video 7</b></td>
           <td align=center><b>WMV1</b></td>
           <td align=center><b>wmvds32.ax</b></td>
@@ -776,7 +652,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Video Adv DMO</b></td>
           <td align=center><b>WMVA<br>WVP2</b></td>
           <td align=center><b>wmvadvd.dll</b></td>
@@ -784,15 +660,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Windows Media Video (VC-1) Advanced Profile</b></td>
+        <tr> 
+          <td align=center><b>Windows Media Video (VC-1) Advanced Profile Decoder</b></td>
           <td align=center><b>WVC1</b></td>
           <td align=center><b>wvc1dmod.dll</b></td>
           <td align=center><b>YV12<br>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Screen Codec 2</b></td>
           <td align=center><b>MSS1<br>MSS2</b></td>
           <td align=center><b>wmsdmod.dll</b></td>
@@ -800,47 +676,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Windows Media Screen Codec 2 from WMP10</b></td>
-          <td align=center><b>MSS1<br>MSS2</b></td>
-          <td align=center><b>wms10dmod.dll</b></td>
-          <td align=center><b>BGR32<br>BGR24<br>BGR16</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>GoToMeeting codec</b></td>
-          <td align=center><b>G2M2<br>G2M3</b></td>
-          <td align=center><b>G2M.dll</b></td>
-          <td align=center><b>BGR24<br>RGB24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>GeoVision Advanced MPEG-4</b></td>
-          <td align=center><b>GMP4<br>GM40</b></td>
-          <td align=center><b>GXAMP4.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MJPEG</b></td>
-          <td align=center><b>MJPG<br>mjpg<br>AVRn<br>AVDJ<br>ADJV<br>jpeg<br>mjpa<br>JFIF<br>ijpg<br>IJPG<br>JPEG<br>JPGL<br>LJPG<br>dmb1<br>MJLS<br>MMJP<br>QIVG<br>ACDV<br>SLMJ<br>MVJP<br>IJLV<br>avi1<br>avi2<br>MTSJ<br>ZJPG</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg MJPEG decoder</b></td>
+          <td align=center><b>MJPG<br>mjpg<br>AVRn<br>AVDJ<br>ADJV<br>jpeg<br>mjpa<br>JFIF<br>ijpg<br>IJPG<br>JPEG<br>JPGL<br>LJPG<br>dmb1</b></td>
           <td align=center><b>mjpeg</b></td>
-          <td align=center><b>444P<br>422P<br>440P<br>YUY2<br>YV12<br>I420<br>IYUV<br>BGR32<br>RGB24<br>Y800</b></td>
+          <td align=center><b>444P<br>422P<br>YUY2<br>YV12<br>I420<br>IYUV<br>BGR32<br>RGB24<br>Y800</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MJPEG-B</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg MJPEG-B decoder</b></td>
           <td align=center><b>mjpb</b></td>
           <td align=center><b>mjpegb</b></td>
-          <td align=center><b>444P<br>422P<br>440P<br>YUY2<br>YV12<br>I420<br>IYUV</b></td>
+          <td align=center><b>444P<br>422P<br>YUY2<br>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Independent JPEG Group's codec</b></td>
           <td align=center><b>ijpg<br>IJPG<br>jpeg<br>AVRn<br>AVDJ<br>CJPG</b></td>
           <td align=center><b>libjpeg</b></td>
@@ -848,7 +700,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Morgan Motion JPEG Codec</b></td>
           <td align=center><b>MJPG<br>mjpa<br>mjpb<br>mjpg<br>dmb1</b></td>
           <td align=center><b>m3jpeg32.dll</b></td>
@@ -856,7 +708,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MainConcept Motion JPEG</b></td>
           <td align=center><b>MJPG<br>mjpa<br>mjpb<br>mjpg</b></td>
           <td align=center><b>mcmjpg32.dll</b></td>
@@ -864,7 +716,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>AVID Motion JPEG</b></td>
           <td align=center><b>AVRn<br>AVDJ<br>MJPG<br>mjpg</b></td>
           <td align=center><b>AvidAVICodec.dll</b></td>
@@ -872,71 +724,23 @@
           <td align=center colspan=2><b>slooooooooow but stable</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>LEAD (M)JPEG</b></td>
-          <td align=center><b>MJPG<br>jpeg<br>LEAD<br>MTSJ</b></td>
+          <td align=center><b>MJPG<br>jpeg<br>LEAD</b></td>
           <td align=center><b>LCodcCMP.dll</b></td>
           <td align=center><b>BGR24<br>BGR15</b></td>
           <td align=center colspan=2><b>supports interlaced MJPEG</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>ACDSee mjpeg</b></td>
-          <td align=center><b>ACDV</b></td>
-          <td align=center><b>ACDV.dll</b></td>
-          <td align=center><b>BGR32<br>BGR24<br>BGR15</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>OpenJPEG MJPEG2000</b></td>
-          <td align=center><b>MJ2C<br>MJP2<br>mjp2</b></td>
-          <td align=center><b>libopenjpeg</b></td>
-          <td align=center><b>RGB24<br>RGB32<br>BGR32<br>Y8<br>Y800</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Morgan MJPEG2000</b></td>
-          <td align=center><b>MJ2C<br>MJP2</b></td>
+          <td align=center><b>MJ2C</b></td>
           <td align=center><b>m3jp2k32.dll</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV<br>YUY2<br>UYVY<br>BGR32<br>BGR24<br>BGR15</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Forward Uncompressed Video Codec</b></td>
-          <td align=center><b>FRWU</b></td>
-          <td align=center><b>FRWU</b></td>
-          <td align=center><b>UYVY</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Forward Uncompressed Video Codec</b></td>
-          <td align=center><b>FRWU</b></td>
-          <td align=center><b>FRWU.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Forward JPEG Video Codec</b></td>
-          <td align=center><b>FRWD</b></td>
-          <td align=center><b>FRWD.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Forward JPEG+Alpha Video</b></td>
-          <td align=center><b>FRWT</b></td>
-          <td align=center><b>FRWT.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Vivo H.263</b></td>
           <td align=center><b>VIVO<br>vivo<br>viv1<br>viv2</b></td>
           <td align=center><b>ivvideo.dll</b></td>
@@ -944,15 +748,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>UB Video H.263/H.263+/H.263++</b></td>
+        <tr> 
+          <td align=center><b>UB Video H.263/H.263+/H.263++ Decoder</b></td>
           <td align=center><b>U263<br>vivo<br>VIVO<br>viv1</b></td>
           <td align=center><b>ubv263d+.ax</b></td>
           <td align=center><b>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>I263</b></td>
           <td align=center><b>I263<br>i263<br>vivo<br>VIVO<br>viv1</b></td>
           <td align=center><b>i263_32.drv</b></td>
@@ -960,23 +764,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg I263</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg I263 decoder</b></td>
           <td align=center><b>I263<br>i263</b></td>
           <td align=center><b>h263i</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg H.263+</b></td>
-          <td align=center><b>H263<br>U263<br>h263<br>X263<br>M263<br>viv1<br>s263<br>S263<br>T263<br>D263<br>L263<br>ILVR<br>VX1K</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg H.263+ decoder</b></td>
+          <td align=center><b>H263<br>U263<br>h263<br>X263<br>M263<br>viv1<br>s263<br>S263<br>D263<br>L263</b></td>
           <td align=center><b>h263</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>CCITT H.261</b></td>
           <td align=center><b>H261<br>h261</b></td>
           <td align=center><b>h261</b></td>
@@ -984,15 +788,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>QuickTime H.261 video</b></td>
+        <tr> 
+          <td align=center><b>QuickTime H.261 video decoder</b></td>
           <td align=center><b>H261<br>h261</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center><b>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Intel Indeo 5</b></td>
           <td align=center><b>IV50<br>iv50</b></td>
           <td align=center><b>ir50_32.dll</b></td>
@@ -1000,7 +804,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Intel Indeo 5</b></td>
           <td align=center><b>IV50<br>iv50</b></td>
           <td align=center><b>ir50_32.dll</b></td>
@@ -1008,7 +812,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Intel Indeo 4.1</b></td>
           <td align=center><b>IV41<br>iv41</b></td>
           <td align=center><b>ir41_32.dll</b></td>
@@ -1016,7 +820,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Intel Indeo 3.1/3.2</b></td>
           <td align=center><b>IV31<br>iv31<br>IV32<br>iv32</b></td>
           <td align=center><b>ir32_32.dll</b></td>
@@ -1024,7 +828,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAnim's Intel Indeo 5</b></td>
           <td align=center><b>IV50<br>iv50</b></td>
           <td align=center><b>vid_iv50.xa</b></td>
@@ -1032,7 +836,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAnim's Intel Indeo 4.1</b></td>
           <td align=center><b>IV41<br>iv41</b></td>
           <td align=center><b>vid_iv41.xa</b></td>
@@ -1040,7 +844,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAnim's Intel Indeo 3.1/3.2</b></td>
           <td align=center><b>IV31<br>iv31<br>IV32<br>iv32</b></td>
           <td align=center><b>vid_iv32.xa</b></td>
@@ -1048,23 +852,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Indeo 5</b></td>
-          <td align=center><b>IV50</b></td>
-          <td align=center><b>indeo5</b></td>
-          <td align=center><b>YVU9</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg DV</b></td>
-          <td align=center><b>CDVC<br>cdvc<br>CDVH<br>cdvh<br>DVSD<br>dvsd<br>DVCS<br>dvcs<br>dvcp<br>dvc <br>dvp <br>dvpp<br>dv50<br>dv5n<br>dv5p<br>AVdv<br>AVd1<br>dvhq<br>dvhp<br>dvh5<br>dvh6<br>dvh3<br>dvhd<br>dvsl<br>dv25<br>dvs1<br>dvh1</b></td>
-          <td align=center><b>dvvideo</b></td>
-          <td align=center><b>411P<br>422P<br>YV12</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Sony Digital Video (DV)</b></td>
           <td align=center><b>dvsl<br>dvsd<br>dvhd<br>DVSD<br>dvcp<br>dvc </b></td>
           <td align=center><b>qdv.dll</b></td>
@@ -1072,15 +860,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Raw DV (libdv)</b></td>
-          <td align=center><b>DVSD<br>dvsd<br>DVCS<br>dvcs<br>dvcp<br>dvc <br>dvpp<br>dv50<br>dv5n<br>dv5p<br>AVdv<br>AVd1<br>dvhq<br>dvhp<br>dvh5<br>dvh6<br>dvh3</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg DV decoder</b></td>
+          <td align=center><b>CDVC<br>cdvc<br>DVSD<br>dvsd<br>DVCS<br>dvcs<br>dvcp<br>dvc <br>dvpp<br>dv50<br>dv5n<br>dv5p</b></td>
+          <td align=center><b>dvvideo</b></td>
+          <td align=center><b>411P<br>422P<br>YV12</b></td>
+          <td align=center colspan=2><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr> 
+          <td align=center><b>Raw DV decoder (libdv)</b></td>
+          <td align=center><b>DVSD<br>dvsd<br>DVCS<br>dvcs<br>dvcp<br>dvc <br>dvpp<br>dv50<br>dv5n<br>dv5p<br>AVdv</b></td>
           <td align=center><b>libdv.so.2</b></td>
           <td align=center><b>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MainConcept DV Codec</b></td>
           <td align=center><b>DVSD<br>dvsd<br>DVCS<br>dvcs<br>CDVC<br>cdvc<br>dvcp<br>dvc </b></td>
           <td align=center><b>mcdvd_32.dll</b></td>
@@ -1088,7 +884,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAnim's 3ivx Delta 3.5 plugin</b></td>
           <td align=center><b>3IV1</b></td>
           <td align=center><b>vid_3ivX.xa</b></td>
@@ -1096,7 +892,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>3ivx Delta 4.5</b></td>
           <td align=center><b>3IV1</b></td>
           <td align=center><b>3ivxDSDecoder.ax</b></td>
@@ -1104,95 +900,119 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32 RealPlayer 10 RV30/40</b></td>
+        <tr> 
+          <td align=center><b>Linux RealPlayer 10 RV30/40 decoder</b></td>
+          <td align=center><b>RV30<br>rv30<br>RV40<br>rv40</b></td>
+          <td align=center><b>drvc.so</b></td>
+          <td align=center><b>I420</b></td>
+          <td align=center colspan=2><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr> 
+          <td align=center><b>Win32 RealPlayer 10 RV30/40 decoder</b></td>
           <td align=center><b>RV30<br>rv30<br>RV40<br>rv40</b></td>
           <td align=center><b>drvc.dll</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32 RealPlayer 9 RV40</b></td>
+        <tr> 
+          <td align=center><b>Linux RealPlayer 9 RV40 decoder</b></td>
+          <td align=center><b>RV40<br>rv40</b></td>
+          <td align=center><b>drv4.so.6.0</b></td>
+          <td align=center><b>I420</b></td>
+          <td align=center colspan=2><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr> 
+          <td align=center><b>Win32 RealPlayer 9 RV40 decoder</b></td>
           <td align=center><b>RV40<br>rv40</b></td>
           <td align=center><b>drv43260.dll</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Mac OS X RealPlayer 9 RV40</b></td>
+        <tr> 
+          <td align=center><b>Mac OS X RealPlayer 9 RV40 decoder</b></td>
           <td align=center><b>RV40<br>rv40</b></td>
           <td align=center><b>drvc.bundle/Contents/MacOS/drvc</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32 RealPlayer 8 RV30</b></td>
+        <tr> 
+          <td align=center><b>Linux RealPlayer 8 RV30 decoder</b></td>
+          <td align=center><b>RV30<br>rv30</b></td>
+          <td align=center><b>drv3.so.6.0</b></td>
+          <td align=center><b>I420</b></td>
+          <td align=center colspan=2><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr> 
+          <td align=center><b>Win32 RealPlayer 8 RV30 decoder</b></td>
           <td align=center><b>RV30<br>rv30</b></td>
           <td align=center><b>drv33260.dll</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Mac OS X RealPlayer 9 RV30</b></td>
+        <tr> 
+          <td align=center><b>Mac OS X RealPlayer 9 RV30 decoder</b></td>
           <td align=center><b>RV30<br>rv30</b></td>
           <td align=center><b>drvc.bundle/Contents/MacOS/drvc</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg RV20</b></td>
-          <td align=center><b>RV20<br>rv20<br>RVTR</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg RV20 decoder</b></td>
+          <td align=center><b>RV20<br>rv20</b></td>
           <td align=center><b>rv20</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg RV40</b></td>
-          <td align=center><b>RV40<br>rv40</b></td>
-          <td align=center><b>rv40</b></td>
-          <td align=center><b>YV12<br>I420<br>IYUV</b></td>
+        <tr> 
+          <td align=center><b>Linux RealPlayer 8 RV20 decoder</b></td>
+          <td align=center><b>RV20<br>rv20</b></td>
+          <td align=center><b>drv2.so.6.0</b></td>
+          <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32 RealPlayer 10 RV20</b></td>
+        <tr> 
+          <td align=center><b>Win32 RealPlayer 10 RV20 decoder</b></td>
           <td align=center><b>RV20<br>rv20</b></td>
           <td align=center><b>drv2.dll</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32 RealPlayer 8 RV20</b></td>
+        <tr> 
+          <td align=center><b>Win32 RealPlayer 8 RV20 decoder</b></td>
           <td align=center><b>RV20<br>rv20</b></td>
           <td align=center><b>drv23260.dll</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Mac OS X RealPlayer 9 RV20</b></td>
+        <tr> 
+          <td align=center><b>Mac OS X RealPlayer 9 RV20 decoder</b></td>
           <td align=center><b>RV20<br>rv20</b></td>
           <td align=center><b>drv2.bundle/Contents/MacOS/drv2</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg RV10</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg RV10 decoder</b></td>
           <td align=center><b>RV10<br>rv10<br>RV13<br>rv13</b></td>
           <td align=center><b>rv10</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Alparysoft lossless codec dshow</b></td>
           <td align=center><b>ASLC</b></td>
           <td align=center><b>aslcodec_dshow.dll</b></td>
@@ -1200,7 +1020,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Alparysoft lossless codec vfw</b></td>
           <td align=center><b>ASLC</b></td>
           <td align=center><b>aslcodec_vfw.dll</b></td>
@@ -1208,7 +1028,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Lead CMW wavelet 2.0</b></td>
           <td align=center><b>LCW2</b></td>
           <td align=center><b>LCODCCMW2E.dll</b></td>
@@ -1216,7 +1036,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Lagarith Lossless Video Codec</b></td>
           <td align=center><b>LAGS</b></td>
           <td align=center><b>lagarith.dll</b></td>
@@ -1224,7 +1044,7 @@
           <td align=center colspan=2><b>http://lags.leetcode.net/codec.html<br> requires an MMX2 CPU.</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Infinite Video PSI_V</b></td>
           <td align=center><b>PSIV</b></td>
           <td align=center><b>psiv.dll</b></td>
@@ -1232,63 +1052,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>http://www.midivid.com/codec/download.html</b></td>
-          <td align=center><b>MVLZ</b></td>
-          <td align=center><b>MLZCodec.dll</b></td>
-          <td align=center><b>BGR24<br>BGR16</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>http://www.midivid.com/codec/download.html</b></td>
-          <td align=center><b>MVDV</b></td>
-          <td align=center><b>MVCodec.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>www.midivid.com/codec/mv3codec.html</b></td>
-          <td align=center><b>MV30</b></td>
-          <td align=center><b>MV3.dll</b></td>
-          <td align=center><b>BGR24<br>BGR16</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Moyea Flash to Video Converter</b></td>
-          <td align=center><b>MFZ0</b></td>
-          <td align=center><b>MyFlashZip0.ax</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>requires zlib1.dll</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Power VideoWorks video</b></td>
-          <td align=center><b>NSVI</b></td>
-          <td align=center><b>nsvideo.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>DideoNET SMV2</b></td>
-          <td align=center><b>SMV2</b></td>
-          <td align=center><b>smv2vfw.dll</b></td>
-          <td align=center><b>BGR32<br>BGR24<br>BGR8<br>RGB32<br>RGB24<br>RGB8</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>CineForm HD</b></td>
-          <td align=center><b>CFHD</b></td>
-          <td align=center><b>cinevfw.dll</b></td>
-          <td align=center><b>BGR32</b></td>
-          <td align=center colspan=2><b>windows only</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Canopus HQ Codec</b></td>
           <td align=center><b>CUVC</b></td>
           <td align=center><b>CUVCcodc.dll</b></td>
@@ -1296,7 +1060,7 @@
           <td align=center colspan=2><b>requires csehqa.dll and cseuvec.dll</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Canopus Lossless Codec</b></td>
           <td align=center><b>CLLC</b></td>
           <td align=center><b>CLLCcodc.dll</b></td>
@@ -1304,7 +1068,7 @@
           <td align=center colspan=2><b>requires csellc.dll</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>On2 Open Source VP3 Codec</b></td>
           <td align=center><b>VP30<br>vp30<br>VP31<br>vp31</b></td>
           <td align=center><b>vp31vfw.dll</b></td>
@@ -1312,7 +1076,7 @@
           <td align=center colspan=2><b>For SSE-systems use fixed DLL from ftp://mplayerhq.hu/MPlayer/samples/drivers32/</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>On2 VP4 Personal Codec</b></td>
           <td align=center><b>VP40<br>VP31<br>VP30<br>vp31<br>vp30</b></td>
           <td align=center><b>vp4vfw.dll</b></td>
@@ -1320,15 +1084,15 @@
           <td align=center colspan=2><b>Decodes also VP3</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg VP5</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg VP5 decoder</b></td>
           <td align=center><b>VP50</b></td>
           <td align=center><b>vp5</b></td>
           <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>On2 VP5 Personal Codec</b></td>
           <td align=center><b>VP50</b></td>
           <td align=center><b>vp5vfw.dll</b></td>
@@ -1336,39 +1100,31 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg VP6</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg VP6 decoder</b></td>
           <td align=center><b>VP60<br>VP61<br>VP62</b></td>
           <td align=center><b>vp6</b></td>
           <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg VP6 Flash</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg VP6 Flash decoder</b></td>
           <td align=center><b>VP6F</b></td>
           <td align=center><b>vp6f</b></td>
           <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>On2 VP6 Personal Codec</b></td>
-          <td align=center><b>VP60<br>VP61<br>VP62</b></td>
+          <td align=center><b>VP60<br>VP61<br>VP62<br>VP6F</b></td>
           <td align=center><b>vp6vfw.dll</b></td>
           <td align=center><b>YUY2<br>BGR32<br>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>On2 VP6F Personal Codec</b></td>
-          <td align=center><b>VP6F</b></td>
-          <td align=center><b>vp6vfw.dll</b></td>
-          <td align=center><b>YUY2<br>BGR32<br>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>On2 VP7 Personal Codec</b></td>
           <td align=center><b>VP70</b></td>
           <td align=center><b>vp7vfw.dll</b></td>
@@ -1376,7 +1132,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Motion Wavelets</b></td>
           <td align=center><b>MWV1</b></td>
           <td align=center><b>icmw_32.dll</b></td>
@@ -1384,15 +1140,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>centre for wavelets<br> approximation and infromation processing</b></td>
-          <td align=center><b>wavc</b></td>
-          <td align=center><b>WavCWAIP.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>ASUS V2</b></td>
           <td align=center><b>ASV2</b></td>
           <td align=center><b>asusasv2.dll</b></td>
@@ -1400,7 +1148,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>ASUS V1</b></td>
           <td align=center><b>ASV1</b></td>
           <td align=center><b>asusasvd.dll</b></td>
@@ -1408,15 +1156,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg IBM Ultimotion</b></td>
+        <tr> 
+          <td align=center><b>IBM Ultimotion native decoder</b></td>
           <td align=center><b>ULTI</b></td>
           <td align=center><b>ultimotion</b></td>
           <td align=center><b>YVU9</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>IBM Ultimotion</b></td>
           <td align=center><b>ULTI</b></td>
           <td align=center><b>ultimo.dll</b></td>
@@ -1424,7 +1172,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Screen Video</b></td>
           <td align=center><b>MSS1</b></td>
           <td align=center><b>msscds32.ax</b></td>
@@ -1432,7 +1180,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>UCOD-ClearVideo</b></td>
           <td align=center><b>UCOD</b></td>
           <td align=center><b>clrviddd.dll</b></td>
@@ -1440,7 +1188,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>ATI VCR-2</b></td>
           <td align=center><b>VCR2</b></td>
           <td align=center><b>ativcr2.dll</b></td>
@@ -1448,63 +1196,31 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>SoftLab-NSK Forward MPEG2 I-frames</b></td>
-          <td align=center><b>slif</b></td>
-          <td align=center><b>slif.dll</b></td>
-          <td align=center><b>RGB32</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Jan Jezabeks BLOX MPEG Codec</b></td>
-          <td align=center><b>BLOX</b></td>
-          <td align=center><b>blox.dll</b></td>
-          <td align=center><b>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Creative Labs Video Blaster Webcam</b></td>
+        <tr> 
+          <td align=center><b>CJPG</b></td>
           <td align=center><b>CJPG</b></td>
           <td align=center><b>CtWbJpg.DLL</b></td>
           <td align=center><b>YUY2<br>UYVY<br>BGR24<br>BGR15</b></td>
-          <td align=center colspan=2><b>sequential jpeg files?</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>kensington webcam</b></td>
-          <td align=center><b>AJPG<br>ABYR<br>LBYR<br>JBYR<br>UV12</b></td>
-          <td align=center><b>aoxdxipl.ax</b></td>
-          <td align=center><b>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>xiricam Veo PC Camera</b></td>
-          <td align=center><b>XJPG</b></td>
-          <td align=center><b>camfc.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Duck Truemotion1</b></td>
-          <td align=center><b>DUCK<br>PVEZ</b></td>
+          <td align=center><b>DUCK</b></td>
           <td align=center><b>truemotion1</b></td>
           <td align=center><b>BGR15<br>BGR16<br>BGR24<br>BGR32</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Duck/On2 TrueMotion 2.0</b></td>
           <td align=center><b>TM20</b></td>
           <td align=center><b>truemotion2</b></td>
-          <td align=center><b>BGR24</b></td>
+          <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>TrueMotion 2.0</b></td>
           <td align=center><b>TM20</b></td>
           <td align=center><b>tm20dec.ax</b></td>
@@ -1512,31 +1228,7 @@
           <td align=center colspan=2><b>YUV faulting</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>TrueMotion 2.0</b></td>
-          <td align=center><b>TM2X<br>TM2A</b></td>
-          <td align=center><b>tm2X.dll</b></td>
-          <td align=center><b>BGR32<br>BGR24<br>BGR16</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>TrueMotion RT</b></td>
-          <td align=center><b>TR20</b></td>
-          <td align=center><b>tr2032.dll</b></td>
-          <td align=center><b>BGR15</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>sif1 alpha4</b></td>
-          <td align=center><b>SIF1</b></td>
-          <td align=center><b>Sif1_vfw.dll</b></td>
-          <td align=center><b>YV12<br>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Modified MJPEG<br> used in AMV files</b></td>
           <td align=center><b>AMVV</b></td>
           <td align=center><b>amv</b></td>
@@ -1544,7 +1236,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>SP5x codec - used by Aiptek MegaCam</b></td>
           <td align=center><b>SP53<br>SP54<br>SP55<br>SP56<br>SP57<br>SP58</b></td>
           <td align=center><b>sp5x</b></td>
@@ -1552,7 +1244,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>SP5x codec - used by Aiptek MegaCam</b></td>
           <td align=center><b>SP53<br>SP54<br>SP55<br>SP56<br>SP57<br>SP58</b></td>
           <td align=center><b>sp5x_32.dll</b></td>
@@ -1560,111 +1252,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>SP4x codec - used by Aiptek MegaCam</b></td>
-          <td align=center><b>SP40<br>SP41<br>SP42<br>SP43<br>SP44<br>SP45<br>SP46<br>SP47</b></td>
-          <td align=center><b>SP4X_32.DLL</b></td>
-          <td align=center><b>BGR24<br>BGR15</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Brooktree 411 codec</b></td>
-          <td align=center><b>BT20<br>Y41P</b></td>
-          <td align=center><b>btvvc32.drv</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Broadway MPEG Capture Codec</b></td>
-          <td align=center><b>BW10</b></td>
-          <td align=center><b>bw10.dll</b></td>
-          <td align=center><b>YV12<br>YUY2<br>I420</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>zdsoft screen recorder</b></td>
-          <td align=center><b>ZDSV</b></td>
-          <td align=center><b>scrvid.dll</b></td>
-          <td align=center><b>BGR32</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>WebTrain Communication lossless screen recorder</b></td>
-          <td align=center><b>WTVC</b></td>
-          <td align=center><b>wtvc.dll</b></td>
-          <td align=center><b>BGR16</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Kega Video</b></td>
-          <td align=center><b>KGV1</b></td>
-          <td align=center><b>KGV1-VFW.dll</b></td>
-          <td align=center><b>BGR16</b></td>
-          <td align=center colspan=2><b>requires MSVCR80.DLL on windows</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>xfire video</b></td>
-          <td align=center><b>XFR1</b></td>
-          <td align=center><b>xfcodec.dll</b></td>
-          <td align=center><b>YV12<br>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>nokia eti camcorder eyecon</b></td>
-          <td align=center><b>NUB0<br>NUB1<br>NUB2</b></td>
-          <td align=center><b>nub2.dll</b></td>
-          <td align=center><b>YV12<br>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>WorldConnect Wavelet Video</b></td>
-          <td align=center><b>SMSV</b></td>
-          <td align=center><b>wv32vfw.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>found in visualmail videos</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Analog Devices Wavelet Codec</b></td>
-          <td align=center><b>ADV1</b></td>
-          <td align=center><b>ADV601.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>waveletvideo.freeservers.com</b></td>
-          <td align=center><b>ADV1</b></td>
-          <td align=center><b>wavelet.dll</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>fox motion video</b></td>
-          <td align=center><b>FMVC</b></td>
-          <td align=center><b>fmcodec.dll</b></td>
-          <td align=center><b>BGR32<br>BGR24<br>BGR15</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Telegeny VDTZ</b></td>
-          <td align=center><b>VDTZ</b></td>
-          <td align=center><b>VTZ32.DLL</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>SoftMedia ViVD V2 codec VfW</b></td>
           <td align=center><b>GXVE<br>gxve</b></td>
           <td align=center><b>ViVD2.dll</b></td>
@@ -1672,7 +1260,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Winnov Videum winx codec</b></td>
           <td align=center><b>WINX</b></td>
           <td align=center><b>wnvwinx.dll</b></td>
@@ -1680,15 +1268,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg wnv1 codec</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg wnv1 native codec</b></td>
           <td align=center><b>WNV1</b></td>
           <td align=center><b>wnv1</b></td>
           <td align=center><b>422P</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Winnov Videum wnv1 codec</b></td>
           <td align=center><b>WNV1</b></td>
           <td align=center><b>wnvplay1.dll</b></td>
@@ -1696,31 +1284,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VDOWave codec</b></td>
-          <td align=center><b>VDOM<br>VDOW</b></td>
+          <td align=center><b>VDOM</b></td>
           <td align=center><b>vdowave.drv</b></td>
           <td align=center><b>BGR24</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>VDOWave 3 advanced codec</b></td>
-          <td align=center><b>VDO3<br>VDOM<br>VDOW</b></td>
-          <td align=center><b>vdo32_30.drv</b></td>
-          <td align=center><b>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Vianet Lsvx Video</b></td>
+        <tr> 
+          <td align=center><b>Vianet Lsvx Video Decoder</b></td>
           <td align=center><b>lsvx<br>lsvm<br>lsvc</b></td>
           <td align=center><b>lsvxdec.dll</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR16</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg VMware video</b></td>
           <td align=center><b>VMnc</b></td>
           <td align=center><b>vmnc</b></td>
@@ -1728,7 +1308,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VMware video</b></td>
           <td align=center><b>VMnc</b></td>
           <td align=center><b>vmnc.dll</b></td>
@@ -1736,7 +1316,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Smacker Video</b></td>
           <td align=center><b>SMK2<br>SMK4</b></td>
           <td align=center><b>smackvid</b></td>
@@ -1744,31 +1324,31 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Chinese AVS Video</b></td>
-          <td align=center><b>CAVS<br>avs2</b></td>
+          <td align=center><b>CAVS</b></td>
           <td align=center><b>cavs</b></td>
           <td align=center><b>I420</b></td>
           <td align=center colspan=2><b>only works with libavformat demuxer</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg DNxHD</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg DNxHD decoder</b></td>
           <td align=center><b>AVdn</b></td>
           <td align=center><b>dnxhd</b></td>
           <td align=center><b>422P</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>win32/quicktime 3IV1 (3ivx)</b></td>
+        <tr> 
+          <td align=center><b>win32/quicktime 3IV1 (3ivx) decoder</b></td>
           <td align=center><b>3IV1</b></td>
           <td align=center><b>3ivx Delta 3.5.qtx</b></td>
           <td align=center><b>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32/QuickTime Streambox ACT-L2</b></td>
           <td align=center><b>ACTL</b></td>
           <td align=center><b>ACTLComponent.qtx</b></td>
@@ -1776,7 +1356,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32/QuickTime Avid Meridien Uncompressed</b></td>
           <td align=center><b>AVUI</b></td>
           <td align=center><b>AvidQTAVUICodec.qtx</b></td>
@@ -1784,39 +1364,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime Cinepak</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime Cinepak decoder</b></td>
           <td align=center><b>cvid</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center><b>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime SVQ3</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime SVQ3 decoder</b></td>
           <td align=center><b>SVQ3</b></td>
           <td align=center><b>QuickTimeEssentials.qtx</b></td>
           <td align=center><b>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>cinewave uncompressed 10-bit codec</b></td>
-          <td align=center><b>v210</b></td>
-          <td align=center><b>CineWave.qtx</b></td>
-          <td align=center><b>BGR32<br>BGR24<br>BGR8<br>Y800<br>RGB32<br>RGB24<br>RGB8<br>YV12<br>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Apple ProRes 422 (HQ) decoder</b></td>
-          <td align=center><b>apch<br>apcn<br>apcs</b></td>
-          <td align=center><b>AppleProResDecoder.qtx</b></td>
-          <td align=center><b>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VSS Codec Light</b></td>
           <td align=center><b>VSSV</b></td>
           <td align=center><b>vsslight.dll</b></td>
@@ -1824,7 +1388,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VSS H.264 New</b></td>
           <td align=center><b>VSSH</b></td>
           <td align=center><b>vsshdsd.dll</b></td>
@@ -1832,7 +1396,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VSS H.264 Old</b></td>
           <td align=center><b>VSSH</b></td>
           <td align=center><b>vssh264.dll</b></td>
@@ -1840,7 +1404,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VSS Wavelet Video Codec</b></td>
           <td align=center><b>VSSW</b></td>
           <td align=center><b>vsswlt.dll</b></td>
@@ -1848,7 +1412,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>AVIzlib</b></td>
           <td align=center><b>ZLIB</b></td>
           <td align=center><b>avizlib.dll</b></td>
@@ -1856,7 +1420,7 @@
           <td align=center colspan=2><b>24bpp only</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>AVImszh</b></td>
           <td align=center><b>MSZH</b></td>
           <td align=center><b>avimszh.dll</b></td>
@@ -1864,15 +1428,7 @@
           <td align=center colspan=2><b>24bpp only</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Alaris VideoGramPiX</b></td>
-          <td align=center><b>VGPX<br>VTLP</b></td>
-          <td align=center><b>vgpix32d.dll</b></td>
-          <td align=center><b>UYVY<br>BGR24</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Q-Team's QPEG (www.q-team.de)</b></td>
           <td align=center><b>Q1.0<br>QPEG<br>Q1.1<br>qpeq</b></td>
           <td align=center><b>qpeg32.dll</b></td>
@@ -1880,15 +1436,15 @@
           <td align=center colspan=2><b>BGR8 only!</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg TechSmith Camtasia Screen Codec</b></td>
+        <tr> 
+          <td align=center><b>TechSmith Camtasia Screen Codec (native)</b></td>
           <td align=center><b>TSCC<br>tscc</b></td>
           <td align=center><b>camtasia</b></td>
           <td align=center><b>BGR32<br>BGR24<br>BGR15<br>BGR8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>TechSmith Camtasia Screen Codec</b></td>
           <td align=center><b>TSCC<br>tscc</b></td>
           <td align=center><b>tsccvid.dll</b></td>
@@ -1896,7 +1452,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>CamStudio Screen Codec</b></td>
           <td align=center><b>CSCD<br>cscd</b></td>
           <td align=center><b>camstudio</b></td>
@@ -1904,7 +1460,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FRAPS: Realtime Video Capture</b></td>
           <td align=center><b>FPS1<br>fps1</b></td>
           <td align=center><b>frapsvid.dll</b></td>
@@ -1912,7 +1468,7 @@
           <td align=center colspan=2><b>Requires a processor with SSE???</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Fraps</b></td>
           <td align=center><b>FPS1<br>fps1</b></td>
           <td align=center><b>fraps</b></td>
@@ -1920,7 +1476,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Tiertex SEQ</b></td>
           <td align=center><b>TSEQ</b></td>
           <td align=center><b>tiertexseqvideo</b></td>
@@ -1928,7 +1484,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Sierra VMD video</b></td>
           <td align=center><b>VMDV</b></td>
           <td align=center><b>vmdvideo</b></td>
@@ -1936,7 +1492,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Feeble Files DXA video</b></td>
           <td align=center><b>DXA1</b></td>
           <td align=center><b>dxa</b></td>
@@ -1944,7 +1500,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Delphine CIN video</b></td>
           <td align=center><b>DCIV</b></td>
           <td align=center><b>dsicinvideo</b></td>
@@ -1952,7 +1508,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg THP video</b></td>
           <td align=center><b>THPV</b></td>
           <td align=center><b>thp</b></td>
@@ -1960,7 +1516,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg BFI Video</b></td>
           <td align=center><b>BFIV</b></td>
           <td align=center><b>bfi</b></td>
@@ -1968,23 +1524,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg RL2</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg RL2 decoder</b></td>
           <td align=center><b>RL2V</b></td>
           <td align=center><b>rl2</b></td>
           <td align=center><b>BGR8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Renderware TeXture Dictionary</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Renderware TeXture Dictionary decoder</b></td>
           <td align=center><b>TXDV</b></td>
           <td align=center><b>txd</b></td>
           <td align=center><b>BGR32</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAN Video</b></td>
           <td align=center><b>Xxan</b></td>
           <td align=center><b>xanlib.dll</b></td>
@@ -1992,15 +1548,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Electronic Arts TGV</b></td>
-          <td align=center><b>fVGT</b></td>
-          <td align=center><b>eatgv</b></td>
-          <td align=center><b>BGR8</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW RGB32</b></td>
           <td align=center><b>-<br>raw <br> BGR</b></td>
           <td align=center><b>-</b></td>
@@ -2008,7 +1556,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW RGB24</b></td>
           <td align=center><b>-<br>raw <br>BGR</b></td>
           <td align=center><b>-</b></td>
@@ -2016,7 +1564,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW RGB16</b></td>
           <td align=center><b>-<br>raw <br>BGR</b></td>
           <td align=center><b>-</b></td>
@@ -2024,7 +1572,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR32</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>-</b></td>
@@ -2032,7 +1580,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR32</b></td>
           <td align=center><b>-<br> RGB</b></td>
           <td align=center><b>-</b></td>
@@ -2040,7 +1588,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR24</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>-</b></td>
@@ -2048,7 +1596,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR24</b></td>
           <td align=center><b>-<br>raw <br>RGB</b></td>
           <td align=center><b>-</b></td>
@@ -2056,7 +1604,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR15</b></td>
           <td align=center><b>-<br></b></td>
           <td align=center><b>-</b></td>
@@ -2064,7 +1612,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR15</b></td>
           <td align=center><b>-<br>raw <br>RGB</b></td>
           <td align=center><b>-</b></td>
@@ -2072,7 +1620,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR15</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>-</b></td>
@@ -2080,7 +1628,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR15</b></td>
           <td align=center><b>-<br>raw <br>RGB</b></td>
           <td align=center><b>-</b></td>
@@ -2088,7 +1636,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR8</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>-</b></td>
@@ -2096,7 +1644,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR8</b></td>
           <td align=center><b>-<br>raw <br>RGB</b></td>
           <td align=center><b>-</b></td>
@@ -2104,7 +1652,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW BGR1</b></td>
           <td align=center><b>-<br>raw <br>RGB</b></td>
           <td align=center><b>-</b></td>
@@ -2112,15 +1660,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW YUY2</b></td>
-          <td align=center><b>-<br>raw <br>yuy2<br>YUY2<br>V422<br>YUNV<br>VYUY<br>yuvs</b></td>
+          <td align=center><b>-<br>raw <br>yuy2<br>YUY2</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW YUV2</b></td>
           <td align=center><b>-<br>raw <br>yuv2<br>YUV2</b></td>
           <td align=center><b>-</b></td>
@@ -2128,15 +1676,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW UYVY</b></td>
-          <td align=center><b>-<br>2vuy<br>raw <br>uyvy<br>UYVY<br>HDYC<br>UYNV<br>UYNY<br>uyv1<br>2Vu1<br>VDTZ</b></td>
+          <td align=center><b>-<br>2vuy<br>raw <br>uyvy<br>UYVY</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>UYVY</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW 444P</b></td>
           <td align=center><b>-<br>raw <br>444p<br>444P</b></td>
           <td align=center><b>-</b></td>
@@ -2144,15 +1692,15 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW 422P</b></td>
-          <td align=center><b>-<br>raw <br>422p<br>422P<br>P422<br>Y42B</b></td>
+          <td align=center><b>-<br>raw <br>422p<br>422P</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>422P</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW YV12</b></td>
           <td align=center><b>-<br>raw <br>yv12<br>YV12</b></td>
           <td align=center><b>-</b></td>
@@ -2160,23 +1708,23 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW NV21</b></td>
           <td align=center><b>-<br>raw <br>nv21<br>NV21</b></td>
           <td align=center><b>-</b></td>
-          <td align=center><b>NV21</b></td>
+          <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW NV12</b></td>
           <td align=center><b>-<br>raw <br>nv12<br>NV12</b></td>
           <td align=center><b>-</b></td>
-          <td align=center><b>NV12</b></td>
+          <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW HM12</b></td>
           <td align=center><b>-<br>raw <br>hm12<br>HM12</b></td>
           <td align=center><b>-</b></td>
@@ -2184,7 +1732,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW I420</b></td>
           <td align=center><b>-<br>raw <br>i420<br>I420<br>IYUV<br>iyuv</b></td>
           <td align=center><b>-</b></td>
@@ -2192,7 +1740,7 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW YVU9</b></td>
           <td align=center><b>-<br>raw <br>yvu9<br>YVU9</b></td>
           <td align=center><b>-</b></td>
@@ -2200,82 +1748,10 @@
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RAW Y8/Y800</b></td>
           <td align=center><b>-<br>Y8  <br>y800<br>Y800</b></td>
           <td align=center><b>-</b></td>
-          <td align=center><b>Y800<br>Y8</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW YUY2</b></td>
-          <td align=center><b>-<br>raw <br>yuy2<br>YUY2<br>V422<br>v422<br>YUNV<br>yunv<br>VYUY<br>vyuy<br>yuvs<br>YUVS</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW YUV2</b></td>
-          <td align=center><b>-<br>raw <br>yuv2<br>YUV2</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>YUY2</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW UYVY</b></td>
-          <td align=center><b>-<br>raw <br>uyvy<br>UYVY<br>HDYC<br>hdyc<br>UYNV<br>uynv<br>UYNY<br>uyny<br>uyv1<br>UYV1<br>2Vu1<br>2vu1<br>2VU1<br>2Vuy<br>2vuy<br>2VUY<br>AV1x<br>AVup<br>VDTZ</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>UYVY</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW 444P</b></td>
-          <td align=center><b>-<br>raw <br>444p<br>444P</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>444P</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW 422P</b></td>
-          <td align=center><b>-<br>raw <br>422p<br>422P<br>P422<br>p422<br>Y42B<br>y42b</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>422P</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW YV12</b></td>
-          <td align=center><b>-<br>raw <br>yv12<br>YV12</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>YV12</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW I420</b></td>
-          <td align=center><b>-<br>raw <br>i420<br>I420<br>IYUV<br>iyuv</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>I420<br>IYUV</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW YVU9</b></td>
-          <td align=center><b>-<br>raw <br>yvu9<br>YVU9</b></td>
-          <td align=center><b>rawvideo</b></td>
-          <td align=center><b>YVU9</b></td>
-          <td align=center colspan=2><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>RAW Y8/Y800</b></td>
-          <td align=center><b>-<br>Y8  <br>y800<br>Y800</b></td>
-          <td align=center><b>rawvideo</b></td>
           <td align=center><b>Y800<br>Y8</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
@@ -2284,305 +1760,200 @@
         <tr>
           <td colspan=6 bgcolor="#CCCCCC"><b>New / Untested codecs</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">fourcc</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
-          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
+          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">problem</font></b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg TGA</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg TGA decoder</b></td>
           <td align=center><b>mtga<br>MTGA<br>tga </b></td>
           <td align=center><b>targa</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg ZyGo</b></td>
           <td align=center><b>ZyGo</b></td>
           <td align=center><b>h263</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>M261</b></td>
           <td align=center><b>m261<br>M261</b></td>
           <td align=center><b>msh261.drv</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg VP3</b></td>
           <td align=center><b>VP30<br>vp30<br>VP31<br>vp31<br>VP3 </b></td>
           <td align=center><b>vp3</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Theora</b></td>
           <td align=center><b>theo<br>Thra<br></b></td>
           <td align=center><b>theora</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg VP6A</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg VP6A decoder</b></td>
           <td align=center><b>VP6A</b></td>
           <td align=center><b>vp6a</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>VFAPI rgb transcode codec</b></td>
-          <td align=center><b>vifp</b></td>
-          <td align=center><b>VFCodec.dll</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>loronix wavelet</b></td>
-          <td align=center><b>ADV1</b></td>
-          <td align=center><b>wavlor.dll</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>tridvfw</b></td>
-          <td align=center><b>ty2c<br>TY2C<br>ty0n<br>TY2N<br>TY0N<br>T565</b></td>
-          <td align=center><b>TRICDC32.DRV</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime BeHereiVideo</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime BeHereiVideo decoder</b></td>
           <td align=center><b>bhiv</b></td>
           <td align=center><b>BeHereiVideo.qtx</b></td>
           <td align=center colspan=3><b>sample file wanted!</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg V210 - 10-bit</b></td>
-          <td align=center><b>v210</b></td>
-          <td align=center><b>v210</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>QuickTime AIC video decoder</b></td>
-          <td align=center><b>icod</b></td>
-          <td align=center><b>QuickTime.qts</b></td>
-          <td align=center colspan=3><b>Mac OS X only</b></td>
         </tr>
 <!--  -->
 
         <tr>
           <td colspan=6 bgcolor="#CCCCCC"><b>Codecs with problems</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">fourcc</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
-          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
+          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">problem</font></b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>GeoCodec</b></td>
-          <td align=center><b>GEOV<br>GEOX</b></td>
-          <td align=center><b>GeoCodec.dll</b></td>
-          <td align=center colspan=3><b>crashes without -nosound<br> hangs on exit</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MPEG-1/2 (XvMC)</b></td>
-          <td align=center><b>-<br><br>mpg1<br>mpg2<br>MPG2<br>DVR <br>hdv1<br>hdv2<br>PIM1<br>PIM2<br>VCR2<br>MPEG<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf<br>xd5a<br>xd5b<br>xd5c<br>xd5d<br>xd5e<br>xd5f<br>xd59<br>mx5n<br>mx4n<br>mx4p<br>mx3n<br>mx3p<br>AVmp<br>mp2v<br>mpgv<br>m2v1<br>m1v1<br>LMP2</b></td>
+          <td align=center><b>-<br><br>mpg1<br>mpg2<br>MPG2<br>DVR <br>hdv1<br>hdv2<br>PIM1<br>VCR2<br>MPEG<br>hdv3<br>hdv5<br>mx5p<br>MMES<br>mmes<br>hdv6<br>hdv7<br>hdv8<br>xdv1<br>xdv2<br>xdv3<br>xdv4<br>xdv5<br>xdv6<br>xdv7<br>xdv8<br>xdv9<br>xdva<br>xdvb<br>xdvc<br>xdvd<br>xdve<br>xdvf</b></td>
           <td align=center><b>mpegvideo_xvmc</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Microsoft Video 1</b></td>
           <td align=center><b>cram<br>CRAM<br>msvc<br>MSVC<br>wham<br>WHAM</b></td>
           <td align=center><b>msvidc32.dll</b></td>
           <td align=center colspan=3><b>-vf palette required for 8bpp</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>HuffYUV</b></td>
           <td align=center><b>HFYU</b></td>
           <td align=center><b>huffyuv.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAnim's Radius Cinepak Video</b></td>
           <td align=center><b>cvid</b></td>
           <td align=center><b>vid_cvid.xa</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg WMV3/WMV9</b></td>
           <td align=center><b>WMV3<br>wmv3</b></td>
           <td align=center><b>wmv3</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg WMV3/WMV9 (VDPAU)</b></td>
-          <td align=center><b>WMV3<br>wmv3</b></td>
-          <td align=center><b>wmv3_vdpau</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg WVC1</b></td>
-          <td align=center><b>WVC1<br>wvc1<br>WMVA<br>vc-1<br>VC-1</b></td>
+          <td align=center><b>WVC1<br>wvc1<br>WMVA</b></td>
           <td align=center><b>vc1</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg WVC1 (VDPAU)</b></td>
-          <td align=center><b>WVC1<br>wvc1<br>WMVA<br>vc-1<br>VC-1</b></td>
-          <td align=center><b>vc1_vdpau</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DivX4Windows-VFW</b></td>
           <td align=center><b>DIVX<br>divx<br>DIV1<br>div1<br>MP43<br>mp43<br>DIV3<br>div3<br>DIV4<br>div4<br>AP41<br></b></td>
           <td align=center><b>divx.dll</b></td>
           <td align=center colspan=3><b>sig11 with -framedrop</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>UB Video MPEG-4</b></td>
           <td align=center><b>mp4v<br>UMP4</b></td>
           <td align=center><b>ubvmp4d.dll</b></td>
           <td align=center colspan=3><b>black&white</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Zoran MJPEG passthrough</b></td>
           <td align=center><b>MJPG<br>jpeg</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>ImagePower MJPEG2000</b></td>
           <td align=center><b>IPJ2</b></td>
           <td align=center><b>jp2avi.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAnim's CCITT H.261</b></td>
           <td align=center><b>H261<br>h261</b></td>
           <td align=center><b>vid_h261.xa</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Linux RealPlayer 10 RV30/40</b></td>
-          <td align=center><b>RV30<br>rv30<br>RV40<br>rv40</b></td>
-          <td align=center><b>drvc.so</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Linux RealPlayer 9 RV40</b></td>
-          <td align=center><b>RV40<br>rv40</b></td>
-          <td align=center><b>drv4.so.6.0</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Linux RealPlayer 8 RV30</b></td>
-          <td align=center><b>RV30<br>rv30</b></td>
-          <td align=center><b>drv3.so.6.0</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg RV30</b></td>
-          <td align=center><b>RV30<br>rv30</b></td>
-          <td align=center><b>rv30</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Linux RealPlayer 8 RV20</b></td>
-          <td align=center><b>RV20<br>rv20</b></td>
-          <td align=center><b>drv2.so.6.0</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>sif1 alpha4</b></td>
-          <td align=center><b>SIF1</b></td>
-          <td align=center><b>Sif1Dec.ax</b></td>
-          <td align=center colspan=3><b>one frame every 5 seconds?</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>SP6x codec</b></td>
-          <td align=center><b>SP60<br>SP61<br>SP62</b></td>
-          <td align=center><b>sp6x_32.dll</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>win32/quicktime ZyGo</b></td>
+        <tr> 
+          <td align=center><b>win32/quicktime ZyGo decoder</b></td>
           <td align=center><b>ZyGo<br>zygo<br>lsvx</b></td>
           <td align=center><b>ZyGoVideo.qtx</b></td>
           <td align=center colspan=3><b>wrong colors</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime SVQ1</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime SVQ1 decoder</b></td>
           <td align=center><b>SVQ1</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Bethesda Software VID</b></td>
           <td align=center><b>BETH</b></td>
           <td align=center><b>bethsoftvid</b></td>
           <td align=center colspan=3><b>video plays much too fast</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg XAN wc3</b></td>
           <td align=center><b>WC3V</b></td>
           <td align=center><b>xan_wc3</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Id CIN video</b></td>
           <td align=center><b>IDCI</b></td>
           <td align=center><b>idcinvideo</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Interplay Video</b></td>
           <td align=center><b>INPV</b></td>
           <td align=center><b>interplayvideo</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg VQA Video</b></td>
           <td align=center><b>VQAV</b></td>
           <td align=center><b>vqavideo</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg C93 Video</b></td>
           <td align=center><b>C93V</b></td>
           <td align=center><b>c93</b></td>
@@ -2593,112 +1964,119 @@
         <tr>
           <td colspan=6 bgcolor="#CCCCCC"><b>Not yet working codecs:</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">fourcc</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
-          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
+          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">problem</font></b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Morgan MJPEG</b></td>
           <td align=center><b>MJPG<br>mjpa<br>mjpb<br>mjpg<br>dmb1</b></td>
           <td align=center><b>m3jpegdec.ax</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Pegasus Motion JPEG</b></td>
           <td align=center><b>MJPG</b></td>
           <td align=center><b>pvmjpg21.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Pegasus lossless JPEG</b></td>
           <td align=center><b>JPGL<br>MJPG</b></td>
           <td align=center><b>pvljpg20.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Pegasus Motion Wavelet 2000</b></td>
           <td align=center><b>PVW2</b></td>
           <td align=center><b>pvwv220.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>XAnim's CCITT H.263</b></td>
           <td align=center><b>H263<br>h263<br>viv1<br>VIVO<br>vivo</b></td>
           <td align=center><b>vid_h263.xa</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime H.263</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime H.263 decoder</b></td>
           <td align=center><b>h263</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/Quicktime RLE/RPZA</b></td>
+        <tr> 
+          <td align=center><b>Win32/Quicktime RLE/RPZA decoder</b></td>
           <td align=center><b>rpza<br>rle </b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>no colorspace accepted</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime VP3</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime VP3 decoder</b></td>
           <td align=center><b>VP31</b></td>
           <td align=center><b>On2_VP3.qtx</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime Indeo</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime Indeo decoder</b></td>
           <td align=center><b>IV31<br>iv31<br>IV32<br>iv32<br>IV41</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime MJPEG</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime MJPEG decoder</b></td>
           <td align=center><b>dmb1<br>mjpa<br>mjpb</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Win32/QuickTime MPEG-4</b></td>
+        <tr> 
+          <td align=center><b>Win32/QuickTime MPEG-4 decoder</b></td>
           <td align=center><b>mp4v</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
+          <td align=center><b>Alaris VideoGramPiX</b></td>
+          <td align=center><b>VGPX<br>VTLP</b></td>
+          <td align=center><b>vgpix32d.dll</b></td>
+          <td align=center colspan=3><b>only produces strange patterns</b></td>
+        </tr>
+<!--  -->
+        <tr> 
           <td align=center><b>ATI VCR-1</b></td>
           <td align=center><b>VCR1</b></td>
           <td align=center><b>ativcr1.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Pinnacle Hardware MPEG-1</b></td>
           <td align=center><b>PIM1</b></td>
           <td align=center><b>pclepim1.dll</b></td>
           <td align=center colspan=3><b>no picture. use ffmpeg12!</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>rricm</b></td>
           <td align=center><b>dmb1</b></td>
           <td align=center><b>rricm.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>NULL codec (no decoding!)</b></td>
           <td align=center><b>-</b></td>
           <td align=center><b>-</b></td>
@@ -2712,1043 +2090,889 @@
 
       <table width="100%" border="1" cellspacing="0" cellpadding="5">
 
-        <tr>
+        <tr> 
           <td colspan=6 bgcolor="#CCCCCC"><b>Working audio codecs</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">format</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
           <td align=center colspan=3><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Audio 9 DMO</b></td>
           <td align=center><b>0x162<br>0x163</b></td>
           <td align=center><b>wma9dmod.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Audio DMO</b></td>
           <td align=center><b>0x160<br>0x161<br>0x162<br>0x163</b></td>
           <td align=center><b>wmadmod.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Audio 9 Speech DMO</b></td>
           <td align=center><b>0xA</b></td>
           <td align=center><b>wmspdmod.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Windows Media Audio 9 Speech DShow</b></td>
           <td align=center><b>0xA</b></td>
           <td align=center><b>wmavds32.ax</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg QDM2 audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg QDM2 audio decoder</b></td>
           <td align=center><b>0x324D4451</b></td>
           <td align=center><b>qdm2</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>QuickTime QDMC/QDM2 audio</b></td>
+        <tr> 
+          <td align=center><b>QuickTime QDMC/QDM2 audio decoders</b></td>
           <td align=center><b>0x324D4451<br>0x434D4451</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg QCLP audio</b></td>
-          <td align=center><b>0x706C6351<br>0x70637173<br>0x716C6351</b></td>
-          <td align=center><b>qcelp</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>QuickTime QCLP audio</b></td>
+        <tr> 
+          <td align=center><b>QuickTime QCLP audio decoder</b></td>
           <td align=center><b>0x706C6351</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>QuickTime MACE3 audio</b></td>
+        <tr> 
+          <td align=center><b>QuickTime MACE3 audio decoder</b></td>
           <td align=center><b>0x3343414D</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>QuickTime MACE6 audio</b></td>
+        <tr> 
+          <td align=center><b>QuickTime MACE6 audio decoder</b></td>
           <td align=center><b>0x3643414D</b></td>
           <td align=center><b>QuickTime.qts</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Zygo audio</b></td>
-          <td align=center><b>0x4E585053</b></td>
-          <td align=center><b>ZyGoAudioS.qtx</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg RealAudio 1.0</b></td>
           <td align=center><b>0x345F3431</b></td>
           <td align=center><b>real_144</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg RealAudio 2.0</b></td>
           <td align=center><b>0x385F3832</b></td>
           <td align=center><b>real_288</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg COOK audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg COOK audio decoder</b></td>
           <td align=center><b>0x6B6F6F63</b></td>
           <td align=center><b>cook</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Atrac 3 audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Atrac 3 audio decoder</b></td>
           <td align=center><b>0x63727461<br>0x270</b></td>
           <td align=center><b>atrac3</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Sipr/Acelp.net audio</b></td>
-          <td align=center><b>0x72706973<br>0x130</b></td>
-          <td align=center><b>sipr</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealAudio 1.0</b></td>
           <td align=center><b>0x345F3431</b></td>
           <td align=center><b>14_4.so.6.0</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio 1.0</b></td>
           <td align=center><b>0x345F3431</b></td>
           <td align=center><b>14_43260.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Mac OS X RealAudio 1.0</b></td>
           <td align=center><b>0x345F3431</b></td>
           <td align=center><b>14_4.shlb</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealAudio 2.0</b></td>
           <td align=center><b>0x385F3832</b></td>
           <td align=center><b>28_8.so.6.0</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio 2.0</b></td>
           <td align=center><b>0x385F3832</b></td>
           <td align=center><b>28_83260.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Mac OS X RealAudio 2.0</b></td>
           <td align=center><b>0x385F3832</b></td>
           <td align=center><b>28_8.shlb</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealPlayer 10 COOK audio</b></td>
           <td align=center><b>0x6B6F6F63</b></td>
           <td align=center><b>cook.so</b></td>
           <td align=center colspan=3><b>supports cook 5.1</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealAudio COOK</b></td>
           <td align=center><b>0x6B6F6F63</b></td>
           <td align=center><b>cook.so.6.0</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio 10 COOK</b></td>
           <td align=center><b>0x6B6F6F63</b></td>
           <td align=center><b>cook.dll</b></td>
           <td align=center colspan=3><b>supports cook 5.1</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio COOK</b></td>
           <td align=center><b>0x6B6F6F63</b></td>
           <td align=center><b>cook3260.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Mac OS X RealAudio COOK</b></td>
           <td align=center><b>0x6B6F6F63</b></td>
           <td align=center><b>cook.bundle/Contents/MacOS/cook</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealAudio Sipro</b></td>
           <td align=center><b>0x72706973</b></td>
           <td align=center><b>sipr.so.6.0</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealPlayer 10 RealAudio Sipro</b></td>
           <td align=center><b>0x72706973</b></td>
           <td align=center><b>sipr.so</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio 10 Sipro</b></td>
           <td align=center><b>0x72706973</b></td>
           <td align=center><b>sipr.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio Sipro</b></td>
           <td align=center><b>0x72706973</b></td>
           <td align=center><b>sipr3260.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Mac OS X RealAudio Sipro</b></td>
           <td align=center><b>0x72706973</b></td>
           <td align=center><b>sipr.bundle/Contents/MacOS/sipr</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealAudio ATRAC3</b></td>
           <td align=center><b>0x63727461</b></td>
           <td align=center><b>atrc.so.6.0</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>RealPlayer 10 RealAudio ATRAC3</b></td>
           <td align=center><b>0x63727461</b></td>
           <td align=center><b>atrc.so</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio 10 ATRAC3</b></td>
           <td align=center><b>0x63727461</b></td>
           <td align=center><b>atrc.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Win32 RealAudio ATRAC3</b></td>
           <td align=center><b>0x63727461</b></td>
           <td align=center><b>atrc3260.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Mac OS X RealAudio ATRAC3</b></td>
           <td align=center><b>0x63727461</b></td>
           <td align=center><b>atrc.bundle/Contents/MacOS/atrc</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg SEGA CRI adx codec</b></td>
-          <td align=center><b>0x78646153</b></td>
-          <td align=center><b>adpcm_adx</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg AMV IMA ADPCM audio</b></td>
           <td align=center><b>0x41564D41</b></td>
           <td align=center><b>adpcm_ima_amv</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg QT IMA ADPCM audio</b></td>
           <td align=center><b>0x34616D69</b></td>
           <td align=center><b>adpcm_ima_qt</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg WAV IMA ADPCM audio</b></td>
-          <td align=center><b>0x11<br>0x1100736D<br>0x11005354</b></td>
+          <td align=center><b>0x11<br>0x1100736D</b></td>
           <td align=center><b>adpcm_ima_wav</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>IMA ADPCM</b></td>
           <td align=center><b>0x11<br>0x34616D69<br>0x1100736D</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg MS ADPCM audio</b></td>
           <td align=center><b>0x2<br>0x200736D</b></td>
           <td align=center><b>adpcm_ms</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MS ADPCM</b></td>
           <td align=center><b>0x2<br>0x200736D</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg DK4 IMA ADPCM audio</b></td>
           <td align=center><b>0x61</b></td>
           <td align=center><b>adpcm_ima_dk4</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Duck DK4 ADPCM (rogue format number)</b></td>
           <td align=center><b>0x61</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg DK3 IMA ADPCM audio</b></td>
           <td align=center><b>0x62</b></td>
           <td align=center><b>adpcm_ima_dk3</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Duck DK3 ADPCM (rogue format number)</b></td>
           <td align=center><b>0x62</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Id RoQ File Audio</b></td>
+        <tr> 
+          <td align=center><b>Id RoQ File Audio Decoder</b></td>
           <td align=center><b>0x41516F52</b></td>
           <td align=center><b>roq_dpcm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Bink Audio (RDFT)</b></td>
-          <td align=center><b>0x32554142</b></td>
-          <td align=center><b>binkaudio_rdft</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Delphine CIN audio</b></td>
           <td align=center><b>0x41494344</b></td>
           <td align=center><b>dsicinaudio</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg 4XM ADPCM audio</b></td>
           <td align=center><b>0x414D5834</b></td>
           <td align=center><b>adpcm_4xm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Westwood IMA ADPCM audio</b></td>
           <td align=center><b>0x53574941</b></td>
           <td align=center><b>adpcm_ima_ws</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Westwood SND1</b></td>
           <td align=center><b>0x31444E53</b></td>
           <td align=center><b>ws_snd1</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Interplay DPCM audio</b></td>
           <td align=center><b>0x41504E49</b></td>
           <td align=center><b>interplay_dpcm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg EA ADPCM audio</b></td>
           <td align=center><b>0x41454441</b></td>
           <td align=center><b>adpcm_ea</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg EA MAXIS XA ADPCM audio</b></td>
           <td align=center><b>0x41584441</b></td>
           <td align=center><b>adpcm_ea_maxis_xa</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg XA ADPCM audio</b></td>
           <td align=center><b>0x41585350</b></td>
           <td align=center><b>adpcm_xa</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg XAN DPCM audio</b></td>
           <td align=center><b>0x6E617841</b></td>
           <td align=center><b>xan_dpcm</b></td>
           <td align=center colspan=3><b>only works with libavformat demuxer</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Yamaha ADPCM audio</b></td>
-          <td align=center><b>0x20</b></td>
-          <td align=center><b>adpcm_yamaha</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg THP ADPCM audio</b></td>
           <td align=center><b>0x41504854</b></td>
           <td align=center><b>adpcm_thp</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>raw DV audio (libdv)</b></td>
+        <tr> 
+          <td align=center><b>raw DV audio decoder (libdv)</b></td>
           <td align=center><b>0x56444152</b></td>
           <td align=center><b>libdv.so.2</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg DV audio</b></td>
-          <td align=center><b>0x56444152<br>0x61766476<br>0x61637664<br>0x75617664</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg DV audio decoder</b></td>
+          <td align=center><b>0x56444152</b></td>
           <td align=center><b>dvaudio</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg AAC (MPEG-2/MPEG-4 Audio)</b></td>
-          <td align=center><b>0x6134706D<br>0x4134504D<br>0x20424C56<br>0x20434141<br>0x50434141<br>0x63616172<br>0x70636172<br>0xFF<br>0x706D<br>0x4143<br>0xA106<br>0xAAC0</b></td>
-          <td align=center><b>aac</b></td>
+        <tr> 
+          <td align=center><b>FAAD AAC (MPEG-2/MPEG-4 Audio) decoder</b></td>
+          <td align=center><b>0x6134706D<br>0x4134504D<br>0x20424C56<br>0x20434141<br>0x50434141<br>0xFF<br>0x706D</b></td>
+          <td align=center><b>libfaad2</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg FLAC audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg FLAC audio decoder</b></td>
           <td align=center><b>0x43614C66<br>0xF1AC</b></td>
           <td align=center><b>flac</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg ALAC audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg ALAC audio decoder</b></td>
           <td align=center><b>0x63616C61</b></td>
           <td align=center><b>alac</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg True Audio (TTA)</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg True Audio (TTA) decoder</b></td>
           <td align=center><b>0x31415454</b></td>
           <td align=center><b>tta</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg WavPack audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg WavPack audio decoder</b></td>
           <td align=center><b>0x4B505657</b></td>
           <td align=center><b>wavpack</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Shorten audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Shorten audio decoder</b></td>
           <td align=center><b>0x6E726873</b></td>
           <td align=center><b>shorten</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Monkey's Audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Monkey's Audio decoder</b></td>
           <td align=center><b>0x20455041</b></td>
           <td align=center><b>ape</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg ALS</b></td>
-          <td align=center><b>0x20534C41</b></td>
-          <td align=center><b>als</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MLP</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg MLP decoder</b></td>
           <td align=center><b>0x20504C4D</b></td>
           <td align=center><b>mlp</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg TrueHD</b></td>
-          <td align=center><b>0x44485254</b></td>
-          <td align=center><b>truehd</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Nellymoser Audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Nellymoser Audio decoder</b></td>
           <td align=center><b>0x4C4C454E</b></td>
           <td align=center><b>nellymoser</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FAAD AAC (MPEG-2/MPEG-4 Audio)</b></td>
-          <td align=center><b>0x6134706D<br>0x4134504D<br>0x20424C56<br>0x20434141<br>0x50434141<br>0x63616172<br>0x70636172<br>0xFF<br>0x706D<br>0x4143<br>0xA106<br>0xAAC0</b></td>
-          <td align=center><b>libfaad2</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Uncompressed PCM</b></td>
           <td align=center><b>0x0<br>0x1<br>0x3<br>0xFFFE<br>0x20776172<br>0x736F7774<br>0x74776F73<br>0x32336C66<br>0x666C3332<br>0x454E4F4E<br>0x34326E69<br>0x696E3234<br>0x32336E69<br>0x696E3332</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DivX audio (WMA)</b></td>
           <td align=center><b>0x160<br>0x161</b></td>
           <td align=center><b>divxa32.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>vdowave ACM</b></td>
-          <td align=center><b>0xFFFC</b></td>
-          <td align=center><b>vdowave.acm</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MS ADPCM</b></td>
           <td align=center><b>0x2</b></td>
           <td align=center><b>msadp32.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>mp3lib MPEG layer-2<br> layer-3</b></td>
-          <td align=center><b>0x50<br>0x55<br>0x5500736D<br>0x5000736D<br>0x55005354<br>0x33706D2E<br>0x2033504D<br>0x454D414C</b></td>
+          <td align=center><b>0x50<br>0x55<br>0x5500736D<br>0x33706D2E<br>0x2033504D<br>0x454D414C</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>Optimized to MMX/SSE/3Dnow!</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Multi-channel MPEG layer-3 on MP4 audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Multi-channel MPEG layer-3 on MP4 audio decoder</b></td>
           <td align=center><b>0x1D61346D</b></td>
           <td align=center><b>mp3on4</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MPEG layer-3 audio</b></td>
-          <td align=center><b>0x55<br>0x5500736D<br>0x55005354<br>0x33706D2E<br>0x2033504D<br>0x454D414C</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg MPEG layer-3 audio decoder</b></td>
+          <td align=center><b>0x55<br>0x5500736D<br>0x33706D2E<br>0x2033504D<br>0x454D414C</b></td>
           <td align=center><b>mp3</b></td>
           <td align=center colspan=3><b>integer only</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MPEG layer-3 adu audio</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg MPEG layer-3 adu audio decoder</b></td>
           <td align=center><b>0x55756461</b></td>
           <td align=center><b>mp3adu</b></td>
           <td align=center colspan=3><b>integer only</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg MPEG layer-1 and layer-2 audio</b></td>
-          <td align=center><b>0x50<br>0x5000736D<br>0x32706D2E<br>0x31706D2E</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg MPEG layer-1 and layer-2 audio decoder</b></td>
+          <td align=center><b>0x50</b></td>
           <td align=center><b>mp2</b></td>
           <td align=center colspan=3><b>integer only</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>libMAD MPEG layer 1-2-3</b></td>
           <td align=center><b>0x50<br>0x55<br>0x5500736D<br>0x33706D2E<br>0x2033504D<br>0x454D414C</b></td>
           <td align=center><b>libmad</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MPEG layer-3</b></td>
           <td align=center><b>0x55</b></td>
           <td align=center><b>l3codeca.acm</b></td>
           <td align=center colspan=3><b>conflicts with security kernel patches</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>IMA ADPCM</b></td>
           <td align=center><b>0x11</b></td>
           <td align=center><b>imaadp32.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MS GSM</b></td>
-          <td align=center><b>0x31<br>0x32<br>0x204D5347<br>0x1500<br>0x6D736761</b></td>
+          <td align=center><b>0x31<br>0x32<br>0x204D5347<br>0x6D736761</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MS GSM</b></td>
           <td align=center><b>0x31</b></td>
           <td align=center><b>msgsm32.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MSN AUDIO</b></td>
           <td align=center><b>0x32</b></td>
           <td align=center><b>msnaudio.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>aLaw</b></td>
           <td align=center><b>0x6<br>0x77616C61</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>uLaw</b></td>
-          <td align=center><b>0x7<br>0x77616C75<br>0x6C75</b></td>
+          <td align=center><b>0x7<br>0x77616C75</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Uncompressed DVD/VOB LPCM</b></td>
           <td align=center><b>0x10001</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Bluray LPCM</b></td>
-          <td align=center><b>0x4D435042</b></td>
-          <td align=center><b>pcm_bluray</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg AC-3</b></td>
-          <td align=center><b>0x2000<br>0x332D6361<br>0x332D4341<br>0x20736D<br>0x74656E64<br>0x33636173</b></td>
-          <td align=center><b>ac3</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg E-AC-3</b></td>
-          <td align=center><b>0x33434145</b></td>
-          <td align=center><b>eac3</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>AC3-liba52</b></td>
           <td align=center><b>0x2000<br>0x74656E64</b></td>
           <td align=center><b>liba52</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg DTS</b></td>
-          <td align=center><b>0x2001<br>0x86</b></td>
-          <td align=center><b>dca</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg AC-3</b></td>
+          <td align=center><b>0x2000<br>0x74656E64</b></td>
+          <td align=center><b>ac3</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DTS-libdca</b></td>
-          <td align=center><b>0x2001<br>0x86</b></td>
+          <td align=center><b>0x2001</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
+          <td align=center><b>FFmpeg DTS</b></td>
+          <td align=center><b>0x2001</b></td>
+          <td align=center><b>dca</b></td>
+          <td align=center colspan=3><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr> 
           <td align=center><b>Musepack sv7 audio codec</b></td>
           <td align=center><b>0x2043504D</b></td>
           <td align=center><b>mpc7</b></td>
           <td align=center colspan=3><b>only works with libavformat demuxer</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Musepack sv8 audio codec</b></td>
-          <td align=center><b>0x3843504D<br>0x4B43504D</b></td>
+          <td align=center><b>0x3843504D</b></td>
           <td align=center><b>mpc8</b></td>
           <td align=center colspan=3><b>only works with libavformat demuxer</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Musepack audio codec</b></td>
           <td align=center><b>0x2043504D<br>0x2B4D</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>AMR Narrowband</b></td>
-          <td align=center><b>0x726D6173<br>0x57</b></td>
-          <td align=center><b>libopencore_amrnb</b></td>
+          <td align=center><b>0x726D6173</b></td>
+          <td align=center><b>libamr_nb</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>AMR Wideband</b></td>
-          <td align=center><b>0x62776173<br>0x58</b></td>
-          <td align=center><b>libopencore_amrwb</b></td>
+          <td align=center><b>0x62776173</b></td>
+          <td align=center><b>libamr_wb</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg's ADPCM Flash-variant</b></td>
           <td align=center><b>0x5346</b></td>
           <td align=center><b>adpcm_swf</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>VoxWare MetaVoice</b></td>
-          <td align=center><b>0x74</b></td>
-          <td align=center><b>voxmvdec.ax</b></td>
-          <td align=center colspan=3><b>windows users need msms001.vwp and mvoice.vwp in windows\\system32 folder</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VoxWare</b></td>
           <td align=center><b>0x75</b></td>
           <td align=center><b>voxmsdec.ax</b></td>
           <td align=center colspan=3><b>windows users need msms001.vwp in windows\\system32 folder</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>ACELP.net Sipro Lab Audio</b></td>
+        <tr> 
+          <td align=center><b>ACELP.net Sipro Lab Audio Decoder</b></td>
           <td align=center><b>0x130</b></td>
           <td align=center><b>acelpdec.ax</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Intel Music Coder</b></td>
           <td align=center><b>0x401</b></td>
           <td align=center><b>imc</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Intel Music Coder</b></td>
           <td align=center><b>0x401</b></td>
           <td align=center><b>imc32.acm</b></td>
           <td align=center colspan=3><b>driver at http://codeczone.virtualave.net/FXIMCAUD.zip</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Indeo audio</b></td>
           <td align=center><b>0x402</b></td>
           <td align=center><b>iac25_32.ax</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Creative ADPCM codec</b></td>
+        <tr> 
+          <td align=center><b>Creative ADPCM native codec</b></td>
           <td align=center><b>0x200</b></td>
           <td align=center><b>adpcm_ct</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Creative ADPCM codec</b></td>
           <td align=center><b>0x200</b></td>
           <td align=center><b>ctadp32.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>SC4 : Micronas speech codec (ADPCM<br> MPman recording)</b></td>
           <td align=center><b>0x350</b></td>
           <td align=center><b>mi-sc4.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>AC3 through S/PDIF</b></td>
-          <td align=center><b>0x2000<br>0x332D6361<br>0x74656E64</b></td>
+          <td align=center><b>0x2000<br>0x74656E64</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DTS through S/PDIF</b></td>
           <td align=center><b>0x2001</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Vorbis</b></td>
+        <tr> 
+          <td align=center><b>FFmpeg Vorbis decoder</b></td>
           <td align=center><b>0x73627276<br>0x566F</b></td>
           <td align=center><b>vorbis</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>OggVorbis Audio</b></td>
+        <tr> 
+          <td align=center><b>OggVorbis Audio Decoder</b></td>
           <td align=center><b>0x73627276<br>0x566F</b></td>
           <td align=center><b>libvorbis</b></td>
           <td align=center colspan=3><b>OggVorbis driver using libvorbis</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>OggVorbis audio</b></td>
-          <td align=center><b>0x73627276<br>0x566F</b></td>
-          <td align=center><b>tremor</b></td>
-          <td align=center colspan=3><b>fixed-point decoder useful for systems without floating-point unit</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>OggVorbis ACM</b></td>
           <td align=center><b>0x674F<br>0x6750<br>0x676F<br>0x6770<br>0x6771</b></td>
           <td align=center><b>vorbis.acm</b></td>
           <td align=center colspan=3><b>OggVorbis driver using vorbis.acm</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Speex audio</b></td>
-          <td align=center><b>0x20787073<br>0xA109</b></td>
+        <tr> 
+          <td align=center><b>Speex Audio Decoder</b></td>
+          <td align=center><b>0x20787073</b></td>
           <td align=center><b>speex</b></td>
           <td align=center colspan=3><b>Speex driver using libspeex</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Vivo G.723/Siren Audio Codec</b></td>
           <td align=center><b>0x111<br>0x112</b></td>
           <td align=center><b>vivog723.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Sharp G.726 Audio</b></td>
           <td align=center><b>0x45</b></td>
           <td align=center><b>g726</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>ALF2</b></td>
           <td align=center><b>0x1FC4</b></td>
           <td align=center><b>alf2cd.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg TrueSpeech</b></td>
-          <td align=center><b>0x22<br>0x1501</b></td>
+          <td align=center><b>0x22</b></td>
           <td align=center><b>truespeech</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DSP Group TrueSpeech(TM)</b></td>
           <td align=center><b>0x22</b></td>
           <td align=center><b>tssoft32.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>NetSpeak GSM</b></td>
-          <td align=center><b>0x1500</b></td>
-          <td align=center><b>nsgsm32.acm</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>NetSpeak TrueSpeech</b></td>
-          <td align=center><b>0x1501</b></td>
-          <td align=center><b>nstsp32.acm</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VoxWare RT24 speech codec</b></td>
           <td align=center><b>0x181C</b></td>
           <td align=center><b>nsrt2432.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Lernout & Hauspie CELP and SBC codecs</b></td>
           <td align=center><b>0x1101<br>0x1102<br>0x1103<br>0x1104</b></td>
           <td align=center><b>lhacm.acm</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Voxware AC aka Lernout & Hauspie CELP and CBS codecs</b></td>
-          <td align=center><b>0x70<br>0x71<br>0x72<br>0x73</b></td>
-          <td align=center><b>lhacm2.acm</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>Philips Speech Processing CELP</b></td>
-          <td align=center><b>0x120</b></td>
-          <td align=center><b>smcelp32.acm</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>FFmpeg TwinVQ</b></td>
-          <td align=center><b>0x32495754</b></td>
-          <td align=center><b>twinvq</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>VQF codec by NTTLabs</b></td>
           <td align=center><b>0x4E495754</b></td>
           <td align=center><b>tvqdec.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>MPEG audio pass-through for hardware MPEG decoders</b></td>
           <td align=center><b>0x50<br>0x55<br>0x5500736D<br>0x33706D2E<br>0x2033504D<br>0x454D414C</b></td>
           <td align=center><b>-</b></td>
           <td align=center colspan=3><b>for hardware MPEG audio decoders</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>msn siren audio codec</b></td>
           <td align=center><b>0x28E</b></td>
           <td align=center><b>sirenacm.dll</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>Ulead DV ACM</b></td>
-          <td align=center><b>0x215<br>0x216</b></td>
-          <td align=center><b>dvacm.acm</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
 
-        <tr>
+        <tr> 
           <td colspan=6 bgcolor="#CCCCCC"><b>New / Untested codecs</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">format</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
-          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
+          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">problem</font></b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>D-Cinema audio (FFmpeg)</b></td>
           <td align=center><b>0x64756164</b></td>
           <td align=center><b>pcm_s24daud</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DivX audio v1 (FFmpeg)</b></td>
           <td align=center><b>0x160</b></td>
           <td align=center><b>wmav1</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>DivX audio v2 (FFmpeg)</b></td>
           <td align=center><b>0x161</b></td>
           <td align=center><b>wmav2</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>WMA Pro audio (FFmpeg)</b></td>
-          <td align=center><b>0x162<br>0x33414D57</b></td>
-          <td align=center><b>wmapro</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
-          <td align=center><b>WMA Voice audio (FFmpeg)</b></td>
-          <td align=center><b>0xA</b></td>
-          <td align=center><b>wmavoice</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Macintosh Audio Compression and Expansion 3:1</b></td>
           <td align=center><b>0x3343414D</b></td>
           <td align=center><b>mace3</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Macintosh Audio Compression and Expansion 6:1</b></td>
           <td align=center><b>0x3643414D</b></td>
           <td align=center><b>mace6</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Sonic</b></td>
           <td align=center><b>0x434E4F53<br>0x2048</b></td>
           <td align=center><b>sonic</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Sharp G.726 Audio</b></td>
           <td align=center><b>0x45</b></td>
           <td align=center><b>scg726.acm</b></td>
@@ -3756,31 +2980,24 @@
         </tr>
 <!--  -->
 
-        <tr>
+        <tr> 
           <td colspan=6 bgcolor="#CCCCCC"><b>Codecs with problems</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">format</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
-          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
+          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">problem</font></b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>FFmpeg Smacker Audio</b></td>
           <td align=center><b>0x414B4D53</b></td>
           <td align=center><b>smackaud</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->
-        <tr>
-          <td align=center><b>FFmpeg Bink Audio (DCT)</b></td>
-          <td align=center><b>0x31554142</b></td>
-          <td align=center><b>binkaudio_dct</b></td>
-          <td align=center colspan=3><b>-</b></td>
-        </tr>
-<!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>Sony ATRAC3</b></td>
           <td align=center><b>0x270</b></td>
           <td align=center><b>atrac3.acm</b></td>
@@ -3788,17 +3005,17 @@
         </tr>
 <!--  -->
 
-        <tr>
+        <tr> 
           <td colspan=6 bgcolor="#CCCCCC"><b>Not yet working codecs</b></td>
         </tr>
-        <tr>
+        <tr> 
           <td width=150 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codec name</font></b></td>
           <td width=70 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">format</font></b></td>
-          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">driver name</font></b></td>
-          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">comments</font></b></td>
+          <td width=120 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">codecfile</font></b></td>
+          <td colspan=3 align=center><b><font color="#AAAAAA" face="Verdana, Arial, Helvetica, sans-serif" size="2">problem</font></b></td>
         </tr>
 <!--  -->
-        <tr>
+        <tr> 
           <td align=center><b>G.711/G.721/G.723</b></td>
           <td align=center><b>0x111<br>0x112</b></td>
           <td align=center><b>g72x.c</b></td>

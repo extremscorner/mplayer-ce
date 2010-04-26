@@ -1,25 +1,4 @@
-/*
- * GyS-TermIO v2.0 (for GySmail v3)
- * a very small replacement of ncurses library
- *
- * copyright (C) 1999 A'rpi/ESP-team
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+/* GyS-TermIO v2.0 (for GySmail v3)          (C) 1999 A'rpi/ESP-team */
 
 #include "config.h"
 
@@ -58,7 +37,6 @@
 
 #include "mp_fifo.h"
 #include "keycodes.h"
-#include "getch2.h"
 
 #ifdef HAVE_TERMIOS
 static struct termios tio_orig;
@@ -83,10 +61,10 @@ static int getch2_key_db=0;
 #if 0
 #include <termcap.h>
 #else
-int tgetent(char *BUFFER, char *TERMTYPE);
-int tgetnum(char *NAME);
-int tgetflag(char *NAME);
-char *tgetstr(char *NAME, char **AREA);
+  extern int tgetent (char *BUFFER, char *TERMTYPE);
+  extern int tgetnum (char *NAME);
+  extern int tgetflag (char *NAME);
+  extern char *tgetstr (char *NAME, char **AREA);
 #endif
 
 static char term_buffer[4096];
@@ -298,9 +276,10 @@ char* get_term_charset(void)
     char* charset = NULL;
 #ifdef HAVE_LANGINFO
     setlocale(LC_CTYPE, "");
-    charset = strdup(nl_langinfo(CODESET));
+    charset = nl_langinfo(CODESET);
     setlocale(LC_CTYPE, "C");
 #endif
     return charset;
 }
 #endif
+

@@ -20,12 +20,12 @@
 
 /*
  * This implementation is based on an algorithm described in
- * "Aria Nosratinia Embedded Post-Processing for
+ * "Aria Nosratinia Embedded Post-Processing for 
  * Enhancement of Compressed Images (1999)"
  * (http://citeseer.nj.nec.com/nosratinia99embedded.html)
  */
 
-
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,14 +37,13 @@
 #include "mp_msg.h"
 #include "cpudetect.h"
 
-#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 
-#undef fprintf
-#undef free
-#undef malloc
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 #include "img_format.h"
 #include "mp_image.h"
@@ -69,23 +68,23 @@ static const uint8_t offset[127][2]= {
 {0,0},
 {0,0}, {4,4},
 {0,0}, {2,2}, {6,4}, {4,6},
-{0,0}, {5,1}, {2,2}, {7,3}, {4,4}, {1,5}, {6,6}, {3,7},
+{0,0}, {5,1}, {2,2}, {7,3}, {4,4}, {1,5}, {6,6}, {3,7}, 
 
-{0,0}, {4,0}, {1,1}, {5,1}, {3,2}, {7,2}, {2,3}, {6,3},
-{0,4}, {4,4}, {1,5}, {5,5}, {3,6}, {7,6}, {2,7}, {6,7},
+{0,0}, {4,0}, {1,1}, {5,1}, {3,2}, {7,2}, {2,3}, {6,3}, 
+{0,4}, {4,4}, {1,5}, {5,5}, {3,6}, {7,6}, {2,7}, {6,7}, 
 
-{0,0}, {0,2}, {0,4}, {0,6}, {1,1}, {1,3}, {1,5}, {1,7},
-{2,0}, {2,2}, {2,4}, {2,6}, {3,1}, {3,3}, {3,5}, {3,7},
-{4,0}, {4,2}, {4,4}, {4,6}, {5,1}, {5,3}, {5,5}, {5,7},
-{6,0}, {6,2}, {6,4}, {6,6}, {7,1}, {7,3}, {7,5}, {7,7},
+{0,0}, {0,2}, {0,4}, {0,6}, {1,1}, {1,3}, {1,5}, {1,7}, 
+{2,0}, {2,2}, {2,4}, {2,6}, {3,1}, {3,3}, {3,5}, {3,7}, 
+{4,0}, {4,2}, {4,4}, {4,6}, {5,1}, {5,3}, {5,5}, {5,7}, 
+{6,0}, {6,2}, {6,4}, {6,6}, {7,1}, {7,3}, {7,5}, {7,7}, 
 
-{0,0}, {4,4}, {0,4}, {4,0}, {2,2}, {6,6}, {2,6}, {6,2},
-{0,2}, {4,6}, {0,6}, {4,2}, {2,0}, {6,4}, {2,4}, {6,0},
-{1,1}, {5,5}, {1,5}, {5,1}, {3,3}, {7,7}, {3,7}, {7,3},
-{1,3}, {5,7}, {1,7}, {5,3}, {3,1}, {7,5}, {3,5}, {7,1},
-{0,1}, {4,5}, {0,5}, {4,1}, {2,3}, {6,7}, {2,7}, {6,3},
-{0,3}, {4,7}, {0,7}, {4,3}, {2,1}, {6,5}, {2,5}, {6,1},
-{1,0}, {5,4}, {1,4}, {5,0}, {3,2}, {7,6}, {3,6}, {7,2},
+{0,0}, {4,4}, {0,4}, {4,0}, {2,2}, {6,6}, {2,6}, {6,2}, 
+{0,2}, {4,6}, {0,6}, {4,2}, {2,0}, {6,4}, {2,4}, {6,0}, 
+{1,1}, {5,5}, {1,5}, {5,1}, {3,3}, {7,7}, {3,7}, {7,3}, 
+{1,3}, {5,7}, {1,7}, {5,3}, {3,1}, {7,5}, {3,5}, {7,1}, 
+{0,1}, {4,5}, {0,5}, {4,1}, {2,3}, {6,7}, {2,7}, {6,3}, 
+{0,3}, {4,7}, {0,7}, {4,3}, {2,1}, {6,5}, {2,5}, {6,1}, 
+{1,0}, {5,4}, {1,4}, {5,0}, {3,2}, {7,6}, {3,6}, {7,2}, 
 {1,2}, {5,6}, {1,6}, {5,2}, {3,0}, {7,4}, {3,4}, {7,0},
 };
 
@@ -105,13 +104,13 @@ struct vf_priv_s {
 #define SHIFT 22
 
 static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
-	int i;
+	int i; 
 	int bias= 0; //FIXME
 	unsigned int threshold1, threshold2;
-
+	
 	threshold1= qp*((1<<4) - bias) - 1;
 	threshold2= (threshold1<<1);
-
+        
 	memset(dst, 0, 64*sizeof(DCTELEM));
 	dst[0]= (src[0] + 4)>>3;
 
@@ -125,13 +124,13 @@ static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
 }
 
 static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
-	int i;
+	int i; 
 	int bias= 0; //FIXME
 	unsigned int threshold1, threshold2;
-
+	
 	threshold1= qp*((1<<4) - bias) - 1;
 	threshold2= (threshold1<<1);
-
+        
 	memset(dst, 0, 64*sizeof(DCTELEM));
 	dst[0]= (src[0] + 4)>>3;
 
@@ -147,14 +146,14 @@ static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
 	}
 }
 
-#if HAVE_MMX
+#ifdef HAVE_MMX
 static void hardthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
 	int bias= 0; //FIXME
 	unsigned int threshold1;
-
+	
 	threshold1= qp*((1<<4) - bias) - 1;
-
-        __asm__ volatile(
+	
+        asm volatile(
 #define REQUANT_CORE(dst0, dst1, dst2, dst3, src0, src1, src2, src3) \
 		"movq " #src0 ", %%mm0	\n\t"\
 		"movq " #src1 ", %%mm1	\n\t"\
@@ -197,7 +196,7 @@ static void hardthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
 		"movq %%mm7, " #dst1 "	\n\t"\
 		"movq %%mm3, " #dst2 "	\n\t"\
 		"movq %%mm1, " #dst3 "	\n\t"
-
+                
 		"movd %2, %%mm4		\n\t"
 		"movd %3, %%mm5		\n\t"
 		"movd %4, %%mm6		\n\t"
@@ -221,8 +220,8 @@ static void softthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
 	unsigned int threshold1;
 
 	threshold1= qp*((1<<4) - bias) - 1;
-
-        __asm__ volatile(
+	
+        asm volatile(
 #undef REQUANT_CORE
 #define REQUANT_CORE(dst0, dst1, dst2, dst3, src0, src1, src2, src3) \
 		"movq " #src0 ", %%mm0	\n\t"\
@@ -275,7 +274,7 @@ static void softthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
 		"movq %%mm7, " #dst1 "	\n\t"\
 		"movq %%mm3, " #dst2 "	\n\t"\
 		"movq %%mm1, " #dst3 "	\n\t"
-
+                
 		"movd %2, %%mm4		\n\t"
 		"movd %3, %%mm5		\n\t"
 		"packssdw %%mm4, %%mm4	\n\t"
@@ -295,7 +294,7 @@ static void softthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
 
 static inline void add_block(int16_t *dst, int stride, DCTELEM block[64]){
 	int y;
-
+	
 	for(y=0; y<8; y++){
 		*(uint32_t*)&dst[0 + y*stride]+= *(uint32_t*)&block[0 + y*8];
 		*(uint32_t*)&dst[2 + y*stride]+= *(uint32_t*)&block[2 + y*8];
@@ -328,14 +327,14 @@ static void store_slice_c(uint8_t *dst, int16_t *src, int dst_stride, int src_st
 	}
 }
 
-#if HAVE_MMX
+#ifdef HAVE_MMX
 static void store_slice_mmx(uint8_t *dst, int16_t *src, int dst_stride, int src_stride, int width, int height, int log2_scale){
 	int y;
 
 	for(y=0; y<height; y++){
 		uint8_t *dst1= dst;
 		int16_t *src1= src;
-		__asm__ volatile(
+		asm volatile(
 			"movq (%3), %%mm3	\n\t"
 			"movq (%3), %%mm4	\n\t"
 			"movd %4, %%mm2		\n\t"
@@ -385,7 +384,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
 	for(y=0; y<height; y++){
 		int index= 8 + 8*stride + y*stride;
 		fast_memcpy(p->src + index, src + y*src_stride, width);
-		for(x=0; x<8; x++){
+		for(x=0; x<8; x++){ 
 			p->src[index         - x - 1]= p->src[index +         x    ];
 			p->src[index + width + x    ]= p->src[index + width - x - 1];
 		}
@@ -401,12 +400,12 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
 		for(x=0; x<width+8; x+=8){
 			const int qps= 3 + is_luma;
 			int qp;
-
+                        
 			if(p->qp)
 				qp= p->qp;
 			else{
 				qp= qp_store[ (XMIN(x, width-1)>>qps) + (XMIN(y, height-1)>>qps) * qp_stride];
-				qp = FFMAX(1, norm_qscale(qp, p->mpeg2));
+				if(p->mpeg2) qp = FFMAX(1, qp>>1);
 			}
 			for(i=0; i<count; i++){
 				const int x1= x + offset[i+count-1][0];
@@ -435,7 +434,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
 	//FIXME reorder for better caching
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 	int h= (height+16+15)&(~15);
@@ -443,11 +442,11 @@ static int config(struct vf_instance *vf,
 	vf->priv->temp_stride= (width+16+15)&(~15);
         vf->priv->temp= malloc(vf->priv->temp_stride*h*sizeof(int16_t));
         vf->priv->src = malloc(vf->priv->temp_stride*h*sizeof(uint8_t));
-
+        
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi){
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
     vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
@@ -464,7 +463,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     mpi->flags|=MP_IMGFLAG_DIRECT;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	mp_image_t *dmpi;
 
 	if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
@@ -480,15 +479,9 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
         vf->priv->mpeg2= mpi->qscale_type;
         if(mpi->pict_type != 3 && mpi->qscale && !vf->priv->qp){
-            int w = mpi->qstride;
-            int h = (mpi->h + 15) >> 4;
-            if (!w) {
-                w = (mpi->w + 15) >> 4;
-                h = 1;
-            }
             if(!vf->priv->non_b_qp)
-                vf->priv->non_b_qp= malloc(w*h);
-            fast_memcpy(vf->priv->non_b_qp, mpi->qscale, w*h);
+                vf->priv->non_b_qp= malloc(mpi->qstride * ((mpi->h + 15) >> 4));
+            fast_memcpy(vf->priv->non_b_qp, mpi->qscale, mpi->qstride * ((mpi->h + 15) >> 4));
         }
 	if(vf->priv->log2_count || !(mpi->flags&MP_IMGFLAG_DIRECT)){
             char *qp_tab= vf->priv->non_b_qp;
@@ -506,17 +499,17 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	    }
 	}
 
-#if HAVE_MMX
-	if(gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
+#ifdef HAVE_MMX
+	if(gCpuCaps.hasMMX) asm volatile ("emms\n\t");
 #endif
-#if HAVE_MMX2
-	if(gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
+#ifdef HAVE_MMX2
+	if(gCpuCaps.hasMMX2) asm volatile ("sfence\n\t");
 #endif
 
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 	if(!vf->priv) return;
 
 	if(vf->priv->temp) free(vf->priv->temp);
@@ -527,13 +520,13 @@ static void uninit(struct vf_instance *vf){
         vf->priv->avctx= NULL;
         if(vf->priv->non_b_qp) free(vf->priv->non_b_qp);
         vf->priv->non_b_qp= NULL;
-
+	
 	free(vf->priv);
 	vf->priv=NULL;
 }
 
 //===========================================================================//
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt){
 	case IMGFMT_YVU9:
 	case IMGFMT_IF09:
@@ -551,7 +544,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     return 0;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
     switch(request){
     case VFCTRL_QUERY_MAX_PP_LEVEL:
 	return 6;
@@ -562,10 +555,10 @@ static int control(struct vf_instance *vf, int request, void* data){
     return vf_next_control(vf,request,data);
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
 
     int log2c=-1;
-
+    
     vf->config=config;
     vf->put_image=put_image;
     vf->get_image=get_image;
@@ -574,14 +567,14 @@ static int vf_open(vf_instance_t *vf, char *args){
     vf->control= control;
     vf->priv=malloc(sizeof(struct vf_priv_s));
     memset(vf->priv, 0, sizeof(struct vf_priv_s));
-
+    
     avcodec_init();
 
     vf->priv->avctx= avcodec_alloc_context();
     dsputil_init(&vf->priv->dsp, vf->priv->avctx);
-
+    
     vf->priv->log2_count= 3;
-
+    
     if (args) sscanf(args, "%d:%d:%d", &log2c, &vf->priv->qp, &vf->priv->mode);
 
     if( log2c >=0 && log2c <=6 )
@@ -596,7 +589,7 @@ static int vf_open(vf_instance_t *vf, char *args){
 	case 1: requantize= softthresh_c; break;
     }
 
-#if HAVE_MMX
+#ifdef HAVE_MMX
     if(gCpuCaps.hasMMX){
 	store_slice= store_slice_mmx;
 	switch(vf->priv->mode&3){
@@ -605,7 +598,7 @@ static int vf_open(vf_instance_t *vf, char *args){
 	}
     }
 #endif
-
+    
     return 1;
 }
 
@@ -614,6 +607,6 @@ const vf_info_t vf_info_spp = {
     "spp",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };

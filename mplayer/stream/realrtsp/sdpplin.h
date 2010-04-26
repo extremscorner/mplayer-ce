@@ -30,7 +30,7 @@
 #define MPLAYER_SDPPLIN_H
 
 #include "rmff.h"
-#include "stream/librtsp/rtsp.h"
+#include "../librtsp/rtsp.h"
 
 typedef struct {
 
@@ -98,7 +98,7 @@ typedef struct {
   int duration;
 
   sdpplin_stream_t **stream;
-
+  
 } sdpplin_t;
 
 sdpplin_t *sdpplin_parse(char *data);

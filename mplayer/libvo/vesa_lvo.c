@@ -1,24 +1,13 @@
 /*
- * vo_vesa interface to Linux Video Overlay
- * (partly based on vo_mga.c)
+ *  vesa_lvo.c
  *
- * copyright (C) 2001 Nick Kurshev <nickols_k@mail.ru>
+ *	Copyright (C) Nick Kurshev <nickols_k@mail.ru> - Oct 2001
  *
- * This file is part of MPlayer.
+ *  You can redistribute this file under terms and conditions
+ *  of GNU General Public licence v2 or later.
  *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * This file contains vo_vesa interface to Linux Video Overlay.
+ * (Partly based on vo_mga.c from mplayer's package)
  */
 
 #include <inttypes.h>
@@ -154,7 +143,7 @@ int      vlvo_init(unsigned src_width,unsigned src_height,
 
 	/*clear the buffer*/
 	memset(frames[0],0x80,mga_vid_config.frame_size*mga_vid_config.num_frames);
-	return 0;
+	return 0;  
 }
 
 void vlvo_term( void )
@@ -242,7 +231,7 @@ void     vlvo_flip_page(void)
 	ioctl(lvo_handler,MGA_VID_FSEL,&next_frame);
 	next_frame=(next_frame+1)%mga_vid_config.num_frames;
 	lvo_mem=frames[next_frame];
-  }
+  }	
 }
 
 #if 0

@@ -34,9 +34,9 @@ static int pngRead( unsigned char * fname,txSample * bf )
  int             len;
  AVCodecContext *avctx;
  AVFrame        *frame;
-
+ 
  FILE *fp=fopen( fname,"rb" );
- if ( !fp )
+ if ( !fp ) 
   {
    mp_dbg( MSGT_GPLAYER,MSGL_DBG2,"[png] file read error ( %s )\n",fname );
    return 1;
@@ -45,7 +45,7 @@ static int pngRead( unsigned char * fname,txSample * bf )
  fseek(fp, 0, SEEK_END);
  len = ftell(fp);
  if (len > 50 * 1024 * 1024) return 2;
- data = av_malloc(len + FF_INPUT_BUFFER_PADDING_SIZE);
+ data = malloc(len + FF_INPUT_BUFFER_PADDING_SIZE);
  fseek(fp, 0, SEEK_SET);
  fread(data, len, 1, fp);
  fclose(fp);
@@ -59,8 +59,7 @@ static int pngRead( unsigned char * fname,txSample * bf )
    case PIX_FMT_GRAY8:    bf->BPP =  8; break;
    case PIX_FMT_GRAY16BE: bf->BPP = 16; break;
    case PIX_FMT_RGB24:    bf->BPP = 24; break;
-   case PIX_FMT_BGRA:
-   case PIX_FMT_ARGB:     bf->BPP = 32; break;
+   case PIX_FMT_RGB32:    bf->BPP = 32; break;
    default:               bf->BPP =  0; break;
  }
  if (decode_ok && bf->BPP) {
@@ -74,7 +73,6 @@ static int pngRead( unsigned char * fname,txSample * bf )
  avcodec_close(avctx);
  av_freep(&frame);
  av_freep(&avctx);
- av_freep(&data);
 
  mp_dbg( MSGT_GPLAYER,MSGL_DBG2,"[png] filename: %s.\n",fname );
  mp_dbg( MSGT_GPLAYER,MSGL_DBG2,"[png]  size: %dx%d bits: %d\n",bf->Width,bf->Height,bf->BPP );
@@ -110,10 +108,10 @@ static int conv24to32( txSample * bf )
 static void Normalize( txSample * bf )
 {
  int           i;
-#if !HAVE_BIGENDIAN
+#ifndef WORDS_BIGENDIAN 
  for ( i=0;i < (int)bf->ImageSize;i+=4 ) bf->Image[i+3]=0;
 #else
- for ( i=0;i < (int)bf->ImageSize;i+=4 ) bf->Image[i]=0;
+ for ( i=0;i < (int)bf->ImageSize;i+=4 ) bf->Image[i]=0; 
 #endif
 }
 
@@ -148,7 +146,7 @@ int bpRead( char * fname, txSample * bf )
 {
  fname=fExist( fname );
  if ( fname == NULL ) return -2;
- if ( pngRead( fname,bf ) )
+ if ( pngRead( fname,bf ) ) 
   {
    mp_dbg( MSGT_GPLAYER,MSGL_FATAL,"[bitmap] unknown file type ( %s )\n",fname );
    return -5;

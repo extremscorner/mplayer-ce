@@ -1,24 +1,10 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 
 #include <stdio.h>
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -57,7 +43,7 @@ int field_dominance=-1;
 
 int divx_quality=0;
 
-const vd_functions_t* mpvdec=NULL;
+vd_functions_t* mpvdec=NULL;
 
 int get_video_quality_max(sh_video_t *sh_video){
   vf_instance_t* vf=sh_video->vfilter;
@@ -150,10 +136,6 @@ int set_rectangle(sh_video_t *sh_video,int param,int value)
 
 void resync_video_stream(sh_video_t *sh_video)
 {
-    sh_video->timer = 0;
-    sh_video->next_frame_time = 0;
-    sh_video->num_buffered_pts = 0;
-    sh_video->last_pts = MP_NOPTS_VALUE;
     if(mpvdec) mpvdec->control(sh_video, VDCTRL_RESYNC_STREAM, NULL);
 }
 
@@ -170,9 +152,8 @@ int get_current_video_decoder_lag(sh_video_t *sh_video)
 }
 
 void uninit_video(sh_video_t *sh_video){
-    if(!sh_video || !sh_video->initialized) return;
+    if(!sh_video->initialized) return;
     mp_msg(MSGT_DECVIDEO,MSGL_V,MSGTR_UninitVideoStr,sh_video->codec->drv);
-    //printf(MSGL_V,MSGTR_UninitVideoStr,sh_video->codec->drv);
     mpvdec->uninit(sh_video);
 #ifdef CONFIG_DYNAMIC_PLUGINS
     if (sh_video->dec_handle)
@@ -338,6 +319,7 @@ stringset_free(&selected);
 
 if(!sh_video->initialized){
     mp_msg(MSGT_DECVIDEO,MSGL_ERR,MSGTR_CantFindVideoCodec,sh_video->format);
+    mp_msg(MSGT_DECAUDIO,MSGL_HINT, MSGTR_RTFMCodecs);
     return 0; // failed
 }
 
@@ -350,8 +332,8 @@ void *decode_video(sh_video_t *sh_video, unsigned char *start, int in_size,
 		   int drop_frame, double pts)
 {
     mp_image_t *mpi = NULL;
-    u64 t = GetTimer();
-    u64 t2;
+    unsigned int t = GetTimer();
+    unsigned int t2;
     double tt;
 
     if (correct_pts && pts != MP_NOPTS_VALUE) {
@@ -388,14 +370,14 @@ void *decode_video(sh_video_t *sh_video, unsigned char *start, int in_size,
 
     //------------------------ frame decoded. --------------------
 
-#if HAVE_MMX
+#ifdef HAVE_MMX
     // some codecs are broken, and doesn't restore MMX state :(
     // it happens usually with broken/damaged files.
     if (gCpuCaps.has3DNow) {
-	__asm__ volatile ("femms\n\t":::"memory");
+	__asm __volatile ("femms\n\t":::"memory");
     }
     else if (gCpuCaps.hasMMX) {
-	__asm__ volatile ("emms\n\t":::"memory");
+	__asm __volatile ("emms\n\t":::"memory");
     }
 #endif
 
@@ -428,18 +410,15 @@ void *decode_video(sh_video_t *sh_video, unsigned char *start, int in_size,
 int filter_video(sh_video_t *sh_video, void *frame, double pts)
 {
     mp_image_t *mpi = frame;
-    u64 t2 = GetTimer();
+    unsigned int t2 = GetTimer();
     vf_instance_t *vf = sh_video->vfilter;
     // apply video filters and call the leaf vo/ve
     int ret = vf->put_image(vf, mpi, pts);
     if (ret > 0) {
-	// draw EOSD first so it ends up below the OSD.
-	// Note that changing this is will not work right with vf_ass and the
-	// vos currently always draw the EOSD first in paused mode.
+	vf->control(vf, VFCTRL_DRAW_OSD, NULL);
 #ifdef CONFIG_ASS
 	vf->control(vf, VFCTRL_DRAW_EOSD, NULL);
 #endif
-	vf->control(vf, VFCTRL_DRAW_OSD, NULL);
     }
 
     t2 = GetTimer()-t2;

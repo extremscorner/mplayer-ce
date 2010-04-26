@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_MP_CORE_H
 #define MPLAYER_MP_CORE_H
 
@@ -59,12 +41,6 @@
 #define PT_UP_PREV -3
 #define PT_STOP 4
 
-enum exit_reason {
-  EXIT_NONE,
-  EXIT_QUIT,
-  EXIT_EOF,
-  EXIT_ERROR
-};
 
 typedef struct MPContext {
     int osd_show_percentage;
@@ -91,11 +67,6 @@ typedef struct MPContext {
     // struct.
     int num_buffered_frames;
 
-    // used to retry decoding after startup/seeking to compensate for codec delay
-    int startup_decode_retry;
-    // how long until we need to display the "current" frame
-    double time_frame;
-
     // AV sync: the next frame should be shown when the audio out has this
     // much (in seconds) buffered data left. Increased when more data is
     // written to the ao, decreased when moving to the next frame.
@@ -103,7 +74,7 @@ typedef struct MPContext {
     // by the audio CPU usage meter.
     double delay;
 
-    double begin_skip; ///< start time of the current skip while on edlout mode
+    float begin_skip; ///< start time of the current skip while on edlout mode
     // audio is muted if either EDL or user activates mute
     short edl_muted; ///< Stores whether EDL is currently in muted mode.
     short user_muted; ///< Stores whether user wanted muted mode.
@@ -155,8 +126,7 @@ void reinit_audio_chain(void);
 void init_vo_spudec(void);
 double playing_audio_pts(sh_audio_t *sh_audio, demux_stream_t *d_audio,
 			 const ao_functions_t *audio_out);
-void exit_player(enum exit_reason how);
-void exit_player_with_rc(enum exit_reason how, int rc);
+void exit_player_with_rc(const char* how, int rc);
 void add_subtitles(char *filename, float fps, int noerr);
 int reinit_video_chain(void);
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # example how to output video on multiple windows in sync.
 # might be even more useful in combination with vo ggi
 # to distribute the video arbitrarily
@@ -29,7 +29,7 @@ i=1
 fifo_list=""
 while test $i -le $count; do
   fifo_list="$dir/mp$i $fifo_list"
-  i=$(($i+1))
+  let i=$i+1
 done
 
 mkfifo $fifo_list

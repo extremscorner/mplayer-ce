@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -93,11 +75,11 @@ int ai_oss_init(audio_in_t *ai)
 	       ai->oss.device, strerror(errno));
 	return -1;
     }
-
+	
     ioctl_param = 0 ;
     mp_msg(MSGT_TV, MSGL_V, "ioctl dsp getfmt: %d\n",
 	   ioctl(ai->oss.audio_fd, SNDCTL_DSP_GETFMTS, &ioctl_param));
-
+	
     mp_msg(MSGT_TV, MSGL_V, "Supported formats: %x\n", ioctl_param);
     if (!(ioctl_param & AFMT_S16_LE))
 	mp_msg(MSGT_TV, MSGL_ERR, MSGTR_MPDEMUX_AIOSS_UnsupportedFmt);
@@ -111,7 +93,7 @@ int ai_oss_init(audio_in_t *ai)
     }
 
     if (ai_oss_set_channels(ai) < 0) return -1;
-
+	
     ioctl_param = ai->req_samplerate;
     mp_msg(MSGT_TV, MSGL_V, "ioctl dsp speed: %d\n",
 	   err = ioctl(ai->oss.audio_fd, SNDCTL_DSP_SPEED, &ioctl_param));

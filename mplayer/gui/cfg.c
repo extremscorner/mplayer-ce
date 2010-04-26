@@ -27,18 +27,17 @@
 #include "mplayer.h"
 #include "m_config.h"
 #include "m_option.h"
-#include "path.h"
-#include "libmpcodecs/vd.h"
+#include "get_path.h"
 #include "libvo/sub.h"
 #include "libvo/video_out.h"
 #include "stream/stream.h"
 #include "libmpdemux/demuxer.h"
+#include "libass/ass.h"
 #include "libass/ass_mp.h"
 
 #include "cfg.h"
 #include "app.h"
 #include "interface.h"
-#include "mplayer/gmplayer.h"
 #include "mplayer/play.h"
 
 // --- params
@@ -100,14 +99,14 @@ gtkASS_t gtkASS;
 // ---
 
 extern int    stop_xscreensaver;
+extern int    m_config_parse_config_file(m_config_t* config, char *conffile);
 extern int    disable_gui_conf;
-int m_config_parse_config_file(m_config_t* config, char *conffile);
 
 static m_config_t * gui_conf;
 static const m_option_t gui_opts[] =
 {
  { "enable_audio_equ",&gtkEnableAudioEqualizer,CONF_TYPE_FLAG,0,0,1,NULL },
-
+ 
  { "vo_driver",&video_driver_list,CONF_TYPE_STRING_LIST,0,0,0,NULL },
  { "vo_panscan",&vo_panscan,CONF_TYPE_FLOAT,CONF_RANGE,0.0,1.0,NULL },
  { "vo_doublebuffering",&vo_doublebuffering,CONF_TYPE_FLAG,0,0,1,NULL },
@@ -154,7 +153,7 @@ static const m_option_t gui_opts[] =
 
  { "dvd_device",&dvd_device,CONF_TYPE_STRING,0,0,0,NULL },
  { "cdrom_device",&cdrom_device,CONF_TYPE_STRING,0,0,0,NULL },
-
+ 
  { "osd_level",&osd_level,CONF_TYPE_INT,CONF_RANGE,0,3,NULL },
  { "sub_auto_load",&sub_auto,CONF_TYPE_FLAG,0,0,1,NULL },
  { "sub_unicode",&sub_unicode,CONF_TYPE_FLAG,0,0,1,NULL },
@@ -183,14 +182,14 @@ static const m_option_t gui_opts[] =
  { "cache",&gtkCacheOn,CONF_TYPE_FLAG,0,0,1,NULL },
  { "cache_size",&gtkCacheSize,CONF_TYPE_INT,CONF_RANGE,-1,65535,NULL },
 
- { "playbar",&gtkEnablePlayBar,CONF_TYPE_FLAG,0,0,1,NULL },
+ { "playbar",&gtkEnablePlayBar,CONF_TYPE_FLAG,0,0,1,NULL }, 
  { "load_fullscreen",&gtkLoadFullscreen,CONF_TYPE_FLAG,0,0,1,NULL },
  { "show_videowin", &gtkShowVideoWindow,CONF_TYPE_FLAG,0,0,1,NULL },
  { "stopxscreensaver",&stop_xscreensaver,CONF_TYPE_FLAG,0,0,1,NULL },
 
  { "autosync",&gtkAutoSyncOn,CONF_TYPE_FLAG,0,0,1,NULL },
  { "autosync_size",&gtkAutoSync,CONF_TYPE_INT,CONF_RANGE,0,10000,NULL },
-
+ 
  { "gui_skin",&skinName,CONF_TYPE_STRING,0,0,0,NULL },
 
  { "gui_save_pos", &gui_save_pos, CONF_TYPE_FLAG,0,0,1,NULL},
@@ -205,7 +204,8 @@ static const m_option_t gui_opts[] =
  { "equ_channel_4",&gtkEquChannel4,CONF_TYPE_STRING,0,0,0,NULL },
  { "equ_channel_5",&gtkEquChannel5,CONF_TYPE_STRING,0,0,0,NULL },
  { "equ_channel_6",&gtkEquChannel6,CONF_TYPE_STRING,0,0,0,NULL },
-
+ 
+#if 1
 #define audio_equ_row( i,j ) { "equ_band_"#i#j,&gtkEquChannels[i][j],CONF_TYPE_FLOAT,CONF_RANGE,-15.0,15.0,NULL },
    audio_equ_row( 0,0 ) audio_equ_row( 0,1 ) audio_equ_row( 0,2 ) audio_equ_row( 0,3 ) audio_equ_row( 0,4 ) audio_equ_row( 0,5 ) audio_equ_row( 0,6 ) audio_equ_row( 0,7 ) audio_equ_row( 0,8 ) audio_equ_row( 0,9 )
    audio_equ_row( 1,0 ) audio_equ_row( 1,1 ) audio_equ_row( 1,2 ) audio_equ_row( 1,3 ) audio_equ_row( 1,4 ) audio_equ_row( 1,5 ) audio_equ_row( 1,6 ) audio_equ_row( 1,7 ) audio_equ_row( 1,8 ) audio_equ_row( 1,9 )
@@ -214,11 +214,12 @@ static const m_option_t gui_opts[] =
    audio_equ_row( 4,0 ) audio_equ_row( 4,1 ) audio_equ_row( 4,2 ) audio_equ_row( 4,3 ) audio_equ_row( 4,4 ) audio_equ_row( 4,5 ) audio_equ_row( 4,6 ) audio_equ_row( 4,7 ) audio_equ_row( 4,8 ) audio_equ_row( 4,9 )
    audio_equ_row( 5,0 ) audio_equ_row( 5,1 ) audio_equ_row( 5,2 ) audio_equ_row( 5,3 ) audio_equ_row( 5,4 ) audio_equ_row( 5,5 ) audio_equ_row( 5,6 ) audio_equ_row( 5,7 ) audio_equ_row( 5,8 ) audio_equ_row( 5,9 )
 #undef audio_equ_row
+#endif
 
  { NULL, NULL, 0, 0, 0, 0, NULL }
 };
 
-static char * gfgets( char * str, int size, FILE * f )
+char * gfgets( char * str, int size, FILE * f )
 {
  char * s = fgets( str,size,f );
  char   c;
@@ -239,7 +240,7 @@ int cfg_read( void )
  mp_msg( MSGT_GPLAYER,MSGL_V,"[cfg] reading config file: %s\n",cfg );
  gui_conf=m_config_new();
  m_config_register_options( gui_conf,gui_opts );
- if ( !disable_gui_conf && m_config_parse_config_file( gui_conf,cfg ) < 0 )
+ if ( !disable_gui_conf && m_config_parse_config_file( gui_conf,cfg ) < 0 ) 
   {
    mp_msg( MSGT_GPLAYER,MSGL_FATAL,MSGTR_ConfigFileError );
 //   exit( 1 );
@@ -304,7 +305,7 @@ int cfg_write( void )
  FILE * f;
  int    i;
 
-// -- save configuration
+// -- save configuration 
  if ( (f=fopen( cfg,"wt+" )) )
   {
    for ( i=0;gui_opts[i].name;i++ )
@@ -322,7 +323,7 @@ int cfg_write( void )
    fclose( f );
   }
  free( cfg );
-
+ 
 // -- save playlist
  cfg=get_path( "gui.pl" );
  if ( (f=fopen( cfg,"wt+" )) )
@@ -331,7 +332,7 @@ int cfg_write( void )
    while ( plCurrent )
     {
      if ( plCurrent->path && plCurrent->name )
-      {
+      { 
        fprintf( f,"%s\n",plCurrent->path );
        fprintf( f,"%s\n",plCurrent->name );
       }
@@ -368,3 +369,4 @@ int cfg_write( void )
 
  return 0;
 }
+

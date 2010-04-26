@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- synced with r27815 -->
+<!-- synced with r24604 -->
 <chapter id="tv">
 <title>TV</title>
 
@@ -52,7 +52,7 @@ Qui ci sono giusto alcuni consigli:
 <listitem><para>
   Scegli una sana dimensione dell'immagine. Le dimensioni dell'immagine
   risultante dovrebbero essere divisibili per 16.
-</para></listitem>
+</para></listitem> 
 <listitem>
   <para>
   Se catturi il video con una risoluzione verticale maggiore di metà della
@@ -88,7 +88,7 @@ Qui ci sono giusto alcuni consigli:
   <application>MEncoder</application> può gestire un sovraccarico per pochi
   secondi, ma non di più. E' meglio disattivare screensaver 3D OpenGL e cose
   del genere.
-</para></listitem>
+</para></listitem> 
 <listitem><para>
   Non pacioccare con il clock di sistema. <application>MEncoder</application>
   usa il clock di sistema per gestire la sincronizzazione A/V. Se tu modifichi
@@ -113,6 +113,11 @@ Qui ci sono giusto alcuni consigli:
   in YV12, perciò l'unica cosa che otterrai sarà spreco di CPU.
 </para></listitem>
 <listitem><para>
+  Per specificare lo spazio colore I420 (<option>outfmt=i420</option>), devi
+  aggiungere un'opzione <option>-vc rawi420</option> a causa di un conflitto
+  del fourcc con un codec video Intel Indeo.
+</para></listitem>
+<listitem><para>
   Ci sono vari modi per la cattura dell'audio. Puoi acquisire il suono sia
   usando la tua scheda audio attraverso una connessione via cavo esterna tra la
   scheda video e il line-in, sia usando l'ADC integrato nel chip bt878.
@@ -121,7 +126,7 @@ Qui ci sono giusto alcuni consigli:
   <filename>linux/Documentation/sound/btaudio</filename> (nei sorgenti del
   kernel, non di <application>MPlayer</application>) per alcune istruzioni su
   come usare tale driver.
-</para></listitem>
+</para></listitem> 
 <listitem><para>
   Se <application>MEncoder</application> non può aprire il dispositivo audio,
   assicurati che sia veramente disponibile. Ci sono alcuni problemi con sound
@@ -194,8 +199,7 @@ sulla direzione orizzontale a causa di una limitazione hardware.
 <title>Televideo (teletext)</title>
 
 <para>
-Il televideo è attualmente disponibile solo in
-<application>MPlayer</application> per i driver v4l e v4l2.
+Il televideo è attualmente disponibile solo in MPlayer per i driver v4l e v4l2.
 </para>
 
 <sect2 id="tv-teletext-implementation-notes">

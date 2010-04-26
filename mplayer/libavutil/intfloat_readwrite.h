@@ -18,11 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_INTFLOAT_READWRITE_H
-#define AVUTIL_INTFLOAT_READWRITE_H
+#ifndef FFMPEG_INTFLOAT_READWRITE_H
+#define FFMPEG_INTFLOAT_READWRITE_H
 
 #include <stdint.h>
-#include "attributes.h"
+#include "common.h"
 
 /* IEEE 80 bits extended float */
 typedef struct AVExtFloat  {
@@ -37,4 +37,4 @@ int64_t av_dbl2int(double d) av_const;
 int32_t av_flt2int(float d) av_const;
 AVExtFloat av_dbl2ext(double d) av_const;
 
-#endif /* AVUTIL_INTFLOAT_READWRITE_H */
+#endif /* FFMPEG_INTFLOAT_READWRITE_H */

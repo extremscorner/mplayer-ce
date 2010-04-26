@@ -27,8 +27,8 @@
 #include <inttypes.h>
 
 #include "config.h"
-#if !defined(GEKKO)
-#if !HAVE_WINSOCK2_H
+
+#ifndef HAVE_WINSOCK2
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -37,19 +37,13 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
-#endif
-
-#ifdef GEKKO
-#include <network.h>
-#endif
 
 #include "mp_msg.h"
 #include "rtsp.h"
 #include "rtsp_rtp.h"
 #include "rtsp_session.h"
-#include "stream/network.h"
-#include "stream/freesdp/common.h"
-#include "stream/freesdp/parser.h"
+#include "../freesdp/common.h"
+#include "../freesdp/parser.h"
 
 #define RTSP_DEFAULT_PORT 31336
 #define MAX_LENGTH 256
@@ -62,7 +56,7 @@
 #define RTSP_NPT_NOW "npt=now-"
 #define RTSP_MEDIA_CONTAINER_MPEG_TS "33"
 #define RTSP_TRANSPORT_REQUEST "Transport: RTP/AVP;%s;%s%i-%i;mode=\"PLAY\""
-
+  
 #define RTSP_TRANSPORT_MULTICAST "multicast"
 #define RTSP_TRANSPORT_UNICAST "unicast"
 
@@ -87,7 +81,7 @@ rtcp_send_rr (rtsp_t *s, struct rtp_rtsp_session_t *st)
 {
   if (st->rtcp_socket == -1)
     return;
-
+  
   /* send RTCP RR every RTCP_SEND_FREQUENCY packets
    * FIXME : NOT CORRECT, HARDCODED, BUT MAKES SOME SERVERS HAPPY
    * not rfc compliant
@@ -113,14 +107,14 @@ static struct rtp_rtsp_session_t *
 rtp_session_new (void)
 {
   struct rtp_rtsp_session_t *st = NULL;
-
+  
   st = malloc (sizeof (struct rtp_rtsp_session_t));
-
+  
   st->rtp_socket = -1;
   st->rtcp_socket = -1;
   st->control_url = NULL;
   st->count = 0;
-
+  
   return st;
 }
 
@@ -158,7 +152,7 @@ parse_port (const char *line, const char *param,
   char *parse1;
   char *parse2;
   char *parse3;
-
+  
   char *line_copy = strdup (line);
 
   parse1 = strstr (line_copy, param);
@@ -166,14 +160,14 @@ parse_port (const char *line, const char *param,
   if (parse1)
   {
     parse2 = strstr (parse1, "-");
-
+    
     if (parse2)
     {
       parse3 = strstr (parse2, ";");
-
+      
       if (parse3)
 	parse3[0] = 0;
-
+      
       parse2[0] = 0;
     }
     else
@@ -187,12 +181,12 @@ parse_port (const char *line, const char *param,
     free (line_copy);
     return 0;
   }
-
+  
   *rtp_port = atoi (parse1 + strlen (param));
   *rtcp_port = atoi (parse2 + 1);
 
   free (line_copy);
-
+  
   return 1;
 }
 
@@ -205,21 +199,21 @@ parse_destination (const char *line)
   char *dest = NULL;
   char *line_copy = strdup (line);
   int len;
-
+  
   parse1 = strstr (line_copy, RTSP_SETUP_DESTINATION);
   if (!parse1)
   {
     free (line_copy);
     return NULL;
   }
-
+  
   parse2 = strstr (parse1, ";");
   if (!parse2)
   {
     free (line_copy);
     return NULL;
   }
-
+ 
   len = strlen (parse1) - strlen (parse2)
     - strlen (RTSP_SETUP_DESTINATION) + 1;
   dest = (char *) malloc (len + 1);
@@ -235,7 +229,7 @@ rtcp_connect (int client_port, int server_port, const char* server_hostname)
   struct sockaddr_in sin;
   struct hostent *hp;
   int s;
-
+  
   if (client_port <= 1023)
     return -1;
 
@@ -250,14 +244,13 @@ rtcp_connect (int client_port, int server_port, const char* server_hostname)
     return -1;
   }
 
-  memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
   sin.sin_addr.s_addr = INADDR_ANY;
   sin.sin_port = htons (client_port);
-
+  
   if (bind (s, (struct sockaddr *) &sin, sizeof (sin)))
   {
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
     if (errno != EINPROGRESS)
 #else
     if (WSAGetLastError() != WSAEINPROGRESS)
@@ -267,14 +260,9 @@ rtcp_connect (int client_port, int server_port, const char* server_hostname)
       return -1;
     }
   }
-
-  sin.sin_family = AF_INET;
   
-#ifdef GEKKO
-  memcpy (&(sin.sin_addr.s_addr), hp->h_addr_list[0], sizeof (hp->h_addr_list[0]));
-#else
+  sin.sin_family = AF_INET;
   memcpy (&(sin.sin_addr.s_addr), hp->h_addr, sizeof (hp->h_addr));
-#endif
   sin.sin_port = htons (server_port);
 
   /* datagram socket */
@@ -304,16 +292,17 @@ rtp_connect (char *hostname, int port)
   if (s == -1)
     return -1;
 
-  memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
   if (!hostname || !strcmp (hostname, "0.0.0.0"))
     sin.sin_addr.s_addr = htonl (INADDR_ANY);
   else
-#if HAVE_INET_PTON
-    inet_pton (AF_INET, hostname, &sin.sin_addr);
-#elif HAVE_INET_ATON
+#ifndef HAVE_WINSOCK2
+#ifdef HAVE_ATON
     inet_aton (hostname, &sin.sin_addr);
-#elif HAVE_WINSOCK2_H
+#else
+    inet_pton (AF_INET, hostname, &sin.sin_addr);
+#endif
+#else
     sin.sin_addr.s_addr = htonl (INADDR_ANY);
 #endif
   sin.sin_port = htons (port);
@@ -338,11 +327,11 @@ rtp_connect (char *hostname, int port)
       return -1;
     }
   }
-
+  
   /* datagram socket */
   if (bind (s, (struct sockaddr *) &sin, sizeof (sin)))
   {
-#if !HAVE_WINSOCK2_H
+#ifndef HAVE_WINSOCK2
     if (errno != EINPROGRESS)
 #else
     if (WSAGetLastError() != WSAEINPROGRESS)
@@ -356,10 +345,10 @@ rtp_connect (char *hostname, int port)
 
   tv.tv_sec = 1; /* 1 second timeout */
   tv.tv_usec = 0;
-
+  
   FD_ZERO (&set);
   FD_SET (s, &set);
-
+  
   err = select (s + 1, &set, NULL, NULL, &tv);
   if (err < 0)
   {
@@ -373,7 +362,7 @@ rtp_connect (char *hostname, int port)
     close (s);
     return -1;
   }
-
+  
   err_len = sizeof (err);
   getsockopt (s, SOL_SOCKET, SO_ERROR, &err, (socklen_t *) &err_len);
   if (err)
@@ -382,7 +371,7 @@ rtp_connect (char *hostname, int port)
     close (s);
     return -1;
   }
-
+  
   return s;
 }
 
@@ -393,17 +382,19 @@ is_multicast_address (char *addr)
 
   if (!addr)
     return -1;
-
+  
   sin.sin_family = AF_INET;
 
-#if HAVE_INET_PTON
-    inet_pton (AF_INET, addr, &sin.sin_addr);
-#elif HAVE_INET_ATON
+#ifndef HAVE_WINSOCK2
+#ifdef HAVE_ATON
     inet_aton (addr, &sin.sin_addr);
-#elif HAVE_WINSOCK2_H
+#else
+    inet_pton (AF_INET, addr, &sin.sin_addr);
+#endif
+#else
     sin.sin_addr.s_addr = htonl (INADDR_ANY);
 #endif
-
+  
   if ((ntohl (sin.sin_addr.s_addr) >> 28) == 0xe)
     return 1;
 
@@ -426,7 +417,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
   int statut;
   int content_length = 0;
   int is_multicast = 0;
-
+  
   fsdp_description_t *dsc = NULL;
   fsdp_error_t result;
 
@@ -461,7 +452,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
     return NULL;
   }
   sdp[content_length] = 0;
-
+  
   /* 3. parse SDP message */
   dsc = fsdp_description_new ();
   result = fsdp_parse (sdp, dsc);
@@ -500,7 +491,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
   }
 
   /* 6. parse the `m=<media>  <port>  <transport> <fmt list>' line */
-
+ 
   /* check for an A/V media */
   if (fsdp_get_media_type (med_dsc) != FSDP_MEDIA_VIDEO &&
       fsdp_get_media_type (med_dsc) != FSDP_MEDIA_AUDIO)
@@ -508,7 +499,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
     fsdp_description_delete (dsc);
     return NULL;
   }
-
+  
   /* only RTP/AVP transport method is supported right now */
   if (fsdp_get_media_transport_protocol (med_dsc) != FSDP_TP_RTP_AVP)
   {
@@ -517,8 +508,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
   }
 
   /* only MPEG-TS is supported at the moment */
-  if (!fsdp_get_media_format (med_dsc, 0) ||
-      !strstr (fsdp_get_media_format (med_dsc, 0),
+  if (!strstr (fsdp_get_media_format (med_dsc, 0),
                RTSP_MEDIA_CONTAINER_MPEG_TS))
   {
     fsdp_description_delete (dsc);
@@ -545,7 +535,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
 
   /* RTCP port generally is RTP port + 1 */
   client_rtcp_port = client_rtp_port + 1;
-
+  
   mp_msg (MSGT_OPEN, MSGL_V,
           "RTP Port from SDP appears to be: %d\n", client_rtp_port);
   mp_msg (MSGT_OPEN, MSGL_V,
@@ -583,7 +573,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
     /* no control for media: try global one instead */
     server_addr = strdup (fsdp_get_global_conn_address (dsc));
   }
-
+    
   if (!server_addr)
   {
     fsdp_description_delete (dsc);
@@ -621,7 +611,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
             is_multicast ? RTSP_MULTICAST_PORT : RTSP_UNICAST_CLIENT_PORT,
             client_rtp_port, client_rtcp_port);
   mp_msg (MSGT_OPEN, MSGL_V, "RTSP Transport: %s\n", temp_buf);
-
+  
   rtsp_unschedule_field (rtsp_session, RTSP_SESSION);
   rtsp_schedule_field (rtsp_session, temp_buf);
 
@@ -632,7 +622,7 @@ rtp_setup_and_play (rtsp_t *rtsp_session)
   else /* relative URL */
     statut = rtsp_request_setup (rtsp_session,
                                  NULL, rtp_session->control_url);
-
+    
   if (statut < 200 || statut > 299)
   {
     free (server_addr);

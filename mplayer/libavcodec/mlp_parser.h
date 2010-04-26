@@ -20,14 +20,14 @@
  */
 
 /**
- * @file
+ * @file mlp_parser.h
  * MLP parser prototypes
  */
 
-#ifndef AVCODEC_MLP_PARSER_H
-#define AVCODEC_MLP_PARSER_H
+#ifndef FFMPEG_MLP_PARSER_H
+#define FFMPEG_MLP_PARSER_H
 
-#include "get_bits.h"
+#include "bitstream.h"
 
 typedef struct MLPHeaderInfo
 {
@@ -55,5 +55,5 @@ typedef struct MLPHeaderInfo
 
 int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb);
 
-#endif /* AVCODEC_MLP_PARSER_H */
+#endif /* FFMPEG_MLP_PARSER_H */
 

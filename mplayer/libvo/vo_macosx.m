@@ -1,35 +1,15 @@
 /*
- * Mac OS X video output driver
- * Copyright (c) 2005 Nicolas Plourde <nicolasplourde@gmail.com>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+	vo_macosx.m
+	by Nicolas Plourde <nicolasplourde@gmail.com>
+	
+	MPlayer Mac OSX video out module.
+ 	Copyright (c) Nicolas Plourde - 2005
+*/
 
 #import "vo_macosx.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <CoreServices/CoreServices.h>
-//special workaround for Apple bug #6267445
-//(OSServices Power API disabled in OSServices.h for 64bit systems)
-#ifndef __POWER__
-#include <CoreServices/../Frameworks/OSServices.framework/Headers/Power.h>
-#endif
+#include <sys/shm.h>
 
 //MPLAYER
 #include "config.h"
@@ -39,9 +19,6 @@
 #include "aspect.h"
 #include "mp_msg.h"
 #include "m_option.h"
-#include "mp_fifo.h"
-#include "libvo/sub.h"
-#include "subopt-helper.h"
 
 #include "input/input.h"
 #include "input/mouse.h"
@@ -56,13 +33,13 @@ NSAutoreleasePool *autoreleasepool;
 OSType pixelFormat;
 
 //shared memory
-int shm_fd;
+int shm_id;
+struct shmid_ds shm_desc;
 BOOL shared_buffer = false;
-#define DEFAULT_BUFFER_NAME "mplayerosx"
-static char *buffer_name;
 
 //Screen
-int screen_id = -1;
+int screen_id;
+BOOL screen_force;
 NSRect screen_frame;
 NSScreen *screen_handle;
 NSArray *screen_array;
@@ -95,13 +72,16 @@ static BOOL isLeopardOrLater;
 
 static vo_info_t info = 
 {
-	"Mac OS X Core Video",
+	"Mac OSX Core Video",
 	"macosx",
 	"Nicolas Plourde <nicolas.plourde@gmail.com>",
 	""
 };
 
 LIBVO_EXTERN(macosx)
+
+extern void mplayer_put_key(int code);
+extern void vo_draw_text(int dxs,int dys,void (*draw_alpha)(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride));
 
 static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
 {
@@ -121,15 +101,15 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 	
 	//init screen
 	screen_array = [NSScreen screens];
-	if(screen_id < (int)[screen_array count])
+	if(screen_id < [screen_array count])
 	{
-		screen_handle = [screen_array objectAtIndex:(screen_id < 0 ? 0 : screen_id)];
+		screen_handle = [screen_array objectAtIndex:screen_id];
 	}
 	else
 	{
-		mp_msg(MSGT_VO, MSGL_INFO, "[vo_macosx] Device ID %d does not exist, falling back to main device\n", screen_id);
+		mp_msg(MSGT_VO, MSGL_FATAL, "Get device error: Device ID %d do not exist, falling back to main device.\n", screen_id);
 		screen_handle = [screen_array objectAtIndex:0];
-		screen_id = -1;
+		screen_id = 0;
 	}
 	screen_frame = [screen_handle frame];
 	vo_screenwidth = screen_frame.size.width;
@@ -178,42 +158,24 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 	}
 	else
 	{
-		mp_msg(MSGT_VO, MSGL_INFO, "[vo_macosx] writing output to a shared buffer "
-				"named \"%s\"\n",buffer_name);
-		
 		movie_aspect = (float)d_width/(float)d_height;
-		
-		// create shared memory
-		shm_fd = shm_open(buffer_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-		if (shm_fd == -1)
+				
+		shm_id = shmget(9849, image_width*image_height*image_bytes, IPC_CREAT | 0666);
+		if (shm_id == -1)
 		{
-			mp_msg(MSGT_VO, MSGL_FATAL, 
-				   "[vo_macosx] failed to open shared memory. Error: %s\n", strerror(errno));
+			perror("vo_mplayer shmget: ");
 			return 1;
 		}
 		
-		
-		if (ftruncate(shm_fd, image_width*image_height*image_bytes) == -1)
-		{
-			mp_msg(MSGT_VO, MSGL_FATAL, 
-				   "[vo_macosx] failed to size shared memory, possibly already in use. Error: %s\n", strerror(errno));
-			shm_unlink(buffer_name);
+		image_data = shmat(shm_id, NULL, 0);
+		if (!image_data)
+		{	
+			perror("vo_mplayer shmat: ");
 			return 1;
 		}
 		
-		image_data = mmap(NULL, image_width*image_height*image_bytes,
-					PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-		
-		if (image_data == MAP_FAILED)
-		{
-			mp_msg(MSGT_VO, MSGL_FATAL, 
-				   "[vo_macosx] failed to map shared memory. Error: %s\n", strerror(errno));
-			shm_unlink(buffer_name);
-			return 1;
-		}		
-		
-		//connect to mplayerosx
-		mplayerosxProxy=[NSConnection rootProxyForConnectionWithRegisteredName:[NSString stringWithCString:buffer_name] host:nil];
+		//connnect to mplayerosx
+		mplayerosxProxy=[NSConnection rootProxyForConnectionWithRegisteredName:@"mplayerosx" host:nil];
 		if ([mplayerosxProxy conformsToProtocol:@protocol(MPlayerOSXVOProto)]) {
 			[mplayerosxProxy setProtocolForProxy:@protocol(MPlayerOSXVOProto)];
 			mplayerosxProto = (id <MPlayerOSXVOProto>)mplayerosxProxy;
@@ -301,13 +263,12 @@ static void uninit(void)
 		mplayerosxProto = nil;
 		[mplayerosxProxy release];
 		mplayerosxProxy = nil;
-		
-		if (munmap(image_data, image_width*image_height*image_bytes) == -1)
-			mp_msg(MSGT_VO, MSGL_FATAL, "[vo_macosx] uninit: munmap failed. Error: %s\n", strerror(errno));
-		
-		if (shm_unlink(buffer_name) == -1)
-			mp_msg(MSGT_VO, MSGL_FATAL, "[vo_macosx] uninit: shm_unlink failed. Error: %s\n", strerror(errno));
-		
+
+		if (shmdt(image_data) == -1)
+			mp_msg(MSGT_VO, MSGL_FATAL, "uninit: shmdt failed\n");
+	
+		if (shmctl(shm_id, IPC_RMID, &shm_desc) == -1)
+			mp_msg(MSGT_VO, MSGL_FATAL, "uninit: shmctl failed\n");
 	}
 
     SetSystemUIMode( kUIModeNormal, 0);
@@ -331,57 +292,44 @@ static void uninit(void)
         image_datas[1] = NULL;
         image_data = NULL;
     }
-    
-    if (buffer_name) free(buffer_name);
-    buffer_name = NULL;
 }
-
-static opt_t subopts[] = {
-{"device_id",     OPT_ARG_INT,  &screen_id,     NULL},
-{"shared_buffer", OPT_ARG_BOOL, &shared_buffer, NULL},
-{"buffer_name",   OPT_ARG_MSTRZ,&buffer_name,   NULL},
-{NULL}
-};
 
 static int preinit(const char *arg)
 {
-	
-	// set defaults
-	screen_id = -1;
-	shared_buffer = false;
-	buffer_name = NULL;
-	
-	if (subopt_parse(arg, subopts) != 0) {
-		mp_msg(MSGT_VO, MSGL_FATAL,
-				"\n-vo macosx command line help:\n"
-				"Example: mplayer -vo macosx:device_id=1:shared_buffer:buffer_name=mybuff\n"
-				"\nOptions:\n"
-				"  device_id=<0-...>\n"
-				"    Set screen device ID for fullscreen.\n"
-				"  shared_buffer\n"
-				"    Write output to a shared memory buffer instead of displaying it.\n"
-				"  buffer_name=<name>\n"
-				"    Name of the shared buffer created with shm_open() as well as\n"
-				"    the name of the NSConnection MPlayer will try to open.\n"
-				"    Setting buffer_name implicitly enables shared_buffer.\n"
-				"\n" );
-		return -1;
-	}
+	int parse_err = 0;
+
+    if(arg) 
+    {
+        char *parse_pos = (char *)&arg[0];
+        while (parse_pos[0] && !parse_err) 
+		{
+			if (strncmp (parse_pos, "device_id=", 10) == 0)
+			{
+				parse_pos = &parse_pos[10];
+				screen_id = strtol(parse_pos, &parse_pos, 0);
+				screen_force = YES;
+            }
+			if (strncmp (parse_pos, "shared_buffer", 13) == 0)
+			{
+				parse_pos = &parse_pos[13];
+				shared_buffer = YES;
+            }
+            if (parse_pos[0] == ':') parse_pos = &parse_pos[1];
+            else if (parse_pos[0]) parse_err = 1;
+        }
+    }
 
 	NSApplicationLoad();
 	autoreleasepool = [[NSAutoreleasePool alloc] init];
 	NSApp = [NSApplication sharedApplication];
 	isLeopardOrLater = floor(NSAppKitVersionNumber) > 824;
 	
-	if (!buffer_name)
-		buffer_name = strdup(DEFAULT_BUFFER_NAME);
-	else
-		shared_buffer = true;
-	
 	if(!shared_buffer)
 	{
 		#if !defined (CONFIG_MACOSX_FINDER) || !defined (CONFIG_SDL)
 		//this chunk of code is heavily based off SDL_macosx.m from SDL 
+		//it uses an Apple private function to request foreground operation
+		void CPSEnableForegroundOperation(ProcessSerialNumber* psn);
 		ProcessSerialNumber myProc, frProc;
 		Boolean sameProc;
 
@@ -391,7 +339,7 @@ static int preinit(const char *arg)
 			{
 				if (SameProcess(&frProc, &myProc, &sameProc) == noErr && !sameProc)
 				{
-					TransformProcessType(&myProc, kProcessTransformToForegroundApplication);
+					CPSEnableForegroundOperation(&myProc);
 				}
 				SetFrontProcess(&myProc);
 			}
@@ -477,20 +425,20 @@ static int control(uint32_t request, void *data, ...)
 	
 	error = CVPixelBufferCreateWithBytes(NULL, image_width, image_height, pixelFormat, image_datas[0], image_width*image_bytes, NULL, NULL, NULL, &frameBuffers[0]);
 	if(error != kCVReturnSuccess)
-		mp_msg(MSGT_VO, MSGL_ERR,"[vo_macosx] Failed to create Pixel Buffer(%d)\n", error);
+		mp_msg(MSGT_VO, MSGL_ERR,"Failed to create Pixel Buffer(%d)\n", error);
 	if (vo_doublebuffering) {
 		error = CVPixelBufferCreateWithBytes(NULL, image_width, image_height, pixelFormat, image_datas[1], image_width*image_bytes, NULL, NULL, NULL, &frameBuffers[1]);
 		if(error != kCVReturnSuccess)
-			mp_msg(MSGT_VO, MSGL_ERR,"[vo_macosx] Failed to create Pixel Double Buffer(%d)\n", error);
+			mp_msg(MSGT_VO, MSGL_ERR,"Failed to create Pixel Double Buffer(%d)\n", error);
 	}
 	
 	error = CVOpenGLTextureCacheCreate(NULL, 0, [glContext CGLContextObj], [[self pixelFormat] CGLPixelFormatObj], 0, &textureCache);
 	if(error != kCVReturnSuccess)
-		mp_msg(MSGT_VO, MSGL_ERR,"[vo_macosx] Failed to create OpenGL texture Cache(%d)\n", error);
+		mp_msg(MSGT_VO, MSGL_ERR,"Failed to create OpenGL texture Cache(%d)\n", error);
 	
 	error = CVOpenGLTextureCacheCreateTextureFromImage(NULL, textureCache, frameBuffers[image_page], 0, &texture);
 	if(error != kCVReturnSuccess)
-		mp_msg(MSGT_VO, MSGL_ERR,"[vo_macosx] Failed to create OpenGL texture(%d)\n", error);
+		mp_msg(MSGT_VO, MSGL_ERR,"Failed to create OpenGL texture(%d)\n", error);
 	
 	//show window
 	[window center];
@@ -766,6 +714,7 @@ static int control(uint32_t request, void *data, ...)
 - (void) render
 {
 	int curTime;
+	static int lastTime = 0;
 
 	glClear(GL_COLOR_BUFFER_BIT);	
 	
@@ -806,25 +755,28 @@ static int control(uint32_t request, void *data, ...)
 	
 	glFlush();
 	
-	curTime  = TickCount()/60;
-
-	//automatically hide mouse cursor (and future on-screen control?)
+	//auto hide mouse cursor and futur on-screen control?
 	if(isFullscreen && !mouseHide && !isRootwin)
 	{
-		if( ((curTime - lastMouseHide) >= 5) || (lastMouseHide == 0) )
+		int curTime = TickCount()/60;
+		static int lastTime = 0;
+		
+		if( ((curTime - lastTime) >= 5) || (lastTime == 0) )
 		{
 			CGDisplayHideCursor(kCGDirectMainDisplay);
-			mouseHide = TRUE;
-			lastMouseHide = curTime;
+			mouseHide = YES;
+			lastTime = curTime;
 		}
 	}
 	
 	//update activity every 30 seconds to prevent
 	//screensaver from starting up.
-	if( ((curTime - lastScreensaverUpdate) >= 30) || (lastScreensaverUpdate == 0) )
+	curTime  = TickCount()/60;
+		
+	if( ((curTime - lastTime) >= 30) || (lastTime == 0) )
 	{
 		UpdateSystemActivity(UsrActivity);
-		lastScreensaverUpdate = curTime;
+		lastTime = curTime;
 	}
 }
 
@@ -835,10 +787,9 @@ static int control(uint32_t request, void *data, ...)
 {
 	CVReturn error = kCVReturnSuccess;
 	
-	CVOpenGLTextureRelease(texture);
 	error = CVOpenGLTextureCacheCreateTextureFromImage(NULL, textureCache, frameBuffers[image_page], 0, &texture);
 	if(error != kCVReturnSuccess)
-		mp_msg(MSGT_VO, MSGL_ERR,"[vo_macosx] Failed to create OpenGL texture(%d)\n", error);
+		mp_msg(MSGT_VO, MSGL_ERR,"Failed to create OpenGL texture(%d)\n", error);
 
     CVOpenGLTextureGetCleanTexCoords(texture, lowerLeft, lowerRight, upperRight, upperLeft);
 }
@@ -872,7 +823,7 @@ static int control(uint32_t request, void *data, ...)
 		}
 		
 		old_frame = [window frame];	//save main window size & position
-		if(screen_id >= 0)
+		if(screen_force)
 			screen_frame = [screen_handle frame];
 		else {
 			screen_frame = [[window screen] frame];
@@ -960,8 +911,8 @@ static int control(uint32_t request, void *data, ...)
 		return;
 	[NSApp sendEvent:event];
 	// Without SDL's bootstrap code (include SDL.h in mplayer.c),
-	// on Leopard, we have trouble to get the play window automatically focused
-	// when the app is actived. The Following code fix this problem.
+	// on Leopard, we got trouble to get the play window auto focused
+	// when app is actived. Following code fix this problem.
 #ifndef CONFIG_SDL
 	if (isLeopardOrLater && [event type] == NSAppKitDefined
 			&& [event subtype] == NSApplicationActivatedEventType) {

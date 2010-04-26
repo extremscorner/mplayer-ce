@@ -1,34 +1,15 @@
 /*
- * NAS audio output driver
+ * NAS output plugin for mplayer
  *
- * copyright (c) 2001 Tobias Diedrich <ranma@gmx.at>
+ * based on the libaudiooss parts rewritten by me, which were
+ * originally based on the NAS output plugin for xmms.
  *
- * Based on the libaudiooss parts rewritten by me, which were
- * originally based on the NAS output plugin for XMMS.
- *
- * XMMS plugin by Willem Monsuwe
+ * xmms plugin by Willem Monsuwe
  * adapted for libaudiooss by Jon Trulson
  * further modified by Erik Inge Bolsø
- * largely rewritten and used for this ao driver by Tobias Diedrich
+ * largely rewritten and used for this
+ * plugin by Tobias Diedrich
  *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
-/*
  * Theory of operation:
  *
  * The NAS consists of two parts, a server daemon and a client.
@@ -60,10 +41,9 @@
 #include "audio_out_internal.h"
 #include "libaf/af_format.h"
 
-/* NAS_FRAG_SIZE must be a power-of-two value */
 #define NAS_FRAG_SIZE 4096
 
-static const char * const nas_event_types[] = {
+static char *nas_event_types[] = {
 	"Undefined",
 	"Undefined",
 	"ElementNotify",
@@ -73,21 +53,21 @@ static const char * const nas_event_types[] = {
 	"DeviceNotify"
 };
 
-static const char * const nas_elementnotify_kinds[] = {
+static char *nas_elementnotify_kinds[] = {
 	"LowWater",
 	"HighWater",
 	"State",
 	"Unknown"
 };
 
-static const char * const nas_states[] = {
+static char *nas_states[] = {
 	"Stop",
 	"Start",
 	"Pause",
 	"Any"
 };
 
-static const char * const nas_reasons[] = {
+static char *nas_reasons[] = {
 	"User",
 	"Underrun",
 	"Overrun",
@@ -97,29 +77,29 @@ static const char * const nas_reasons[] = {
 	"Any"
 };
 
-static const char* nas_reason(unsigned int reason)
+static char* nas_reason(unsigned int reason)
 {
 	if (reason > 6) reason = 6;
 	return nas_reasons[reason];
 }
 
-static const char* nas_elementnotify_kind(unsigned int kind)
+static char* nas_elementnotify_kind(unsigned int kind)
 {
 	if (kind > 2) kind = 3;
 	return nas_elementnotify_kinds[kind];
 }
 
-static const char* nas_event_type(unsigned int type) {
+static char* nas_event_type(unsigned int type) {
 	if (type > 6) type = 0;
 	return nas_event_types[type];
 }
 
-static const char* nas_state(unsigned int state) {
+static char* nas_state(unsigned int state) {
 	if (state>3) state = 3;
 	return nas_states[state];
 }
 
-static const ao_info_t info =
+static ao_info_t info = 
 {
 	"NAS audio output",
 	"nas",
@@ -136,8 +116,8 @@ struct ao_nas_data {
 	unsigned int state;
 	int expect_underrun;
 
-	char *client_buffer;
-	char *server_buffer;
+	void *client_buffer;
+	void *server_buffer;
 	unsigned int client_buffer_size;
 	unsigned int client_buffer_used;
 	unsigned int server_buffer_size;
@@ -159,7 +139,7 @@ static void nas_print_error(AuServer *aud, const char *prefix, AuStatus as)
 	mp_msg(MSGT_AO, MSGL_ERR, "ao_nas: %s: returned status %d (%s)\n", prefix, as, s);
 }
 
-static int nas_readBuffer(struct ao_nas_data *nas_data, unsigned int num)
+static int nas_readBuffer(struct ao_nas_data *nas_data, int num)
 {
 	AuStatus as;
 
@@ -201,13 +181,13 @@ static int nas_readBuffer(struct ao_nas_data *nas_data, unsigned int num)
 	 * Now write the new buffer to the network.
 	 */
 	AuWriteElement(nas_data->aud, nas_data->flow, 0, num, nas_data->server_buffer, AuFalse, &as);
-	if (as != AuSuccess)
+	if (as != AuSuccess) 
 		nas_print_error(nas_data->aud, "nas_readBuffer(): AuWriteElement", as);
 
 	return num;
 }
 
-static int nas_writeBuffer(struct ao_nas_data *nas_data, void *data, unsigned int len)
+static int nas_writeBuffer(struct ao_nas_data *nas_data, void *data, int len)
 {
 	pthread_mutex_lock(&nas_data->buffer_mutex);
 	mp_msg(MSGT_AO, MSGL_DBG2, "ao_nas: nas_writeBuffer(): len=%d client=%d/%d server=%d/%d\n",
@@ -229,7 +209,7 @@ static int nas_empty_event_queue(struct ao_nas_data *nas_data)
 {
 	AuEvent ev;
 	int result = 0;
-
+	
 	while (AuScanForTypedEvent(nas_data->aud, AuEventsQueuedAfterFlush,
 				   AuTrue, AuEventTypeElementNotify, &ev)) {
 		AuDispatchEvent(nas_data->aud, &ev);
@@ -280,7 +260,7 @@ static AuBool nas_event_handler(AuServer *aud, AuEvent *ev, AuEventHandlerRec *h
 		nas_state(event->prev_state),
 		nas_state(event->cur_state),
 		nas_reason(event->reason),
-		(int)event->num_bytes,
+		event->num_bytes,
 		nas_data->expect_underrun);
 
 	if (event->num_bytes > INT_MAX) {
@@ -321,7 +301,7 @@ static AuBool nas_event_handler(AuServer *aud, AuEvent *ev, AuEventHandlerRec *h
 		}
 		mp_msg(MSGT_AO, MSGL_DBG2,
 			"ao_nas: Can't refill buffer, stopping flow.\n");
-		AuStopFlow(aud, nas_data->flow, NULL);
+		AuStopFlow(nas_data->aud, nas_data->flow, NULL);
 		break;
 	default:
 		break;
@@ -381,7 +361,7 @@ static int control(int cmd, void *arg)
 		vol->right = (float)nas_data->gain/AU_FIXED_POINT_SCALE*50;
 		vol->left = vol->right;
 
-		mp_msg(MSGT_AO, MSGL_DBG2, "ao_nas: AOCONTROL_GET_VOLUME: %.2f\n", vol->right);
+		mp_msg(MSGT_AO, MSGL_DBG2, "ao_nas: AOCONTROL_GET_VOLUME: %08x\n", nas_data->gain);
 		retval = CONTROL_OK;
 		break;
 
@@ -392,7 +372,7 @@ static int control(int cmd, void *arg)
 		 * so i take the mean of both values.
 		 */
 		nas_data->gain = AU_FIXED_POINT_SCALE*((vol->left+vol->right)/2)/50;
-		mp_msg(MSGT_AO, MSGL_DBG2, "ao_nas: AOCONTROL_SET_VOLUME: %.2f\n", (vol->left+vol->right)/2);
+		mp_msg(MSGT_AO, MSGL_DBG2, "ao_nas: AOCONTROL_SET_VOLUME: %08x\n", nas_data->gain);
 
 		aep.parameters[AuParmsMultiplyConstantConstant]=nas_data->gain;
 		aep.flow = nas_data->flow;
@@ -421,8 +401,6 @@ static int init(int rate,int channels,int format,int flags)
 	int bytes_per_sample = channels * AuSizeofFormat(auformat);
 	int buffer_size;
 	char *server;
-
-	(void)flags; /* shut up 'unused parameter' warning */
 
 	nas_data=malloc(sizeof(struct ao_nas_data));
 	memset(nas_data, 0, sizeof(struct ao_nas_data));
@@ -462,7 +440,7 @@ static int init(int rate,int channels,int format,int flags)
 	mp_msg(MSGT_AO, MSGL_V, "ao_nas: init(): Using audioserver %s\n", server);
 
 	nas_data->aud = AuOpenServer(server, 0, NULL, 0, NULL, NULL);
-	if (!nas_data->aud) {
+	if (!nas_data->aud) { 
 		mp_msg(MSGT_AO, MSGL_ERR, "ao_nas: init(): Can't open nas audio server -> nosound\n");
 		return 0;
 	}
@@ -571,7 +549,7 @@ static void audio_resume(void)
 static int get_space(void)
 {
 	int result;
-
+	
 	mp_msg(MSGT_AO, MSGL_DBG3, "ao_nas: get_space()\n");
 
 	pthread_mutex_lock(&nas_data->buffer_mutex);
@@ -586,7 +564,7 @@ static int get_space(void)
 // return: number of bytes played
 static int play(void* data,int len,int flags)
 {
-	int written, maxbursts = 0, playbursts = 0;
+	int maxbursts, playbursts, writelen;
 	AuStatus as;
 
 	mp_msg(MSGT_AO, MSGL_DBG3,
@@ -596,27 +574,18 @@ static int play(void* data,int len,int flags)
 	if (len == 0)
 		return 0;
 
-	if (!(flags & AOPLAY_FINAL_CHUNK)) {
-		pthread_mutex_lock(&nas_data->buffer_mutex);
-		maxbursts = (nas_data->client_buffer_size -
-			     nas_data->client_buffer_used) / ao_data.outburst;
-		playbursts = len / ao_data.outburst;
-		len = (playbursts > maxbursts ? maxbursts : playbursts) *
-			   ao_data.outburst;
-		pthread_mutex_unlock(&nas_data->buffer_mutex);
-	}
+	pthread_mutex_lock(&nas_data->buffer_mutex);
+	maxbursts = (nas_data->client_buffer_size -
+		     nas_data->client_buffer_used) / ao_data.outburst;
+	playbursts = len / ao_data.outburst;
+	writelen = (playbursts > maxbursts ? maxbursts : playbursts) *
+		   ao_data.outburst;
+	pthread_mutex_unlock(&nas_data->buffer_mutex);
 
-	/*
-	 * If AOPLAY_FINAL_CHUNK is set, we did not actually check len fits
-	 * into the available buffer space, but mplayer.c shouldn't give us
-	 * more to play than we report to it by get_space(), so this should be
-	 * fine.
-	 */
-	written = nas_writeBuffer(nas_data, data, len);
+	writelen = nas_writeBuffer(nas_data, data, writelen);
 
 	if (nas_data->state != AuStateStart &&
-	    (maxbursts == playbursts ||
-	     flags & AOPLAY_FINAL_CHUNK)) {
+	    maxbursts == playbursts) {
 		mp_msg(MSGT_AO, MSGL_DBG2, "ao_nas: play(): Starting flow.\n");
 		nas_data->expect_underrun = 1;
 		AuStartFlow(nas_data->aud, nas_data->flow, &as);
@@ -624,14 +593,14 @@ static int play(void* data,int len,int flags)
 			nas_print_error(nas_data->aud, "play(): AuStartFlow", as);
 	}
 
-	return written;
+	return writelen;
 }
 
 // return: delay in seconds between first and last sample in buffer
 static float get_delay(void)
 {
 	float result;
-
+	
 	mp_msg(MSGT_AO, MSGL_DBG3, "ao_nas: get_delay()\n");
 
 	pthread_mutex_lock(&nas_data->buffer_mutex);

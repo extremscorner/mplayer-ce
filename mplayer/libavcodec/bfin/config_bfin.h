@@ -1,4 +1,6 @@
 /*
+ * config_bfin.h
+ *
  * Copyright (C) 2007 Marc Hoffman <marc.hoffman@analog.com>
  *
  * This file is part of FFmpeg.
@@ -28,16 +30,14 @@ DEFUN(put_pixels_clamped,mL1,
       rts;
 */
 
-#ifndef AVCODEC_BFIN_CONFIG_BFIN_H
-#define AVCODEC_BFIN_CONFIG_BFIN_H
-
-#include "config.h"
+#ifndef FFMPEG_CONFIG_BFIN_H
+#define FFMPEG_CONFIG_BFIN_H
 
 #ifndef DEFUN
 
 #define mL3 .text
 #ifndef mL1
-#if defined(__FDPIC__) && CONFIG_SRAM
+#ifdef __FDPIC__
 #define mL1 .l1.text
 #else
 #define mL1 mL3
@@ -62,4 +62,4 @@ DEFUN(put_pixels_clamped,mL1,
 
 #endif
 
-#endif /* AVCODEC_BFIN_CONFIG_BFIN_H */
+#endif /* FFMPEG_CONFIG_BFIN_H */

@@ -1,38 +1,18 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_AF_H
 #define MPLAYER_AF_H
 
 #include <stdio.h>
 
 #include "config.h"
-
-#include "af_format.h"
+#include "af_mp.h"
 #include "control.h"
-#include "cpudetect.h"
-#include "mp_msg.h"
+#include "af_format.h"
 
 struct af_instance_s;
 
 // Number of channels
 #ifndef AF_NCH
-#define AF_NCH 8
+#define AF_NCH 6
 #endif
 
 // Audio data chunk
@@ -52,8 +32,8 @@ typedef struct af_data_s
 #define AF_FLAGS_NOT_REENTRANT 	0x00000001
 
 /* Audio filter information not specific for current instance, but for
-   a specific filter */
-typedef struct af_info_s
+   a specific filter */ 
+typedef struct af_info_s 
 {
   const char *info;
   const char *name;
@@ -73,7 +53,7 @@ typedef struct af_instance_s
   void* setup;	  // setup data for this specific instance and filter
   af_data_t* data; // configuration for outgoing data stream
   struct af_instance_s* next;
-  struct af_instance_s* prev;
+  struct af_instance_s* prev;  
   double delay; /* Delay caused by the filter, in units of bytes read without
 		 * corresponding output */
   double mul; /* length multiplier: how much does this instance change
@@ -93,9 +73,13 @@ extern int* af_cpu_speed;
 #define AF_INIT_FLOAT		0x00000004
 #define AF_INIT_FORMAT_MASK	0x00000004
 
-// Default init type
+// Default init type 
 #ifndef AF_INIT_TYPE
+#if defined(HAVE_SSE) || defined(HAVE_3DNOW)
+#define AF_INIT_TYPE (af_cpu_speed?*af_cpu_speed:AF_INIT_FAST)
+#else
 #define AF_INIT_TYPE (af_cpu_speed?*af_cpu_speed:AF_INIT_SLOW)
+#endif
 #endif
 
 // Configuration switches
@@ -183,7 +167,7 @@ void af_remove(af_stream_t* s, af_instance_t* af);
  * \brief find filter in chain by name
  * \param name name of the filter to find
  * \return first filter with right name or NULL if not found
- *
+ * 
  * This function is used for finding already initialized filters
  */
 af_instance_t* af_get(af_stream_t* s, char* name);
@@ -277,7 +261,7 @@ int af_from_ms(int n, float* in, int* out, int rate, float mi, float ma);
  * \param rate sample rate
  * \return AF_ERROR on error, AF_OK otherwise
  */
-int af_to_ms(int n, int* in, float* out, int rate);
+int af_to_ms(int n, int* in, float* out, int rate); 
 
 /**
  * \brief test if output format matches
@@ -306,7 +290,7 @@ void af_help(void);
  * \brief fill the missing parameters in the af_data_t structure
  * \param data structure to fill
  * \ingroup af_filter
- *
+ * 
  * Currently only sets bps based on format
  */
 void af_fix_parameters(af_data_t *data);
@@ -333,11 +317,41 @@ void af_fix_parameters(af_data_t *data);
 #endif
 
 #ifndef sign
-#define sign(a) (((a)>0)?(1):(-1))
+#define sign(a) (((a)>0)?(1):(-1)) 
 #endif
 
 #ifndef lrnd
 #define lrnd(a,b) ((b)((a)>=0.0?(a)+0.5:(a)-0.5))
 #endif
+
+/* Error messages */
+
+typedef struct af_msg_cfg_s
+{
+  int level;   	/* Message level for debug and error messages max = 2
+		   min = -2 default = 0 */
+  FILE* err;	// Stream to print error messages to
+  FILE* msg;	// Stream to print information messages to
+}af_msg_cfg_t;
+
+extern af_msg_cfg_t af_msg_cfg; // Message 
+
+//! \addtogroup af_filter
+//! \{
+#define AF_MSG_FATAL	-3 ///< Fatal error exit immediately
+#define AF_MSG_ERROR    -2 ///< Error return gracefully
+#define AF_MSG_WARN     -1 ///< Print warning but do not exit (can be suppressed)
+#define AF_MSG_INFO	 0 ///< Important information
+#define AF_MSG_VERBOSE	 1 ///< Print this if verbose is enabled 
+#define AF_MSG_DEBUG0	 2 ///< Print if very verbose
+#define AF_MSG_DEBUG1	 3 ///< Print if very very verbose 
+
+//! Macro for printing error messages
+#ifndef af_msg
+#define af_msg(lev, args... ) \
+(((lev)<AF_MSG_WARN)?(fprintf(af_msg_cfg.err?af_msg_cfg.err:stderr, ## args )): \
+(((lev)<=af_msg_cfg.level)?(fprintf(af_msg_cfg.msg?af_msg_cfg.msg:stdout, ## args )):0))
+#endif
+//! \}
 
 #endif /* MPLAYER_AF_H */

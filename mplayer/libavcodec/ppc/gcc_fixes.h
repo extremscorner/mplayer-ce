@@ -20,19 +20,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_PPC_GCC_FIXES_H
-#define AVCODEC_PPC_GCC_FIXES_H
+#ifndef FFMPEG_GCC_FIXES_H
+#define FFMPEG_GCC_FIXES_H
 
 #include "config.h"
 
-#if HAVE_ALTIVEC_H
+#ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
 
 #if (__GNUC__ < 4)
 # define REG_v(a)
 #else
-# define REG_v(a) __asm__ ( #a )
+# define REG_v(a) asm ( #a )
 #endif
 
 #if (__GNUC__ == 3 && __GNUC_MINOR__ < 3)
@@ -99,4 +99,4 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
 
 #endif /* (__GNUC__ == 3 && __GNUC_MINOR__ < 3) */
 
-#endif /* AVCODEC_PPC_GCC_FIXES_H */
+#endif /* FFMPEG_GCC_FIXES_H */
