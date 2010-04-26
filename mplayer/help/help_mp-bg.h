@@ -458,14 +458,14 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nTвърде много аудио пакети в буфера: (%d в %d байта).\n"
 #define MSGTR_TooManyVideoInBuffer "\nТвърде много видео пакети в буфера: (%d в %d байта).\n"
 #define MSGTR_MaybeNI "Може би възпроизвеждате non-interleaved поток/файл или кодекът не се е справил?\n" \
-                      "За AVI файлове, опитайте да наложите non-interleaved режим със опцията -ni.\n"
+		      "За AVI файлове, опитайте да наложите non-interleaved режим със опцията -ni.\n"
 #define MSGTR_SwitchToNi "\nЗле структуриран AVI файл - превключване към -ni режим...\n"
 #define MSGTR_Detected_XXX_FileFormat "%s формат.\n"
 #define MSGTR_DetectedAudiofile "Аудио файл.\n"
 #define MSGTR_NotSystemStream "Не е MPEG System Stream... (може би Transport Stream?)\n"
 #define MSGTR_InvalidMPEGES "Невалиден MPEG-ES поток??? Свържете се с автора, може да е бъг :(\n"
 #define MSGTR_FormatNotRecognized "============ За съжаление, този формат не се разпознава/поддържа =============\n"\
-                                  "=== Ако този файл е AVI, ASF или MPEG поток, моля уведомете автора! ===\n"
+				  "=== Ако този файл е AVI, ASF или MPEG поток, моля уведомете автора! ===\n"
 #define MSGTR_MissingVideoStream "Не е открит видео поток.\n"
 #define MSGTR_MissingAudioStream "Не е открит аудио поток -> няма звук.\n"
 #define MSGTR_MissingVideoStreamBug "Липсва видео поток!? Свържете се с автора, може да е бъг :(\n"
@@ -546,6 +546,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: Кодекът не е указал sh->disp_w и sh->disp_h, опит за решение.\n"
+#define MSGTR_VoConfigRequest "VDec: заявка на vo config - %d x %d (preferred csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Не е открит подходящ цветови формат - повторен опит с -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Пропорциите на филма са %.2f:1 - мащабиране до правилните пропорции .\n"
 #define MSGTR_MovieAspectUndefined "Не са дефинирани пропорции - без предварително мащабиране.\n"

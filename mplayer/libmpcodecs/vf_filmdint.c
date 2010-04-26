@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,15 +9,10 @@
 
 #include "img_format.h"
 #include "mp_image.h"
-#include "vd.h"
 #include "vf.h"
 #include "cmmx.h"
 
 #include "libvo/fastmemcpy.h"
-
-#ifdef GEKKO
-#include <gctypes.h>
-#endif
 
 #define NUM_STORED 4
 
@@ -94,17 +71,16 @@ struct vf_priv_s {
     struct frame_stats stats[2];
     struct metrics thres;
     char chflag;
-#ifdef GEKKO
-    u64 diff_time, merge_time, decode_time, vo_time, filter_time;
-#else
     double diff_time, merge_time, decode_time, vo_time, filter_time;
-#endif    
 };
 
 #define PPZ { 2000, 2000, 0, 2000 }
 #define PPR { 2000, 2000, 0, 2000 }
 static const struct frame_stats ppzs = {PPZ,PPZ,PPZ,PPZ,PPZ,PPZ,PPZ,0,0,9999};
 static const struct frame_stats pprs = {PPR,PPR,PPR,PPR,PPR,PPR,PPR,0,0,9999};
+
+extern int opt_screen_size_x;
+extern int opt_screen_size_y;
 
 #ifndef MIN
 #define        MIN(a,b) (((a)<(b))?(a):(b))
@@ -933,22 +909,14 @@ static void init(struct vf_priv_s *p, mp_image_t *mpi)
     p->num_fields = 3;
 }
 
-#ifdef GEKKO
-#include <ogc/lwp_watchdog.h>
-static inline u64 get_time(void)
-{
-	return tick_microsecs(gettime());
-}
-#else
 static inline double get_time(void)
 {
     struct timeval tv;
     gettimeofday(&tv, 0);
     return tv.tv_sec + tv.tv_usec * 1e-6;
 }
-#endif
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi)
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi)
 {
     struct vf_priv_s *p = vf->priv;
     static unsigned char **planes, planes_idx;
@@ -1152,7 +1120,7 @@ find_breaks(struct vf_priv_s *p, struct frame_stats *s)
 
 #define ITOC(X) (!(X) ? ' ' : (X) + ((X)>9 ? 'a'-10 : '0'))
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
     mp_image_t *dmpi;
     struct vf_priv_s *p = vf->priv;
@@ -1164,11 +1132,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     int breaks, prev;
     int show_fields = 0;
     int dropped_fields = 0;
-#ifdef GEKKO    
-    u64 start_time, diff_time;
-#else
     double start_time, diff_time;
-#endif    
     char prev_chflag = p->chflag;
     int keep_rate;
 
@@ -1354,7 +1318,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
     return show_fields ? vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE) : 0;
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
     /* FIXME - support more formats */
     switch (fmt) {
@@ -1369,7 +1333,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
     return 0;
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
 		  int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt)
 {
@@ -1414,17 +1378,17 @@ static int config(struct vf_instance *vf,
     return vf_next_config(vf, p->w, p->h, d_width, d_height, flags, outfmt);
 }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
 {
     struct vf_priv_s *p = vf->priv;
     mp_msg(MSGT_VFILTER, MSGL_INFO, "diff_time: %.3f, merge_time: %.3f, "
-	   "export: %lu, merge: %lu, copy: %lu\n", (double)p->diff_time, (double)p->merge_time,
+	   "export: %lu, merge: %lu, copy: %lu\n", p->diff_time, p->merge_time,
 	   p->export_count, p->merge_count, p->num_copies);
     free(p->memory_allocated);
     free(p);
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
     struct vf_priv_s *p;
     vf->get_image = get_image;
@@ -1476,6 +1440,6 @@ const vf_info_t vf_info_filmdint = {
     "filmdint",
     "Zoltan Hidvegi",
     "",
-    vf_open,
+    open,
     NULL
 };

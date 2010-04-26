@@ -102,6 +102,10 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     gain_block[9] = 10 * log10(sum) - 32;
 
     ff_celp_lp_synthesis_filterf(block, ractx->sp_lpc, buffer, 5, 36);
+
+    /* output */
+    for (i=0; i < 5; i++)
+        block[i] = av_clipf(block[i], -4095./4096., 4095./4096.);
 }
 
 /**
@@ -202,7 +206,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
 AVCodec ra_288_decoder =
 {
     "real_288",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_RA_288,
     sizeof(RA288Context),
     ra288_decode_init,

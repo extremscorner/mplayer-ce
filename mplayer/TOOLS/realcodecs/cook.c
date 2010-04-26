@@ -395,6 +395,7 @@ ulong RASetFlavor(ulong p1,ulong p2) {
 	result=(*raSetFlavor)(p1,p2);
 	fprintf(stderr, "--> 0x%0lx(%ld)\n\n\n", result, result);
 
+#if 1
 	fputs("######################## FLAVOR PROPERTIES ###################\n\n", stderr);
 	numflavors=raGetNumberOfFlavors2();
 	flavor=0;
@@ -412,6 +413,7 @@ ulong RASetFlavor(ulong p1,ulong p2) {
 	}
 
 	fputs("######################## FLAVOR PROPERTIES ###################\n\n", stderr);
+#endif
 
 	return result;
 }
@@ -424,3 +426,4 @@ void  SetDLLAccessPath(ulong p1) {
 	hexdump((void*)p1, 44);
 	fprintf(stderr, "--> void\n\n\n");
 }
+

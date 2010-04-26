@@ -18,8 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <stdint.h>
-#include "aac_hdr.h"
+#include <stdlib.h>
+#include <inttypes.h>
+
+#include "config.h"
 
 /// \param srate (out) sample rate
 /// \param num (out) number of audio frames in this ADTS frame

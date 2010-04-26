@@ -26,7 +26,6 @@ extern float vo_panscan_amount;
 
 void panscan_init(void);
 void panscan_calc(void);
-void panscan_calc_windowed(void);
 
 void aspect_save_orig(int orgw, int orgh);
 
@@ -34,7 +33,6 @@ void aspect_save_prescale(int prew, int preh);
 
 void aspect_save_screenres(int scrw, int scrh);
 
-#define A_WINZOOM 2 ///< zoom to fill window size
 #define A_ZOOM 1
 #define A_NOZOOM 0
 

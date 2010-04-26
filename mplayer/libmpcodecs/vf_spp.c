@@ -406,7 +406,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
 				qp= p->qp;
 			else{
 				qp= qp_store[ (XMIN(x, width-1)>>qps) + (XMIN(y, height-1)>>qps) * qp_stride];
-				qp = FFMAX(1, norm_qscale(qp, p->mpeg2));
+				if(p->mpeg2) qp = FFMAX(1, qp>>1);
 			}
 			for(i=0; i<count; i++){
 				const int x1= x + offset[i+count-1][0];
@@ -435,7 +435,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stri
 	//FIXME reorder for better caching
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 	int h= (height+16+15)&(~15);
@@ -447,7 +447,7 @@ static int config(struct vf_instance *vf,
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi){
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
     vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
@@ -464,7 +464,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     mpi->flags|=MP_IMGFLAG_DIRECT;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	mp_image_t *dmpi;
 
 	if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
@@ -480,15 +480,9 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
         vf->priv->mpeg2= mpi->qscale_type;
         if(mpi->pict_type != 3 && mpi->qscale && !vf->priv->qp){
-            int w = mpi->qstride;
-            int h = (mpi->h + 15) >> 4;
-            if (!w) {
-                w = (mpi->w + 15) >> 4;
-                h = 1;
-            }
             if(!vf->priv->non_b_qp)
-                vf->priv->non_b_qp= malloc(w*h);
-            fast_memcpy(vf->priv->non_b_qp, mpi->qscale, w*h);
+                vf->priv->non_b_qp= malloc(mpi->qstride * ((mpi->h + 15) >> 4));
+            fast_memcpy(vf->priv->non_b_qp, mpi->qscale, mpi->qstride * ((mpi->h + 15) >> 4));
         }
 	if(vf->priv->log2_count || !(mpi->flags&MP_IMGFLAG_DIRECT)){
             char *qp_tab= vf->priv->non_b_qp;
@@ -516,7 +510,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 	if(!vf->priv) return;
 
 	if(vf->priv->temp) free(vf->priv->temp);
@@ -533,7 +527,7 @@ static void uninit(struct vf_instance *vf){
 }
 
 //===========================================================================//
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt){
 	case IMGFMT_YVU9:
 	case IMGFMT_IF09:
@@ -551,7 +545,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
     return 0;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
     switch(request){
     case VFCTRL_QUERY_MAX_PP_LEVEL:
 	return 6;
@@ -562,7 +556,7 @@ static int control(struct vf_instance *vf, int request, void* data){
     return vf_next_control(vf,request,data);
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
 
     int log2c=-1;
 
@@ -614,6 +608,6 @@ const vf_info_t vf_info_spp = {
     "spp",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };

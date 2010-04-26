@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/msvideo1.c
  * Microsoft Video-1 Decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the MS Video-1 format, visit:
  *   http://www.pcisys.net/~melanson/codecs/
@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -333,7 +334,7 @@ static av_cold int msvideo1_decode_end(AVCodecContext *avctx)
 
 AVCodec msvideo1_decoder = {
     "msvideo1",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_MSVIDEO1,
     sizeof(Msvideo1Context),
     msvideo1_decode_init,

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,7 +70,7 @@ imgfmt_to_pixfmt (int imgfmt)
 
 
 static int
-config (struct vf_instance *vf,
+config (struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
         unsigned int flags, unsigned int outfmt)
 {
@@ -114,7 +96,7 @@ config (struct vf_instance *vf,
 }
 
 static int
-put_image (struct vf_instance *vf, mp_image_t *mpi, double pts)
+put_image (struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
   struct vf_priv_s *priv = vf->priv;
   mp_image_t* dmpi;
@@ -151,7 +133,7 @@ put_image (struct vf_instance *vf, mp_image_t *mpi, double pts)
 
 
 static int
-query_format (struct vf_instance *vf, unsigned int fmt)
+query_format (struct vf_instance_s* vf, unsigned int fmt)
 {
   if(imgfmt_to_pixfmt(fmt) == -1)
     return 0;
@@ -161,7 +143,7 @@ query_format (struct vf_instance *vf, unsigned int fmt)
 
 
 static int
-vf_open(vf_instance_t *vf, char *args)
+open (vf_instance_t *vf, char* args)
 {
   /* We don't have any args */
   (void) args;
@@ -192,7 +174,7 @@ const vf_info_t vf_info_lavcdeint = {
     "Joe Rabinoff",
     "libavcodec's internal deinterlacer, in case you don't like "
       "the builtin ones (invoked with -pp or -npp)",
-    vf_open,
+    open,
     NULL
 };
 

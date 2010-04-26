@@ -5,7 +5,10 @@
 #include <stdarg.h>
 #endif
 
-#include "windef.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "pshpack1.h"
 
 /* flags for HIGHCONTRAST dwFlags field */
@@ -2918,5 +2921,9 @@ INT       WINAPI LoadMessageW(HMODULE,UINT,WORD,LPWSTR,INT);
 VOID        WINAPI ScreenSwitchEnable16(WORD);
 
 #define WC_DIALOG    (LPSTR)((DWORD)((WORD)( 0x8002)))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MPLAYER_WINUSER_H */

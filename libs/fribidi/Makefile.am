@@ -1,24 +1,210 @@
-##                                               -*- Automake -*-
-## Process this file with automake to produce Makefile.in
-##############################################################################
-## $Id: Makefile.am,v 1.10 2005/08/25 18:35:34 behdad Exp $
-## $Author: behdad $
-## $Date: 2005/08/25 18:35:34 $
-## $Revision: 1.10 $
-## $Source: /cvs/fribidi/fribidi2/Makefile.am,v $
-##############################################################################
 
-## The order of subdirs is important, don't change without a reason.
-SUBDIRS = gen.tab charset lib bin doc test
+AUTOMAKE_OPTIONS = gnu 
 
-EXTRA_DIST = bootstrap ChangeLog.old
+noinst_PROGRAMS =	\
+	fribidi_benchmark	\
+	fribidi_create_char_types	\
+	fribidi_create_mirroring	\
+	fribidi_bidi_types
+
+libfribidi_charsets =	\
+	fribidi_char_sets.c	\
+	fribidi_char_sets_utf8.c
+
+libfribidi_charsets_extra =	\
+	fribidi_char_sets_cap_rtl.c	\
+	fribidi_char_sets_iso8859_6.c	\
+	fribidi_char_sets_iso8859_8.c	\
+	fribidi_char_sets_cp1255.c	\
+	fribidi_char_sets_cp1256.c	\
+	fribidi_char_sets_isiri_3342.c
+
+libfribidi_charsets_h =	\
+	fribidi_char_sets.h	\
+	fribidi_char_sets.i	\
+	fribidi_char_sets_utf8.h
+
+libfribidi_charsets_extra_h =	\
+	fribidi_char_sets_cap_rtl.h	\
+	fribidi_char_sets_cp1255.h	\
+	fribidi_char_sets_cp1256.h	\
+	fribidi_char_sets_isiri_3342.h	\
+	fribidi_char_sets_iso8859_6.h	\
+	fribidi_char_sets_iso8859_8.h
+
+libfribidi_extra_h =	
+
+lib_LTLIBRARIES = libfribidi.la
+
+libfribidi_la_SOURCES =	\
+	fribidi.c	\
+	fribidi_types.c		\
+	fribidi_mem.c	\
+	fribidi_mirroring.c	\
+	fribidi_char_type.c	\
+	fribidi_utils.c	\
+	wcwidth.c	\
+	$(libfribidi_charsets)	\
+	$(libfribidi_charsets_extra)
+
+libfribidi_la_LDFLAGS = -no-undefined
+
+libfribidi_la_LIBADD = 
+
+libfribidiincdir = $(includedir)/fribidi
+
+libfribidiinc_HEADERS =	\
+	fribidi.h	\
+	fribidi_types.h	\
+	fribidi_types.i	\
+	fribidi_unicode.h	\
+	$(libfribidi_charsets_h)	\
+	$(libfribidi_charsets_extra_h)	\
+	fribidi_config.h	\
+	fribidi_mem.h
+
+GETOPT_SRC =	\
+	getopt.c	\
+	getopt1.c
+
+GETOPT_HDR =	\
+	getopt.h	\
+	getopt_int.h	\
+	gettext.h
+
+TEST_FILES =	\
+	tests/test_CapRTL_explicit.input	\
+	tests/test_CapRTL_explicit.reference	\
+	tests/test_CapRTL_implicit.input	\
+	tests/test_CapRTL_implicit.reference	\
+	tests/test_ISO8859-8_hebrew.input	\
+	tests/test_ISO8859-8_hebrew.reference	\
+	tests/test_UTF-8_persian.input	\
+	tests/test_UTF-8_persian.reference
+
+TABLE_FILES =	\
+	fribidi_tab_mirroring.i	\
+	fribidi_tab_char_type_2.i	\
+	fribidi_tab_char_type_9.i
+
+UNIDATA_FILES =	\
+	unidata/README	\
+	unidata/UnicodeData.txt	\
+	unidata/BidiMirroring.txt
+
+OTHER_FILES =	\
+	wcwidth.i
+
+TESTS = run.tests
+
+EXTRA_HEADERS =	\
+	packtab.h	\
+	$(libfribidi_extra_h)	\
+	$(GETOPT_HDR)
+
+EXTRA_DIST =	\
+	bootstrap \
+	fribidi.spec	\
+	$(TESTS)	\
+	$(TEST_FILES)	\
+	$(TABLE_FILES)	\
+	$(UNIDATA_FILES)	\
+	$(OTHER_FILES)	\
+	$(EXTRA_HEADERS)
+
+fribidi_benchmark_SOURCES = fribidi_benchmark.c $(GETOPT_SRC)
+fribidi_benchmark_LDADD = libfribidi.la
+
+fribidi_bidi_types_LDADD = libfribidi.la
+
+fribidi_create_char_types_SOURCES = fribidi_create_char_types.c packtab.c
+
+fribidi_create_mirroring_SOURCES = fribidi_create_mirroring.c
+
+bin_PROGRAMS = fribidi
+fribidi_SOURCES = fribidi_main.c $(GETOPT_SRC)
+fribidi_LDADD = libfribidi.la
+
+
+fribidi_tab_mirroring.i: $(fribidi_create_mirroring_SOURCES) fribidi_types.h	\
+		unidata/BidiMirroring.txt
+	$(MAKE) fribidi_create_mirroring
+	if test -d unidata; then UNIDATA=unidata;	\
+	else UNIDATA="$(srcdir)/unidata"; fi &&	\
+	./fribidi_create_mirroring "$$UNIDATA" ||	\
+	($(RM) "$@"; false)
+
+
+$(srcdir)/fribidi_mirroring.c: fribidi_tab_mirroring.i
+	touch "$@" || $(MAKE) clean
+
+fribidi_tab_mirroring:	fribidi_tab_mirroring.i
+
+
+fribidi_tab_char_type_%.i: $(fribidi_create_char_types_SOURCES)	\
+		unidata/UnicodeData.txt
+	$(MAKE) fribidi_create_char_types
+	if test -d unidata; then UNIDATA=unidata;	\
+	else UNIDATA="$(srcdir)/unidata"; fi &&	\
+	./fribidi_create_char_types "`echo "$@"	\
+	  | sed 's/[^0-9]*//g'`" "$$UNIDATA" ||	\
+	($(RM) "$@"; false)
+	$(RM) fribidi_tab_char_type_stamp
+	$(MAKE) fribidi_tab_char_type_stamp
+
+fribidi_tab_char_type_stamp:
+	touch "$(srcdir)/fribidi_char_type.c" || $(MAKE) clean
+	touch "$@"
+
+fribidi_tab_char_type_small:
+	$(MAKE) fribidi_tab_char_type_9.i
+
+fribidi_tab_char_type_large:
+	$(MAKE) fribidi_tab_char_type_2.i
+
+fribidi_tab tab:	fribidi_tab_char_type_small	\
+			fribidi_tab_char_type_large	\
+			fribidi_tab_mirroring
+
+
+config.h: fribidi_tab_char_type_stamp
+	./config.status --recheck
+	./config.status
+	touch "$@"
+
+$(srcdir)/fribidi_char_type.c: config.h
+
+tests/test_%.reference: tests/test_%.input $(libfribidi_la_SOURCES)
+	$(MAKE) fribidi
+	(test -d tests || mkdir tests) &&	\
+	testcase="$@" && 	\
+	charset="`echo "$@" | sed 's/_[^_]*$$//;s/.*_//'`" &&	\
+	./fribidi --test --charset "$$charset" "$<" > "$@" || \
+	($(RM) "$@"; false)
+
+test.reference:
+	for testcase in "$(srcdir)"/tests/test_*.input; do	\
+		test="`echo "$$testcase"	\
+		  | sed 's/\.input$$/.reference/i; s|.*/||;'`" &&	\
+		$(MAKE) "tests/$$test" ||	\
+		exit 1;	\
+	done
+
+test: fribidi
+	"$(srcdir)/run.tests"
+
+.PHONY:		test test.reference	\
+		fribidi_tab_char_type_small fribidi_tab_char_type_large	\
+		fribidi_tab_mirroring fribidi_tab tab
+
+bin_SCRIPTS = fribidi-config
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = @PACKAGE@.pc
+pkgconfig_DATA = fribidi.pc
 
-BUILT_SOURCES = lib/fribidi-unicode-version.h
-lib/fribidi-unicode-version.h:
-	(cd lib && $(MAKE) $(AM_MAKEFLAGS) fribidi-unicode-version.h)
+CLEANFILES = 
+
+DISTCLEANFILES = fribidi_tab_char_type_stamp
 
 MAINTAINERCLEANFILES = \
 		$(srcdir)/INSTALL \
@@ -33,7 +219,6 @@ MAINTAINERCLEANFILES = \
 		$(srcdir)/install-sh \
 		$(srcdir)/ltmain.sh \
 		$(srcdir)/missing \
-		$(srcdir)/mkinstalldirs \
 		`find "$(srcdir)" -type f -name Makefile.in -print` \
 		`find "$(srcdir)" -type f -name "*~" -print` \
 		`$(srcdir)/bootstrap --write-configure`
@@ -45,32 +230,7 @@ MAINTAINERCLEANFILES = \
 # Indent all C source and header files, using indent(1):
 
 indent: $(srcdir)/.indent.pro
-	cd "$(srcdir)" && \
-	find . -mindepth 2 -type f -name "*.[ch]" -print | \
-	  xargs ./missing --run indent
+	cd "$(srcdir)" && ./missing --run indent fribidi_*.[ch]
 
 .PHONY: indent
 
-# Creating ChangeLog from CVS log, using cvs2cl(1):
-
-MAINTAINERCLEANFILES += ChangeLog ChangeLog.bak
-
-EXTRA_DIST += ChangeLog
-
-ChangeLog: $(srcdir)/ChangeLog
-
-$(srcdir)/ChangeLog:
-	@if test -d "$(srcdir)/CVS"; then \
-	  (cd "$(srcdir)" && \
-	  ./missing --run cvs2cl --stdout --utc --FSF -U AUTHORS) > $@.tmp \
-	  && echo "For older changes see ChangeLog.old" >> $@.tmp && mv -f $@.tmp $@ \
-	  || ($(RM) $@.tmp; \
-	      echo Failed to generate ChangeLog, your ChangeLog may be outdated >&2; \
-	      (test -f $@ || echo cvs2cl is required to generate this file >> $@)); \
-	else \
-	  test -f $@ || \
-	  (echo A CVS checkout and cvs2cl is required to generate ChangeLog >&2 && \
-	  echo A CVS checkout and cvs2cl is required to generate this file >> $@); \
-	fi
-
-.PHONY: ChangeLog $(srcdir)/ChangeLog

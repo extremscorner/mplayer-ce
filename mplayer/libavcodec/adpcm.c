@@ -24,7 +24,7 @@
 #include "bytestream.h"
 
 /**
- * @file
+ * @file libavcodec/adpcm.c
  * ADPCM codecs.
  * First version by Francois Revol (revol@free.fr)
  * Fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
@@ -86,12 +86,10 @@ static const int AdaptationTable[] = {
         768, 614, 512, 409, 307, 230, 230, 230
 };
 
-/** Divided by 4 to fit in 8-bit integers */
 static const uint8_t AdaptCoeff1[] = {
         64, 128, 0, 48, 60, 115, 98
 };
 
-/** Divided by 4 to fit in 8-bit integers */
 static const int8_t AdaptCoeff2[] = {
         0, -64, 0, 16, 0, -52, -58
 };
@@ -154,8 +152,6 @@ typedef struct ADPCMContext {
 #if CONFIG_ENCODERS
 static av_cold int adpcm_encode_init(AVCodecContext *avctx)
 {
-    uint8_t *extradata;
-    int i;
     if (avctx->channels > 2)
         return -1; /* only stereo or mono =) */
 
@@ -179,16 +175,6 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 / avctx->channels + 2; /* each 16 bits sample gives one nibble */
                                                              /* and we have 7 bytes per channel overhead */
         avctx->block_align = BLKSIZE;
-        avctx->extradata_size = 32;
-        extradata = avctx->extradata = av_malloc(avctx->extradata_size);
-        if (!extradata)
-            return AVERROR(ENOMEM);
-        bytestream_put_le16(&extradata, avctx->frame_size);
-        bytestream_put_le16(&extradata, 7); /* wNumCoef */
-        for (i = 0; i < 7; i++) {
-            bytestream_put_le16(&extradata, AdaptCoeff1[i] * 4);
-            bytestream_put_le16(&extradata, AdaptCoeff2[i] * 4);
-        }
         break;
     case CODEC_ID_ADPCM_YAMAHA:
         avctx->frame_size = BLKSIZE * avctx->channels;
@@ -205,6 +191,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         break;
     default:
         return -1;
+        break;
     }
 
     avctx->coded_frame= avcodec_alloc_frame();
@@ -661,12 +648,15 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                     *dst++ = buf[0][i] | (buf[1][i] << 4);
             }
         } else
-            for (n *= avctx->channels; n>0; n--) {
+        for (; n>0; n--) {
+            for(i = 0; i < avctx->channels; i++) {
                 int nibble;
-                nibble  = adpcm_yamaha_compress_sample(&c->status[ 0], *samples++);
-                nibble |= adpcm_yamaha_compress_sample(&c->status[st], *samples++) << 4;
+                nibble  = adpcm_yamaha_compress_sample(&c->status[i], samples[i]);
+                nibble |= adpcm_yamaha_compress_sample(&c->status[i], samples[i+avctx->channels]) << 4;
                 *dst++ = nibble;
             }
+            samples += 2 * avctx->channels;
+        }
         break;
     default:
         return -1;
@@ -1638,14 +1628,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 #define ADPCM_ENCODER(id,name,long_name_)       \
 AVCodec name ## _encoder = {                    \
     #name,                                      \
-    AVMEDIA_TYPE_AUDIO,                         \
+    CODEC_TYPE_AUDIO,                           \
     id,                                         \
     sizeof(ADPCMContext),                       \
     adpcm_encode_init,                          \
     adpcm_encode_frame,                         \
     adpcm_encode_close,                         \
     NULL,                                       \
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE}, \
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE}, \
     .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
 };
 #else
@@ -1656,7 +1646,7 @@ AVCodec name ## _encoder = {                    \
 #define ADPCM_DECODER(id,name,long_name_)       \
 AVCodec name ## _decoder = {                    \
     #name,                                      \
-    AVMEDIA_TYPE_AUDIO,                         \
+    CODEC_TYPE_AUDIO,                           \
     id,                                         \
     sizeof(ADPCMContext),                       \
     adpcm_decode_init,                          \

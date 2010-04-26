@@ -7,26 +7,11 @@
  * Most notably, only the text information is decoded as of now, discarding
  * color, background and position info (see source below).
  *
+ * by Matteo Giani
+ *
  * uses source from the xine closed captions decoder
- *
- * Copyright (C) 2002 Matteo Giani
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,7 +95,7 @@ static void scroll_buffer(subtitle* buf)
 void subcc_init(void)
 {
 	int i;
-	printf("subcc_init(): initing...\n");
+	//printf("subcc_init(): initing...\n");
 	build_char_table();
 	for(i=0;i<SUB_MAX_TEXT;i++) {buf1.text[i]=buf2.text[i]=NULL;}
 	buf1.lines=buf2.lines=0;
@@ -122,7 +107,6 @@ void subcc_init(void)
 
 static void append_char(char c)
 {
-	printf("append_char\n");
 	if(!bb->lines) {bb->lines++; cursor_pos=0;}
 	if(bb->text[bb->lines - 1]==NULL)
 	{
@@ -346,3 +330,4 @@ void subcc_process_data(unsigned char *inputdata,unsigned int len)
 
 	subcc_decode(inputdata, len);
 }
+

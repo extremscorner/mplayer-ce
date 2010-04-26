@@ -185,7 +185,7 @@ static int swf_write_header(AVFormatContext *s)
 
     for(i=0;i<s->nb_streams;i++) {
         AVCodecContext *enc = s->streams[i]->codec;
-        if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (enc->codec_type == CODEC_TYPE_AUDIO) {
             if (enc->codec_id == CODEC_ID_MP3) {
                 if (!enc->frame_size) {
                     av_log(s, AV_LOG_ERROR, "audio frame size not set\n");
@@ -351,7 +351,7 @@ static int swf_write_video(AVFormatContext *s,
             put_le16(pb, enc->width);
             put_le16(pb, enc->height);
             put_byte(pb, 0);
-            put_byte(pb,ff_codec_get_tag(swf_codec_tags,enc->codec_id));
+            put_byte(pb,codec_get_tag(swf_codec_tags,enc->codec_id));
             put_swf_end_tag(s);
 
             /* place the video object for the first time */
@@ -464,7 +464,7 @@ static int swf_write_audio(AVFormatContext *s,
 static int swf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
+    if (codec->codec_type == CODEC_TYPE_AUDIO)
         return swf_write_audio(s, codec, pkt->data, pkt->size);
     else
         return swf_write_video(s, codec, pkt->data, pkt->size);
@@ -480,7 +480,7 @@ static int swf_write_trailer(AVFormatContext *s)
     video_enc = NULL;
     for(i=0;i<s->nb_streams;i++) {
         enc = s->streams[i]->codec;
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (enc->codec_type == CODEC_TYPE_VIDEO)
             video_enc = enc;
         else
             av_fifo_free(swf->audio_fifo);

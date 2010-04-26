@@ -26,7 +26,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/svq1.c
  * Sorenson Vector Quantizer #1 (SVQ1) video codec.
  * For more information of the SVQ1 algorithm, visit:
  *   http://www.pcisys.net/~melanson/codecs/
@@ -768,7 +768,6 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int i;
-    int offset = 0;
 
     MPV_decode_defaults(s);
 
@@ -781,38 +780,30 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
     s->flags= avctx->flags;
     if (MPV_common_init(s) < 0) return -1;
 
-    INIT_VLC_STATIC(&svq1_block_type, 2, 4,
+    init_vlc(&svq1_block_type, 2, 4,
         &ff_svq1_block_type_vlc[0][1], 2, 1,
-        &ff_svq1_block_type_vlc[0][0], 2, 1, 6);
+        &ff_svq1_block_type_vlc[0][0], 2, 1, INIT_VLC_USE_STATIC);
 
-    INIT_VLC_STATIC(&svq1_motion_component, 7, 33,
+    init_vlc(&svq1_motion_component, 7, 33,
         &mvtab[0][1], 2, 1,
-        &mvtab[0][0], 2, 1, 176);
+        &mvtab[0][0], 2, 1, INIT_VLC_USE_STATIC);
 
     for (i = 0; i < 6; i++) {
-        static const uint8_t sizes[2][6] = {{14, 10, 14, 18, 16, 18}, {10, 10, 14, 14, 14, 16}};
-        static VLC_TYPE table[168][2];
-        svq1_intra_multistage[i].table = &table[offset];
-        svq1_intra_multistage[i].table_allocated = sizes[0][i];
-        offset += sizes[0][i];
         init_vlc(&svq1_intra_multistage[i], 3, 8,
             &ff_svq1_intra_multistage_vlc[i][0][1], 2, 1,
-            &ff_svq1_intra_multistage_vlc[i][0][0], 2, 1, INIT_VLC_USE_NEW_STATIC);
-        svq1_inter_multistage[i].table = &table[offset];
-        svq1_inter_multistage[i].table_allocated = sizes[1][i];
-        offset += sizes[1][i];
+            &ff_svq1_intra_multistage_vlc[i][0][0], 2, 1, INIT_VLC_USE_STATIC);
         init_vlc(&svq1_inter_multistage[i], 3, 8,
             &ff_svq1_inter_multistage_vlc[i][0][1], 2, 1,
-            &ff_svq1_inter_multistage_vlc[i][0][0], 2, 1, INIT_VLC_USE_NEW_STATIC);
+            &ff_svq1_inter_multistage_vlc[i][0][0], 2, 1, INIT_VLC_USE_STATIC);
     }
 
-    INIT_VLC_STATIC(&svq1_intra_mean, 8, 256,
+    init_vlc(&svq1_intra_mean, 8, 256,
         &ff_svq1_intra_mean_vlc[0][1], 4, 2,
-        &ff_svq1_intra_mean_vlc[0][0], 4, 2, 632);
+        &ff_svq1_intra_mean_vlc[0][0], 4, 2, INIT_VLC_USE_STATIC);
 
-    INIT_VLC_STATIC(&svq1_inter_mean, 9, 512,
+    init_vlc(&svq1_inter_mean, 9, 512,
         &ff_svq1_inter_mean_vlc[0][1], 4, 2,
-        &ff_svq1_inter_mean_vlc[0][0], 4, 2, 1434);
+        &ff_svq1_inter_mean_vlc[0][0], 4, 2, INIT_VLC_USE_STATIC);
 
     return 0;
 }
@@ -828,7 +819,7 @@ static av_cold int svq1_decode_end(AVCodecContext *avctx)
 
 AVCodec svq1_decoder = {
     "svq1",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_SVQ1,
     sizeof(MpegEncContext),
     svq1_decode_init,
@@ -837,6 +828,6 @@ AVCodec svq1_decoder = {
     svq1_decode_frame,
     CODEC_CAP_DR1,
     .flush= ff_mpeg_flush,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
-    .long_name= NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, PIX_FMT_NONE},
+    .long_name= NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1"),
 };

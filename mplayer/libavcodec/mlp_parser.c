@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mlp_parser.c
  * MLP parser
  */
 
@@ -176,9 +176,7 @@ static int mlp_parse(AVCodecParserContext *s,
 
         for (i = 0; i < buf_size; i++) {
             mp->pc.state = (mp->pc.state << 8) | buf[i];
-            if ((mp->pc.state & 0xfffffffe) == 0xf8726fba &&
-                // ignore if we do not have the data for the start of header
-                mp->pc.index + i >= 7) {
+            if ((mp->pc.state & 0xfffffffe) == 0xf8726fba) {
                 mp->in_sync = 1;
                 mp->bytes_left = 0;
                 break;
@@ -293,5 +291,5 @@ AVCodecParser mlp_parser = {
     sizeof(MLPParseContext),
     mlp_init,
     mlp_parse,
-    ff_parse_close,
+    NULL,
 };

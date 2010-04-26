@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mpegaudio.c
  * The simplest mpeg audio layer 2 encoder.
  */
 
@@ -59,7 +59,7 @@ typedef struct MpegAudioContext {
 } MpegAudioContext;
 
 /* define it to use floats in quantization (I don't like floats !) */
-#define USE_FLOATS
+//#define USE_FLOATS
 
 #include "mpegaudiodata.h"
 #include "mpegaudiotab.h"
@@ -126,8 +126,10 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     s->sblimit = ff_mpa_sblimit_table[table];
     s->alloc_table = ff_mpa_alloc_tables[table];
 
-    dprintf(avctx, "%d kb/s, %d Hz, frame_size=%d bits, table=%d, padincr=%x\n",
-            bitrate, freq, s->frame_size, table, s->frame_frac_incr);
+#ifdef DEBUG
+    av_log(avctx, AV_LOG_DEBUG, "%d kb/s, %d Hz, frame_size=%d bits, table=%d, padincr=%x\n",
+           bitrate, freq, s->frame_size, table, s->frame_frac_incr);
+#endif
 
     for(i=0;i<s->nb_channels;i++)
         s->samples_offset[i] = 0;
@@ -790,15 +792,14 @@ static av_cold int MPA_encode_close(AVCodecContext *avctx)
 
 AVCodec mp2_encoder = {
     "mp2",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MP2,
     sizeof(MpegAudioContext),
     MPA_encode_init,
     MPA_encode_frame,
     MPA_encode_close,
     NULL,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
-    .supported_samplerates= (const int[]){44100, 48000,  32000, 22050, 24000, 16000, 0},
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
 };
 

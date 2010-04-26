@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include "config.h"
 #include "cpudetect.h"
 #include "mp_msg.h"
@@ -195,10 +177,18 @@ void GetCpuCaps( CpuCaps *caps)
 #endif
 
 		/* FIXME: Does SSE2 need more OS support, too? */
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) \
+  || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) \
+  || defined(__APPLE__) || defined(__CYGWIN__) || defined(__MINGW32__) \
+  || defined(__OS2__)
 		if (caps->hasSSE)
 			check_os_katmai_support();
 		if (!caps->hasSSE)
 			caps->hasSSE2 = 0;
+#else
+		caps->hasSSE=0;
+		caps->hasSSE2 = 0;
+#endif
 //		caps->has3DNow=1;
 //		caps->hasMMX2 = 0;
 //		caps->hasMMX = 0;
@@ -527,8 +517,8 @@ if (ARCH_PPC)
 if (ARCH_ALPHA)
 	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: Digital Alpha\n");
 
-if (ARCH_MIPS)
-	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: MIPS\n");
+if (ARCH_SGI_MIPS)
+	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: SGI MIPS\n");
 
 if (ARCH_PA_RISC)
 	mp_msg(MSGT_CPUDETECT,MSGL_V,"CPU: Hewlett-Packard PA-RISC\n");

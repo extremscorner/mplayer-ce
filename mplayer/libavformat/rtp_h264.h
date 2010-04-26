@@ -25,5 +25,6 @@
 #include "rtpdec.h"
 
 extern RTPDynamicProtocolHandler ff_h264_dynamic_handler;
+void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size);
 
 #endif /* AVFORMAT_RTP_H264_H */

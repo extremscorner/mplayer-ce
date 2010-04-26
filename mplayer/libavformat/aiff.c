@@ -46,10 +46,6 @@ static const AVCodecTag codec_aiff_tags[] = {
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
 
-typedef struct {
-    int64_t data_end;
-} AIFFInputContext;
-
 static enum CodecID aiff_codec_get_id(int bps)
 {
     if (bps <= 8)
@@ -123,7 +119,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
     /* Got an AIFF-C? */
     if (version == AIFF_C_VERSION1) {
         codec->codec_tag = get_le32(pb);
-        codec->codec_id  = ff_codec_get_id(codec_aiff_tags, codec->codec_tag);
+        codec->codec_id  = codec_get_id(codec_aiff_tags, codec->codec_tag);
 
         switch (codec->codec_id) {
         case CODEC_ID_PCM_S16BE:
@@ -318,7 +314,6 @@ static int aiff_read_header(AVFormatContext *s,
     unsigned version = AIFF_C_VERSION1;
     ByteIOContext *pb = s->pb;
     AVStream * st;
-    AIFFInputContext *aiff = s->priv_data;
 
     /* check FORM header */
     filesize = get_tag(pb, &tag);
@@ -371,7 +366,6 @@ static int aiff_read_header(AVFormatContext *s,
             get_meta(s, "comment"  , size);
             break;
         case MKTAG('S', 'S', 'N', 'D'):     /* Sampled sound chunk */
-            aiff->data_end = url_ftell(pb) + size;
             offset = get_be32(pb);      /* Offset of sound data */
             get_be32(pb);               /* BlockSize... don't care */
             offset += url_ftell(pb);    /* Compute absolute data offset */
@@ -426,18 +420,14 @@ static int aiff_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
     AVStream *st = s->streams[0];
-    AIFFInputContext *aiff = s->priv_data;
-    int64_t max_size;
     int res;
 
-    /* calculate size of remaining data */
-    max_size = aiff->data_end - url_ftell(s->pb);
-    if (max_size <= 0)
-        return AVERROR_EOF;
+    /* End of stream may be reached */
+    if (url_feof(s->pb))
+        return AVERROR(EIO);
 
     /* Now for that packet */
-    max_size = FFMIN(max_size, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);
-    res = av_get_packet(s->pb, pkt, max_size);
+    res = av_get_packet(s->pb, pkt, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);
     if (res < 0)
         return res;
 
@@ -450,7 +440,7 @@ static int aiff_read_packet(AVFormatContext *s,
 AVInputFormat aiff_demuxer = {
     "aiff",
     NULL_IF_CONFIG_SMALL("Audio IFF"),
-    sizeof(AIFFInputContext),
+    0,
     aiff_probe,
     aiff_read_header,
     aiff_read_packet,

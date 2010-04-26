@@ -67,7 +67,6 @@
 
 #include "libvo/sub.h"
 
-#include "demux_mov.h"
 #include "qtpalette.h"
 #include "parse_mp4.h" // .MP4 specific stuff
 
@@ -166,7 +165,7 @@ typedef struct {
     void* desc; // image/sound/etc description (pointer to ImageDescription etc)
 } mov_track_t;
 
-static void mov_build_index(mov_track_t* trak,int timescale){
+void mov_build_index(mov_track_t* trak,int timescale){
     int i,j,s;
     int last=trak->chunks_size;
     unsigned int pts=0;
@@ -1446,7 +1445,7 @@ static void lschunks(demuxer_t* demuxer,int level,off_t endpos,mov_track_t* trak
 	    z_stream zstrm;
 	    stream_t* backup;
 
-	    if (moov_sz > UINT_MAX - 16) {
+	    if (moov_sz > SIZE_MAX - 16) {
               mp_msg(MSGT_DEMUX, MSGL_ERR, "Invalid cmvd atom size %d\n", moov_sz);
               break;
             }
@@ -1550,7 +1549,7 @@ static void lschunks(demuxer_t* demuxer,int level,off_t endpos,mov_track_t* trak
 				break;
 			    case MOV_FOURCC('n','a','m','e'):
 			    case MOV_FOURCC(0xa9,'n','a','m'):
-				demux_info_add(demuxer, "title", &text[2]);
+				demux_info_add(demuxer, "name", &text[2]);
 				mp_msg(MSGT_DEMUX, MSGL_V, " Name: %s\n", &text[2]);
 				break;
 			    case MOV_FOURCC(0xa9,'A','R','T'):

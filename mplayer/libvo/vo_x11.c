@@ -267,7 +267,7 @@ static void freeMyXImage(void)
     ImageData = NULL;
 }
 
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #define BO_NATIVE    MSBFirst
 #define BO_NONNATIVE LSBFirst
 #else
@@ -457,7 +457,7 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width,
     // we can easily "emulate" them.
     if (out_format & 64 && (IMGFMT_IS_RGB(out_format) || IMGFMT_IS_BGR(out_format))) {
       out_format &= ~64;
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
       out_offset = 1;
 #else
       out_offset = -1;
@@ -565,7 +565,7 @@ static int draw_slice(uint8_t * src[], int stride[], int w, int h,
         dst[0] += dstStride[0] * (image_height - 1);
         dstStride[0] = -dstStride[0];
     }
-    sws_scale(swsContext, src, stride, y, h, dst, dstStride);
+    sws_scale_ordered(swsContext, src, stride, y, h, dst, dstStride);
     return 0;
 }
 

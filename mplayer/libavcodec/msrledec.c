@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/msrledec.c
  * MS RLE decoder based on decoder by Mike Melanson and my own for TSCC
  * For more information about the MS RLE format, visit:
  *   http://www.multimedia.cx/msrle.txt
@@ -28,7 +28,6 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "msrledec.h"
 
 #define FETCH_NEXT_STREAM_BYTE() \
     if (stream_ptr >= data_size) \
@@ -147,7 +146,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
             p2 = *src++;
             if(p2 == 0) { //End-of-line
                 output = pic->data[0] + (--line) * pic->linesize[0];
-                if (line < 0 && !(src+1 < data + srcsize && AV_RB16(src) == 1)) {
+                if (line < 0){
                     av_log(avctx, AV_LOG_ERROR, "Next line is beyond picture bounds\n");
                     return -1;
                 }
@@ -168,8 +167,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
                 continue;
             }
             // Copy data
-            if ((pic->linesize[0] > 0 && output + p2 * (depth >> 3) > output_end)
-              ||(pic->linesize[0] < 0 && output + p2 * (depth >> 3) < output_end)) {
+            if (output + p2 * (depth >> 3) > output_end) {
                 src += p2 * (depth >> 3);
                 continue;
             }
@@ -213,8 +211,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
                      src += 4;
                      break;
             }
-            if ((pic->linesize[0] > 0 && output + p1 * (depth >> 3) > output_end)
-              ||(pic->linesize[0] < 0 && output + p1 * (depth >> 3) < output_end))
+            if (output + p1 * (depth >> 3) > output_end)
                 continue;
             for(i = 0; i < p1; i++) {
                 switch(depth){

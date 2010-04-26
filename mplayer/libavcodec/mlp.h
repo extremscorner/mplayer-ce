@@ -47,15 +47,13 @@
  */
 #define MAX_SUBSTREAMS      3
 
-/** which multiple of 48000 the maximum sample rate is */
-#define MAX_RATEFACTOR      4
 /** maximum sample frequency seen in files */
-#define MAX_SAMPLERATE      (MAX_RATEFACTOR * 48000)
+#define MAX_SAMPLERATE      192000
 
 /** maximum number of audio samples within one access unit */
-#define MAX_BLOCKSIZE       (40 * MAX_RATEFACTOR)
+#define MAX_BLOCKSIZE       (40 * (MAX_SAMPLERATE / 48000))
 /** next power of two greater than MAX_BLOCKSIZE */
-#define MAX_BLOCKSIZE_POW2  (64 * MAX_RATEFACTOR)
+#define MAX_BLOCKSIZE_POW2  (64 * (MAX_SAMPLERATE / 48000))
 
 /** number of allowed filters */
 #define NUM_FILTERS         2

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/qtrle.c
  * QT RLE Video Decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the QT RLE format, visit:
  *   http://www.pcisys.net/~melanson/codecs/
@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -539,7 +540,7 @@ static av_cold int qtrle_decode_end(AVCodecContext *avctx)
 
 AVCodec qtrle_decoder = {
     "qtrle",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_QTRLE,
     sizeof(QtrleContext),
     qtrle_decode_init,

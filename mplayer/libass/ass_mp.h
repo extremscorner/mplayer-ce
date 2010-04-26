@@ -24,23 +24,8 @@
 #define LIBASS_MP_H
 
 #include "subreader.h"
-#if defined(CONFIG_ASS_INTERNAL) || !defined(CONFIG_ASS)
+#include "ass_types.h"
 #include "ass.h"
-#else
-#include <ass/ass.h>
-#endif
-#if defined(LIBASS_VERSION) && LIBASS_VERSION >= 0x00907010
-#define ass_library_t ASS_Library
-#define ass_track_t ASS_Track
-#define ass_track_s ASS_Track
-#define ass_renderer_t ASS_Renderer
-#define ass_image_t ASS_Image
-#define ass_style_t ASS_Style
-#define ass_event_t ASS_Event
-#define process_force_style(t) ass_process_force_style(t)
-#else
-void process_force_style(ass_track_t* track);
-#endif
 
 extern ass_library_t* ass_library;
 extern int ass_enabled;
@@ -59,7 +44,6 @@ extern int ass_hinting;
 ass_track_t* ass_default_track(ass_library_t* library);
 int ass_process_subtitle(ass_track_t* track, subtitle* sub);
 ass_track_t* ass_read_subdata(ass_library_t* library, sub_data* subdata, double fps);
-ass_track_t* ass_read_stream(ass_library_t* library, const char *fname, char *charset);
 
 void ass_configure(ass_renderer_t* priv, int w, int h, int hinting);
 void ass_configure_fonts(ass_renderer_t* priv);

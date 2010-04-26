@@ -1,12 +1,3 @@
-Thanks to:
-
-Behnam Esfahbod <behnam@esfahbod.info>
-	* Testing and auditing code.
-
-
-And for the previous versions of FriBidi (pre 2002), thanks to:
-
-
 Tomas Frydrych <tomas@frydrych.uklinux.net>
 	* Contirbuted patches for compiling GNU FriBidi under other OSes.
 

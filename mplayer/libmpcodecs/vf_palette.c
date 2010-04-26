@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,14 +19,14 @@
 // routines are incorrrect.  they assume the palette to be of the same
 // depth as the output, which is incorrect. --Joey
 
-static const unsigned int bgr_list[]={
+static unsigned int bgr_list[]={
     IMGFMT_BGR32,
     IMGFMT_BGR24,
 //    IMGFMT_BGR16,
 //    IMGFMT_BGR15,
     0
 };
-static const unsigned int rgb_list[]={
+static unsigned int rgb_list[]={
     IMGFMT_RGB32,
     IMGFMT_RGB24,
 //    IMGFMT_RGB16,
@@ -54,10 +36,10 @@ static const unsigned int rgb_list[]={
 
 static unsigned int gray_pal[256];
 
-static unsigned int find_best(struct vf_instance *vf, unsigned int fmt){
+static unsigned int find_best(struct vf_instance_s* vf, unsigned int fmt){
     unsigned int best=0;
     int ret;
-    const unsigned int* p;
+    unsigned int* p;
     if(fmt==IMGFMT_BGR8) p=bgr_list;
     else if(fmt==IMGFMT_RGB8) p=rgb_list;
     else return 0;
@@ -78,7 +60,7 @@ struct vf_priv_s {
     int pal_msg;
 };
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
     if (!vf->priv->fmt)
@@ -92,9 +74,8 @@ static int config(struct vf_instance *vf,
     return vf_next_config(vf,width,height,d_width,d_height,flags,vf->priv->fmt);
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     mp_image_t *dmpi;
-    uint8_t *old_palette = mpi->planes[1];
 
     // hope we'll get DR buffer:
     dmpi=vf_get_image(vf->next,vf->priv->fmt,
@@ -171,14 +152,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	    }
 	}
     }
-    mpi->planes[1] = old_palette;
 
     return vf_next_put_image(vf,dmpi, pts);
 }
 
 //===========================================================================//
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     int best=find_best(vf,fmt);
     if(!best) return 0; // no match
     return vf->next->query_format(vf->next,best);
@@ -188,7 +168,7 @@ static void uninit(vf_instance_t *vf) {
   free(vf->priv);
 }
 
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
     unsigned int i;
     vf->config=config;
     vf->uninit=uninit;
@@ -220,7 +200,7 @@ const vf_info_t vf_info_palette = {
     "palette",
     "A'rpi & Alex",
     "",
-    vf_open,
+    open,
     NULL
 };
 

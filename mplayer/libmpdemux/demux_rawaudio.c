@@ -72,7 +72,6 @@ static demuxer_t* demux_rawaudio_open(demuxer_t* demuxer) {
   demuxer->audio->id = 0;
   demuxer->audio->sh = sh_audio;
   sh_audio->ds = demuxer->audio;
-  sh_audio->needs_parsing = 1;
 
   return demuxer;
 }
@@ -113,6 +112,7 @@ static void demux_rawaudio_seek(demuxer_t *demuxer,float rel_seek_secs,float aud
 //  printf("demux_rawaudio: streamtell=%d\n",(int)stream_tell(demuxer->stream));
 }
 
+
 const demuxer_desc_t demuxer_desc_rawaudio = {
   "Raw audio demuxer",
   "rawaudio",
@@ -126,4 +126,5 @@ const demuxer_desc_t demuxer_desc_rawaudio = {
   demux_rawaudio_open,
   NULL,
   demux_rawaudio_seek,
+  NULL
 };

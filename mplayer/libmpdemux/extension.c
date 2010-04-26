@@ -27,12 +27,6 @@
 
 /*
  * An autodetection based on the extension is not a good idea, but we don't care ;-)
- *
- * You should not add anything here where autodetection can be easily fixed except in
- * order to speed up auto-detection, in particular for formats that are often streamed.
- * In particular you should not normally add any DEMUXER_TYPE_LAVF, adding the
- * format to preferred_list in libmpdemux/demuxer_lavf.c will usually achieve
- * the same effect in a much more reliable way.
  */
 static struct {
         const char *extension;
@@ -44,6 +38,9 @@ static struct {
         { "vob", DEMUXER_TYPE_MPEG_PS },
         { "m2v", DEMUXER_TYPE_MPEG_PS },
         { "avi", DEMUXER_TYPE_AVI },
+        { "mp4", DEMUXER_TYPE_LAVF },
+        { "mov", DEMUXER_TYPE_LAVF },
+        { "qt", DEMUXER_TYPE_LAVF },
         { "asx", DEMUXER_TYPE_ASF },
         { "asf", DEMUXER_TYPE_ASF },
         { "wmv", DEMUXER_TYPE_ASF },
@@ -68,6 +65,7 @@ static struct {
         { "it", DEMUXER_TYPE_XMMS },
         { "mid", DEMUXER_TYPE_XMMS },
         { "midi", DEMUXER_TYPE_XMMS },
+        { "vqf", DEMUXER_TYPE_XMMS },
         { "nsv", DEMUXER_TYPE_NSV },
         { "nsa", DEMUXER_TYPE_NSV },
         { "mpc", DEMUXER_TYPE_MPC },
@@ -83,7 +81,6 @@ static struct {
         { "eac3",DEMUXER_TYPE_LAVF },
         { "mac", DEMUXER_TYPE_LAVF },
         { "str", DEMUXER_TYPE_LAVF },
-        { "cdg", DEMUXER_TYPE_LAVF },
 
 // At least the following are hacks against broken autodetection
 // that should not be there
@@ -107,3 +104,4 @@ int demuxer_type_by_filename(char* filename){
   }
   return DEMUXER_TYPE_UNKNOWN;
 }
+

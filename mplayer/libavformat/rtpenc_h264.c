@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavformat/rtpenc_h264.c
  * @brief H.264 packetization
  * @author Luca Abeni <lucabe72@email.it>
  */

@@ -21,7 +21,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/fraps.c
  * Lossless Fraps 'FPS1' decoder
  * @author Roine Gustafsson <roine at users sf net>
  * @author Konstantin Shishkov
@@ -366,7 +366,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec fraps_decoder = {
     "fraps",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_FRAPS,
     sizeof(FrapsContext),
     decode_init,

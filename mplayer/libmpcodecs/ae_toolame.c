@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -43,7 +25,7 @@ static int
 static float param_vbr = 0;
 static char *param_mode = "stereo";
 
-const m_option_t toolameopts_conf[] = {
+m_option_t toolameopts_conf[] = {
 	{"br", &param_bitrate, CONF_TYPE_INT, 0, 0, 0, NULL},
 	{"mode", &param_mode, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"psy", &param_psy, CONF_TYPE_INT, CONF_RANGE, -1, 4, NULL},
@@ -121,7 +103,7 @@ static int encode_toolame(audio_encoder_t *encoder, uint8_t *dest, void *src, in
 	return ret_size;
 }
 
-static int close_toolame(audio_encoder_t *encoder)
+int close_toolame(audio_encoder_t *encoder)
 {
 	free(encoder->priv);
 	return 1;
@@ -165,7 +147,7 @@ int mpae_init_toolame(audio_encoder_t *encoder)
 	else
 		mp_msg(MSGT_MENCODER, MSGL_ERR, "ae_toolame, Toolame can't encode > 2 channels, exiting\n");
 
-	ctx = calloc(1, sizeof(mpae_toolame_ctx));
+	ctx = (mpae_toolame_ctx *) calloc(1, sizeof(mpae_toolame_ctx));
 	if(ctx == NULL)
 	{
 		mp_msg(MSGT_MENCODER, MSGL_ERR, "ae_toolame, couldn't alloc a %d bytes context, exiting\n", sizeof(mpae_toolame_ctx));
@@ -234,3 +216,4 @@ int mpae_init_toolame(audio_encoder_t *encoder)
 
 	return 1;
 }
+

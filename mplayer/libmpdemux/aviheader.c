@@ -28,11 +28,21 @@
 #include "stream/stream.h"
 #include "demuxer.h"
 #include "stheader.h"
-#include "aviprint.h"
+
 #include "aviheader.h"
 #include "libavutil/common.h"
 
 static MainAVIHeader avih;
+
+void print_avih(MainAVIHeader *h, int verbose_level);
+void print_avih_flags(MainAVIHeader *h, int verbose_level);
+void print_strh(AVIStreamHeader *h, int verbose_level);
+void print_wave_header(WAVEFORMATEX *h, int verbose_level);
+void print_video_header(BITMAPINFOHEADER *h, int verbose_level);
+void print_index(AVIINDEXENTRY *idx,int idx_size, int verbose_level);
+void print_avistdindex_chunk(avistdindex_chunk *h, int verbose_level);
+void print_avisuperindex_chunk(avisuperindex_chunk *h, int verbose_level);
+void print_vprp(VideoPropHeader *vprp, int verbose_level);
 
 static int odml_get_vstream_id(int id, unsigned char res[])
 {
@@ -49,8 +59,7 @@ static int odml_get_vstream_id(int id, unsigned char res[])
     return 0;
 }
 
-static int avi_idx_cmp(const void *elem1, const void *elem2)
-{
+int avi_idx_cmp(const void *elem1,const void *elem2) {
   register off_t a = AVI_IDX_OFFSET((AVIINDEXENTRY *)elem1);
   register off_t b = AVI_IDX_OFFSET((AVIINDEXENTRY *)elem2);
   return (a > b) - (b > a);
@@ -158,7 +167,7 @@ while(1){
     case mmioFOURCC('I','M','E','D'): hdr="Medium";break;
     // INAM - Stores the title of the subject of the file, such as
     // "Seattle from Above."
-    case mmioFOURCC('I','N','A','M'): hdr="Title";break;
+    case mmioFOURCC('I','N','A','M'): hdr="Name";break;
     // IPLT - Specifies the number of colors requested when digitizing
     // an image, such as "256."
     case mmioFOURCC('I','P','L','T'): hdr="Palette Setting";break;
@@ -210,7 +219,6 @@ while(1){
         mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "aviheader", stream_id);
         memcpy(&sh_audio->audio,&h,sizeof(h));
         sh_audio->stream_delay = (float)sh_audio->audio.dwStart * sh_audio->audio.dwScale/sh_audio->audio.dwRate;
-        sh_audio->needs_parsing = 1;
       }
       last_fccType=h.fccType;
       last_fccHandler=h.fccHandler;
@@ -467,6 +475,7 @@ if (priv->isodml && (index_mode==-1 || index_mode==0 || index_mode==1)) {
     avisuperindex_chunk *cx;
     AVIINDEXENTRY *idx;
 
+
     if (priv->idx_size) free(priv->idx);
     priv->idx_size = 0;
     priv->idx_offset = 0;
@@ -623,11 +632,11 @@ if (index_file_load) {
 }
 gen_index:
 if(index_mode>=2 || (priv->idx_size==0 && index_mode==1)){
-  int idx_pos = 0;
   // build index for file:
   stream_reset(demuxer->stream);
   stream_seek(demuxer->stream,demuxer->movi_start);
 
+  priv->idx_pos=0;
   priv->idx_size=0;
   priv->idx=NULL;
 
@@ -648,13 +657,13 @@ if(index_mode>=2 || (priv->idx_size==0 && index_mode==1)){
     if(stream_eof(demuxer->stream)) break;
     if(!id || avi_stream_id(id)==100) goto skip_chunk; // bad ID (or padding?)
 
-    if(idx_pos>=priv->idx_size){
+    if(priv->idx_pos>=priv->idx_size){
 //      priv->idx_size+=32;
       priv->idx_size+=1024; // +16kB
       priv->idx=realloc(priv->idx,priv->idx_size*sizeof(AVIINDEXENTRY));
-      if(!priv->idx){idx_pos=0; break;} // error!
+      if(!priv->idx){priv->idx_pos=0; break;} // error!
     }
-    idx=&((AVIINDEXENTRY *)priv->idx)[idx_pos++];
+    idx=&((AVIINDEXENTRY *)priv->idx)[priv->idx_pos++];
     idx->ckid=id;
     idx->dwFlags=AVIIF_KEYFRAME; // FIXME
     idx->dwFlags|=(demuxer->filepos>>16)&0xffff0000U;
@@ -704,7 +713,7 @@ skip_chunk:
     skip=(len+1)&(~1UL); // total bytes in this chunk
     stream_seek(demuxer->stream,8+demuxer->filepos+skip);
   }
-  priv->idx_size=idx_pos;
+  priv->idx_size=priv->idx_pos;
   mp_msg(MSGT_HEADER,MSGL_INFO,MSGTR_MPDEMUX_AVIHDR_IdxGeneratedForHowManyChunks,priv->idx_size);
   if( mp_msg_test(MSGT_HEADER,MSGL_DBG2) ) print_index(priv->idx,priv->idx_size,MSGL_DBG2);
 
@@ -728,3 +737,4 @@ skip_chunk:
   }
 }
 }
+

@@ -258,7 +258,7 @@ register word 	* s;
 }
 
 /**** 4.3.2 */
-static void Gsm_Long_Term_Synthesis_Filtering (S,Ncr,bcr,erp,drp)
+void Gsm_Long_Term_Synthesis_Filtering (S,Ncr,bcr,erp,drp)
 XA_GSM_STATE        * S;
 word                    Ncr;
 word                    bcr;

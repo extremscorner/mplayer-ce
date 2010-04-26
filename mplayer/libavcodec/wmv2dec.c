@@ -21,7 +21,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "h263.h"
 #include "mathops.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
@@ -466,7 +465,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx){
         avctx->idct_algo=FF_IDCT_WMV2;
     }
 
-    if(ff_msmpeg4_decode_init(avctx) < 0)
+    if(ff_h263_decode_init(avctx) < 0)
         return -1;
 
     ff_wmv2_common_init(w);
@@ -486,7 +485,7 @@ static av_cold int wmv2_decode_end(AVCodecContext *avctx)
 
 AVCodec wmv2_decoder = {
     "wmv2",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_WMV2,
     sizeof(Wmv2Context),
     wmv2_decode_init,

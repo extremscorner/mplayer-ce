@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mlpdec.c
  * MLP decoder
  */
 
@@ -155,17 +155,15 @@ static VLC huff_vlc[3];
 
 static av_cold void init_static(void)
 {
-    if (!huff_vlc[0].bits) {
-        INIT_VLC_STATIC(&huff_vlc[0], VLC_BITS, 18,
-                    &ff_mlp_huffman_tables[0][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[0][0][0], 2, 1, 512);
-        INIT_VLC_STATIC(&huff_vlc[1], VLC_BITS, 16,
-                    &ff_mlp_huffman_tables[1][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[1][0][0], 2, 1, 512);
-        INIT_VLC_STATIC(&huff_vlc[2], VLC_BITS, 15,
-                    &ff_mlp_huffman_tables[2][0][1], 2, 1,
-                    &ff_mlp_huffman_tables[2][0][0], 2, 1, 512);
-    }
+    INIT_VLC_STATIC(&huff_vlc[0], VLC_BITS, 18,
+                &ff_mlp_huffman_tables[0][0][1], 2, 1,
+                &ff_mlp_huffman_tables[0][0][0], 2, 1, 512);
+    INIT_VLC_STATIC(&huff_vlc[1], VLC_BITS, 16,
+                &ff_mlp_huffman_tables[1][0][1], 2, 1,
+                &ff_mlp_huffman_tables[1][0][0], 2, 1, 512);
+    INIT_VLC_STATIC(&huff_vlc[2], VLC_BITS, 15,
+                &ff_mlp_huffman_tables[2][0][1], 2, 1,
+                &ff_mlp_huffman_tables[2][0][0], 2, 1, 512);
 
     ff_mlp_init_crc();
 }
@@ -397,7 +395,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     if (m->avctx->request_channels > 0
         && s->max_channel + 1 >= m->avctx->request_channels
         && substr < m->max_decoded_substream) {
-        av_log(m->avctx, AV_LOG_DEBUG,
+        av_log(m->avctx, AV_LOG_INFO,
                "Extracting %d channel downmix from substream %d. "
                "Further substreams will be skipped.\n",
                s->max_channel + 1, substr);
@@ -959,7 +957,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
 
     length = (AV_RB16(buf) & 0xfff) * 2;
 
-    if (length < 4 || length > buf_size)
+    if (length > buf_size)
         return -1;
 
     init_get_bits(&gb, (buf + 4), (length - 4) * 8);
@@ -1134,9 +1132,10 @@ error:
     return -1;
 }
 
+#if CONFIG_MLP_DECODER
 AVCodec mlp_decoder = {
     "mlp",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MLP,
     sizeof(MLPDecodeContext),
     mlp_decode_init,
@@ -1145,11 +1144,12 @@ AVCodec mlp_decoder = {
     read_access_unit,
     .long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
 };
+#endif /* CONFIG_MLP_DECODER */
 
 #if CONFIG_TRUEHD_DECODER
 AVCodec truehd_decoder = {
     "truehd",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_TRUEHD,
     sizeof(MLPDecodeContext),
     mlp_decode_init,

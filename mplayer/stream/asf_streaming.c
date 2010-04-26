@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +19,7 @@
 
 #include "stream.h"
 #include "libmpdemux/demuxer.h"
-#include "asf_mmst_streaming.h"
+
 #include "network.h"
 #include "tcp.h"
 
@@ -47,6 +29,7 @@
 
 extern int network_bandwidth;
 
+int asf_mmst_streaming_start( stream_t *stream );
 static int asf_http_streaming_start(stream_t *stream, int *demuxer_type);
 
 static int asf_read_wrapper(int fd, void *buffer, int len, streaming_ctrl_t *stream_ctrl) {
@@ -492,7 +475,6 @@ static int asf_http_streaming_type(char *content_type, char *features, HTTP_head
 	if( 	!strcasecmp(content_type, "application/octet-stream") ||
 		!strcasecmp(content_type, "application/vnd.ms.wms-hdr.asfv1") ||        // New in Corona, first request
 		!strcasecmp(content_type, "application/x-mms-framed") ||                // New in Corana, second request
-		!strcasecmp(content_type, "video/x-ms-wmv") ||
 		!strcasecmp(content_type, "video/x-ms-asf")) {
 
 		if( strstr(features, "broadcast") ) {
@@ -870,3 +852,4 @@ const stream_info_t stream_info_asf = {
   NULL,
   0 // Urls are an option string
 };
+

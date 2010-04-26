@@ -1,9 +1,8 @@
-This is GNU FriBidi
-The Free Implementation of the Unicode Bidirectional Algorithm.
+This is GNU FriBidi,
+a Free Implementation of the Unicode BiDirectional algorithm.
 
 Background
 ==========
-
 One of the missing links stopping the penetration of free software in Middle
 East is the lack of support for the Arabic and Hebrew alphabets. In order to
 have proper Arabic and Hebrew support, the BiDi algorithm should have been
@@ -12,90 +11,69 @@ software in the Middle Eastern countries.
 
 Audience
 ========
-
 It is our hope that this library will stimulate the implementation of Hebrew
 and Arabic in lots of free software. Here is a small list of projects that
-would benefit from the use of the GNU FriBidi library, but of course there are
+would benifit from the use of the GNU FriBidi library, but of course there are
 many more: Wine, Mozilla, Qt, KDE, lynx, OpenOffice.
 
-GNU FriBidi is already being used in projects like Pango (resulting in GTK+
-and GNOME using GNU FriBidi), AbiWord, MLTerm, MPlayer, and BiCon.
-
-Dependencies
-============
-
-Currently GNU FriBidi does not depend on any other library, but uses Glib if
-available.  It uses GNU Build System for build and installation on POSIX
-systems.
+It may be interesting for you to know that Fribidi is already being used in
+projects like Gnome, GTK+, Pango, AbiWord, and Xterm.
 
 Downloading
 ===========
-
 The latest version of GNU FriBidi may be found at:
 
    http://fribidi.org/
 
 Building
 ========
+See INSTALL for a description of how to build and install this library.
 
-See INSTALL for a description of how to build and install GNU FriBidi.
-
-License
+Copyright
 =========
+Fribidi is:
+Copyright (C) 1999,2000 Dov Grobgeld, and
+Copyright (C) 2001,2002,2005 Behdad Esfahbod.
 
-GNU FriBidi is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public License
-as published by the Free Software Foundation; either version 2.1
-of the License, or (at your option) any later version.
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
 
-GNU FriBidi is distributed in the hope that it will be useful,
+This library is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public License
-along with GNU FriBidi, in a file named COPYING; if not, write to the
+along with this library, in a file named COPYING; if not, write to the
 Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 Boston, MA  02111-1307  USA
 
-For licensing issues, contact <license@farsiweb.info>.
+For licensing issues, contact <dov@imagic.weizmann.ac.il> and
+<fwpg@sharif.edu>.
 
 Implementation
 ==============
-
 The library implements the algorithm described in the "Unicode Standard
 Annex #9, The Bidirectional Algorithm", available at
-http://www.unicode.org/unicode/reports/tr9/. GNU Fribidi has been tested
-exhaustively against the Unicode Reference Code, and to the best of our
-knowledge, it completely conforms to the specification, always producing
-the same result as the Reference Code.
+http://www.unicode.org/unicode/reports/tr9/. GNU FriBidi has been tested
+exhaustively against the Unicode Reference Code, and due to our knowledge,
+it completely conforms to the specification, always producing the same
+result as the Reference Code.
 
-The library uses Unicode (UTF32) entirely. The character properties are
-automatically extracted from the Unicode data files, available from:
-
-	http://www.unicode.org/Public/UNIDATA/
-
-This means that every Unicode character is treated in strict accordance
-with the Unicode specification.
-
-There is a limited support for character set conversion from/to the UTF32
-encoding.  Data in these character sets must be converted into UTF32 before
-the library may be used.  iconv(3) can always do a better job on that, so you
-may find that the character sets conversion code is typically turned off on
-POSIX machines.
-
-The reordering of characters is typically done through the function:
+The reordering of characters is done through the function:
       
-     fribidi_boolean
+     void
      fribidi_log2vis(/* input */
 		     FriBidiChar *str,
-		     FriBidiStrIndex len,
+		     int len,
 		     FriBidiCharType *pbase_dir,
 		     /* output */
 		     FriBidiChar *visual_str,
-		     FriBidiStrIndex *position_L_to_V_list,
-		     FriBidiStrIndex *position_V_to_L_list,
-		     FriBidiLevel    *embedding_level_list
+		     gint        *position_L_to_V_list,
+		     gint        *position_V_to_L_list,
+		     gint8       *embedding_level_list
 		     )
     
 
@@ -117,8 +95,10 @@ where
                             list is in interactive applications when the
                             embedding e.g. level determines cursor display.
 
-In any of the output pointers == NULL, then that information is not 
-calculated.
+If any of the output pointers == NULL, then that information is not 
+calculated.  Note that this function does not allow line breaking, and
+so GNU FriBidi is not feature complete yet.  This will be fixed in the
+future.
 
 How it looks like
 =================
@@ -131,11 +111,10 @@ full description.
 Executable
 ==========
 
-There is also a command-line utilitity called fribidi that loops over
+There is also a command line utilitity called `fribidi' that loops over
 the text of a file and performs the BiDi algorithm on each line, also
 used for testing the algorithm. Run fribidi with the --help option to
-learn about usage.  The command-line utility is known to have problems
-with line-breaking and ltov/vtol lists.
+learn about usage.
 
 Bugs and comments
 =================
@@ -149,5 +128,6 @@ And send your comments to:
 	fribidi@freedesktop.org
 
 
-Behdad Esfahbod
-behdad@gnu.org
+
+Behdad Esfahbod <behdad@gnu.org>
+June 8, 2005

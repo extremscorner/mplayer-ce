@@ -36,10 +36,7 @@
 #include "app.h"
 #include "cfg.h"
 #include "help_mp.h"
-#include "path.h"
-#include "mp_core.h"
-#include "mplayer.h"
-#include "libmpcodecs/vd.h"
+#include "get_path.h"
 #include "libvo/x11_common.h"
 #include "libvo/video_out.h"
 #include "libvo/font_load.h"
@@ -49,6 +46,7 @@
 #include "mixer.h"
 #include "libaf/af.h"
 #include "libaf/equalizer.h"
+#include "libass/ass.h"
 #include "libass/ass_mp.h"
 
 extern af_cfg_t af_cfg;
@@ -75,6 +73,27 @@ int vcd_seek_to_track(void *vcd, int track);
 guiInterface_t guiIntfStruct;
 int guiWinID=-1;
 
+char * gstrcat( char ** dest,const char * src )
+{
+ char * tmp = NULL;
+
+ if ( !src ) return NULL;
+
+ if ( *dest )
+  {
+   tmp=malloc( strlen( *dest ) + strlen( src ) + 1 );
+
+   if ( tmp ) /* TODO: advanced error handling */
+    {
+     strcpy( tmp,*dest ); strcat( tmp,src ); free( *dest );
+    }
+   }
+  else
+   { tmp=malloc( strlen( src ) + 1 ); strcpy( tmp,src ); }
+ *dest=tmp;
+ return tmp;
+}
+
 int gstrcmp( const char * a,const char * b )
 {
  if ( !a && !b ) return 0;
@@ -82,7 +101,7 @@ int gstrcmp( const char * a,const char * b )
  return strcmp( a,b );
 }
 
-static int gstrncmp( const char * a, const char * b, int size )
+int gstrncmp( const char * a,const char * b,int size )
 {
  if ( !a && !b ) return 0;
  if ( !a || !b ) return -1;
@@ -107,6 +126,12 @@ void gfree( void ** p )
  free( *p ); *p=NULL;
 }
 
+void gset( char ** str, const char * what )
+{
+ if ( *str ) { if ( !strstr( *str,what ) ) { gstrcat( str,"," ); gstrcat( str,what ); }}
+   else gstrcat( str,what );
+}
+
 /**
  * \brief this actually creates a new list containing only one element...
  */
@@ -129,7 +154,7 @@ void gaddlist( char *** list,const char * entry )
  * \brief this replaces a string starting with search by replace.
  * If not found, replace is appended.
  */
-static void greplace(char ***list, const char *search, const char *replace)
+void greplace(char ***list, const char *search, const char *replace)
 {
  int i = 0;
  int len = (search) ? strlen(search) : 0;
@@ -496,15 +521,15 @@ static void remove_vf( char * str )
   }
 }
 
-int guiGetEvent( int type,void * arg )
+int guiGetEvent( int type,char * arg )
 {
   const ao_functions_t *audio_out = NULL;
   const vo_functions_t *video_out = NULL;
   mixer_t *mixer = NULL;
 
- stream_t * stream = arg;
+ stream_t * stream = (stream_t *) arg;
 #ifdef CONFIG_DVDREAD
- dvd_priv_t * dvdp = arg;
+ dvd_priv_t * dvdp = (dvd_priv_t *) arg;
 #endif
 
  if (guiIntfStruct.mpcontext) {
@@ -516,8 +541,8 @@ int guiGetEvent( int type,void * arg )
  switch ( type )
   {
    case guiXEvent:
-        guiIntfStruct.event_struct=arg;
-        wsEvents( wsDisplay,arg,NULL );
+        guiIntfStruct.event_struct=(void *)arg;
+        wsEvents( wsDisplay,(XEvent *)arg,NULL );
         gtkEventHandling();
         break;
    case guiCEvent:
@@ -547,12 +572,12 @@ int guiGetEvent( int type,void * arg )
 	  else wsVisibleWindow( &appMPlayer.subWindow,wsShowWindow );
 	break;
    case guiSetContext:
-	guiIntfStruct.mpcontext=arg;
+	guiIntfStruct.mpcontext=(void *)arg;
    case guiSetDemuxer:
-	guiIntfStruct.demuxer=arg;
+	guiIntfStruct.demuxer=(void *)arg;
 	break;
    case guiSetAfilter:
-	guiIntfStruct.afilter=arg;
+	guiIntfStruct.afilter=(void *)arg;
 	break;
    case guiSetShVideo:
 	 {
@@ -648,7 +673,7 @@ int guiGetEvent( int type,void * arg )
 	guiIntfStruct.sh_video=arg;
 	if ( arg )
 	 {
-	  sh_video_t * sh = arg;
+	  sh_video_t * sh = (sh_video_t *)arg;
 	  guiIntfStruct.FPS=sh->fps;
 	 }
 
@@ -757,7 +782,7 @@ int guiGetEvent( int type,void * arg )
 	     }
 	 }
 
-	if ( !video_driver_list && !video_driver_list[0] ) { gtkMessageBox( GTK_MB_FATAL,MSGTR_IDFGCVD ); exit_player(EXIT_ERROR); }
+	if ( !video_driver_list && !video_driver_list[0] ) { gtkMessageBox( GTK_MB_FATAL,MSGTR_IDFGCVD ); exit_player( "gui init" ); }
 
 	{
 	 int i = 0;
@@ -1172,7 +1197,7 @@ void * gtkSet( int cmd,float fparam, void * vparam )
 
 //This function adds/inserts one file into the gui playlist
 
-static int import_file_into_gui(char* temp, int insert)
+int import_file_into_gui(char* temp, int insert)
 {
   char *filename, *pathname;
   plItem * item;

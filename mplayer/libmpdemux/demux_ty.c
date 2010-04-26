@@ -41,7 +41,6 @@
 
 #include "stream/stream.h"
 #include "demuxer.h"
-#include "demux_ty_osd.h"
 #include "parse_es.h"
 #include "stheader.h"
 #include "sub_cc.h"
@@ -87,7 +86,6 @@ typedef struct
 typedef struct
 {
    int             whichChunk;
-   unsigned char   chunk[ CHUNKSIZE ];
 
    unsigned char   lastAudio[ MAX_AUDIO_BUFFER ];
    int             lastAudioEnd;
@@ -106,6 +104,7 @@ typedef struct
 } TiVoInfo;
 
 off_t vstream_streamsize( );
+void ty_ClearOSD( int start );
 
 // ===========================================================================
 #define TMF_SIG "showing.xml"
@@ -339,6 +338,7 @@ static int demux_ty_fill_buffer( demuxer_t *demux, demux_stream_t *dsds )
    int              errorHeader = 0;
    int              recordsDecoded = 0;
 
+   unsigned char    chunk[ CHUNKSIZE ];
    int              readSize;
 
    int              numberRecs;
@@ -350,7 +350,6 @@ static int demux_ty_fill_buffer( demuxer_t *demux, demux_stream_t *dsds )
    int              aid;
 
    TiVoInfo         *tivo = demux->priv;
-   unsigned char    *chunk = tivo->chunk;
 
    if ( demux->stream->type == STREAMTYPE_DVD )
       return 0;

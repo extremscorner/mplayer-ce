@@ -38,6 +38,20 @@
 #include "mp_msg.h"
 
 #ifdef CONFIG_DVB
+#ifndef CONFIG_DVB_HEAD
+#include <poll.h>
+
+#include <sys/ioctl.h>
+#include <stdio.h>
+#include <time.h>
+
+#include <ost/dmx.h>
+#include <ost/frontend.h>
+#include <ost/sec.h>
+#include <ost/video.h>
+#include <ost/audio.h>
+
+#else
 #define true 1
 #define false 0
 #include <poll.h>
@@ -50,6 +64,7 @@
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/video.h>
 #include <linux/dvb/audio.h>
+#endif
 #endif
 
 #include "config.h"
@@ -126,9 +141,15 @@ static int preinit(const char *arg){
           mp_msg(MSGT_VO,MSGL_INFO, "Couldn't find a usable dvb video device, exiting\n");
           return -1;
         }
+#ifndef CONFIG_DVB_HEAD
+	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/ost/video+audio\n");
+	sprintf(vo_file, "/dev/ost/video");
+	sprintf(ao_file, "/dev/ost/audio");
+#else
 	mp_msg(MSGT_VO,MSGL_INFO, "Opening /dev/dvb/adapter%d/video0+audio0\n", card);
 	sprintf(vo_file, "/dev/dvb/adapter%d/video0", card);
 	sprintf(ao_file, "/dev/dvb/adapter%d/audio0", card);
+#endif
 	if((vo_mpegpes_fd = open(vo_file,O_RDWR)) < 0){
         	perror("DVB VIDEO DEVICE: ");
         	return -1;
@@ -199,10 +220,14 @@ static int my_write(unsigned char* data,int len){
     return orig_len;
 }
 
-static void send_pes_packet(unsigned char* data, int len, int id, int timestamp)
-{
+void send_pes_packet(unsigned char* data,int len,int id,int timestamp){
     send_mpeg_pes_packet (data, len, id, timestamp, 1, my_write);
 }
+
+void send_lpcm_packet(unsigned char* data,int len,int id,unsigned int timestamp,int freq_id){
+    send_mpeg_lpcm_packet(data, len, id, timestamp, freq_id, my_write);
+}
+
 
 static int draw_frame(uint8_t * src[])
 {

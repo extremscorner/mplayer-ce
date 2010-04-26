@@ -17,7 +17,7 @@ datadir = ${datarootdir}
 localedir = ${datarootdir}/locale
 
 # Programs used by "make":
-CC = ${DEVKITPPC}/bin/powerpc-gekko-gcc
+CC = /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc
 CFLAGS = -mcpu=750
 CPPFLAGS = 
 LDFLAGS = 
@@ -32,7 +32,7 @@ RM = rm -f
 
 
 # Programs used by "make install":
-INSTALL = /usr/bin/install -c
+INSTALL = /bin/install -c
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_DATA = ${INSTALL} -m 644
 mkinstalldirs = $(SHELL) ../build-aux/mkinstalldirs

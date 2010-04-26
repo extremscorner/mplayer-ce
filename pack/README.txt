@@ -112,37 +112,18 @@ contains a folder  named "MPlayer_ce"  which  you will  need  to copy to your
 "apps" folder  on your SD Card. 
 Once  copied  over you  can launch it  using the  loader of your choice.
 
-×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                              USB 2.0                          ·oø×O0|
-`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+USB 2.0:
+You need to  install the  USB 2.0 cIOS from http://wiibrew.org/wiki/CIOS_usb2
+You must then then reinstall DVDX http://wiibrew.org/wiki/DVDx using advanced
+mode and selecting IOS202.   Even  if you don't  plan on playing DVDs this is
+necessary for MPlayer CE to detect if the cIOS is installed.
 
-For  USB 2.0  support  you  will  need  to install the USB 2.0 cIOS from here
-(please note that this requires an internet connection): 
+Plug in your USB device before loading MPlayer, and it should be mounted.
+Some devices do not support hotplugging.
 
-   http://mplayer-ce.googlecode.com/files/cIOS_Installer.rar
-
-Make sure to watch it download and install in case it fails and returns to HBC.
-Those that install this cIOS do not require DVDx.
-
-Offline installation is available.  For a guide please see here:
-
-   http://www.tehskeen.com/forums/showthread.php?p=62838
-
-If you receive the error codes -1017 or -2011 your Wii probably does not have
-an  IOS  with the  fakesigning bug.  Users without  the  fakesign  bug cannot
-install this cIOS. Trucha Bug Restorer is an  application to workaround this.
-It is  compatible  with  all  Wiis and  up to  system menu 4.1. Only use this
-program if you have an idea what the trucha bug
-
-   http://wiibrew.org/wiki/Signing_bug
-
-is and why you need it. For more information and to download visit:
-
-   http://www.tehskeen.com/viewarticle.php?articleid=4295
-
-Once complete, download the cIOS Installer and choose IOS36 as the IOS in the
-selection screen.
-Make sure to watch it download and install in case it fails and returns to HBC.
+Users  with  system menu 3.4 or  higher will not be  able to use  USB2.0 with
+MPlayerCE because the DVDx installer for 3.4 does not have an  advanced mode.
+Unfortunately there is nothing we can do about it.
 
 If you plan on updating make sure to install the cIOS and DVDx before updating.
 
@@ -185,18 +166,6 @@ folder.  The specifications for "loop.avi" are listed below.
 
 XVID MPEG4 Compressed AVI
 640x456 or 720x480 Resolution
-
-How to change colour of subtitles?
-
-to change colour of subs you need to add some params to your'e mplayer.conf
-e.g. with this param now subs are yellow
-ass=yes
-ass-font-scale=2.2
-ass-color=FFFF0000
-ass-font-scale to change subs size
-
-More information can be found here: 
-http://www.mplayerhq.hu/DOCS/man/en/mplayer.1.html#OSD/SUBTITLE%20OPTIONS
 
 Further Customization Instructions can be found on the MPlayer CE Wiki
 
@@ -329,15 +298,12 @@ Aspect
 
 The Nintendo Wii is capable of reading DVD DATA and DVD-VIDEO discs, but this
 functionality  while  left  into  the  Nintendo  Wii  needs  to be enabled by 
-installing  DVDx from  Team Twiizers.  If you use USB2 and have installed the 
-cIOS202 then you don't need a DVDx install at all, as the cIOS has a patch to 
-access DVD without it.
-You  can  locate  DVDx  from  the URLs below.  
-Make sure to install  the  correct version as there is one for System Menu 
-3.2/3.3  3.4  and 4.0
+installing  DVDx from  Team Twiizers.  You  can  locate  DVDx  from  the URLs 
+below.  Make sure to install  the  correct version as there is one for System
+Menu 3.2/3.3 and one for 3.4
+
 DVDx 3.2/3.3 -> http://hackmii.com/2008/08/libdi-and-the-dvdx-installer
 DVDx 3.4 -> http://hackmii.com/2009/02/dvdx34/
-DVDx 4.0 -> http://bootmii.org/download/
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                           RADIO STREAMS                       ·oø×O0|
@@ -355,102 +321,8 @@ Example:
 <e name="Woxy radio" ok="loadlist 'http://woxy.lala.com/stream/aac32.pls'"/>
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                         Youtube/SHOUTcast                    · oø×O0|
-`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-You can add changes to the Youtube/SHOUTcast, check your menu.conf. 
-By default it is running via Extrems' Server.
-
-×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             CHANGELOG                         ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-
-v0.76
-   * Fixes for 4.2 update
-   * Stability fixes (hopefully freezing is gone forever now)
-   * Network (LAN and WAN) speeds increased
-   * Added directory play feature
-   * YouTube section entirely revamped
-   * Added Nintendo Channel content (quality may not yet be optimal) (thanks to yellowstar6 for his work on ninchdl-listext)
-   * [blip.tv was planned but couldn't make it on time]
-   * Many, many more bugs fixed
-
-v0.75
-   * FTP support added
-   * NTFS support added for USB and SD
-   * SMB speed improved
-   * Hopefully finally eradicated the freezing bug
-   * Fixed noise bug when loading another stream
-
-v0.72
-   * Fix playlist bug
-   * More SMB servers detected (thanks to hax)
-   * SMB now supports user-level share security (thanks to hax)
-   * SMB now supports plain text passwords (thanks to hax)
-
-v0.71
-   * Autoload implemented. If the next file has a very similar name (using a
-     Levenshtein distance of 2) it will be autoloaded. 
-     Examples: film.part1.avi > film.part2.avi (1 change)
-               episode.s01e09.avi > episode.s01e10.avi works (2 changes)
-   * Improved memory management: fixes MPlayer hanging if out of memory.
-   * OSD level 3 now shows mem1 and mem2 info.
-   * Driver improved with autodetection error: on error the device is reinitied
-     and read is retried.
-   * Restore Points fixed. Now quit or power off saves restore point and can
-     resume properly. Please delete your previous restore_point file in case
-     it is corrupted, and check that your SD card isn't locked.
-   * Improved SMB connections: now SMB will always reconnect.
-   * Improved stream initialisation.
-   * Fixed green lines at the top of loading screen.
-   * Further improved video compatibility
-   * Added ability to load an external driver from SD for USB 2.0 testing.
-     More details (and drivers) will be added to the Google Code page at a
-     later date.  Thanks to Hermes for the patch.
-   * Finally fixed the problem with network and USB 2.0 conflicts
-     (due to the driver using a bad device).
-   * Font loading improved.
-   * Improved MPlayer support when a file unexpectedly disappears and reappears.
-   * Many other small fixes and code cleanup.
-   * New USB test:
-      - If http://mplayer-ce.googlecode.com/files/USB%20Test.rar says USB device
-        is compatible but a device is not working then there is no FAT partition
-        on the device.  Check if you are using NTFS or exFAT instead.
-
-v0.7
-   * Use small cache if opening an internet stream (audio and video).
-   * Optimized memory access (thanks to a suggestion from Shagkur); cache thread
-     is now more stable.
-   * A8 patch added for DVD playback in cIOS202 to avoid problems with old
-     modchips.
-   * Improved Libfat:
-      - fix for special characters
-      - prevent possible corruption on sd
-      - can now mount any FAT partition, whether primary or active
-      - real FAT32 limit so larger files can be played
-   * Improved USB hotplug and DVD detection
-   * ECHI module modified for greater compatibility with USB devices.
-   * Improved video compatibility.
-   * New buffering system implemented.  If the cache drops below 3% MPlayer will
-     pause and re-buffer to prevent possible hangs with bad connections. Cache is
-     shown on OSD level 3.
-   * Shoutcast TV is complete with caching, thanks to Extrems.  Please see
-     menu.conf.
-   * If new cIOS is used then DVDx is not required for DVD access.
-   * New cIOS Installer:
-      - Installs IOS202 using base IOS60 automatically for greater WiFi support.
-      - Ability to select the IOS to use so you can select an IOS with the
-        fakesign bug.
-
-v0.62
-    * USB LAN Adaptor support fixed (again).  Thanks to CountZ3ro for testing.
-      Please note that you will need to install the USB 2.0 cIOS.
-    * cIOS improved to stop conflicts with other homebrew. Please note that
-      now only port0 has usb2 support. All other USB devices (including the
-      USB LAN adaptor) must go in port1.  See here for details:
-      http://mplayer-ce.googlecode.com/files/usb.jpg
-    * Horizontal stretch parameter added (see mplayer.conf)
-    * YouTube options added to menu.conf (thanks to Extrems)
-    * Many small bug fixes
 
 v0.61
     * New screen size variables actually work now.
@@ -507,7 +379,7 @@ v0.5
  v0.3
  
     * Fixed code to play videos with incompatible size
-    * We now support many video formats and unorthodox resolutions
+        - We now support many video formats and unorthodox resolutions
     * Fixed keepalive issue in samba (thanks to Ludovic Orban)
     * New loop.avi and widescreen version (thanks to Blue_K)
  
@@ -578,21 +450,17 @@ V0.1 Christmas Edition
                   AgentX - Source Improvements, Configs & Testing
                DJDynamite123 - Autochain Code/Experimenting & Testing
                       Ludovic Orban - Keepalive issue in samba
-                         Extrems - SHOUTcast/Youtube Patches
-                            Tantric - SMB Improvements		
-                                hax - FTP devoptab
-                                 Shareese - NTFS						
+                            Tantric - SMB Improvements					
                               Brakken - Documentation
                                  Blue_K - loop.avi
-						  yellowstar6 - ninchdl-listext
                               
                               Thanks Goes Out To ...
                               
                                       [rOn]
                                   Team Twiizers
                                  GeeXboX Authors
-	                            dargllun									 
-                                      Daca
-                           Shagkur & LibOGC Contributers
+	                               dargllun									 
+                                       Daca
+                            Shagkur & LibOGC Contributers
                               
 ×¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨•ßrK•

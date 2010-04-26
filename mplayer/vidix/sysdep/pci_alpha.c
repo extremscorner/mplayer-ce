@@ -26,3 +26,4 @@ static long pci_config_read_long(
     pciconfig_read(bus, dev<<3, cmd, 4, &retval);
     return retval;
 }
+

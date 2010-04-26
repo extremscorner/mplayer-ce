@@ -29,13 +29,12 @@
 #include "help_mp.h"
 
 #include "stream/stream.h"
-#include "aviprint.h"
 #include "demuxer.h"
 #include "stheader.h"
 
 #include "asf.h"
+
 #include "asfguid.h"
-#include "asfheader.h"
 
 typedef struct {
   // must be 0 for metadata record, might be non-zero for metadata lib record
@@ -135,6 +134,10 @@ int asf_check_header(demuxer_t *demuxer){
   demuxer->priv = asf;
   return DEMUXER_TYPE_ASF;
 }
+
+void print_wave_header(WAVEFORMATEX *h, int verbose_level);
+void print_video_header(BITMAPINFOHEADER *h, int verbose_level);
+
 
 static int get_ext_stream_properties(char *buf, int buf_len, int stream_num, struct asf_priv* asf, int is_video)
 {
@@ -441,7 +444,6 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
       audio_pos += 64; //16+16+4+4+4+16+4;
       buffer = &hdr[audio_pos];
       sh_audio=new_sh_audio(demuxer,streamh->stream_no & 0x7F);
-      sh_audio->needs_parsing = 1;
       mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "asfheader", streamh->stream_no & 0x7F);
       ++audio_streams;
       if (!asf_init_audio_stream(demuxer, asf, sh_audio, streamh, &audio_pos, &buffer, hdr, hdr_len))
@@ -542,7 +544,7 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
       asf->packetsize=fileh->max_packet_size;
       asf->packet=malloc(asf->packetsize); // !!!
       asf->packetrate=fileh->max_bitrate/8.0/(double)asf->packetsize;
-      asf->movielength=(fileh->play_duration-10000*fileh->preroll)/10000000.0;
+      asf->movielength=(fileh->play_duration-fileh->preroll)/10000000LL;
   }
 
   // find content header
@@ -563,7 +565,7 @@ int read_asf_header(demuxer_t *demuxer,struct asf_priv* asf){
           if (pos > hdr_len) goto len_err_out;
           if ((string = get_ucs2str(wstring, len))) {
             mp_msg(MSGT_HEADER,MSGL_V," Title: %s\n", string);
-            demux_info_add(demuxer, "title", string);
+            demux_info_add(demuxer, "name", string);
             free(string);
           }
         }

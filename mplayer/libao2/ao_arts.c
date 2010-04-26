@@ -147,3 +147,4 @@ static float get_delay(void)
 	return ((float) (ao_data.buffersize - arts_stream_get(stream,
 		ARTS_P_BUFFER_SPACE))) / ((float) ao_data.bps);
 }
+

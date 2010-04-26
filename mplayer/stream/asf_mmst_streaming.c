@@ -43,15 +43,22 @@
 #include <winsock2.h>
 #endif
 
+#ifndef CONFIG_SETLOCALE
+#undef CONFIG_ICONV
+#endif
+
 #ifdef CONFIG_ICONV
 #include <iconv.h>
+#ifdef HAVE_LANGINFO
+#include <langinfo.h>
+#endif
 #endif
 
 #include "url.h"
 #include "libmpdemux/asf.h"
 
 #include "stream.h"
-#include "asf_mmst_streaming.h"
+
 #include "network.h"
 #include "tcp.h"
 
@@ -567,7 +574,11 @@ int asf_mmst_streaming_start(stream_t *stream)
 
   /* prepare for the url encoding conversion */
 #ifdef CONFIG_ICONV
-  url_conv = iconv_open("UTF-16LE", "UTF-8");
+#ifdef HAVE_LANGINFO
+  url_conv = iconv_open("UTF-16LE",nl_langinfo(CODESET));
+#else
+  url_conv = iconv_open("UTF-16LE", NULL);
+#endif
 #endif
 
   snprintf (str, 1023, "\034\003NSPlayer/7.0.0.1956; {33715801-BAB3-9D85-24E9-03B90328270A}; Host: %s", url1->hostname);

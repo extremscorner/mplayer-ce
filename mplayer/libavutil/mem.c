@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavutil/mem.c
  * default memory allocator for libavutil
  */
 
@@ -33,29 +33,12 @@
 #include <malloc.h>
 #endif
 
-#include "avutil.h"
 #include "mem.h"
 
 /* here we can use OS-dependent allocation functions */
 #undef free
 #undef malloc
 #undef realloc
-
-#ifdef MALLOC_PREFIX
-
-#define malloc         AV_JOIN(MALLOC_PREFIX, malloc)
-#define memalign       AV_JOIN(MALLOC_PREFIX, memalign)
-#define posix_memalign AV_JOIN(MALLOC_PREFIX, posix_memalign)
-#define realloc        AV_JOIN(MALLOC_PREFIX, realloc)
-#define free           AV_JOIN(MALLOC_PREFIX, free)
-
-void *malloc(size_t size);
-void *memalign(size_t align, size_t size);
-int   posix_memalign(void **ptr, size_t align, size_t size);
-void *realloc(void *ptr, size_t size);
-void  free(void *ptr);
-
-#endif /* MALLOC_PREFIX */
 
 /* You can redefine av_malloc and av_free in your project to use your
    memory allocator. You do not need to suppress this file because the
@@ -83,8 +66,7 @@ void *av_malloc(unsigned int size)
     if (posix_memalign(&ptr,16,size))
         ptr = NULL;
 #elif HAVE_MEMALIGN
-    //ptr = memalign(16,(size+15)&(~15));
-    ptr = memalign(32,(size+31)&(~31));
+    ptr = memalign(16,size);
     /* Why 64?
        Indeed, we should align it:
          on 4 for 386

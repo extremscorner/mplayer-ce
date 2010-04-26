@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -52,7 +34,7 @@ static unsigned long samples_input, max_bytes_output;
 static unsigned char *decoder_specific_buffer = NULL;
 static unsigned long decoder_specific_len = 0;
 
-const m_option_t faacopts_conf[] = {
+m_option_t faacopts_conf[] = {
 	{"br", &param_bitrate, CONF_TYPE_INT, 0, 0, 0, NULL},
 	{"quality", &param_quality, CONF_TYPE_INT, CONF_RANGE, 0, 1000, NULL},
 	{"object", &param_object_type, CONF_TYPE_INT, CONF_RANGE, 1, 4, NULL},

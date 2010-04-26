@@ -115,15 +115,10 @@ static int write_buffer(unsigned char* data, int len){
 static int read_buffer(unsigned char* data,int len){
   int buffered = av_fifo_size(ao->buffer);
   if (len > buffered) len = buffered;
-  av_fifo_generic_read(ao->buffer, data, len, NULL);
-  return len;
+  return av_fifo_generic_read(ao->buffer, data, len, NULL);
 }
 
-static OSStatus theRenderProc(void *inRefCon,
-                              AudioUnitRenderActionFlags *inActionFlags,
-                              const AudioTimeStamp *inTimeStamp,
-                              UInt32 inBusNumber, UInt32 inNumFrames,
-                              AudioBufferList *ioData)
+OSStatus theRenderProc(void *inRefCon, AudioUnitRenderActionFlags *inActionFlags, const AudioTimeStamp *inTimeStamp, UInt32 inBusNumber, UInt32 inNumFrames, AudioBufferList *ioData)
 {
 int amt=av_fifo_size(ao->buffer);
 int req=(inNumFrames)*ao->packetSize;
@@ -267,7 +262,7 @@ int b_alive;
     ao->b_changed_mixing = 0;
 
     /* Probe whether device support S/PDIF stream output if input is AC3 stream. */
-    if (AF_FORMAT_IS_AC3(format))
+    if ((format & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_AC3)
     {
         /* Find the ID of the default Device. */
         i_param_size = sizeof(AudioDeviceID);
@@ -291,7 +286,7 @@ int b_alive;
         }
 
         /* Retrieve the name of the device. */
-        psz_name = malloc(i_param_size);
+        psz_name = (char *)malloc(i_param_size);
         err = AudioDeviceGetProperty(devid_def, 0, 0,
                                      kAudioDevicePropertyDeviceName,
                                      &i_param_size, psz_name);
@@ -318,7 +313,23 @@ int b_alive;
 	inDesc.mSampleRate=rate;
 	inDesc.mFormatID=ao->b_supports_digital ? kAudioFormat60958AC3 : kAudioFormatLinearPCM;
 	inDesc.mChannelsPerFrame=channels;
-	inDesc.mBitsPerChannel=af_fmt2bits(format);
+	switch(format&AF_FORMAT_BITS_MASK){
+	case AF_FORMAT_8BIT:
+		inDesc.mBitsPerChannel=8;
+		break;
+	case AF_FORMAT_16BIT:
+		inDesc.mBitsPerChannel=16;
+		break;
+	case AF_FORMAT_24BIT:
+		inDesc.mBitsPerChannel=24;
+		break;
+	case AF_FORMAT_32BIT:
+		inDesc.mBitsPerChannel=32;
+		break;
+	default:
+		ao_msg(MSGT_AO, MSGL_WARN, "Unsupported format (0x%08x)\n", format);
+		goto err_out;
+	}
 
     if((format&AF_FORMAT_POINT_MASK)==AF_FORMAT_F) {
 	// float
@@ -332,7 +343,13 @@ int b_alive;
 	// unsigned int
 		inDesc.mFormatFlags = kAudioFormatFlagIsPacked;
     }
-    if ((format & AF_FORMAT_END_MASK) == AF_FORMAT_BE)
+    if ((format & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_AC3) {
+        // Currently ac3 input (comes from hwac3) is always in native byte-order.
+#ifdef WORDS_BIGENDIAN
+        inDesc.mFormatFlags |= kAudioFormatFlagIsBigEndian;
+#endif
+    }
+    else if ((format & AF_FORMAT_END_MASK) == AF_FORMAT_BE)
         inDesc.mFormatFlags |= kAudioFormatFlagIsBigEndian;
 
     inDesc.mFramesPerPacket = 1;
@@ -513,7 +530,7 @@ static int OpenSPDIF(void)
     }
 
     i_streams = i_param_size / sizeof(AudioStreamID);
-    p_streams = malloc(i_param_size);
+    p_streams = (AudioStreamID *)malloc(i_param_size);
     if (p_streams == NULL)
     {
         ao_msg(MSGT_AO, MSGL_WARN, "out of memory\n" );
@@ -549,7 +566,7 @@ static int OpenSPDIF(void)
         }
 
         i_formats = i_param_size / sizeof(AudioStreamBasicDescription);
-        p_format_list = malloc(i_param_size);
+        p_format_list = (AudioStreamBasicDescription *)malloc(i_param_size);
         if (p_format_list == NULL)
         {
             ao_msg(MSGT_AO, MSGL_WARN, "could not malloc the memory\n" );
@@ -652,7 +669,7 @@ static int OpenSPDIF(void)
 
     /* FIXME: If output stream is not native byte-order, we need change endian somewhere. */
     /*        Although there's no such case reported.                                     */
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
     if (!(ao->stream_format.mFormatFlags & kAudioFormatFlagIsBigEndian))
 #else
     if (ao->stream_format.mFormatFlags & kAudioFormatFlagIsBigEndian)
@@ -742,7 +759,7 @@ static int AudioDeviceSupportsDigital( AudioDeviceID i_dev_id )
     }
 
     i_streams = i_param_size / sizeof(AudioStreamID);
-    p_streams = malloc(i_param_size);
+    p_streams = (AudioStreamID *)malloc(i_param_size);
     if (p_streams == NULL)
     {
         ao_msg(MSGT_AO,MSGL_V, "out of memory\n");
@@ -791,7 +808,7 @@ static int AudioStreamSupportsDigital( AudioStreamID i_stream_id )
     }
 
     i_formats = i_param_size / sizeof(AudioStreamBasicDescription);
-    p_format_list = malloc(i_param_size);
+    p_format_list = (AudioStreamBasicDescription *)malloc(i_param_size);
     if (p_format_list == NULL)
     {
         ao_msg(MSGT_AO,MSGL_V, "could not malloc the memory\n" );

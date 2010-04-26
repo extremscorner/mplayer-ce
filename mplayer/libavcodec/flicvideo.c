@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/flicvideo.c
  * Autodesk Animator FLI/FLC Video Decoder
  * by Mike Melanson (melanson@pcisys.net)
  * for more information on the .fli/.flc file format and all of its many
@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -585,7 +586,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                  * during decompression. So if it is required (i.e., this is not a LE target, we do
                  * a second pass over the line here, swapping the bytes.
                  */
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
                 pixel_ptr = y_ptr;
                 pixel_countdown = s->avctx->width;
                 while (pixel_countdown > 0) {
@@ -739,7 +740,7 @@ static av_cold int flic_decode_end(AVCodecContext *avctx)
 
 AVCodec flic_decoder = {
     "flic",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_FLIC,
     sizeof(FlicDecodeContext),
     flic_decode_init,

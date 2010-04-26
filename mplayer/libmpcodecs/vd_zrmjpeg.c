@@ -36,7 +36,7 @@
 
 #include "vd_internal.h"
 
-static const vd_info_t info =
+static vd_info_t info =
 {
 	"Zoran MJPEG Video passthrough",
 	"zrmjpeg",

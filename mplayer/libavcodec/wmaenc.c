@@ -134,7 +134,7 @@ static void encode_exp_vlc(WMACodecContext *s, int ch, const int *exp_param){
         int exp = *exp_param++;
         int code = exp - last_exp + 60;
         assert(code >= 0 && code < 120);
-        put_bits(&s->pb, ff_aac_scalefactor_bits[code], ff_aac_scalefactor_code[code]);
+        put_bits(&s->pb, ff_wma_scale_huffbits[code], ff_wma_scale_huffcodes[code]);
         /* XXX: use a table */
         q+= *ptr++;
         last_exp= exp;
@@ -186,7 +186,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
 
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            WMACoef *coefs1;
+            int16_t *coefs1;
             float *coefs, *exponents, mult;
             int i, n;
 
@@ -264,7 +264,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
             int run, tindex;
-            WMACoef *ptr, *eptr;
+            int16_t *ptr, *eptr;
             tindex = (ch == 1 && s->ms_stereo);
             ptr = &s->coefs1[ch][0];
             eptr = ptr + nb_coefs[ch];
@@ -386,25 +386,25 @@ static int encode_superframe(AVCodecContext *avctx,
 AVCodec wmav1_encoder =
 {
     "wmav1",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_WMAV1,
     sizeof(WMACodecContext),
     encode_init,
     encode_superframe,
     ff_wma_end,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
 
 AVCodec wmav2_encoder =
 {
     "wmav2",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_WMAV2,
     sizeof(WMACodecContext),
     encode_init,
     encode_superframe,
     ff_wma_end,
-    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
 };

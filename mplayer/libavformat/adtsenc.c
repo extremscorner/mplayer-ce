@@ -22,11 +22,22 @@
 
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
-#include "libavcodec/avcodec.h"
+#include "libavcodec/internal.h"
+#include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
-#include "adts.h"
 
-int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf, int size)
+#define ADTS_HEADER_SIZE 7
+
+typedef struct {
+    int write_adts;
+    int objecttype;
+    int sample_rate_index;
+    int channel_conf;
+    int pce_size;
+    uint8_t pce_data[MAX_PCE_SIZE];
+} ADTSContext;
+
+static int decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf, int size)
 {
     GetBitContext gb;
     PutBitContext pb;
@@ -53,7 +64,7 @@ int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf
         return -1;
     }
     if (get_bits(&gb, 1)) {
-        av_log_missing_feature(s, "Signaled SBR or PS", 0);
+        ff_log_missing_feature(s, "Signaled SBR or PS", 0);
         return -1;
     }
     if (!adts->channel_conf) {
@@ -75,16 +86,17 @@ static int adts_write_header(AVFormatContext *s)
     AVCodecContext *avc = s->streams[0]->codec;
 
     if(avc->extradata_size > 0 &&
-            ff_adts_decode_extradata(s, adts, avc->extradata, avc->extradata_size) < 0)
+            decode_extradata(s, adts, avc->extradata, avc->extradata_size) < 0)
         return -1;
 
     return 0;
 }
 
-int ff_adts_write_frame_header(ADTSContext *ctx,
-                               uint8_t *buf, int size, int pce_size)
+static int adts_write_frame_header(AVFormatContext *s, int size)
 {
+    ADTSContext *ctx = s->priv_data;
     PutBitContext pb;
+    uint8_t buf[ADTS_HEADER_SIZE];
 
     init_put_bits(&pb, buf, ADTS_HEADER_SIZE);
 
@@ -103,11 +115,16 @@ int ff_adts_write_frame_header(ADTSContext *ctx,
     /* adts_variable_header */
     put_bits(&pb, 1, 0);        /* copyright_identification_bit */
     put_bits(&pb, 1, 0);        /* copyright_identification_start */
-    put_bits(&pb, 13, ADTS_HEADER_SIZE + size + pce_size); /* aac_frame_length */
+    put_bits(&pb, 13, ADTS_HEADER_SIZE + size + ctx->pce_size); /* aac_frame_length */
     put_bits(&pb, 11, 0x7ff);   /* adts_buffer_fullness */
     put_bits(&pb, 2, 0);        /* number_of_raw_data_blocks_in_frame */
 
     flush_put_bits(&pb);
+    put_buffer(s->pb, buf, ADTS_HEADER_SIZE);
+    if (ctx->pce_size) {
+        put_buffer(s->pb, ctx->pce_data, ctx->pce_size);
+        ctx->pce_size = 0;
+    }
 
     return 0;
 }
@@ -116,18 +133,11 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ADTSContext *adts = s->priv_data;
     ByteIOContext *pb = s->pb;
-    uint8_t buf[ADTS_HEADER_SIZE];
 
     if (!pkt->size)
         return 0;
-    if(adts->write_adts) {
-        ff_adts_write_frame_header(adts, buf, pkt->size, adts->pce_size);
-        put_buffer(pb, buf, ADTS_HEADER_SIZE);
-        if(adts->pce_size) {
-            put_buffer(pb, adts->pce_data, adts->pce_size);
-            adts->pce_size = 0;
-        }
-    }
+    if(adts->write_adts)
+        adts_write_frame_header(s, pkt->size);
     put_buffer(pb, pkt->data, pkt->size);
     put_flush_packet(pb);
 
@@ -138,7 +148,7 @@ AVOutputFormat adts_muxer = {
     "adts",
     NULL_IF_CONFIG_SMALL("ADTS AAC"),
     "audio/aac",
-    "aac,adts",
+    "aac",
     sizeof(ADTSContext),
     CODEC_ID_AAC,
     CODEC_ID_NONE,

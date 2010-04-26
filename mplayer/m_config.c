@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 /// \file
 /// \ingroup Config
@@ -37,10 +20,10 @@
 #define MAX_PROFILE_DEPTH 20
 
 static int
-parse_profile(const m_option_t *opt, const char *name, const char *param, void *dst, int src);
+parse_profile(const m_option_t *opt, const char *name, char *param, void *dst, int src);
 
 static void
-set_profile(const m_option_t *opt, void* dst, const void* src);
+set_profile(const m_option_t *opt, void* dst, void* src);
 
 static int
 show_profile(m_option_t *opt, char* name, char *param);
@@ -282,18 +265,14 @@ static m_config_option_t*
 m_config_get_co(m_config_t *config, char* arg) {
   m_config_option_t *co;
 
-  if(!arg)return NULL;
   for(co = config->opts ; co ; co = co->next ) {
-    if(co->name && co->opt && co->opt->type)
-    {
-        int l = strlen(co->name) - 1;
-		if((co->opt->type->flags & M_OPT_TYPE_ALLOW_WILDCARD) &&
-		   (co->name[l] == '*')) {
-		  if(strncasecmp(co->name,arg,l) == 0)
-		return co;
-		} else if(strcasecmp(co->name,arg) == 0)
-		  return co;
-    }else printf("arg: %s\n",arg);
+    int l = strlen(co->name) - 1;
+    if((co->opt->type->flags & M_OPT_TYPE_ALLOW_WILDCARD) &&
+       (co->name[l] == '*')) {
+      if(strncasecmp(co->name,arg,l) == 0)
+	return co;
+    } else if(strcasecmp(co->name,arg) == 0)
+      return co;
   }
   return NULL;
 }
@@ -419,6 +398,19 @@ m_config_get_option(m_config_t *config, char* arg) {
     return NULL;
 }
 
+const void*
+m_config_get_option_ptr(m_config_t *config, char* arg) {
+  const m_option_t* conf;
+
+#ifdef MP_DEBUG
+  assert(config != NULL);
+  assert(arg != NULL);
+#endif
+
+  conf = m_config_get_option(config,arg);
+  if(!conf) return NULL;
+  return conf->p;
+}
 
 void
 m_config_print_option_list(m_config_t *config) {
@@ -506,7 +498,7 @@ m_config_set_profile(m_config_t* config, m_profile_t* p) {
 }
 
 static int
-parse_profile(const m_option_t *opt, const char *name, const char *param, void *dst, int src)
+parse_profile(const m_option_t *opt, const char *name, char *param, void *dst, int src)
 {
   m_config_t* config = opt->priv;
   char** list = NULL;
@@ -542,7 +534,7 @@ parse_profile(const m_option_t *opt, const char *name, const char *param, void *
 }
 
 static void
-set_profile(const m_option_t *opt, void *dst, const void *src) {
+set_profile(const m_option_t *opt, void *dst, void *src) {
   m_config_t* config = opt->priv;
   m_profile_t* p;
   char** list = NULL;

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mpc8.c Musepack SV8 decoder
  * MPEG Audio Layer 1/2 -like codec with frames of 1152 samples
  * divided into 32 subbands.
  */
@@ -44,8 +44,7 @@ static const int quant_offsets[6] = { MPC8_Q5_OFFSET, MPC8_Q6_OFFSET, MPC8_Q7_OF
 
 static inline int mpc8_dec_base(GetBitContext *gb, int k, int n)
 {
-    int len = mpc8_cnk_len[k-1][n-1] - 1;
-    int code = len ? get_bits_long(gb, len) : 0;
+    int code = get_bits(gb, mpc8_cnk_len[k-1][n-1] - 1);
 
     if (code >= mpc8_cnk_lost[k-1][n-1])
         code = ((code << 1) | get_bits1(gb)) - mpc8_cnk_lost[k-1][n-1];
@@ -128,9 +127,6 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     skip_bits(&gb, 4);//channels
     c->MSS = get_bits1(&gb);
     c->frames = 1 << (get_bits(&gb, 3) * 2);
-
-    avctx->sample_fmt = SAMPLE_FMT_S16;
-    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
 
     if(vlc_initialized) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
@@ -222,6 +218,8 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
                  &mpc8_q8_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
     }
     vlc_initialized = 1;
+    avctx->sample_fmt = SAMPLE_FMT_S16;
+    avctx->channel_layout = (avctx->channels==2) ? CH_LAYOUT_STEREO : CH_LAYOUT_MONO;
     return 0;
 }
 
@@ -401,7 +399,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx,
 
 AVCodec mpc8_decoder = {
     "mpc8",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_MUSEPACK8,
     sizeof(MPCContext),
     mpc8_decode_init,

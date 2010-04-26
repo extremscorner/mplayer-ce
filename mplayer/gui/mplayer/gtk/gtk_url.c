@@ -66,7 +66,7 @@ void ShowURLDialogBox( void )
  gtk_widget_show( URL );
 }
 
-static void HideURLDialogBox( void )
+void HideURLDialogBox( void )
 {
  if ( !URL ) return;
  gtk_widget_hide( URL );
@@ -168,3 +168,4 @@ GtkWidget * create_URL( void )
 
  return URL;
 }
+

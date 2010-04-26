@@ -9,6 +9,7 @@
 #include <ogc/semaphore.h>
 //#include "mp_msg.h"
 
+static lwp_t mainthread;
 typedef struct ThreadContext{
     AVCodecContext *avctx;
     lwp_t thread;
@@ -20,12 +21,10 @@ typedef struct ThreadContext{
 }ThreadContext;
 
 
-static void * thread_func(void *v)
-{
+static void * thread_func(void *v){
     ThreadContext *c= v;
 
-    while(1)
-    {
+    while(1){
         //mp_msg(MSGT_VO, MSGL_ERR,"thread_func Lock work_sem %i\n",c->work_sem);
         LWP_SemWait(c->work_sem);
         //mp_msg(MSGT_VO, MSGL_ERR,"thread_func pass Lock work_sem %i, exec\n",c->work_sem);
@@ -33,11 +32,14 @@ static void * thread_func(void *v)
             c->ret= c->func(c->avctx, c->arg);
         else
         {
+            //LWP_JoinThread(mainthread,NULL);
             return NULL;
         }
         //mp_msg(MSGT_VO, MSGL_ERR,"thread_func UnLock done_sem %i\n",c->thread);
         LWP_SemPost(c->done_sem);
     }
+
+    //LWP_JoinThread(mainthread,NULL);
     return NULL;
 }
 
@@ -45,19 +47,19 @@ static void * thread_func(void *v)
  * Free what has been allocated by avcodec_thread_init().
  * Must be called after decoding has finished, especially do not call while avcodec_thread_execute() is running.
  */
-void avcodec_thread_free(AVCodecContext *s)
-{
+void avcodec_thread_free(AVCodecContext *s){
     ThreadContext *c= s->thread_opaque;
     int i;
+    //usleep(10000);
+    for(i=0; i<s->thread_count; i++){
 
-    for(i=0; i<s->thread_count; i++)
-	{
         c[i].func= NULL;
         LWP_SemPost(c[i].work_sem);
-        LWP_JoinThread(c[i].thread, NULL);
+        //usleep(10000);
         LWP_SemDestroy(c[i].work_sem);
         LWP_SemDestroy(c[i].done_sem);
     }
+    //usleep(10000);
     av_freep(&s->thread_opaque);  
 }
 
@@ -97,6 +99,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     c= av_mallocz(sizeof(ThreadContext)*thread_count);
     s->thread_opaque= c;
 
+    mainthread=LWP_GetSelf();
     for(i=0; i<thread_count; i++){
         c[i].avctx= s;
 

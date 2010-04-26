@@ -17,7 +17,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/ppc/util_altivec.h
  * Contains misc utility macros and inline functions
  */
 

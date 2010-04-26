@@ -1,23 +1,7 @@
 /*
  * Network layer for MPlayer
- *
- * Copyright (C) 2001 Bertrand BAUDET <bertrand_baudet@yahoo.com>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * by Bertrand BAUDET <bertrand_baudet@yahoo.com>
+ * (C) 2001, MPlayer team.
  */
 
 #include <stdlib.h>
@@ -51,7 +35,6 @@
 #include "network.h"
 #include "stream.h"
 #include "tcp.h"
-#include "libavutil/avstring.h"
 
 #if defined(GEKKO)
 #include <ogc/lwp_watchdog.h>
@@ -104,14 +87,6 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 	int to;
 #else
 	struct timeval to;
-#endif
-
-#if HAVE_WINSOCK2_H && defined(HAVE_AF_INET6)
-	// our winsock name resolution code can not handle IPv6
-	if (af == AF_INET6) {
-		mp_msg(MSGT_NETWORK, MSGL_WARN, "IPv6 not supported for winsock2\n");
-		return TCP_ERROR_FATAL;
-	}
 #endif
 
 	socket_server_fd = socket(af, SOCK_STREAM, 0);
@@ -195,7 +170,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 	}
 
 #if HAVE_INET_ATON || defined(HAVE_WINSOCK2_H)
-	av_strlcpy( buf, inet_ntoa( *((struct in_addr*)our_s_addr) ), 255);
+	strncpy( buf, inet_ntoa( *((struct in_addr*)our_s_addr) ), 255);
 #else
 	inet_ntop(af, our_s_addr, buf, 255);
 #endif

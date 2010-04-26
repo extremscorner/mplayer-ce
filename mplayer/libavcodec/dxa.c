@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/dxa.c
  * DXA Video decoder
  */
 
@@ -295,6 +295,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
 
+    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
+        return -1;
+    }
+
     c->dsize = avctx->width * avctx->height * 2;
     if((c->decomp_buf = av_malloc(c->dsize)) == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
@@ -319,14 +323,13 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec dxa_decoder = {
     "dxa",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_DXA,
     sizeof(DxaDecContext),
     decode_init,
     NULL,
     decode_end,
     decode_frame,
-    CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Feeble Files/ScummVM DXA"),
 };
 

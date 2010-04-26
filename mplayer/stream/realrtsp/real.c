@@ -235,8 +235,6 @@ static rmff_header_t *real_parse_sdp(char *data, char **stream_rules, uint32_t b
     char b[64];
     int rulematches[MAX_RULEMATCHES];
 
-    if (!desc->stream[i])
-      continue;
 #ifdef LOG
     printf("calling asmrp_match with:\n%s\n%u\n", desc->stream[i]->asm_rule_book, bandwidth);
 #endif
@@ -251,7 +249,7 @@ static rmff_header_t *real_parse_sdp(char *data, char **stream_rules, uint32_t b
 
     if (!desc->stream[i]->mlti_data) {
 	len = 0;
-	buf = xbuffer_free(buf);
+	buf = NULL;
     } else
     len=select_mlti_data(desc->stream[i]->mlti_data, desc->stream[i]->mlti_data_size, rulematches[0], &buf);
 
@@ -384,14 +382,10 @@ int real_get_rdt_chunk(rtsp_t *rtsp_session, char **buffer, int rdt_rawdata) {
     ph.flags=0;
   *buffer = xbuffer_ensure_size(*buffer, 12+size);
   if(rdt_rawdata) {
-      if (size < 12)
-          return 0;
     n=rtsp_read_data(rtsp_session, *buffer, size-12);
     return (n <= 0) ? 0 : n;
   }
   rmff_dump_pheader(&ph, *buffer);
-  if (size < 12)
-      return 0;
   size-=12;
   n=rtsp_read_data(rtsp_session, (*buffer)+12, size);
 
@@ -429,11 +423,11 @@ rmff_header_t *real_setup_and_get_header(rtsp_t *rtsp_session, uint32_t bandwidt
 
   char *description=NULL;
   char *session_id=NULL;
-  rmff_header_t *h = NULL;
-  char *challenge1 = NULL;
+  rmff_header_t *h;
+  char *challenge1;
   char challenge2[41];
   char checksum[9];
-  char *subscribe = NULL;
+  char *subscribe;
   char *buf = xbuffer_init(256);
   char *mrl=rtsp_get_mrl(rtsp_session);
   unsigned int size;
@@ -443,10 +437,7 @@ rmff_header_t *real_setup_and_get_header(rtsp_t *rtsp_session, uint32_t bandwidt
   int i;
 
   /* get challenge */
-  challenge1=rtsp_search_answers(rtsp_session,"RealChallenge1");
-  if (!challenge1)
-      goto out;
-  challenge1=strdup(challenge1);
+  challenge1=strdup(rtsp_search_answers(rtsp_session,"RealChallenge1"));
 #ifdef LOG
   printf("real: Challenge1: %s\n", challenge1);
 #endif
@@ -518,7 +509,8 @@ autherr:
         alert);
     }
     rtsp_send_ok(rtsp_session);
-    goto out;
+    buf = xbuffer_free(buf);
+    return NULL;
   }
 
   /* receive description */
@@ -532,7 +524,8 @@ autherr:
   if (size > MAX_DESC_BUF) {
     mp_msg(MSGT_STREAM, MSGL_ERR, "realrtsp: Content-length for description too big (> %uMB)!\n",
             MAX_DESC_BUF/(1024*1024) );
-    goto out;
+    xbuffer_free(buf);
+    return NULL;
   }
 
   if (!rtsp_search_answers(rtsp_session,"ETag"))
@@ -547,7 +540,8 @@ autherr:
   description=malloc(size+1);
 
   if( rtsp_read_data(rtsp_session, description, size) <= 0) {
-    goto out;
+    buf = xbuffer_free(buf);
+    return NULL;
   }
   description[size]=0;
 
@@ -556,7 +550,9 @@ autherr:
   strcpy(subscribe, "Subscribe: ");
   h=real_parse_sdp(description, &subscribe, bandwidth);
   if (!h) {
-    goto out;
+    subscribe = xbuffer_free(subscribe);
+    buf = xbuffer_free(buf);
+    return NULL;
   }
   rmff_fix_header(h);
 
@@ -619,12 +615,8 @@ autherr:
   /* and finally send a play request */
   rtsp_request_play(rtsp_session,NULL);
 
-out:
   subscribe = xbuffer_free(subscribe);
   buf = xbuffer_free(buf);
-  free(description);
-  free(session_id);
-  free(challenge1);
   return h;
 }
 

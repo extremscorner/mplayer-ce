@@ -1,21 +1,5 @@
 /*
- * Copyright (c) 2003 Todd Kirby <slapcat@pacbell.net>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * author: Todd Kirby <slapcat@pacbell.net>
  */
 
 #include <stdio.h>
@@ -37,7 +21,7 @@
 #define OUT_PIXEL_STRIDE 3 /* RGB */
 
 
-static const vd_info_t info =
+static vd_info_t info =
 {
   "SGI Image decoder",
   "sgi",
@@ -84,7 +68,7 @@ control(sh_video_t* sh, int cmd, void *arg, ...)
 static int
 init(sh_video_t *sh)
 {
-  sh->context = calloc(1, sizeof(SGIInfo));
+  sh->context = (SGIInfo *) calloc(1, sizeof(SGIInfo));
   last_x = -1;
 
   return 1;
@@ -341,3 +325,4 @@ mp_image_t *decode(sh_video_t *sh, void *raw, int len, int flags)
 
   return mpi;
 }
+

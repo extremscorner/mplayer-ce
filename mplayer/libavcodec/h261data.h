@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/h261data.h
  * H.261 tables.
  */
 

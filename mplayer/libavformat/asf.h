@@ -82,6 +82,7 @@ typedef struct {
 
 typedef struct {
     uint32_t seqno;
+    unsigned int packet_size;
     int is_streamed;
     int asfid2avid[128];                 ///< conversion table from asf ID 2 AVStream ID
     ASFStream streams[128];              ///< it's max number and it's not that big
@@ -158,12 +159,8 @@ extern const ff_asf_guid ff_asf_simple_index_header;
 extern const ff_asf_guid ff_asf_ext_stream_embed_stream_header;
 extern const ff_asf_guid ff_asf_ext_stream_audio_stream;
 extern const ff_asf_guid ff_asf_metadata_header;
-extern const ff_asf_guid ff_asf_marker_header;
 extern const ff_asf_guid ff_asf_my_guid;
 extern const ff_asf_guid ff_asf_language_guid;
-extern const ff_asf_guid ff_asf_content_encryption;
-extern const ff_asf_guid ff_asf_ext_content_encryption;
-extern const ff_asf_guid ff_asf_digital_signature;
 
 extern const AVMetadataConv ff_asf_metadata_conv[];
 
@@ -229,6 +226,24 @@ extern const AVMetadataConv ff_asf_metadata_conv[];
 #define ASF_PL_FLAG_KEY_FRAME 0x80 //1000 0000
 
 extern AVInputFormat asf_demuxer;
-int ff_put_str16_nolen(ByteIOContext *s, const char *tag);
+
+/**
+ * Load a single ASF packet into the demuxer.
+ * @param s demux context
+ * @param pb context to read data from
+ * @returns 0 on success, <0 on error
+ */
+int ff_asf_get_packet(AVFormatContext *s, ByteIOContext *pb);
+
+/**
+ * Parse data from individual ASF packets (which were previously loaded
+ * with asf_get_packet()).
+ * @param s demux context
+ * @param pb context to read data from
+ * @param pkt pointer to store packet data into
+ * @returns 0 if data was stored in pkt, <0 on error or 1 if more ASF
+ *          packets need to be loaded (through asf_get_packet())
+ */
+int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *pkt);
 
 #endif /* AVFORMAT_ASF_H */

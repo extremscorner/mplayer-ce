@@ -31,10 +31,6 @@
 #define attribute_used
 #endif
 
-#if ARCH_X86_64 && defined(PIC)
-#define MANGLE(a) EXTERN_PREFIX #a "(%%rip)"
-#else
 #define MANGLE(a) EXTERN_PREFIX #a
-#endif
 
 #endif /* MPLAYER_MANGLE_H */

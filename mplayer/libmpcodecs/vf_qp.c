@@ -42,7 +42,7 @@ struct vf_priv_s {
 	int qp_stride;
 };
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
 	int h= (height+15)>>4;
@@ -68,7 +68,7 @@ static int config(struct vf_instance *vf,
             };
 
             const char *error = NULL;
-            vf->priv->lut[i+129]= lrintf(ff_parse_and_eval_expr(vf->priv->eq, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error));
+            vf->priv->lut[i+129]= lrintf(ff_eval2(vf->priv->eq, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error));
             if (error)
                 mp_msg(MSGT_VFILTER, MSGL_ERR, "qp: Error evaluating \"%s\": %s\n", vf->priv->eq, error);
         }
@@ -76,7 +76,7 @@ static int config(struct vf_instance *vf,
 	return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
-static void get_image(struct vf_instance *vf, mp_image_t *mpi){
+static void get_image(struct vf_instance_s* vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
     vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
@@ -93,7 +93,7 @@ static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     mpi->flags|=MP_IMGFLAG_DIRECT;
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
 	mp_image_t *dmpi;
         int x,y;
 
@@ -136,7 +136,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 	if(!vf->priv) return;
 
 	if(vf->priv->qp) av_free(vf->priv->qp);
@@ -147,7 +147,7 @@ static void uninit(struct vf_instance *vf){
 }
 
 //===========================================================================//
-static int vf_open(vf_instance_t *vf, char *args){
+static int open(vf_instance_t *vf, char* args){
     vf->config=config;
     vf->put_image=put_image;
     vf->get_image=get_image;
@@ -167,6 +167,6 @@ const vf_info_t vf_info_qp = {
     "qp",
     "Michael Niedermayer",
     "",
-    vf_open,
+    open,
     NULL
 };

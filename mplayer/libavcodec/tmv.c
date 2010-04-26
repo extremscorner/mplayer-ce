@@ -21,7 +21,7 @@
 
 /**
  * 8088flex TMV video decoder
- * @file
+ * @file libavcodec/tmv.c
  * @author Daniel Verkamp
  * @sa http://www.oldskool.org/pc/8088_Corruption
  */
@@ -100,11 +100,10 @@ static av_cold int tmv_decode_close(AVCodecContext *avctx)
 
 AVCodec tmv_decoder = {
     .name           = "tmv",
-    .type           = AVMEDIA_TYPE_VIDEO,
+    .type           = CODEC_TYPE_VIDEO,
     .id             = CODEC_ID_TMV,
     .priv_data_size = sizeof(TMVContext),
     .close          = tmv_decode_close,
     .decode         = tmv_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("8088flex TMV"),
 };

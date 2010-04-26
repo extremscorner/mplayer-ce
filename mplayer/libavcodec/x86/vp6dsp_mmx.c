@@ -1,5 +1,5 @@
 /**
- * @file
+ * @file libavcodec/x86/vp6dsp_mmx.c
  * MMX-optimized functions for the VP6 decoder
  *
  * Copyright (C) 2009  Sebastien Lucas <sebastien.lucas@gmail.com>

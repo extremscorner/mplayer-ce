@@ -61,7 +61,7 @@ static const vo_info_t info = {
     ""
 };
 
-const LIBVO_EXTERN(kva)
+LIBVO_EXTERN(kva)
 
 #define WC_MPLAYER  "WC_MPLAYER"
 

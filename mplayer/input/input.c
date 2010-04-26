@@ -43,7 +43,7 @@
 #include "help_mp.h"
 #include "m_config.h"
 #include "m_option.h"
-#include "path.h"
+#include "get_path.h"
 
 #include "joystick.h"
 
@@ -94,7 +94,6 @@ static const mp_cmd_t mp_cmds[] = {
   { MP_CMD_OSD, "osd",0, { {MP_CMD_ARG_INT,{-1}}, {-1,{0}} } },
   { MP_CMD_OSD_SHOW_TEXT, "osd_show_text", 1, { {MP_CMD_ARG_STRING, {0}}, {MP_CMD_ARG_INT,{-1}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_OSD_SHOW_PROPERTY_TEXT, "osd_show_property_text",1, { {MP_CMD_ARG_STRING, {0}}, {MP_CMD_ARG_INT,{-1}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
-  { MP_CMD_OSD_SHOW_PROGRESSION, "osd_show_progression", 0, { {-1,{0}} } },
   { MP_CMD_VOLUME, "volume", 1, { { MP_CMD_ARG_FLOAT,{0} }, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_BALANCE, "balance", 1, { { MP_CMD_ARG_FLOAT,{0} }, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_MIXER_USEMASTER, "use_master", 0, { {-1,{0}} } },
@@ -173,8 +172,10 @@ static const mp_cmd_t mp_cmds[] = {
   { MP_CMD_LOADLIST, "loadlist", 1, { {MP_CMD_ARG_STRING, {0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_RUN, "run", 1, { {MP_CMD_ARG_STRING,{0}}, {-1,{0}} } },
   { MP_CMD_VF_CHANGE_RECTANGLE, "change_rectangle", 2, { {MP_CMD_ARG_INT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}}}},
+#ifdef CONFIG_TV_TELETEXT
   { MP_CMD_TV_TELETEXT_ADD_DEC, "teletext_add_dec", 1, { {MP_CMD_ARG_STRING,{0}}, {-1,{0}} } },
   { MP_CMD_TV_TELETEXT_GO_LINK, "teletext_go_link", 1, { {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
+#endif
 
 #ifdef CONFIG_GUI
   { MP_CMD_GUI_LOADFILE, "gui_loadfile", 0, { {-1,{0}} } },
@@ -208,11 +209,6 @@ static const mp_cmd_t mp_cmds[] = {
 
   { MP_CMD_SEEK_CHAPTER, "seek_chapter", 1, { {MP_CMD_ARG_INT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_SET_MOUSE_POS, "set_mouse_pos", 2, { {MP_CMD_ARG_INT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
-
-  { MP_CMD_AF_SWITCH, "af_switch", 1,  { {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
-  { MP_CMD_AF_ADD, "af_add", 1,  { {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
-  { MP_CMD_AF_DEL, "af_del", 1,  { {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
-  { MP_CMD_AF_CLR, "af_clr", 0, { {-1,{0}} } },
 
   { 0, NULL, 0, {} }
 };
@@ -406,7 +402,6 @@ static const mp_cmd_bind_t def_cmd_binds[] = {
   { { KEY_DEL, 0 }, "alt_src_step -1" },
   { { 'o', 0 }, "osd" },
   { { 'I', 0 }, "osd_show_property_text \"${filename}\"" },
-  { { 'P', 0 }, "osd_show_progression" },
   { { 'z', 0 }, "sub_delay -0.1" },
   { { 'x', 0 }, "sub_delay +0.1" },
   { { 'g', 0 }, "sub_step -1" },
@@ -444,9 +439,11 @@ static const mp_cmd_bind_t def_cmd_binds[] = {
   { { 'n', 0 }, "tv_step_norm" },
   { { 'u', 0 }, "tv_step_chanlist" },
 #endif
+#ifdef CONFIG_TV_TELETEXT
   { { 'X', 0 }, "step_property teletext_mode 1" },
   { { 'W', 0 }, "step_property teletext_page 1" },
   { { 'Q', 0 }, "step_property teletext_page -1" },
+#endif
 #ifdef CONFIG_JOYSTICK
   { { JOY_AXIS0_PLUS, 0 }, "seek 10" },
   { { JOY_AXIS0_MINUS, 0 }, "seek -10" },
@@ -606,7 +603,7 @@ static int mp_input_print_key_list(m_option_t* cfg);
 static int mp_input_print_cmd_list(m_option_t* cfg);
 
 // Our command line options
-static const m_option_t input_conf[] = {
+static m_option_t input_conf[] = {
   { "conf", &config_file, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL },
   { "ar-dev", &ar_dev, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL },
   { "ar-delay", &ar_delay, CONF_TYPE_INT, CONF_GLOBAL, 0, 0, NULL },
@@ -620,7 +617,7 @@ static const m_option_t input_conf[] = {
   { NULL, NULL, 0, 0, 0, 0, NULL}
 };
 
-static const m_option_t mp_input_opts[] = {
+static m_option_t mp_input_opts[] = {
   { "input", &input_conf, CONF_TYPE_SUBCONFIG, 0, 0, 0, NULL},
   { "nojoystick", &use_joystick,  CONF_TYPE_FLAG, CONF_GLOBAL, 1, 0, NULL },
   { "joystick", &use_joystick,  CONF_TYPE_FLAG, CONF_GLOBAL, 0, 1, NULL },
@@ -921,7 +918,7 @@ mp_input_parse_cmd(char* str) {
   return cmd;
 }
 
-#define MP_CMD_MAX_SIZE 4096
+#define MP_CMD_MAX_SIZE 256
 
 static int
 mp_input_read_cmd(mp_input_fd_t* mp_fd, char** ret) {
@@ -964,8 +961,6 @@ mp_input_read_cmd(mp_input_fd_t* mp_fd, char** ret) {
     int l = 0;
     // Find the cmd end
     mp_fd->buffer[mp_fd->pos] = '\0';
-    end = strchr(mp_fd->buffer,'\r');
-    if (end) *end = '\n';
     end = strchr(mp_fd->buffer,'\n');
     // No cmd end ?
     if(!end) {
@@ -1503,7 +1498,7 @@ mp_input_get_input_from_name(char* name,int* keys) {
 #define BS_MAX 256
 #define SPACE_CHAR " \n\r\t"
 
-static void
+void
 mp_input_bind_keys(const int keys[MP_MAX_KEY_DOWN+1], char* cmd) {
   int i = 0,j;
   mp_cmd_bind_t* bind = NULL;
@@ -1547,7 +1542,7 @@ mp_input_bind_keys(const int keys[MP_MAX_KEY_DOWN+1], char* cmd) {
   memcpy(bind->input,keys,(MP_MAX_KEY_DOWN+1)*sizeof(int));
 }
 
-static void
+void
 mp_input_add_binds(const mp_cmd_bind_t* list) {
   int i;
   for(i = 0 ; list[i].cmd ; i++)
@@ -1913,11 +1908,6 @@ mp_input_check_interrupt(int time) {
   case MP_CMD_PLAY_TREE_UP_STEP:
   case MP_CMD_PLAY_ALT_SRC_STEP:
     // The cmd will be executed when we are back in the main loop
-    return 1;
-  case MP_CMD_PAUSE:
-	  // remove the cmd from the queue
-	  cmd = mp_input_get_cmd(time,0,0);
-	  mp_cmd_free(cmd);
     return 1;
   }
   // remove the cmd from the queue

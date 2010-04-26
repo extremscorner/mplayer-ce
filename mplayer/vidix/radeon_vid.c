@@ -831,7 +831,7 @@ static void radeon_engine_restore( void )
 				  (pitch64 << 22));
 
     radeon_fifo_wait(1);
-#if HAVE_BIGENDIAN
+#if defined(WORDS_BIGENDIAN)
     OUTREGP(DP_DATATYPE,
 	    HOST_BIG_ENDIAN_EN, ~HOST_BIG_ENDIAN_EN);
 #else

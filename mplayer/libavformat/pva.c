@@ -45,7 +45,7 @@ static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
 
     if (!(st = av_new_stream(s, 0)))
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_MPEG2VIDEO;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
     av_set_pts_info(st, 32, 1, 90000);
@@ -53,9 +53,9 @@ static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
 
     if (!(st = av_new_stream(s, 1)))
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id   = CODEC_ID_MP2;
-    st->need_parsing      = AVSTREAM_PARSE_FULL;
+    st->need_parsing      = AVSTREAM_PARSE_HEADERS;
     av_set_pts_info(st, 33, 1, 90000);
     av_add_index_entry(st, 0, 0, 0, 0, AVINDEX_KEYFRAME);
 

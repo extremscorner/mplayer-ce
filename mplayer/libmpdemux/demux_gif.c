@@ -47,8 +47,7 @@ typedef struct {
 
 #ifndef CONFIG_GIF_TVT_HACK
 // not supported by certain versions of the library
-static int my_read_gif(GifFileType *gif, uint8_t *buf, int len)
-{
+int my_read_gif(GifFileType *gif, uint8_t *buf, int len) {
   return stream_read(gif->UserData, buf, len);
 }
 #endif

@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -196,7 +178,7 @@ static enum mode analyze_plane(unsigned char *old, unsigned char *new,
    return mode;
    }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
    {
    mp_image_t *dmpi;
    int w;
@@ -240,7 +222,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
    return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
    }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
    {
    free(vf->priv->buf[0]);
    free(vf->priv->buf[1]);
@@ -248,7 +230,7 @@ static void uninit(struct vf_instance *vf)
    free(vf->priv);
    }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
    {
    vf->put_image = put_image;
    vf->uninit = uninit;
@@ -296,6 +278,6 @@ const vf_info_t vf_info_phase =
    "phase",
    "Ville Saari",
    "",
-   vf_open,
+   open,
    NULL
    };

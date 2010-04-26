@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +9,7 @@
 #include "ad_internal.h"
 #include "libaf/reorder_ch.h"
 
-static const ad_info_t info =
+static ad_info_t info =
 {
 	"Ogg/Vorbis audio decoder",
 #ifdef CONFIG_TREMOR
@@ -42,11 +25,7 @@ static const ad_info_t info =
 LIBAD_EXTERN(libvorbis)
 
 #ifdef CONFIG_TREMOR
-#ifdef GEKKO
-#include "../tremor/ivorbiscodec.h"
-#else
 #include <tremor/ivorbiscodec.h>
-#endif
 #else
 #include <vorbis/codec.h>
 #endif

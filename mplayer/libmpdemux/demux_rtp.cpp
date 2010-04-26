@@ -110,16 +110,8 @@ static char* openURL_sip(SIPClient* client, char const* url) {
   }
 }
 
-#ifdef CONFIG_LIBNEMESI
-extern int rtsp_transport_tcp;
-#else
-int rtsp_transport_tcp = 0;
-#endif
-
+int rtspStreamOverTCP = 0;
 extern int rtsp_port;
-#ifdef CONFIG_LIBAVCODEC
-extern AVCodecContext *avcctx;
-#endif
 
 extern "C" int audio_id, video_id, dvdsub_id;
 extern "C" demuxer_t* demux_open_rtp(demuxer_t* demuxer) {
@@ -237,7 +229,7 @@ extern "C" demuxer_t* demux_open_rtp(demuxer_t* demuxer) {
 	if (rtspClient != NULL) {
 	  // Issue a RTSP "SETUP" command on the chosen subsession:
 	  if (!rtspClient->setupMediaSubsession(*subsession, False,
-						rtsp_transport_tcp)) break;
+						rtspStreamOverTCP)) break;
 	  if (!strcmp(subsession->mediumName(), "audio"))
 	    audiofound = 1;
 	  if (!strcmp(subsession->mediumName(), "video"))
@@ -335,7 +327,7 @@ extern "C" int demux_rtp_fill_buffer(demuxer_t* demuxer, demux_stream_t* ds) {
     const float ptsBehindLimit = 60.0; // seconds
     if (ptsBehind < ptsBehindThreshold ||
 	ptsBehind > ptsBehindLimit ||
-	rtsp_transport_tcp) { // packet's OK
+	rtspStreamOverTCP) { // packet's OK
       ds_add_packet(ds, dp);
       break;
     }
@@ -389,11 +381,8 @@ extern "C" void demux_close_rtp(demuxer_t* demuxer) {
   Medium::close(rtpState->sipClient);
   delete rtpState->audioBufferQueue;
   delete rtpState->videoBufferQueue;
-  delete[] rtpState->sdpDescription;
+  delete rtpState->sdpDescription;
   delete rtpState;
-#ifdef CONFIG_LIBAVCODEC
-  av_freep(&avcctx);
-#endif
 
   env->reclaim(); delete scheduler;
 }
@@ -567,7 +556,7 @@ static demux_packet_t* getBuffer(demuxer_t* demuxer, demux_stream_t* ds,
     }
     if (headersize == 3 && h264parserctx) { // h264
       consumed = h264parserctx->parser->parser_parse(h264parserctx,
-                               avcctx,
+                               NULL,
                                &poutbuf, &poutbuf_size,
                                dp->buffer, dp->len);
 
@@ -631,7 +620,7 @@ ReadBufferQueue::ReadBufferQueue(MediaSubsession* subsession,
 }
 
 ReadBufferQueue::~ReadBufferQueue() {
-  free((void *)fTag);
+  delete fTag;
 
   // Free any pending buffers (that never got delivered):
   demux_packet_t* dp = pendingDPHead;
@@ -666,7 +655,7 @@ demux_packet_t* ReadBufferQueue::getPendingBuffer() {
   return dp;
 }
 
-static int demux_rtp_control(struct demuxer *demuxer, int cmd, void *arg) {
+static int demux_rtp_control(struct demuxer_st *demuxer, int cmd, void *arg) {
   double endpts = ((RTPState*)demuxer->priv)->mediaSession->playEndTime();
 
   switch(cmd) {

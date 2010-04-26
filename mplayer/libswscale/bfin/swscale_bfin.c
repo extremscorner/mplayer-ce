@@ -31,7 +31,7 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
-#if defined (__FDPIC__) && CONFIG_SRAM
+#ifdef __FDPIC__
 #define L1CODE __attribute__ ((l1_text))
 #else
 #define L1CODE

@@ -216,14 +216,6 @@ void menu_list_draw(menu_t* menu,mp_image_t* mpi) {
 void menu_list_read_cmd(menu_t* menu,int cmd) {
   list_entry_t* m;
   int i;
-  #ifdef GEKKO
-  if(mpriv->current == NULL) 
-  {
-    printf("mpriv->current == NULL  ??\n");
-    mpriv->current = mpriv->menu;  //strange
-    return;
-  }
-  #endif
   switch(cmd) {
   case MENU_CMD_UP:
     while(mpriv->current->prev) {
@@ -340,3 +332,4 @@ void menu_list_uninit(menu_t* menu,free_entry_t free_func) {
   mpriv->menu = mpriv->current = NULL;
 
 }
+

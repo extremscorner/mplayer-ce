@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +15,6 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 #include "av_opts.h"
-#include "osdep/strsep.h"
 
 #include "codec-cfg.h"
 #include "stream/stream.h"
@@ -43,7 +24,6 @@
 #include "libmpdemux/muxer.h"
 
 #include "img_format.h"
-#include "fmt-conversion.h"
 #include "mp_image.h"
 #include "vf.h"
 
@@ -183,7 +163,8 @@ static char *lavc_param_avopt = NULL;
 
 #include "m_option.h"
 
-const m_option_t lavcopts_conf[]={
+#ifdef CONFIG_LIBAVCODEC
+m_option_t lavcopts_conf[]={
 	{"acodec", &lavc_param_acodec, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"abitrate", &lavc_param_abitrate, CONF_TYPE_INT, CONF_RANGE, 1, 1000000, NULL},
 	{"atag", &lavc_param_atag, CONF_TYPE_INT, CONF_RANGE, 0, 0xffff, NULL},
@@ -330,6 +311,7 @@ const m_option_t lavcopts_conf[]={
         {"o", &lavc_param_avopt, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{NULL, NULL, 0, 0, 0, 0, NULL}
 };
+#endif
 
 struct vf_priv_s {
     muxer_stream_t* mux;
@@ -343,13 +325,13 @@ struct vf_priv_s {
 #define mux_v (vf->priv->mux)
 #define lavc_venc_context (vf->priv->context)
 
-static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts);
+static int encode_frame(struct vf_instance_s* vf, AVFrame *pic, double pts);
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
         int width, int height, int d_width, int d_height,
 	unsigned int flags, unsigned int outfmt){
     int size, i;
-    char *p;
+    void *p;
 
     mux_v->bih->biWidth=width;
     mux_v->bih->biHeight=height;
@@ -611,9 +593,30 @@ static int config(struct vf_instance *vf,
     }
 
     mux_v->imgfmt = lavc_param_format;
-    lavc_venc_context->pix_fmt = imgfmt2pixfmt(lavc_param_format);
-    if (lavc_venc_context->pix_fmt == PIX_FMT_NONE)
-        return 0;
+    switch(lavc_param_format)
+    {
+	case IMGFMT_YV12:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV420P;
+	    break;
+	case IMGFMT_422P:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV422P;
+	    break;
+	case IMGFMT_444P:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV444P;
+	    break;
+	case IMGFMT_411P:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV411P;
+	    break;
+	case IMGFMT_YVU9:
+	    lavc_venc_context->pix_fmt = PIX_FMT_YUV410P;
+	    break;
+	case IMGFMT_BGR32:
+	    lavc_venc_context->pix_fmt = PIX_FMT_RGB32;
+	    break;
+	default:
+    	    mp_msg(MSGT_MENCODER,MSGL_ERR,"%s is not a supported format\n", vo_format_name(lavc_param_format));
+    	    return 0;
+    }
 
     if(!stats_file) {
     /* lavc internal 2pass bitrate control */
@@ -714,7 +717,7 @@ static int config(struct vf_instance *vf,
     return 1;
 }
 
-static int control(struct vf_instance *vf, int request, void* data){
+static int control(struct vf_instance_s* vf, int request, void* data){
 
     switch(request){
         case VFCTRL_FLUSH_FRAMES:
@@ -726,7 +729,7 @@ static int control(struct vf_instance *vf, int request, void* data){
     }
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt){
+static int query_format(struct vf_instance_s* vf, unsigned int fmt){
     switch(fmt){
     case IMGFMT_YV12:
     case IMGFMT_IYUV:
@@ -763,7 +766,7 @@ static double psnr(double d){
     return -10.0*log(d)/log(10);
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts){
     AVFrame *pic= vf->priv->pic;
 
     pic->data[0]=mpi->planes[0];
@@ -786,7 +789,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     return encode_frame(vf, pic, pts) >= 0;
 }
 
-static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
+static int encode_frame(struct vf_instance_s* vf, AVFrame *pic, double pts){
     const char pict_type_char[5]= {'?', 'I', 'P', 'B', 'S'};
     int out_size;
     double dts;
@@ -891,7 +894,7 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
     return out_size;
 }
 
-static void uninit(struct vf_instance *vf){
+static void uninit(struct vf_instance_s* vf){
 
     if(lavc_param_psnr){
         double f= lavc_venc_context->width*lavc_venc_context->height*255.0*255.0;
@@ -908,8 +911,7 @@ static void uninit(struct vf_instance *vf){
     av_freep(&lavc_venc_context->intra_matrix);
     av_freep(&lavc_venc_context->inter_matrix);
 
-    if (lavc_venc_context->codec)
-        avcodec_close(lavc_venc_context);
+    avcodec_close(lavc_venc_context);
 
     if(stats_file) fclose(stats_file);
 
@@ -1045,8 +1047,6 @@ static int vf_open(vf_instance_t *vf, char* args){
 
     vf->priv->pic = avcodec_alloc_frame();
     vf->priv->context = avcodec_alloc_context();
-    vf->priv->context->codec_type = CODEC_TYPE_VIDEO;
-    vf->priv->context->codec_id = vf->priv->codec->id;
 
     return 1;
 }

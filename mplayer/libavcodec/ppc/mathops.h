@@ -23,9 +23,7 @@
 #ifndef AVCODEC_PPC_MATHOPS_H
 #define AVCODEC_PPC_MATHOPS_H
 
-#include <stdint.h>
 #include "config.h"
-#include "libavutil/common.h"
 
 #if HAVE_PPC4XX
 /* signed 16x16 -> 32 multiply add accumulate */
@@ -46,7 +44,7 @@ static inline av_const int MULH(int a, int b){
     return r;
 }
 
-#if !ARCH_PPC64
+#if !HAVE_PPC64
 static inline av_const int64_t MAC64(int64_t d, int a, int b)
 {
     union { uint64_t x; unsigned hl[2]; } x = { d };

@@ -1,4 +1,4 @@
-.\" MPlayer (C) 2000-2010 MPlayer Team
+.\" MPlayer (C) 2000-2009 MPlayer Team
 .\" This man page was/is done by Gabucino, Diego Biurrun, Jonas Jermann
 .\" Translated by Vladimir Voroshilov <voroshil@gmail.com>
 .\" Encoding: koi8-r
@@ -5814,7 +5814,7 @@ scale и к эху при его низких значениях.
 .RE
 .
 .TP
-.B scale[=w:h[:interlaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
+.B scale[=w:h[:ilaced[:chr_drop[:par[:par2[:presize[:noup[:arnd]]]]]]]]
 Масштабирует изображение модулем программного масштабирования (медленно)
 и осуществляет YUV<\->RGB  преобразование пространства цветов (смотрите
 также \-sws).
@@ -5839,7 +5839,7 @@ scale и к эху при его низких значениях.
 .br
 \-(n+8): Как и \-n выше, но округляя размеры до ближайшего кратного 16 значения.
 .REss
-.IPs <interlaced>
+.IPs <ilaced>
 Переключает чересстрочное масштабирование.
 .RSss
 0: выключено (по умолчанию)
@@ -11269,6 +11269,12 @@ FIXME: Описать это.
 .
 .TP
 .B USERPROFILE
+FIXME: Описать это.
+.
+.SS libmpcodecs:
+.
+.TP
+.B XANIM_MOD_DIR
 FIXME: Описать это.
 .
 .SS GUI:

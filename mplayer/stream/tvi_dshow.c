@@ -76,7 +76,6 @@
 
 #include <stdio.h>
 #include "libmpcodecs/img_format.h"
-#include "libmpcodecs/dec_teletext.h"
 #include "libaf/af_format.h"
 #include "help_mp.h"
 #include "osdep/timer.h"
@@ -88,11 +87,6 @@
 
 
 #include "tvi_dshow.h"
-
-#ifndef STDCALL
-// mingw64 needs this
-#define STDCALL __stdcall
-#endif
 
 static tvi_handle_t *tvi_init_dshow(tv_param_t* tv_param);
 
@@ -374,127 +368,86 @@ static int tv_available_inputs_count = 0;
 *
 *---------------------------------------------------------------------------------------
 */
-// selectany can not be used with "static", fixes compilation with mingw-w64
-#undef DECLSPEC_SELECTANY
-#define DECLSPEC_SELECTANY
 /// CLSID definitions (used for CoCreateInstance call)
-#define CLSID_SampleGrabber MP_CLSID_SampleGrabber
-static DEFINE_GUID(CLSID_SampleGrabber, 0xC1F400A0, 0x3F08, 0x11d3, 0x9F, 0x0B,
+DEFINE_GUID(CLSID_SampleGrabber, 0xC1F400A0, 0x3F08, 0x11d3, 0x9F, 0x0B,
 	    0x00, 0x60, 0x08, 0x03, 0x9E, 0x37);
-#define CLSID_NullRenderer MP_CLSID_NullRenderer
-static DEFINE_GUID(CLSID_NullRenderer, 0xC1F400A4, 0x3F08, 0x11d3, 0x9F, 0x0B,
+DEFINE_GUID(CLSID_NullRenderer, 0xC1F400A4, 0x3F08, 0x11d3, 0x9F, 0x0B,
 	    0x00, 0x60, 0x08, 0x03, 0x9E, 0x37);
-#define CLSID_SystemDeviceEnum MP_CLSID_SystemDeviceEnum
-static DEFINE_GUID(CLSID_SystemDeviceEnum, 0x62BE5D10, 0x60EB, 0x11d0, 0xBD, 0x3B,
+DEFINE_GUID(CLSID_SystemDeviceEnum, 0x62BE5D10, 0x60EB, 0x11d0, 0xBD, 0x3B,
 	    0x00, 0xA0, 0xC9, 0x11, 0xCE, 0x86);
-#define CLSID_CaptureGraphBuilder2 MP_CLSID_CaptureGraphBuilder2
-static DEFINE_GUID(CLSID_CaptureGraphBuilder2, 0xBF87B6E1, 0x8C27, 0x11d0, 0xB3,
+DEFINE_GUID(CLSID_CaptureGraphBuilder2, 0xBF87B6E1, 0x8C27, 0x11d0, 0xB3,
 	    0xF0, 0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define CLSID_VideoInputDeviceCategory MP_CLSID_VideoInputDeviceCategory
-static DEFINE_GUID(CLSID_VideoInputDeviceCategory, 0x860BB310, 0x5D01, 0x11d0,
+DEFINE_GUID(CLSID_VideoInputDeviceCategory, 0x860BB310, 0x5D01, 0x11d0,
 	    0xBD, 0x3B, 0x00, 0xA0, 0xC9, 0x11, 0xCE, 0x86);
-#define CLSID_AudioInputDeviceCategory MP_CLSID_AudioInputDeviceCategory
-static DEFINE_GUID(CLSID_AudioInputDeviceCategory, 0x33d9a762, 0x90c8, 0x11d0,
+DEFINE_GUID(CLSID_AudioInputDeviceCategory, 0x33d9a762, 0x90c8, 0x11d0,
 	    0xbd, 0x43, 0x00, 0xa0, 0xc9, 0x11, 0xce, 0x86);
-#define CLSID_FilterGraph MP_CLSID_FilterGraph
-static DEFINE_GUID(CLSID_FilterGraph, 0xe436ebb3, 0x524f, 0x11ce, 0x9f, 0x53,
+DEFINE_GUID(CLSID_FilterGraph, 0xe436ebb3, 0x524f, 0x11ce, 0x9f, 0x53,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define CLSID_SystemClock MP_CLSID_SystemClock
-static DEFINE_GUID(CLSID_SystemClock, 0xe436ebb1, 0x524f, 0x11ce, 0x9f, 0x53,
+DEFINE_GUID(CLSID_SystemClock, 0xe436ebb1, 0x524f, 0x11ce, 0x9f, 0x53,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
 #ifdef NOT_USED
-#define CLSID_CaptureGraphBuilder MP_CLSID_CaptureGraphBuilder
-static DEFINE_GUID(CLSID_CaptureGraphBuilder, 0xBF87B6E0, 0x8C27, 0x11d0, 0xB3,
+DEFINE_GUID(CLSID_CaptureGraphBuilder, 0xBF87B6E0, 0x8C27, 0x11d0, 0xB3,
 	    0xF0, 0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define CLSID_VideoPortManager MP_CLSID_VideoPortManager
-static DEFINE_GUID(CLSID_VideoPortManager, 0x6f26a6cd, 0x967b, 0x47fd, 0x87, 0x4a,
+DEFINE_GUID(CLSID_VideoPortManager, 0x6f26a6cd, 0x967b, 0x47fd, 0x87, 0x4a,
 	    0x7a, 0xed, 0x2c, 0x9d, 0x25, 0xa2);
-#define IID_IPin MP_IID_IPin
-static DEFINE_GUID(IID_IPin, 0x56a86891, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00, 0x20,
+DEFINE_GUID(IID_IPin, 0x56a86891, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00, 0x20,
 	    0xaf, 0x0b, 0xa7, 0x70);
-#define IID_ICaptureGraphBuilder MP_IID_ICaptureGraphBuilder
-static DEFINE_GUID(IID_ICaptureGraphBuilder, 0xbf87b6e0, 0x8c27, 0x11d0, 0xb3,
+DEFINE_GUID(IID_ICaptureGraphBuilder, 0xbf87b6e0, 0x8c27, 0x11d0, 0xb3,
 	    0xf0, 0x00, 0xaa, 0x00, 0x37, 0x61, 0xc5);
-#define IID_IFilterGraph MP_IID_IFilterGraph
-static DEFINE_GUID(IID_IFilterGraph, 0x56a8689f, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
+DEFINE_GUID(IID_IFilterGraph, 0x56a8689f, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
 	    0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define PIN_CATEGORY_PREVIEW MP_PIN_CATEGORY_PREVIEW
-static DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f,
 	    0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
 #endif
 
 /// IID definitions (used for QueryInterface call)
-#define IID_IReferenceClock MP_IID_IReferenceClock
-static DEFINE_GUID(IID_IReferenceClock, 0x56a86897, 0x0ad4, 0x11ce, 0xb0, 0x3a,
+DEFINE_GUID(IID_IReferenceClock, 0x56a86897, 0x0ad4, 0x11ce, 0xb0, 0x3a,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IAMBufferNegotiation MP_IID_IAMBufferNegotiation
-static DEFINE_GUID(IID_IAMBufferNegotiation, 0x56ED71A0, 0xAF5F, 0x11D0, 0xB3, 0xF0,
+DEFINE_GUID(IID_IAMBufferNegotiation, 0x56ED71A0, 0xAF5F, 0x11D0, 0xB3, 0xF0,
             0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define IID_IKsPropertySet MP_IID_IKsPropertySet
-static DEFINE_GUID(IID_IKsPropertySet, 0x31efac30, 0x515c, 0x11d0, 0xa9, 0xaa,
+DEFINE_GUID(IID_IKsPropertySet, 0x31efac30, 0x515c, 0x11d0, 0xa9, 0xaa,
 	    0x00, 0xaa, 0x00, 0x61, 0xbe, 0x93);
-#define IID_ISampleGrabber MP_IID_ISampleGrabber
-static DEFINE_GUID(IID_ISampleGrabber, 0x6B652FFF, 0x11FE, 0x4fce, 0x92, 0xAD,
+DEFINE_GUID(IID_ISampleGrabber, 0x6B652FFF, 0x11FE, 0x4fce, 0x92, 0xAD,
 	    0x02, 0x66, 0xB5, 0xD7, 0xC7, 0x8F);
-#define IID_ISampleGrabberCB MP_IID_ISampleGrabberCB
-static DEFINE_GUID(IID_ISampleGrabberCB, 0x0579154A, 0x2B53, 0x4994, 0xB0, 0xD0,
+DEFINE_GUID(IID_ISampleGrabberCB, 0x0579154A, 0x2B53, 0x4994, 0xB0, 0xD0,
 	    0xE7, 0x73, 0x14, 0x8E, 0xFF, 0x85);
-#define IID_ICaptureGraphBuilder2 MP_IID_ICaptureGraphBuilder2
-static DEFINE_GUID(IID_ICaptureGraphBuilder2, 0x93e5a4e0, 0x2d50, 0x11d2, 0xab,
+DEFINE_GUID(IID_ICaptureGraphBuilder2, 0x93e5a4e0, 0x2d50, 0x11d2, 0xab,
 	    0xfa, 0x00, 0xa0, 0xc9, 0xc6, 0xe3, 0x8d);
-#define IID_ICreateDevEnum MP_IID_ICreateDevEnum
-static DEFINE_GUID(IID_ICreateDevEnum, 0x29840822, 0x5b84, 0x11d0, 0xbd, 0x3b,
+DEFINE_GUID(IID_ICreateDevEnum, 0x29840822, 0x5b84, 0x11d0, 0xbd, 0x3b,
 	    0x00, 0xa0, 0xc9, 0x11, 0xce, 0x86);
-#define IID_IGraphBuilder MP_IID_IGraphBuilder
-static DEFINE_GUID(IID_IGraphBuilder, 0x56a868a9, 0x0ad4, 0x11ce, 0xb0, 0x3a,
+DEFINE_GUID(IID_IGraphBuilder, 0x56a868a9, 0x0ad4, 0x11ce, 0xb0, 0x3a,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IAMVideoProcAmp MP_IID_IAMVideoProcAmp
-static DEFINE_GUID(IID_IAMVideoProcAmp, 0xC6E13360, 0x30AC, 0x11d0, 0xA1, 0x8C,
+DEFINE_GUID(IID_IAMVideoProcAmp, 0xC6E13360, 0x30AC, 0x11d0, 0xA1, 0x8C,
 	    0x00, 0xA0, 0xC9, 0x11, 0x89, 0x56);
-#define IID_IVideoWindow MP_IID_IVideoWindow
-static DEFINE_GUID(IID_IVideoWindow, 0x56a868b4, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
+DEFINE_GUID(IID_IVideoWindow, 0x56a868b4, 0x0ad4, 0x11ce, 0xb0, 0x3a, 0x00,
 	    0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IMediaControl MP_IID_IMediaControl
-static DEFINE_GUID(IID_IMediaControl, 0x56a868b1, 0x0ad4, 0x11ce, 0xb0, 0x3a,
+DEFINE_GUID(IID_IMediaControl, 0x56a868b1, 0x0ad4, 0x11ce, 0xb0, 0x3a,
 	    0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70);
-#define IID_IAMTVTuner MP_IID_IAMTVTuner
-static DEFINE_GUID(IID_IAMTVTuner, 0x211A8766, 0x03AC, 0x11d1, 0x8D, 0x13, 0x00,
+DEFINE_GUID(IID_IAMTVTuner, 0x211A8766, 0x03AC, 0x11d1, 0x8D, 0x13, 0x00,
 	    0xAA, 0x00, 0xBD, 0x83, 0x39);
-#define IID_IAMCrossbar MP_IID_IAMCrossbar
-static DEFINE_GUID(IID_IAMCrossbar, 0xc6e13380, 0x30ac, 0x11d0, 0xa1, 0x8c, 0x00,
+DEFINE_GUID(IID_IAMCrossbar, 0xc6e13380, 0x30ac, 0x11d0, 0xa1, 0x8c, 0x00,
 	    0xa0, 0xc9, 0x11, 0x89, 0x56);
-#define IID_IAMStreamConfig MP_IID_IAMStreamConfig
-static DEFINE_GUID(IID_IAMStreamConfig, 0xc6e13340, 0x30ac, 0x11d0, 0xa1, 0x8c,
+DEFINE_GUID(IID_IAMStreamConfig, 0xc6e13340, 0x30ac, 0x11d0, 0xa1, 0x8c,
 	    0x00, 0xa0, 0xc9, 0x11, 0x89, 0x56);
-#define IID_IAMAudioInputMixer MP_IID_IAMAudioInputMixer
-static DEFINE_GUID(IID_IAMAudioInputMixer, 0x54C39221, 0x8380, 0x11d0, 0xB3, 0xF0,
+DEFINE_GUID(IID_IAMAudioInputMixer, 0x54C39221, 0x8380, 0x11d0, 0xB3, 0xF0,
 	    0x00, 0xAA, 0x00, 0x37, 0x61, 0xC5);
-#define IID_IAMTVAudio MP_IID_IAMTVAudio
-static DEFINE_GUID(IID_IAMTVAudio, 0x83EC1C30, 0x23D1, 0x11d1, 0x99, 0xE6, 0x00,
+DEFINE_GUID(IID_IAMTVAudio, 0x83EC1C30, 0x23D1, 0x11d1, 0x99, 0xE6, 0x00,
 	    0xA0, 0xC9, 0x56, 0x02, 0x66);
-#define IID_IAMAnalogVideoDecoder MP_IID_IAMAnalogVideoDecoder
-static DEFINE_GUID(IID_IAMAnalogVideoDecoder, 0xC6E13350, 0x30AC, 0x11d0, 0xA1,
+DEFINE_GUID(IID_IAMAnalogVideoDecoder, 0xC6E13350, 0x30AC, 0x11d0, 0xA1,
 	    0x8C, 0x00, 0xA0, 0xC9, 0x11, 0x89, 0x56);
-#define IID_IPropertyBag MP_IID_IPropertyBag
-static DEFINE_GUID(IID_IPropertyBag, 0x55272a00, 0x42cb, 0x11ce, 0x81, 0x35, 0x00,
+DEFINE_GUID(IID_IPropertyBag, 0x55272a00, 0x42cb, 0x11ce, 0x81, 0x35, 0x00,
 	    0xaa, 0x00, 0x4b, 0xb8, 0x51);
-#define PIN_CATEGORY_CAPTURE MP_PIN_CATEGORY_CAPTURE
-static DEFINE_GUID(PIN_CATEGORY_CAPTURE, 0xfb6c4281, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_CAPTURE, 0xfb6c4281, 0x0353, 0x11d1, 0x90, 0x5f,
 	    0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PIN_CATEGORY_VIDEOPORT MP_PIN_CATEGORY_VIDEOPORT
-static DEFINE_GUID(PIN_CATEGORY_VIDEOPORT, 0xfb6c4285, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_VIDEOPORT, 0xfb6c4285, 0x0353, 0x11d1, 0x90, 0x5f,
 	    0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PIN_CATEGORY_PREVIEW MP_PIN_CATEGORY_PREVIEW
-static DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_PREVIEW, 0xfb6c4282, 0x0353, 0x11d1, 0x90, 0x5f,
             0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PIN_CATEGORY_VBI MP_PIN_CATEGORY_VBI
-static DEFINE_GUID(PIN_CATEGORY_VBI, 0xfb6c4284, 0x0353, 0x11d1, 0x90, 0x5f,
+DEFINE_GUID(PIN_CATEGORY_VBI, 0xfb6c4284, 0x0353, 0x11d1, 0x90, 0x5f,
             0x00, 0x00, 0xc0, 0xcc, 0x16, 0xba);
-#define PROPSETID_TUNER MP_PROPSETID_TUNER
-static DEFINE_GUID(PROPSETID_TUNER, 0x6a2e0605, 0x28e4, 0x11d0, 0xa1, 0x8c, 0x00,
+DEFINE_GUID(PROPSETID_TUNER, 0x6a2e0605, 0x28e4, 0x11d0, 0xa1, 0x8c, 0x00,
 	    0xa0, 0xc9, 0x11, 0x89, 0x56);
-#define MEDIATYPE_VBI MP_MEDIATYPE_VBI
-static DEFINE_GUID(MEDIATYPE_VBI,   0xf72a76e1, 0xeb0a, 0x11d0, 0xac, 0xe4, 0x00,
+DEFINE_GUID(MEDIATYPE_VBI,   0xf72a76e1, 0xeb0a, 0x11d0, 0xac, 0xe4, 0x00,
             0x00, 0xc0, 0xcc, 0x16, 0xba);
 
 #define INSTANCEDATA_OF_PROPERTY_PTR(x) (((KSPROPERTY*)(x)) + 1)
@@ -796,19 +749,19 @@ static HRESULT init_ringbuffer(grabber_ringbuffer_t * rb, int buffersize,
     mp_msg(MSGT_TV, MSGL_DBG2, "tvi_dshow: Capture buffer: %d blocks of %d bytes.\n",
 	   rb->buffersize, rb->blocksize);
 
-    rb->ringbuffer = malloc(rb->buffersize * sizeof(char *));
+    rb->ringbuffer = (char **) malloc(rb->buffersize * sizeof(char *));
     if (!rb)
 	return E_POINTER;
     memset(rb->ringbuffer, 0, rb->buffersize * sizeof(char *));
 
     for (i = 0; i < rb->buffersize; i++) {
-	rb->ringbuffer[i] = malloc(rb->blocksize * sizeof(char));
+	rb->ringbuffer[i] = (char *) malloc(rb->blocksize * sizeof(char));
 	if (!rb->ringbuffer[i]) {
 	    destroy_ringbuffer(rb);
 	    return E_OUTOFMEMORY;
 	}
     }
-    rb->dpts = malloc(rb->buffersize * sizeof(double));
+    rb->dpts = (double*) malloc(rb->buffersize * sizeof(double));
     if (!rb->dpts) {
 	destroy_ringbuffer(rb);
 	return E_OUTOFMEMORY;
@@ -817,7 +770,7 @@ static HRESULT init_ringbuffer(grabber_ringbuffer_t * rb, int buffersize,
     rb->tail = 0;
     rb->count = 0;
     rb->tStart = -1;
-    rb->pMutex = malloc(sizeof(CRITICAL_SECTION));
+    rb->pMutex = (CRITICAL_SECTION *) malloc(sizeof(CRITICAL_SECTION));
     if (!rb->pMutex) {
 	destroy_ringbuffer(rb);
 	return E_OUTOFMEMORY;
@@ -966,7 +919,7 @@ static HRESULT load_freq_table(int nCountry, int nInputType,
     }
     *pnFirst = plFreqTable[0];
     *pnLen = (int) (plFreqTable[1] - plFreqTable[0] + 1);
-    *pplFreqTable = malloc((*pnLen) * sizeof(long));
+    *pplFreqTable = (long *) malloc((*pnLen) * sizeof(long));
     if (!*pplFreqTable) {
 	FreeLibrary(hDLL);
 	return E_FAIL;
@@ -1273,7 +1226,7 @@ static void get_capabilities(priv_t * priv)
 	OLE_CALL_ARGS(priv->pCrossbar, get_PinCounts, &lOutputPins,
 		  &lInputPins);
 
-	tv_available_inputs = malloc(sizeof(long) * lInputPins);
+	tv_available_inputs = (long *) malloc(sizeof(long) * lInputPins);
 	tv_available_inputs_count = 0;
 
 	mp_msg(MSGT_TV, MSGL_V, MSGTR_TVI_DS_AvailableVideoInputs);
@@ -2063,11 +2016,11 @@ static HRESULT get_available_formats_stream(chain_t *chain)
     }
     done = 0;
 
-    arpmt = malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
+    arpmt = (AM_MEDIA_TYPE **) malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
     if (arpmt) {
 	memset(arpmt, 0, (count + 1) * sizeof(AM_MEDIA_TYPE *));
 
-	pBuf = malloc((count + 1) * sizeof(void *));
+	pBuf = (void **) malloc((count + 1) * sizeof(void *));
 	if (pBuf) {
 	    memset(pBuf, 0, (count + 1) * sizeof(void *));
 
@@ -2170,7 +2123,8 @@ static HRESULT get_available_formats_pin(ICaptureGraphBuilder2 * pBuilder,
     OLE_CALL(pEnum,Reset);
 
     count = i;
-    arpmt = malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
+    arpmt =
+	(AM_MEDIA_TYPE **) malloc((count + 1) * sizeof(AM_MEDIA_TYPE *));
     if (!arpmt)
 	return E_OUTOFMEMORY;
     memset(arpmt, 0, (count + 1) * sizeof(AM_MEDIA_TYPE *));
@@ -2183,7 +2137,7 @@ static HRESULT get_available_formats_pin(ICaptureGraphBuilder2 * pBuilder,
     OLE_RELEASE_SAFE(pEnum);
 
 
-    pBuf = malloc((count + 1) * sizeof(void *));
+    pBuf = (void **) malloc((count + 1) * sizeof(void *));
     if (!pBuf) {
 	for (i = 0; i < count; i++)
 	    if (arpmt[i])
@@ -2309,6 +2263,7 @@ static int get_audio_framesize(priv_t * priv)
     return priv->chains[1]->rbuf->blocksize;
 }
 
+#ifdef CONFIG_TV_TELETEXT
 static int vbi_get_props(priv_t* priv,tt_stream_props* ptsp)
 {
     if(!priv || !ptsp)
@@ -2354,6 +2309,7 @@ static void vbi_grabber(priv_t* priv)
     }
     free(buf);
 }
+#endif /* CONFIG_TV_TELETEXT */
 
 /**
  * \brief fills given buffer with video data (usually one frame)
@@ -2398,7 +2354,9 @@ static double grab_video_frame(priv_t * priv, char *buffer, int len)
       rb->count--;
     LeaveCriticalSection(rb->pMutex);
 
+#ifdef CONFIG_TV_TELETEXT
     vbi_grabber(priv);
+#endif
     return pts;
 }
 
@@ -2587,12 +2545,13 @@ static HRESULT build_audio_chain(priv_t *priv)
  */
 static HRESULT build_vbi_chain(priv_t *priv)
 {
+#ifdef CONFIG_TV_TELETEXT
     HRESULT hr;
 
     if(priv->chains[2]->rbuf)
         return S_OK;
 
-    if(priv->tv_param->teletext.device)
+    if(priv->tv_param->tdevice)
     {
         priv->chains[2]->rbuf=calloc(1,sizeof(grabber_ringbuffer_t));
         if(!priv->chains[2]->rbuf)
@@ -2606,6 +2565,7 @@ static HRESULT build_vbi_chain(priv_t *priv)
             return 0;
         }
     }
+#endif
     return S_OK;
 }
 
@@ -2941,8 +2901,10 @@ static int init(priv_t * priv)
             OLE_QUERYINTERFACE(priv->pBuilder,IID_IBaseFilter,pBF);
             OLE_CALL_ARGS(pBF,SetSyncSource,rc);
         }
+#ifdef CONFIG_TV_TELETEXT
        if(vbi_get_props(priv,&(priv->tsp))!=TVI_CONTROL_TRUE)
            break;
+#endif
         result = 1;
     } while(0);
 
@@ -3012,7 +2974,9 @@ static int uninit(priv_t * priv)
     if (priv->dwRegister) {
         RemoveFromRot(priv->dwRegister);
     }
+#ifdef CONFIG_TV_TELETEXT
     teletext_control(priv->priv_vbi,TV_VBI_CONTROL_STOP,(void*)1);
+#endif
     //stop audio grabber thread
 
     if (priv->state && priv->pMediaControl) {
@@ -3517,19 +3481,20 @@ static int control(priv_t * priv, int cmd, void *arg)
     case TVI_CONTROL_IMMEDIATE:
 	priv->immediate_mode = 1;
 	return TVI_CONTROL_TRUE;
+#ifdef CONFIG_TV_TELETEXT
     case TVI_CONTROL_VBI_INIT:
     {
         void* ptr;
         ptr=&(priv->tsp);
-        if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==VBI_CONTROL_TRUE)
+        if(teletext_control(NULL,TV_VBI_CONTROL_START,&ptr)==TVI_CONTROL_TRUE)
             priv->priv_vbi=ptr;
         else
             priv->priv_vbi=NULL;
         return TVI_CONTROL_TRUE;
     }
-    case TVI_CONTROL_GET_VBI_PTR:
-        *(void **)arg=priv->priv_vbi;
-        return TVI_CONTROL_TRUE;
+    default:
+        return teletext_control(priv->priv_vbi,cmd,arg);
+#endif
     }
     return TVI_CONTROL_UNKNOWN;
 }

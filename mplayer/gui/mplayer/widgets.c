@@ -41,6 +41,7 @@
 #include "gui/wm/ws.h"
 
 
+#include "gtk/menu.h"
 #include "play.h"
 #include "gtk/fs.h"
 
@@ -59,7 +60,7 @@ int gtkInitialized = 0;
 #include "gtk/mb.h"
 #include "gtk/about.h"
 #include "gtk/opts.h"
-#include "gtk/gtk_menu.h"
+#include "gtk/menu.h"
 #include "gtk/gtk_url.h"
 #include "gtk/eq.h"
 

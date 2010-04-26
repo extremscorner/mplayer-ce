@@ -1,88 +1,75 @@
-Before release:
-
-* Use gtk-doc?
-
-* Implement fribidi_wcwidth()?
-
-* Port fribidi-main.c to new API.
-
-* help2man.
-
 Implementation issues:
 
-* Add API to get and pass on TypeLink*, to not allocate bidi levels.
-  Something like that.  Also the UTF-8 stuff from pango/mini-fribidi.
+* FriBidiEnv type should be defined that is to hold all global variables
+  and should be passed as environment to all fribidi functions.
 
-* Explore vis2log.
+* Add const keywords all over the source.
 
-* Clean caprtl2utf8 to do arbitrary charset conversion?
+* with --without-charsets, fribidi char set converters use iconv internally.
 
-* add --output-charset.
+* Update CapRTL with new Unicode reference version.
 
-* Update README, etc...
-
-* Mix __attr... with DLLIMPORT?
-
-* Update all files headers/footers.  For c/h files, lib/fribidi-mirroring.[ch]
-  is always the reference.
-
-* In fribidi_main.c reorder after line break.
-
-* Change fribidi-main cmd-line parameters: --mirror --no-mirror...  change the
-  defaults too.
+* Revise Reorder api, in fribidi_main.c reorder after link break.
 
 * Add an option to fribidi_main.c to assume two consecutive returns as
   paragraph separators.
 
-* Add more tests.  For:
-  - Checking that not removing explicit marks in analyze is not changing the
-    output in anyway.
-  - Tests with BN.  Right now ^ is BN in CapRTL scheme.
-  - Test tables.
+* Change fribidi_main.c to act like 'bidiv' if argv[0] == "bidiv".
 
-* indent:  support function attributes and _PARAMS like things.  Also
-  FRIBIDI_BEGIN_DECLS, and LIKELY.
+* Fix iconv problem: Check for old iconvs (without wchar_t, without
+  byteorder UTF-32 or UCS-4 types).
 
-* Cleanup gen.tab/gen-*.c files.
+* When there is no glibc, libiconv should be linked when --without-charset
+  is enabled.
 
-* Override pkgincludedir and append interface version.  Should we go the GNOME
-  parallel install way?
+* Design better apis to do reorder based on available levels, remove
+  explicit marks then calculate position maps, ....
 
-* c2man:  parse Author and Copyright from the whole file.
+* Revise fribidi_util.c, add some functions, update other to support explicit
+  marks, and too many embedding levels, eg. fribidi_map_range.
 
-* Write texinfo documentation.
+* Charset converters and fribidi_analyse change API to allocate mem if
+  NULL is passed to them.
 
-* Set up gnu.org web pages, and update the entry in Free Software Directory.
+BiDi algorithms issues:
 
-* Use gengetopt.
+General issues:
 
-* Add FriBidiEnv functionality at compile time.  Also, ifdef out the memory
-  cleanup stuff if asked to fail on memory allocation failure (xmalloc).  When
-  this is done, FRIBIDI_GNUC_WARN_UNUSEDS can be turned off conditionally.
+* Better documentation.
 
-* Generate HTML and DVI documentation.
+* Write notes and a reference implementation for the following interactions
+  with fribidi:
 
-* Rewrite fribidi.spec.in
+    - Terminal editing with cursor key interaction, e.g. through curses.
+      No mouse or cut and paste interaction.
 
-* Add make rules for lib/$(BUILT_SOURCES) to depend on gen.tab/ stuff?
+    - Like above (with fixed width fonts?) but in an GUI environment
+      where the mouse may be used to position the cursor.
 
-* When called in interactive mode, fribidi cmd-line should greet, write
-  about copyrtight stuff, and shared-libs' version and Unicode version.
+    - Like above but with the ability to do a mouse selection. At least
+      in logical mode, possibly in visual mode.
 
-* Configure gen.tab/ with host=build to avoid cross-compiling table
-  generators.
+    - Like above but with proportional fonts.
 
-* Replace test/run.tests with something better, Makefile foo, etc.
+    - Like above with proportional fonts and character attributes.
 
-* Clean up README and NEWS, and check all files' headers.  Write
-  gen.tab/README.  Also add UniData license file.
+    - Like above but with kerning between characters.
 
-From GNU Coding Standards:
+* Write a description of the needed steps to convert a LTR editor into a
+  BiDi aware editor.
 
-* The distribution should contain a file named `README' which gives the name
-  of the package, and a general description of what it does. It is also good
-  to explain the purpose of each of the first-level subdirectories in the
-  package, if there are any. The `README' file should either state the version
-  number of the package, or refer to where in the package it can be found.
+* Make interfaces to other scripting languages if there is any interest.
 
-* Add ^L to all sources.
+* Consider the implications of a minimal incremental algorithm for
+  adding a single character.
+
+* Add handling of precomposed and presentation unicode chars when converting
+  to 8-bit encodings (breaking into several chars, or better match)
+
+* Persian 8-bit encoding ISIRI-3342 has the notion of strong typed chars like
+  spaces etc (all the characters in the range 0x00-0x7f are strongly typed
+  left-to-right, and sometimes have duplicates in 0x80-0xff as a strongly
+  typed right-to-left version.  several chars in the range 0xa0-0xbf have
+  exact unicode counterparts; but others (and all in the range 0x80-0x9f,
+  and 0xff) have not; so how should that be handled when converting to
+  unicode to preserve at best the direction information?

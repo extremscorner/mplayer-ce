@@ -11,7 +11,7 @@
  *
  * Modified for use with MPlayer, changes contained in liba52_changes.diff.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: imdct.c 29643 2009-09-04 10:31:24Z reimar $
+ * $Id: imdct.c 29306 2009-05-13 15:22:13Z bircoph $
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -727,7 +727,6 @@ const complex_t HSQRT2_3DNOW __attribute__ ((aligned (8))) = { 0.707106781188, 0
 #define HAVE_AMD3DNOWEXT 1
 #include "imdct_3dnow.h"
 
-#if !ARCH_X86_64 || !defined(PIC)
 void
 imdct_do_512_sse(sample_t data[],sample_t delay[], sample_t bias)
 {
@@ -1061,7 +1060,6 @@ imdct_do_512_sse(sample_t data[],sample_t delay[], sample_t bias)
 		: "%"REG_S, "%"REG_D
 	);
 }
-#endif
 #endif // ARCH_X86 || ARCH_X86_64
 
 void a52_imdct_256(sample_t * data, sample_t * delay, sample_t bias)
@@ -1261,14 +1259,12 @@ void a52_imdct_init (uint32_t mm_accel)
 	ifft64 = ifft64_c;
 
 #if ARCH_X86 || ARCH_X86_64
-#if !ARCH_X86_64 || !defined(PIC)
 	if(mm_accel & MM_ACCEL_X86_SSE)
 	{
 	  fprintf (stderr, "Using SSE optimized IMDCT transform\n");
 	  a52_imdct_512 = imdct_do_512_sse;
 	}
 	else
-#endif
 	if(mm_accel & MM_ACCEL_X86_3DNOWEXT)
 	{
 	  fprintf (stderr, "Using 3DNowEx optimized IMDCT transform\n");

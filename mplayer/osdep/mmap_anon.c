@@ -27,8 +27,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "mmap_anon.h"
-
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
