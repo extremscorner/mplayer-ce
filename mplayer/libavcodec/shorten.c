@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/shorten.c
  * Shorten decoder
  * @author Jeff Muizelaar
  *
@@ -527,7 +527,7 @@ static void shorten_flush(AVCodecContext *avctx){
 
 AVCodec shorten_decoder = {
     "shorten",
-    AVMEDIA_TYPE_AUDIO,
+    CODEC_TYPE_AUDIO,
     CODEC_ID_SHORTEN,
     sizeof(ShortenContext),
     shorten_decode_init,

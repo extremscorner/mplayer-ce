@@ -72,7 +72,7 @@ static int save_settings(HDRVR hDriver, const char *filename)
         return -1;
     }
 
-    pv = malloc(cb);
+    pv = (char *) malloc(cb);
     if (SendDriverMessage(hDriver, ICM_GETSTATE, (LPARAM) pv, (LPARAM) &cb) != ICERR_OK)
     {
         printf("ICM_GETSTATE failed\n");
@@ -112,7 +112,7 @@ static int load_settings(HDRVR hDriver, const char *filename)
         return -1;
     }
 
-    pv = malloc(info.st_size);
+    pv = (char *) malloc(info.st_size);
     fd = fopen(filename, "rb");
 
     if (!fd)

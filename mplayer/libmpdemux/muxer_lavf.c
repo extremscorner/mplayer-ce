@@ -74,7 +74,7 @@ static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
 static char *mux_avopt = NULL;
 
-const m_option_t lavfopts_conf[] = {
+m_option_t lavfopts_conf[] = {
 	{"format", &(conf_format), CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"muxrate", &mux_rate, CONF_TYPE_INT, CONF_RANGE, 0, INT_MAX, NULL},
 	{"packetsize", &mux_packet_size, CONF_TYPE_INT, CONF_RANGE, 0, INT_MAX, NULL},
@@ -340,7 +340,7 @@ int muxer_init_muxer_lavf(muxer_t *muxer)
 "will play these INCORRECT files as if nothing were wrong!\n"
 "*******************************************************************************\n");
 
-	priv = calloc(1, sizeof(muxer_priv_t));
+	priv = (muxer_priv_t *) calloc(1, sizeof(muxer_priv_t));
 	if(priv == NULL)
 		return 0;
 
@@ -391,7 +391,7 @@ int muxer_init_muxer_lavf(muxer_t *muxer)
         }
 
 	priv->oc->pb = av_alloc_put_byte(priv->buffer, BIO_BUFFER_SIZE, 1, muxer, NULL, mp_write, mp_seek);
-	if ((muxer->stream->flags & MP_STREAM_SEEK) != MP_STREAM_SEEK)
+	if ((muxer->stream->flags & STREAM_SEEK) != STREAM_SEEK)
             priv->oc->pb->is_streamed = 1;
 
 	muxer->priv = (void *) priv;

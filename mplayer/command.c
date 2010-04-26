@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdlib.h>
 #include <inttypes.h>
 #include <unistd.h>
@@ -43,37 +25,46 @@
 #include "mpcommon.h"
 #include "mixer.h"
 #include "libmpcodecs/dec_video.h"
-#include "libmpcodecs/dec_teletext.h"
 #include "vobsub.h"
 #include "spudec.h"
-#include "path.h"
+#include "get_path.h"
+#ifdef CONFIG_TV
 #include "stream/tv.h"
+#endif
+#ifdef CONFIG_RADIO
 #include "stream/stream_radio.h"
+#endif
+#ifdef CONFIG_PVR
 #include "stream/pvr.h"
+#endif
 #ifdef CONFIG_DVBIN
 #include "stream/dvbin.h"
 #endif
 #ifdef CONFIG_DVDREAD
 #include "stream/stream_dvd.h"
 #endif
+#ifdef CONFIG_DVDNAV
 #include "stream/stream_dvdnav.h"
+#endif
+#ifdef CONFIG_ASS
+#include "libass/ass.h"
 #include "libass/ass_mp.h"
+#endif
+#ifdef CONFIG_MENU
 #include "m_struct.h"
 #include "libmenu/menu.h"
+#endif
+#ifdef CONFIG_GUI
 #include "gui/interface.h"
+#endif
 
 #include "mp_core.h"
 #include "mp_fifo.h"
 #include "libavutil/avstring.h"
 
-#ifdef GEKKO
-#include "osdep/plat_gekko.h"
-#endif
-
 #define ROUND(x) ((int)((x)<0 ? (x)-0.5 : (x)+0.5))
 
 extern int use_menu;
-extern int copyScreen;
 
 static void rescale_input_coordinates(int ix, int iy, double *dx, double *dy)
 {
@@ -418,7 +409,7 @@ static int mp_property_chapter(m_option_t *prop, int action, void *arg,
         if (!arg)
             return M_PROPERTY_ERROR;
         M_PROPERTY_CLAMP(prop, *(int*)arg);
-        step_all = *(int *)arg - chapter;
+        step_all = *(int *)arg - (chapter + 1);
         chapter += step_all;
         break;
     case M_PROPERTY_STEP_UP:
@@ -818,22 +809,23 @@ static int mp_property_balance(m_option_t * prop, int action, void *arg,
 static int mp_property_audio(m_option_t * prop, int action, void *arg,
 			     MPContext * mpctx)
 {
-    int current_id, tmp;
-    if (!mpctx->demuxer || !mpctx->demuxer->audio)
-        return M_PROPERTY_UNAVAILABLE;
-    current_id = mpctx->demuxer->audio->id;
+    int current_id = -1, tmp;
 
     switch (action) {
     case M_PROPERTY_GET:
+	if (!mpctx->sh_audio)
+	    return M_PROPERTY_UNAVAILABLE;
 	if (!arg)
 	    return M_PROPERTY_ERROR;
-	*(int *) arg = current_id;
+	*(int *) arg = audio_id;
 	return M_PROPERTY_OK;
     case M_PROPERTY_PRINT:
+	if (!mpctx->sh_audio)
+	    return M_PROPERTY_UNAVAILABLE;
 	if (!arg)
 	    return M_PROPERTY_ERROR;
 
-	if (current_id < 0)
+	if (audio_id < 0)
 	    *(char **) arg = strdup(MSGTR_Disabled);
 	else {
 	    char lang[40] = MSGTR_Unknown;
@@ -842,7 +834,7 @@ static int mp_property_audio(m_option_t * prop, int action, void *arg,
                 av_strlcpy(lang, sh->lang, 40);
 #ifdef CONFIG_DVDREAD
 	    else if (mpctx->stream->type == STREAMTYPE_DVD) {
-		int code = dvd_lang_from_aid(mpctx->stream, current_id);
+		int code = dvd_lang_from_aid(mpctx->stream, audio_id);
 		if (code) {
 		    lang[0] = code >> 8;
 		    lang[1] = code;
@@ -853,19 +845,22 @@ static int mp_property_audio(m_option_t * prop, int action, void *arg,
 
 #ifdef CONFIG_DVDNAV
 	    else if (mpctx->stream->type == STREAMTYPE_DVDNAV)
-		mp_dvdnav_lang_from_aid(mpctx->stream, current_id, lang);
+		mp_dvdnav_lang_from_aid(mpctx->stream, audio_id, lang);
 #endif
 	    *(char **) arg = malloc(64);
-	    snprintf(*(char **) arg, 64, "(%d) %s", current_id, lang);
+	    snprintf(*(char **) arg, 64, "(%d) %s", audio_id, lang);
 	}
 	return M_PROPERTY_OK;
 
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_SET:
+	if (!mpctx->demuxer)
+	    return M_PROPERTY_UNAVAILABLE;
 	if (action == M_PROPERTY_SET && arg)
 	    tmp = *((int *) arg);
 	else
 	    tmp = -1;
+	current_id = mpctx->demuxer->audio->id;
 	audio_id = demuxer_switch_audio(mpctx->demuxer, tmp);
 	if (audio_id == -2
 	    || (audio_id > -1
@@ -892,32 +887,34 @@ static int mp_property_audio(m_option_t * prop, int action, void *arg,
 static int mp_property_video(m_option_t * prop, int action, void *arg,
 			     MPContext * mpctx)
 {
-    int current_id, tmp;
-    if (!mpctx->demuxer || !mpctx->demuxer->video)
-        return M_PROPERTY_UNAVAILABLE;
-    current_id = mpctx->demuxer->video->id;
+    int current_id = -1, tmp;
 
     switch (action) {
     case M_PROPERTY_GET:
+	if (!mpctx->sh_video)
+	    return M_PROPERTY_UNAVAILABLE;
 	if (!arg)
 	    return M_PROPERTY_ERROR;
-	*(int *) arg = current_id;
+	*(int *) arg = video_id;
 	return M_PROPERTY_OK;
     case M_PROPERTY_PRINT:
+	if (!mpctx->sh_video)
+	    return M_PROPERTY_UNAVAILABLE;
 	if (!arg)
 	    return M_PROPERTY_ERROR;
 
-	if (current_id < 0)
+	if (video_id < 0)
 	    *(char **) arg = strdup(MSGTR_Disabled);
 	else {
 	    char lang[40] = MSGTR_Unknown;
 	    *(char **) arg = malloc(64);
-	    snprintf(*(char **) arg, 64, "(%d) %s", current_id, lang);
+	    snprintf(*(char **) arg, 64, "(%d) %s", video_id, lang);
 	}
 	return M_PROPERTY_OK;
 
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_SET:
+	current_id = mpctx->demuxer->video->id;
 	if (action == M_PROPERTY_SET && arg)
 	    tmp = *((int *) arg);
 	else
@@ -962,10 +959,6 @@ static int mp_property_program(m_option_t * prop, int action, void *arg,
 	     &prog) == DEMUXER_CTRL_NOTIMPL)
 	    return M_PROPERTY_ERROR;
 
-	if (prog.aid < 0 && prog.vid < 0) {
-	    mp_msg(MSGT_CPLAYER, MSGL_ERR, "Selected program contains no audio or video streams!\n");
-	    return M_PROPERTY_ERROR;
-	}
 	mp_property_do("switch_audio", M_PROPERTY_SET, &prog.aid, mpctx);
 	mp_property_do("switch_video", M_PROPERTY_SET, &prog.vid, mpctx);
 	return M_PROPERTY_OK;
@@ -1036,8 +1029,6 @@ static int mp_property_deinterlace(m_option_t * prop, int action,
 	vf->control(vf, VFCTRL_GET_DEINTERLACE, &deinterlace);
 	deinterlace = !deinterlace;
 	vf->control(vf, VFCTRL_SET_DEINTERLACE, &deinterlace);
-	set_osd_msg(OSD_MSG_SPEED, 1, osd_duration, MSGTR_OSDDeinterlace,
-	    deinterlace ? MSGTR_Enabled : MSGTR_Disabled);
 	return M_PROPERTY_OK;
     }
     return M_PROPERTY_NOT_IMPLEMENTED;
@@ -1311,6 +1302,9 @@ static int mp_property_aspect(m_option_t * prop, int action, void *arg,
 static int mp_property_sub_pos(m_option_t * prop, int action, void *arg,
 			       MPContext * mpctx)
 {
+    if (!mpctx->sh_video)
+	return M_PROPERTY_UNAVAILABLE;
+
     switch (action) {
     case M_PROPERTY_SET:
 	if (!arg)
@@ -1330,7 +1324,6 @@ static int mp_property_sub(m_option_t * prop, int action, void *arg,
     demux_stream_t *const d_sub = mpctx->d_sub;
     const int global_sub_size = mpctx->global_sub_size;
     int source = -1, reset_spu = 0;
-    double pts = 0;
     char *sub_name;
 
     if (global_sub_size <= 0)
@@ -1513,15 +1506,11 @@ static int mp_property_sub(m_option_t * prop, int action, void *arg,
 	&& (mpctx->stream->type == STREAMTYPE_DVD
 	    || mpctx->stream->type == STREAMTYPE_DVDNAV)
 	&& dvdsub_id < 0 && reset_spu) {
-	d_sub->id = -2;
-	d_sub->sh = NULL;
+	dvdsub_id = -2;
+	d_sub->id = dvdsub_id;
     }
 #endif
-    if (mpctx->sh_audio)
-        pts = mpctx->sh_audio->pts;
-    if (mpctx->sh_video)
-        pts = mpctx->sh_video->pts;
-    update_subtitles(mpctx->sh_video, pts, d_sub, 1);
+    update_subtitles(mpctx->sh_video, d_sub, 1);
 
     return M_PROPERTY_OK;
 }
@@ -1893,6 +1882,7 @@ static int mp_property_tv_color(m_option_t * prop, int action, void *arg,
 
 #endif
 
+#ifdef CONFIG_TV_TELETEXT
 static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
@@ -1903,7 +1893,8 @@ static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
       SET is GET+1
       STEP is GET+2
     */
-    if (!mpctx->demuxer || !mpctx->demuxer->teletext)
+    tvi_handle_t *tvh = mpctx->demuxer->priv;
+    if (mpctx->demuxer->type != DEMUXER_TYPE_TV || !tvh)
         return M_PROPERTY_UNAVAILABLE;
     if(!base_ioctl)
         return M_PROPERTY_ERROR;
@@ -1912,30 +1903,31 @@ static int mp_property_teletext_common(m_option_t * prop, int action, void *arg,
     case M_PROPERTY_GET:
         if (!arg)
             return M_PROPERTY_ERROR;
-        result=teletext_control(mpctx->demuxer->teletext, base_ioctl, arg);
+        result=tvh->functions->control(tvh->priv, base_ioctl, arg);
         break;
     case M_PROPERTY_SET:
         if (!arg)
             return M_PROPERTY_ERROR;
         M_PROPERTY_CLAMP(prop, *(int *) arg);
-        result=teletext_control(mpctx->demuxer->teletext, base_ioctl+1, arg);
+        result=tvh->functions->control(tvh->priv, base_ioctl+1, arg);
         break;
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_STEP_DOWN:
-        result=teletext_control(mpctx->demuxer->teletext, base_ioctl, &val);
+        result=tvh->functions->control(tvh->priv, base_ioctl, &val);
         val += (arg ? *(int *) arg : 1) * (action == M_PROPERTY_STEP_DOWN ? -1 : 1);
-        result=teletext_control(mpctx->demuxer->teletext, base_ioctl+1, &val);
+        result=tvh->functions->control(tvh->priv, base_ioctl+1, &val);
         break;
     default:
         return M_PROPERTY_NOT_IMPLEMENTED;
     }
 
-    return result == VBI_CONTROL_TRUE ? M_PROPERTY_OK : M_PROPERTY_ERROR;
+    return result == TVI_CONTROL_TRUE ? M_PROPERTY_OK : M_PROPERTY_ERROR;
 }
 
 static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
+    tvi_handle_t *tvh = mpctx->demuxer->priv;
     int result;
     int val;
 
@@ -1944,8 +1936,7 @@ static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
     if(result!=M_PROPERTY_OK)
         return result;
 
-    if(teletext_control(mpctx->demuxer->teletext,
-                        (int)prop->priv, &val)==VBI_CONTROL_TRUE && val)
+    if(tvh->functions->control(tvh->priv, prop->priv, &val)==TVI_CONTROL_TRUE && val)
         mp_input_set_section("teletext");
     else
         mp_input_set_section("tv");
@@ -1955,23 +1946,26 @@ static int mp_property_teletext_mode(m_option_t * prop, int action, void *arg,
 static int mp_property_teletext_page(m_option_t * prop, int action, void *arg,
                   MPContext * mpctx)
 {
+    tvi_handle_t *tvh = mpctx->demuxer->priv;
     int result;
     int val;
-    if (!mpctx->demuxer->teletext)
+    if (mpctx->demuxer->type != DEMUXER_TYPE_TV || !tvh)
         return M_PROPERTY_UNAVAILABLE;
     switch(action){
     case M_PROPERTY_STEP_UP:
     case M_PROPERTY_STEP_DOWN:
         //This should be handled separately
         val = (arg ? *(int *) arg : 1) * (action == M_PROPERTY_STEP_DOWN ? -1 : 1);
-        result=teletext_control(mpctx->demuxer->teletext,
-                                TV_VBI_CONTROL_STEP_PAGE, &val);
+        result=tvh->functions->control(tvh->priv, TV_VBI_CONTROL_STEP_PAGE, &val);
         break;
     default:
         result=mp_property_teletext_common(prop,action,arg,mpctx);
     }
     return result;
 }
+
+
+#endif /* CONFIG_TV_TELETEXT */
 
 ///@}
 
@@ -2007,7 +2001,7 @@ static const m_option_t mp_properties[] = {
     { "time_pos", mp_property_time_pos, CONF_TYPE_TIME,
      M_OPT_MIN, 0, 0, NULL },
     { "chapter", mp_property_chapter, CONF_TYPE_INT,
-     M_OPT_MIN, 0, 0, NULL },
+     M_OPT_MIN, 1, 0, NULL },
     { "chapters", mp_property_chapters, CONF_TYPE_INT,
      0, 0, 0, NULL },
     { "angle", mp_property_angle, CONF_TYPE_INT,
@@ -2019,7 +2013,7 @@ static const m_option_t mp_properties[] = {
 
     // Audio
     { "volume", mp_property_volume, CONF_TYPE_FLOAT,
-     M_OPT_RANGE, 0, 200, NULL },
+     M_OPT_RANGE, 0, 100, NULL },
     { "mute", mp_property_mute, CONF_TYPE_FLAG,
      M_OPT_RANGE, 0, 1, NULL },
     { "audio_delay", mp_property_audio_delay, CONF_TYPE_FLOAT,
@@ -2035,7 +2029,7 @@ static const m_option_t mp_properties[] = {
     { "channels", mp_property_channels, CONF_TYPE_INT,
      0, 0, 0, NULL },
     { "switch_audio", mp_property_audio, CONF_TYPE_INT,
-     CONF_RANGE, -2, 65535, NULL },
+     CONF_RANGE, -2, MAX_A_STREAMS - 1, NULL },
     { "balance", mp_property_balance, CONF_TYPE_FLOAT,
      M_OPT_RANGE, -1, 1, NULL },
 
@@ -2081,7 +2075,7 @@ static const m_option_t mp_properties[] = {
     { "aspect", mp_property_aspect, CONF_TYPE_FLOAT,
      0, 0, 0, NULL },
     { "switch_video", mp_property_video, CONF_TYPE_INT,
-     CONF_RANGE, -2, 65535, NULL },
+     CONF_RANGE, -2, MAX_V_STREAMS - 1, NULL },
     { "switch_program", mp_property_program, CONF_TYPE_INT,
      CONF_RANGE, -1, 65535, NULL },
 
@@ -2125,6 +2119,8 @@ static const m_option_t mp_properties[] = {
     { "tv_hue", mp_property_tv_color, CONF_TYPE_INT,
      M_OPT_RANGE, -100, 100, (void *) TV_COLOR_HUE },
 #endif
+
+#ifdef CONFIG_TV_TELETEXT
     { "teletext_page", mp_property_teletext_page, CONF_TYPE_INT,
      M_OPT_RANGE, 100, 899,  (void*)TV_VBI_CONTROL_GET_PAGE },
     { "teletext_subpage", mp_property_teletext_common, CONF_TYPE_INT,
@@ -2135,6 +2131,8 @@ static const m_option_t mp_properties[] = {
      M_OPT_RANGE, 0, 3, (void*)TV_VBI_CONTROL_GET_FORMAT },
     { "teletext_half_page", mp_property_teletext_common, CONF_TYPE_INT,
      M_OPT_RANGE, 0, 2, (void*)TV_VBI_CONTROL_GET_HALF_PAGE },
+#endif
+
     { NULL, NULL, NULL, 0, 0, 0, NULL }
 };
 
@@ -2341,77 +2339,6 @@ static const struct {
 };
 #endif
 
-static const char *property_error_string(int error_value)
-{
-    switch (error_value) {
-    case M_PROPERTY_ERROR:
-        return "ERROR";
-    case M_PROPERTY_UNAVAILABLE:
-        return "PROPERTY_UNAVAILABLE";
-    case M_PROPERTY_NOT_IMPLEMENTED:
-        return "NOT_IMPLEMENTED";
-    case M_PROPERTY_UNKNOWN:
-        return "PROPERTY_UNKNOWN";
-    case M_PROPERTY_DISABLED:
-        return "DISABLED";
-    }
-    return "UNKNOWN";
-}
-
-static void remove_subtitle_range(MPContext *mpctx, int start, int count)
-{
-    int idx;
-    int end = start + count;
-    int after = mpctx->set_of_sub_size - end;
-    sub_data **subs = mpctx->set_of_subtitles;
-#ifdef CONFIG_ASS
-    ass_track_t **ass_tracks = mpctx->set_of_ass_tracks;
-#endif
-    if (count < 0 || count > mpctx->set_of_sub_size ||
-        start < 0 || start > mpctx->set_of_sub_size - count) {
-        mp_msg(MSGT_CPLAYER, MSGL_ERR,
-               "Cannot remove invalid subtitle range %i +%i\n", start, count);
-        return;
-    }
-    for (idx = start; idx < end; idx++) {
-        sub_data *subd = subs[idx];
-        mp_msg(MSGT_CPLAYER, MSGL_STATUS,
-               MSGTR_RemovedSubtitleFile, idx + 1,
-               filename_recode(subd->filename));
-        sub_free(subd);
-        subs[idx] = NULL;
-#ifdef CONFIG_ASS
-        if (ass_tracks[idx])
-            ass_free_track(ass_tracks[idx]);
-        ass_tracks[idx] = NULL;
-#endif
-    }
-
-    mpctx->global_sub_size -= count;
-    mpctx->set_of_sub_size -= count;
-    if (mpctx->set_of_sub_size <= 0)
-        mpctx->global_sub_indices[SUB_SOURCE_SUBS] = -1;
-
-    memmove(subs + start, subs + end, after * sizeof(*subs));
-    memset(subs + start + after, 0, count * sizeof(*subs));
-#ifdef CONFIG_ASS
-    memmove(ass_tracks + start, ass_tracks + end, after * sizeof(*ass_tracks));
-    memset(ass_tracks + start + after, 0, count * sizeof(*ass_tracks));
-#endif
-
-    if (mpctx->set_of_sub_pos >= start && mpctx->set_of_sub_pos < end) {
-        mpctx->global_sub_pos = -2;
-        subdata = NULL;
-#ifdef CONFIG_ASS
-        ass_track = NULL;
-#endif
-        mp_input_queue_cmd(mp_input_parse_cmd("sub_select"));
-    } else if (mpctx->set_of_sub_pos >= end) {
-        mpctx->set_of_sub_pos -= count;
-        mpctx->global_sub_pos -= count;
-    }
-}
-
 int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 {
     sh_audio_t * const sh_audio = mpctx->sh_audio;
@@ -2455,8 +2382,6 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 		    mp_msg(MSGT_CPLAYER, MSGL_WARN,
 			   "Failed to set property '%s' to '%s'.\n",
 			   cmd->args[0].v.s, cmd->args[1].v.s);
-		if (r <= 0)
-		    mp_msg(MSGT_GLOBAL, MSGL_INFO, "ANS_ERROR=%s\n", property_error_string(r));
 	    }
 	    break;
 
@@ -2498,20 +2423,16 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 		    mp_msg(MSGT_CPLAYER, MSGL_WARN,
 			   "Failed to increment property '%s' by %f.\n",
 			   cmd->args[0].v.s, cmd->args[1].v.f);
-		if (r <= 0)
-		    mp_msg(MSGT_GLOBAL, MSGL_INFO, "ANS_ERROR=%s\n", property_error_string(r));
 	    }
 	    break;
 
 	case MP_CMD_GET_PROPERTY:{
 		char *tmp;
-		int r = mp_property_do(cmd->args[0].v.s, M_PROPERTY_TO_STRING,
-				       &tmp, mpctx);
-		if (r <= 0) {
+		if (mp_property_do(cmd->args[0].v.s, M_PROPERTY_TO_STRING,
+				   &tmp, mpctx) <= 0) {
 		    mp_msg(MSGT_CPLAYER, MSGL_WARN,
 			   "Failed to get value of property '%s'.\n",
 			   cmd->args[0].v.s);
-		    mp_msg(MSGT_GLOBAL, MSGL_INFO, "ANS_ERROR=%s\n", property_error_string(r));
 		    break;
 		}
 		mp_msg(MSGT_GLOBAL, MSGL_INFO, "ANS_%s=%s\n",
@@ -2522,7 +2443,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 
 	case MP_CMD_EDL_MARK:
 	    if (edl_fd) {
-		double v = sh_video ? sh_video->pts :
+		float v = sh_video ? sh_video->pts :
 		    playing_audio_pts(sh_audio, mpctx->d_audio,
 				      mpctx->audio_out);
 
@@ -2586,16 +2507,9 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_QUIT:
-#ifdef WIILIB
-//like pause
-	    cmd->pausing = 1;
-	    brk_cmd = 1;
-	    copyScreen = 1;
-	    break;
-#else	
 	    exit_player_with_rc(EXIT_QUIT,
 				(cmd->nargs > 0) ? cmd->args[0].v.i : 0);
-#endif
+
 	case MP_CMD_PLAY_TREE_STEP:{
 		int n = cmd->args[0].v.i == 0 ? 1 : cmd->args[0].v.i;
 		int force = cmd->args[1].v.i;
@@ -2612,11 +2526,10 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 		} else
 #endif
 		{
-			#ifndef WIILIB
 		    if (!force && mpctx->playtree_iter) {
 			play_tree_iter_t *i =
 			    play_tree_iter_new_copy(mpctx->playtree_iter);
-			if (i && play_tree_iter_step(i, n, 0) ==
+			if (play_tree_iter_step(i, n, 0) ==
 			    PLAY_TREE_ITER_ENTRY)
 			    mpctx->eof =
 				(n > 0) ? PT_NEXT_ENTRY : PT_PREV_ENTRY;
@@ -2625,9 +2538,6 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 			mpctx->eof = (n > 0) ? PT_NEXT_ENTRY : PT_PREV_ENTRY;
 		    if (mpctx->eof)
 			mpctx->play_tree_step = n;
-		    #else
-		    mpctx->eof = 1;
-			#endif
 		    brk_cmd = 1;
 		}
 	    }
@@ -2747,7 +2657,6 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    break;
 
 	case MP_CMD_LOADLIST:{
-		setwatchdogcounter(-1);
 		play_tree_t *e = parse_playlist_file(cmd->args[0].v.s);
 		if (!e)
 		    mp_msg(MSGT_CPLAYER, MSGL_ERR,
@@ -2767,7 +2676,6 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 			mpctx->eof = PT_NEXT_SRC;
 		    }
 		}
-		setwatchdogcounter(WATCH_TIMEOUT);
 		brk_cmd = 1;
 	    }
 	    break;
@@ -2779,17 +2687,6 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 		/* NOP */ ;
 	    mpctx->eof = PT_STOP;
 	    brk_cmd = 1;
-	    break;
-
-	case MP_CMD_OSD_SHOW_PROGRESSION:{
-		int len = demuxer_get_time_length(mpctx->demuxer);
-		int pts = demuxer_get_current_time(mpctx->demuxer);
-		set_osd_bar(0, "Position", 0, 100, demuxer_get_percent_pos(mpctx->demuxer));
-		set_osd_msg(OSD_MSG_TEXT, 1, osd_duration,
-			    "%c %02d:%02d:%02d / %02d:%02d:%02d",
-			    mpctx->osd_function, pts/3600, (pts/60)%60, pts%60,
-			    len/3600, (len/60)%60, len%60);
-	    }
 	    break;
 
 #ifdef CONFIG_RADIO
@@ -2977,21 +2874,23 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	    if (mpctx->file_format == DEMUXER_TYPE_TV)
 		tv_step_chanlist((tvi_handle_t *) (mpctx->demuxer->priv));
 	    break;
-#endif /* CONFIG_TV */
+#ifdef CONFIG_TV_TELETEXT
 	case MP_CMD_TV_TELETEXT_ADD_DEC:
 	{
-	    if (mpctx->demuxer->teletext)
-	        teletext_control(mpctx->demuxer->teletext,TV_VBI_CONTROL_ADD_DEC,
-	                         &(cmd->args[0].v.s));
+	    tvi_handle_t* tvh=(tvi_handle_t *)(mpctx->demuxer->priv);
+	    if (mpctx->file_format == DEMUXER_TYPE_TV)
+		tvh->functions->control(tvh->priv,TV_VBI_CONTROL_ADD_DEC,&(cmd->args[0].v.s));
 	    break;
 	}
 	case MP_CMD_TV_TELETEXT_GO_LINK:
 	{
-	    if (mpctx->demuxer->teletext)
-	        teletext_control(mpctx->demuxer->teletext,TV_VBI_CONTROL_GO_LINK,
-	                         &(cmd->args[0].v.i));
+	    tvi_handle_t* tvh=(tvi_handle_t *)(mpctx->demuxer->priv);
+	    if (mpctx->file_format == DEMUXER_TYPE_TV)
+		tvh->functions->control(tvh->priv,TV_VBI_CONTROL_GO_LINK,&(cmd->args[0].v.i));
 	    break;
 	}
+#endif /* CONFIG_TV_TELETEXT */
+#endif /* CONFIG_TV */
 
 	case MP_CMD_SUB_LOAD:
 	    if (sh_video) {
@@ -3025,7 +2924,7 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 				j=strlen(vobsub_filename);
 				for(i=j-1;i>0 && vobsub_filename[i]!='.';i--);
 				vobsub_filename[i]='\0';							
-				
+				printf("vobsub_filename: %s\n",vobsub_filename); sleep(3);
 				aux_vobsub=vobsub_open(vobsub_filename,NULL,0,&vo_spudec);
 				if(aux_vobsub){
 				  if(vo_vobsub) 
@@ -3050,10 +2949,46 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 	case MP_CMD_SUB_REMOVE:
 	    if (sh_video) {
 		int v = cmd->args[0].v.i;
+		sub_data *subd;
 		if (v < 0) {
-		    remove_subtitle_range(mpctx, 0, mpctx->set_of_sub_size);
+		    for (v = 0; v < mpctx->set_of_sub_size; ++v) {
+			subd = mpctx->set_of_subtitles[v];
+			mp_msg(MSGT_CPLAYER, MSGL_STATUS,
+			       MSGTR_RemovedSubtitleFile, v + 1,
+			       filename_recode(subd->filename));
+			sub_free(subd);
+			mpctx->set_of_subtitles[v] = NULL;
+		    }
+		    mpctx->global_sub_indices[SUB_SOURCE_SUBS] = -1;
+		    mpctx->global_sub_size -= mpctx->set_of_sub_size;
+		    mpctx->set_of_sub_size = 0;
+		    if (mpctx->set_of_sub_pos >= 0) {
+			mpctx->global_sub_pos = -2;
+			subdata = NULL;
+			mp_input_queue_cmd(mp_input_parse_cmd("sub_select"));
+		    }
 		} else if (v < mpctx->set_of_sub_size) {
-		    remove_subtitle_range(mpctx, v, 1);
+		    subd = mpctx->set_of_subtitles[v];
+		    mp_msg(MSGT_CPLAYER, MSGL_STATUS,
+			   MSGTR_RemovedSubtitleFile, v + 1,
+			   filename_recode(subd->filename));
+		    sub_free(subd);
+		    if (mpctx->set_of_sub_pos == v) {
+			mpctx->global_sub_pos = -2;
+			subdata = NULL;
+			mp_input_queue_cmd(mp_input_parse_cmd("sub_select"));
+		    } else if (mpctx->set_of_sub_pos > v) {
+			--mpctx->set_of_sub_pos;
+			--mpctx->global_sub_pos;
+		    }
+		    while (++v < mpctx->set_of_sub_size)
+			mpctx->set_of_subtitles[v - 1] =
+			    mpctx->set_of_subtitles[v];
+		    --mpctx->set_of_sub_size;
+		    --mpctx->global_sub_size;
+		    if (mpctx->set_of_sub_size <= 0)
+			mpctx->global_sub_indices[SUB_SOURCE_SUBS] = -1;
+		    mpctx->set_of_subtitles[mpctx->set_of_sub_size] = NULL;
 		}
 	    }
 	    break;
@@ -3301,43 +3236,6 @@ int run_command(MPContext * mpctx, mp_cmd_t * cmd)
 
 #endif
 
-    case MP_CMD_AF_SWITCH:
-        if (sh_audio)
-        {
-            af_uninit(mpctx->mixer.afilter);
-            af_init(mpctx->mixer.afilter);
-        }
-    case MP_CMD_AF_ADD:
-    case MP_CMD_AF_DEL:
-        if (!sh_audio)
-            break;
-        {
-            char* af_args = strdup(cmd->args[0].v.s);
-            char* af_commands = af_args;
-            char* af_command;
-            af_instance_t* af;
-            while ((af_command = strsep(&af_commands, ",")) != NULL)
-            {
-                if (cmd->id == MP_CMD_AF_DEL)
-                {
-                    af = af_get(mpctx->mixer.afilter, af_command);
-                    if (af != NULL)
-                        af_remove(mpctx->mixer.afilter, af);
-                }
-                else
-                    af_add(mpctx->mixer.afilter, af_command);
-            }
-            build_afilter_chain(sh_audio, &ao_data);
-            free(af_args);
-        }
-        break;
-    case MP_CMD_AF_CLR:
-        if (!sh_audio)
-            break;
-        af_uninit(mpctx->mixer.afilter);
-        af_init(mpctx->mixer.afilter);
-        build_afilter_chain(sh_audio, &ao_data);
-        break;
 	default:
 #ifdef CONFIG_GUI
 	    if ((use_gui) && (cmd->id > MP_CMD_GUI_EVENTS))

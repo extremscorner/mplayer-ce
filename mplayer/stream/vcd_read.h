@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_VCD_READ_H
 #define MPLAYER_VCD_READ_H
 
@@ -72,7 +54,7 @@ int vcd_seek_to_track(mp_vcd_priv_t* vcd,int track){
   return VCD_SECTOR_DATA*vcd_get_msf(vcd);
 }
 
-static int vcd_get_track_end(mp_vcd_priv_t* vcd,int track){
+int vcd_get_track_end(mp_vcd_priv_t* vcd,int track){
   vcd->entry.cdte_format = CDROM_MSF;
   vcd->entry.cdte_track  = track<vcd->tochdr.cdth_trk1?(track+1):CDROM_LEADOUT;
   if (ioctl(vcd->fd, CDROMREADTOCENTRY, &vcd->entry)) {
@@ -82,7 +64,7 @@ static int vcd_get_track_end(mp_vcd_priv_t* vcd,int track){
   return VCD_SECTOR_DATA*vcd_get_msf(vcd);
 }
 
-static mp_vcd_priv_t* vcd_read_toc(int fd){
+mp_vcd_priv_t* vcd_read_toc(int fd){
   struct cdrom_tochdr tochdr;
   mp_vcd_priv_t* vcd;
   int i, min = 0, sec = 0, frame = 0;
@@ -143,11 +125,6 @@ static mp_vcd_priv_t* vcd_read_toc(int fd){
   vcd->fd = fd;
   vcd->tochdr = tochdr;
   return vcd;
-}
-
-static int vcd_end_track(mp_vcd_priv_t* vcd)
-{
-  return vcd->tochdr.cdth_trk1;
 }
 
 static int vcd_read(mp_vcd_priv_t* vcd,char *mem){

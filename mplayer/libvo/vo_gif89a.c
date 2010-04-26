@@ -374,3 +374,4 @@ static void uninit(void)
 	reduce_data = NULL;
 	reduce_cmap = NULL;
 }
+

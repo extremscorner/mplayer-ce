@@ -26,7 +26,6 @@
 
 #include "config.h"
 #include "vidix.h"
-#include "drivers.h"
 #include "libavutil/common.h"
 #include "mpbswap.h"
 #include "config.h"

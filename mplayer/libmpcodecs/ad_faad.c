@@ -28,7 +28,7 @@
 #include "ad_internal.h"
 #include "libaf/reorder_ch.h"
 
-static const ad_info_t info =
+static ad_info_t info =
 {
 	"AAC (MPEG2/4 Advanced Audio Coding)",
 	"faad",
@@ -47,7 +47,7 @@ LIBAD_EXTERN(faad)
 
 /* configure maximum supported channels, *
  * this is theoretically max. 64 chans   */
-#define FAAD_MAX_CHANNELS 8
+#define FAAD_MAX_CHANNELS 6
 #define FAAD_BUFFLEN (FAAD_MIN_STREAMSIZE*FAAD_MAX_CHANNELS)
 
 //#define AAC_DUMP_COMPRESSED
@@ -96,6 +96,7 @@ static int init(sh_audio_t *sh)
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"FAAD: codecdata extracted from WAVEFORMATEX\n");
   }
   if(!sh->codecdata_len) {
+#if 1
     faacDecConfigurationPtr faac_conf;
     /* Set the default object type and samplerate */
     /* This is useful for RAW AAC files */
@@ -124,6 +125,7 @@ static int init(sh_audio_t *sh)
     //faac_conf->defObjectType = LTP; // => MAIN, LC, SSR, LTP available.
 
     faacDecSetConfiguration(faac_hdec, faac_conf);
+#endif
 
     sh->a_in_buffer_len = demux_read_data(sh->ds, sh->a_in_buffer, sh->a_in_buffer_size);
     pos = aac_probe(sh->a_in_buffer, sh->a_in_buffer_len);
@@ -165,8 +167,7 @@ static int init(sh_audio_t *sh)
   } else {
     mp_msg(MSGT_DECAUDIO,MSGL_V,"FAAD: Decoder init done (%dBytes)!\n", sh->a_in_buffer_len); // XXX: remove or move to debug!
     mp_msg(MSGT_DECAUDIO,MSGL_V,"FAAD: Negotiated samplerate: %ldHz  channels: %d\n", faac_samplerate, faac_channels);
-    // 8 channels is aac channel order #7.
-    sh->channels = faac_channels == 7 ? 8 : faac_channels;
+    sh->channels = faac_channels;
     if (audio_output_channels <= 2) sh->channels = faac_channels > 1 ? 2 : 1;
     sh->samplerate = faac_samplerate;
     sh->samplesize=2;

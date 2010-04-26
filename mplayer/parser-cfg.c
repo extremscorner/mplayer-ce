@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 /// \defgroup ConfigParsers Config parsers
 ///
@@ -52,7 +35,7 @@ static int recursion_depth = 0;
  *  \param conffile Path to the config file.
  *  \return 1 on sucess, -1 on error.
  */
-int m_config_parse_config_file(m_config_t* config, const char *conffile)
+int m_config_parse_config_file(m_config_t* config, char *conffile)
 {
 #define PRINT_LINENUM	mp_msg(MSGT_CFGPARSER,MSGL_V,"%s(%d): ", conffile, line_num)
 #define MAX_LINE_LEN	10000
@@ -103,14 +86,10 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 	}
 
 	while (fgets(line, MAX_LINE_LEN, fp)) {
-#ifndef GEKKO
 		if (errors >= 16) {
 			mp_msg(MSGT_CFGPARSER,MSGL_FATAL,"too many errors\n");
-			free(line);
-			fclose(fp);
 			goto out;
 		}
-#endif
 
 		line_num++;
 		line_pos = 0;
@@ -167,10 +146,8 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 
 		/* check '=' */
 		if (line[line_pos++] != '=') {
-#ifndef GEKKO
 			PRINT_LINENUM;
 			mp_msg(MSGT_CFGPARSER,MSGL_ERR,"Option %s needs a parameter at line %d\n",opt,line_num);
-#endif
 			ret = -1;
 			errors++;
 			continue;
@@ -212,10 +189,8 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 
 		/* did we read a parameter? */
 		if (param_pos == 0) {
-#ifndef GEKKO
 			PRINT_LINENUM;
 			mp_msg(MSGT_CFGPARSER,MSGL_ERR,"Option %s needs a parameter at line %d\n",opt,line_num);
-#endif
 			ret = -1;
 			errors++;
 			continue;
@@ -249,9 +224,7 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 		if (tmp < 0) {
 			PRINT_LINENUM;
 			if(tmp == M_OPT_UNKNOWN) {
-				#ifndef GEKKO
 				mp_msg(MSGT_CFGPARSER,MSGL_WARN,"Warning unknown option %s at line %d\n", opt,line_num);
-				#endif
 				continue;
 			}
 			mp_msg(MSGT_CFGPARSER,MSGL_ERR,"Error parsing option %s=%s at line %d\n",opt,param,line_num);
@@ -279,6 +252,7 @@ int m_config_preparse_command_line(m_config_t *config, int argc, char **argv)
 {
 	int msg_lvl, i, r, ret = 0;
 	char* arg;
+	m_option_t* opt;
 
 	// Hack to shutup the parser error messages.
 	msg_lvl = mp_msg_levels[MSGT_CFGPARSER];
@@ -287,7 +261,6 @@ int m_config_preparse_command_line(m_config_t *config, int argc, char **argv)
 	config->mode = M_COMMAND_LINE_PRE_PARSE;
 
 	for(i = 1 ; i < argc ; i++) {
-		const m_option_t* opt;
 		arg = argv[i];
 		// Ignore non option
 		if(arg[0] != '-' || arg[1] == 0) continue;

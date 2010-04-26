@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/dnxhd_parser.c
  * DNxHD/VC-3 parser
  */
 

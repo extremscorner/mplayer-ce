@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/audioconvert.c
  * audio conversion
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
@@ -79,7 +79,7 @@ static const char* const channel_names[]={
     [30] = "DR",
 };
 
-static const char *get_channel_name(int channel_id)
+const char *get_channel_name(int channel_id)
 {
     if (channel_id<0 || channel_id>=FF_ARRAY_ELEMS(channel_names))
         return NULL;
@@ -107,6 +107,7 @@ static const struct {
 } channel_layout_map[] = {
     { "mono",        1,  CH_LAYOUT_MONO },
     { "stereo",      2,  CH_LAYOUT_STEREO },
+    { "surround",    3,  CH_LAYOUT_SURROUND },
     { "4.0",         4,  CH_LAYOUT_4POINT0 },
     { "quad",        4,  CH_LAYOUT_QUAD },
     { "5.0",         5,  CH_LAYOUT_5POINT0 },
@@ -123,6 +124,9 @@ static const struct {
 void avcodec_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout)
 {
     int i;
+
+    if (channel_layout==0)
+        channel_layout = avcodec_guess_channel_layout(nb_channels, CODEC_ID_NONE, NULL);
 
     for (i=0; channel_layout_map[i].name; i++)
         if (nb_channels    == channel_layout_map[i].nb_channels &&
@@ -209,7 +213,7 @@ if(ctx->fmt_pair == ofmt + SAMPLE_FMT_NB*ifmt){\
 }
 
 //FIXME put things below under ifdefs so we do not waste space for cases no codec will need
-//FIXME rounding ?
+//FIXME rounding and clipping ?
 
              CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_U8 ,  *(const uint8_t*)pi)
         else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_U8 , (*(const uint8_t*)pi - 0x80)<<8)
@@ -226,14 +230,14 @@ if(ctx->fmt_pair == ofmt + SAMPLE_FMT_NB*ifmt){\
         else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_S32,  *(const int32_t*)pi)
         else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_S32,  *(const int32_t*)pi*(1.0 / (1<<31)))
         else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_S32,  *(const int32_t*)pi*(1.0 / (1<<31)))
-        else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_FLT, av_clip_uint8(  lrintf(*(const float*)pi * (1<<7)) + 0x80))
-        else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_FLT, av_clip_int16(  lrintf(*(const float*)pi * (1<<15))))
-        else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_FLT, av_clipl_int32(llrintf(*(const float*)pi * (1U<<31))))
+        else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_FLT, lrintf(*(const float*)pi * (1<<7)) + 0x80)
+        else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_FLT, lrintf(*(const float*)pi * (1<<15)))
+        else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_FLT, lrintf(*(const float*)pi * (1<<31)))
         else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_FLT, *(const float*)pi)
         else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_FLT, *(const float*)pi)
-        else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_DBL, av_clip_uint8(  lrint(*(const double*)pi * (1<<7)) + 0x80))
-        else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_DBL, av_clip_int16(  lrint(*(const double*)pi * (1<<15))))
-        else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_DBL, av_clipl_int32(llrint(*(const double*)pi * (1U<<31))))
+        else CONV(SAMPLE_FMT_U8 , uint8_t, SAMPLE_FMT_DBL, lrint(*(const double*)pi * (1<<7)) + 0x80)
+        else CONV(SAMPLE_FMT_S16, int16_t, SAMPLE_FMT_DBL, lrint(*(const double*)pi * (1<<15)))
+        else CONV(SAMPLE_FMT_S32, int32_t, SAMPLE_FMT_DBL, lrint(*(const double*)pi * (1<<31)))
         else CONV(SAMPLE_FMT_FLT, float  , SAMPLE_FMT_DBL, *(const double*)pi)
         else CONV(SAMPLE_FMT_DBL, double , SAMPLE_FMT_DBL, *(const double*)pi)
         else return -1;

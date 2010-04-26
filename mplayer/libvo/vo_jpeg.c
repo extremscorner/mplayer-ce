@@ -44,7 +44,7 @@
 #include "mp_msg.h"
 #include "video_out.h"
 #include "video_out_internal.h"
-#include "mp_core.h"
+#include "mplayer.h"			/* for exit_player() */
 #include "help_mp.h"
 
 /* ------------------------------------------------------------------------- */
@@ -121,17 +121,17 @@ static void jpeg_mkdir(char *buf, int verbose) {
                             MSGTR_VO_GenericError, strerror(errno) );
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s %s\n", info.short_name,
                             MSGTR_VO_UnableToAccess,buf);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
                 if ( !S_ISDIR(stat_p.st_mode) ) {
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s %s\n", info.short_name,
                             buf, MSGTR_VO_ExistsButNoDirectory);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
                 if ( !(stat_p.st_mode & S_IWUSR) ) {
                     mp_msg(MSGT_VO, MSGL_ERR, "%s: %s - %s\n", info.short_name,
                             buf, MSGTR_VO_DirExistsButNotWritable);
-                    exit_player(EXIT_ERROR);
+                    exit_player(MSGTR_Exit_error);
                 }
 
                 mp_msg(MSGT_VO, MSGL_INFO, "%s: %s - %s\n", info.short_name,
@@ -143,7 +143,7 @@ static void jpeg_mkdir(char *buf, int verbose) {
                         MSGTR_VO_GenericError, strerror(errno) );
                 mp_msg(MSGT_VO, MSGL_ERR, "%s: %s - %s\n", info.short_name,
                         buf, MSGTR_VO_CantCreateDirectory);
-                exit_player(EXIT_ERROR);
+                exit_player(MSGTR_Exit_error);
         } /* end switch */
     } else if ( verbose ) {
         mp_msg(MSGT_VO, MSGL_INFO, "%s: %s - %s\n", info.short_name,
@@ -192,7 +192,7 @@ static uint32_t jpeg_write(uint8_t * name, uint8_t * buffer)
         mp_msg(MSGT_VO, MSGL_ERR, "%s: %s: %s\n",
                 info.short_name, MSGTR_VO_GenericError,
                 strerror(errno) );
-        exit_player(EXIT_ERROR);
+        exit_player(MSGTR_Exit_error);
     }
 
     cinfo.err = jpeg_std_error(&jerr);
@@ -330,10 +330,11 @@ static void check_events(void)
 /** \brief Validation function for values [0-100]
  */
 
-static int int_zero_hundred(void *valp)
+static int int_zero_hundred(int *val)
 {
-    int *val = valp;
-    return *val >= 0 && *val <= 100;
+    if ( (*val >=0) && (*val<=100) )
+        return 1;
+    return 0;
 }
 
 static int preinit(const char *arg)
@@ -342,15 +343,15 @@ static int preinit(const char *arg)
         {"progressive", OPT_ARG_BOOL,   &jpeg_progressive_mode, NULL},
         {"baseline",    OPT_ARG_BOOL,   &jpeg_baseline,         NULL},
         {"optimize",    OPT_ARG_INT,    &jpeg_optimize,
-                                            int_zero_hundred},
+                                            (opt_test_f)int_zero_hundred},
         {"smooth",      OPT_ARG_INT,    &jpeg_smooth,
-                                            int_zero_hundred},
+                                            (opt_test_f)int_zero_hundred},
         {"quality",     OPT_ARG_INT,    &jpeg_quality,
-                                            int_zero_hundred},
+                                            (opt_test_f)int_zero_hundred},
         {"dpi",         OPT_ARG_INT,    &jpeg_dpi,              NULL},
         {"outdir",      OPT_ARG_MSTRZ,  &jpeg_outdir,           NULL},
         {"subdirs",     OPT_ARG_MSTRZ,  &jpeg_subdirs,          NULL},
-        {"maxfiles",    OPT_ARG_INT,    &jpeg_maxfiles, int_pos},
+        {"maxfiles",    OPT_ARG_INT,    &jpeg_maxfiles, (opt_test_f)int_pos},
         {NULL, 0, NULL, NULL}
     };
     const char *info_message = NULL;
@@ -417,3 +418,4 @@ static int control(uint32_t request, void *data, ...)
 #undef BUFLENGTH
 
 /* ------------------------------------------------------------------------- */
+

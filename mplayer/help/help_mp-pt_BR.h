@@ -244,14 +244,14 @@ static const char help_text[]=
 #define MSGTR_TooManyAudioInBuffer "\nMuitos pacotes de audio no buffer: (%d em %d bytes).\n"
 #define MSGTR_TooManyVideoInBuffer "\nMuitos pacotes de audio no buffer: (%d em %d bytes).\n"
 #define MSGTR_MaybeNI "Talvez você esteja reproduzindo um fluxo/arquivo não-entrelaçado ou o codec falhou?\n" \
-                      "Para arquivos .AVI, tente forçar um modo não-entrelaçado com a opção -ni.\n"
+		      "Para arquivos .AVI, tente forçar um modo não-entrelaçado com a opção -ni.\n"
 #define MSGTR_SwitchToNi "\nDetectado .AVI mau entrelaçado - mudando para o modo -ni!\n"
 #define MSGTR_Detected_XXX_FileFormat "Detectado formato de arquivo %s!\n"
 #define MSGTR_DetectedAudiofile "Detectado arquivo de audio!\n"
 #define MSGTR_NotSystemStream "Formato do fluxo não MPEG System... (pode ser um fluxo de transporte?)\n"
 #define MSGTR_InvalidMPEGES "Fluxo MPEG-ES inválido??? Contacte o autor, pode ser um bug :(\n"
 #define MSGTR_FormatNotRecognized "======= Desculpe, este formato de arquivo não é reconhecido/suportado ========\n"\
-                                  "== Se este arquivo é um fluxo AVI, ASF ou MPEG, por favor contacte o autor ==\n"
+				  "== Se este arquivo é um fluxo AVI, ASF ou MPEG, por favor contacte o autor ==\n"
 #define MSGTR_MissingVideoStream "Nenhuma trilha de vídeo encontrado!\n"
 #define MSGTR_MissingAudioStream "Nenhuma trilha de audio encontrado -> sem som\n"
 #define MSGTR_MissingVideoStreamBug "Trilha de vídeo faltando!? Contacte o autor, pode ser um bug :(\n"
@@ -330,6 +330,7 @@ static const char help_text[]=
 
 // vd.c
 #define MSGTR_CodecDidNotSet "VDec: codec não configurou sh->disp_w e sh->disp_h, tentando solução alternativa!\n"
+#define MSGTR_VoConfigRequest "VDec: configuração vo pedida - %d x %d (preferido csp: %s)\n"
 #define MSGTR_CouldNotFindColorspace "Impossível encotrar \"colorspace\" similar - retentando com -vf scale...\n"
 #define MSGTR_MovieAspectIsSet "Aspecto do filme é  %.2f:1 - pré-redimensionando para corrigir o aspecto do filme.\n"
 #define MSGTR_MovieAspectUndefined "Aspecto do filme é indefinido - nenhum pré-redimensionamento aplicado.\n"

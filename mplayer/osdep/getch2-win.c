@@ -25,27 +25,21 @@
 
 #include "config.h"
 #include <stdio.h>
-#include <stdint.h>
-#include <string.h>
 #include <windows.h>
 #include "keycodes.h"
 #include "input/input.h"
 #include "mp_fifo.h"
-#include "getch2.h"
+// HACK, stdin is used as something else below
+#undef stdin
 
 int mp_input_slave_cmd_func(int fd,char* dest,int size){
   DWORD retval;
-  HANDLE in = GetStdHandle(STD_INPUT_HANDLE);
-  if(PeekNamedPipe(in, NULL, size, &retval, NULL, NULL)){
-    if (size > retval) size = retval;
-  } else {
-    if (WaitForSingleObject(in, 0))
-      size = 0;
-  }
-  if(!size){
+  HANDLE stdin = GetStdHandle(STD_INPUT_HANDLE);
+  if(!PeekNamedPipe(stdin, NULL, size, &retval, NULL, NULL) || !retval){
 	  return MP_INPUT_NOTHING;
   }
-  ReadFile(in, dest, size, &retval, NULL);
+  if(retval>size)retval=size;
+  ReadFile(stdin, dest, retval, &retval, NULL);
   if(retval)return retval;
   return MP_INPUT_NOTHING;
 }
@@ -57,7 +51,7 @@ char * erase_to_end_of_line = NULL;
 void get_screen_size(void){
 }
 
-static HANDLE in;
+static HANDLE stdin;
 static int getch2_status=0;
 
 static int getch2_internal(void)
@@ -65,17 +59,9 @@ static int getch2_internal(void)
 	INPUT_RECORD eventbuffer[128];
     DWORD retval;
    	int i=0;
-    if(!getch2_status){
-      // supports e.g. MinGW xterm, unfortunately keys are only received after
-      // enter was pressed.
-      uint8_t c;
-      if (!PeekNamedPipe(in, NULL, 1, &retval, NULL, NULL) || !retval)
-        return -1;
-      ReadFile(in, &c, 1, &retval, NULL);
-      return retval == 1 ? c : -1;
-    }
+    if(!getch2_status)return -1;
     /*check if there are input events*/
-	if(!GetNumberOfConsoleInputEvents(in,&retval))
+	if(!GetNumberOfConsoleInputEvents(stdin,&retval))
 	{
 		printf("getch2: can't get number of input events: %i\n",GetLastError());
 		return -1;
@@ -83,7 +69,7 @@ static int getch2_internal(void)
     if(retval<=0)return -1;
 
 	/*read all events*/
-	if(!ReadConsoleInput(in,eventbuffer,128,&retval))
+	if(!ReadConsoleInput(stdin,eventbuffer,128,&retval))
 	{
 		printf("getch: can't read input events\n");
 		return -1;
@@ -162,8 +148,8 @@ void getch2(void)
 void getch2_enable(void)
 {
 	DWORD retval;
-    in = GetStdHandle(STD_INPUT_HANDLE);
-   	if(!GetNumberOfConsoleInputEvents(in,&retval))
+    stdin = GetStdHandle(STD_INPUT_HANDLE);
+   	if(!GetNumberOfConsoleInputEvents(stdin,&retval))
 	{
 		printf("getch2: %i can't get number of input events  [disabling console input]\n",GetLastError());
 		getch2_status = 0;
@@ -201,7 +187,7 @@ static const struct {
 
 char* get_term_charset(void)
 {
-    char codepage[10];
+    static char codepage[10];
     unsigned i, cpno = GetConsoleOutputCP();
     if (!cpno)
         cpno = GetACP();
@@ -210,9 +196,9 @@ char* get_term_charset(void)
 
     for (i = 0; cp_alias[i].cp; i++)
         if (cpno == cp_alias[i].cp)
-            return strdup(cp_alias[i].alias);
+            return cp_alias[i].alias;
 
     snprintf(codepage, sizeof(codepage), "CP%u", cpno);
-    return strdup(codepage);
+    return codepage;
 }
 #endif

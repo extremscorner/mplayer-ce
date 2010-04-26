@@ -78,7 +78,6 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
     return 0;
 }
 
-// src must NOT be const as it can be a context for func that may need updating (like a pointer or byte counter)
 int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void*, void*, int))
 {
     int total = size;

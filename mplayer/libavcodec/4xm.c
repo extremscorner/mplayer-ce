@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/4xm.c
  * 4XM codec.
  */
 
@@ -137,7 +137,7 @@ typedef struct FourXContext{
     int mv[256];
     VLC pre_vlc;
     int last_dc;
-    DECLARE_ALIGNED(16, DCTELEM, block)[6][64];
+    DECLARE_ALIGNED_8(DCTELEM, block[6][64]);
     void *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int version;
@@ -815,7 +815,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     init_vlcs(f);
 
     if(f->version>2) avctx->pix_fmt= PIX_FMT_RGB565;
-    else             avctx->pix_fmt= PIX_FMT_BGR555;
+    else             avctx->pix_fmt= PIX_FMT_RGB555;
 
     return 0;
 }
@@ -832,24 +832,20 @@ static av_cold int decode_end(AVCodecContext *avctx){
         f->cfrm[i].allocated_size= 0;
     }
     free_vlc(&f->pre_vlc);
-    if(f->current_picture.data[0])
-        avctx->release_buffer(avctx, &f->current_picture);
-    if(f->last_picture.data[0])
-        avctx->release_buffer(avctx, &f->last_picture);
 
     return 0;
 }
 
 AVCodec fourxm_decoder = {
     "4xm",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_4XM,
     sizeof(FourXContext),
     decode_init,
     NULL,
     decode_end,
     decode_frame,
-    CODEC_CAP_DR1,
+    /*CODEC_CAP_DR1,*/
     .long_name = NULL_IF_CONFIG_SMALL("4X Movie"),
 };
 

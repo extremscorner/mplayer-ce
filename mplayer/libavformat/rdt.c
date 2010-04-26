@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavformat/rdt.c
  * @brief Realmedia RTSP protocol (RDT) support
  * @author Ronald S. Bultje <rbultje@ronald.bitfreak.net>
  */
@@ -67,7 +67,7 @@ ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
     s->prev_set_id    = -1;
     s->prev_stream_id = -1;
     s->prev_timestamp = -1;
-    s->parse_packet = handler ? handler->parse_packet : NULL;
+    s->parse_packet = handler->parse_packet;
     s->dynamic_protocol_context = priv_data;
 
     return s;
@@ -120,7 +120,8 @@ ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
         buf[8 + i] ^= xor_table[i];
 
     av_md5_sum(zres, buf, 64);
-    ff_data_to_hex(response, zres, 16, 1);
+    ff_data_to_hex(response, zres, 16);
+    for (i=0;i<32;i++) response[i] = tolower(response[i]);
 
     /* add tail */
     strcpy (response + 32, "01d0a8e3");
@@ -307,7 +308,7 @@ rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
         init_put_byte(&pb, buf, len, 0, NULL, NULL, NULL, NULL);
         flags = (flags & RTP_FLAG_KEY) ? 2 : 0;
         res = ff_rm_parse_packet (rdt->rmctx, &pb, st, rdt->rmst[st->index], len, pkt,
-                                  &seq, flags, *timestamp);
+                                  &seq, &flags, timestamp);
         pos = url_ftell(&pb);
         if (res < 0)
             return res;
@@ -417,7 +418,7 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
     } else if (av_strstart(p, "StartTime:integer;", &p))
         stream->first_dts = atoi(p);
     else if (av_strstart(p, "ASMRuleBook:string;", &p)) {
-        int n, first = -1;
+        int n = st_index, first = -1;
 
         for (n = 0; n < s->nb_streams; n++)
             if (s->streams[n]->priv_data == stream->priv_data) {
@@ -510,7 +511,7 @@ ff_real_parse_sdp_a_line (AVFormatContext *s, int stream_index,
 }
 
 static PayloadContext *
-rdt_new_context (void)
+rdt_new_extradata (void)
 {
     PayloadContext *rdt = av_mallocz(sizeof(PayloadContext));
 
@@ -520,7 +521,7 @@ rdt_new_context (void)
 }
 
 static void
-rdt_free_context (PayloadContext *rdt)
+rdt_free_extradata (PayloadContext *rdt)
 {
     int i;
 
@@ -537,19 +538,19 @@ rdt_free_context (PayloadContext *rdt)
 
 #define RDT_HANDLER(n, s, t) \
 static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
-    .enc_name         = s, \
-    .codec_type       = t, \
-    .codec_id         = CODEC_ID_NONE, \
-    .parse_sdp_a_line = rdt_parse_sdp_line, \
-    .open             = rdt_new_context, \
-    .close            = rdt_free_context, \
-    .parse_packet     = rdt_parse_packet \
+    s, \
+    t, \
+    CODEC_ID_NONE, \
+    rdt_parse_sdp_line, \
+    rdt_new_extradata, \
+    rdt_free_extradata, \
+    rdt_parse_packet \
 };
 
-RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", AVMEDIA_TYPE_VIDEO);
-RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", AVMEDIA_TYPE_AUDIO);
-RDT_HANDLER(video,      "x-pn-realvideo",                AVMEDIA_TYPE_VIDEO);
-RDT_HANDLER(audio,      "x-pn-realaudio",                AVMEDIA_TYPE_AUDIO);
+RDT_HANDLER(live_video, "x-pn-multirate-realvideo-live", CODEC_TYPE_VIDEO);
+RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", CODEC_TYPE_AUDIO);
+RDT_HANDLER(video,      "x-pn-realvideo",                CODEC_TYPE_VIDEO);
+RDT_HANDLER(audio,      "x-pn-realaudio",                CODEC_TYPE_AUDIO);
 
 void av_register_rdt_dynamic_payload_handlers(void)
 {

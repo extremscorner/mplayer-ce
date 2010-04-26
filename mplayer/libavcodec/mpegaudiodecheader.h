@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/mpegaudiodecheader.c
  * MPEG Audio header decoder.
  */
 

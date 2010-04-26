@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,7 +11,7 @@
 
 #include "mpbswap.h"
 
-static const ad_info_t info =
+static ad_info_t info =
 {
 	"FFmpeg/libavcodec audio decoders",
 	"ffmpeg",
@@ -54,7 +36,6 @@ static int preinit(sh_audio_t *sh)
 
 static int init(sh_audio_t *sh_audio)
 {
-    int tries = 0;
     int x;
     AVCodecContext *lavc_context;
     AVCodec *lavc_codec;
@@ -86,7 +67,6 @@ static int init(sh_audio_t *sh_audio)
     }
     lavc_context->request_channels = audio_output_channels;
     lavc_context->codec_tag = sh_audio->format; //FOURCC
-    lavc_context->codec_type = CODEC_TYPE_AUDIO;
     lavc_context->codec_id = lavc_codec->id; // not sure if required, imho not --A'rpi
 
     /* alloc extra data */
@@ -111,7 +91,7 @@ static int init(sh_audio_t *sh_audio)
         mp_msg(MSGT_DECAUDIO,MSGL_ERR, MSGTR_CantOpenCodec);
         return 0;
     }
-   mp_msg(MSGT_DECAUDIO,MSGL_V,"INFO: libavcodec \"%s\" init OK!\n", lavc_codec->name);
+   mp_msg(MSGT_DECAUDIO,MSGL_V,"INFO: libavcodec init OK!\n");
 
 //   printf("\nFOURCC: 0x%X\n",sh_audio->format);
    if(sh_audio->format==0x3343414D){
@@ -126,9 +106,7 @@ static int init(sh_audio_t *sh_audio)
    }
 
    // Decode at least 1 byte:  (to get header filled)
-   do {
-       x=decode_audio(sh_audio,sh_audio->a_buffer,1,sh_audio->a_buffer_size);
-   } while (x <= 0 && tries++ < 5);
+   x=decode_audio(sh_audio,sh_audio->a_buffer,1,sh_audio->a_buffer_size);
    if(x>0) sh_audio->a_buffer_len=x;
 
   sh_audio->channels=lavc_context->channels;
@@ -146,16 +124,10 @@ static int init(sh_audio_t *sh_audio)
   if(sh_audio->wf){
       // If the decoder uses the wrong number of channels all is lost anyway.
       // sh_audio->channels=sh_audio->wf->nChannels;
-
-      if (lavc_context->codec_id == CODEC_ID_AAC &&
-          sh_audio->samplerate == 2*sh_audio->wf->nSamplesPerSec) {
-          mp_msg(MSGT_DECAUDIO, MSGL_WARN,
-                 "Ignoring broken container sample rate for ACC with SBR\n");
-      } else if (sh_audio->wf->nSamplesPerSec)
-          sh_audio->samplerate=sh_audio->wf->nSamplesPerSec;
-
+      if (sh_audio->wf->nSamplesPerSec)
+      sh_audio->samplerate=sh_audio->wf->nSamplesPerSec;
       if (sh_audio->wf->nAvgBytesPerSec)
-          sh_audio->i_bps=sh_audio->wf->nAvgBytesPerSec;
+      sh_audio->i_bps=sh_audio->wf->nAvgBytesPerSec;
   }
   sh_audio->samplesize=af_fmt2bits(sh_audio->sample_format)/ 8;
   return 1;
@@ -177,7 +149,6 @@ static int control(sh_audio_t *sh,int cmd,void* arg, ...)
     switch(cmd){
     case ADCTRL_RESYNC_STREAM:
         avcodec_flush_buffers(lavc_context);
-        ds_clear_parser(sh->ds);
     return CONTROL_TRUE;
     }
     return CONTROL_UNKNOWN;
@@ -188,41 +159,42 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
     unsigned char *start=NULL;
     int y,len=-1;
     while(len<minlen){
-	AVPacket pkt;
 	int len2=maxlen;
 	double pts;
 	int x=ds_get_packet_pts(sh_audio->ds,&start, &pts);
-	if(x<=0) {
-	    start = NULL;
-	    x = 0;
-	    ds_parse(sh_audio->ds, &start, &x, MP_NOPTS_VALUE, 0);
-	    if (x <= 0)
-	        break; // error
-	} else {
-	    int in_size = x;
-	    int consumed = ds_parse(sh_audio->ds, &start, &x, pts, 0);
-	    sh_audio->ds->buffer_pos -= in_size - consumed;
-	}
-	av_init_packet(&pkt);
-	pkt.data = start;
-	pkt.size = x;
+	if(x<=0) break; // error
 	if (pts != MP_NOPTS_VALUE) {
 	    sh_audio->pts = pts;
 	    sh_audio->pts_bytes = 0;
 	}
-	y=avcodec_decode_audio3(sh_audio->context,(int16_t*)buf,&len2,&pkt);
+	y=avcodec_decode_audio2(sh_audio->context,(int16_t*)buf,&len2,start,x);
 //printf("return:%d samples_out:%d bitstream_in:%d sample_sum:%d\n", y, len2, x, len); fflush(stdout);
 	if(y<0){ mp_msg(MSGT_DECAUDIO,MSGL_V,"lavc_audio: error\n");break; }
-	if(!sh_audio->parser && y<x)
-	    sh_audio->ds->buffer_pos+=y-x;  // put back data (HACK!)
+	if(y<x) sh_audio->ds->buffer_pos+=y-x;  // put back data (HACK!)
 	if(len2>0){
 	  if (((AVCodecContext *)sh_audio->context)->channels >= 5) {
-            int samplesize = av_get_bits_per_sample_format(((AVCodecContext *)
-                                    sh_audio->context)->sample_fmt) / 8;
-            reorder_channel_nch(buf, AF_CHANNEL_LAYOUT_LAVC_DEFAULT,
+            int src_ch_layout = AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT;
+            const char *codec=((AVCodecContext*)sh_audio->context)->codec->name;
+            if (!strcasecmp(codec, "ac3")
+                || !strcasecmp(codec, "eac3"))
+              src_ch_layout = AF_CHANNEL_LAYOUT_LAVC_AC3_DEFAULT;
+            else if (!strcasecmp(codec, "dca"))
+              src_ch_layout = AF_CHANNEL_LAYOUT_LAVC_DCA_DEFAULT;
+            else if (!strcasecmp(codec, "libfaad")
+                || !strcasecmp(codec, "mpeg4aac"))
+              src_ch_layout = AF_CHANNEL_LAYOUT_AAC_DEFAULT;
+            else if (!strcasecmp(codec, "liba52"))
+              src_ch_layout = AF_CHANNEL_LAYOUT_LAVC_LIBA52_DEFAULT;
+            else if (!strcasecmp(codec, "vorbis"))
+              src_ch_layout = AF_CHANNEL_LAYOUT_VORBIS_DEFAULT;
+            else if (!strcasecmp(codec, "flac"))
+              src_ch_layout = AF_CHANNEL_LAYOUT_FLAC_DEFAULT;
+            else
+              src_ch_layout = AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT;
+            reorder_channel_nch(buf, src_ch_layout,
                                 AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
                                 ((AVCodecContext *)sh_audio->context)->channels,
-                                len2 / samplesize, samplesize);
+                                len2 / 2, 2);
 	  }
 	  //len=len2;break;
 	  if(len<0) len=len2; else len+=len2;

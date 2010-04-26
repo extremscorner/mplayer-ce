@@ -165,7 +165,7 @@ static dvd_input_t file_open(const char *target)
   }
 
   /* Open the device */
-#if !defined(WIN32) && !defined(__OS2__)
+#ifndef WIN32
   dev->fd = open(target, O_RDONLY);
 #else
   dev->fd = open(target, O_RDONLY | O_BINARY);

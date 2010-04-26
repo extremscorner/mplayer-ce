@@ -19,7 +19,7 @@
  */
 
 /**
- * @file
+ * @file libavutil/bfin/bswap.h
  * byte swapping routines
  */
 
@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 #include "config.h"
-#include "libavutil/attributes.h"
+#include "libavutil/common.h"
 
 #define bswap_32 bswap_32
 static av_always_inline av_const uint32_t bswap_32(uint32_t x)

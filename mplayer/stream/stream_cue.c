@@ -1,22 +1,4 @@
-/*
- * VideoCD BinCue
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+//=================== VideoCD BinCue ==========================
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +20,7 @@
 #include "m_struct.h"
 #include "libavutil/avstring.h"
 
+#define byte    unsigned char
 #define SIZERAW 2352
 #define SIZEISO_MODE1 2048
 #define SIZEISO_MODE2_RAW 2352
@@ -70,6 +53,11 @@ static const struct m_struct_st stream_opts = {
   &stream_priv_dflts,
   stream_opts_fields
 };
+
+static FILE* fd_cue;
+static int fd_bin = 0;
+
+static char bin_filename[256];
 
 static char cue_filename[256];
 static char bincue_path[256];
@@ -116,7 +104,7 @@ static int digits2int(char s[2], int errval) {
 }
 
 /* presumes Line is preloaded with the "current" line of the file */
-static int cue_getTrackinfo(FILE *fd_cue, char *Line, tTrack *track)
+static int cue_getTrackinfo(char *Line, tTrack *track)
 {
   int already_set = 0;
 
@@ -172,12 +160,9 @@ static int cue_getTrackinfo(FILE *fd_cue, char *Line, tTrack *track)
  * sure the sizes are in sync.
  */
 static int cue_find_bin (char *firstline) {
-  const char *cur_name;
   int i,j;
-  char bin_filename[256];
   char s[256];
   char t[256];
-  int fd_bin;
 
   /* get the filename out of that */
   /*                      12345 6  */
@@ -210,62 +195,71 @@ static int cue_find_bin (char *firstline) {
 
   }
 
-  fd_bin = -1;
-  for (i = 0; fd_bin == -1 && i < 6; i++) {
-    switch (i) {
-    case 0:
-      /* now try to open that file, without path */
-      cur_name = bin_filename;
-      break;
-    case 1:
-      /* now try to find it with the path of the cue file */
-      snprintf(s,sizeof( s ),"%s/%s",bincue_path,bin_filename);
-      cur_name = s;
-      break;
-    case 2:
+  /* now try to open that file, without path */
+  fd_bin = open (bin_filename, O_RDONLY);
+  if (fd_bin == -1)
+  {
+    mp_msg(MSGT_OPEN,MSGL_STATUS, MSGTR_MPDEMUX_CUEREAD_BinFilenameTested,
+           bin_filename);
+
+    /* now try to find it with the path of the cue file */
+    snprintf(s,sizeof( s ),"%s/%s",bincue_path,bin_filename);
+    fd_bin = open (s, O_RDONLY);
+    if (fd_bin == -1)
+    {
+      mp_msg(MSGT_OPEN,MSGL_STATUS,
+             MSGTR_MPDEMUX_CUEREAD_BinFilenameTested, s);
       /* now I would say the whole filename is shit, build our own */
       strncpy(s, cue_filename, strlen(cue_filename) - 3 );
       s[strlen(cue_filename) - 3] = '\0';
       strcat(s, "bin");
-      cur_name = s;
-      break;
-    case 3:
-      /* ok try it with path */
-      snprintf(t, sizeof( t ), "%s/%s", bincue_path, s);
-      fd_bin = open (t, O_RDONLY);
-      cur_name = t;
-      break;
-    case 4:
-      /* now I would say the whole filename is shit, build our own */
-      strncpy(s, cue_filename, strlen(cue_filename) - 3 );
-      s[strlen(cue_filename) - 3] = '\0';
-      strcat(s, "img");
-      cur_name = s;
-      break;
-    case 5:
-      /* ok try it with path */
-      snprintf(t, sizeof( t ), "%s/%s", bincue_path, s);
-      cur_name = t;
-      break;
-    }
-    fd_bin = open(cur_name, O_RDONLY);
-    if (fd_bin == -1) {
-      mp_msg(MSGT_OPEN,MSGL_STATUS, MSGTR_MPDEMUX_CUEREAD_BinFilenameTested,
-            cur_name);
-    }
-  }
+      fd_bin = open (s, O_RDONLY);
+      if (fd_bin == -1)
+      {
+        mp_msg(MSGT_OPEN,MSGL_STATUS,
+               MSGTR_MPDEMUX_CUEREAD_BinFilenameTested, s);
 
-  if (fd_bin == -1)
-  {
-    /* I'll give up */
-    mp_msg(MSGT_OPEN,MSGL_ERR,
-           MSGTR_MPDEMUX_CUEREAD_CannotFindBinFile);
-    return -1;
+        /* ok try it with path */
+        snprintf(t, sizeof( t ), "%s/%s", bincue_path, s);
+        fd_bin = open (t, O_RDONLY);
+        if (fd_bin == -1)
+        {
+          mp_msg(MSGT_OPEN,MSGL_STATUS,
+                 MSGTR_MPDEMUX_CUEREAD_BinFilenameTested,t);
+          /* now I would say the whole filename is shit, build our own */
+          strncpy(s, cue_filename, strlen(cue_filename) - 3 );
+          s[strlen(cue_filename) - 3] = '\0';
+          strcat(s, "img");
+          fd_bin = open (s, O_RDONLY);
+          if (fd_bin == -1)
+          {
+            mp_msg(MSGT_OPEN,MSGL_STATUS,
+                   MSGTR_MPDEMUX_CUEREAD_BinFilenameTested, s);
+            /* ok try it with path */
+            snprintf(t, sizeof( t ), "%s/%s", bincue_path, s);
+            fd_bin = open (t, O_RDONLY);
+            if (fd_bin == -1)
+            {
+              mp_msg(MSGT_OPEN,MSGL_STATUS,
+                     MSGTR_MPDEMUX_CUEREAD_BinFilenameTested, s);
+
+              /* I'll give up */
+              mp_msg(MSGT_OPEN,MSGL_ERR,
+                     MSGTR_MPDEMUX_CUEREAD_CannotFindBinFile);
+              return -1;
+            }
+          }
+        } else strcpy(bin_filename, t);
+
+      } else strcpy(bin_filename, s);
+
+    } else strcpy(bin_filename, s);
+
   }
 
   mp_msg(MSGT_OPEN,MSGL_INFO,
-         MSGTR_MPDEMUX_CUEREAD_UsingBinFile, cur_name);
-  return fd_bin;
+         MSGTR_MPDEMUX_CUEREAD_UsingBinFile, bin_filename);
+  return 0;
 }
 
 static inline int cue_msf_2_sector(int minute, int second, int frame) {
@@ -312,11 +306,11 @@ static int cue_read_cue (char *in_cue_filename)
   unsigned int sect;
   char *s,*t;
   int i;
-  int fd_bin;
-  FILE *fd_cue;
 
   /* we have no tracks at the beginning */
   nTracks = 0;
+
+  fd_bin = 0;
 
   /* split the filename into a path and filename part */
   s = strdup(in_cue_filename);
@@ -332,8 +326,6 @@ static int cue_read_cue (char *in_cue_filename)
 
   av_strlcpy(bincue_path,t,sizeof( bincue_path ));
   mp_msg(MSGT_OPEN,MSGL_V,"dirname: %s, cuepath: %s\n", t, bincue_path);
-  free(s);
-  s = t = NULL;
 
   /* no path at all? */
   if (strcmp(bincue_path, ".") == 0) {
@@ -358,7 +350,7 @@ static int cue_read_cue (char *in_cue_filename)
   /* read the first line and hand it to find_bin, which will
      test more than one possible name of the file */
 
-  if(! fgets( sLine, sizeof(sLine), fd_cue ) )
+  if(! fgets( sLine, 256, fd_cue ) )
   {
     mp_msg(MSGT_OPEN,MSGL_ERR,
            MSGTR_MPDEMUX_CUEREAD_ErrReadingFromCueFile, in_cue_filename);
@@ -366,8 +358,7 @@ static int cue_read_cue (char *in_cue_filename)
     return -1;
   }
 
-  fd_bin = cue_find_bin(sLine);
-  if (fd_bin == -1) {
+  if (cue_find_bin(sLine)) {
     fclose (fd_cue);
     return -1;
   }
@@ -375,7 +366,7 @@ static int cue_read_cue (char *in_cue_filename)
 
   /* now build the track list */
   /* red the next line and call our track finder */
-  if(! fgets( sLine, sizeof(sLine), fd_cue ) )
+  if(! fgets( sLine, 256, fd_cue ) )
   {
     mp_msg(MSGT_OPEN,MSGL_ERR,
            MSGTR_MPDEMUX_CUEREAD_ErrReadingFromCueFile, in_cue_filename);
@@ -385,7 +376,7 @@ static int cue_read_cue (char *in_cue_filename)
 
   while(!feof(fd_cue))
   {
-    if (cue_getTrackinfo(fd_cue, sLine, &tracks[nTracks++]) != 0)
+    if (cue_getTrackinfo(sLine, &tracks[nTracks++]) != 0)
     {
       mp_msg(MSGT_OPEN,MSGL_ERR,
              MSGTR_MPDEMUX_CUEREAD_ErrReadingFromCueFile, in_cue_filename);
@@ -440,14 +431,15 @@ static int cue_read_cue (char *in_cue_filename)
 
 
 
-static int cue_read_toc_entry(int track) {
+static int cue_read_toc_entry(void) {
+
+  int track = cue_current_pos.track - 1;
+
   /* check if its a valid track, if not return -1 */
-  if (track <= 0 || track > nTracks)
+  if (track >= nTracks)
     return -1;
 
 
-  cue_current_pos.track = track;
-  track--;
   switch (tracks[track].mode)
   {
     case AUDIO:
@@ -469,29 +461,21 @@ static int cue_read_toc_entry(int track) {
   return 0;
 }
 
-static int cue_vcd_get_track_end (int track){
-  int sector = cue_msf_2_sector(tracks[track].minute, tracks[track].second,
-                                tracks[track].frame);
+static int cue_vcd_seek_to_track (int track){
+  cue_current_pos.track  = track;
 
-  return VCD_SECTOR_DATA * sector;
-}
-
-static int seek(stream_t *s,off_t newpos) {
-  s->pos=newpos;
-  cue_set_msf(s->pos/VCD_SECTOR_DATA);
-  return 1;
-}
-
-static int cue_vcd_seek_to_track (stream_t *stream, int track){
-  int pos;
-  if (cue_read_toc_entry (track))
+  if (cue_read_toc_entry ())
     return -1;
 
-  pos = VCD_SECTOR_DATA * cue_get_msf();
-  stream->start_pos = pos;
-  stream->end_pos = cue_vcd_get_track_end(track);
-  seek(stream, pos);
-  return pos;
+  return VCD_SECTOR_DATA * cue_get_msf();
+}
+
+static int cue_vcd_get_track_end (int track){
+  cue_current_pos.frame = tracks[track].frame;
+  cue_current_pos.second = tracks[track].second;
+  cue_current_pos.minute = tracks[track].minute;
+
+  return VCD_SECTOR_DATA * cue_get_msf();
 }
 
 static void cue_vcd_read_toc(void){
@@ -511,7 +495,6 @@ static void cue_vcd_read_toc(void){
 
 static int cue_vcd_read(stream_t *stream, char *mem, int size) {
   unsigned long position;
-  int fd_bin = stream->fd;
   int track = cue_current_pos.track - 1;
 
   position = tracks[track].start_offset +
@@ -548,35 +531,16 @@ static int cue_vcd_read(stream_t *stream, char *mem, int size) {
   return VCD_SECTOR_DATA;
 }
 
-static int control(stream_t *stream, int cmd, void *arg) {
-  switch(cmd) {
-    case STREAM_CTRL_GET_NUM_CHAPTERS:
-    {
-      *(unsigned int *)arg = nTracks;
-      return STREAM_OK;
-    }
-    case STREAM_CTRL_SEEK_TO_CHAPTER:
-    {
-      int r;
-      unsigned int track = *(unsigned int *)arg + 1;
-      r = cue_vcd_seek_to_track(stream, track);
-      if (r >= 0) {
-        return STREAM_OK;
-      }
-      break;
-    }
-    case STREAM_CTRL_GET_CURRENT_CHAPTER:
-    {
-      *(unsigned int *)arg = cue_current_pos.track - 1;
-      return STREAM_OK;
-    }
-  }
-  return STREAM_UNSUPPORTED;
+static int seek(stream_t *s,off_t newpos) {
+  s->pos=newpos;
+  cue_set_msf(s->pos/VCD_SECTOR_DATA);
+  return 1;
 }
+
 
 static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
   struct stream_priv_s* p = (struct stream_priv_s*)opts;
-  int ret,f,track = 0;
+  int ret,ret2,f,track = 0;
   char *filename = NULL, *colon = NULL;
 
   if(mode != STREAM_READ || !p->filename) {
@@ -603,21 +567,22 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
     return STREAM_UNSUPPORTED;
   }
   cue_vcd_read_toc();
-  ret=cue_vcd_seek_to_track(stream, track);
+  ret2=cue_vcd_get_track_end(track);
+  ret=cue_vcd_seek_to_track(track);
   if(ret<0){
     mp_msg(MSGT_OPEN,MSGL_ERR,MSGTR_ErrTrackSelect " (seek)\n");
     return STREAM_UNSUPPORTED;
   }
-  mp_msg(MSGT_OPEN,MSGL_INFO,MSGTR_MPDEMUX_CUEREAD_CueStreamInfo_FilenameTrackTracksavail,
-         filename, track, ret, (int)stream->end_pos);
+  mp_msg(MSGT_OPEN,MSGL_INFO,MSGTR_MPDEMUX_CUEREAD_CueStreamInfo_FilenameTrackTracksavail, filename, track, ret, ret2);
 
   stream->fd = f;
   stream->type = STREAMTYPE_VCDBINCUE;
   stream->sector_size = VCD_SECTOR_DATA;
-  stream->flags = STREAM_READ | MP_STREAM_SEEK_FW;
+  stream->flags = STREAM_READ | STREAM_SEEK_FW;
+  stream->start_pos = ret;
+  stream->end_pos = ret2;
   stream->fill_buffer = cue_vcd_read;
   stream->seek = seek;
-  stream->control = control;
 
   free(filename);
   m_struct_free(&stream_opts,opts);
@@ -634,3 +599,4 @@ const stream_info_t stream_info_cue = {
   &stream_opts,
   1 // Urls are an option string
 };
+

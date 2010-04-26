@@ -55,6 +55,7 @@ LIBAO_EXTERN(dsound)
 /**
 \todo use the definitions from the win32 api headers when they define these
 */
+#if 1
 #define WAVE_FORMAT_IEEE_FLOAT 0x0003
 #define WAVE_FORMAT_DOLBY_AC3_SPDIF 0x0092
 #define WAVE_FORMAT_EXTENSIBLE 0xFFFE
@@ -100,6 +101,8 @@ typedef struct {
                                         /* present in stream  */
     GUID            SubFormat;
 } WAVEFORMATEXTENSIBLE, *PWAVEFORMATEXTENSIBLE;
+#endif
+
 #endif
 
 static const int channel_mask[] = {
@@ -220,7 +223,7 @@ static int InitDirectSound(void)
     HRESULT (WINAPI *OurDirectSoundCreate)(LPGUID, LPDIRECTSOUND *, LPUNKNOWN);
 	HRESULT (WINAPI *OurDirectSoundEnumerate)(LPDSENUMCALLBACKA, LPVOID);
 	int device_index=0;
-	const opt_t subopts[] = {
+	opt_t subopts[] = {
 	  {"device", OPT_ARG_INT, &device_num,NULL},
 	  {NULL}
 	};
@@ -324,7 +327,7 @@ static int write_buffer(unsigned char *data, int len)
 
   if (SUCCEEDED(res))
   {
-  	if( (ao_data.channels == 6) && !AF_FORMAT_IS_AC3(ao_data.format) ) {
+  	if( (ao_data.channels == 6) && (ao_data.format!=AF_FORMAT_AC3) ) {
   	    // reorder channels while writing to pointers.
   	    // it's this easy because buffer size and len are always
   	    // aligned to multiples of channels*bytespersample
@@ -423,17 +426,9 @@ static int init(int rate, int channels, int format, int flags)
 	DSBUFFERDESC dsbpridesc;
 	DSBUFFERDESC dsbdesc;
 
-	//check if the channel count and format is supported in general
-	if (channels > 6) {
-		UninitDirectSound();
-		mp_msg(MSGT_AO, MSGL_ERR, "ao_dsound: 8 channel audio not yet supported\n");
-		return 0;
-	}
-
-	if (AF_FORMAT_IS_AC3(format))
-		format = AF_FORMAT_AC3_NE;
+	//check if the format is supported in general
 	switch(format){
-		case AF_FORMAT_AC3_NE:
+		case AF_FORMAT_AC3:
 		case AF_FORMAT_S24_LE:
 		case AF_FORMAT_S16_LE:
 		case AF_FORMAT_U8:
@@ -456,7 +451,7 @@ static int init(int rate, int channels, int format, int flags)
 	wformat.Format.cbSize          = (channels > 2) ? sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX) : 0;
 	wformat.Format.nChannels       = channels;
 	wformat.Format.nSamplesPerSec  = rate;
-	if (AF_FORMAT_IS_AC3(format)) {
+	if (format == AF_FORMAT_AC3) {
 		wformat.Format.wFormatTag      = WAVE_FORMAT_DOLBY_AC3_SPDIF;
 		wformat.Format.wBitsPerSample  = 16;
 		wformat.Format.nBlockAlign     = 4;

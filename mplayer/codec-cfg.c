@@ -1,5 +1,7 @@
 /*
  * codec.conf parser
+ * by Szabolcs Berecz <szabi@inf.elte.hu>
+ * (C) 2001
  *
  * to compile test application:
  *  cc -I. -DTESTING -o codec-cfg-test codec-cfg.c mp_msg.o osdep/getch2.o -ltermcap
@@ -7,24 +9,6 @@
  *   gcc -DCODECS2HTML -o codecs2html codec-cfg.c mp_msg.o
  *
  * TODO: implement informat in CODECS2HTML too
- *
- * Copyright (C) 2001 Szabolcs Berecz <szabi@inf.elte.hu>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #define DEBUG
@@ -154,13 +138,10 @@ static int add_to_format(char *s, char *alias,unsigned int *fourcc, unsigned int
 	return 1;
 }
 
-        static const struct {
+        static struct {
 	        const char *name;
 	        const unsigned int num;
 	} fmt_table[] = {
-		// note: due to parser deficiencies/simplicity, if one format
-		// name matches the beginning of another, the longer one _must_
-		// come first in this list.
 		{"YV12",  IMGFMT_YV12},
 		{"I420",  IMGFMT_I420},
 		{"IYUV",  IMGFMT_IYUV},
@@ -168,20 +149,9 @@ static int add_to_format(char *s, char *alias,unsigned int *fourcc, unsigned int
 		{"NV21",  IMGFMT_NV21},
 		{"YVU9",  IMGFMT_YVU9},
 		{"IF09",  IMGFMT_IF09},
-		{"444P16LE", IMGFMT_444P16_LE},
-		{"444P16BE", IMGFMT_444P16_BE},
-		{"422P16LE", IMGFMT_422P16_LE},
-		{"422P16BE", IMGFMT_422P16_BE},
-		{"420P16LE", IMGFMT_420P16_LE},
-		{"420P16BE", IMGFMT_420P16_BE},
-		{"444P16", IMGFMT_444P16},
-		{"422P16", IMGFMT_422P16},
-		{"420P16", IMGFMT_420P16},
-		{"420A",  IMGFMT_420A},
 		{"444P",  IMGFMT_444P},
 		{"422P",  IMGFMT_422P},
 		{"411P",  IMGFMT_411P},
-		{"440P",  IMGFMT_440P},
 		{"Y800",  IMGFMT_Y800},
 		{"Y8",    IMGFMT_Y8},
 
@@ -189,22 +159,20 @@ static int add_to_format(char *s, char *alias,unsigned int *fourcc, unsigned int
 		{"UYVY",  IMGFMT_UYVY},
 		{"YVYU",  IMGFMT_YVYU},
 
-		{"RGB48LE",  IMGFMT_RGB48LE},
-		{"RGB48BE",  IMGFMT_RGB48BE},
-	        {"RGB4",  IMGFMT_RGB4},
-	        {"RGB8",  IMGFMT_RGB8},
-		{"RGB15", IMGFMT_RGB15},
-		{"RGB16", IMGFMT_RGB16},
-		{"RGB24", IMGFMT_RGB24},
-		{"RGB32", IMGFMT_RGB32},
-		{"BGR4",  IMGFMT_BGR4},
-		{"BGR8",  IMGFMT_BGR8},
-		{"BGR15", IMGFMT_BGR15},
-		{"BGR16", IMGFMT_BGR16},
-		{"BGR24", IMGFMT_BGR24},
-		{"BGR32", IMGFMT_BGR32},
-	        {"RGB1",  IMGFMT_RGB1},
-		{"BGR1",  IMGFMT_BGR1},
+	        {"RGB4",  IMGFMT_RGB|4},
+	        {"RGB8",  IMGFMT_RGB|8},
+		{"RGB15", IMGFMT_RGB|15},
+		{"RGB16", IMGFMT_RGB|16},
+		{"RGB24", IMGFMT_RGB|24},
+		{"RGB32", IMGFMT_RGB|32},
+		{"BGR4",  IMGFMT_BGR|4},
+		{"BGR8",  IMGFMT_BGR|8},
+		{"BGR15", IMGFMT_BGR|15},
+		{"BGR16", IMGFMT_BGR|16},
+		{"BGR24", IMGFMT_BGR|24},
+		{"BGR32", IMGFMT_BGR|32},
+	        {"RGB1",  IMGFMT_RGB|1},
+		{"BGR1",  IMGFMT_BGR|1},
 
 		{"MPES",  IMGFMT_MPEGPES},
 		{"ZRMJPEGNI", IMGFMT_ZRMJPEGNI},
@@ -219,7 +187,6 @@ static int add_to_format(char *s, char *alias,unsigned int *fourcc, unsigned int
 		{"VDPAU_H264",IMGFMT_VDPAU_H264},
 		{"VDPAU_WMV3",IMGFMT_VDPAU_WMV3},
 		{"VDPAU_VC1",IMGFMT_VDPAU_VC1},
-		{"VDPAU_MPEG4",IMGFMT_VDPAU_MPEG4},
 
 		{NULL,    0}
 	};
@@ -776,7 +743,6 @@ err_out_release_num:
 static void codecs_free(codecs_t* codecs,int count) {
 	int i;
 		for ( i = 0; i < count; i++)
-		{
 			if ( codecs[i].name ) {
 				if( codecs[i].name )
 					free(codecs[i].name);
@@ -789,7 +755,6 @@ static void codecs_free(codecs_t* codecs,int count) {
 				if( codecs[i].drv )
 					free(codecs[i].drv);
 			}
-		}
 		if (codecs)
 			free(codecs);
 }
@@ -797,19 +762,10 @@ static void codecs_free(codecs_t* codecs,int count) {
 void codecs_uninit_free(void) {
 	if (video_codecs)
 	codecs_free(video_codecs,nr_vcodecs);
-	nr_vcodecs=0;
 	video_codecs=NULL;
 	if (audio_codecs)
 	codecs_free(audio_codecs,nr_acodecs);
-	nr_acodecs=0;
 	audio_codecs=NULL;
-}
-
-void load_builtin_codecs() {
-	video_codecs = builtin_video_codecs;
-	audio_codecs = builtin_audio_codecs;
-	nr_vcodecs = sizeof(builtin_video_codecs)/sizeof(codecs_t);
-	nr_acodecs = sizeof(builtin_audio_codecs)/sizeof(codecs_t);
 }
 
 codecs_t *find_audio_codec(unsigned int fourcc, unsigned int *fourccmap,

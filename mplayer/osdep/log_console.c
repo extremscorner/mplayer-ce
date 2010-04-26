@@ -92,31 +92,14 @@ const devoptab_t dot_out = {
 	NULL,		// device dirclose_r
 	NULL		// device statvfs_r
 };
-extern u32 *xfb[2];
-extern u32 whichfb;
+
 void log_console_init(GXRModeObj *vmode, u16 logsize) {
 	u16 i;
 	LWP_MutexInit(&console_mutex, false);
-#ifndef WIILIB	
 	CON_InitEx(vmode, 20, 30, vmode->fbWidth - 40, vmode->xfbHeight - 60);
-	//CON_InitEx(vmode, 10, 10 , (vmode->fbWidth / 2)-80, vmode->xfbHeight - 40);
-	
-#endif
 	rcb = VIDEO_SetPostRetraceCallback(NULL);
 	VIDEO_SetPostRetraceCallback(rcb);
 
-/*
-	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
-	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
-
-	VIDEO_SetNextFramebuffer(xfb[whichfb]);
-	VIDEO_SetBlack(FALSE);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-*/
 	gecko = usb_isgeckoalive(1);
 
 	if (log_size && log) {

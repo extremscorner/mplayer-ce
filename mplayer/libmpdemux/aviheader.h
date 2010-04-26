@@ -21,10 +21,9 @@
 
 #include <sys/types.h>
 #include <stdint.h>
-#include "config.h"	/* get correct definition of HAVE_BIGENDIAN */
+#include "config.h"	/* get correct definition of WORDS_BIGENDIAN */
 #include "libavutil/common.h"
 #include "mpbswap.h"
-#include "demuxer.h"
 
 #ifndef mmioFOURCC
 #define mmioFOURCC( ch0, ch1, ch2, ch3 )				\
@@ -228,7 +227,7 @@ typedef enum {
  * Some macros to swap little endian structures read from an AVI file
  * into machine endian format
  */
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #define	le2me_MainAVIHeader(h) {					\
     (h)->dwMicroSecPerFrame = le2me_32((h)->dwMicroSecPerFrame);	\
     (h)->dwMaxBytesPerSec = le2me_32((h)->dwMaxBytesPerSec);		\
@@ -368,13 +367,10 @@ typedef struct {
   avisuperindex_chunk *suidx;
   int suidx_size;
   int isodml;
-  int warned_unaligned;
 } avi_priv_t;
 
 #define AVI_PRIV ((avi_priv_t*)(demuxer->priv))
 
 #define AVI_IDX_OFFSET(x) ((((uint64_t)(x)->dwFlags&0xffff0000)<<16)+(x)->dwChunkOffset)
-
-void read_avi_header(demuxer_t *demuxer, int index_mode);
 
 #endif /* MPLAYER_AVIHEADER_H */

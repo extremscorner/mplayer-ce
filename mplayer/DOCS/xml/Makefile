@@ -2,11 +2,11 @@
 
 include ../../config.mak
 
-# Generated HTML files go here.
-HTML = ../HTML
+# Generated chunked HTML files go here.
+HTML_CHUNKED = ../HTML
 
-MAIN_XML_ALL = $(foreach lang,$(DOC_LANG_ALL),$(lang)/main.xml)
-CONFIGURE_GENERATED = html-chunk.xsl html-single.xsl xsltproc.sh xmllint.sh
+# Generated single HTML files go here.
+HTML_SINGLE = ../HTML-single
 
 all: html-chunked html-single
 
@@ -18,48 +18,48 @@ help:
 	@echo "html-single-LANG  : As above, but only one language."
 	@echo "html-chunked      : HTML documentation for configured languages (multiple files)"
 	@echo "html-chunked-LANG : As above, but only one language."
-	@echo "xmllint           : Check syntax of XML files for configured languages."
-	@echo "xmllint-LANG      : Check syntax of LANG XML files."
-	@echo "clean             : Purge the 'HTML' directory."
+	@echo "xmllint           : Check syntax of all xml files."
+	@echo "xmllint-LANG      : Check syntax of LANG xml files."
+	@echo "clean             : Purge the 'HTML' and 'HTML-single' directories."
 	@echo "releaseclean      : Remove generated files but keep the HTML."
 	@echo "distclean         : Remove ALL generated files."
 	@echo "Substitute LANG for one of $(DOC_LANG_ALL)"
 
-html-chunked: $(addprefix html-chunked-,$(DOC_LANGS))
-html-single:  $(addprefix html-single-,$(DOC_LANGS))
+html-chunked: xsltproc.sh xmllint.sh $(HTML_CHUNKED) $(addprefix html-chunked-,$(DOC_LANGS))
 
-xmllint: $(addprefix xmllint-,$(DOC_LANGS))
+html-single: xsltproc.sh xmllint.sh $(HTML_SINGLE) $(addprefix html-single-,$(DOC_LANGS))
 
-$(foreach lang,$(DOC_LANG_ALL),$(HTML)/$(lang)):
-	mkdir -p $@
+xmllint: xmllint.sh $(addprefix xmllint-,$(DOC_LANG_ALL))
 
-$(CONFIGURE_GENERATED) $(MAIN_XML_ALL):
+$(HTML_CHUNKED) $(HTML_SINGLE):
+	-mkdir -p $@
+
+xsltproc.sh xmllint.sh:
 	sh configure
 
 define lang-def
-html-chunked-$(lang) html-single-$(lang): $(HTML)/$(lang) $(CONFIGURE_GENERATED)
+html-chunked-$(1): xsltproc.sh xmllint.sh $(HTML_CHUNKED)
+	-mkdir -p $(HTML_CHUNKED)/$(1)
+	$(MAKE) HTMLDIR=../$(HTML_CHUNKED)/$(1) -C $(1) html-chunked
 
-html-chunked-$(lang):
-	$(MAKE) HTMLDIR=../$$< -C $(lang) html-chunked
+html-single-$(1): xsltproc.sh xmllint.sh $(HTML_SINGLE)
+	-mkdir -p $(HTML_SINGLE)/$(1)
+	$(MAKE) HTMLFILE=../$(HTML_SINGLE)/$(1)/MPlayer.html -C $(1) html-single
 
-html-single-$(lang):
-	$(MAKE) HTMLDIR=../$$< -C $(lang) html-single
-
-xmllint-$(lang): xmllint.sh
-	$(MAKE) -C $(lang) xmllint
+xmllint-$(1): xmllint.sh
+	$(MAKE) HTMLFILE=../$(HTML_SINGLE)/$(1)/MPlayer.html -C $(1) xmllint
 endef
 
-$(foreach lang, $(DOC_LANG_ALL),$(eval $(lang-def)))
+$(foreach lang, $(DOC_LANG_ALL),$(eval $(call lang-def,$(lang))))
 
 clean:
-	-rm -rf $(HTML)
+	rm -rf $(HTML_CHUNKED) $(HTML_SINGLE)
 
 releaseclean:
-	-rm -f $(CONFIGURE_GENERATED)
-	-rm -f $(MAIN_XML_ALL)
-	-rm -f $$(find . -name *.xml -type l)
+	rm -f $(foreach lang,$(DOC_LANG_ALL),$(lang)/main.xml)
+	rm -f $$(find . -name *.xml -type l)
+	rm -f html-chunk.xsl html-single.xsl xsltproc.sh xmllint.sh
 
 distclean: clean releaseclean
 
-.PHONY: all help html-chunked html-single xmllint
-.PHONY: html-chunked-* html-single-* xmllint-* *clean*
+.PHONY: all help html-chunked* html-single* xmllint* *clean*

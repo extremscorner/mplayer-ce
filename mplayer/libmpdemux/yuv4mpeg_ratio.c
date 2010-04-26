@@ -110,3 +110,4 @@ int y4m_parse_ratio(y4m_ratio_t *r, const char *s)
   y4m_ratio_reduce(r);
   return Y4M_OK;
 }
+

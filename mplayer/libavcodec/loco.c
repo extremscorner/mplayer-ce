@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/loco.c
  * LOCO codec.
  */
 
@@ -275,24 +275,14 @@ static av_cold int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static av_cold int decode_end(AVCodecContext *avctx){
-    LOCOContext * const l = avctx->priv_data;
-    AVFrame *pic = &l->pic;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-
-    return 0;
-}
-
 AVCodec loco_decoder = {
     "loco",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_LOCO,
     sizeof(LOCOContext),
     decode_init,
     NULL,
-    decode_end,
+    NULL,
     decode_frame,
     CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("LOCO"),

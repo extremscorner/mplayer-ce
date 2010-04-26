@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,7 +88,6 @@ static void pack_nn_MMX(unsigned char *dst, unsigned char *y,
 	pack_nn_C(dst, y, u, v, (w&7));
 }
 
-#if HAVE_EBX_AVAILABLE
 static void pack_li_0_MMX(unsigned char *dst, unsigned char *y,
 	unsigned char *u, unsigned char *v, int w, int us, int vs)
 {
@@ -326,7 +307,6 @@ static void pack_li_1_MMX(unsigned char *dst, unsigned char *y,
 		);
 	pack_li_1_C(dst, y, u, v, (w&15), us, vs);
 }
-#endif /* HAVE_EBX_AVAILABLE */
 #endif
 
 static pack_func_t *pack_nn;
@@ -369,7 +349,7 @@ static void ilpack(unsigned char *dst, unsigned char *src[3],
 }
 
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
 	mp_image_t *dmpi;
 
@@ -383,7 +363,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 	return vf_next_put_image(vf,dmpi, pts);
 }
 
-static int config(struct vf_instance *vf,
+static int config(struct vf_instance_s* vf,
 		  int width, int height, int d_width, int d_height,
 		  unsigned int flags, unsigned int outfmt)
 {
@@ -392,7 +372,7 @@ static int config(struct vf_instance *vf,
 }
 
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
 	/* FIXME - really any YUV 4:2:0 input format should work */
 	switch (fmt) {
@@ -404,7 +384,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
 	return 0;
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
 	vf->config=config;
 	vf->query_format=query_format;
@@ -419,10 +399,8 @@ static int vf_open(vf_instance_t *vf, char *args)
 #if HAVE_MMX
 	if(gCpuCaps.hasMMX) {
 		pack_nn = (pack_func_t *)pack_nn_MMX;
-#if HAVE_EBX_AVAILABLE
 		pack_li_0 = pack_li_0_MMX;
 		pack_li_1 = pack_li_1_MMX;
-#endif
 	}
 #endif
 
@@ -448,6 +426,7 @@ const vf_info_t vf_info_ilpack = {
 	"ilpack",
 	"Richard Felker",
 	"",
-	vf_open,
+	open,
 	NULL
 };
+

@@ -138,8 +138,7 @@ static int field_parity = -1;
 *	   implementation     *
 ******************************/
 
-static void unlock(void)
-{
+void unlock(void) {
 if (frame && framelocked) frame->Unlock(frame);
 if (primary && primarylocked) primary->Unlock(primary);
 }
@@ -311,7 +310,7 @@ static int preinit(const char *arg)
 
 }
 
-static DFBSurfacePixelFormat convformat(uint32_t format)
+DFBSurfacePixelFormat convformat(uint32_t format)
 {
 // add more formats !!!
 	switch (format) {
@@ -351,9 +350,9 @@ unsigned int height;
 int setsize;
 } enum1_t;
 
-static DFBEnumerationResult test_format_callback(unsigned int id,
-                                                 DFBDisplayLayerDescription  desc,
-                                                 void *data)
+DFBEnumerationResult test_format_callback( unsigned int                 id,
+                                           DFBDisplayLayerDescription  desc,
+                                           void *data)
 {
      enum1_t *params =(enum1_t *)data;
      IDirectFBDisplayLayer *layer;
@@ -449,8 +448,7 @@ int bpp;
 } videomode_t;
 
 
-static DFBEnumerationResult video_modes_callback(int width, int height,
-                                                 int bpp, void *data)
+DFBEnumerationResult video_modes_callback( int width,int height,int bpp, void *data)
 {
      videomode_t *params =(videomode_t *)data;
 
@@ -1147,7 +1145,8 @@ static uint32_t get_image(mp_image_t *mpi)
 
 //    printf("width=%d vs. pitch=%d, flags=0x%X  \n",mpi->width,pitch,mpi->flags);
 
-    if(mpi->flags&(MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_ACCEPT_WIDTH)){
+    if((mpi->width==pitch) ||
+       (mpi->flags&(MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_ACCEPT_WIDTH))){
        // we're lucky or codec accepts stride => ok, let's go!
 
 	    if (frame) {

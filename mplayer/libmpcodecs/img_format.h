@@ -1,25 +1,5 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #ifndef MPLAYER_IMG_FORMAT_H
 #define MPLAYER_IMG_FORMAT_H
-
-#include "config.h"
 
 /* RGB/BGR Formats */
 
@@ -33,8 +13,6 @@
 #define IMGFMT_RGB16 (IMGFMT_RGB|16)
 #define IMGFMT_RGB24 (IMGFMT_RGB|24)
 #define IMGFMT_RGB32 (IMGFMT_RGB|32)
-#define IMGFMT_RGB48LE (IMGFMT_RGB|48)
-#define IMGFMT_RGB48BE (IMGFMT_RGB|48|128)
 
 #define IMGFMT_BGR_MASK 0xFFFFFF00
 #define IMGFMT_BGR (('B'<<24)|('G'<<16)|('R'<<8))
@@ -47,34 +25,16 @@
 #define IMGFMT_BGR24 (IMGFMT_BGR|24)
 #define IMGFMT_BGR32 (IMGFMT_BGR|32)
 
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #define IMGFMT_ABGR IMGFMT_RGB32
 #define IMGFMT_BGRA (IMGFMT_RGB32|64)
 #define IMGFMT_ARGB IMGFMT_BGR32
 #define IMGFMT_RGBA (IMGFMT_BGR32|64)
-#define IMGFMT_RGB48NE IMGFMT_RGB48BE
-#define IMGFMT_RGB15BE IMGFMT_RGB15
-#define IMGFMT_RGB15LE (IMGFMT_RGB15|64)
-#define IMGFMT_RGB16BE IMGFMT_RGB16
-#define IMGFMT_RGB16LE (IMGFMT_RGB16|64)
-#define IMGFMT_BGR15BE IMGFMT_BGR15
-#define IMGFMT_BGR15LE (IMGFMT_BGR15|64)
-#define IMGFMT_BGR16BE IMGFMT_BGR16
-#define IMGFMT_BGR16LE (IMGFMT_BGR16|64)
 #else
 #define IMGFMT_ABGR (IMGFMT_BGR32|64)
 #define IMGFMT_BGRA IMGFMT_BGR32
 #define IMGFMT_ARGB (IMGFMT_RGB32|64)
 #define IMGFMT_RGBA IMGFMT_RGB32
-#define IMGFMT_RGB48NE IMGFMT_RGB48LE
-#define IMGFMT_RGB15BE (IMGFMT_RGB15|64)
-#define IMGFMT_RGB15LE IMGFMT_RGB15
-#define IMGFMT_RGB16BE (IMGFMT_RGB16|64)
-#define IMGFMT_RGB16LE IMGFMT_RGB16
-#define IMGFMT_BGR15BE (IMGFMT_BGR15|64)
-#define IMGFMT_BGR15LE IMGFMT_BGR15
-#define IMGFMT_BGR16BE (IMGFMT_BGR16|64)
-#define IMGFMT_BGR16LE IMGFMT_BGR16
 #endif
 
 /* old names for compatibility */
@@ -105,32 +65,7 @@
 #define IMGFMT_444P 0x50343434
 #define IMGFMT_422P 0x50323234
 #define IMGFMT_411P 0x50313134
-#define IMGFMT_440P 0x50303434
 #define IMGFMT_HM12 0x32314D48
-
-// 4:2:0 planar with alpha
-#define IMGFMT_420A 0x41303234
-
-#define IMGFMT_444P16_LE 0x51343434
-#define IMGFMT_444P16_BE 0x34343451
-#define IMGFMT_422P16_LE 0x51323234
-#define IMGFMT_422P16_BE 0x34323251
-#define IMGFMT_420P16_LE 0x51303234
-#define IMGFMT_420P16_BE 0x34323051
-#if HAVE_BIGENDIAN
-#define IMGFMT_444P16 IMGFMT_444P16_BE
-#define IMGFMT_422P16 IMGFMT_422P16_BE
-#define IMGFMT_420P16 IMGFMT_420P16_BE
-#else
-#define IMGFMT_444P16 IMGFMT_444P16_LE
-#define IMGFMT_422P16 IMGFMT_422P16_LE
-#define IMGFMT_420P16 IMGFMT_420P16_LE
-#endif
-
-#define IMGFMT_IS_YUVP16_LE(fmt) (((fmt  ^ IMGFMT_420P16_LE) & 0xff0000ff) == 0)
-#define IMGFMT_IS_YUVP16_BE(fmt) (((fmt  ^ IMGFMT_420P16_BE) & 0xff0000ff) == 0)
-#define IMGFMT_IS_YUVP16_NE(fmt) (((fmt  ^ IMGFMT_420P16   ) & 0xff0000ff) == 0)
-#define IMGFMT_IS_YUVP16(fmt)    (IMGFMT_IS_YUVP16_LE(fmt) || IMGFMT_IS_YUVP16_BE(fmt))
 
 /* Packed YUV Formats */
 
@@ -181,7 +116,6 @@
 #define IMGFMT_VDPAU_H264          (IMGFMT_VDPAU|0x03)
 #define IMGFMT_VDPAU_WMV3          (IMGFMT_VDPAU|0x04)
 #define IMGFMT_VDPAU_VC1           (IMGFMT_VDPAU|0x05)
-#define IMGFMT_VDPAU_MPEG4         (IMGFMT_VDPAU|0x06)
 
 typedef struct {
     void* data;
@@ -191,12 +125,5 @@ typedef struct {
 } vo_mpegpes_t;
 
 const char *vo_format_name(int format);
-
-/**
- * Calculates the scale shifts for the chroma planes for planar YUV
- *
- * \return bits-per-pixel for format if successful (i.e. format is 3 or 4-planes planar YUV), 0 otherwise
- */
-int mp_get_chroma_shift(int format, int *x_shift, int *y_shift);
 
 #endif /* MPLAYER_IMG_FORMAT_H */

@@ -29,7 +29,7 @@
 #include "stream/stream_dvdnav.h"
 #define OSD_NAV_BOX_ALPHA 0x7f
 
-#include "libmpcodecs/dec_teletext.h"
+#include "stream/tv.h"
 #include "osdep/timer.h"
 
 #include "mplayer.h"
@@ -86,11 +86,13 @@ font_desc_t* vo_font=NULL;
 font_desc_t* sub_font=NULL;
 
 unsigned char* vo_osd_text=NULL;
+#ifdef CONFIG_TV_TELETEXT
 void* vo_osd_teletext_page=NULL;
 int vo_osd_teletext_half = 0;
 int vo_osd_teletext_mode=0;
 int vo_osd_teletext_format=0;
 int vo_osd_teletext_scale=0;
+#endif
 int sub_unicode=0;
 int sub_utf8=0;
 int sub_pos=100;
@@ -197,7 +199,7 @@ inline static void vo_update_text_osd(mp_osd_obj_t* obj,int dxs,int dys){
 	int font;
 
         obj->bbox.x1=obj->x=x;
-        obj->bbox.y1=obj->y=20;
+        obj->bbox.y1=obj->y=10;
 
         while (*cp){
           uint16_t c=utf8_get_char(&cp);
@@ -272,6 +274,7 @@ inline static void vo_update_nav (mp_osd_obj_t *obj, int dxs, int dys, int left_
 }
 #endif
 
+#ifdef CONFIG_TV_TELETEXT
 // renders char to a big per-object buffer where alpha and bitmap are separated
 static void tt_draw_alpha_buf(mp_osd_obj_t* obj, int x0,int y0, int w,int h, unsigned char* src, int stride,int fg,int bg,int alpha)
 {
@@ -312,7 +315,7 @@ inline static void vo_update_text_teletext(mp_osd_obj_t *obj, int dxs, int dys)
     int b,ax[6],ay[6],aw[6],ah[6];
     tt_char tc;
     tt_char* tdp=vo_osd_teletext_page;
-    static const uint8_t colors[8]={1,85,150,226,70,105,179,254};
+    unsigned char colors[8]={1,85,150,226,70,105,179,254};
     unsigned char* buf[9];
 
     obj->flags|=OSDFLAG_CHANGED|OSDFLAG_VISIBLE;
@@ -351,16 +354,14 @@ inline static void vo_update_text_teletext(mp_osd_obj_t *obj, int dxs, int dys)
     hm=vo_font->height+1;
     wm=dxs*hm*max_rows/(dys*VBI_COLUMNS);
 
-#ifdef CONFIG_FREETYPE
     //very simple teletext font auto scaling
     if(!vo_osd_teletext_scale && hm*(max_rows+1)>dys){
-        osd_font_scale_factor*=1.0*(dys)/((max_rows+1)*hm);
+        text_font_scale_factor*=1.0*(dys)/((max_rows+1)*hm);
         force_load_font=1;
-        vo_osd_teletext_scale=osd_font_scale_factor;
+        vo_osd_teletext_scale=text_font_scale_factor;
         obj->flags&=~OSDFLAG_VISIBLE;
         return;
     }
-#endif
 
     cols=dxs/wm;
     rows=dys/hm;
@@ -515,6 +516,7 @@ TODO: support for separated graphics symbols (where six rectangles does not touc
     for(i=0;i<9;i++)
         free(buf[i]);
 }
+#endif
 
 int vo_osd_progbar_type=-1;
 int vo_osd_progbar_value=100;   // 0..256
@@ -726,7 +728,7 @@ inline static void vo_update_text_sub(mp_osd_obj_t* obj,int dxs,int dys){
 	      render_one_glyph(sub_font, c);
 
 		if (c == ' ') {
-		    struct osd_text_t *tmp_ott = calloc(1, sizeof(struct osd_text_t));
+		    struct osd_text_t *tmp_ott = (struct osd_text_t *) calloc(1, sizeof(struct osd_text_t));
 
 		    if (osl == NULL) {
 			osl = cp_ott = tmp_ott;
@@ -739,7 +741,7 @@ inline static void vo_update_text_sub(mp_osd_obj_t* obj,int dxs,int dys){
 		    }
 		    tmp_ott->osd_length = xsize;
 		    tmp_ott->text_length = char_position;
-		    tmp_ott->text = malloc(char_position * sizeof(int));
+		    tmp_ott->text = (int *) malloc(char_position * sizeof(int));
 		    for (counter = 0; counter < char_position; ++counter)
 			tmp_ott->text[counter] = char_seq[counter];
 		    char_position = 0;
@@ -769,7 +771,7 @@ inline static void vo_update_text_sub(mp_osd_obj_t* obj,int dxs,int dys){
 
 	    // osl holds an ordered (as they appear in the lines) chain of the subtitle words
 	    {
-		struct osd_text_t *tmp_ott = calloc(1, sizeof(struct osd_text_t));
+		struct osd_text_t *tmp_ott = (struct osd_text_t *) calloc(1, sizeof(struct osd_text_t));
 
 		if (osl == NULL) {
 		    osl = cp_ott = tmp_ott;
@@ -782,7 +784,7 @@ inline static void vo_update_text_sub(mp_osd_obj_t* obj,int dxs,int dys){
 		}
 		tmp_ott->osd_length = xsize;
 		tmp_ott->text_length = char_position;
-		tmp_ott->text = malloc(char_position * sizeof(int));
+		tmp_ott->text = (int *) malloc(char_position * sizeof(int));
 		for (counter = 0; counter < char_position; ++counter)
 		    tmp_ott->text[counter] = char_seq[counter];
 		char_position = 0;
@@ -794,7 +796,7 @@ inline static void vo_update_text_sub(mp_osd_obj_t* obj,int dxs,int dys){
 		int value = 0, exit = 0, minimum = 0;
 
 		// otp will contain the chain of the osd subtitle lines coming from the single vo_sub line.
-		otp = tmp_otp = calloc(1, sizeof(struct osd_text_p));
+		otp = tmp_otp = (struct osd_text_p *) calloc(1, sizeof(struct osd_text_p));
 		tmp_otp->ott = osl;
 		for (tmp_ott = tmp_otp->ott; exit == 0; ) {
 		    do {
@@ -802,7 +804,7 @@ inline static void vo_update_text_sub(mp_osd_obj_t* obj,int dxs,int dys){
 			tmp_ott = tmp_ott->next;
 		    } while ((tmp_ott != NULL) && (value + tmp_ott->osd_kerning + tmp_ott->osd_length <= xlimit));
 		    if (tmp_ott != NULL) {
-			struct osd_text_p *tmp = calloc(1, sizeof(struct osd_text_p));
+			struct osd_text_p *tmp = (struct osd_text_p *) calloc(1, sizeof(struct osd_text_p));
 
 			tmp_otp->value = value;
 			tmp_otp->next = tmp;
@@ -1052,7 +1054,7 @@ inline static void vo_update_spudec_sub(mp_osd_obj_t* obj, int dxs, int dys)
 
 inline static void vo_draw_spudec_sub(mp_osd_obj_t* obj, void (*draw_alpha)(int x0, int y0, int w, int h, unsigned char* src, unsigned char* srca, int stride))
 {
-  spudec_draw_scaled(vo_spudec, obj->dxs, obj->dys, draw_alpha);
+  if(vo_spudec)spudec_draw_scaled(vo_spudec, obj->dxs, obj->dys, draw_alpha);
 }
 
 void *vo_spudec=NULL;
@@ -1089,16 +1091,13 @@ void free_osd_list(void){
 }
 
 #define FONT_LOAD_DEFER 6
-int prev_dxs = 0, prev_dys = 0;
 
-static int vo_update_osd_ext(int dxs,int dys, int left_border, int top_border,
-                             int right_border, int bottom_border, int orig_w,
-                             int orig_h)
-{
+int vo_update_osd_ext(int dxs,int dys, int left_border, int top_border,
+                      int right_border, int bottom_border, int orig_w, int orig_h){
     mp_osd_obj_t* obj=vo_osd_list;
     int chg=0;
 #ifdef CONFIG_FREETYPE
-    static int defer_counter = 0;
+    static int defer_counter = 0, prev_dxs = 0, prev_dys = 0;
 #endif
 
 #ifdef CONFIG_FREETYPE
@@ -1123,32 +1122,22 @@ static int vo_update_osd_ext(int dxs,int dys, int left_border, int top_border,
     if (force_load_font) {
 	force_load_font = 0;
         load_font_ft(dxs, dys, &vo_font, font_name, osd_font_scale_factor);
-	if (mpctx_get_set_of_sub_size() > 0)
-	{
-		if (sub_font_name)
-			load_font_ft(dxs, dys, &sub_font, sub_font_name, text_font_scale_factor);
-		else
-			load_font_ft(dxs, dys, &sub_font, font_name, text_font_scale_factor);
-	}
+	if (sub_font_name)
+	    load_font_ft(dxs, dys, &sub_font, sub_font_name, text_font_scale_factor);
 	else
-		sub_font = vo_font;
+	    load_font_ft(dxs, dys, &sub_font, font_name, text_font_scale_factor);
 	prev_dxs = dxs;
 	prev_dys = dys;
 	defer_counter = 0;
     } else {
        if (!vo_font)
            load_font_ft(dxs, dys, &vo_font, font_name, osd_font_scale_factor);
-		if (!sub_font) {
-			if (mpctx_get_set_of_sub_size() > 0)
-			{
-				if (sub_font_name)
-					load_font_ft(dxs, dys, &sub_font, sub_font_name, text_font_scale_factor);
-				else
-					load_font_ft(dxs, dys, &sub_font, font_name, text_font_scale_factor);
-			}
-			else
-				sub_font = vo_font;
-		} 
+       if (!sub_font) {
+           if (sub_font_name)
+               load_font_ft(dxs, dys, &sub_font, sub_font_name, text_font_scale_factor);
+           else
+               load_font_ft(dxs, dys, &sub_font, font_name, text_font_scale_factor);
+       }
     }
 #endif
 
@@ -1165,9 +1154,11 @@ static int vo_update_osd_ext(int dxs,int dys, int left_border, int top_border,
 	case OSDTYPE_SUBTITLE:
 	    vo_update_text_sub(obj,dxs,dys);
 	    break;
+#ifdef CONFIG_TV_TELETEXT
 	case OSDTYPE_TELETEXT:
 	    vo_update_text_teletext(obj,dxs,dys);
 	    break;
+#endif
 	case OSDTYPE_PROGBAR:
 	    vo_update_text_progbar(obj,dxs,dys);
 	    break;
@@ -1239,7 +1230,9 @@ void vo_init_osd(void){
 #ifdef CONFIG_DVDNAV
     new_osd_obj(OSDTYPE_DVDNAV);
 #endif
+#ifdef CONFIG_TV_TELETEXT
     new_osd_obj(OSDTYPE_TELETEXT);
+#endif
 #ifdef CONFIG_FREETYPE
     force_load_font = 1;
 #endif
@@ -1280,7 +1273,9 @@ void vo_draw_text_ext(int dxs, int dys, int left_border, int top_border,
 #ifdef CONFIG_DVDNAV
         case OSDTYPE_DVDNAV:
 #endif
+#ifdef CONFIG_TV_TELETEXT
 	case OSDTYPE_TELETEXT:
+#endif
 	case OSDTYPE_OSD:
 	case OSDTYPE_SUBTITLE:
 	case OSDTYPE_PROGBAR:
@@ -1296,7 +1291,6 @@ void vo_draw_text_ext(int dxs, int dys, int left_border, int top_border,
 }
 
 void vo_draw_text(int dxs, int dys, void (*draw_alpha)(int x0, int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride)) {
-  if(!vo_osd_list)return;
   vo_draw_text_ext(dxs, dys, 0, 0, 0, 0, dxs, dys, draw_alpha);
 }
 

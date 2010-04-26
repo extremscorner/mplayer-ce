@@ -31,13 +31,11 @@ DEFUN(put_pixels_clamped,mL1,
 #ifndef AVCODEC_BFIN_CONFIG_BFIN_H
 #define AVCODEC_BFIN_CONFIG_BFIN_H
 
-#include "config.h"
-
 #ifndef DEFUN
 
 #define mL3 .text
 #ifndef mL1
-#if defined(__FDPIC__) && CONFIG_SRAM
+#ifdef __FDPIC__
 #define mL1 .l1.text
 #else
 #define mL1 mL3

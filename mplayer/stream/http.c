@@ -1,23 +1,7 @@
 /*
  * HTTP Helper
- *
- * Copyright (C) 2001 Bertrand Baudet <bertrand_baudet@yahoo.com>
- *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * by Bertrand Baudet <bertrand_baudet@yahoo.com>
+ * (C) 2001, MPlayer team.
  */
 
 #include "config.h"
@@ -46,6 +30,8 @@
 extern const mime_struct_t mime_type_table[];
 extern int stream_cache_size;
 extern int network_bandwidth;
+
+int http_seek(stream_t *stream, off_t pos);
 
 typedef struct {
   unsigned metaint;
@@ -124,13 +110,8 @@ static void scast_meta_read(int fd, streaming_ctrl_t *sc) {
   my_read(fd, &tmp, 1, sc);
   metalen = tmp * 16;
   if (metalen > 0) {
-    int i;
-    uint8_t *info = malloc(metalen + 1);
+    char *info = malloc(metalen + 1);
     unsigned nlen = my_read(fd, info, metalen, sc);
-    // avoid breaking the user's terminal too much
-    if (nlen > 256) nlen = 256;
-    for (i = 0; i < nlen; i++)
-      if (info[i] && info[i] < 32) info[i] = '?';
     info[nlen] = 0;
     mp_msg(MSGT_DEMUXER, MSGL_INFO, "\nICY Info: %s\n", info);
     free(info);
@@ -337,7 +318,7 @@ http_response_append( HTTP_header_t *http_hdr, char *response, int length ) {
 		mp_msg(MSGT_NETWORK,MSGL_FATAL,"Bad size in memory (re)allocation\n");
 		return -1;
 	}
-	http_hdr->buffer = realloc( http_hdr->buffer, http_hdr->buffer_size+length+1 );
+	http_hdr->buffer = (char*)realloc( http_hdr->buffer, http_hdr->buffer_size+length+1 );
 	if( http_hdr->buffer==NULL ) {
 		mp_msg(MSGT_NETWORK,MSGL_FATAL,"Memory (re)allocation failed\n");
 		return -1;
@@ -433,7 +414,7 @@ http_response_parse( HTTP_header_t *http_hdr ) {
 		while( *ptr!='\r' && *ptr!='\n' ) ptr++;
 		len = ptr-hdr_ptr;
 		if( len==0 ) break;
-		field = realloc(field, len+1);
+		field = (char*)realloc(field, len+1);
 		if( field==NULL ) {
 			mp_msg(MSGT_NETWORK,MSGL_ERR,"Memory allocation failed\n");
 			return -1;
@@ -525,7 +506,7 @@ char *
 http_get_field( HTTP_header_t *http_hdr, const char *field_name ) {
 	if( http_hdr==NULL || field_name==NULL ) return NULL;
 	http_hdr->field_search_pos = http_hdr->first_field;
-	http_hdr->field_search = realloc( http_hdr->field_search, strlen(field_name)+1 );
+	http_hdr->field_search = (char*)realloc( http_hdr->field_search, strlen(field_name)+1 );
 	if( http_hdr->field_search==NULL ) {
 		mp_msg(MSGT_NETWORK,MSGL_FATAL,"Memory allocation failed\n");
 		return NULL;
@@ -762,7 +743,6 @@ static int http_streaming_start(stream_t *stream, int* file_format) {
 	int auth_retry=0;
 	int seekable=0;
 	char *content_type;
-	const char *content_length;
 	char *next_url;
 	URL_t *url = stream->streaming_ctrl->url;
 
@@ -787,12 +767,9 @@ static int http_streaming_start(stream_t *stream, int* file_format) {
 
 		// Check if we can make partial content requests and thus seek in http-streams
 		if( http_hdr!=NULL && http_hdr->status_code==200 ) {
-		    const char *accept_ranges = http_get_field(http_hdr,"Accept-Ranges");
-		    const char *server = http_get_field(http_hdr, "Server");
-		    if (accept_ranges)
+		    char *accept_ranges;
+		    if( (accept_ranges = http_get_field(http_hdr,"Accept-Ranges")) != NULL )
 			seekable = strncmp(accept_ranges,"bytes",5)==0;
-		    else if (server && strcmp(server, "gvs 1.0") == 0)
-			seekable = 1; // HACK for youtube incorrectly claiming not to support seeking
 		}
 
 		print_icy_metadata(http_hdr);
@@ -836,15 +813,15 @@ static int http_streaming_start(stream_t *stream, int* file_format) {
 		// Assume standard http if not ICY
 		switch( http_hdr->status_code ) {
 			case 200: // OK
-				content_length = http_get_field(http_hdr, "Content-Length");
-				if (content_length) {
-					mp_msg(MSGT_NETWORK,MSGL_V,"Content-Length: [%s]\n", content_length);
-					stream->end_pos = atoll(content_length);
-				}
 				// Look if we can use the Content-Type
 				content_type = http_get_field( http_hdr, "Content-Type" );
 				if( content_type!=NULL ) {
+					char *content_length = NULL;
 					mp_msg(MSGT_NETWORK,MSGL_V,"Content-Type: [%s]\n", content_type );
+					if( (content_length = http_get_field(http_hdr, "Content-Length")) != NULL) {
+						mp_msg(MSGT_NETWORK,MSGL_V,"Content-Length: [%s]\n", http_get_field(http_hdr, "Content-Length"));
+						stream->end_pos = atoi(content_length);
+					}
 					// Check in the mime type table for a demuxer type
 					i = 0;
 					while(mime_type_table[i].mime_type != NULL) {
@@ -914,7 +891,7 @@ static int fixup_open(stream_t *stream,int seekable) {
 	stream->type = STREAMTYPE_STREAM;
 	if(!is_icy && !is_ultravox && seekable)
 	{
-		stream->flags |= MP_STREAM_SEEK;
+		stream->flags |= STREAM_SEEK;
 		stream->seek = http_seek;
 	}
 	stream->streaming_ctrl->bandwidth = network_bandwidth;

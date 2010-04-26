@@ -5,14 +5,14 @@
 
 *********************************************************/
 #include "config.h"
-#include "loader/dshow/guids.h"
-#include "loader/dshow/interfaces.h"
-#include "loader/registry.h"
+#include "dshow/guids.h"
+#include "dshow/interfaces.h"
+#include "registry.h"
 #ifdef WIN32_LOADER
-#include "loader/ldt_keeper.h"
+#include "ldt_keeper.h"
 #endif
 
-#include "loader/dshow/libwin32.h"
+#include "dshow/libwin32.h"
 #include "DMO_Filter.h"
 
 #include "DMO_VideoDecoder.h"
@@ -33,7 +33,7 @@ struct DMO_VideoDecoder
 
 //#include "DMO_VideoDecoder.h"
 
-#include "loader/wine/winerror.h"
+#include "wine/winerror.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -552,3 +552,4 @@ int DMO_VideoDecoder_SetDirection(DMO_VideoDecoder *this, int d)
     this->m_sVhdr2->bmiHeader.biHeight = this->iv.m_obh.biHeight;
     return 0;
 }
+

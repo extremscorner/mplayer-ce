@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,7 +6,9 @@
 
 #include "vd_internal.h"
 
-static const vd_info_t info = {
+#define TEMP_BUF_SIZE (720*576)
+
+static vd_info_t info = {
 	"Hauppauge Macroblock/NV12/NV21 Decoder",
 	"hmblck",
 	"Alex <d18c7db@hotmail.com>, A'rpi, Alex Beregszaszi",
@@ -88,6 +72,11 @@ static int nv12_to_yv12(unsigned char *data, int len, mp_image_t* mpi, int swapp
     if ( (len != (Y_size + (UV_size<<1))) ) {
         mp_msg(MSGT_DECVIDEO, MSGL_ERR,
                "hmblck: Image size inconsistent with data size.\n");
+        return 0;
+    }
+    if ( (mpi->width > 720) || (mpi->height > 576) ) {
+        mp_msg(MSGT_DECVIDEO,MSGL_ERR,
+               "hmblck: Image size is too big.\n");
         return 0;
     }
     if (mpi->num_planes != 3) {

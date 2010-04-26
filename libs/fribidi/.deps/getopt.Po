@@ -1,0 +1,74 @@
+getopt.o getopt.o: getopt.c config.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdio.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/newlib.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/config.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/ieeefp.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stddef.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stdarg.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/reent.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/_types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_default_types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/limits.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/lock.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/types.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/features.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/stdio.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/string.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/string.h \
+  gettext.h getopt.h \
+  c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/ctype.h \
+  getopt_int.h
+
+config.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/stdio.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/newlib.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/config.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/ieeefp.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stddef.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/stdarg.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/reent.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/_ansi.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/_types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/_default_types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/include/limits.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/lock.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/machine/types.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/features.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/stdio.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/string.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/sys/string.h:
+
+gettext.h:
+
+getopt.h:
+
+c:\devkitpro\devkitppc\bin\../lib/gcc/powerpc-gekko/4.2.4/../../../../powerpc-gekko/include/ctype.h:
+
+getopt_int.h:

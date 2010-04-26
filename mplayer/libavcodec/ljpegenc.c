@@ -26,7 +26,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/ljpegenc.c
  * lossless JPEG encoder.
  */
 
@@ -56,7 +56,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 
     s->header_bits= put_bits_count(&s->pb);
 
-    if(avctx->pix_fmt == PIX_FMT_BGRA){
+    if(avctx->pix_fmt == PIX_FMT_RGB32){
         int x, y, i;
         const int linesize= p->linesize[0];
         uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;
@@ -188,7 +188,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 
 AVCodec ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need them
     "ljpeg",
-    AVMEDIA_TYPE_VIDEO,
+    CODEC_TYPE_VIDEO,
     CODEC_ID_LJPEG,
     sizeof(MpegEncContext),
     MPV_encode_init,

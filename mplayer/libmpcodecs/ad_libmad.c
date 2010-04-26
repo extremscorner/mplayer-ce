@@ -1,20 +1,4 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+// SAMPLE audio decoder - you can use this file as template when creating new codec!
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +8,7 @@
 
 #include "ad_internal.h"
 
-static const ad_info_t info =  {
+static ad_info_t info =  {
 	"libmad mpeg audio decoder",
 	"libmad",
 	"A'rpi",
@@ -52,7 +36,7 @@ typedef struct mad_decoder_s {
 
 static int preinit(sh_audio_t *sh){
 
-  mad_decoder_t *this = malloc(sizeof(mad_decoder_t));
+  mad_decoder_t *this = (mad_decoder_t *) malloc(sizeof(mad_decoder_t));
   memset(this,0,sizeof(mad_decoder_t));
   sh->context = this;
 

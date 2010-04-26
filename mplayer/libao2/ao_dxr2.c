@@ -201,13 +201,13 @@ static int play(void* data,int len,int flags){
   // MPEG and AC3 don't work :-(
     if(ao_data.format==AF_FORMAT_MPEG2)
       send_mpeg_ps_packet (data, len, 0xC0, ao_data.pts, 2, write_dxr2);
-    else if(AF_FORMAT_IS_AC3(ao_data.format))
+    else if(ao_data.format==AF_FORMAT_AC3)
       send_mpeg_ps_packet (data, len, 0x80, ao_data.pts, 2, write_dxr2);
     else {
 	int i;
 	//unsigned short *s=data;
 	uint16_t *s=data;
-#if !HAVE_BIGENDIAN
+#ifndef WORDS_BIGENDIAN
 	for(i=0;i<len/2;i++) s[i] = bswap_16(s[i]);
 #endif
 	dxr2_send_lpcm_packet(data,len,0xA0,ao_data.pts-10000,freq_id);
@@ -220,3 +220,4 @@ static float get_delay(void){
 
     return 0.0;
 }
+

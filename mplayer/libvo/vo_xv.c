@@ -612,8 +612,8 @@ static int preinit(const char *arg)
     const opt_t subopts[] =
     {
       /* name         arg type     arg var         test */
-      {  "port",      OPT_ARG_INT, &xv_port,       int_pos },
-      {  "adaptor",   OPT_ARG_INT, &xv_adaptor,    int_non_neg },
+      {  "port",      OPT_ARG_INT, &xv_port,       (opt_test_f)int_pos },
+      {  "adaptor",   OPT_ARG_INT, &xv_adaptor,    (opt_test_f)int_non_neg },
       {  "ck",        OPT_ARG_STR, &ck_src_arg,    xv_test_ck },
       {  "ck-method", OPT_ARG_STR, &ck_method_arg, xv_test_ckm },
       {  NULL }
@@ -748,12 +748,26 @@ static int control(uint32_t request, void *data, ...)
         case VOCTRL_GUISUPPORT:
             return VO_TRUE;
         case VOCTRL_GET_PANSCAN:
+            if (!vo_config_count || !vo_fs)
+                return VO_FALSE;
             return VO_TRUE;
         case VOCTRL_FULLSCREEN:
             vo_x11_fullscreen();
             /* indended, fallthrough to update panscan on fullscreen/windowed switch */
         case VOCTRL_SET_PANSCAN:
+            if ((vo_fs && (vo_panscan != vo_panscan_amount))
+                || (!vo_fs && vo_panscan_amount))
+            {
+                int old_y = vo_panscan_y;
+
+                panscan_calc();
+
+                if (old_y != vo_panscan_y)
+                {
                     resize();
+                    flip_page();
+                }
+            }
             return VO_TRUE;
         case VOCTRL_SET_EQUALIZER:
             {

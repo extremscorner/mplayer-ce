@@ -12,7 +12,7 @@ exec_prefix = ${prefix}
 libdir = ${exec_prefix}/lib
 
 # Programs used by "make":
-CC = ${DEVKITPPC}/bin/powerpc-gekko-gcc
+CC = /c/devkitPro/devkitPPC/bin/powerpc-gekko-gcc
 CFLAGS = -mcpu=750 -fvisibility=hidden
 CPPFLAGS = 
 LDFLAGS = 
@@ -31,7 +31,7 @@ LIBTOOL_UNINSTALL = $(LIBTOOL) --mode=uninstall
 RM = rm -f
 
 # Programs used by "make install":
-INSTALL = /usr/bin/install -c
+INSTALL = /bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 mkinstalldirs = $(SHELL) ../build-aux/mkinstalldirs
 

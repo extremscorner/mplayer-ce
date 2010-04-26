@@ -5,9 +5,9 @@
 
 *********************************************************/
 #include "config.h"
-#include "loader/dshow/libwin32.h"
+#include "dshow/libwin32.h"
 #ifdef WIN32_LOADER
-#include "loader/ldt_keeper.h"
+#include "ldt_keeper.h"
 #endif
 
 #include "DMO_Filter.h"
@@ -29,9 +29,9 @@ struct DMO_AudioDecoder
 #include <stdlib.h>
 
 #include "mp_msg.h"
-#include "libmpdemux/aviprint.h"
 
 typedef long STDCALL (*GETCLASS) (GUID*, GUID*, void**);
+void print_wave_header(WAVEFORMATEX *h, int verbose_level);
 
 DMO_AudioDecoder * DMO_AudioDecoder_Open(char* dllname, GUID* guid, WAVEFORMATEX* wf,int out_channels)
 //DMO_AudioDecoder * DMO_AudioDecoder_Create(const CodecInfo * info, const WAVEFORMATEX* wf)

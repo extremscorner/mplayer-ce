@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- synced with r29001 -->
+<!-- synced with r27770 -->
 <chapter id="video">
 <title>Videó kimeneti eszközök</title>
 
@@ -2272,7 +2272,7 @@ parancsot kell használnod:
 <screen>
 mplayer -vo zr -zrdev /dev/video0 -zrcrop 352x288+352+0 -zrxdoff 0 -zrbw \
     -zrcrop 352x288+0+0 -zrdev /dev/video1 -zrquality 10 \
-    <replaceable>movie.avi</replaceable>
+	<replaceable>movie.avi</replaceable>
 </screen>
 </para>
 

@@ -28,11 +28,18 @@
 #include "cpudetect.h"
 #include "mp_msg.h"
 
+/* Set the initialization type from mplayers cpudetect */
+#ifdef AF_INIT_TYPE
+#undef AF_INIT_TYPE
+#define AF_INIT_TYPE \
+  ((gCpuCaps.has3DNow || gCpuCaps.hasSSE)?AF_INIT_FAST:AF_INIT_SLOW)
+#endif
+
 struct af_instance_s;
 
 // Number of channels
 #ifndef AF_NCH
-#define AF_NCH 8
+#define AF_NCH 6
 #endif
 
 // Audio data chunk
@@ -95,7 +102,11 @@ extern int* af_cpu_speed;
 
 // Default init type
 #ifndef AF_INIT_TYPE
+#if HAVE_SSE || HAVE_AMD3DNOW
+#define AF_INIT_TYPE (af_cpu_speed?*af_cpu_speed:AF_INIT_FAST)
+#else
 #define AF_INIT_TYPE (af_cpu_speed?*af_cpu_speed:AF_INIT_SLOW)
+#endif
 #endif
 
 // Configuration switches

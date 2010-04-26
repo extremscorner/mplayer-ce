@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include "config.h"
 #include "img_format.h"
 #include "stdio.h"
@@ -33,8 +15,6 @@ const char *vo_format_name(int format)
 	case IMGFMT_RGB16: return "RGB 16-bit";
 	case IMGFMT_RGB24: return "RGB 24-bit";
 //	case IMGFMT_RGB32: return "RGB 32-bit";
-	case IMGFMT_RGB48LE: return "RGB 48-bit LE";
-	case IMGFMT_RGB48BE: return "RGB 48-bit BE";
 	case IMGFMT_BGR1: return "BGR 1-bit";
 	case IMGFMT_BGR4: return "BGR 4-bit";
 	case IMGFMT_BG4B: return "BGR 4-bit per byte";
@@ -55,13 +35,6 @@ const char *vo_format_name(int format)
 	case IMGFMT_CLPL: return "Planar CLPL";
 	case IMGFMT_Y800: return "Planar Y800";
 	case IMGFMT_Y8: return "Planar Y8";
-	case IMGFMT_420P16_LE: return "Planar 420P 16-bit little-endian";
-	case IMGFMT_420P16_BE: return "Planar 420P 16-bit big-endian";
-	case IMGFMT_422P16_LE: return "Planar 422P 16-bit little-endian";
-	case IMGFMT_422P16_BE: return "Planar 422P 16-bit big-endian";
-	case IMGFMT_444P16_LE: return "Planar 444P 16-bit little-endian";
-	case IMGFMT_444P16_BE: return "Planar 444P 16-bit big-endian";
-	case IMGFMT_420A: return "Planar 420P with alpha";
 	case IMGFMT_444P: return "Planar 444P";
 	case IMGFMT_422P: return "Planar 422P";
 	case IMGFMT_411P: return "Planar 411P";
@@ -97,67 +70,9 @@ const char *vo_format_name(int format)
 	case IMGFMT_VDPAU_MPEG1: return "MPEG1 VDPAU acceleration";
 	case IMGFMT_VDPAU_MPEG2: return "MPEG2 VDPAU acceleration";
 	case IMGFMT_VDPAU_H264: return "H.264 VDPAU acceleration";
-	case IMGFMT_VDPAU_MPEG4: return "MPEG-4 Part 2 VDPAU acceleration";
 	case IMGFMT_VDPAU_WMV3: return "WMV3 VDPAU acceleration";
 	case IMGFMT_VDPAU_VC1: return "VC1 VDPAU acceleration";
     }
     snprintf(unknown_format,20,"Unknown 0x%04x",format);
     return unknown_format;
-}
-
-int mp_get_chroma_shift(int format, int *x_shift, int *y_shift)
-{
-    int xs = 0, ys = 0;
-    int bpp;
-    int bpp_factor = 1;
-    int err = 0;
-    switch (format) {
-    case IMGFMT_420P16_LE:
-    case IMGFMT_420P16_BE:
-        bpp_factor = 2;
-    case IMGFMT_420A:
-    case IMGFMT_I420:
-    case IMGFMT_IYUV:
-    case IMGFMT_YV12:
-        xs = 1;
-        ys = 1;
-        break;
-    case IMGFMT_IF09:
-    case IMGFMT_YVU9:
-        xs = 2;
-        ys = 2;
-        break;
-    case IMGFMT_444P16_LE:
-    case IMGFMT_444P16_BE:
-        bpp_factor = 2;
-    case IMGFMT_444P:
-        xs = 0;
-        ys = 0;
-        break;
-    case IMGFMT_422P16_LE:
-    case IMGFMT_422P16_BE:
-        bpp_factor = 2;
-    case IMGFMT_422P:
-        xs = 1;
-        ys = 0;
-        break;
-    case IMGFMT_411P:
-        xs = 2;
-        ys = 0;
-        break;
-    case IMGFMT_440P:
-        xs = 0;
-        ys = 1;
-        break;
-    default:
-        err = 1;
-        break;
-    }
-    if (x_shift) *x_shift = xs;
-    if (y_shift) *y_shift = ys;
-    bpp = 8 + (16 >> (xs + ys));
-    if (format == IMGFMT_420A)
-        bpp += 8;
-    bpp *= bpp_factor;
-    return err ? 0 : bpp;
 }

@@ -20,8 +20,6 @@
 #define MPLAYER_GUI_INTERFACE_H
 
 #include "config.h"
-#include "m_config.h"
-#include "playtree.h"
 #include "mplayer/play.h"
 #include "libvo/font_load.h"
 #include "cfg.h"
@@ -163,7 +161,7 @@ extern int use_gui;
 
 void guiInit( void );
 void guiDone( void );
-int  guiGetEvent( int type,void * arg );
+int  guiGetEvent( int type,char * arg );
 void guiEventHandling( void );
 void guiLoadFont( void );
 void guiLoadSubtitle( char * name );
@@ -229,11 +227,6 @@ int    gstrcmp( const char * a, const char * b );
 void   gfree( void ** p );
 void   gaddlist( char *** list, const char * entry );
 char * gstrchr( char * str, int c );
-
-int import_initial_playtree_into_gui(play_tree_t* my_playtree,
-                                     m_config_t* config, int enqueue);
-int import_playtree_playlist_into_gui(play_tree_t* my_playtree,
-                                      m_config_t* config);
 
 #define guiSetFilename( s,n ) { gfree( (void **)&s ); s=gstrdup( n ); }
 

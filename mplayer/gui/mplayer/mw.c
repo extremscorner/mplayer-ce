@@ -42,13 +42,11 @@
 #include "libvo/sub.h"
 #include "access_mpcontext.h"
 
-#include "libmpcodecs/vd.h"
 #include "libmpdemux/demuxer.h"
 #include "libmpdemux/stheader.h"
 #include "codec-cfg.h"
 #include "m_option.h"
 #include "m_property.h"
-#include "mp_core.h"
 
 #define GUI_REDRAW_WAIT 375
 
@@ -74,7 +72,7 @@ int             i,pot = 0;
 void mplMainDraw( void )
 {
 
- if ( appMPlayer.mainWindow.State == wsWindowClosed ) exit_player( EXIT_QUIT );
+ if ( appMPlayer.mainWindow.State == wsWindowClosed ) exit_player( MSGTR_Exit_quit );
 
  if ( appMPlayer.mainWindow.Visible == wsWindowNotVisible ||
       !mainVisible ) return;
@@ -104,7 +102,7 @@ void mplEventHandling( int msg,float param )
   {
 // --- user events
    case evExit:
-        exit_player( EXIT_QUIT );
+        exit_player( "Exit" );
         break;
 
    case evPlayNetwork:

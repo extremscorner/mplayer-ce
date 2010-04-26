@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/cavs.c
  * Chinese AVS video (AVS1-P2, JiZhun profile) decoder
  * @author Stefan Gehrer <stefan.gehrer@gmx.de>
  */
@@ -73,7 +73,7 @@ static inline int get_bs(cavs_vector *mvP, cavs_vector *mvQ, int b) {
  *
  */
 void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
-    uint8_t bs[8];
+    DECLARE_ALIGNED_8(uint8_t, bs[8]);
     int qp_avg, alpha, beta, tc;
     int i;
 
@@ -93,9 +93,9 @@ void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
     if(!h->loop_filter_disable) {
         /* determine bs */
         if(mb_type == I_8X8)
-            memset(bs,2,8);
+            *((uint64_t *)bs) = 0x0202020202020202ULL;
         else{
-            memset(bs,0,8);
+            *((uint64_t *)bs) = 0;
             if(ff_cavs_partition_flags[mb_type] & SPLITV){
                 bs[2] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1], mb_type > P_8X8);
                 bs[3] = get_bs(&h->mv[MV_FWD_X2], &h->mv[MV_FWD_X3], mb_type > P_8X8);
@@ -109,7 +109,7 @@ void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type) {
             bs[4] = get_bs(&h->mv[MV_FWD_B2], &h->mv[MV_FWD_X0], mb_type > P_8X8);
             bs[5] = get_bs(&h->mv[MV_FWD_B3], &h->mv[MV_FWD_X1], mb_type > P_8X8);
         }
-        if(AV_RN64(bs)) {
+        if( *((uint64_t *)bs) ) {
             if(h->flags & A_AVAIL) {
                 qp_avg = (h->qp + h->left_qp + 1) >> 1;
                 SET_PARAMS;
@@ -572,7 +572,7 @@ void ff_cavs_init_mb(AVSContext *h) {
 /**
  * save predictors for later macroblocks and increase
  * macroblock address
- * @return 0 if end of frame is reached, 1 otherwise
+ * @returns 0 if end of frame is reached, 1 otherwise
  */
 int ff_cavs_next_mb(AVSContext *h) {
     int i;

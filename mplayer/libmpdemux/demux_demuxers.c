@@ -54,15 +54,6 @@ demuxer_t*  new_demuxers_demuxer(demuxer_t* vd, demuxer_t* ad, demuxer_t* sd) {
   ret->video = vd->video;
   ret->audio = ad->audio;
   ret->sub = sd->sub;
-  if (sd && sd != vd && sd != ad) sd->sub->non_interleaved = 1;
-
-  // without these, demux_demuxers_fill_buffer will never be called,
-  // but they break the demuxer-specific code in video.c
-#if 0
-  if (vd) vd->video->demuxer = ret;
-  if (ad) ad->audio->demuxer = ret;
-  if (sd) sd->sub->demuxer = ret;
-#endif
 
   // HACK?, necessary for subtitle (and audio and video when implemented) switching
   memcpy(ret->v_streams, vd->v_streams, sizeof(ret->v_streams));
@@ -79,15 +70,11 @@ static int demux_demuxers_fill_buffer(demuxer_t *demux,demux_stream_t *ds) {
 
   priv=demux->priv;
 
-  // HACK: make sure the subtitles get properly interleaved if with -subfile
-  if (priv->sd && priv->sd->sub != ds &&
-      priv->sd != priv->vd && priv->sd != priv->ad)
-    ds_get_next_pts(priv->sd->sub);
-  if(priv->vd && priv->vd->video == ds)
+  if(ds->demuxer == priv->vd)
     return demux_fill_buffer(priv->vd,ds);
-  else if(priv->ad && priv->ad->audio == ds)
+  else if(ds->demuxer == priv->ad)
     return demux_fill_buffer(priv->ad,ds);
-  else if(priv->sd && priv->sd->sub == ds)
+  else if(ds->demuxer == priv->sd)
     return demux_fill_buffer(priv->sd,ds);
 
   mp_msg(MSGT_DEMUX,MSGL_WARN,MSGTR_MPDEMUX_DEMUXERS_FillBufferError);

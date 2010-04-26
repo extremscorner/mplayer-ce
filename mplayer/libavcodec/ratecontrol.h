@@ -24,7 +24,7 @@
 #define AVCODEC_RATECONTROL_H
 
 /**
- * @file
+ * @file libavcodec/ratecontrol.h
  * ratecontrol header.
  */
 
@@ -84,7 +84,7 @@ typedef struct RateControlContext{
     void *non_lavc_opaque;        ///< context for non lavc rc code (for example xvid)
     float dry_run_qscale;         ///< for xvid rc
     int last_picture_number;      ///< for xvid rc
-    AVExpr * rc_eq_eval;
+    AVEvalExpr * rc_eq_eval;
 }RateControlContext;
 
 struct MpegEncContext;

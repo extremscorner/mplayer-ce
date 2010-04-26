@@ -21,7 +21,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/cook.c
  * Cook compatible decoder. Bastardization of the G.722.1 standard.
  * This decoder handles RealNetworks, RealAudio G2 data.
  * Cook is identified by the codec name cook in RM files.
@@ -52,7 +52,6 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "bytestream.h"
-#include "fft.h"
 
 #include "cookdata.h"
 
@@ -137,7 +136,7 @@ typedef struct cook {
     AVLFG               random_state;
 
     /* transform data */
-    FFTContext          mdct_ctx;
+    MDCTContext         mdct_ctx;
     float*              mlt_window;
 
     /* VLC data */
@@ -151,7 +150,7 @@ typedef struct cook {
     /* data buffers */
 
     uint8_t*            decoded_bytes_buffer;
-    DECLARE_ALIGNED(16, float,mono_mdct_output)[2048];
+    DECLARE_ALIGNED_16(float,mono_mdct_output[2048]);
     float               decode_buffer_1[1024];
     float               decode_buffer_2[1024];
     float               decode_buffer_0[1060]; /* static allocation for joint decode */
@@ -260,7 +259,7 @@ static av_cold int init_cook_mlt(COOKContext *q) {
         q->mlt_window[j] *= sqrt(2.0 / q->samples_per_channel);
 
     /* Initialize the MDCT. */
-    if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1, 1.0)) {
+    if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1)) {
       av_free(q->mlt_window);
       return -1;
     }
@@ -1102,7 +1101,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     q->bit_rate = avctx->bit_rate;
 
     /* Initialize RNG. */
-    av_lfg_init(&q->random_state, 0);
+    av_lfg_init(&q->random_state, ff_random_get_seed());
 
     while(edata_ptr < edata_ptr_end){
         /* 8 for mono, 16 for stereo, ? for multichannel
@@ -1142,10 +1141,9 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                 av_log(avctx,AV_LOG_DEBUG,"MONO\n");
                 break;
             case STEREO:
-                if (q->nb_channels != 1) {
+                if (q->nb_channels != 1)
                     q->subpacket[s].bits_per_subpdiv = 1;
-                    q->subpacket[s].num_channels = 2;
-                }
+                q->subpacket[s].num_channels = 2;
                 av_log(avctx,AV_LOG_DEBUG,"STEREO\n");
                 break;
             case JOINT_STEREO:
@@ -1288,7 +1286,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 AVCodec cook_decoder =
 {
     .name = "cook",
-    .type = AVMEDIA_TYPE_AUDIO,
+    .type = CODEC_TYPE_AUDIO,
     .id = CODEC_ID_COOK,
     .priv_data_size = sizeof(COOKContext),
     .init = cook_decode_init,

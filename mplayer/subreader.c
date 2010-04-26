@@ -1,25 +1,11 @@
 /*
  * Subtitle reader with format autodetection
  *
- * Copyright (c) 2001 laaz
+ * Written by laaz
  * Some code cleanup & realloc() by A'rpi/ESP-team
  *
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,8 +19,6 @@
 #include "mp_msg.h"
 #include "subreader.h"
 #include "stream/stream.h"
-#include "libavutil/common.h"
-#include "libavutil/avstring.h"
 
 #ifdef CONFIG_ENCA
 #include <enca.h>
@@ -111,7 +95,7 @@ static char *stristr(const char *haystack, const char *needle) {
     return NULL;
 }
 
-static subtitle *sub_read_line_sami(stream_t* st, subtitle *current, int utf16) {
+static subtitle *sub_read_line_sami(stream_t* st, subtitle *current) {
     static char line[LINE_LEN+1];
     static char *s = NULL, *slacktime_s;
     char text[LINE_LEN+1], *p=NULL, *q;
@@ -123,7 +107,7 @@ static subtitle *sub_read_line_sami(stream_t* st, subtitle *current, int utf16) 
 
     /* read the first line */
     if (!s)
-	    if (!(s = stream_read_line(st, line, LINE_LEN, utf16))) return 0;
+	    if (!(s = stream_read_line(st, line, LINE_LEN))) return 0;
 
     do {
 	switch (state) {
@@ -230,7 +214,7 @@ static subtitle *sub_read_line_sami(stream_t* st, subtitle *current, int utf16) 
 	}
 
 	/* read next line */
-	if (state != 99 && !(s = stream_read_line (st, line, LINE_LEN, utf16))) {
+	if (state != 99 && !(s = stream_read_line (st, line, LINE_LEN))) {
 	    if (current->start > 0) {
 		break; // if it is the last subtitle
 	    } else {
@@ -274,14 +258,14 @@ static char *sub_readtext(char *source, char **dest) {
     else return NULL;  // last text field
 }
 
-static subtitle *sub_read_line_microdvd(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_microdvd(stream_t *st,subtitle *current) {
     char line[LINE_LEN+1];
     char line2[LINE_LEN+1];
     char *p, *next;
     int i;
 
     do {
-	if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+	if (!stream_read_line (st, line, LINE_LEN)) return NULL;
     } while ((sscanf (line,
 		      "{%ld}{}%[^\r\n]",
 		      &(current->start), line2) < 2) &&
@@ -302,14 +286,14 @@ static subtitle *sub_read_line_microdvd(stream_t *st,subtitle *current, int utf1
     return current;
 }
 
-static subtitle *sub_read_line_mpl2(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_mpl2(stream_t *st,subtitle *current) {
     char line[LINE_LEN+1];
     char line2[LINE_LEN+1];
     char *p, *next;
     int i;
 
     do {
-	if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+	if (!stream_read_line (st, line, LINE_LEN)) return NULL;
     } while ((sscanf (line,
 		      "[%ld][%ld]%[^\r\n]",
 		      &(current->start), &(current->end), line2) < 3));
@@ -328,19 +312,19 @@ static subtitle *sub_read_line_mpl2(stream_t *st,subtitle *current, int utf16) {
     return current;
 }
 
-static subtitle *sub_read_line_subrip(stream_t* st, subtitle *current, int utf16) {
+static subtitle *sub_read_line_subrip(stream_t* st, subtitle *current) {
     char line[LINE_LEN+1];
     int a1,a2,a3,a4,b1,b2,b3,b4;
     char *p=NULL, *q=NULL;
     int len;
 
     while (1) {
-	if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+	if (!stream_read_line (st, line, LINE_LEN)) return NULL;
 	if (sscanf (line, "%d:%d:%d.%d,%d:%d:%d.%d",&a1,&a2,&a3,&a4,&b1,&b2,&b3,&b4) < 8) continue;
 	current->start = a1*360000+a2*6000+a3*100+a4;
 	current->end   = b1*360000+b2*6000+b3*100+b4;
 
-	if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+	if (!stream_read_line (st, line, LINE_LEN)) return NULL;
 
 	p=q=line;
 	for (current->lines=1; current->lines < SUB_MAX_TEXT; current->lines++) {
@@ -358,21 +342,21 @@ static subtitle *sub_read_line_subrip(stream_t* st, subtitle *current, int utf16
     return current;
 }
 
-static subtitle *sub_read_line_subviewer(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_subviewer(stream_t *st,subtitle *current) {
     char line[LINE_LEN+1];
     int a1,a2,a3,a4,b1,b2,b3,b4;
     char *p=NULL;
     int i,len;
 
     while (!current->text[0]) {
-	if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+	if (!stream_read_line (st, line, LINE_LEN)) return NULL;
 	if ((len=sscanf (line, "%d:%d:%d%[,.:]%d --> %d:%d:%d%[,.:]%d",&a1,&a2,&a3,(char *)&i,&a4,&b1,&b2,&b3,(char *)&i,&b4)) < 10)
 	    continue;
 	current->start = a1*360000+a2*6000+a3*100+a4/10;
 	current->end   = b1*360000+b2*6000+b3*100+b4/10;
 	for (i=0; i<SUB_MAX_TEXT;) {
 	    int blank = 1;
-	    if (!stream_read_line (st, line, LINE_LEN, utf16)) break;
+	    if (!stream_read_line (st, line, LINE_LEN)) break;
 	    len=0;
 	    for (p=line; *p!='\n' && *p!='\r' && *p; p++,len++)
 		if (*p != ' ' && *p != '\t')
@@ -410,21 +394,21 @@ static subtitle *sub_read_line_subviewer(stream_t *st,subtitle *current, int utf
     return current;
 }
 
-static subtitle *sub_read_line_subviewer2(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_subviewer2(stream_t *st,subtitle *current) {
     char line[LINE_LEN+1];
     int a1,a2,a3,a4;
     char *p=NULL;
     int i,len;
 
     while (!current->text[0]) {
-        if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+        if (!stream_read_line (st, line, LINE_LEN)) return NULL;
 	if (line[0]!='{')
 	    continue;
         if ((len=sscanf (line, "{T %d:%d:%d:%d",&a1,&a2,&a3,&a4)) < 4)
             continue;
         current->start = a1*360000+a2*6000+a3*100+a4/10;
         for (i=0; i<SUB_MAX_TEXT;) {
-            if (!stream_read_line (st, line, LINE_LEN, utf16)) break;
+            if (!stream_read_line (st, line, LINE_LEN)) break;
             if (line[0]=='}') break;
             len=0;
             for (p=line; *p!='\n' && *p!='\r' && *p; ++p,++len);
@@ -443,14 +427,14 @@ static subtitle *sub_read_line_subviewer2(stream_t *st,subtitle *current, int ut
 }
 
 
-static subtitle *sub_read_line_vplayer(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_vplayer(stream_t *st,subtitle *current) {
 	char line[LINE_LEN+1];
 	int a1,a2,a3;
 	char *p=NULL, *next,separator;
 	int i,len,plen;
 
 	while (!current->text[0]) {
-		if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+		if (!stream_read_line (st, line, LINE_LEN)) return NULL;
 		if ((len=sscanf (line, "%d:%d:%d%c%n",&a1,&a2,&a3,&separator,&plen)) < 4)
 			continue;
 
@@ -489,7 +473,7 @@ static subtitle *sub_read_line_vplayer(stream_t *st,subtitle *current, int utf16
 	return current;
 }
 
-static subtitle *sub_read_line_rt(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_rt(stream_t *st,subtitle *current) {
 	//TODO: This format uses quite rich (sub/super)set of xhtml
 	// I couldn't check it since DTD is not included.
 	// WARNING: full XML parses can be required for proper parsing
@@ -499,7 +483,7 @@ static subtitle *sub_read_line_rt(stream_t *st,subtitle *current, int utf16) {
     int i,len,plen;
 
     while (!current->text[0]) {
-	if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+	if (!stream_read_line (st, line, LINE_LEN)) return NULL;
 	//TODO: it seems that format of time is not easily determined, it may be 1:12, 1:12.0 or 0:1:12.0
 	//to describe the same moment in time. Maybe there are even more formats in use.
 	//if ((len=sscanf (line, "<Time Begin=\"%d:%d:%d.%d\" End=\"%d:%d:%d.%d\"",&a1,&a2,&a3,&a4,&b1,&b2,&b3,&b4)) < 8)
@@ -539,7 +523,7 @@ static subtitle *sub_read_line_rt(stream_t *st,subtitle *current, int utf16) {
     return current;
 }
 
-static subtitle *sub_read_line_ssa(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_ssa(stream_t *st,subtitle *current) {
 /*
  * Sub Station Alpha v4 (and v2?) scripts have 9 commas before subtitle
  * other Sub Station Alpha scripts have only 8 commas before subtitle
@@ -563,7 +547,7 @@ static subtitle *sub_read_line_ssa(stream_t *st,subtitle *current, int utf16) {
 	char *tmp;
 
 	do {
-		if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
+		if (!stream_read_line (st, line, LINE_LEN)) return NULL;
 	} while (sscanf (line, "Dialogue: Marked=%d,%d:%d:%d.%d,%d:%d:%d.%d,"
 			"%[^\n\r]", &nothing,
 			&hour1, &min1, &sec1, &hunsec1,
@@ -640,11 +624,11 @@ static void sub_pp_ssa(subtitle *sub) {
  *
  * by set, based on code by szabi (dunnowhat sub format ;-)
  */
-static subtitle *sub_read_line_pjs(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_pjs(stream_t *st,subtitle *current) {
     char line[LINE_LEN+1];
     char text[LINE_LEN+1], *s, *d;
 
-    if (!stream_read_line (st, line, LINE_LEN, utf16))
+    if (!stream_read_line (st, line, LINE_LEN))
 	return NULL;
     /* skip spaces */
     for (s=line; *s && isspace(*s); s++);
@@ -678,7 +662,7 @@ static subtitle *sub_read_line_pjs(stream_t *st,subtitle *current, int utf16) {
     return current;
 }
 
-static subtitle *sub_read_line_mpsub(stream_t *st, subtitle *current, int utf16) {
+static subtitle *sub_read_line_mpsub(stream_t *st, subtitle *current) {
 	char line[LINE_LEN+1];
 	float a,b;
 	int num=0;
@@ -686,7 +670,7 @@ static subtitle *sub_read_line_mpsub(stream_t *st, subtitle *current, int utf16)
 
 	do
 	{
-		if (!stream_read_line(st, line, LINE_LEN, utf16)) return NULL;
+		if (!stream_read_line(st, line, LINE_LEN)) return NULL;
 	} while (sscanf (line, "%f %f", &a, &b) !=2);
 
 	mpsub_position += a*mpsub_multiplier;
@@ -695,7 +679,7 @@ static subtitle *sub_read_line_mpsub(stream_t *st, subtitle *current, int utf16)
 	current->end=(int) mpsub_position;
 
 	while (num < SUB_MAX_TEXT) {
-		if (!stream_read_line (st, line, LINE_LEN, utf16)) {
+		if (!stream_read_line (st, line, LINE_LEN)) {
 			if (num == 0) return NULL;
 			else return current;
 		}
@@ -723,14 +707,14 @@ static subtitle *sub_read_line_mpsub(stream_t *st, subtitle *current, int utf16)
 subtitle *previous_aqt_sub = NULL;
 #endif
 
-static subtitle *sub_read_line_aqt(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_aqt(stream_t *st,subtitle *current) {
     char line[LINE_LEN+1];
     char *next;
     int i;
 
     while (1) {
     // try to locate next subtitle
-        if (!stream_read_line (st, line, LINE_LEN, utf16))
+        if (!stream_read_line (st, line, LINE_LEN))
 		return NULL;
         if (!(sscanf (line, "-->> %ld", &(current->start)) <1))
 		break;
@@ -745,14 +729,14 @@ static subtitle *sub_read_line_aqt(stream_t *st,subtitle *current, int utf16) {
     previous_aqt_sub = current;
 #endif
 
-    if (!stream_read_line (st, line, LINE_LEN, utf16))
+    if (!stream_read_line (st, line, LINE_LEN))
 	return NULL;
 
     sub_readtext((char *) &line,&current->text[0]);
     current->lines = 1;
     current->end = current->start; // will be corrected by next subtitle
 
-    if (!stream_read_line (st, line, LINE_LEN, utf16))
+    if (!stream_read_line (st, line, LINE_LEN))
 	return current;
 
     next = line,i=1;
@@ -780,7 +764,7 @@ static subtitle *sub_read_line_aqt(stream_t *st,subtitle *current, int utf16) {
 subtitle *previous_subrip09_sub = NULL;
 #endif
 
-static subtitle *sub_read_line_subrip09(stream_t *st,subtitle *current, int utf16) {
+static subtitle *sub_read_line_subrip09(stream_t *st,subtitle *current) {
     char line[LINE_LEN+1];
     int a1,a2,a3;
     char * next=NULL;
@@ -788,7 +772,7 @@ static subtitle *sub_read_line_subrip09(stream_t *st,subtitle *current, int utf1
 
     while (1) {
     // try to locate next subtitle
-        if (!stream_read_line (st, line, LINE_LEN, utf16))
+        if (!stream_read_line (st, line, LINE_LEN))
 		return NULL;
         if (!((len=sscanf (line, "[%d:%d:%d]",&a1,&a2,&a3)) < 3))
 		break;
@@ -805,7 +789,7 @@ static subtitle *sub_read_line_subrip09(stream_t *st,subtitle *current, int utf1
     previous_subrip09_sub = current;
 #endif
 
-    if (!stream_read_line (st, line, LINE_LEN, utf16))
+    if (!stream_read_line (st, line, LINE_LEN))
 	return NULL;
 
     next = line,i=0;
@@ -832,7 +816,7 @@ static subtitle *sub_read_line_subrip09(stream_t *st,subtitle *current, int utf1
     return current;
 }
 
-static subtitle *sub_read_line_jacosub(stream_t* st, subtitle * current, int utf16)
+static subtitle *sub_read_line_jacosub(stream_t* st, subtitle * current)
 {
     char line1[LINE_LEN], line2[LINE_LEN], directive[LINE_LEN], *p, *q;
     unsigned a1, a2, a3, a4, b1, b2, b3, b4, comment = 0;
@@ -844,7 +828,7 @@ static subtitle *sub_read_line_jacosub(stream_t* st, subtitle * current, int utf
     memset(line2, 0, LINE_LEN);
     memset(directive, 0, LINE_LEN);
     while (!current->text[0]) {
-	if (!stream_read_line(st, line1, LINE_LEN, utf16)) {
+	if (!stream_read_line(st, line1, LINE_LEN)) {
 	    return NULL;
 	}
 	if (sscanf
@@ -1002,10 +986,11 @@ static subtitle *sub_read_line_jacosub(stream_t* st, subtitle * current, int utf
 		    (*(p + 1) == '~') || (*(p + 1) == '{')) {
 		    ++p;
 		} else if (eol(*(p + 1))) {
-		    if (!stream_read_line(st, directive, LINE_LEN, utf16))
+		    if (!stream_read_line(st, directive, LINE_LEN))
 			return NULL;
 		    trail_space(directive);
-		    av_strlcat(line2, directive, LINE_LEN);
+		    strncat(line2, directive,
+			    (LINE_LEN > 511) ? LINE_LEN : 511);
 		    break;
 		}
 	    default:
@@ -1022,14 +1007,14 @@ static subtitle *sub_read_line_jacosub(stream_t* st, subtitle * current, int utf
     return current;
 }
 
-static int sub_autodetect (stream_t* st, int *uses_time, int utf16) {
+static int sub_autodetect (stream_t* st, int *uses_time) {
     char line[LINE_LEN+1];
     int i,j=0;
     char p;
 
     while (j < 100) {
 	j++;
-	if (!stream_read_line (st, line, LINE_LEN, utf16))
+	if (!stream_read_line (st, line, LINE_LEN))
 	    return SUB_INVALID;
 
 	if (sscanf (line, "{%d}{%d}", &i, &i)==2)
@@ -1099,7 +1084,7 @@ void	subcp_open (stream_t *st)
 		char enca_lang[3], enca_fallback[100];
 		if (sscanf(sub_cp, "enca:%2s:%99s", enca_lang, enca_fallback) == 2
 		     || sscanf(sub_cp, "ENCA:%2s:%99s", enca_lang, enca_fallback) == 2) {
-		  if (st && st->flags & MP_STREAM_SEEK ) {
+		  if (st && st->flags & STREAM_SEEK ) {
 		    cp_tmp = guess_cp(st, enca_lang, enca_fallback);
 		  } else {
 		    cp_tmp = enca_fallback;
@@ -1162,13 +1147,10 @@ subtitle* subcp_recode (subtitle *sub)
 #endif
 
 #ifdef CONFIG_FRIBIDI
-/**
- * Do conversion necessary for right-to-left language support via fribidi.
- * @param sub subtitle to convert
- * @param sub_utf8 whether the subtitle is encoded in UTF-8
- * @param from first new subtitle, all lines before this are assumed to be already converted
- */
-static subtitle* sub_fribidi (subtitle *sub, int sub_utf8, int from)
+#ifndef max
+#define max(a,b)  (((a)>(b))?(a):(b))
+#endif
+subtitle* sub_fribidi (subtitle *sub, int sub_utf8)
 {
   FriBidiChar logical[LINE_LEN+1], visual[LINE_LEN+1]; // Hopefully these two won't smash the stack
   char        *ip      = NULL, *op     = NULL;
@@ -1177,8 +1159,7 @@ static subtitle* sub_fribidi (subtitle *sub, int sub_utf8, int from)
   int l=sub->lines;
   int char_set_num;
   fribidi_boolean log2vis;
-  if (!flip_hebrew)
-    return sub;
+  if(flip_hebrew) { // Please fix the indentation someday
   fribidi_set_mirroring(1);
   fribidi_set_reorder_nsm(0);
 
@@ -1187,7 +1168,7 @@ static subtitle* sub_fribidi (subtitle *sub, int sub_utf8, int from)
   }else {
     char_set_num = fribidi_parse_charset ("UTF-8");
   }
-  while (l > from) {
+  while (l) {
     ip = sub->text[--l];
     orig_len = len = strlen( ip ); // We assume that we don't use full unicode, only UTF-8 or ISO8859-x
     if(len > LINE_LEN) {
@@ -1203,7 +1184,7 @@ static subtitle* sub_fribidi (subtitle *sub, int sub_utf8, int from)
     if(log2vis) {
       len = fribidi_remove_bidi_marks (visual, len, NULL, NULL,
 				       NULL);
-      if((op = malloc((FFMAX(2*orig_len,2*len) + 1))) == NULL) {
+      if((op = malloc((max(2*orig_len,2*len) + 1))) == NULL) {
 	mp_msg(MSGT_SUBREADER,MSGL_WARN,"SUB: error allocating mem.\n");
 	l++;
 	break;
@@ -1213,10 +1194,11 @@ static subtitle* sub_fribidi (subtitle *sub, int sub_utf8, int from)
       sub->text[l] = op;
     }
   }
-  if (!from && l){
+  if (l){
     for (l = sub->lines; l;)
       free (sub->text[--l]);
     return ERR;
+  }
   }
   return sub;
 }
@@ -1283,7 +1265,7 @@ static void adjust_subs_time(subtitle* sub, float subtime, float fps, int block,
 }
 
 struct subreader {
-    subtitle * (*read)(stream_t *st,subtitle *dest,int utf16);
+    subtitle * (*read)(stream_t *st,subtitle *dest);
     void       (*post)(subtitle *dest);
     const char *name;
 };
@@ -1350,13 +1332,12 @@ const char* guess_cp(stream_t *st, const char *preferred_language, const char *f
 #endif
 
 sub_data* sub_read_file (char *filename, float fps) {
-    int utf16;
     stream_t* fd;
     int n_max, n_first, i, j, sub_first, sub_orig;
-    subtitle *first, *second, *sub, *return_sub, *alloced_sub = NULL;
+    subtitle *first, *second, *sub, *return_sub;
     sub_data *subt_data;
     int uses_time = 0, sub_num = 0, sub_errs = 0;
-    static const struct subreader sr[]=
+    struct subreader sr[]=
     {
 	    { sub_read_line_microdvd, NULL, "microdvd" },
 	    { sub_read_line_subrip, NULL, "subrip" },
@@ -1373,24 +1354,20 @@ sub_data* sub_read_file (char *filename, float fps) {
 	    { sub_read_line_jacosub, NULL, "jacosub" },
 	    { sub_read_line_mpl2, NULL, "mpl2" }
     };
-    const struct subreader *srp;
+    struct subreader *srp;
 
     if(filename==NULL) return NULL; //qnx segfault
     i = 0;
     fd=open_stream (filename, NULL, &i); if (!fd) return NULL;
 
-    sub_format = SUB_INVALID;
-    for (utf16 = 0; sub_format == SUB_INVALID && utf16 < 3; utf16++) {
-        sub_format=sub_autodetect (fd, &uses_time, utf16);
-        stream_reset(fd);
-        stream_seek(fd,0);
-    }
-    utf16--;
-
+    sub_format=sub_autodetect (fd, &uses_time);
     mpsub_multiplier = (uses_time ? 100.0 : 1.0);
     if (sub_format==SUB_INVALID) {mp_msg(MSGT_SUBREADER,MSGL_WARN,"SUB: Could not determine file format\n");return NULL;}
     srp=sr+sub_format;
     mp_msg(MSGT_SUBREADER, MSGL_V, "SUB: Detected subtitle file format: %s\n", srp->name);
+
+    stream_reset(fd);
+    stream_seek(fd,0);
 
 #ifdef CONFIG_ICONV
     sub_utf8_prev=sub_utf8;
@@ -1405,7 +1382,6 @@ sub_data* sub_read_file (char *filename, float fps) {
 			    break;
 			}
 	    }
-
 	    if (k<0) subcp_open(fd);
     }
 #endif
@@ -1421,7 +1397,6 @@ sub_data* sub_read_file (char *filename, float fps) {
     }
 
 #ifdef CONFIG_SORTSUB
-    alloced_sub =
     sub = malloc(sizeof(subtitle));
     //This is to deal with those formats (AQT & Subrip) which define the end of a subtitle
     //as the beginning of the following
@@ -1436,13 +1411,13 @@ sub_data* sub_read_file (char *filename, float fps) {
 	sub = &first[sub_num];
 #endif
 	memset(sub, '\0', sizeof(subtitle));
-        sub=srp->read(fd,sub,utf16);
+        sub=srp->read(fd,sub);
         if(!sub) break;   // EOF
 #ifdef CONFIG_ICONV
-	if ((sub!=ERR) && sub_utf8 == 2) sub=subcp_recode(sub);
+	if ((sub!=ERR) && (sub_utf8 & 2)) sub=subcp_recode(sub);
 #endif
 #ifdef CONFIG_FRIBIDI
-	if (sub!=ERR) sub=sub_fribidi(sub,sub_utf8,0);
+	if (sub!=ERR) sub=sub_fribidi(sub,sub_utf8);
 #endif
 	if ( sub == ERR )
 	 {
@@ -1450,7 +1425,6 @@ sub_data* sub_read_file (char *filename, float fps) {
           subcp_close();
 #endif
     	  if ( first ) free(first);
-	  free(alloced_sub);
 	  return NULL;
 	 }
         // Apply any post processing that needs recoding first
@@ -1503,7 +1477,6 @@ sub_data* sub_read_file (char *filename, float fps) {
 #ifdef CONFIG_ICONV
     subcp_close();
 #endif
-    free(alloced_sub);
 
 //    printf ("SUB: Subtitle format %s time.\n", uses_time?"uses":"doesn't use");
     mp_msg(MSGT_SUBREADER, MSGL_V,"SUB: Read %i subtitles, %i bad line(s).\n",
@@ -1661,7 +1634,7 @@ if ((suboverlap_enabled == 2) ||
 	    if (higher_line >= SUB_MAX_TEXT) {
 		// the 'block' has too much lines, so we don't overlap the
 		// subtitles
-		second = realloc(second, (sub_num + sub_to_add + 1) * sizeof(subtitle));
+		second = (subtitle *) realloc(second, (sub_num + sub_to_add + 1) * sizeof(subtitle));
 		for (j = 0; j <= sub_to_add; ++j) {
 		    int ls;
 		    memset(&second[sub_num + j], '\0', sizeof(subtitle));
@@ -1681,7 +1654,7 @@ if ((suboverlap_enabled == 2) ||
 
 	    // we read the placeholder structure and create the new
 	    // subs.
-	    second = realloc(second, (sub_num + 1) * sizeof(subtitle));
+	    second = (subtitle *) realloc(second, (sub_num + 1) * sizeof(subtitle));
 	    memset(&second[sub_num], '\0', sizeof(subtitle));
 	    second[sub_num].start = local_start;
 	    second[sub_num].end   = local_end;
@@ -1752,18 +1725,18 @@ char * strreplace( char * in,char * what,char * whereof )
 static void strcpy_trim(char *d, char *s)
 {
     // skip leading whitespace
-    while (*s && isspace(*s)) {
+    while (*s && !isalnum(*s)) {
 	s++;
     }
     for (;;) {
 	// copy word
-	while (*s && !isspace(*s)) {
+	while (*s && isalnum(*s)) {
 	    *d = tolower(*s);
 	    s++; d++;
 	}
 	if (*s == 0) break;
 	// trim excess whitespace
-	while (*s && isspace(*s)) {
+	while (*s && !isalnum(*s)) {
 	    s++;
 	}
 	if (*s == 0) break;
@@ -1802,7 +1775,7 @@ static void strcpy_get_ext(char *d, char *s)
 static int whiteonly(char *s)
 {
     while (*s) {
-	if (!isspace(*s)) return 0;
+	if (isalnum(*s)) return 0;
 	s++;
   }
     return 1;
@@ -1862,7 +1835,7 @@ char** sub_filenames(const char* path, char *fname)
     subcnt = 0;
 
     tmp = strrchr(fname,'/');
-#if HAVE_DOS_PATHS
+#if defined(__MINGW32__) || defined(__CYGWIN__) || defined(__OS2__)
     if(!tmp)tmp = strrchr(fname,'\\');
     if(!tmp)tmp = strrchr(fname,':');
 #endif
@@ -2269,15 +2242,15 @@ void dump_sami(sub_data* subd, float fps) {
 
 void sub_free( sub_data * subd )
 {
-    int i, j;
+ int i;
 
     if ( !subd ) return;
 
-    for (i = 0; i < subd->sub_num; i++)
-        for (j = 0; j < subd->subtitles[i].lines; j++)
-            free( subd->subtitles[i].text[j] );
-    free( subd->subtitles );
-    free( subd->filename );
+    if (subd->subtitles) {
+	for (i=0; i < subd->subtitles->lines; i++) free( subd->subtitles->text[i] );
+	free( subd->subtitles );
+    }
+    if (subd->filename) free( subd->filename );
     free( subd );
 }
 
@@ -2298,7 +2271,6 @@ void sub_add_text(subtitle *sub, const char *txt, int len, double endpts) {
   int double_newline = 1; // ignore newlines at the beginning
   int i, pos;
   char *buf;
-  int orig_lines = sub->lines;
   if (sub->lines >= SUB_MAX_TEXT) return;
   pos = 0;
   buf = malloc(MAX_SUBLINE + 1);
@@ -2343,9 +2315,6 @@ void sub_add_text(subtitle *sub, const char *txt, int len, double endpts) {
   if (sub->lines < SUB_MAX_TEXT &&
       strlen(sub->text[sub->lines]))
     sub->lines++;
-#ifdef CONFIG_FRIBIDI
-  sub = sub_fribidi(sub, sub_utf8, orig_lines);
-#endif
 }
 
 #define MP_NOPTS_VALUE (-1LL<<63)

@@ -1,0 +1,14 @@
+   MPlayer CE
+   version 0.6 (23.05.2009)
+   
+   Mplayer-CE Team
+   rodries, AgentX, DJDynamite123, 
+   Tantric, Scip
+   
+   http://mplayer-ce.googlecode.com
+   
+   MPlayer Wii port © Team Twiizers,
+   used code © MPlayerWii[rOn], GeeXboX,
+   tipolosko, Ludovic Orban, DennisLKJ etc.
+   background video © Blue_K
+   

@@ -21,7 +21,7 @@
 
 /**
  * TIFF tables
- * @file
+ * @file libavcodec/tiff.h
  * @author Konstantin Shishkov
  */
 #ifndef AVCODEC_TIFF_H
@@ -37,7 +37,6 @@ enum TiffTags{
     TIFF_BPP,
     TIFF_COMPR,
     TIFF_INVERT = 0x106,
-    TIFF_FILL_ORDER = 0x10A,
     TIFF_STRIP_OFFS = 0x111,
     TIFF_SAMPLES_PER_PIXEL = 0x115,
     TIFF_ROWSPERSTRIP = 0x116,

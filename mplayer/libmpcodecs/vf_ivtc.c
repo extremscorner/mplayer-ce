@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,7 +40,7 @@ enum {
 	F_SHOW
 };
 
-#if HAVE_MMX && HAVE_EBX_AVAILABLE
+#if HAVE_MMX
 static void block_diffs_MMX(struct metrics *m, unsigned char *old, unsigned char *new, int os, int ns)
 {
 	int i;
@@ -426,7 +408,7 @@ static void copy_image(mp_image_t *dmpi, mp_image_t *mpi, int field)
 	}
 }
 
-static int do_put_image(struct vf_instance *vf, mp_image_t *dmpi)
+static int do_put_image(struct vf_instance_s* vf, mp_image_t *dmpi)
 {
 	struct vf_priv_s *p = vf->priv;
 	int dropflag=0;
@@ -455,7 +437,7 @@ static int do_put_image(struct vf_instance *vf, mp_image_t *dmpi)
 	return vf_next_put_image(vf, dmpi, MP_NOPTS_VALUE);
 }
 
-static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
+static int put_image(struct vf_instance_s* vf, mp_image_t *mpi, double pts)
 {
 	int ret=0;
 	struct vf_priv_s *p = vf->priv;
@@ -506,7 +488,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 	return ret;
 }
 
-static int query_format(struct vf_instance *vf, unsigned int fmt)
+static int query_format(struct vf_instance_s* vf, unsigned int fmt)
 {
 	switch (fmt) {
 	case IMGFMT_YV12:
@@ -517,12 +499,12 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
 	return 0;
 }
 
-static void uninit(struct vf_instance *vf)
+static void uninit(struct vf_instance_s* vf)
 {
 	free(vf->priv);
 }
 
-static int vf_open(vf_instance_t *vf, char *args)
+static int open(vf_instance_t *vf, char* args)
 {
 	struct vf_priv_s *p;
 	vf->put_image = put_image;
@@ -534,7 +516,7 @@ static int vf_open(vf_instance_t *vf, char *args)
 	p->first = 1;
 	if (args) sscanf(args, "%d", &p->drop);
 	block_diffs = block_diffs_C;
-#if HAVE_MMX && HAVE_EBX_AVAILABLE
+#if HAVE_MMX
 	if(gCpuCaps.hasMMX) block_diffs = block_diffs_MMX;
 #endif
 	return 1;
@@ -545,6 +527,8 @@ const vf_info_t vf_info_ivtc = {
     "ivtc",
     "Rich Felker",
     "",
-    vf_open,
+    open,
     NULL
 };
+
+

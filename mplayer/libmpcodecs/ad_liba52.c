@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #define _XOPEN_SOURCE 600
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,7 +45,7 @@ static sample_t a52_level = 1;
 float a52_drc_level = 1.0;
 static int a52_drc_action = DRC_NO_ACTION;
 
-static const ad_info_t info =
+static ad_info_t info =
 {
 	"AC3 decoding with liba52",
 	"liba52",
@@ -74,8 +56,7 @@ static const ad_info_t info =
 
 LIBAD_EXTERN(liba52)
 
-static int a52_fillbuff(sh_audio_t *sh_audio)
-{
+int a52_fillbuff(sh_audio_t *sh_audio){
 int length=0;
 int flags=0;
 int sample_rate=0;
@@ -139,8 +120,7 @@ int channels=0;
   return (flags&A52_LFE) ? (channels+1) : channels;
 }
 
-static sample_t dynrng_call (sample_t c, void *data)
-{
+sample_t dynrng_call (sample_t c, void *data) {
 //	fprintf(stderr, "(%lf, %lf): %lf\n", (double)c, (double)a52_drc_level, (double)pow((double)c, a52_drc_level));
 	return pow((double)c, a52_drc_level);
 }

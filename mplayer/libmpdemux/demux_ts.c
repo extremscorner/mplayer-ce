@@ -34,9 +34,9 @@
 #include "demuxer.h"
 #include "parse_es.h"
 #include "stheader.h"
+
 #include "ms_hdr.h"
 #include "mpeg_hdr.h"
-#include "demux_ts.h"
 
 #define TS_PH_PACKET_SIZE 192
 #define TS_FEC_PACKET_SIZE 204
@@ -77,10 +77,8 @@ typedef enum
 	AUDIO_DTS	= 0x2001,
 	AUDIO_LPCM_BE  	= 0x10001,
 	AUDIO_AAC	= mmioFOURCC('M', 'P', '4', 'A'),
-	AUDIO_TRUEHD	= mmioFOURCC('T', 'R', 'H', 'D'),
 	SPU_DVD		= 0x3000000,
 	SPU_DVB		= 0x3000001,
-	SPU_TELETEXT	= 0x3000002,
 	PES_PRIVATE1	= 0xBD00000,
 	SL_PES_STREAM	= 0xD000000,
 	SL_SECTION	= 0xD100000,
@@ -97,7 +95,7 @@ typedef struct {
 	unsigned char *start;
 	uint16_t payload_size;
 	es_stream_type_t type, subtype;
-	double pts, last_pts;
+	float pts, last_pts;
 	int pid;
 	char lang[4];
 	int last_cc;				// last cc code (-1 if first packet)
@@ -219,8 +217,8 @@ typedef struct {
 typedef struct {
 	uint64_t size;
 	float duration;
-	double first_pts;
-	double last_pts;
+	float first_pts;
+	float last_pts;
 } TS_stream_info;
 
 typedef struct {
@@ -246,9 +244,8 @@ typedef struct {
 } TS_pids_t;
 
 
-#define IS_AUDIO(x) (((x) == AUDIO_MP2) || ((x) == AUDIO_A52) || ((x) == AUDIO_LPCM_BE) || ((x) == AUDIO_AAC) || ((x) == AUDIO_DTS) || ((x) == AUDIO_TRUEHD))
+#define IS_AUDIO(x) (((x) == AUDIO_MP2) || ((x) == AUDIO_A52) || ((x) == AUDIO_LPCM_BE) || ((x) == AUDIO_AAC) || ((x) == AUDIO_DTS))
 #define IS_VIDEO(x) (((x) == VIDEO_MPEG1) || ((x) == VIDEO_MPEG2) || ((x) == VIDEO_MPEG4) || ((x) == VIDEO_H264) || ((x) == VIDEO_AVC)  || ((x) == VIDEO_VC1))
-#define IS_SUB(x) (((x) == SPU_DVD) || ((x) == SPU_DVB) || ((x) == SPU_TELETEXT))
 
 static int ts_parse(demuxer_t *demuxer, ES_stream_t *es, unsigned char *packet, int probe);
 
@@ -289,7 +286,6 @@ try_fec:
 }
 
 static int parse_avc_sps(uint8_t *buf, int len, int *w, int *h);
-static inline uint8_t *pid_lang_from_pmt(ts_priv_t *priv, int pid);
 
 static void ts_add_stream(demuxer_t * demuxer, ES_stream_t *es)
 {
@@ -304,8 +300,6 @@ static void ts_add_stream(demuxer_t * demuxer, ES_stream_t *es)
 		sh_audio_t *sh = new_sh_audio_aid(demuxer, priv->last_aid, es->pid);
 		if(sh)
 		{
-			const char *lang = pid_lang_from_pmt(priv, es->pid);
-			sh->needs_parsing = 1;
 			sh->format = IS_AUDIO(es->type) ? es->type : es->subtype;
 			sh->ds = demuxer->audio;
 
@@ -313,14 +307,12 @@ static void ts_add_stream(demuxer_t * demuxer, ES_stream_t *es)
 			priv->ts.streams[es->pid].sh = sh;
 			priv->ts.streams[es->pid].type = TYPE_AUDIO;
 			mp_msg(MSGT_DEMUX, MSGL_V, "\r\nADDED AUDIO PID %d, type: %x stream n. %d\r\n", es->pid, sh->format, priv->last_aid);
-			if (lang && lang[0])
-				mp_msg(MSGT_IDENTIFY, MSGL_V, "ID_AID_%d_LANG=%s\n", es->pid, lang);
 			priv->last_aid++;
 		}
 
 		if(es->extradata && es->extradata_len)
 		{
-			sh->wf = malloc(sizeof (WAVEFORMATEX) + es->extradata_len);
+			sh->wf = (WAVEFORMATEX *) malloc(sizeof (WAVEFORMATEX) + es->extradata_len);
 			sh->wf->cbSize = es->extradata_len;
 			memcpy(sh->wf + 1, es->extradata, es->extradata_len);
 		}
@@ -344,7 +336,7 @@ static void ts_add_stream(demuxer_t * demuxer, ES_stream_t *es)
 			if(sh->format == VIDEO_AVC && es->extradata && es->extradata_len)
 			{
 				int w = 0, h = 0;
-				sh->bih = calloc(1, sizeof(BITMAPINFOHEADER) + es->extradata_len);
+				sh->bih = (BITMAPINFOHEADER *) calloc(1, sizeof(BITMAPINFOHEADER) + es->extradata_len);
 				sh->bih->biSize= sizeof(BITMAPINFOHEADER) + es->extradata_len;
 				sh->bih->biCompression = sh->format;
 				memcpy(sh->bih + 1, es->extradata, es->extradata_len);
@@ -680,7 +672,7 @@ static off_t ts_detect_streams(demuxer_t *demuxer, tsdemux_init_t *param)
 				pptr = &pes_priv1[es.pid];
 				if(pptr->pos < 64*1024)
 				{
-				tmpbuf = realloc(pptr->buf, pptr->pos + es.size);
+				tmpbuf = (char*) realloc(pptr->buf, pptr->pos + es.size);
 				if(tmpbuf != NULL)
 				{
 					pptr->buf = tmpbuf;
@@ -698,7 +690,7 @@ static off_t ts_detect_streams(demuxer_t *demuxer, tsdemux_init_t *param)
 
 			is_audio = IS_AUDIO(es.type) || ((es.type==SL_PES_STREAM) && IS_AUDIO(es.subtype));
 			is_video = IS_VIDEO(es.type) || ((es.type==SL_PES_STREAM) && IS_VIDEO(es.subtype));
-			is_sub   = IS_SUB(es.type);
+			is_sub   = ((es.type == SPU_DVD) || (es.type == SPU_DVB));
 
 
 			if((! is_audio) && (! is_video) && (! is_sub))
@@ -708,12 +700,16 @@ static off_t ts_detect_streams(demuxer_t *demuxer, tsdemux_init_t *param)
 
 			if(is_video)
 			{
+				mp_msg(MSGT_IDENTIFY, MSGL_V, "ID_VIDEO_ID=%d\n", es.pid);
     				chosen_pid = (req_vpid == es.pid);
 				if((! chosen_pid) && (req_vpid > 0))
 					continue;
 			}
 			else if(is_audio)
 			{
+				mp_msg(MSGT_IDENTIFY, MSGL_V, "ID_AUDIO_ID=%d\n", es.pid);
+				if (es.lang[0] > 0)
+					mp_msg(MSGT_IDENTIFY, MSGL_V, "ID_AID_%d_LANG=%s\n", es.pid, es.lang);
 				if(req_apid > 0)
 				{
 					chosen_pid = (req_apid == es.pid);
@@ -875,8 +871,6 @@ static off_t ts_detect_streams(demuxer_t *demuxer, tsdemux_init_t *param)
 		mp_msg(MSGT_DEMUXER, MSGL_INFO, "AUDIO LPCM(pid=%d)", param->apid);
 	else if(param->atype == AUDIO_AAC)
 		mp_msg(MSGT_DEMUXER, MSGL_INFO, "AUDIO AAC(pid=%d)", param->apid);
-	else if(param->atype == AUDIO_TRUEHD)
-		mp_msg(MSGT_DEMUXER, MSGL_INFO, "AUDIO TRUEHD(pid=%d)", param->apid);
 	else
 	{
 		audio_found = 0;
@@ -885,8 +879,8 @@ static off_t ts_detect_streams(demuxer_t *demuxer, tsdemux_init_t *param)
 		mp_msg(MSGT_DEMUXER, MSGL_INFO, "NO AUDIO! ");
 	}
 
-	if(IS_SUB(param->stype))
-		mp_msg(MSGT_DEMUXER, MSGL_INFO, " SUB %s(pid=%d) ", (param->stype==SPU_DVD ? "DVD" : param->stype==SPU_DVB ? "DVB" : "Teletext"), param->spid);
+	if(param->stype == SPU_DVD || param->stype == SPU_DVB)
+		mp_msg(MSGT_DEMUXER, MSGL_INFO, " SUB %s(pid=%d) ", (param->stype==SPU_DVD ? "DVD" : "DVB"), param->spid);
 	else
 	{
 		param->stype = UNKNOWN;
@@ -1115,6 +1109,7 @@ static void demux_close_ts(demuxer_t * demuxer)
 }
 
 
+unsigned char mp_getbits(unsigned char*, unsigned int, unsigned char);
 #define getbits mp_getbits
 
 static int mp4_parse_sl_packet(pmt_t *pmt, uint8_t *buf, uint16_t packet_len, int pid, ES_stream_t *pes_es)
@@ -1254,7 +1249,7 @@ static int mp4_parse_sl_packet(pmt_t *pmt, uint8_t *buf, uint16_t packet_len, in
 					return -1;
 			}
 
-			pes_es->pts = (double) v / (double) sl->ts_resolution;
+			pes_es->pts = (float) v / (float) sl->ts_resolution;
 			mp_msg(MSGT_DEMUXER,MSGL_DBG2, "CTS: %d bits, value: %"PRIu64"/%d = %.3f\n", sl->ts_len, v, sl->ts_resolution, pes_es->pts);
 		}
 
@@ -1397,10 +1392,10 @@ static int pes_parse2(unsigned char *buf, uint16_t packet_len, ES_stream_t *es, 
 		pts |=  p[12]         <<  7 ;
 		pts |= (p[13] & 0xFE) >>  1 ;
 
-		es->pts = pts / 90000.0;
+		es->pts = pts / 90000.0f;
 	}
 	else
-		es->pts = 0.0;
+		es->pts = 0.0f;
 
 
 	header_len = p[8];
@@ -1417,8 +1412,6 @@ static int pes_parse2(unsigned char *buf, uint16_t packet_len, ES_stream_t *es, 
 		int ssid = parse_pes_extension_fields(p, pkt_len);
 		if((audio_substream_id!=-1) && (ssid != audio_substream_id))
 			return 0;
-		if(ssid == 0x72 && type_from_pmt != AUDIO_DTS)
-			es->type  = type_from_pmt = AUDIO_TRUEHD;
 	}
 
 	p += header_len + 9;
@@ -1678,7 +1671,7 @@ static int collect_section(ts_section_t *section, int is_start, unsigned char *b
 	{
 		if(! section->buffer)
 		{
-			section->buffer = malloc(4096 + 256);
+			section->buffer = (uint8_t*) malloc(4096+256);
 			if(section->buffer == NULL)
 				return 0;
 		}
@@ -2252,14 +2245,6 @@ static int parse_descriptors(struct pmt_es_t *es, uint8_t *ptr)
 				mp_msg(MSGT_DEMUX, MSGL_DBG2, "DVB DTS Descriptor\n");
 			}
 		}
-		else if(ptr[j] == 0x56) // Teletext
-		{
-			if(descr_len >= 5) {
-				memcpy(es->lang, ptr+2, 3);
-				es->lang[3] = 0;
-			}
-			es->type = SPU_TELETEXT;
-		}
 		else if(ptr[j] == 0x59)	//Subtitling Descriptor
 		{
 			uint8_t subtype;
@@ -2521,7 +2506,6 @@ static int parse_pmt(ts_priv_t * priv, uint16_t progid, uint16_t pid, int is_sta
 				break;
 			case 0x8A:
 			case 0x82:
-			case 0x85:
 			case 0x86:
 				pmt->es[idx].type = AUDIO_DTS;
 				break;
@@ -2697,7 +2681,7 @@ static int fill_extradata(mp4_decoder_config_t * mp4_dec, ES_stream_t *tss)
 
 	if(mp4_dec->buf_size > tss->extradata_alloc)
 	{
-		tmp = realloc(tss->extradata, mp4_dec->buf_size);
+		tmp = (uint8_t *) realloc(tss->extradata, mp4_dec->buf_size);
 		if(!tmp)
 			return 0;
 		tss->extradata = tmp;
@@ -2740,7 +2724,6 @@ static int ts_parse(demuxer_t *demuxer , ES_stream_t *es, unsigned char *packet,
 		rap_flag = 0;
 		mp4_dec = NULL;
 		es->is_synced = 0;
-		es->lang[0] = 0;
 		si = NULL;
 
 		junk = priv->ts.packet_size - TS_PACKET_SIZE;
@@ -2891,7 +2874,7 @@ static int ts_parse(demuxer_t *demuxer , ES_stream_t *es, unsigned char *packet,
 
 		is_video = IS_VIDEO(tss->type) || (tss->type==SL_PES_STREAM && IS_VIDEO(tss->subtype));
 		is_audio = IS_AUDIO(tss->type) || (tss->type==SL_PES_STREAM && IS_AUDIO(tss->subtype)) || (tss->type == PES_PRIVATE1);
-		is_sub	= IS_SUB(tss->type);
+		is_sub	= ((tss->type == SPU_DVD) || (tss->type == SPU_DVB));
 		pid_type = pid_type_from_pmt(priv, pid);
 
 			// PES CONTENT STARTS HERE
@@ -2924,7 +2907,7 @@ static int ts_parse(demuxer_t *demuxer , ES_stream_t *es, unsigned char *packet,
 				si = &priv->astr;
 			}
 			else if(is_sub
-				|| IS_SUB(pid_type))
+				|| (pid_type == SPU_DVD) || (pid_type == SPU_DVB))
 			{
 				//SUBS are infrequent, so the initial detection may fail
 				// and we may need to add them at play-time
@@ -3073,7 +3056,7 @@ static int ts_parse(demuxer_t *demuxer , ES_stream_t *es, unsigned char *packet,
 			tss->is_synced |= es->is_synced || rap_flag;
 			tss->payload_size = es->payload_size;
 
-			if((is_sub || is_audio) && (lang = pid_lang_from_pmt(priv, es->pid)))
+			if(is_audio && (lang = pid_lang_from_pmt(priv, es->pid)))
 			{
 				memcpy(es->lang, lang, 3);
 				es->lang[3] = 0;
@@ -3093,7 +3076,7 @@ static int ts_parse(demuxer_t *demuxer , ES_stream_t *es, unsigned char *packet,
 			}
 			else
 			{
-				if(es->pts == 0.0)
+				if(es->pts == 0.0f)
 					es->pts = tss->pts = tss->last_pts;
 				else
 					tss->pts = tss->last_pts = es->pts;
@@ -3276,8 +3259,8 @@ static void demux_seek_ts(demuxer_t *demuxer, float rel_seek_secs, float audio_d
 	{
 		if(sh_audio && !d_audio->eof && d_video->pts && d_audio->pts)
 		{
-			double a_pts=d_audio->pts;
-			a_pts+=(ds_tell_pts(d_audio)-sh_audio->a_in_buffer_len)/(double)sh_audio->i_bps;
+			float a_pts=d_audio->pts;
+			a_pts+=(ds_tell_pts(d_audio)-sh_audio->a_in_buffer_len)/(float)sh_audio->i_bps;
 			if(d_video->pts > a_pts)
 			{
 				skip_audio_frame(sh_audio);  // sync audio
@@ -3395,9 +3378,14 @@ static int demux_ts_control(demuxer_t *demuxer, int cmd, void *arg)
 			}
 			else	//audio track <n>
 			{
-				if (n >= 8192 || priv->ts.streams[n].type != reftype) return DEMUXER_CTRL_NOTIMPL;
-				i = n;
+				for(i = 0; i < 8192; i++)
+				{
+					if(priv->ts.streams[i].id == n && priv->ts.streams[i].type == reftype)
+					{
 						sh = priv->ts.streams[i].sh;
+						break;
+					}
+				}
 			}
 
 			if(sh)
@@ -3468,12 +3456,12 @@ static int demux_ts_control(demuxer_t *demuxer, int cmd, void *arg)
 				if(!vid_done && priv->ts.streams[pmt->es[j].pid].type == TYPE_VIDEO)
 				{
 					vid_done = 1;
-					prog->vid = pmt->es[j].pid;
+					prog->vid = priv->ts.streams[pmt->es[j].pid].id;
 				}
 				else if(!aid_done && priv->ts.streams[pmt->es[j].pid].type == TYPE_AUDIO)
 				{
 					aid_done = 1;
-					prog->aid = pmt->es[j].pid;
+					prog->aid = priv->ts.streams[pmt->es[j].pid].id;
 				}
 			}
 

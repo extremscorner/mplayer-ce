@@ -24,7 +24,6 @@
 #include "raw.h"
 #include "id3v2.h"
 #include "oggdec.h"
-#include "vorbiscomment.h"
 
 static int flac_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
@@ -36,7 +35,7 @@ static int flac_read_header(AVFormatContext *s,
     AVStream *st = av_new_stream(s, 0);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_FLAC;
     st->need_parsing = AVSTREAM_PARSE_FULL;
     /* the parameters will be extracted from the compressed bitstream */
@@ -67,11 +66,11 @@ static int flac_read_header(AVFormatContext *s,
         case FLAC_METADATA_TYPE_VORBIS_COMMENT:
             buffer = av_mallocz(metadata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer) {
-                return AVERROR(ENOMEM);
+                return AVERROR_NOMEM;
             }
             if (get_buffer(s->pb, buffer, metadata_size) != metadata_size) {
                 av_freep(&buffer);
-                return AVERROR(EIO);
+                return AVERROR_IO;
             }
             break;
         /* skip metadata block for unsupported types */
@@ -114,7 +113,7 @@ static int flac_read_header(AVFormatContext *s,
             }
             /* process supported blocks other than STREAMINFO */
             if (metadata_type == FLAC_METADATA_TYPE_VORBIS_COMMENT) {
-                if (ff_vorbis_comment(s, &s->metadata, buffer, metadata_size)) {
+                if (vorbis_comment(s, buffer, metadata_size)) {
                     av_log(s, AV_LOG_WARNING, "error parsing VorbisComment metadata\n");
                 }
             }
@@ -147,5 +146,4 @@ AVInputFormat flac_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "flac",
     .value = CODEC_ID_FLAC,
-    .metadata_conv = ff_vorbiscomment_metadata_conv,
 };

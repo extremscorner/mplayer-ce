@@ -19,7 +19,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/put_bits.h
  * bitstream writer API
  */
 
@@ -52,10 +52,10 @@ typedef struct PutBitContext {
 } PutBitContext;
 
 /**
- * Initializes the PutBitContext s.
+ * Initializes the PutBitContext \p s.
  *
  * @param buffer the buffer where to put bits
- * @param buffer_size the size in bytes of buffer
+ * @param buffer_size the size in bytes of \p buffer
  */
 static inline void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 {
@@ -117,35 +117,25 @@ static inline void flush_put_bits(PutBitContext *s)
 #endif
 }
 
-#if defined(ALT_BITSTREAM_WRITER) || defined(BITSTREAM_WRITER_LE)
-#define align_put_bits align_put_bits_unsupported_here
-#define ff_put_string ff_put_string_unsupported_here
-#define ff_copy_bits ff_copy_bits_unsupported_here
-#else
 /**
  * Pads the bitstream with zeros up to the next byte boundary.
  */
 void align_put_bits(PutBitContext *s);
 
 /**
- * Puts the string string in the bitstream.
+ * Puts the string \p s in the bitstream.
  *
  * @param terminate_string 0-terminates the written string if value is 1
  */
-void ff_put_string(PutBitContext *pb, const char *string, int terminate_string);
+void ff_put_string(PutBitContext * pbc, const char *s, int terminate_string);
 
 /**
- * Copies the content of src to the bitstream.
+ * Copies the content of \p src to the bitstream.
  *
- * @param length the number of bits of src to copy
+ * @param length the number of bits of \p src to copy
  */
 void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
-#endif
 
-/**
- * Writes up to 31 bits into a bitstream.
- * Use put_bits32 to write 32 bits.
- */
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #ifndef ALT_BITSTREAM_WRITER
 {
@@ -153,7 +143,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     int bit_left;
 
     //    printf("put_bits=%d %x\n", n, value);
-    assert(n <= 31 && value < (1U << n));
+    assert(n == 32 || value < (1U << n));
 
     bit_buf = s->bit_buf;
     bit_left = s->bit_left;
@@ -262,27 +252,11 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 }
 #endif
 
-static inline void put_sbits(PutBitContext *pb, int n, int32_t value)
+static inline void put_sbits(PutBitContext *pb, int bits, int32_t val)
 {
-    assert(n >= 0 && n <= 31);
+    assert(bits >= 0 && bits <= 31);
 
-    put_bits(pb, n, value & ((1<<n)-1));
-}
-
-/**
- * Writes exactly 32 bits into a bitstream.
- */
-static void av_unused put_bits32(PutBitContext *s, uint32_t value)
-{
-    int lo = value & 0xffff;
-    int hi = value >> 16;
-#ifdef BITSTREAM_WRITER_LE
-    put_bits(s, 16, lo);
-    put_bits(s, 16, hi);
-#else
-    put_bits(s, 16, hi);
-    put_bits(s, 16, lo);
-#endif
+    put_bits(pb, bits, val & ((1<<bits)-1));
 }
 
 /**
@@ -302,8 +276,7 @@ static inline uint8_t* put_bits_ptr(PutBitContext *s)
  * Skips the given number of bytes.
  * PutBitContext must be flushed & aligned to a byte boundary before calling this.
  */
-static inline void skip_put_bytes(PutBitContext *s, int n)
-{
+static inline void skip_put_bytes(PutBitContext *s, int n){
         assert((put_bits_count(s)&7)==0);
 #ifdef ALT_BITSTREAM_WRITER
         FIXME may need some cleaning of the buffer
@@ -317,10 +290,9 @@ static inline void skip_put_bytes(PutBitContext *s, int n)
 /**
  * Skips the given number of bits.
  * Must only be used if the actual values in the bitstream do not matter.
- * If n is 0 the behavior is undefined.
+ * If \p n is 0 the behavior is undefined.
  */
-static inline void skip_put_bits(PutBitContext *s, int n)
-{
+static inline void skip_put_bits(PutBitContext *s, int n){
 #ifdef ALT_BITSTREAM_WRITER
     s->index += n;
 #else
@@ -335,8 +307,7 @@ static inline void skip_put_bits(PutBitContext *s, int n)
  *
  * @param size the new size in bytes of the buffer where to put bits
  */
-static inline void set_put_bits_buffer_size(PutBitContext *s, int size)
-{
+static inline void set_put_bits_buffer_size(PutBitContext *s, int size){
     s->buf_end= s->buf + size;
 }
 

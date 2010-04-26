@@ -31,11 +31,7 @@
 #include "audio_out.h"
 #include "audio_out_internal.h"
 #include "libaf/af_format.h"
-#ifdef CONFIG_SDL_SDL_H
-#include <SDL/SDL.h>
-#else
 #include <SDL.h>
-#endif
 #include "osdep/timer.h"
 
 #include "libavutil/fifo.h"
@@ -86,11 +82,10 @@ static int read_buffer(unsigned char* data,int len){
   int buffered = av_fifo_size(buffer);
   if (len > buffered) len = buffered;
 #ifdef USE_SDL_INTERNAL_MIXER
-  av_fifo_generic_read(buffer, data, len, mix_audio);
+  return av_fifo_generic_read(buffer, data, len, mix_audio);
 #else
-  av_fifo_generic_read(buffer, data, len, NULL);
+  return av_fifo_generic_read(buffer, data, len, NULL);
 #endif
-  return len;
 }
 
 // end ring buffer stuff
@@ -120,8 +115,7 @@ static int control(int cmd,void *arg){
 }
 
 // SDL Callback function
-static void outputaudio(void *unused, Uint8 *stream, int len)
-{
+void outputaudio(void *unused, Uint8 *stream, int len) {
 	//SDL_MixAudio(stream, read_buffer(buffers, len), len, SDL_MIX_MAXVOLUME);
 	//if(!full_buffers) printf("SDL: Buffer underrun!\n");
 
@@ -316,3 +310,9 @@ static float get_delay(void){
     int buffered = av_fifo_size(buffer); // could be less
     return (float)(buffered + ao_data.buffersize)/(float)ao_data.bps;
 }
+
+
+
+
+
+

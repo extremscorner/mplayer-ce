@@ -1,20 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 
 #include "config.h"
 
@@ -61,7 +44,6 @@ static int open_live_rtsp_sip(stream_t *stream,int mode, void* opts, int* file_f
 
   *file_format = DEMUXER_TYPE_RTP;
   stream->type = STREAMTYPE_STREAM;
-  stream->flags = STREAM_NON_CACHEABLE;
   return STREAM_OK;
 
 fail:
@@ -79,7 +61,11 @@ static int open_live_sdp(stream_t *stream,int mode, void* opts, int* file_format
 
   if(strncmp("sdp://",filename,6) == 0) {
     filename += 6;
+#if defined(__CYGWIN__) || defined(__MINGW32__)
     f = open(filename,O_RDONLY|O_BINARY);
+#else
+    f = open(filename,O_RDONLY);
+#endif
     if(f < 0) {
       mp_msg(MSGT_OPEN,MSGL_ERR,MSGTR_FileNotFound,filename);
       return STREAM_ERROR;

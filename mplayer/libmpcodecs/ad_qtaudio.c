@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,7 +15,7 @@
 #include "loader/wine/windef.h"
 #endif
 
-static const ad_info_t info =  {
+static ad_info_t info =  {
 	"QuickTime Audio Decoder",
 	"qtaudio",
 	"A'rpi",
@@ -118,6 +100,7 @@ static int loader_init(void)
         mp_msg(MSGT_DECAUDIO,MSGL_ERR,"failed loading qtmlClient.dll\n" );
 	return 1;
     }
+#if 1
     InitializeQTML = (LPFUNC1)GetProcAddress(qtml_dll,"InitializeQTML");
 	if ( InitializeQTML == NULL )
     {
@@ -172,6 +155,7 @@ static int loader_init(void)
         mp_msg(MSGT_DECAUDIO,MSGL_ERR,"failed getting proc address SoundConverterBeginConversion\n");
 		return 1;
     }
+#endif
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"loader_init DONE???\n");
 	return 0;
 }
@@ -205,6 +189,7 @@ static int preinit(sh_audio_t *sh){
     }
 #endif
 
+#if 1
 	OutputFormatInfo.flags = InputFormatInfo.flags = 0;
 	OutputFormatInfo.sampleCount = InputFormatInfo.sampleCount = 0;
 	OutputFormatInfo.buffer = InputFormatInfo.buffer = NULL;
@@ -254,6 +239,8 @@ static int preinit(sh_audio_t *sh){
     sh->i_bps=sh->wf->nAvgBytesPerSec;
 //InputBufferSize*WantedBufferSize/OutputBufferSize;
 
+#endif
+
    if(sh->format==0x3343414D){
        // MACE 3:1
        sh->ds->ss_div = 2*3; // 1 samples/packet
@@ -277,11 +264,6 @@ static void uninit(sh_audio_t *sh){
     int error;
     unsigned long ConvertedFrames=0;
     unsigned long ConvertedBytes=0;
-
-#ifdef WIN32_LOADER
-    Setup_FS_Segment();
-#endif
-
     error=SoundConverterEndConversion(myConverter,NULL,&ConvertedFrames,&ConvertedBytes);
     mp_msg(MSGT_DECAUDIO,MSGL_DBG2,"SoundConverterEndConversion:%i\n",error);
     error = SoundConverterClose(myConverter);
@@ -304,10 +286,6 @@ static int decode_audio(sh_audio_t *sh,unsigned char *buf,int minlen,int maxlen)
     unsigned long InputBufferSize=0; //size of the input buffer
     unsigned long ConvertedFrames=0;
     unsigned long ConvertedBytes=0;
-
-#ifdef WIN32_LOADER
-    Setup_FS_Segment();
-#endif
 
     FramesToGet=minlen/OutFrameSize;
     if(FramesToGet*OutFrameSize<minlen &&

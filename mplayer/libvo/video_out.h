@@ -74,7 +74,6 @@
 #define VOCTRL_GET_EOSD_RES 29
 typedef struct {
   int w, h; // screen dimensions, including black borders
-  int srcw, srch; // unscaled source dimensions
   int mt, mb, ml, mr; // borders (top, bottom, left, right)
 } mp_eosd_res_t;
 
@@ -108,7 +107,6 @@ typedef struct {
 #define VOFLAG_MODESWITCHING	0x02
 #define VOFLAG_SWSCALE		0x04
 #define VOFLAG_FLIPPING		0x08
-#define VOFLAG_HIDDEN		0x10  //< Use to create a hidden window
 #define VOFLAG_XOVERLAY_SUB_VO  0x10000
 
 typedef struct vo_info_s
@@ -252,9 +250,6 @@ extern char *vo_subdevice;
 
 extern int vo_colorkey;
 
-extern char *vo_winname;
-extern char *vo_wintitle;
-
 extern int64_t WinID;
 
 typedef struct {
@@ -279,10 +274,5 @@ struct vo_rect {
 };
 void calc_src_dst_rects(int src_width, int src_height, struct vo_rect *src, struct vo_rect *dst,
                         struct vo_rect *borders, const struct vo_rect *crop);
-
-static inline int aspect_scaling(void)
-{
-  return vo_fs;
-}
 
 #endif /* MPLAYER_VIDEO_OUT_H */

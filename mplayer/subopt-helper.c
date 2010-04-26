@@ -1,21 +1,3 @@
-/*
- * This file is part of MPlayer.
- *
- * MPlayer is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * MPlayer is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with MPlayer; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 /**
  * \file subopt-helper.c
  *
@@ -318,16 +300,18 @@ static char const * parse_str( char const * str, strarg_t * const valp )
 /*** common test functions ***/
 
 /** \brief Test if i is not negative */
-int int_non_neg(void *iptr)
+int int_non_neg( int * i )
 {
-  int *i = iptr;
-  return *i >= 0;
+  if ( *i < 0 ) { return 0; }
+
+  return 1;
 }
 /** \brief Test if i is positive. */
-int int_pos(void *iptr)
+int int_pos( int * i )
 {
-  int *i = iptr;
-  return *i > 0;
+  if ( *i > 0 ) { return 1; }
+
+  return 0;
 }
 
 /*** little helpers */
@@ -347,3 +331,4 @@ int strargcasecmp(strarg_t *arg, char *str) {
     res = arg->len - strlen(str);
   return res;
 }
+

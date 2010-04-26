@@ -29,10 +29,10 @@ typedef struct LangEntry {
     uint16_t next_equivalent;
 } LangEntry;
 
-static const uint16_t lang_table_counts[] = { 484, 20, 184 };
-static const uint16_t lang_table_offsets[] = { 0, 484, 504 };
+const uint16_t lang_table_counts[] = { 484, 20, 184 };
+const uint16_t lang_table_offsets[] = { 0, 484, 504 };
 
-static const LangEntry lang_table[] = {
+static LangEntry lang_table[] = {
     /*----- AV_LANG_ISO639_2_BIBL entries (484) -----*/
     /*0000*/ { "aar",  504 },
     /*0001*/ { "abk",  505 },
@@ -738,7 +738,7 @@ const char *av_convert_lang_to(const char *lang, enum AVLangCodespace target_cod
     const LangEntry *entry = NULL;
     const int NB_CODESPACES = sizeof(lang_table_counts)/sizeof(*lang_table_counts);
 
-    if (target_codespace >= NB_CODESPACES)
+    if (target_codespace < 0 || target_codespace >= NB_CODESPACES)
         return NULL;
 
     for (i=0; !entry && i<NB_CODESPACES; i++)

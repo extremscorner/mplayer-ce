@@ -19,7 +19,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-/* $Id: vo_zr.c 30635 2010-02-18 10:19:42Z diego $ */
+/* $Id: vo_zr.c 29305 2009-05-13 02:58:57Z diego $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,8 +41,8 @@
 #include "mp_msg.h"
 #include "m_option.h"
 #include "fastmemcpy.h"
+
 #include "jpeg_enc.h"
-#include "vo_zr.h"
 
 static const vo_info_t info =
 {
@@ -121,8 +121,7 @@ static zr_info_t zr_info[ZR_MAX_DEVICES] = {
 #define MJPEG_SIZE	1024*256
 
 
-static int zoran_getcap(zr_info_t *zr)
-{
+int zoran_getcap(zr_info_t *zr) {
 	char* dev = NULL;
 
 	if (zr->device)
@@ -197,8 +196,7 @@ static int zoran_getcap(zr_info_t *zr)
 	return 0;
 }
 
-static int init_zoran(zr_info_t *zr, int stretchx, int stretchy)
-{
+int init_zoran(zr_info_t *zr, int stretchx, int stretchy) {
 	/* center the image, and stretch it as far as possible (try to keep
 	 * aspect) and check if it fits */
 	if (zr->image_width > zr->vc.maxwidth) {
@@ -266,8 +264,7 @@ static int init_zoran(zr_info_t *zr, int stretchx, int stretchy)
 	return 0;
 }
 
-static void uninit_zoran(zr_info_t *zr)
-{
+void uninit_zoran(zr_info_t *zr) {
 	if (zr->image) {
 		free(zr->image);
 		zr->image=NULL;
@@ -286,8 +283,7 @@ static void uninit_zoran(zr_info_t *zr)
 	close(zr->vdes);
 }
 
-static int zr_geometry_sane(geo_t *g, unsigned int width, unsigned int height)
-{
+int zr_geometry_sane(geo_t *g, unsigned int width, unsigned int height) {
 	if (g->set) {
 		if (g->width%2 != 0 || g->height%2 != 0 ||
 				g->xoff%2 != 0 || g->yoff%2 != 0) {

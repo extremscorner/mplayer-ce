@@ -19,7 +19,7 @@
 #ifndef MPLAYER_ASF_H
 #define MPLAYER_ASF_H
 
-//#include "config.h"	/* for HAVE_BIGENDIAN */
+//#include "config.h"	/* for WORDS_BIGENDIAN */
 #include <inttypes.h>
 #include "libavutil/common.h"
 #include "mpbswap.h"
@@ -105,7 +105,7 @@ typedef struct __attribute__((packed)) {
 } ASF_stream_chunck_t;
 
 // Definition of the stream type
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 	#define ASF_STREAMING_CLEAR	0x2443		// $C
 	#define ASF_STREAMING_DATA	0x2444		// $D
 	#define ASF_STREAMING_END_TRANS	0x2445		// $E
@@ -140,7 +140,7 @@ typedef struct {
  * Some macros to swap little endian structures read from an ASF file
  * into machine endian format
  */
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 #define	le2me_ASF_obj_header_t(h) {					\
     (h)->size = le2me_64((h)->size);					\
 }
@@ -222,7 +222,7 @@ struct asf_priv {
     int scrambling_b;
     unsigned packetsize;
     double   packetrate;
-    double movielength;
+    unsigned movielength;
     int asf_is_dvr_ms;
     uint32_t asf_frame_state;
     int asf_frame_start_found;

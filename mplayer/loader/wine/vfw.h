@@ -6,7 +6,9 @@
 #ifndef MPLAYER_VFW_H
 #define MPLAYER_VFW_H
 //#include "pshpack1.h"
-#include "windef.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct __attribute__((__packed__))
 {
@@ -206,9 +208,6 @@ typedef struct {
     LPBITMAPINFOHEADER	lpbiPrev;
     void*		lpPrev;
 } ICCOMPRESS;
-
-
-long VFWAPI VideoForWindowsVersion(void);
 
 long VFWAPIV ICCompress(
 	HIC hic,long dwFlags,LPBITMAPINFOHEADER lpbiOutput,void* lpData,
@@ -666,4 +665,7 @@ typedef struct {
 #define AVIERR_USERABORT	MAKE_AVIERR(198)
 #define AVIERR_ERROR		MAKE_AVIERR(199)
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* MPLAYER_VFW_H */

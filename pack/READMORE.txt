@@ -11,7 +11,6 @@ libfat with 'make wii-release' and then copying the libogc folder to your Devkit
 libfreetype with 'make' and 'make install'
 libjpeg with 'make' and 'make install'
 libiconv with 'make' and 'make install-lib'
-libfribidi with 'make' and 'make install'
 
 Now you can build mplayer_ce with 'make'.
 It should create mplayer.dol in the mplayer-trunk directory.

@@ -34,8 +34,8 @@ extern const AVCodecTag codec_movvideo_tags[];
 extern const AVCodecTag codec_movaudio_tags[];
 extern const AVCodecTag ff_codec_movsubtitle_tags[];
 
-int ff_mov_iso639_to_lang(const char lang[4], int mp4);
-int ff_mov_lang_to_iso639(unsigned code, char to[4]);
+int ff_mov_iso639_to_lang(const char *lang, int mp4);
+int ff_mov_lang_to_iso639(unsigned code, char *to);
 
 /* the QuickTime file format is quite convoluted...
  * it has lots of index tables, each indexing something in another one...
@@ -56,14 +56,11 @@ typedef struct {
 typedef struct {
     uint32_t type;
     char *path;
-    char *dir;
-    char volume[28];
-    char filename[64];
-    int16_t nlvl_to, nlvl_from;
 } MOVDref;
 
 typedef struct {
     uint32_t type;
+    int64_t offset;
     int64_t size; /* total size (excluding the size and type fields) */
 } MOVAtom;
 
@@ -109,6 +106,7 @@ typedef struct MOVStreamContext {
     unsigned int keyframe_count;
     int *keyframes;
     int time_scale;
+    int time_rate;
     int time_offset;      ///< time offset of the first edit list entry
     int current_sample;
     unsigned int bytes_per_frame;
@@ -138,11 +136,6 @@ typedef struct MOVContext {
     MOVTrackExt *trex_data;
     unsigned trex_count;
     int itunes_metadata;  ///< metadata are itunes style
-    int chapter_track;
 } MOVContext;
-
-int ff_mp4_read_descr_len(ByteIOContext *pb);
-int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom);
-enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
 #endif /* AVFORMAT_ISOM_H */

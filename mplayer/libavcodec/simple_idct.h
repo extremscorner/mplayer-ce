@@ -21,7 +21,7 @@
  */
 
 /**
- * @file
+ * @file libavcodec/simple_idct.h
  * simple idct header.
  */
 

@@ -51,7 +51,7 @@ void ShowSkinBrowser( void )
    else SkinBrowser=create_SkinBrowser();
 }
 
-static void HideSkinBrowser( void )
+void HideSkinBrowser( void )
 {
  if ( !SkinBrowser ) return;
  gtk_widget_hide( SkinBrowser );

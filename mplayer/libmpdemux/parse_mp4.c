@@ -33,8 +33,7 @@
 #define MP4_DL MSGL_V
 #define freereturn(a,b) free(a); return b
 
-static int mp4_read_descr_len(stream_t *s)
-{
+int mp4_read_descr_len(stream_t *s) {
   uint8_t b;
   uint8_t numBytes = 0;
   uint32_t length = 0;
@@ -171,3 +170,4 @@ void mp4_free_esds(esds_t *esds) {
 
 #undef freereturn
 #undef MP4_DL
+

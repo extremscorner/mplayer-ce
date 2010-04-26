@@ -32,11 +32,9 @@
 #include <sys/types.h>
 #include "config.h"
 #if !HAVE_WINSOCK2_H
-#ifndef GEKKO
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#endif
 #else
 #include <winsock2.h>
 #endif

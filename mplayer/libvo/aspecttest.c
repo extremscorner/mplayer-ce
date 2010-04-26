@@ -18,7 +18,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,11 +27,8 @@
 #define DEF_ZOOM 1
 
 extern float monitor_aspect;
-int vo_dheight;
-int vo_dwidth;
 int vo_fs;
 float vo_panscan;
-int64_t WinID = -1;
 
 int main(int argc, char *argv[]) {
   int w,h,z=DEF_ZOOM;
@@ -63,3 +59,4 @@ int main(int argc, char *argv[]) {
   printf("new size:       %dx%d\n",w,h);
   return 0;
 }
+

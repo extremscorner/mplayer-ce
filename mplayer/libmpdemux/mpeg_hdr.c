@@ -67,8 +67,6 @@ int mp_header_process_sequence_header (mp_mpeg_header_t * picture, const unsigne
     picture->mpeg1 = 1;
     picture->picture_structure = 3; //FRAME_PICTURE;
     picture->display_time=100;
-    picture->frame_rate_extension_n = 1;
-    picture->frame_rate_extension_d = 1;
     return 0;
 }
 
@@ -83,9 +81,6 @@ static int header_process_sequence_extension (mp_mpeg_header_t * picture,
 	return 1;
 
     picture->progressive_sequence = (buffer[1] >> 3) & 1;
-    picture->frame_rate_extension_n = ((buffer[5] >> 5) & 3) + 1;
-    picture->frame_rate_extension_d = (buffer[5] & 0x1f) + 1;
-
     picture->mpeg1 = 0;
     return 0;
 }
@@ -251,19 +246,13 @@ int mp4_header_process_vol(mp_mpeg_header_t * picture, unsigned char * buffer)
 
     n++; //marker bit
 
-    if(getbits(buffer, n++, 1)) {      //fixed_vop_timeinc
-      n += read_timeinc(picture, buffer, n);
+    if(getbits(buffer, n, 1)) {	//fixed_vop_timeinc
+      n++;
+      n = read_timeinc(picture, buffer, n);
 
       if(picture->timeinc_unit)
         picture->fps = (float) picture->timeinc_resolution / (float) picture->timeinc_unit;
     }
-
-    n++; //marker bit
-    picture->display_picture_width = getbits16(buffer, n, 13);
-    n += 13;
-    n++; //marker bit
-    picture->display_picture_height = getbits16(buffer, n, 13);
-    n += 13;
 
     //fprintf(stderr, "ASPECT: %d, PARW=%d, PARH=%d, TIMEINCRESOLUTION: %d, FIXED_TIMEINC: %d (number of bits: %d), FPS: %u\n",
     //	aspect, aspectw, aspecth, picture->timeinc_resolution, picture->timeinc_unit, picture->timeinc_bits, picture->fps);
@@ -282,7 +271,7 @@ void mp4_header_process_vop(mp_mpeg_header_t * picture, unsigned char * buffer)
   n++;
   getbits(buffer, n, 1);
   n++;
-  n += read_timeinc(picture, buffer, n);
+  n = read_timeinc(picture, buffer, n);
 }
 
 #define min(a, b) ((a) <= (b) ? (a) : (b))
@@ -314,11 +303,6 @@ static unsigned int read_golomb(unsigned char *buffer, unsigned int *init)
   return v2;
 }
 
-inline static int read_golomb_s(unsigned char *buffer, unsigned int *init)
-{
-  unsigned int v = read_golomb(buffer, init);
-  return (v & 1) ? ((v + 1) >> 1) : -(v >> 1);
-}
 
 static int h264_parse_vui(mp_mpeg_header_t * picture, unsigned char * buf, unsigned int n)
 {
@@ -377,7 +361,7 @@ static int mp_unescape03(unsigned char *buf, int len);
 
 int h264_parse_sps(mp_mpeg_header_t * picture, unsigned char * buf, int len)
 {
-  unsigned int n = 0, v, i, k, mbh;
+  unsigned int n = 0, v, i, mbh;
   int frame_mbs_only;
 
   len = mp_unescape03(buf, len);
@@ -392,15 +376,7 @@ int h264_parse_sps(mp_mpeg_header_t * picture, unsigned char * buf, int len)
     read_golomb(buf, &n);
     n++;
     if(getbits(buf, n++, 1)){
-      for(i = 0; i < 8; i++)
-      {  // scaling list is skipped for now
-        if(getbits(buf, n++, 1))
-        {
-          v = 8;
-          for(k = (i < 6 ? 16 : 64); k && v; k--)
-            v = (v + read_golomb_s(buf, &n)) & 255;
-        }
-      }
+      //FIXME scaling matrix
     }
   }
   read_golomb(buf, &n);

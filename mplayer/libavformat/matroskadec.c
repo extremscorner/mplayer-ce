@@ -20,7 +20,7 @@
  */
 
 /**
- * @file
+ * @file libavformat/matroskadec.c
  * Matroska file demuxer
  * by Ronald Bultje <rbultje@ronald.bitfreak.net>
  * with a little help from Moritz Bunkus <moritz@bunkus.org>
@@ -30,11 +30,9 @@
 
 #include <stdio.h>
 #include "avformat.h"
-#include "internal.h"
-/* For ff_codec_get_id(). */
+/* For codec_get_id(). */
 #include "riff.h"
 #include "isom.h"
-#include "rm.h"
 #include "matroska.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/intfloat_readwrite.h"
@@ -145,7 +143,6 @@ typedef struct {
 
     AVStream *stream;
     int64_t end_timecode;
-    int ms_compat;
 } MatroskaTrack;
 
 typedef struct {
@@ -244,7 +241,6 @@ typedef struct {
 typedef struct {
     uint64_t duration;
     int64_t  reference;
-    uint64_t non_simple;
     EbmlBin  bin;
 } MatroskaBlock;
 
@@ -483,7 +479,6 @@ static EbmlSyntax matroska_blockgroup[] = {
     { MATROSKA_ID_SIMPLEBLOCK,    EBML_BIN,  0, offsetof(MatroskaBlock,bin) },
     { MATROSKA_ID_BLOCKDURATION,  EBML_UINT, 0, offsetof(MatroskaBlock,duration), {.u=AV_NOPTS_VALUE} },
     { MATROSKA_ID_BLOCKREFERENCE, EBML_UINT, 0, offsetof(MatroskaBlock,reference) },
-    { 1,                          EBML_UINT, 0, offsetof(MatroskaBlock,non_simple), {.u=1} },
     { 0 }
 };
 
@@ -1041,8 +1036,7 @@ static void matroska_convert_tags(AVFormatContext *s)
                     matroska_convert_tag(s, &tags[i].tag,
                                          &track[j].stream->metadata, NULL);
         } else {
-            matroska_convert_tag(s, &tags[i].tag, &s->metadata,
-                                 tags[i].target.type);
+            matroska_convert_tag(s, &tags[i].tag, &s->metadata, NULL);
         }
     }
 }
@@ -1145,7 +1139,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                "EBML header using unsupported features\n"
                "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
                ebml.version, ebml.doctype, ebml.doctype_version);
-        return AVERROR_PATCHWELCOME;
+        return AVERROR_NOFMT;
     }
     ebml_free(ebml_syntax, &ebml);
 
@@ -1247,23 +1241,22 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC")
             && track->codec_priv.size >= 40
             && track->codec_priv.data != NULL) {
-            track->ms_compat = 1;
             track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
-            codec_id = ff_codec_get_id(ff_codec_bmp_tags, track->video.fourcc);
-            extradata_offset = 40;
+            codec_id = codec_get_id(codec_bmp_tags, track->video.fourcc);
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
-                   && track->codec_priv.size >= 14
+                   && track->codec_priv.size >= 18
                    && track->codec_priv.data != NULL) {
             init_put_byte(&b, track->codec_priv.data, track->codec_priv.size,
                           URL_RDONLY, NULL, NULL, NULL, NULL);
-            ff_get_wav_header(&b, st->codec, track->codec_priv.size);
+            get_wav_header(&b, st->codec, track->codec_priv.size);
             codec_id = st->codec->codec_id;
-            extradata_offset = FFMIN(track->codec_priv.size, 18);
+            extradata_offset = 18;
+            track->codec_priv.size -= extradata_offset;
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
             track->video.fourcc = AV_RL32(track->codec_priv.data);
-            codec_id=ff_codec_get_id(codec_movvideo_tags, track->video.fourcc);
+            codec_id=codec_get_id(codec_movvideo_tags, track->video.fourcc);
         } else if (codec_id == CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
             case  8:  codec_id = CODEC_ID_PCM_U8;     break;
@@ -1310,16 +1303,15 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
                    codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
             extradata_offset = 26;
+            track->codec_priv.size -= extradata_offset;
         } else if (codec_id == CODEC_ID_RA_144) {
             track->audio.out_samplerate = 8000;
             track->audio.channels = 1;
         } else if (codec_id == CODEC_ID_RA_288 || codec_id == CODEC_ID_COOK ||
-                   codec_id == CODEC_ID_ATRAC3 || codec_id == CODEC_ID_SIPR) {
-            int flavor;
+                   codec_id == CODEC_ID_ATRAC3) {
             init_put_byte(&b, track->codec_priv.data,track->codec_priv.size,
                           0, NULL, NULL, NULL, NULL);
-            url_fskip(&b, 22);
-            flavor                       = get_be16(&b);
+            url_fskip(&b, 24);
             track->audio.coded_framesize = get_be32(&b);
             url_fskip(&b, 12);
             track->audio.sub_packet_h    = get_be16(&b);
@@ -1330,16 +1322,11 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec->block_align = track->audio.coded_framesize;
                 track->codec_priv.size = 0;
             } else {
-                if (codec_id == CODEC_ID_SIPR && flavor < 4) {
-                    const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
-                    track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
-                    st->codec->bit_rate = sipr_bit_rate[flavor];
-                }
                 st->codec->block_align = track->audio.sub_packet_size;
                 extradata_offset = 78;
+                track->codec_priv.size -= extradata_offset;
             }
         }
-        track->codec_priv.size -= extradata_offset;
 
         if (codec_id == CODEC_ID_NONE)
             av_log(matroska->ctx, AV_LOG_INFO,
@@ -1353,7 +1340,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->start_time = 0;
         if (strcmp(track->language, "und"))
             av_metadata_set(&st->metadata, "language", track->language);
-        av_metadata_set(&st->metadata, "title", track->name);
+        av_metadata_set(&st->metadata, "description", track->name);
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
@@ -1362,24 +1349,22 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
                       track->default_duration, 1000000000, 30000);
 
-        if (!st->codec->extradata) {
-            if(extradata){
-                st->codec->extradata = extradata;
-                st->codec->extradata_size = extradata_size;
-            } else if(track->codec_priv.data && track->codec_priv.size > 0){
-                st->codec->extradata = av_mallocz(track->codec_priv.size +
-                                                  FF_INPUT_BUFFER_PADDING_SIZE);
-                if(st->codec->extradata == NULL)
-                    return AVERROR(ENOMEM);
-                st->codec->extradata_size = track->codec_priv.size;
-                memcpy(st->codec->extradata,
-                       track->codec_priv.data + extradata_offset,
-                       track->codec_priv.size);
-            }
+        if(extradata){
+            st->codec->extradata = extradata;
+            st->codec->extradata_size = extradata_size;
+        } else if(track->codec_priv.data && track->codec_priv.size > 0){
+            st->codec->extradata = av_mallocz(track->codec_priv.size +
+                                              FF_INPUT_BUFFER_PADDING_SIZE);
+            if(st->codec->extradata == NULL)
+                return AVERROR(ENOMEM);
+            st->codec->extradata_size = track->codec_priv.size;
+            memcpy(st->codec->extradata,
+                   track->codec_priv.data + extradata_offset,
+                   track->codec_priv.size);
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
-            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_tag  = track->video.fourcc;
             st->codec->width  = track->video.pixel_width;
             st->codec->height = track->video.pixel_height;
@@ -1388,16 +1373,13 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                       st->codec->height * track->video.display_width,
                       st->codec-> width * track->video.display_height,
                       255);
-            if (st->codec->codec_id != CODEC_ID_H264)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->sample_rate = track->audio.out_samplerate;
             st->codec->channels = track->audio.channels;
-            if (st->codec->codec_id != CODEC_ID_AAC)
-            st->need_parsing = AVSTREAM_PARSE_HEADERS;
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
-            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            st->codec->codec_type = CODEC_TYPE_SUBTITLE;
         }
     }
 
@@ -1412,7 +1394,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             av_metadata_set(&st->metadata, "filename",attachements[j].filename);
             st->codec->codec_id = CODEC_ID_NONE;
-            st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
+            st->codec->codec_type = CODEC_TYPE_ATTACHMENT;
             st->codec->extradata  = av_malloc(attachements[j].bin.size);
             if(st->codec->extradata == NULL)
                 break;
@@ -1550,7 +1532,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     flags = *data++;
     size -= 3;
     if (is_keyframe == -1)
-        is_keyframe = flags & 0x80 ? AV_PKT_FLAG_KEY : 0;
+        is_keyframe = flags & 0x80 ? PKT_FLAG_KEY : 0;
 
     if (cluster_time != (uint64_t)-1
         && (block_time >= 0 || cluster_time >= -block_time)) {
@@ -1647,11 +1629,9 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
 
     if (res == 0) {
         for (n = 0; n < laces; n++) {
-            if ((st->codec->codec_id == CODEC_ID_RA_288 ||
-                 st->codec->codec_id == CODEC_ID_COOK ||
-                 st->codec->codec_id == CODEC_ID_SIPR ||
-                 st->codec->codec_id == CODEC_ID_ATRAC3) &&
-                 st->codec->block_align && track->audio.sub_packet_size) {
+            if (st->codec->codec_id == CODEC_ID_RA_288 ||
+                st->codec->codec_id == CODEC_ID_COOK ||
+                st->codec->codec_id == CODEC_ID_ATRAC3) {
                 int a = st->codec->block_align;
                 int sps = track->audio.sub_packet_size;
                 int cfs = track->audio.coded_framesize;
@@ -1665,15 +1645,11 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         for (x=0; x<h/2; x++)
                             memcpy(track->audio.buf+x*2*w+y*cfs,
                                    data+x*cfs, cfs);
-                    else if (st->codec->codec_id == CODEC_ID_SIPR)
-                        memcpy(track->audio.buf + y*w, data, w);
                     else
                         for (x=0; x<w/sps; x++)
                             memcpy(track->audio.buf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), data+x*sps, sps);
 
                     if (++track->audio.sub_packet_cnt >= h) {
-                        if (st->codec->codec_id == CODEC_ID_SIPR)
-                            ff_rm_reorder_sipr_data(track->audio.buf, h, w);
                         track->audio.sub_packet_cnt = 0;
                         track->audio.pkt_cnt = h*w / a;
                     }
@@ -1691,11 +1667,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                 MatroskaTrackEncoding *encodings = track->encodings.elem;
                 int offset = 0, pkt_size = lace_size[n];
                 uint8_t *pkt_data = data;
-
-                if (lace_size[n] > size) {
-                    av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
-                    break;
-                }
 
                 if (encodings && encodings->scope & 1) {
                     offset = matroska_decode_buffer(&pkt_data,&pkt_size, track);
@@ -1721,10 +1692,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                     pkt->flags = is_keyframe;
                 pkt->stream_index = st->index;
 
-                if (track->ms_compat)
-                    pkt->dts = timecode;
-                else
-                    pkt->pts = timecode;
+                pkt->pts = timecode;
                 pkt->pos = pos;
                 if (st->codec->codec_id == CODEC_ID_TEXT)
                     pkt->convergence_duration = duration;
@@ -1748,7 +1716,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             if (timecode != AV_NOPTS_VALUE)
                 timecode = duration ? timecode + duration : AV_NOPTS_VALUE;
             data += lace_size[n];
-            size -= lace_size[n];
         }
     }
 
@@ -1776,14 +1743,12 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
     for (i=0; i<blocks_list->nb_elem; i++)
-        if (blocks[i].bin.size > 0) {
-            int is_keyframe = blocks[i].non_simple ? !blocks[i].reference : -1;
+        if (blocks[i].bin.size > 0)
             res=matroska_parse_block(matroska,
                                      blocks[i].bin.data, blocks[i].bin.size,
                                      blocks[i].bin.pos,  cluster.timecode,
-                                     blocks[i].duration, is_keyframe,
+                                     blocks[i].duration, !blocks[i].reference,
                                      pos);
-        }
     ebml_free(matroska_cluster, &cluster);
     if (res < 0)  matroska->done = 1;
     return res;

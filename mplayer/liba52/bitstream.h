@@ -8,7 +8,7 @@
  *
  * Modified for use with MPlayer, changes contained in liba52_changes.diff.
  * detailed changelog at http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: bitstream.h 29443 2009-07-26 19:53:00Z diego $
+ * $Id: bitstream.h 29306 2009-05-13 15:22:13Z bircoph $
  *
  * a52dec is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@ static inline uint32_t unaligned32(const void *v) {
 #endif
 
 /* (stolen from the kernel) */
-#if HAVE_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 
 #	define swab32(x) (x)
 

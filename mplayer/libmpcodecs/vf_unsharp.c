@@ -126,7 +126,7 @@ static void unsharp( uint8_t *dst, uint8_t *src, int dstStride, int srcStride, i
 
 //===========================================================================//
 
-static int config( struct vf_instance *vf,
+static int config( struct vf_instance_s* vf,
 		   int width, int height, int d_width, int d_height,
 		   unsigned int flags, unsigned int outfmt ) {
 
@@ -143,7 +143,7 @@ static int config( struct vf_instance *vf,
     stepsX = fp->msizeX/2;
     stepsY = fp->msizeY/2;
     for( z=0; z<2*stepsY; z++ )
-	fp->SC[z] = av_malloc(sizeof(*(fp->SC[z])) * (width+2*stepsX));
+	fp->SC[z] = memalign( 16, sizeof(*(fp->SC[z])) * (width+2*stepsX) );
 
     fp = &vf->priv->chromaParam;
     effect = fp->amount == 0 ? "don't touch" : fp->amount < 0 ? "blur" : "sharpen";
@@ -152,14 +152,14 @@ static int config( struct vf_instance *vf,
     stepsX = fp->msizeX/2;
     stepsY = fp->msizeY/2;
     for( z=0; z<2*stepsY; z++ )
-	fp->SC[z] = av_malloc(sizeof(*(fp->SC[z])) * (width+2*stepsX));
+	fp->SC[z] = memalign( 16, sizeof(*(fp->SC[z])) * (width+2*stepsX) );
 
     return vf_next_config( vf, width, height, d_width, d_height, flags, outfmt );
 }
 
 //===========================================================================//
 
-static void get_image( struct vf_instance *vf, mp_image_t *mpi ) {
+static void get_image( struct vf_instance_s* vf, mp_image_t *mpi ) {
     if( mpi->flags & MP_IMGFLAG_PRESERVE )
 	return; // don't change
     if( mpi->imgfmt!=vf->priv->outfmt )
@@ -178,7 +178,7 @@ static void get_image( struct vf_instance *vf, mp_image_t *mpi ) {
     mpi->flags |= MP_IMGFLAG_DIRECT;
 }
 
-static int put_image( struct vf_instance *vf, mp_image_t *mpi, double pts) {
+static int put_image( struct vf_instance_s* vf, mp_image_t *mpi, double pts) {
     mp_image_t *dmpi;
 
     if( !(mpi->flags & MP_IMGFLAG_DIRECT) )
@@ -204,7 +204,7 @@ static int put_image( struct vf_instance *vf, mp_image_t *mpi, double pts) {
     return vf_next_put_image( vf, dmpi, pts);
 }
 
-static void uninit( struct vf_instance *vf ) {
+static void uninit( struct vf_instance_s* vf ) {
     unsigned int z;
     FilterParam *fp;
 
@@ -212,12 +212,12 @@ static void uninit( struct vf_instance *vf ) {
 
     fp = &vf->priv->lumaParam;
     for( z=0; z<sizeof(fp->SC)/sizeof(fp->SC[0]); z++ ) {
-	if( fp->SC[z] ) av_free( fp->SC[z] );
+	if( fp->SC[z] ) free( fp->SC[z] );
 	fp->SC[z] = NULL;
     }
     fp = &vf->priv->chromaParam;
     for( z=0; z<sizeof(fp->SC)/sizeof(fp->SC[0]); z++ ) {
-	if( fp->SC[z] ) av_free( fp->SC[z] );
+	if( fp->SC[z] ) free( fp->SC[z] );
 	fp->SC[z] = NULL;
     }
 
@@ -227,7 +227,7 @@ static void uninit( struct vf_instance *vf ) {
 
 //===========================================================================//
 
-static int query_format( struct vf_instance *vf, unsigned int fmt ) {
+static int query_format( struct vf_instance_s* vf, unsigned int fmt ) {
     switch(fmt) {
     case IMGFMT_YV12:
     case IMGFMT_I420:
@@ -263,14 +263,14 @@ static void parse( FilterParam *fp, char* args ) {
 
 //===========================================================================//
 
-static const unsigned int fmt_list[] = {
+static unsigned int fmt_list[] = {
     IMGFMT_YV12,
     IMGFMT_I420,
     IMGFMT_IYUV,
     0
 };
 
-static int vf_open( vf_instance_t *vf, char *args ) {
+static int open( vf_instance_t *vf, char* args ) {
     vf->config       = config;
     vf->put_image    = put_image;
     vf->get_image    = get_image;
@@ -317,7 +317,7 @@ const vf_info_t vf_info_unsharp = {
     "unsharp",
     "Remi Guyomarch",
     "",
-    vf_open,
+    open,
     NULL
 };
 
