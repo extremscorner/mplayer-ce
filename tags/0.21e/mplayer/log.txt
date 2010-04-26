@@ -1,0 +1,60 @@
+mplayer.o:(.rodata.mplayer_opts+0x179c): undefined reference to `network_username'
+mplayer.o:(.rodata.mplayer_opts+0x17c4): undefined reference to `network_password'
+mplayer.o:(.rodata.mplayer_opts+0x17ec): undefined reference to `network_bandwidth'
+mplayer.o:(.rodata.mplayer_opts+0x1814): undefined reference to `network_useragent'
+mplayer.o:(.rodata.mplayer_opts+0x183c): undefined reference to `network_cookies_enabled'
+mplayer.o:(.rodata.mplayer_opts+0x1864): undefined reference to `network_cookies_enabled'
+mplayer.o:(.rodata.mplayer_opts+0x188c): undefined reference to `cookies_file'
+mplayer.o:(.rodata.mplayer_opts+0x18b4): undefined reference to `network_prefer_ipv4'
+mplayer.o:(.rodata.mplayer_opts+0x18dc): undefined reference to `network_ipv4_only_proxy'
+mplayer.o:(.rodata.mplayer_opts+0x1904): undefined reference to `reuse_socket'
+mplayer.o:(.rodata.mplayer_opts+0x192c): undefined reference to `reuse_socket'
+mplayer.o:(.rodata.mplayer_opts+0x19a4): undefined reference to `rtsp_port'
+mplayer.o:(.rodata.mplayer_opts+0x19cc): undefined reference to `rtsp_destination'
+
+stream/stream.o: In function `open_stream_plugin':
+c:\devkitpro\examples\mplayer\mplayer-trunk2/stream/stream.c:175: undefined reference to `streaming_ctrl_free'
+
+stream/stream.o: In function `open_stream_full':
+c:\devkitpro\examples\mplayer\mplayer-trunk2/stream/stream.c:203: undefined reference to `stream_info_http1'
+
+c:\devkitpro\examples\mplayer\mplayer-trunk2/stream/stream.c:203: undefined reference to `stream_info_http1'
+
+stream/stream.o:(.rodata.auto_open_streams+0x0): undefined reference to `stream_info_http1'
+
+stream/stream.o:(.rodata.auto_open_streams+0x4): undefined reference to `stream_info_asf'
+
+stream/stream.o:(.rodata.auto_open_streams+0x8): undefined reference to `stream_info_pnm'
+
+stream/stream.o:(.rodata.auto_open_streams+0xc): undefined reference to `stream_info_rtp'
+
+stream/stream.o:(.rodata.auto_open_streams+0x10): undefined reference to `stream_info_udp'
+
+stream/stream.o:(.rodata.auto_open_streams+0x14): undefined reference to `stream_info_http2'
+
+collect2: ld returned 1 exit status
+make: *** [mplayer.elf] Error 1
+
+
+
+
+
+
+
+
+
+
+mplayer.o:(.rodata.mplayer_opts+0x188c): undefined reference to `cookies_file'
+mplayer.o:(.rodata.mplayer_opts+0x19a4): undefined reference to `rtsp_port'
+mplayer.o:(.rodata.mplayer_opts+0x19cc): undefined reference to `rtsp_destination'
+
+stream/udp.o: In function `udp_open_socket':
+C:\devkitPro\examples\mplayer\mplayer-trunk2/stream/udp.c:105: undefined reference to `inet_pton'
+
+stream/tcp.o: In function `connect2Server_with_af':
+C:\devkitPro\examples\mplayer\mplayer-trunk2/stream/tcp.c:128: undefined reference to `inet_pton'
+
+C:\devkitPro\examples\mplayer\mplayer-trunk2/stream/tcp.c:176: undefined reference to `inet_ntop'
+
+collect2: ld returned 1 exit status
+make: *** [mplayer.elf] Error 1
