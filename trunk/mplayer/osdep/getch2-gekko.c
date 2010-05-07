@@ -365,7 +365,7 @@ void getch2(void)
 			(m_screenbottom_shift != _m_screenbottom_shift))
 		{
 			nunchuk_update = true;
-			GX_UpdateSquare();
+			mpgxUpdateSquare();
 		}
 		
 		int kb_get = getch2_internal();

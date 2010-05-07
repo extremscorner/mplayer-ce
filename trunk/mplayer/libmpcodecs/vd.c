@@ -122,7 +122,7 @@ const vd_functions_t * const mpcodecs_vd_drivers[] = {
 #include "libvo/video_out.h"
 
 // libvo opts:
-int fullscreen=0;
+int fullscreen=1;
 int vidmode=0;
 int softzoom=0;
 int flip=-1;

@@ -260,7 +260,8 @@ OBJS-$(CONFIG_PPM_DECODER)             += pnmdec.o pnm.o
 OBJS-$(CONFIG_PPM_ENCODER)             += pnmenc.o pnm.o
 OBJS-$(CONFIG_PTX_DECODER)             += ptx.o
 OBJS-$(CONFIG_QCELP_DECODER)           += qcelpdec.o celp_math.o         \
-                                          celp_filters.o acelp_vectors.o
+                                          celp_filters.o acelp_vectors.o \
+                                          acelp_filters.o
 OBJS-$(CONFIG_QDM2_DECODER)            += qdm2.o mpegaudiodec.o            \
                                           mpegaudiodecheader.o mpegaudio.o \
                                           mpegaudiodata.o
@@ -357,9 +358,9 @@ OBJS-$(CONFIG_VORBIS_DECODER)          += vorbis_dec.o vorbis.o \
 OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbis_enc.o vorbis.o \
                                           vorbis_data.o
 OBJS-$(CONFIG_VP3_DECODER)             += vp3.o vp3dsp.o
-OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o \
+OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vp56dsp.o \
                                           vp3dsp.o
-OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o \
+OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o vp56dsp.o \
                                           vp3dsp.o vp6dsp.o huffman.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
 OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o

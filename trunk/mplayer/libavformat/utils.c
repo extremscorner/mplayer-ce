@@ -312,7 +312,7 @@ int av_filename_number_test(const char *filename)
     return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1)>=0);
 }
 
-static AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
+AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
 {
     AVInputFormat *fmt1, *fmt;
     int score;
@@ -2546,7 +2546,7 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
 #if LIBAVFORMAT_VERSION_INT < (53<<16)
     av_free(chapter->title);
 #endif
-    av_metadata_set(&chapter->metadata, "title", title);
+    av_metadata_set2(&chapter->metadata, "title", title, 0);
     chapter->id    = id;
     chapter->time_base= time_base;
     chapter->start = start;

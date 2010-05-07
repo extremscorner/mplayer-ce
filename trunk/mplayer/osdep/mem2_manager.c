@@ -40,10 +40,10 @@ void *mem2_malloc(u32 size)
 	else return malloc(size);
 }
 
-void *mem2_malign(u8 align, u32 size)
+void *mem2_align(u8 align, u32 size, heap_cntrl *heap_ctrl)
 {
 	// memalign hack from libavutil/mem.c
-	void *pointer = mem2_malloc(size + align);
+	void *pointer = __lwp_heap_allocate(heap_ctrl, size + align);
 	long difference;
 	
 	if (!pointer)
@@ -56,12 +56,10 @@ void *mem2_malign(u8 align, u32 size)
 	return pointer;
 }
 
-BOOL mem2_free(void *ptr)
+bool mem2_free(void *pointer, bool aligned, heap_cntrl *heap_ctrl)
 {
-	if (mem2_initied) return __lwp_heap_free(&mem2_heap, ptr);
-	else 
-	{
-		free(ptr);
-		return true;
-	}
+	if (aligned)
+		return __lwp_heap_free(heap_ctrl, (char *)pointer - ((char *)pointer)[-1]);
+	else
+		return __lwp_heap_free(heap_ctrl, pointer);
 }

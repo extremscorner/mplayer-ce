@@ -910,7 +910,7 @@ static void * exithreadfunc (void *arg)
 
 void plat_init (int *argc, char **argv[])
 {
-	GX_InitVideo(0, true);
+	mpviSetup(0, true);
 	log_console_init(vmode, 0);
 
 	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);
@@ -1055,8 +1055,8 @@ void plat_init (int *argc, char **argv[])
 	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
 
 
-	// only used for cache_mem at now  (stream_cache_size + 32kb(paranoid)
-	u32 uppermem = (stream_cache_size * 1024) + (((1024 * 1024) + (512 * 512) + (512 * 512)) * 2) + (32 * 1024);
+	// only used for cache_mem at now  (stream_cache_size + 8kb(paranoid)
+	u32 uppermem = (stream_cache_size * 1024) + (8 * 1024);
 	printf(" Allocating upper memory.\n\t\x1b[37m%u bytes\x1b[39;0m\n", uppermem);
 	InitMem2Manager(uppermem);
 	
@@ -1071,8 +1071,8 @@ void plat_init (int *argc, char **argv[])
 	if ((video_mode > 0) || !overscan)
 	{
 		log_console_deinit();
-		// Need to deinit video here.
-		GX_InitVideo(video_mode, overscan);
+		mpviClear();
+		mpviSetup(video_mode, overscan);
 		log_console_init(vmode, 0);
 		log_console_enable_video(false);
 	}
@@ -1080,6 +1080,9 @@ void plat_init (int *argc, char **argv[])
 
 void plat_deinit (int rc) 
 {
+	log_console_deinit();
+	mpviClear();
+	
 	exit_automount_thread=true;
 	LWP_JoinThread(mountthread,NULL);
 	exit_watchdog_thread=true;
@@ -1093,10 +1096,6 @@ void plat_deinit (int rc)
 	}
     if (!hbc_stub())
 		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
-
-    //log_console_enable_video(true);
-	//printf("exiting mplayerce\n");sleep(3);
-	//log_console_deinit();
 }
 
 #if 0 // change 0 by 1 if you are using devkitppc r17
