@@ -93,8 +93,8 @@ int vo_osd_teletext_format=0;
 int vo_osd_teletext_scale=0;
 int sub_unicode=0;
 int sub_utf8=0;
-int sub_pos=100;
-int sub_width_p=100;
+int sub_pos=98;
+int sub_width_p=98;
 int sub_alignment=2; /* 0=top, 1=center, 2=bottom */
 int sub_visibility=1;
 int sub_bg_color=0; /* subtitles background color */
@@ -192,12 +192,12 @@ no_utf8:
 
 inline static void vo_update_text_osd(mp_osd_obj_t* obj,int dxs,int dys){
 	const char *cp=vo_osd_text;
-	int x=20;
+	int x=dxs * 0.02;
 	int h=0;
 	int font;
 
         obj->bbox.x1=obj->x=x;
-        obj->bbox.y1=obj->y=20;
+        obj->bbox.y1=obj->y=dys * 0.02;
 
         while (*cp){
           uint16_t c=utf8_get_char(&cp);

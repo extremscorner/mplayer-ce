@@ -28,9 +28,9 @@ INSTALLSTRIP = -s
 WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-CFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float -mpaired -ffast-math -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I.  -D_REENTRANT
+CFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mpaired -ffast-math -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I.  -D_REENTRANT
 ASFLAGS = $(CFLAGS)
-CXXFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mtune=750 -meabi -mhard-float -mpaired -ffast-math -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I.  -D_REENTRANT
+CXXFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mpaired -ffast-math -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I.  -D_REENTRANT
 
 CFLAGS_DHAHELPER = 
 CFLAGS_FAAD_FIXED = 
@@ -42,7 +42,7 @@ CFLAGS_STACKREALIGN =
 CFLAGS_SVGALIB_HELPER = 
 CFLAGS_TREMOR_LOW = 
 
-EXTRALIBS = -Wl,-z,noexecstack  -g -mrvl -ffast-math   -lopencore-amrnb -lopencore-amrwb -lopenjpeg -lfreetype -liconv -lfribidi -lz -ljpeg -lwiikeyboard -lasnd -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii  -lm
+EXTRALIBS = -Wl,-z,noexecstack  -g -mrvl -ffast-math   -lopencore-amrnb -lopencore-amrwb -lopenjpeg -lfreetype -liconv -lfribidi -lz -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii  -lm
 EXTRALIBS_MPLAYER = -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
 
@@ -123,7 +123,7 @@ HAVE_SYS_MMAN_H = no
 IVTV = no
 JACK = no
 JOYSTICK = no
-JPEG = yes
+JPEG = no
 KAI = auto
 KVA = auto
 LADSPA = no
@@ -147,7 +147,7 @@ LIBTHEORA = no
 LIRC = no
 LIVE555 = no
 MACOSX_FINDER = no
-MD5SUM = yes
+MD5SUM = no
 MGA = no
 MNG = no
 MP3LAME = no
@@ -160,7 +160,7 @@ OPENAL = no
 OSS = no
 PE_EXECUTABLE = no
 PNG = no
-PNM = yes
+PNM = no
 PRIORITY = no
 PULSE = no
 PVR = no
@@ -180,7 +180,7 @@ SUNAUDIO = no
 SVGA = no
 TDFXFB = no
 TDFXVID = no
-TGA = yes
+TGA = no
 TOOLAME=no
 TREMOR_INTERNAL = no
 TV = no
@@ -228,7 +228,7 @@ XVID4 = no
 XVIDIX = no
 XVMC = no
 XVR100 = no
-YUV4MPEG = yes
+YUV4MPEG = no
 ZR = no
 
 # FFmpeg

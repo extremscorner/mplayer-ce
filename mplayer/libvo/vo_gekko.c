@@ -37,10 +37,9 @@
 #include "mp_fifo.h"
 #include "osd.h"
 #include "sub.h"
+#include "aspect.h"
 #include "osdep/keycodes.h"
-#include "osdep/log_console.h"
 #include "osdep/gx_supp.h"
-#include "fastmemcpy.h"
 
 #include <gccore.h>
 
@@ -54,154 +53,65 @@ static const vo_info_t info = {
 
 const LIBVO_EXTERN (gekko)
 
-static u16 pitch[3];
 static u32 image_width = 0, image_height = 0;
-
-static f32 gx_width, gx_height;
+static u32 d_image_width = 0; d_image_height = 0;
 
 extern int screenwidth;
 extern int screenheight;
 
 
-void vo_draw_alpha_gekko(int w, int h, unsigned char *src, unsigned char *srca, int srcstride, unsigned char *dstbase, int dststride, int x0)
+static void resize(void)
 {
-	// can be optimized
-	int x,y;
-	unsigned char* buf, *bufa, *tmp, *tmpa;
-	int buf_st;
-	int h1, w1, Yrowpitch, df1;
-
-	u8 *dst, *srca1, *src1, *srca2, *src2, *srca3, *src3, *srca4, *src4;
-
-	getStrideInfo(&w1, &df1, &Yrowpitch);
-	Yrowpitch = Yrowpitch * 8;
-	df1 = df1 * 8;
-
-	h1 = ((h / 8.0) + 0.5) * 8;
-	buf = malloc(dststride * h1);
-	bufa = malloc(dststride * h1);
-
-	memset(buf, 0, dststride * h1);
-	memset(bufa, 0, dststride * h1);
-
-	//	buf_st=(dststride-srcstride)/2; //center
-	//	buf_st=0; //align to left
-	buf_st = x0; // original pos
-	tmp = buf + buf_st;
-	tmpa = bufa + buf_st;
-
-	for (y = 0; y < h; y++)
+	if (vo_fs)
 	{
-		memcpy(tmp, src, w);
-		memcpy(tmpa, srca, w);
-		src += srcstride;
-		srca += srcstride;
-		tmp += dststride;
-		tmpa += dststride;
+		vo_dwidth = screenwidth;
+		vo_dheight = screenheight;
 	}
-	//w=srcstride=dststride;
-	//h=h1;
-
-	src = buf;
-	srca = bufa;
-	h1 = h / 4;
-
-	dst = dstbase;
-	srca1 = srca;
-	src1 = src;
-	srca2 = srca + dststride;
-	src2 = src + dststride;
-	srca3 = srca + dststride * 2;
-	src3 = src + dststride * 2;
-	srca4 = srca + dststride * 3;
-	src4 = src + dststride * 3;
-	for (y = 0; y < h1; y++)
+	else
 	{
-		for (w = 0; w < w1; w++)
-		{
-			for (x = 0; x < 8; x++)
-			{
-				if (*srca1)
-					*dst = (((*dst) * (*srca1)) >> 8) + (*src1);
-				dst++;
-				srca1++;
-				src1++;
-			}
-			for (x = 0; x < 8; x++)
-			{
-				if (*srca2)
-					*dst = (((*dst) * (*srca2)) >> 8) + (*src2);
-				dst++;
-				srca2++;
-				src2++;
-			}
-			for (x = 0; x < 8; x++)
-			{
-				if (*srca3)
-					*dst = (((*dst) * (*srca3)) >> 8) + (*src3);
-				dst++;
-				srca3++;
-				src3++;
-			}
-			for (x = 0; x < 8; x++)
-			{
-				if (*srca4)
-					*dst = (((*dst) * (*srca4)) >> 8) + (*src4);
-				dst++;
-				srca4++;
-				src4++;
-			}
-		}
-		dst += df1;
-		srca1 += Yrowpitch;
-		src1 += Yrowpitch;
-		srca2 += Yrowpitch;
-		src2 += Yrowpitch;
-		srca3 += Yrowpitch;
-		src3 += Yrowpitch;
-		srca4 += Yrowpitch;
-		src4 += Yrowpitch;
+		vo_dwidth = d_image_width;
+		vo_dheight = d_image_height;
 	}
-	free(buf);
-	free(bufa);
-}
-
-static void draw_alpha(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
-{
-	int rowpitch = MIN(ceil((float)image_width / 8) * 8, 1024);
-	int lines = (floor((float)y0 / 8) * 8) - 8;			// Ok...
 	
-	vo_draw_alpha_gekko(w, h, src, srca, stride, GetYtexture() + (lines * rowpitch), pitch[0], x0);
+	int d_width, d_height;
+	
+	aspect(&d_width, &d_height, A_WINZOOM);
+	panscan_calc_windowed();
+	
+    d_width += vo_panscan_x;
+    d_height += vo_panscan_y;
+	
+	mpgxSetSquare((f32)d_width / 2, (f32)d_height / 2);
 }
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x, int y)
 {
-	if (y == 0)
-	{
-		GX_ResetTextureYUVPointers();
-		
-		if (stride[0] != pitch[0])
-		{
-			pitch[0] = stride[0];
-			pitch[1] = stride[1];
-			pitch[2] = stride[2];
-			
-			GX_UpdatePitch(pitch);
-		}
-	}
-	
-	GX_FillTextureYUV(h, image);
+	mpgxIsDrawDone();
+	mpgxCopyYUVp(image, stride);
 	return VO_FALSE;
 }
 
 static void draw_osd(void)
 {
-	vo_draw_text(image_width, image_height, draw_alpha);
+	mpgxIsDrawDone();
+	vo_draw_text(image_width, image_height, mpgxBlitOSD);
 }
 
 static void flip_page(void)
 {
-	GX_RenderTexture(vo_vsync);
+	mpgxIsDrawDone();
+	mpgxPushFrame();
+}
+
+static uint32_t draw_image(mp_image_t *mpi)
+{
+	if (mpi->flags & MP_IMGFLAG_PLANAR)
+	{
+		mpgxIsDrawDone();
+		mpgxCopyYUVp(mpi->planes, mpi->stride);
+	}
+	
+	return VO_TRUE;
 }
 
 static int draw_frame(uint8_t *src[])
@@ -209,43 +119,29 @@ static int draw_frame(uint8_t *src[])
 	return VO_ERROR;
 }
 
-static int inline query_format(uint32_t format)
+static int query_format(uint32_t format)
 {
-	switch (format)
-	{
-		case IMGFMT_YV12:
-			return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_OSD | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_ACCEPT_STRIDE;
-		default:
-			return VO_FALSE;
-	}
+	if (mp_get_chroma_shift(format, NULL, NULL))	// Accept any planar YUV format.
+		return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_OSD | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_ACCEPT_STRIDE;
+	else
+		return VO_FALSE;
 }
 
 static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uint32_t flags, char *title, uint32_t format)
 {
 	image_width = width;
 	image_height = height;
-
-	pitch[0] = 0;
-	pitch[1] = 0;
-	pitch[2] = 0;
 	
-	float screen_aspect = (float)screenwidth / (float)screenheight;
-	float image_aspect = (float)d_width / (float)d_height;
-
-	if (image_aspect > screen_aspect)
-	{
-		gx_width = screenwidth;
-		gx_height = (f32)d_height * ((f32)screenwidth / (f32)d_width);
-	}
-	else
-	{
-		gx_width = (f32)d_width * ((f32)screenheight / (f32)d_height);
-		gx_height = screenheight;
-	}
-
-	GX_StartYUV(image_width, image_height, gx_width / 2, gx_height / 2);
-	GX_ConfigTextureYUV(image_width, image_height, pitch);
+	d_image_width = d_width;
+	d_image_height = d_height;
 	
+	vo_fs = flags & VOFLAG_FULLSCREEN;
+	resize();
+	
+	int xs, ys;
+	mp_get_chroma_shift(format, &xs, &ys);
+	
+	mpgxConfigYUVp(image_width, image_height, image_width >> xs, image_height >> ys);
 	return VO_FALSE;
 }
 
@@ -261,6 +157,8 @@ static void check_events(void)
 
 static int preinit(const char *arg)
 {
+	mpgxInit();
+	mpgxSetupYUVp();
 	return VO_FALSE;
 }
 
@@ -270,6 +168,17 @@ static int control(uint32_t request, void *data, ...)
 	{
 		case VOCTRL_QUERY_FORMAT:
 			return query_format(*((uint32_t *)data));
+		case VOCTRL_DRAW_IMAGE:
+			return draw_image(data);
+		case VOCTRL_FULLSCREEN:
+			vo_fs = !vo_fs;
+			resize();
+			return VO_TRUE;
+		case VOCTRL_GET_PANSCAN:
+			return VO_TRUE;
+		case VOCTRL_SET_PANSCAN:
+			resize();
+			return VO_TRUE;
 		case VOCTRL_UPDATE_SCREENINFO:
             vo_screenwidth = screenwidth;
             vo_screenheight = screenheight;

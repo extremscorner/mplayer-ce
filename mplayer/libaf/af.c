@@ -51,9 +51,6 @@ extern af_info_t af_info_karaoke;
 extern af_info_t af_info_scaletempo;
 extern af_info_t af_info_stats;
 extern af_info_t af_info_bs2b;
-#ifdef GEKKO
-extern af_info_t af_info_wiilight;
-#endif
 
 static af_info_t* filter_list[]={
    &af_info_dummy,
@@ -91,9 +88,6 @@ static af_info_t* filter_list[]={
    &af_info_stats,
 #ifdef CONFIG_LIBBS2B
    &af_info_bs2b,
-#endif
-#ifdef GEKKO
-   &af_info_wiilight,
 #endif
    NULL
 };

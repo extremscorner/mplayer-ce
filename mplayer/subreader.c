@@ -64,7 +64,7 @@ static int sub_slacktime = 20000; //20 sec
 int sub_no_text_pp=0;   // 1 => do not apply text post-processing
                         // like {\...} elimination in SSA format.
 
-int sub_match_fuzziness=0; // level of sub name matching fuzziness
+int sub_match_fuzziness=1; // level of sub name matching fuzziness
 
 /* Use the SUB_* constant defined in the header file */
 int sub_format=SUB_INVALID;

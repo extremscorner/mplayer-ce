@@ -32,13 +32,16 @@
 #include <unistd.h>
 #include <ogc/mutex.h>
 #include <ogc/lwp.h>
+#include <ogc/lwp_heap.h>
+#include <ogc/system.h>
+#include <ogc/machine/asm.h>
+#include <ogc/machine/processor.h>
 
 #include "gx_supp.h"
 #include "ave-rvl.h"
 #include "mem2_manager.h"
+#include "libvo/video_out.h"
 
-
-#define max(a, b) ((a > b) ? b : a)
 
 #define DEFAULT_FIFO_SIZE (256 * 1024)
 
@@ -56,17 +59,18 @@ int screenheight = 480;
 
 /*** 3D GX ***/
 static u8 *gp_fifo;
+static bool flip_ready, wait_ready;
 
 /*** Texture memory ***/
-static u8 *Ytexture[2] = { NULL, NULL };
-static u8 *Utexture[2] = { NULL, NULL };
-static u8 *Vtexture[2] = { NULL, NULL };
-static bool clear_next = false;
+static heap_cntrl heap_ctrl;
+
+static u8 *Ytexture = NULL;
+static u8 *Utexture = NULL;
+static u8 *Vtexture = NULL;
 
 static u32 Ytexsize, UVtexsize;
 
 static GXTexObj YtexObj, UtexObj, VtexObj;
-static u16 vwidth, vheight;
 static u16 Ywidth, Yheight, UVwidth, UVheight;
 
 /* New texture based scaler */
@@ -96,7 +100,7 @@ static f32 UVtexcoords[] ATTRIBUTE_ALIGN(32) = {
 };
 
 
-void GX_InitVideo(int video_mode, bool overscan)
+void mpviSetup(int video_mode, bool overscan)
 {
 	VIDEO_Init();
 	
@@ -118,36 +122,36 @@ void GX_InitVideo(int video_mode, bool overscan)
 			vmode = VIDEO_GetPreferredMode(NULL);
 	}
 	
-	int videowidth = VI_MAX_WIDTH_NTSC;
-	int videoheight = VI_MAX_HEIGHT_NTSC;
+	bool is_pal = (vmode->viTVMode >> 2) == VI_PAL;
+	s32 wide_mode = CONF_GetAspectRatio();
 	
-	if ((vmode->viTVMode >> 2) == VI_PAL)
-	{
-		videowidth = VI_MAX_WIDTH_PAL;
-		videoheight = VI_MAX_HEIGHT_PAL;
-	}
+	int videowidth = is_pal ? VI_MAX_WIDTH_PAL : VI_MAX_WIDTH_NTSC;
+	int videoheight = is_pal ? VI_MAX_HEIGHT_PAL : VI_MAX_HEIGHT_NTSC;
+	
+	float scanwidth = wide_mode == CONF_ASPECT_16_9 ? 0.95 : 0.93;
+	float scanheight = !is_pal ? 0.95 : 0.94;
 	
 	if (overscan)
-		vmode->viHeight = ceil((float)(videoheight * 0.95) / 8) * 8;
+	{
+		vmode->viHeight = videoheight * scanheight;
+		vmode->viHeight += vmode->viHeight % 2;
+	}
 	else
 		vmode->viHeight = videoheight;
 	
 	vmode->xfbHeight = vmode->viHeight;
-	vmode->efbHeight = max(vmode->xfbHeight, 528);
+	vmode->efbHeight = MIN(vmode->xfbHeight, 528);
 	
-	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-	{
-        if (overscan) vmode->viWidth = videowidth * 0.95;
+	if (wide_mode == CONF_ASPECT_16_9)
 		screenwidth = ((float)screenheight / 9) * 16;
-	}
 	else
-	{
-        if (overscan) vmode->viWidth = videowidth * 0.93;
 		screenwidth = ((float)screenheight / 3) * 4;
-	}
 	
 	if (overscan)
+	{
+		vmode->viWidth = videowidth * scanwidth;
 		vmode->viWidth = ceil((float)vmode->viWidth / 16) * 16;
+	}
 	else
 		vmode->viWidth = videowidth;
 	
@@ -165,9 +169,12 @@ void GX_InitVideo(int video_mode, bool overscan)
 	}
 	
 	VIDEO_Configure(vmode);
+	u32 xfbsize = (VI_MAX_WIDTH_PAL * VI_DISPLAY_PIX_SZ) * (VI_MAX_HEIGHT_PAL + 4);
 	
-	xfb[0] = (u32 *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
-	xfb[1] = (u32 *)MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+	if (xfb[0] == NULL)
+		xfb[0] = (u32 *)MEM_K0_TO_K1(memalign(32, xfbsize));
+	if (xfb[1] == NULL)
+		xfb[1] = (u32 *)MEM_K0_TO_K1(memalign(32, xfbsize));
 	
 	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
@@ -175,6 +182,7 @@ void GX_InitVideo(int video_mode, bool overscan)
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_SetBlack(FALSE);
 	VIDEO_Flush();
+	
 	VIDEO_WaitVSync();
 	
 	if (vmode->viTVMode & VI_NON_INTERLACE)
@@ -184,10 +192,100 @@ void GX_InitVideo(int video_mode, bool overscan)
 	    	VIDEO_WaitVSync();
 }
 
-/****************************************************************************
- * draw_initYUV - Internal function to setup TEV for YUV->RGB conversion.
- ****************************************************************************/
-static void draw_initYUV(void)
+void mpviClear()
+{
+	VIDEO_SetPreRetraceCallback(NULL);
+	VIDEO_SetPostRetraceCallback(NULL);
+	
+	VIDEO_SetBlack(TRUE);
+	VIDEO_Flush();
+	
+	VIDEO_WaitVSync();
+	
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	
+	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
+}
+
+
+static void render_cb(void)
+{
+	if (vo_vsync)
+	{
+		flip_ready = true;
+	}
+	else
+	{
+		whichfb ^= 1;
+		VIDEO_Flush();
+	}
+	
+	wait_ready = false;
+}
+
+static void vsync_cb(void)
+{
+	if (vo_vsync)
+	{
+		if (flip_ready)
+		{
+			whichfb ^= 1;
+			VIDEO_Flush();
+			flip_ready = false;
+		}
+	}
+}
+
+void mpgxInit()
+{
+	Mtx GXmodelView2D;
+	Mtx44 perspective;
+	
+	/*** Clear out FIFO area ***/
+	gp_fifo = (u8 *)memalign(32, DEFAULT_FIFO_SIZE);
+	memset(gp_fifo, 0x00, DEFAULT_FIFO_SIZE);
+
+	/*** Initialise GX ***/
+	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
+	GX_SetCopyClear((GXColor){0x00, 0x00, 0x00, 0xFF}, GX_MAX_Z24);
+	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
+	
+	f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
+	u32 xfbHeight = GX_SetDispCopyYScale(yscale);
+	
+	GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
+	GX_SetDispCopySrc(0, 0, MIN(vmode->fbWidth, 640), vmode->efbHeight);
+	GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
+	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
+	GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
+	GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+	
+	GX_SetCullMode(GX_CULL_NONE);
+	GX_SetClipMode(GX_DISABLE);
+	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
+	GX_SetDispCopyGamma(GX_GM_1_0);
+	GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_TRUE);
+	
+	guMtxIdentity(GXmodelView2D);
+	guMtxTransApply(GXmodelView2D, GXmodelView2D, 0.0, 0.0, 0.0);
+	GX_LoadPosMtxImm(GXmodelView2D, GX_PNMTX0);
+	
+	guOrtho(perspective, screenheight / 2, -(screenheight / 2), -(screenwidth / 2), screenwidth / 2, 0.0, 1.0);
+	GX_LoadProjectionMtx(perspective, GX_ORTHOGRAPHIC);
+	
+	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GX_SetAlphaUpdate(GX_ENABLE);
+	GX_SetAlphaCompare(GX_GREATER, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GX_SetColorUpdate(GX_ENABLE);
+	
+	VIDEO_SetPreRetraceCallback(vsync_cb);
+	GX_SetDrawDoneCallback(render_cb);
+	GX_Flush();
+}
+
+void mpgxSetupYUVp()
 {
 	//Setup TEV
 	GX_SetNumChans(1);
@@ -303,98 +401,10 @@ static void draw_initYUV(void)
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_F32, 0);
 	
-	DCFlushRange(square, sizeof(square));
-	DCFlushRange(Ytexcoords, sizeof(Ytexcoords));
-	DCFlushRange(UVtexcoords, sizeof(UVtexcoords));
-	
 	GX_SetArray(GX_VA_POS, square, sizeof(f32) * 2);
 	GX_SetArray(GX_VA_CLR0, colors, sizeof(GXColor));
 	GX_SetArray(GX_VA_TEX0, Ytexcoords, sizeof(f32) * 2);
 	GX_SetArray(GX_VA_TEX1, UVtexcoords, sizeof(f32) * 2);
-	
-	//init YUV texture objects
-	GX_InitTexObj(&YtexObj, Ytexture[whichfb ^ 1], Ywidth, Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-	GX_InitTexObjLOD(&YtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
-	GX_InitTexObj(&UtexObj, Utexture[whichfb ^ 1], UVwidth, UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-	GX_InitTexObjLOD(&UtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
-	GX_InitTexObj(&VtexObj, Vtexture[whichfb ^ 1], UVwidth, UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-	GX_InitTexObjLOD(&VtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
-}
-
-//------- rodries change: to avoid image_buffer intermediate ------
-static int w1,w2,h1,h2,df1,df2,old_h1_2=-1;
-static int p01,p02,p03,p11,p12,p13;
-static u16 Yrowpitch, UVrowpitch;
-static u64 *Ydst, *Udst, *Vdst;
-
-void getStrideInfo(int *_w1, int *_df1, int *_Yrowpitch)  // for subtitle info
-{
-	*_w1 = w1;
-	*_df1 = df1;
-	*_Yrowpitch = Yrowpitch;
-}
-
-void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch)
-{
-	GX_ResetTextureYUVPointers();
-	
-	int half_wd = width / 2;
-	int half_ht = height / 2;
-	
-	Ywidth = max(ceil((float)width / 8) * 8, 1024);
-	UVwidth = max(ceil((float)half_wd / 8) * 8, 1024);
-
-    w1 = pitch[0] / 8;
-    w2 = pitch[1] / 8;
-	
-    df1 = ((Ywidth / 8) - w1) * 4;
-    df2 = ((UVwidth / 8) - w2) * 4;
-	
-    Yrowpitch = (pitch[0] / 2) - w1;
-	UVrowpitch = (pitch[1] / 2) - w2;
-	
-	Yheight = max(ceil((float)height / 4) * 4, 1024);
-	UVheight = max(ceil((float)half_ht / 4) * 4, 1024);
-	
-	// Dodging nasty optimizations.
-	f32 YtexcoordS = (double)width / (double)Ywidth;
-	f32 UVtexcoordS = (double)half_wd / (double)UVwidth;
-	
-	Ytexcoords[2] = Ytexcoords[4] = YtexcoordS;
-	UVtexcoords[2] = UVtexcoords[4] = UVtexcoordS;
-	
-	f32 YtexcoordT = (double)height / (double)Yheight;
-	f32 UVtexcoordT = (double)half_ht / (double)UVheight;
-	
-	Ytexcoords[5] = Ytexcoords[7] = YtexcoordT;
-	UVtexcoords[5] = UVtexcoords[7] = UVtexcoordT;
-	
-	/** Update scaling **/
-	draw_initYUV();
-
-	p01 = pitch[0];
-    p02 = pitch[0] * 2;
-    p03 = pitch[0] * 3;
-	
-    p11 = pitch[1];
-    p12 = pitch[1] * 2;
-    p13 = pitch[1] * 3;
-	
-	vwidth = width;
-	vheight = height;
-    
-    GX_UpdateSquare();
-}
-
-void GX_UpdatePitch(u16 *pitch)
-{
-	//black
-    memset(Ytexture[whichfb ^ 1], 0x00, Ytexsize);
-	memset(Utexture[whichfb ^ 1], 0x80, UVtexsize);
-	memset(Vtexture[whichfb ^ 1], 0x80, UVtexsize);
-	clear_next = true;
-	
-	GX_ConfigTextureYUV(vwidth, vheight, pitch);
 }
 
 //nunchuk control
@@ -403,7 +413,7 @@ extern float m_screentop_shift, m_screenbottom_shift;
 
 static f32 mysquare[8] ATTRIBUTE_ALIGN(32);
 
-void GX_UpdateSquare()
+void mpgxUpdateSquare()
 {
 	memcpy(mysquare, square, sizeof(square));
 	
@@ -420,138 +430,122 @@ void GX_UpdateSquare()
 	GX_SetArray(GX_VA_POS, mysquare, sizeof(f32) * 2);
 }
 
-/****************************************************************************
- * GX_StartYUV - Initialize GX for given width/height.
- ****************************************************************************/
-void GX_StartYUV(u16 width, u16 height, f32 haspect, f32 vaspect)
+void mpgxSetSquare(f32 haspect, f32 vaspect)
 {
-	static bool inited = false;
-	
 	/*** Set new aspect ***/
 	square[0] = square[6] = -haspect;
 	square[2] = square[4] = haspect;
 	square[1] = square[3] = vaspect;
 	square[5] = square[7] = -vaspect;
 	
-	if (!Ytexture[0])
-		Ytexture[0] = (u8 *)mem2_malign(64, 1024 * 1024);
-	if (!Utexture[0])
-		Utexture[0] = (u8 *)mem2_malign(64, 512 * 512);
-	if (!Vtexture[0])
-		Vtexture[0] = (u8 *)mem2_malign(64, 512 * 512);
-	
-	if (!Ytexture[1])
-		Ytexture[1] = (u8 *)mem2_malign(64, 1024 * 1024);
-	if (!Utexture[1])
-		Utexture[1] = (u8 *)mem2_malign(64, 512 * 512);
-	if (!Vtexture[1])
-		Vtexture[1] = (u8 *)mem2_malign(64, 512 * 512);
-	
-	Ywidth = max(ceil((float)width / 8) * 8, 1024);
-	Yheight = max(ceil((float)height / 4) * 4, 1024);
+	mpgxUpdateSquare();
+}
+
+void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chroma_height)
+{
+	Ywidth = MIN(ceil((float)luma_width / 8) * 8, 1024);
+	Yheight = MIN(ceil((float)luma_height / 4) * 4, 1024);
 	
 	Ytexsize = Ywidth * Yheight;
 	
-	UVwidth = max(ceil((float)(width / 2) / 8) * 8, 1024);
-	UVheight = max(ceil((float)(height / 2) / 4) * 4, 1024);
+	UVwidth = MIN(ceil((float)chroma_width / 8) * 8, 1024);
+	UVheight = MIN(ceil((float)chroma_height / 4) * 4, 1024);
 	
 	UVtexsize = UVwidth * UVheight;
 	
-	memset(Ytexture[whichfb ^ 1], 0x00, Ytexsize);
-	memset(Utexture[whichfb ^ 1], 0x80, UVtexsize);
-	memset(Vtexture[whichfb ^ 1], 0x80, UVtexsize);
-	clear_next = true;
+	static void *heap_start = NULL;
+	static u32 heap_size = 0;
 	
-	if (!inited)
+	u32 heap_new = Ytexsize + (UVtexsize * 2);
+	heap_new += ((heap_new / 32) * HEAP_BLOCK_USED_OVERHEAD) + HEAP_MIN_SIZE;	
+	
+	if (heap_new > heap_size)
 	{
-		Mtx GXmodelView2D;
-		Mtx44 perspective;
+		u32 level;
+		_CPU_ISR_Disable(level);
 		
-		/*** Clear out FIFO area ***/
-		gp_fifo = (u8 *)memalign(32, DEFAULT_FIFO_SIZE);
-		memset(gp_fifo, 0, DEFAULT_FIFO_SIZE);
-
-		/*** Initialise GX ***/
-		GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
-		GX_SetCopyClear((GXColor){0, 0, 0, 0xFF}, GX_MAX_Z24);
-		GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
+		if (heap_start == NULL)
+			heap_start = (u32)SYS_GetArena2Hi() - heap_new;
+		else
+			heap_start = ((u32)heap_start + heap_size) - heap_new;
 		
-		f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
-		u32 xfbHeight = GX_SetDispCopyYScale(yscale);
+		SYS_SetArena2Hi(heap_start);
+		_CPU_ISR_Restore(level);
 		
-		GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
-		GX_SetDispCopySrc(0, 0, max(vmode->fbWidth, 640), vmode->efbHeight);
-		GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
-		GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
-		GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
-		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
-		
-		GX_SetCullMode(GX_CULL_NONE);
-		GX_SetClipMode(GX_DISABLE);
-		GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
-		GX_SetDispCopyGamma(GX_GM_1_0);
-		GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_TRUE);
-		
-		guMtxIdentity(GXmodelView2D);
-		guMtxTransApply(GXmodelView2D, GXmodelView2D, 0.0, 0.0, 0.0);
-		GX_LoadPosMtxImm(GXmodelView2D, GX_PNMTX0);
-		
-		guOrtho(perspective, screenheight / 2, -(screenheight / 2), -(screenwidth / 2), screenwidth / 2, 0.0, 1.0);
-		GX_LoadProjectionMtx(perspective, GX_ORTHOGRAPHIC);
-		
-		GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-		GX_SetAlphaUpdate(GX_ENABLE);
-		GX_SetAlphaCompare(GX_GREATER, 0, GX_AOP_AND, GX_ALWAYS, 0);
-		GX_SetColorUpdate(GX_ENABLE);
-		
-		GX_SetDrawDoneCallback(VIDEO_Flush);
-		GX_Flush();
-		GX_UpdateSquare();
-		
-		inited = true;
+		__lwp_heap_init(&heap_ctrl, heap_start, heap_new, 32);
+		heap_size = heap_new;
 	}
+	else
+	{
+		mem2_free(MEM_K1_TO_K0(Vtexture), true, &heap_ctrl);
+		mem2_free(MEM_K1_TO_K0(Utexture), true, &heap_ctrl);
+		mem2_free(MEM_K1_TO_K0(Ytexture), true, &heap_ctrl);
+	}
+	
+	Ytexture = (u8 *)MEM_K0_TO_K1(mem2_align(32, Ytexsize, &heap_ctrl));
+	Utexture = (u8 *)MEM_K0_TO_K1(mem2_align(32, UVtexsize, &heap_ctrl));
+	Vtexture = (u8 *)MEM_K0_TO_K1(mem2_align(32, UVtexsize, &heap_ctrl));
+	
+	// Dodging nasty optimizations.
+	f32 YtexcoordS = (double)luma_width / (double)Ywidth;
+	f32 UVtexcoordS = (double)chroma_width / (double)UVwidth;
+	
+	Ytexcoords[2] = Ytexcoords[4] = YtexcoordS;
+	UVtexcoords[2] = UVtexcoords[4] = UVtexcoordS;
+	
+	f32 YtexcoordT = (double)luma_height / (double)Yheight;
+	f32 UVtexcoordT = (double)chroma_height / (double)UVheight;
+	
+	Ytexcoords[5] = Ytexcoords[7] = YtexcoordT;
+	UVtexcoords[5] = UVtexcoords[7] = UVtexcoordT;
+	
+	DCFlushRange(Ytexcoords, sizeof(Ytexcoords));
+	DCFlushRange(UVtexcoords, sizeof(UVtexcoords));
+	
+	GX_SetArray(GX_VA_TEX0, Ytexcoords, sizeof(f32) * 2);
+	GX_SetArray(GX_VA_TEX1, UVtexcoords, sizeof(f32) * 2);
+	
+	//init YUV texture objects
+	GX_InitTexObj(&YtexObj, Ytexture, Ywidth, Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObjLOD(&YtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
+	GX_InitTexObj(&UtexObj, Utexture, UVwidth, UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObjLOD(&UtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
+	GX_InitTexObj(&VtexObj, Vtexture, UVwidth, UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObjLOD(&VtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
 }
 
-void GX_FillTextureYUV(u16 height, u8 *buffer[3])
+void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 {
+	u64 *Ydst = (u64 *)Ytexture - 1;
+	u64 *Udst = (u64 *)Utexture - 1;
+	u64 *Vdst = (u64 *)Vtexture - 1;
+	
+	u64 *Ysrc1 = (u64 *)buffer[0] - 1;
+	u64 *Ysrc2 = (u64 *)(buffer[0] + stride[0]) - 1;
+	u64 *Ysrc3 = (u64 *)(buffer[0] + (stride[0] * 2)) - 1;
+	u64 *Ysrc4 = (u64 *)(buffer[0] + (stride[0] * 3)) - 1;
+	
+	s16 Yrowpitch = (stride[0] * 4) - Ywidth;
+	
+	u64 *Usrc1 = (u64 *)buffer[1] - 1;
+	u64 *Usrc2 = (u64 *)(buffer[1] + stride[1]) - 1;
+	u64 *Usrc3 = (u64 *)(buffer[1] + (stride[1] * 2)) - 1;
+	u64 *Usrc4 = (u64 *)(buffer[1] + (stride[1] * 3)) - 1;
+	
+	u64 *Vsrc1 = (u64 *)buffer[2] - 1;
+	u64 *Vsrc2 = (u64 *)(buffer[2] + stride[2]) - 1;
+	u64 *Vsrc3 = (u64 *)(buffer[2] + (stride[2] * 2)) - 1;
+	u64 *Vsrc4 = (u64 *)(buffer[2] + (stride[2] * 3)) - 1;
+	
+	s16 UVrowpitch = (stride[1] * 4) - UVwidth;
+	
 	int rows = 0;
-	
-	--Ydst;
-	u64 *Ysrc1 = (u64 *)buffer[0];
-	u64 *Ysrc2 = (u64 *)(buffer[0] + p01);
-	u64 *Ysrc3 = (u64 *)(buffer[0] + p02);
-	u64 *Ysrc4 = (u64 *)(buffer[0] + p03);
-	
-	--Udst;
-	u64 *Usrc1 = (u64 *)buffer[1];
-	u64 *Usrc2 = (u64 *)(buffer[1] + p11);
-	u64 *Usrc3 = (u64 *)(buffer[1] + p12);
-	u64 *Usrc4 = (u64 *)(buffer[1] + p13);
-	
-	--Vdst;
-	u64 *Vsrc1 = (u64 *)buffer[2];
-	u64 *Vsrc2 = (u64 *)(buffer[2] + p11);
-	u64 *Vsrc3 = (u64 *)(buffer[2] + p12);
-	u64 *Vsrc4 = (u64 *)(buffer[2] + p13);
-	
-	if (height != old_h1_2)
-	{
-		old_h1_2 = height;
-		h1 = ceil((float)height / 4);
-    	h2 = ceil((float)(height / 2) / 4);
-	}
-	
 	rows = Yheight / 4;
 	
 	// Copy strides into 8x4 tiles.
 	// Luminance (Y) plane.
-	for (int row = 1; row <= rows; row++)
+	while (rows--)
 	{
-		--Ysrc1;
-		--Ysrc2;
-		--Ysrc3;
-		--Ysrc4;
-		
 		int tiles = Ywidth / 8;
 		
 		while (tiles--)
@@ -562,22 +556,17 @@ void GX_FillTextureYUV(u16 height, u8 *buffer[3])
 			*++Ydst = *++Ysrc4;
 		}
 		
-		Ysrc1 = (u64 *)(buffer[0] + ((p01 * 4) * row));
-		Ysrc2 = (u64 *)(buffer[0] + ((p01 * 4) * row) + p01);
-		Ysrc3 = (u64 *)(buffer[0] + ((p01 * 4) * row) + p02);
-		Ysrc4 = (u64 *)(buffer[0] + ((p01 * 4) * row) + p03);
+		Ysrc1 = (u64 *)((u32)Ysrc1 + Yrowpitch);
+		Ysrc2 = (u64 *)((u32)Ysrc2 + Yrowpitch);
+		Ysrc3 = (u64 *)((u32)Ysrc3 + Yrowpitch);
+		Ysrc4 = (u64 *)((u32)Ysrc4 + Yrowpitch);
 	}
 	
 	rows = UVheight / 4;
 	
 	// Chrominance (U&V) planes.
-	for (int row = 1; row <= rows; row++)
+	while (rows--)
 	{
-		--Usrc1; --Vsrc1;
-		--Usrc2; --Vsrc2;
-		--Usrc3; --Vsrc3;
-		--Usrc4; --Vsrc4;
-		
 		int tiles = UVwidth / 8;
 		
 		while (tiles--)
@@ -593,55 +582,61 @@ void GX_FillTextureYUV(u16 height, u8 *buffer[3])
 			*++Vdst = *++Vsrc4;
 		}
 		
-		Usrc1 = (u64 *)(buffer[1] + ((p11 * 4) * row));
-		Usrc2 = (u64 *)(buffer[1] + ((p11 * 4) * row) + p11);
-		Usrc3 = (u64 *)(buffer[1] + ((p11 * 4) * row) + p12);
-		Usrc4 = (u64 *)(buffer[1] + ((p11 * 4) * row) + p13);
+		Usrc1 = (u64 *)((u32)Usrc1 + UVrowpitch);
+		Usrc2 = (u64 *)((u32)Usrc2 + UVrowpitch);
+		Usrc3 = (u64 *)((u32)Usrc3 + UVrowpitch);
+		Usrc4 = (u64 *)((u32)Usrc4 + UVrowpitch);
 		
-		Vsrc1 = (u64 *)(buffer[2] + ((p11 * 4) * row));
-		Vsrc2 = (u64 *)(buffer[2] + ((p11 * 4) * row) + p11);
-		Vsrc3 = (u64 *)(buffer[2] + ((p11 * 4) * row) + p12);
-		Vsrc4 = (u64 *)(buffer[2] + ((p11 * 4) * row) + p13);
+		Vsrc1 = (u64 *)((u32)Vsrc1 + UVrowpitch);
+		Vsrc2 = (u64 *)((u32)Vsrc2 + UVrowpitch);
+		Vsrc3 = (u64 *)((u32)Vsrc3 + UVrowpitch);
+		Vsrc4 = (u64 *)((u32)Vsrc4 + UVrowpitch);
 	}
 }
 
-void GX_RenderTexture(bool vsync)
+void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
 {
-	static bool first_frame = true;
+	u8 *Isrc = src;
+	u8 *Asrc = srca;
 	
-	if (!first_frame)
+	s16 pitch = stride - w;
+	
+	u8 *Ycached = MEM_K1_TO_K0(Ytexture);
+	DCInvalidateRange(Ycached, Ytexsize);
+	
+	for (int y = 0; y < h; y++)
 	{
-		GX_WaitDrawDone();
-		
-		if (vsync)
+		for (int x = 0; x < w; x++)
 		{
-			VIDEO_WaitVSync();
+			if (*Asrc)
+			{
+				int dxs = x + x0;
+				int dys = y + y0;
+				
+				u8 *Ydst = Ycached + ((dys & (~3)) * Ywidth) + ((dxs & (~7)) << 2) + ((dys & 3) << 3) + (dxs & 7);
+				*Ydst = (((*Ydst) * (*Asrc)) >> 8) + (*Isrc);
+			}
 			
-			if (vmode->viTVMode & VI_NON_INTERLACE)
-				VIDEO_WaitVSync();
+			Isrc++; Asrc++;
 		}
 		
-		if (clear_next)
-		{
-			memset(Ytexture[whichfb], 0x00, Ytexsize);
-			memset(Utexture[whichfb], 0x80, UVtexsize);
-			memset(Vtexture[whichfb], 0x80, UVtexsize);
-			clear_next = false;
-		}
+		Isrc += pitch;
+		Asrc += pitch;
 	}
 	
+	DCFlushRange(Ycached, Ytexsize);
+}
+
+inline void mpgxIsDrawDone()
+{
+	if (wait_ready)
+		GX_WaitDrawDone();
+}
+
+void mpgxPushFrame()
+{
 	GX_InvVtxCache();
 	GX_InvalidateTexAll();
-	
-	whichfb ^= 1;
-	
-	DCFlushRange(Ytexture[whichfb], Ytexsize);
-	DCFlushRange(Utexture[whichfb], UVtexsize);
-	DCFlushRange(Vtexture[whichfb], UVtexsize);
-	
-	GX_InitTexObjData(&YtexObj, Ytexture[whichfb]);
-	GX_InitTexObjData(&UtexObj, Utexture[whichfb]);
-	GX_InitTexObjData(&VtexObj, Vtexture[whichfb]);
 	
 	GX_LoadTexObj(&YtexObj, GX_TEXMAP0);	// MAP0 <- Y
 	GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
@@ -651,9 +646,9 @@ void GX_RenderTexture(bool vsync)
 	u16 efb_drawpt = ceil((float)xfb_copypt / 16) * 16;
 	int difference = efb_drawpt - xfb_copypt;
 	
-	for (int x = 0; x < 2; x++)
+	for (int dxs = 0; dxs < 2; dxs++)
 	{
-		u16 efb_offset = (xfb_copypt - difference) * x;
+		u16 efb_offset = (xfb_copypt - difference) * dxs;
 		
 		GX_SetScissorBoxOffset(efb_offset, 0);
 		GX_SetDispCopySrc(0, 0, efb_drawpt, vmode->efbHeight);
@@ -665,22 +660,13 @@ void GX_RenderTexture(bool vsync)
 			GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
 		GX_End();
 		
-		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * x;
-		GX_CopyDisp((void *)((u32)xfb[whichfb] + xfb_offset), GX_TRUE);
+		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * dxs;
+		GX_CopyDisp((void *)((u32)xfb[whichfb ^ 1] + xfb_offset), GX_TRUE);
 	}
 	
+	VIDEO_SetNextFramebuffer(xfb[whichfb ^ 1]);
+	flip_ready = false;
+	
 	GX_SetDrawDone();
-	VIDEO_SetNextFramebuffer(xfb[whichfb]);
-	first_frame = false;
+	wait_ready = true;
 }
-
-void GX_ResetTextureYUVPointers()
-{
-	Ydst = (u64 *)Ytexture[whichfb ^ 1];
-	Udst = (u64 *)Utexture[whichfb ^ 1];
-	Vdst = (u64 *)Vtexture[whichfb ^ 1];
-}
-
-u8 *GetYtexture() { return Ytexture[whichfb ^ 1]; }
-u16 GetYrowpitch() { return Yrowpitch; }
-u16 GetYrowpitchDf() { return Yrowpitch + df1; }

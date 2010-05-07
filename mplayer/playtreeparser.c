@@ -351,6 +351,10 @@ parse_pls(play_tree_parser_t* p) {
       entry = play_tree_new();
       play_tree_add_file(entry,entries[num].file);
       free(entries[num].file);
+#ifdef GEKKO
+	  // Get the title of .pls entry
+	  if(entries[num].title) play_tree_set_param(entry, PLAY_TREE_PARAM_PRETTYFORMAT_TITLE, entries[num].title);
+#endif
       if(list)
 	play_tree_append_entry(last_entry,entry);
       else
@@ -454,8 +458,14 @@ parse_m3u(play_tree_parser_t* p) {
 #endif
  	  /// start denper's changes
 	  // Get the title of .m3u entry
-	  title = realloc(title, strlen(mp_pretty_title(line))+1);
-	  strcpy(title, mp_pretty_title(line));
+      char *colon = strchr(line, ':');
+      char *comma = strchr(line, ',');
+      int linestart = line;
+
+      if(colon != NULL && comma == NULL) linestart = colon+1;
+      else if(colon != NULL && comma != NULL && (comma-colon) < 4) linestart = comma+1;
+	  title = realloc(title, strlen(mp_pretty_title(linestart))+1);
+	  strcpy(title, mp_pretty_title(linestart));
 	  /// end denper's changes
 	  
       continue;
@@ -833,11 +843,7 @@ parse_playlist_file(char* file) {
 
   mp_msg(MSGT_PLAYTREE,MSGL_V,"Parsing playlist file %s...\n",file);
 
-#ifdef GEKKO
-  ret = parse_playtree(stream,0);
-#else
   ret = parse_playtree(stream,1);
-#endif
   free_stream(stream);
 
   play_tree_add_bpf(ret, file);

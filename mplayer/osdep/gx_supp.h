@@ -33,16 +33,18 @@ extern "C" {
 
 extern GXRModeObj *vmode;
 
-void GX_InitVideo(int video_mode, bool overscan);
+void mpviSetup(int video_mode, bool overscan);
+void mpviClear();
 
-void GX_StartYUV(u16 width, u16 height, f32 haspect, f32 vaspect);
-void GX_RenderTexture(bool vsync);
-void GX_UpdatePitch(u16 *pitch);
-void GX_ResetTextureYUVPointers();
-void GX_FillTextureYUV(u16 height, u8 *buffer[3]);
-void GX_ConfigTextureYUV(u16 width, u16 height, u16 *pitch);
-void getStrideInfo(int *_w1, int *_df1, int *_Yrowpitch);
-u8 *GetYtexture();
+void mpgxInit();
+void mpgxSetupYUVp();
+void mpgxSetSquare(f32 haspect, f32 vaspect);
+void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chroma_height);
+void mpgxCopyYUVp(u8 *buffer[3], int stride[3]);
+void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride);
+void mpgxIsDrawDone();
+void mpgxPushFrame();
+
 
 #ifdef __cplusplus
 }

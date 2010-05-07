@@ -30,15 +30,14 @@
 
 #ifdef CONFIG_GL_WIN32
 #include <windows.h>
-#include <GL/gl.h>
 #include "w32_common.h"
 #endif
 #ifdef CONFIG_GL_X11
-#include <GL/gl.h>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 #include "x11_common.h"
 #endif
+#include <GL/gl.h>
 
 // workaround for some gl.h headers
 #ifndef GLAPIENTRY
@@ -370,8 +369,10 @@ void glDisableYUVConversion(GLenum target, int type);
 /** \} */
 
 enum MPGLType {
+  GLTYPE_AUTO,
   GLTYPE_W32,
   GLTYPE_X11,
+  GLTYPE_SDL,
 };
 
 typedef struct MPGLContext {

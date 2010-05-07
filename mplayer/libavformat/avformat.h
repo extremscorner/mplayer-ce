@@ -22,7 +22,7 @@
 #define AVFORMAT_AVFORMAT_H
 
 #define LIBAVFORMAT_VERSION_MAJOR 52
-#define LIBAVFORMAT_VERSION_MINOR 61
+#define LIBAVFORMAT_VERSION_MINOR 62
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -145,8 +145,9 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
  * @param key tag key to add to m (will be av_strduped)
  * @param value tag value to add to m (will be av_strduped)
  * @return >= 0 on success otherwise an error code <0
+ * @deprecated Use av_metadata_set2() instead.
  */
-int av_metadata_set(AVMetadata **pm, const char *key, const char *value);
+attribute_deprecated int av_metadata_set(AVMetadata **pm, const char *key, const char *value);
 #endif
 
 /**
@@ -885,6 +886,19 @@ AVInputFormat *av_find_input_format(const char *short_name);
  *                  demuxers with or without AVFMT_NOFILE are probed.
  */
 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
+
+/**
+ * Guesses the file format.
+ *
+ * @param is_opened Whether the file is already opened; determines whether
+ *                  demuxers with or without AVFMT_NOFILE are probed.
+ * @param score_max A probe score larger that this is required to accept a
+ *                  detection, the variable is set to the actual detection
+ *                  score afterwards.
+ *                  If the score is <= AVPROBE_SCORE_MAX / 4 it is recommended
+ *                  to retry with a larger probe buffer.
+ */
+AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max);
 
 /**
  * Allocates all the structures needed to read an input stream.
