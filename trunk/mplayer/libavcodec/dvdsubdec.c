@@ -20,8 +20,8 @@
  */
 #include "avcodec.h"
 #include "get_bits.h"
-#include "colorspace.h"
 #include "dsputil.h"
+#include "libavutil/colorspace.h"
 
 //#define DEBUG
 
@@ -460,7 +460,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    AVSubtitle *sub = (void *)data;
+    AVSubtitle *sub = data;
     int is_menu;
 
     is_menu = decode_dvd_subtitles(sub, buf, buf_size);

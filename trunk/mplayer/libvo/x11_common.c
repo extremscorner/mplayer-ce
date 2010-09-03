@@ -191,7 +191,7 @@ void vo_hidecursor(Display * disp, Window win)
     colormap = DefaultColormap(disp, DefaultScreen(disp));
     if ( !XAllocNamedColor(disp, colormap, "black", &black, &dummy) )
     {
-      return; // color alloc failed, give up
+        return; // color alloc failed, give up
     }
     bm_no = XCreateBitmapFromData(disp, win, bm_no_data, 8, 8);
     no_ptr = XCreatePixmapCursor(disp, bm_no, bm_no, &black, &black, 0, 0);
@@ -248,7 +248,7 @@ void fstype_help(void)
     mp_msg(MSGT_VO, MSGL_INFO, "    %-15s %s\n", "below",
            "use _NETWM_STATE_BELOW hint if available");
     mp_msg(MSGT_VO, MSGL_INFO, "    %-15s %s\n", "fullscreen",
-           "use _NETWM_STATE_FULLSCREEN hint if availale");
+           "use _NETWM_STATE_FULLSCREEN hint if available");
     mp_msg(MSGT_VO, MSGL_INFO, "    %-15s %s\n", "stays_on_top",
            "use _NETWM_STATE_STAYS_ON_TOP hint if available");
     mp_msg(MSGT_VO, MSGL_INFO,
@@ -416,8 +416,8 @@ int vo_init(void)
     XWindowAttributes attribs;
     char *dispName;
 
-	if (vo_rootwin)
-		WinID = 0; // use root window
+    if (vo_rootwin)
+        WinID = 0; // use root window
 
     if (vo_depthonscreen)
     {
@@ -745,17 +745,9 @@ void vo_x11_classhint(Display * display, Window window, const char *name)
 }
 
 Window vo_window = None;
-GC vo_gc = NULL;
-GC f_gc = NULL;
+GC vo_gc = None;
+GC f_gc = None;
 XSizeHints vo_hint;
-
-#ifdef CONFIG_GUI
-void vo_setwindow(Window w, GC g)
-{
-    vo_window = w;
-    vo_gc = g;
-}
-#endif
 
 void vo_x11_uninit(void)
 {
@@ -763,21 +755,17 @@ void vo_x11_uninit(void)
     if (vo_window != None)
         vo_showcursor(mDisplay, vo_window);
 
-    if (f_gc)
+    if (f_gc != None)
     {
         XFreeGC(mDisplay, f_gc);
-        f_gc = NULL;
+        f_gc = None;
     }
-#ifdef CONFIG_GUI
-    /* destroy window only if it's not controlled by the GUI */
-    if (!use_gui)
-#endif
     {
-        if (vo_gc)
+        if (vo_gc != None)
         {
             XSetBackground(mDisplay, vo_gc, 0);
             XFreeGC(mDisplay, vo_gc);
-            vo_gc = NULL;
+            vo_gc = None;
         }
         if (vo_window != None)
         {
@@ -806,6 +794,15 @@ void vo_x11_uninit(void)
 static unsigned int mouse_timer;
 static int mouse_waiting_hide;
 
+static int check_resize(void)
+{
+    int old_w = vo_dwidth, old_h = vo_dheight;
+    vo_x11_update_geometry();
+    if (vo_dwidth != old_w || vo_dheight != old_h)
+        return VO_EVENT_RESIZE;
+    return 0;
+}
+
 int vo_x11_check_events(Display * mydisplay)
 {
     int ret = 0;
@@ -814,14 +811,14 @@ int vo_x11_check_events(Display * mydisplay)
     KeySym keySym;
     static XComposeStatus stat;
 
-// unsigned long  vo_KeyTable[512];
-
-    if ((vo_mouse_autohide) && mouse_waiting_hide &&
+    if (vo_mouse_autohide && mouse_waiting_hide &&
                                  (GetTimerMS() - mouse_timer >= 1000)) {
         vo_hidecursor(mydisplay, vo_window);
         mouse_waiting_hide = 0;
     }
 
+    if (WinID > 0)
+        ret |= check_resize();
     while (XPending(mydisplay))
     {
         XNextEvent(mydisplay, &Event);
@@ -840,17 +837,9 @@ int vo_x11_check_events(Display * mydisplay)
                 ret |= VO_EVENT_EXPOSE;
                 break;
             case ConfigureNotify:
-//         if (!vo_fs && (Event.xconfigure.width == vo_screenwidth || Event.xconfigure.height == vo_screenheight)) break;
-//         if (vo_fs && Event.xconfigure.width != vo_screenwidth && Event.xconfigure.height != vo_screenheight) break;
                 if (vo_window == None)
                     break;
-                {
-                    int old_w = vo_dwidth, old_h = vo_dheight;
-		    int old_x = vo_dx, old_y = vo_dy;
-                    vo_x11_update_geometry();
-                    if (vo_dwidth != old_w || vo_dheight != old_h || vo_dx != old_x || vo_dy != old_y)
-                        ret |= VO_EVENT_RESIZE;
-                }
+                ret |= check_resize();
                 break;
             case KeyPress:
                 {
@@ -931,6 +920,10 @@ int vo_x11_check_events(Display * mydisplay)
                 XSetWMNormalHints(mDisplay, vo_window, &vo_hint);
                 vo_fs_flip = 0;
                 break;
+            case DestroyNotify:
+                mp_msg(MSGT_VO, MSGL_WARN, "Our window was destroyed, exiting\n");
+                mplayer_put_key(KEY_CLOSE_WIN);
+                break;
 	    case ClientMessage:
                 if (Event.xclient.message_type == XAWM_PROTOCOLS &&
                     Event.xclient.data.l[0] == XAWM_DELETE_WINDOW)
@@ -955,9 +948,9 @@ void vo_x11_nofs_sizepos(int x, int y, int width, int height)
   }
   else
   {
-   vo_dwidth = width;
-   vo_dheight = height;
-   XMoveResizeWindow(mDisplay, vo_window, x, y, width, height);
+    vo_dwidth = width;
+    vo_dheight = height;
+    XMoveResizeWindow(mDisplay, vo_window, x, y, width, height);
   }
 }
 
@@ -1051,7 +1044,7 @@ Window vo_x11_create_smooth_window(Display * mDisplay, Window mRoot,
         XCreateWindow(mDisplay, mRootWin, x, y, width, height, 0, depth,
                       CopyFromParent, vis, xswamask, &xswa);
     XSetWMProtocols(mDisplay, ret_win, &XAWM_DELETE_WINDOW, 1);
-    if (!f_gc)
+    if (f_gc == None)
         f_gc = XCreateGC(mDisplay, ret_win, 0, 0);
     XSetForeground(mDisplay, f_gc, 0);
 
@@ -1090,10 +1083,22 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
       XChangeWindowAttributes(mDisplay, vo_window, xswamask, &xswa);
       XInstallColormap(mDisplay, col_map);
     }
-    if (WinID) vo_x11_update_geometry();
-    vo_x11_selectinput_witherr(mDisplay, vo_window,
+    if (WinID) {
+      // Expose events can only really be handled by us, so request them.
+      // Do not remove existing masks so GUI keeps working.
+      XWindowAttributes attribs;
+      XGetWindowAttributes(mDisplay, vo_window, &attribs);
+      vo_x11_selectinput_witherr(mDisplay, vo_window,
+                                 attribs.your_event_mask | ExposureMask);
+    } else
+      // Do not capture events since it might break the parent application
+      // if it relies on events being forwarded to the parent of WinID.
+      // It also is consistent with the w32_common.c code.
+      vo_x11_selectinput_witherr(mDisplay, vo_window,
           StructureNotifyMask | KeyPressMask | PointerMotionMask |
           ButtonPressMask | ButtonReleaseMask | ExposureMask);
+
+    vo_x11_update_geometry();
     goto final;
   }
   if (vo_window == None) {
@@ -1116,7 +1121,9 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
     XSelectInput(mDisplay, vo_window, StructureNotifyMask);
     hint.x = x; hint.y = y;
     hint.width = width; hint.height = height;
-    hint.flags = PPosition | PSize;
+    hint.flags = PSize;
+    if (geometry_xy_changed)
+      hint.flags |= PPosition;
     XSetStandardProperties(mDisplay, vo_window, title, title, None, NULL, 0, &hint);
     if (!vo_border) vo_x11_decoration(mDisplay, vo_window, 0);
     // map window
@@ -1133,6 +1140,8 @@ void vo_x11_create_vo_window(XVisualInfo *vis, int x, int y,
           ButtonPressMask | ButtonReleaseMask | ExposureMask);
   }
   if (vo_ontop) vo_x11_setlayer(mDisplay, vo_window, vo_ontop);
+  if (!geometry_xy_changed)
+    vo_x11_update_geometry();
   vo_x11_nofs_sizepos(vo_dx, vo_dy, width, height);
   if (!!vo_fs != !!(flags & VOFLAG_FULLSCREEN))
     vo_x11_fullscreen();
@@ -1155,7 +1164,7 @@ void vo_x11_clearwindow_part(Display * mDisplay, Window vo_window,
 {
     int u_dheight, u_dwidth, left_ov, left_ov2;
 
-    if (!f_gc)
+    if (f_gc == None)
         return;
 
     u_dheight = use_fs ? vo_screenheight : vo_dheight;
@@ -1183,7 +1192,7 @@ void vo_x11_clearwindow_part(Display * mDisplay, Window vo_window,
 
 void vo_x11_clearwindow(Display * mDisplay, Window vo_window)
 {
-    if (!f_gc)
+    if (f_gc == None)
         return;
     XFillRectangle(mDisplay, vo_window, f_gc, 0, 0, vo_screenwidth,
                    vo_screenheight);
@@ -1650,11 +1659,7 @@ void vo_vm_switch(void)
 
 void vo_vm_close(void)
 {
-#ifdef CONFIG_GUI
-    if (vidmodes != NULL && vo_window != None)
-#else
     if (vidmodes != NULL)
-#endif
     {
         int i, modecount;
 

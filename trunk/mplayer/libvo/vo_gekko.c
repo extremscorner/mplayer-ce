@@ -54,7 +54,6 @@ static const vo_info_t info = {
 const LIBVO_EXTERN (gekko)
 
 static u32 image_width = 0, image_height = 0;
-static u32 d_image_width = 0; d_image_height = 0;
 
 extern int screenwidth;
 extern int screenheight;
@@ -62,26 +61,13 @@ extern int screenheight;
 
 static void resize(void)
 {
-	if (vo_fs)
-	{
-		vo_dwidth = screenwidth;
-		vo_dheight = screenheight;
-	}
-	else
-	{
-		vo_dwidth = d_image_width;
-		vo_dheight = d_image_height;
-	}
+	aspect(&vo_dwidth, &vo_dheight, vo_fs ? A_ZOOM : A_NOZOOM);
+	panscan_calc();
 	
-	int d_width, d_height;
+	vo_dwidth += vo_panscan_x;
+	vo_dheight += vo_panscan_y;
 	
-	aspect(&d_width, &d_height, A_WINZOOM);
-	panscan_calc_windowed();
-	
-    d_width += vo_panscan_x;
-    d_height += vo_panscan_y;
-	
-	mpgxSetSquare((f32)d_width / 2, (f32)d_height / 2);
+	mpgxSetSquare((f32)vo_dwidth / 2, (f32)vo_dheight / 2);
 }
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x, int y)
@@ -132,10 +118,18 @@ static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_
 	image_width = width;
 	image_height = height;
 	
-	d_image_width = d_width;
-	d_image_height = d_height;
-	
 	vo_fs = flags & VOFLAG_FULLSCREEN;
+	
+	vo_dwidth = d_width;
+	vo_dheight = d_height;
+	
+	vo_screenwidth = screenwidth;
+	vo_screenheight = screenheight;
+	
+	aspect_save_orig(width, height);
+	aspect_save_prescale(d_width, d_height);
+	aspect_save_screenres(vo_screenwidth, vo_screenheight);
+	
 	resize();
 	
 	int xs, ys;
@@ -179,11 +173,6 @@ static int control(uint32_t request, void *data, ...)
 		case VOCTRL_SET_PANSCAN:
 			resize();
 			return VO_TRUE;
-		case VOCTRL_UPDATE_SCREENINFO:
-            vo_screenwidth = screenwidth;
-            vo_screenheight = screenheight;
-            aspect_save_screenres(vo_screenwidth, vo_screenheight);
-            return VO_TRUE;
 		default:
 			return VO_NOTIMPL;
 	}

@@ -29,7 +29,7 @@
 #include <windowsx.h>
 #include <shlobj.h>
 
-#include "version.h"
+#include "mpcommon.h"
 #include "mplayer.h"
 #include "mp_fifo.h"
 #include "mp_msg.h"
@@ -58,7 +58,6 @@
 /* Globals / Externs */
 void renderinfobox(skin_t *skin, window_priv_t *priv);
 void renderwidget(skin_t *skin, image *dest, widget *item, int state);
-void print_version(void);
 float sub_aspect;
 
 DWORD oldtime;
@@ -85,12 +84,12 @@ void console_toggle(void)
         HWND hwnd = NULL;
         console = 1;
         AllocConsole();
-        SetConsoleTitle(MP_TITLE);
+        SetConsoleTitle(mplayer_version);
 
         /* disable the close button for now */
         while (!hwnd)
         {
-            hwnd = FindWindow(NULL, MP_TITLE);
+            hwnd = FindWindow(NULL, mplayer_version);
             Sleep(100);
         }
         DeleteMenu(GetSystemMenu(hwnd, 0), SC_CLOSE, MF_BYCOMMAND);
@@ -107,7 +106,7 @@ void console_toggle(void)
         fp = freopen("con", "w", stdout);
         *stderr = *fp;
         setvbuf(stderr, NULL, _IONBF, 0);
-        print_version();
+        print_version("MPlayer");
         console_state = 1;
     }
 }

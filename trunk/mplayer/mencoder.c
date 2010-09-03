@@ -37,69 +37,69 @@
 #define ACODEC_FAAC 6
 #define ACODEC_TWOLAME 7
 
+#ifdef __MINGW32__
+#define SIGHUP   1
+#define SIGQUIT  3
+#define SIGPIPE 13
+#endif
+
+#include "config.h"
+
+#include <inttypes.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include "config.h"
-
-#ifdef __MINGW32__
-#define        SIGHUP 1
-#define        SIGQUIT 3
-#define        SIGPIPE 13
-#endif
+#include <sys/time.h>
 #if defined(__MINGW32__) || defined(__CYGWIN__)
 #include <windows.h>
 #endif
 
-#include <sys/time.h>
-
-#include "mp_msg.h"
-#include "help_mp.h"
-
-#include "codec-cfg.h"
-#include "m_option.h"
-#include "m_config.h"
-#include "parser-mecmd.h"
-#include "parser-cfg.h"
-#include "mp_fifo.h"
-#include "path.h"
-
-#include "stream/stream.h"
-#include "libmpdemux/aviprint.h"
-#include "libmpdemux/demuxer.h"
-#include "libmpdemux/stheader.h"
-#include "libmpdemux/mp3_hdr.h"
-#include "libmpdemux/muxer.h"
-
 #include "input/input.h"
-#include "libvo/video_out.h"
-
 #include "libaf/af_format.h"
-
-#include "libmpcodecs/mp_image.h"
+#include "libao2/audio_out.h"
+#include "libass/ass_mp.h"
+#include "libavcodec/avcodec.h"
+#include "libmpcodecs/ae.h"
 #include "libmpcodecs/dec_audio.h"
 #include "libmpcodecs/dec_video.h"
-#include "libmpcodecs/vf.h"
+#include "libmpcodecs/mp_image.h"
 #include "libmpcodecs/vd.h"
-
-// for MPEGLAYER3WAVEFORMAT:
+#include "libmpcodecs/vf.h"
+#include "libmpdemux/aviprint.h"
+#include "libmpdemux/demuxer.h"
+#include "libmpdemux/mp3_hdr.h"
 #include "libmpdemux/ms_hdr.h"
-
-#include <inttypes.h>
-
+#include "libmpdemux/muxer.h"
+#include "libmpdemux/stheader.h"
 #include "libvo/fastmemcpy.h"
-
+#include "libvo/font_load.h"
+#include "libvo/sub.h"
+#include "libvo/video_out.h"
+#include "osdep/priority.h"
 #include "osdep/timer.h"
-
+#include "stream/stream.h"
+#include "stream/stream_bd.h"
 #ifdef CONFIG_DVDREAD
 #include "stream/stream_dvd.h"
 #endif
-
 #include "stream/stream_dvdnav.h"
-#include "libavcodec/avcodec.h"
+#include "codec-cfg.h"
+#include "edl.h"
+#include "help_mp.h"
+#include "m_config.h"
+#include "m_option.h"
+#include "mp_fifo.h"
+#include "mp_msg.h"
+#include "mpcommon.h"
+#include "parser-cfg.h"
+#include "parser-mecmd.h"
+#include "path.h"
+#include "spudec.h"
+#include "vobsub.h"
+#include "eosd.h"
 
-#include "libmpcodecs/ae.h"
+
 int vo_doublebuffering=0;
 int vo_directrendering=0;
 int vo_config_count=1;
@@ -147,8 +147,6 @@ double cur_video_time_usage=0;
 double cur_vout_time_usage=0;
 int benchmark=0;
 
-#include "osdep/priority.h"
-
 // A-V sync:
 int delay_corrected=1;
 static float default_max_pts_correction=-1;//0.01f;
@@ -182,9 +180,6 @@ char* passtmpfile="divx2pass.log";
 
 static int play_n_frames=-1;
 static int play_n_frames_mf=-1;
-
-#include "libvo/font_load.h"
-#include "libvo/sub.h"
 
 // sub:
 char *font_name=NULL;
@@ -226,9 +221,7 @@ void mplayer_put_key(int code)
 {
 }
 
-#include "libass/ass_mp.h"
 char *current_module;
-#include "mpcommon.h"
 
 // Needed by mpcommon.c
 void set_osd_subtitle(subtitle *subs) {
@@ -260,19 +253,16 @@ typedef struct {
     int already_read;
 } s_frame_data;
 
-#include "edl.h"
 static edl_record_ptr edl_records = NULL; ///< EDL entries memory area
 static edl_record_ptr next_edl_record = NULL; ///< only for traversing edl_records
 static short edl_muted; ///< Stores whether EDL is currently in muted mode.
 static short edl_seeking; ///< When non-zero, stream is seekable.
 static short edl_seek_type; ///< When non-zero, frames are discarded instead of seeking.
 
+/* This header requires all the global variable declarations. */
 #include "cfg-mencoder.h"
 
-#include "spudec.h"
-#include "vobsub.h"
 
-#include "libao2/audio_out.h"
 /* FIXME */
 static void mencoder_exit(int level, const char *how)
 {
@@ -337,7 +327,7 @@ static void add_subtitles(char *filename, float fps, int silent)
 {
     sub_data *subd;
 #ifdef CONFIG_ASS
-    ass_track_t *asst = 0;
+    ASS_Track *asst = 0;
 #endif
 
     if (!filename) return;
@@ -596,6 +586,7 @@ user_correct_pts = 0;
   // Create the config context and register the options
   mconfig = m_config_new();
   m_config_register_options(mconfig,mencoder_opts);
+  m_config_register_options(mconfig, common_opts);
 
   // Preparse the command line
   m_config_preparse_command_line(mconfig,argc,argv);
@@ -654,7 +645,7 @@ if(!codecs_file || !parse_codec_cfg(codecs_file)){
 
 
 if (frameno_filename) {
-  stream2=open_stream(frameno_filename,0,&i);
+  stream2=open_stream(frameno_filename, NULL, NULL);
   if(stream2){
     demuxer2=demux_open(stream2,DEMUXER_TYPE_AVI,-1,-1,-2,NULL);
     if(demuxer2) mp_msg(MSGT_MENCODER, MSGL_INFO, MSGTR_UsingPass3ControlFile, frameno_filename);
@@ -718,6 +709,11 @@ play_next_file:
   }
 
   mp_msg(MSGT_CPLAYER, MSGL_INFO, MSGTR_OpenedStream, file_format, (int)(stream->start_pos), (int)(stream->end_pos));
+
+if(stream->type==STREAMTYPE_BD){
+  if(audio_lang && audio_id==-1) audio_id=bd_aid_from_lang(stream,audio_lang);
+  if(dvdsub_lang && dvdsub_id==-1) dvdsub_id=bd_sid_from_lang(stream,dvdsub_lang);
+}
 
 #ifdef CONFIG_DVDREAD
 if(stream->type==STREAMTYPE_DVD){
@@ -1035,12 +1031,10 @@ default: {
           break;
         }
     if (insert) {
-      extern vf_info_t vf_info_ass;
-      vf_info_t* libass_vfs[] = {&vf_info_ass, NULL};
       char* vf_arg[] = {"auto", "1", NULL};
-      vf_instance_t* vf_ass = vf_open_plugin(libass_vfs,sh_video->vfilter,"ass",vf_arg);
+      vf_instance_t* vf_ass = vf_open_filter(sh_video->vfilter,"ass",vf_arg);
       if (vf_ass)
-        sh_video->vfilter=(void*)vf_ass;
+        sh_video->vfilter=vf_ass;
       else
         mp_msg(MSGT_CPLAYER,MSGL_ERR, "ASS: cannot add video filter\n");
     }
@@ -1058,11 +1052,12 @@ default: {
   }
 #endif
 
-    sh_video->vfilter=append_filters(sh_video->vfilter);
+  sh_video->vfilter=append_filters(sh_video->vfilter);
+  eosd_init(sh_video->vfilter);
 
 #ifdef CONFIG_ASS
   if (ass_enabled)
-    ((vf_instance_t *)sh_video->vfilter)->control(sh_video->vfilter, VFCTRL_INIT_EOSD, ass_library);
+    eosd_ass_init(ass_library);
 #endif
 
 // after reading video params we should load subtitles because
@@ -1535,8 +1530,12 @@ case VCODEC_FRAMENO:
     break;
 default:
     // decode_video will callback down to ve_*.c encoders, through the video filters
-    {void *decoded_frame = decode_video(sh_video,frame_data.start,frame_data.in_size,
-      skip_flag>0 && (!sh_video->vfilter || ((vf_instance_t *)sh_video->vfilter)->control(sh_video->vfilter, VFCTRL_SKIP_NEXT_FRAME, 0) != CONTROL_TRUE), MP_NOPTS_VALUE);
+    {
+    int drop_frame = skip_flag > 0 &&
+                     (!sh_video->vfilter ||
+                      ((vf_instance_t *)sh_video->vfilter)->control(sh_video->vfilter, VFCTRL_SKIP_NEXT_FRAME, 0) != CONTROL_TRUE);
+    void *decoded_frame = decode_video(sh_video,frame_data.start,frame_data.in_size,
+                                       drop_frame, MP_NOPTS_VALUE);
     blit_frame = decoded_frame && filter_video(sh_video, decoded_frame, MP_NOPTS_VALUE);}
 
     if (sh_video->vf_initialized < 0) mencoder_exit(1, NULL);
@@ -1670,7 +1669,7 @@ if(sh_audio && !demuxer2){
  if(vobsub_writer){
      unsigned char* packet=NULL;
      int len;
-     while((len=ds_get_packet_sub(d_dvdsub,&packet))>0){
+     while((len=ds_get_packet_sub(d_dvdsub,&packet, NULL, NULL))>0){
 	 mp_msg(MSGT_MENCODER,MSGL_V,"\rDVD sub: len=%d  v_pts=%5.3f  s_pts=%5.3f  \n",len,sh_video->pts,d_dvdsub->pts);
 	     vobsub_out_output(vobsub_writer,packet,len,mux_v->timer + d_dvdsub->pts - sh_video->pts);
      }

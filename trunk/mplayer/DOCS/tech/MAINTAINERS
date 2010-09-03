@@ -58,7 +58,7 @@ Documentation translations:
     * Russian: Vladimir Voroshilov
 
 Platforms/ports:
-    * Debian packaging: Diego Biurrun
+    * Debian/Ubuntu packaging: Reinhard Tartler, Diego Biurrun
     * Red Hat/RPM packaging: Dominik Mierzejewski
     * FreeBSD: Vladimir Kushnir, Nexus
     * BSD/OS: Steven Schultz
@@ -93,7 +93,6 @@ Imported libs/projects:
     * VIDIX core: Benjamin Zores
     * mp3lib: None
     * loader: None
-    * liba52: None
     * libmpeg2: None
     * libdvdcss: Diego Biurrun
     * libdvdread: Diego Biurrun
@@ -128,6 +127,7 @@ streams:
     * stream_dvb.c - Nico Sabbi
     * stream_dvd.c - Nico Sabbi
     * stream_dvdnav.c - Nico Sabbi and Benjamin Zores
+    * stream_bluray.c - Benjamin Zores
 
 codec support:
     * FFmpeg: Michael Niedermayer

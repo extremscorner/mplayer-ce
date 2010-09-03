@@ -52,7 +52,7 @@ typedef struct RTPContext {
  * get the local port first, then you must call this function to set
  * the remote server address.
  *
- * @param s1 media file context
+ * @param h media file context
  * @param uri of the remote server
  * @return zero if no error.
  */
@@ -66,7 +66,7 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
     char buf[1024];
     char path[1024];
 
-    ff_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
+    av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
                  path, sizeof(path), uri);
 
     ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port, "%s", path);
@@ -146,7 +146,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         return AVERROR(ENOMEM);
     h->priv_data = s;
 
-    ff_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
+    av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
                  path, sizeof(path), uri);
     /* extract parameters */
     ttl = -1;
@@ -279,13 +279,13 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     return len;
 }
 
-static int rtp_write(URLContext *h, uint8_t *buf, int size)
+static int rtp_write(URLContext *h, const uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
     int ret;
     URLContext *hd;
 
-    if (buf[1] >= 200 && buf[1] <= 204) {
+    if (buf[1] >= RTCP_SR && buf[1] <= RTCP_APP) {
         /* RTCP payload type */
         hd = s->rtcp_hd;
     } else {
@@ -317,7 +317,7 @@ static int rtp_close(URLContext *h)
 
 /**
  * Return the local rtp port used by the RTP connection
- * @param s1 media file context
+ * @param h media file context
  * @return the local port number
  */
 
@@ -329,7 +329,7 @@ int rtp_get_local_rtp_port(URLContext *h)
 
 /**
  * Return the local rtp port used by the RTP connection
- * @param s1 media file context
+ * @param h media file context
  * @return the local port number
  */
 
@@ -341,7 +341,7 @@ int rtp_get_local_port(URLContext *h)
 
 /**
  * Return the local rtcp port used by the RTP connection
- * @param s1 media file context
+ * @param h media file context
  * @return the local port number
  */
 
@@ -371,6 +371,11 @@ static int rtp_get_file_handle(URLContext *h)
 {
     RTPContext *s = h->priv_data;
     return s->rtp_fd;
+}
+
+int rtp_get_rtcp_file_handle(URLContext *h) {
+    RTPContext *s = h->priv_data;
+    return s->rtcp_fd;
 }
 
 URLProtocol rtp_protocol = {

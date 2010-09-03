@@ -5,7 +5,6 @@
 
 // ========================= MPlayer help ===========================
 
-#ifdef HELP_MP_DEFINE_STATIC
 static const char help_text[]=
 "Użycie:   mplayer [opcje] [url|ścieżka/]plik\n"
 "\n"
@@ -45,7 +44,6 @@ static const char help_text[]=
 "\n"
 " * * * WIĘCEJ OPCJI DOSTĘPNYCH NA STRONIE PODRĘCZNIKA MAN * * *\n"
 "\n";
-#endif
 
 // libmpcodecs/ad_dvdpcm.c:
 #define MSGTR_SamplesWanted "By poprawić obsługę tego formatu potrzebne są próbki. Proszę skontaktować się z twórcami.\n"
@@ -983,8 +981,6 @@ static const char help_text[]=
 #define MSGTR_VO_CantCreateDirectory "Nie mogę stworzyć folderu wyjściowego."
 #define MSGTR_VO_CantCreateFile "Nie mogę stworzyć pliku wyjściowego."
 #define MSGTR_VO_DirectoryCreateSuccess "Folder wyjściowy utworzony pomyślnie."
-#define MSGTR_VO_ParsingSuboptions "Interpretuję podopcje."
-#define MSGTR_VO_SuboptionsParsedOK "Pomyślnie zinterpretowano podopcje."
 #define MSGTR_VO_ValueOutOfRange "wartość poza zakresem."
 #define MSGTR_VO_NoValueSpecified "Nie podano wartości."
 #define MSGTR_VO_UnknownSuboptions "nieznana podopcja(e)"
@@ -1315,7 +1311,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_ASF_UnknownASFStreamType "nieznany typ strumienia ASF\n"
 #define MSGTR_MPDEMUX_ASF_Failed2ParseHTTPResponse "Błąd interpretacji odpowiedzi HTTP.\n"
 #define MSGTR_MPDEMUX_ASF_ServerReturn "Serwer zwrócił %d:%s\n"
-#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "Ostrzeżenie intepretacji ASF HTTP : Pragma %s obcięte z %d bajtów do %d\n"
+#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "Ostrzeżenie intepretacji ASF HTTP : Pragma %s obcięte z %zd bajtów do %d\n"
 #define MSGTR_MPDEMUX_ASF_SocketWriteError "błąd zapisu gniazda: %s\n"
 #define MSGTR_MPDEMUX_ASF_HeaderParseFailed "Błąd interpretacji nagłówka.\n"
 #define MSGTR_MPDEMUX_ASF_NoStreamFound "Nie odnaleziono strumienia.\n"
@@ -1365,7 +1361,7 @@ static const char help_text[]=
 
 #define MSGTR_MPDEMUX_CDDA_CantOpenCDDADevice "Nie omgę otworzyć urządzenia CDDA.\n"
 #define MSGTR_MPDEMUX_CDDA_CantOpenDisc "Nie mogę otworzyć płyty.\n"
-#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "Znalazłem płytę audio z %ld ścieżkami.\n"
+#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "Znalazłem płytę audio z %d ścieżkami.\n"
 
 // cddb.c
 
@@ -1564,7 +1560,7 @@ static const char help_text[]=
 
 // ================================== LIBMPVO ====================================
 
-// mga_common.c
+// mga_template.c
 
 #define MSGTR_LIBVO_MGA_ErrorInConfigIoctl "[MGA] błąd w mga_vid_config ioctl (zła wersja mga_vid.o ?)"
 #define MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule "[MGA] Nie mogłem pobrać wartości luma z modułu jądra!\n"

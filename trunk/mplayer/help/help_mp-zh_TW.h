@@ -8,7 +8,6 @@
 
 // ========================= MPlayer help ===========================
 
-#ifdef HELP_MP_DEFINE_STATIC
 static const char help_text[]=
 "用法:   mplayer [選項] [URL|路徑/]文件名\n"
 "\n"
@@ -48,7 +47,6 @@ static const char help_text[]=
 "\n"
 " * * *  詳細内容，更多的(高級)選項和控製鍵，請參見手册頁  * * *\n"
 "\n";
-#endif
 
 // libmpcodecs/ad_dvdpcm.c:
 #define MSGTR_SamplesWanted "這個格式的采様需要更好的支持。請聯係開發者。\n"
@@ -1001,8 +999,6 @@ static const char help_text[]=
 #define MSGTR_VO_CantCreateDirectory "無法創建輸出目録。"
 #define MSGTR_VO_CantCreateFile "無法創建輸出文件。"
 #define MSGTR_VO_DirectoryCreateSuccess "輸出目録創建成功。"
-#define MSGTR_VO_ParsingSuboptions "解析子選項。"
-#define MSGTR_VO_SuboptionsParsedOK "子選項解析成功。"
 #define MSGTR_VO_ValueOutOfRange "值超出範圍"
 #define MSGTR_VO_NoValueSpecified "没有指定值。"
 #define MSGTR_VO_UnknownSuboptions "未知子選項"
@@ -1384,7 +1380,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_ASF_UnknownASFStreamType "未知的 ASF 流類型\n"
 #define MSGTR_MPDEMUX_ASF_Failed2ParseHTTPResponse "解析 HTTP 響應失敗。\n"
 #define MSGTR_MPDEMUX_ASF_ServerReturn "服務器返回 %d:%s\n"
-#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP 解析警告 : Pragma %s 被從 %d 字節切到 %d\n"
+#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP 解析警告 : Pragma %s 被從 %zd 字節切到 %d\n"
 #define MSGTR_MPDEMUX_ASF_SocketWriteError "Socket 寫錯誤: %s\n"
 #define MSGTR_MPDEMUX_ASF_HeaderParseFailed "解析頭部失敗。\n"
 #define MSGTR_MPDEMUX_ASF_NoStreamFound "找不到流。\n"
@@ -1434,7 +1430,7 @@ static const char help_text[]=
 
 #define MSGTR_MPDEMUX_CDDA_CantOpenCDDADevice "打不開 CDDA 設備。\n"
 #define MSGTR_MPDEMUX_CDDA_CantOpenDisc "打不開盤。\n"
-#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "發現音頻 CD，共 %ld 音軌。\n"
+#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "發現音頻 CD，共 %d 音軌。\n"
 
 // cddb.c
 
@@ -1654,7 +1650,7 @@ static const char help_text[]=
 
 // ================================== LIBMPVO ====================================
 
-// mga_common.c
+// mga_template.c
 
 #define MSGTR_LIBVO_MGA_ErrorInConfigIoctl "[MGA] mga_vid_config ioctl 錯誤 (mga_vid.o 版本錯誤?)"
 #define MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule "[MGA] 無法在内核模塊中獲得 luma 值!\n"

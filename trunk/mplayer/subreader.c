@@ -31,10 +31,14 @@
 
 #include "config.h"
 #include "mp_msg.h"
+#include "mpcommon.h"
 #include "subreader.h"
+#include "subassconvert.h"
+#include "libvo/sub.h"
 #include "stream/stream.h"
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
+#include "libass/ass_mp.h"
 
 #ifdef CONFIG_ENCA
 #include <enca.h>
@@ -111,6 +115,15 @@ static char *stristr(const char *haystack, const char *needle) {
     return NULL;
 }
 
+static void sami_add_line(subtitle *current, char *buffer, char **pos) {
+    char *p = *pos;
+    *p = 0;
+    trail_space(buffer);
+    if (*buffer && current->lines < SUB_MAX_TEXT)
+        current->text[current->lines++] = strdup(buffer);
+    *pos = buffer;
+}
+
 static subtitle *sub_read_line_sami(stream_t* st, subtitle *current, int utf16) {
     static char line[LINE_LEN+1];
     static char *s = NULL, *slacktime_s;
@@ -143,7 +156,7 @@ static subtitle *sub_read_line_sami(stream_t* st, subtitle *current, int utf16) 
 	    }
 	    break;
 
-	case 1: /* find (optionnal) "<P", skip other TAGs */
+	case 1: /* find (optional) "<P", skip other TAGs */
 	    for  (; *s == ' ' || *s == '\t'; s++); /* strip blanks, if any */
 	    if (*s == '\0') break;
 	    if (*s != '<') { state = 3; p = text; continue; } /* not a TAG */
@@ -162,9 +175,7 @@ static subtitle *sub_read_line_sami(stream_t* st, subtitle *current, int utf16) 
 	case 3: /* get all text until '<' appears */
 	    if (*s == '\0') break;
 	    else if (!strncasecmp (s, "<br>", 4)) {
-		*p = '\0'; p = text; trail_space (text);
-		if (text[0] != '\0')
-		    current->text[current->lines++] = strdup (text);
+                sami_add_line(current, text, &p);
 		s += 4;
 	    }
 	    else if ((*s == '{') && !sub_no_text_pp) { state = 5; ++s; continue; }
@@ -243,9 +254,7 @@ static subtitle *sub_read_line_sami(stream_t* st, subtitle *current, int utf16) 
     // For the last subtitle
     if (current->end <= 0) {
         current->end = current->start + sub_slacktime;
-	*p = '\0'; trail_space (text);
-	if (text[0] != '\0')
-	    current->text[current->lines++] = strdup (text);
+        sami_add_line(current, text, &p);
     }
 
     return current;
@@ -289,7 +298,13 @@ static subtitle *sub_read_line_microdvd(stream_t *st,subtitle *current, int utf1
 		      "{%ld}{%ld}%[^\r\n]",
 		      &(current->start), &(current->end), line2) < 3));
 
-    p=line2;
+#ifdef CONFIG_ASS
+    if (ass_enabled) {
+        subassconvert_microdvd(line2, line, LINE_LEN + 1);
+        p = line;
+    } else
+#endif
+        p = line2;
 
     next=p, i=0;
     while ((next =sub_readtext (next, &(current->text[i])))) {
@@ -358,12 +373,74 @@ static subtitle *sub_read_line_subrip(stream_t* st, subtitle *current, int utf16
     return current;
 }
 
+#ifdef CONFIG_ASS
+static subtitle *sub_ass_read_line_subviewer(stream_t *st, subtitle *current, int utf16)
+{
+    int h1, m1, s1, ms1, h2, m2, s2, ms2, j = 0;
+
+    while (!current->text[0]) {
+        char line[LINE_LEN + 1], full_line[LINE_LEN + 1], sep;
+        int i;
+
+        /* Parse SubRip header */
+        if (!stream_read_line(st, line, LINE_LEN, utf16))
+            return NULL;
+        if (sscanf(line, "%d:%d:%d%[,.:]%d --> %d:%d:%d%[,.:]%d",
+                     &h1, &m1, &s1, &sep, &ms1, &h2, &m2, &s2, &sep, &ms2) < 10)
+            continue;
+
+        current->start = h1 * 360000 + m1 * 6000 + s1 * 100 + ms1 / 10;
+        current->end   = h2 * 360000 + m2 * 6000 + s2 * 100 + ms2 / 10;
+
+        /* Concat lines */
+        full_line[0] = 0;
+        for (i = 0; i < SUB_MAX_TEXT; i++) {
+            int blank = 1, len = 0;
+            char *p;
+
+            if (!stream_read_line(st, line, LINE_LEN, utf16))
+                break;
+
+            for (p = line; *p != '\n' && *p != '\r' && *p; p++, len++)
+                if (*p != ' ' && *p != '\t')
+                    blank = 0;
+
+            if (blank)
+                break;
+
+            *p = 0;
+
+            if (len >= sizeof(full_line) - j - 2)
+                break;
+
+            if (j != 0)
+                full_line[j++] = '\n';
+            strcpy(&full_line[j], line);
+            j += len;
+        }
+
+        /* Use the ASS/SSA converter to transform the whole lines */
+        if (full_line[0]) {
+            char converted_line[LINE_LEN + 1];
+            subassconvert_subrip(full_line, converted_line, LINE_LEN + 1);
+            current->text[0] = strdup(converted_line);
+            current->lines = 1;
+        }
+    }
+    return current;
+}
+#endif
+
 static subtitle *sub_read_line_subviewer(stream_t *st,subtitle *current, int utf16) {
     char line[LINE_LEN+1];
     int a1,a2,a3,a4,b1,b2,b3,b4;
     char *p=NULL;
     int i,len;
 
+#ifdef CONFIG_ASS
+    if (ass_enabled)
+        return sub_ass_read_line_subviewer(st, current, utf16);
+#endif
     while (!current->text[0]) {
 	if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
 	if ((len=sscanf (line, "%d:%d:%d%[,.:]%d --> %d:%d:%d%[,.:]%d",&a1,&a2,&a3,(char *)&i,&a4,&b1,&b2,&b3,(char *)&i,&b4)) < 10)
@@ -564,19 +641,20 @@ static subtitle *sub_read_line_ssa(stream_t *st,subtitle *current, int utf16) {
 
 	do {
 		if (!stream_read_line (st, line, LINE_LEN, utf16)) return NULL;
-	} while (sscanf (line, "Dialogue: Marked=%d,%d:%d:%d.%d,%d:%d:%d.%d,"
+	} while (sscanf (line, "Dialogue: Marked=%d,%d:%d:%d.%d,%d:%d:%d.%d"
 			"%[^\n\r]", &nothing,
 			&hour1, &min1, &sec1, &hunsec1,
 			&hour2, &min2, &sec2, &hunsec2,
 			line3) < 9
 		 &&
-		 sscanf (line, "Dialogue: %d,%d:%d:%d.%d,%d:%d:%d.%d,"
+		 sscanf (line, "Dialogue: %d,%d:%d:%d.%d,%d:%d:%d.%d"
 			 "%[^\n\r]", &nothing,
 			 &hour1, &min1, &sec1, &hunsec1,
 			 &hour2, &min2, &sec2, &hunsec2,
 			 line3) < 9	    );
 
         line2=strchr(line3, ',');
+        if (!line2) return NULL;
 
         for (comma = 4; comma < max_comma; comma ++)
           {
@@ -1080,11 +1158,7 @@ static int sub_autodetect (stream_t* st, int *uses_time, int utf16) {
     return SUB_INVALID;  // too many bad lines
 }
 
-extern int sub_utf8;
 int sub_utf8_prev=0;
-
-extern float sub_delay;
-extern float sub_fps;
 
 #ifdef CONFIG_ICONV
 static iconv_t icdsc = (iconv_t)(-1);
@@ -1376,8 +1450,7 @@ sub_data* sub_read_file (char *filename, float fps) {
     const struct subreader *srp;
 
     if(filename==NULL) return NULL; //qnx segfault
-    i = 0;
-    fd=open_stream (filename, NULL, &i); if (!fd) return NULL;
+    fd=open_stream (filename, NULL, NULL); if (!fd) return NULL;
 
     sub_format = SUB_INVALID;
     for (utf16 = 0; sub_format == SUB_INVALID && utf16 < 3; utf16++) {
@@ -1405,7 +1478,6 @@ sub_data* sub_read_file (char *filename, float fps) {
 			    break;
 			}
 	    }
-
 	    if (k<0) subcp_open(fd);
     }
 #endif
@@ -1923,7 +1995,7 @@ char** sub_filenames(const char* path, char *fname)
 		    if (!prio && tmp_sub_id)
 		    {
 			sprintf(tmpresult, "%s %s", f_fname_trim, tmp_sub_id);
-			//mp_msg(MSGT_SUBREADER,MSGL_INFO,"dvdsublang...%s\n", tmpresult);
+			mp_msg(MSGT_SUBREADER, MSGL_DBG2,"Potential sub: %s\n", tmp_fname_trim);
 			if (strcmp(tmp_fname_trim, tmpresult) == 0 && sub_match_fuzziness >= 1) {
 			    // matches the movie name + lang extension
 			    prio = 5;
@@ -2288,58 +2360,72 @@ void sub_free( sub_data * subd )
  * \param txt text to parse
  * \param len length of text in txt
  * \param endpts pts at which this subtitle text should be removed again
+ * \param strip_markup if strip markup is set (!= 0), markup tags like <b></b> are ignored
  *
  * <> and {} are interpreted as comment delimiters, "\n", "\N", '\n', '\r'
  * and '\0' are interpreted as newlines, duplicate, leading and trailing
  * newlines are ignored.
  */
-void sub_add_text(subtitle *sub, const char *txt, int len, double endpts) {
+void sub_add_text(subtitle *sub, const char *txt, int len, double endpts, int strip_markup) {
   int comment = 0;
   int double_newline = 1; // ignore newlines at the beginning
   int i, pos;
   char *buf;
+#ifdef CONFIG_FRIBIDI
   int orig_lines = sub->lines;
+#endif
   if (sub->lines >= SUB_MAX_TEXT) return;
   pos = 0;
   buf = malloc(MAX_SUBLINE + 1);
   sub->text[sub->lines] = buf;
   sub->endpts[sub->lines] = endpts;
-  for (i = 0; i < len && pos < MAX_SUBLINE; i++) {
-    char c = txt[i];
-    if (c == '<') comment |= 1;
-    if (c == '{') comment |= 2;
-    if (comment) {
-      if (c == '}') comment &= ~2;
-      if (c == '>') comment &= ~1;
-      continue;
-    }
-    if (pos == MAX_SUBLINE - 1) {
-      i--;
-      c = 0;
-    }
-    if (c == '\\' && i + 1 < len) {
-      c = txt[++i];
-      if (c == 'n' || c == 'N') c = 0;
-    }
-    if (c == '\n' || c == '\r') c = 0;
-    if (c) {
-      double_newline = 0;
-      buf[pos++] = c;
-    } else if (!double_newline) {
-      if (sub->lines >= SUB_MAX_TEXT - 1) {
-        mp_msg(MSGT_VO, MSGL_WARN, "Too many subtitle lines\n");
-        break;
+
+#ifndef CONFIG_ASS
+  if (!strip_markup)
+    mp_msg(MSGT_SUBREADER, MSGL_ERR, "strip_markup must be set when ASS support is disabled!\n");
+  strip_markup = 1;
+#endif
+  if (!strip_markup) {
+    subassconvert_subrip(txt, buf, MAX_SUBLINE + 1);
+    sub->text[sub->lines] = buf;
+  } else {
+    for (i = 0; i < len && pos < MAX_SUBLINE; i++) {
+      char c = txt[i];
+      if (c == '<') comment |= 1;
+      if (c == '{') comment |= 2;
+      if (comment) {
+        if (c == '}') comment &= ~2;
+        if (c == '>') comment &= ~1;
+        continue;
       }
-      double_newline = 1;
-      buf[pos] = 0;
-      sub->lines++;
-      pos = 0;
-      buf = malloc(MAX_SUBLINE + 1);
-      sub->text[sub->lines] = buf;
-      sub->endpts[sub->lines] = endpts;
+      if (pos == MAX_SUBLINE - 1) {
+        i--;
+        c = 0;
+      }
+      if (c == '\\' && i + 1 < len) {
+        c = txt[++i];
+        if (c == 'n' || c == 'N') c = 0;
+      }
+      if (c == '\n' || c == '\r') c = 0;
+      if (c) {
+        double_newline = 0;
+        buf[pos++] = c;
+      } else if (!double_newline) {
+        if (sub->lines >= SUB_MAX_TEXT - 1) {
+          mp_msg(MSGT_VO, MSGL_WARN, "Too many subtitle lines\n");
+          break;
+        }
+        double_newline = 1;
+        buf[pos] = 0;
+        sub->lines++;
+        pos = 0;
+        buf = malloc(MAX_SUBLINE + 1);
+        sub->text[sub->lines] = buf;
+        sub->endpts[sub->lines] = endpts;
+      }
     }
+    buf[pos] = 0;
   }
-  buf[pos] = 0;
   if (sub->lines < SUB_MAX_TEXT &&
       strlen(sub->text[sub->lines]))
     sub->lines++;

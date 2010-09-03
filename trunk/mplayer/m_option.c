@@ -282,7 +282,7 @@ static char* print_double(const m_option_t* opt,  const void* val) {
 
 const m_option_type_t m_option_type_double = {
   "Double",
-  "double precission floating point number or ratio (numerator[:/]denominator)",
+  "double precision floating point number or ratio (numerator[:/]denominator)",
   sizeof(double),
   0,
   parse_double,
@@ -485,10 +485,12 @@ static int str_list_add(char** add, int n,void* dst,int pre) {
   lst = realloc(lst,(n+ln+1)*sizeof(char*));
 
   if(pre) {
-    memmove(&lst[n],lst,(ln+1)*sizeof(char*));
+    memmove(&lst[n],lst,ln*sizeof(char*));
     memcpy(lst,add,n*sizeof(char*));
   } else
-    memcpy(&lst[ln],add,(n+1)*sizeof(char*));
+    memcpy(&lst[ln],add,n*sizeof(char*));
+  // (re-)add NULL-termination
+  lst[ln+n] = NULL;
 
   free(add);
 

@@ -80,7 +80,7 @@
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         "jb                                  1b             \n\t"\
         :: "r" (&c->redDither),\
-        "r" (dest), "g" (width)\
+        "r" (dest), "g" ((x86_reg)width)\
         : "%"REG_a, "%"REG_d, "%"REG_S\
     );
 
@@ -142,7 +142,7 @@
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         "jb                                  1b             \n\t"\
         :: "r" (&c->redDither),\
-        "r" (dest), "g" (width)\
+        "r" (dest), "g" ((x86_reg)width)\
         : "%"REG_a, "%"REG_d, "%"REG_S\
     );
 
@@ -180,7 +180,7 @@
 /*
     :: "m" (-lumFilterSize), "m" (-chrFilterSize),
        "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
-       "r" (dest), "m" (dstW),
+       "r" (dest), "m" (dstW_reg),
        "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
     : "%eax", "%ebx", "%ecx", "%edx", "%esi"
 */
@@ -234,7 +234,7 @@
 #define YSCALEYUV2PACKEDX_END                     \
         :: "r" (&c->redDither),                   \
             "m" (dummy), "m" (dummy), "m" (dummy),\
-            "r" (dest), "m" (dstW)                \
+            "r" (dest), "m" (dstW_reg)            \
         : "%"REG_a, "%"REG_d, "%"REG_S            \
     );
 
@@ -1025,6 +1025,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 {
 #if COMPILE_TEMPLATE_MMX
     x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
     if(!(c->flags & SWS_BITEXACT)) {
         if (c->flags & SWS_ACCURATE_RND) {
             switch(c->dstFormat) {
@@ -1063,7 +1064,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 
                 :: "r" (&c->redDither),
                 "m" (dummy), "m" (dummy), "m" (dummy),
-                "r" (dest), "m" (dstW)
+                "r" (dest), "m" (dstW_reg)
                 : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
                 );
                 return;
@@ -1137,7 +1138,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 
                 :: "r" (&c->redDither),
                 "m" (dummy), "m" (dummy), "m" (dummy),
-                "r" (dest),  "m" (dstW)
+                "r" (dest),  "m" (dstW_reg)
                 : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
                 );
                 return;
@@ -2328,6 +2329,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #endif /* COMPILE_TEMPLATE_MMX2 */
     x86_reg xInc_shr16 = xInc >> 16;
     uint16_t xInc_mask = xInc & 0xffff;
+    x86_reg dstWidth_reg = dstWidth;
     //NO MMX just normal asm ...
     __asm__ volatile(
         "xor %%"REG_a", %%"REG_a"            \n\t" // i
@@ -2355,7 +2357,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
         " jb        1b                       \n\t"
 
 
-        :: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
+        :: "r" (src), "m" (dst), "m" (dstWidth_reg), "m" (xInc_shr16), "m" (xInc_mask)
         : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
     );
 #if COMPILE_TEMPLATE_MMX2
@@ -2468,6 +2470,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
 #endif /* COMPILE_TEMPLATE_MMX2 */
         x86_reg xInc_shr16 = (x86_reg) (xInc >> 16);
         uint16_t xInc_mask = xInc & 0xffff;
+        x86_reg dstWidth_reg = dstWidth;
         __asm__ volatile(
             "xor %%"REG_a", %%"REG_a"               \n\t" // i
             "xor %%"REG_d", %%"REG_d"               \n\t" // xx
@@ -2494,9 +2497,9 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
 /* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
 which is needed to support GCC 4.0. */
 #if ARCH_X86_64 && AV_GCC_VERSION_AT_LEAST(3,4)
-            :: "m" (src1), "m" (dst), "g" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+            :: "m" (src1), "m" (dst), "g" (dstWidth_reg), "m" (xInc_shr16), "m" (xInc_mask),
 #else
-            :: "m" (src1), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+            :: "m" (src1), "m" (dst), "m" (dstWidth_reg), "m" (xInc_shr16), "m" (xInc_mask),
 #endif
             "r" (src2)
             : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
@@ -2963,13 +2966,13 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         switch(srcFormat) {
         case PIX_FMT_RGB48BE:
         case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48ToUV_half; break;
-        case PIX_FMT_RGB32  :
-        case PIX_FMT_RGB32_1: c->chrToYV12 = bgr32ToUV_half; break;
+        case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV_half;  break;
+        case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV_half; break;
         case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV_half); break;
         case PIX_FMT_BGR565 : c->chrToYV12 = bgr16ToUV_half; break;
         case PIX_FMT_BGR555 : c->chrToYV12 = bgr15ToUV_half; break;
-        case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->chrToYV12 = rgb32ToUV_half; break;
+        case PIX_FMT_BGR32  : c->chrToYV12 = rgb32ToUV_half;  break;
+        case PIX_FMT_BGR32_1: c->chrToYV12 = rgb321ToUV_half; break;
         case PIX_FMT_RGB24  : c->chrToYV12 = RENAME(rgb24ToUV_half); break;
         case PIX_FMT_RGB565 : c->chrToYV12 = rgb16ToUV_half; break;
         case PIX_FMT_RGB555 : c->chrToYV12 = rgb15ToUV_half; break;
@@ -2978,13 +2981,13 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         switch(srcFormat) {
         case PIX_FMT_RGB48BE:
         case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48ToUV; break;
-        case PIX_FMT_RGB32  :
-        case PIX_FMT_RGB32_1: c->chrToYV12 = bgr32ToUV; break;
+        case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV;  break;
+        case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV; break;
         case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV); break;
         case PIX_FMT_BGR565 : c->chrToYV12 = bgr16ToUV; break;
         case PIX_FMT_BGR555 : c->chrToYV12 = bgr15ToUV; break;
-        case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->chrToYV12 = rgb32ToUV; break;
+        case PIX_FMT_BGR32  : c->chrToYV12 = rgb32ToUV;  break;
+        case PIX_FMT_BGR32_1: c->chrToYV12 = rgb321ToUV; break;
         case PIX_FMT_RGB24  : c->chrToYV12 = RENAME(rgb24ToUV); break;
         case PIX_FMT_RGB565 : c->chrToYV12 = rgb16ToUV; break;
         case PIX_FMT_RGB555 : c->chrToYV12 = rgb15ToUV; break;
@@ -3017,10 +3020,10 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     case PIX_FMT_RGB4_BYTE: c->lumToYV12 = palToY; break;
     case PIX_FMT_MONOBLACK: c->lumToYV12 = monoblack2Y; break;
     case PIX_FMT_MONOWHITE: c->lumToYV12 = monowhite2Y; break;
-    case PIX_FMT_RGB32  :
-    case PIX_FMT_RGB32_1: c->lumToYV12 = bgr32ToY; break;
-    case PIX_FMT_BGR32  :
-    case PIX_FMT_BGR32_1: c->lumToYV12 = rgb32ToY; break;
+    case PIX_FMT_RGB32  : c->lumToYV12 = bgr32ToY;  break;
+    case PIX_FMT_RGB32_1: c->lumToYV12 = bgr321ToY; break;
+    case PIX_FMT_BGR32  : c->lumToYV12 = rgb32ToY;  break;
+    case PIX_FMT_BGR32_1: c->lumToYV12 = rgb321ToY; break;
     case PIX_FMT_RGB48BE:
     case PIX_FMT_RGB48LE: c->lumToYV12 = rgb48ToY; break;
     }
@@ -3037,11 +3040,6 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     case PIX_FMT_RGB32  :
     case PIX_FMT_BGR32  :
         c->alpSrcOffset = 3;
-        break;
-    case PIX_FMT_RGB32_1:
-    case PIX_FMT_BGR32_1:
-        c->lumSrcOffset = ALT32_CORR;
-        c->chrSrcOffset = ALT32_CORR;
         break;
     case PIX_FMT_RGB48LE:
         c->lumSrcOffset = 1;

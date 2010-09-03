@@ -1,4 +1,4 @@
-// Synced with help_mp-en.h rev. 31032 (MSGTR_AudioStreamRedefined)
+// Synced with help_mp-en.h rev. 31938 (MSGTR_MissingDLLcodec)
 // Reminder of hard terms which need better/final solution later:
 //   (file links to be updated later if available!);
 //   NAV; section/subsection;  XScreenSaver; keycolor;
@@ -9,7 +9,6 @@
 
 // ========================= MPlayer help ===========================
 
-#ifdef HELP_MP_DEFINE_STATIC
 static const char help_text[]=
 "用法：            mplayer [选项] [URL|路径/]文件名\n"
 "\n"
@@ -49,7 +48,6 @@ static const char help_text[]=
 "\n"
 " * * * 参见手册相关页面可获取具体内容，及更多（高级）选项和控制键的信息 * * *\n"
 "\n";
-#endif
 
 // ========================= MPlayer messages ===========================
 
@@ -293,7 +291,7 @@ static const char help_text[]=
 #define MSGTR_LimitingAudioPreload "限制音频预加载长度为 0.4s。\n"
 #define MSGTR_IncreasingAudioDensity "增加音频密度至 4。\n"
 #define MSGTR_ZeroingAudioPreloadAndMaxPtsCorrection "强制音频预加载长度为 0，最大 PTS 校验长度为 0。\n"
-#define MSGTR_CBRAudioByterate "\n\nCBR 音频：%d 字节/秒，%d 字节/块\n"
+#define MSGTR_CBRAudioByterate "\n\nCBR 音频：%d 字节/秒，%d 字节/段\n"
 #define MSGTR_LameVersion "LAME 版本 %s（%s）\n\n"
 #define MSGTR_InvalidBitrateForLamePreset "错误：指定的比特率超出该预设配置的有效范围。\n"\
 "\n"\
@@ -821,8 +819,6 @@ static const char help_text[]=
 #define MSGTR_VO_CantCreateDirectory "无法创建输出目录。"
 #define MSGTR_VO_CantCreateFile "无法创建输出文件。"
 #define MSGTR_VO_DirectoryCreateSuccess "输出目录创建成功。"
-#define MSGTR_VO_ParsingSuboptions "解析子选项。"
-#define MSGTR_VO_SuboptionsParsedOK "子选项解析成功。"
 #define MSGTR_VO_ValueOutOfRange "值超出范围"
 #define MSGTR_VO_NoValueSpecified "未指定值。"
 #define MSGTR_VO_UnknownSuboptions "未知子选项"
@@ -931,7 +927,7 @@ static const char help_text[]=
 #define MSGTR_LIBVO_MGA_AspectResized "[VO_MGA] aspect()：改变大小为 %dx%d。\n"
 #define MSGTR_LIBVO_MGA_Uninit "[VO] 卸载！\n"
 
-// mga_common.c
+// mga_template.c
 #define MSGTR_LIBVO_MGA_ErrorInConfigIoctl "[MGA] mga_vid_config ioctl 错误（mga_vid.o 版本错误？）"
 #define MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule "[MGA] 无法在内核模块中获得亮度值！\n"
 #define MSGTR_LIBVO_MGA_CouldNotSetLumaValuesFromTheKernelModule "[MGA] 无法在内核模块中设置亮度值！\n"
@@ -1092,9 +1088,7 @@ static const char help_text[]=
 // vo_yuv4mpeg.c
 #define MSGTR_VO_YUV4MPEG_InterlacedHeightDivisibleBy4 "隔行扫描模式要求图像高度能被 4 整除。"
 #define MSGTR_VO_YUV4MPEG_InterlacedLineBufAllocFail "无法为隔行扫描模式分配扫描行缓冲。"
-#define MSGTR_VO_YUV4MPEG_InterlacedInputNotRGB "输入信号不是 RGB 格式，不能按色彩域拆分色度信息！"
 #define MSGTR_VO_YUV4MPEG_WidthDivisibleBy2 "图像宽度必须能被 2 整除。"
-#define MSGTR_VO_YUV4MPEG_NoMemRGBFrameBuf "内存不够，无法分配 RGB 帧缓冲。"
 #define MSGTR_VO_YUV4MPEG_OutFileOpenError "无法获取内存或文件句柄以写入“%s”！"
 #define MSGTR_VO_YUV4MPEG_OutFileWriteError "图像写入输出错误！"
 #define MSGTR_VO_YUV4MPEG_UnknownSubDev "未知子设备：%s"
@@ -1376,8 +1370,8 @@ static const char help_text[]=
 #define MSGTR_WritingTrailer "正在写入索引...\n"
 
 // demuxer.c, demux_*.c
-#define MSGTR_AudioStreamRedefined "警告：重复定义音频流头部 %d。\n"
-#define MSGTR_VideoStreamRedefined "警告: 重复定义视频流头部 %d。\n"
+#define MSGTR_AudioStreamRedefined "警告：重复定义了音频流头部 %d。\n"
+#define MSGTR_VideoStreamRedefined "警告: 重复定义了视频流头部 %d。\n"
 #define MSGTR_TooManyAudioInBuffer "\n缓冲中音频包太多（%d 个包存在于 %d 字节中）。\n"
 #define MSGTR_TooManyVideoInBuffer "\n缓冲中视频包太多（%d 个包存在于 %d 字节中）。\n"
 #define MSGTR_MaybeNI "可能播放了一个非交错合并的媒体流/文件，或者是编解码运行失败？\n" \
@@ -1444,7 +1438,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_ASFHDR_HeaderMallocFailed "无法为文件头部分配 %d 字节的存放空间。\n"
 #define MSGTR_MPDEMUX_ASFHDR_EOFWhileReadingHeader "读 ASF 头部时遇到文件结尾，文件损坏或不完整？\n"
 #define MSGTR_MPDEMUX_ASFHDR_DVRWantsLibavformat "DVR 可能只能与 libavformat 一同使用，如果有问题请尝试 -demuxer 35。\n"
-#define MSGTR_MPDEMUX_ASFHDR_NoDataChunkAfterHeader "文件头部之后没有数据块！\n"
+#define MSGTR_MPDEMUX_ASFHDR_NoDataChunkAfterHeader "文件头部之后没有数据段！\n"
 #define MSGTR_MPDEMUX_ASFHDR_AudioVideoHeaderNotFound "ASF：未找到音频或视频头部 - 文件损坏？\n"
 #define MSGTR_MPDEMUX_ASFHDR_InvalidLengthInASFHeader "ASF 头部长度无效！\n"
 #define MSGTR_MPDEMUX_ASFHDR_DRMLicenseURL "DRM 许可证 URL 地址：%s\n"
@@ -1459,10 +1453,10 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_AVIHDR_RegeneratingKeyfTableForMPEG4 "为 MPEG4 视频重新生成关键帧表。\n"
 #define MSGTR_MPDEMUX_AVIHDR_FoundWaveFmt "找到‘wf’，%d 字节，%d\n"
 #define MSGTR_MPDEMUX_AVIHDR_FoundAVIV2Header "AVI：发现 dmlh (size=%d) (total_frames=%d)\n"
-#define MSGTR_MPDEMUX_AVIHDR_ReadingIndexBlockChunksForFrames  "正在读取索引数据块，%d 块数据用于 %d 帧 (fpos=%"PRId64")。\n"
+#define MSGTR_MPDEMUX_AVIHDR_ReadingIndexBlockChunksForFrames  "正在读取索引数据段，%d 段数据用于 %d 帧 (fpos=%"PRId64")。\n"
 #define MSGTR_MPDEMUX_AVIHDR_AdditionalRIFFHdr "额外的 RIFF 头部数据...\n"
 #define MSGTR_MPDEMUX_AVIHDR_WarnNotExtendedAVIHdr "** 警告：这不是扩展格式的 AVI 头部..\n"
-#define MSGTR_MPDEMUX_AVIHDR_BrokenChunk "数据块损坏？ chunksize=%d  (id=%.4s)\n"
+#define MSGTR_MPDEMUX_AVIHDR_BrokenChunk "数据段损坏？chunksize=%d  (id=%.4s)\n"
 #define MSGTR_MPDEMUX_AVIHDR_BuildingODMLidx "AVI：ODML：构造 ODML 索引 (%d superindexchunks)。\n"
 #define MSGTR_MPDEMUX_AVIHDR_BrokenODMLfile "AVI：ODML：检测到损坏的（不完整的？）文件。将使用传统的索引模式。\n"
 #define MSGTR_MPDEMUX_AVIHDR_CantReadIdxFile "无法读索引文件 %s：%s\n"
@@ -1471,111 +1465,111 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_AVIHDR_PrematureEOF "过早结束的索引文件 %s\n"
 #define MSGTR_MPDEMUX_AVIHDR_IdxFileLoaded "已加载索引文件：%s\n"
 #define MSGTR_MPDEMUX_AVIHDR_GeneratingIdx "正在生成索引：%3lu %s     \r"
-#define MSGTR_MPDEMUX_AVIHDR_IdxGeneratedForHowManyChunks "AVI：为 %d 块数据生成索引表！\n"
+#define MSGTR_MPDEMUX_AVIHDR_IdxGeneratedForHowManyChunks "AVI：为 %d 段数据生成索引表！\n"
 #define MSGTR_MPDEMUX_AVIHDR_Failed2WriteIdxFile "无法写入索引文件 %s：%s\n"
 #define MSGTR_MPDEMUX_AVIHDR_IdxFileSaved "已保存索引文件：%s\n"
 
 // demux_audio.c
-#define MSGTR_MPDEMUX_AUDIO_UnknownFormat "音频分路器: 未知格式 %d。\n"
+#define MSGTR_MPDEMUX_AUDIO_UnknownFormat "音频流分解器：未知格式 %d。\n"
 
 // demux_demuxers.c
-#define MSGTR_MPDEMUX_DEMUXERS_FillBufferError "fill_buffer 错误: 分路器错误: 不是 vd, ad 或 sd。\n"
+#define MSGTR_MPDEMUX_DEMUXERS_FillBufferError "fill_buffer 错误：流分解器错误：非 vd、ad 或 sd。\n"
 
 // demux_mkv.c
 #define MSGTR_MPDEMUX_MKV_ZlibInitializationFailed "[mkv] zlib 初始化失败。\n"
 #define MSGTR_MPDEMUX_MKV_ZlibDecompressionFailed "[mkv] zlib 解压失败。\n"
 #define MSGTR_MPDEMUX_MKV_LzoInitializationFailed "[mkv] lzo 初始化失败。\n"
 #define MSGTR_MPDEMUX_MKV_LzoDecompressionFailed "[mkv] lzo 解压失败。\n"
-#define MSGTR_MPDEMUX_MKV_TrackEncrypted "[mkv] 轨迹号 %u 已加密但解密还没\n[mkv] 实现。跳过轨迹。\n"
-#define MSGTR_MPDEMUX_MKV_UnknownContentEncoding "[mkv] 轨迹 %u 的内容编码类型未知。跳过轨迹。\n"
-#define MSGTR_MPDEMUX_MKV_UnknownCompression "[mkv] 轨迹 %u 已压缩, 用了未知的/不支持的压缩\n[mkv] 算法(%u)。跳过轨迹。\n"
-#define MSGTR_MPDEMUX_MKV_ZlibCompressionUnsupported "[mkv] 轨迹 %u 已用 zlib 压缩但 mplayer 还没编译成\n[mkv] 支持 zlib 压缩。跳过轨迹。\n"
-#define MSGTR_MPDEMUX_MKV_TrackIDName "[mkv] 轨迹 ID %u: %s (%s) \"%s\", %s\n"
-#define MSGTR_MPDEMUX_MKV_TrackID "[mkv] 轨迹 ID %u: %s (%s), %s\n"
-#define MSGTR_MPDEMUX_MKV_UnknownCodecID "[mkv] 未知的/不支持的 CodecID (%s) 或者缺少的/坏的 CodecPrivate\n[mkv] 数据(轨迹 %u)。\n"
-#define MSGTR_MPDEMUX_MKV_FlacTrackDoesNotContainValidHeaders "[mkv] FLAC 轨迹没含有效的头部。\n"
-#define MSGTR_MPDEMUX_MKV_UnknownAudioCodec "[mkv] 未知的/不支持的音频编解码器 ID '%s' 对于轨迹 %u 或者缺少的/有缺点的\n[mkv] 编解码器私有数据。\n"
-#define MSGTR_MPDEMUX_MKV_SubtitleTypeNotSupported "[mkv] 不支持字幕类型 '%s'。\n"
-#define MSGTR_MPDEMUX_MKV_WillPlayVideoTrack "[mkv] 将播放视频轨迹 %u。\n"
-#define MSGTR_MPDEMUX_MKV_NoVideoTrackFound "[mkv] 没有找到/所要的视频轨迹。\n"
-#define MSGTR_MPDEMUX_MKV_NoAudioTrackFound "[mkv] 没有找到/所要的音频轨迹。\n"
-#define MSGTR_MPDEMUX_MKV_WillDisplaySubtitleTrack "[mkv] 将播放字幕轨迹 %u。\n"
-#define MSGTR_MPDEMUX_MKV_NoBlockDurationForSubtitleTrackFound "[mkv] 警告: 对于所找到的字幕轨迹没有 BlockDuration。\n"
-#define MSGTR_MPDEMUX_MKV_TooManySublines "[mkv] Warning: 太多的字幕要渲染, 跳过。\n"
-#define MSGTR_MPDEMUX_MKV_TooManySublinesSkippingAfterFirst "\n[mkv] 警告: 太多的字幕要渲染, %i 以后跳过。n"
+#define MSGTR_MPDEMUX_MKV_TrackEncrypted "[mkv] 轨道 %u 已加密，但解密还未实现。跳过该轨道。\n"
+#define MSGTR_MPDEMUX_MKV_UnknownContentEncoding "[mkv] 轨道 %u 内容的编码类型未知。跳过该轨道。\n"
+#define MSGTR_MPDEMUX_MKV_UnknownCompression "[mkv] 轨道 %u 使用了未知/不支持的压缩算法（%u）。\n[mkv] 跳过该轨道。\n"
+#define MSGTR_MPDEMUX_MKV_ZlibCompressionUnsupported "[mkv] 轨道 %u 已经 zlib 压缩，但 mplayer 未以支持 zlib 压缩\n[mkv] 选项编译。跳过该轨道。\n"
+#define MSGTR_MPDEMUX_MKV_TrackIDName "[mkv] 轨道 ID %u：%s (%s) \"%s\"，%s\n"
+#define MSGTR_MPDEMUX_MKV_TrackID "[mkv] 轨道 ID %u：%s (%s), %s\n"
+#define MSGTR_MPDEMUX_MKV_UnknownCodecID "[mkv] 未知的/不支持的编解码器 ID（%s），也可能是编解码器私有数据\n[mkv] 缺少/损坏（轨道 %u）。\n"
+#define MSGTR_MPDEMUX_MKV_FlacTrackDoesNotContainValidHeaders "[mkv] FLAC 轨道未含有效的头部信息。\n"
+#define MSGTR_MPDEMUX_MKV_UnknownAudioCodec "[mkv] 未知/不支持的音频编解码器 ID‘%s’（轨道 %u），也可能是编解码器\n[mkv] 私有数据缺少/损坏。\n"
+#define MSGTR_MPDEMUX_MKV_SubtitleTypeNotSupported "[mkv] 未支持字幕类型‘%s’。\n"
+#define MSGTR_MPDEMUX_MKV_WillPlayVideoTrack "[mkv] 将播放视频轨道 %u。\n"
+#define MSGTR_MPDEMUX_MKV_NoVideoTrackFound "[mkv] 未找到/不需要视频轨道。\n"
+#define MSGTR_MPDEMUX_MKV_NoAudioTrackFound "[mkv] 未找到/不需要音频轨道。\n"
+#define MSGTR_MPDEMUX_MKV_WillDisplaySubtitleTrack "[mkv] 将播放字幕轨道 %u。\n"
+#define MSGTR_MPDEMUX_MKV_NoBlockDurationForSubtitleTrackFound "[mkv] 警告：所找到的字幕轨道没有字幕段持续时间信息。\n"
+#define MSGTR_MPDEMUX_MKV_TooManySublines "[mkv] Warning：需渲染的字幕过多，跳过。\n"
+#define MSGTR_MPDEMUX_MKV_TooManySublinesSkippingAfterFirst "\n[mkv] 警告：需渲染的字幕过多，路过前 %i 个后的字幕。n"
 
 // demux_nuv.c
-#define MSGTR_MPDEMUX_NUV_NoVideoBlocksInFile "文件中没有视频块。\n"
+#define MSGTR_MPDEMUX_NUV_NoVideoBlocksInFile "文件中没有视频数据段。\n"
 
 // demux_xmms.c
-#define MSGTR_MPDEMUX_XMMS_FoundPlugin "找到插件: %s (%s)。\n"
-#define MSGTR_MPDEMUX_XMMS_ClosingPlugin "关闭插件: %s。\n"
-#define MSGTR_MPDEMUX_XMMS_WaitForStart "等待XMMS插件开始播放‘%s’...\n"
+#define MSGTR_MPDEMUX_XMMS_FoundPlugin "找到插件：%s（%s）。\n"
+#define MSGTR_MPDEMUX_XMMS_ClosingPlugin "关闭插件：%s。\n"
+#define MSGTR_MPDEMUX_XMMS_WaitForStart "等待 XMMS 插件开始播放‘%s’...\n"
 
 
 // ========================== LIBMENU ===================================
 
 // common
-#define MSGTR_LIBMENU_NoEntryFoundInTheMenuDefinition "[MENU] 菜单定义中没有找到条目。\n"
+#define MSGTR_LIBMENU_NoEntryFoundInTheMenuDefinition "[MENU] 菜单定义中未找到菜单项。\n"
 
 // libmenu/menu.c
-#define MSGTR_LIBMENU_SyntaxErrorAtLine "[MENU] 语法错误: 行 %d\n"
-#define MSGTR_LIBMENU_MenuDefinitionsNeedANameAttrib "[MENU] 菜单定义需要名称属性 (行 %d)。\n"
-#define MSGTR_LIBMENU_BadAttrib "[MENU] 错误属性 %s=%s，在菜单 '%s' 的 %d 行\n"
-#define MSGTR_LIBMENU_UnknownMenuType "[MENU] 未知菜单类型 '%s' (行 %d)\n"
-#define MSGTR_LIBMENU_CantOpenConfigFile "[MENU] 打不开菜单配置文件: %s\n"
-#define MSGTR_LIBMENU_ConfigFileIsTooBig "[MENU] 配置文件过长 (> %d KB)\n"
+#define MSGTR_LIBMENU_SyntaxErrorAtLine "[MENU] 语法错误：第 %d 行\n"
+#define MSGTR_LIBMENU_MenuDefinitionsNeedANameAttrib "[MENU] 菜单定义需要名称属性（第 %d 行）。\n"
+#define MSGTR_LIBMENU_BadAttrib "[MENU] 无效属性 %s=%s，菜单‘%s’的第 %d 行\n"
+#define MSGTR_LIBMENU_UnknownMenuType "[MENU] 未知菜单类型‘%s’（第 %d 行）\n"
+#define MSGTR_LIBMENU_CantOpenConfigFile "[MENU] 无法打开菜单配置文件：%s\n"
+#define MSGTR_LIBMENU_ConfigFileIsTooBig "[MENU] 配置文件过大（> %d KB）\n"
 #define MSGTR_LIBMENU_ConfigFileIsEmpty "[MENU] 配置文件为空。\n"
-#define MSGTR_LIBMENU_MenuNotFound "[MENU] 没找到菜单 %s。\n"
-#define MSGTR_LIBMENU_MenuInitFailed "[MENU] 菜单 '%s': 初始化失败。\n"
-#define MSGTR_LIBMENU_UnsupportedOutformat "[MENU] 输出格式不支持!!!!\n"
+#define MSGTR_LIBMENU_MenuNotFound "[MENU] 未找到菜单 %s。\n"
+#define MSGTR_LIBMENU_MenuInitFailed "[MENU] 菜单‘%s’：初始化失败。\n"
+#define MSGTR_LIBMENU_UnsupportedOutformat "[MENU] 不支持该输出格式！\n"
 
 // libmenu/menu_cmdlist.c
-#define MSGTR_LIBMENU_ListMenuEntryDefinitionsNeedAName "[MENU] 列表菜单条目的定义需要名称 (行 %d)。\n"
-#define MSGTR_LIBMENU_ListMenuNeedsAnArgument "[MENU] 列表菜单需要参数。\n"
+#define MSGTR_LIBMENU_ListMenuEntryDefinitionsNeedAName "[MENU] 定义列表菜单项需要给出名称（行 %d）。\n"
+#define MSGTR_LIBMENU_ListMenuNeedsAnArgument "[MENU] 列表菜单需要给出参数。\n"
 
 // libmenu/menu_console.c
-#define MSGTR_LIBMENU_WaitPidError "[MENU] Waitpid 错误: %s。\n"
+#define MSGTR_LIBMENU_WaitPidError "[MENU] Waitpid 错误：%s。\n"
 #define MSGTR_LIBMENU_SelectError "[MENU] Select 错误。\n"
-#define MSGTR_LIBMENU_ReadErrorOnChildFD "[MENU] 子进程的文件描述符读取错误: %s。\n"
-#define MSGTR_LIBMENU_ConsoleRun "[MENU] 终端运行: %s ...\n"
+#define MSGTR_LIBMENU_ReadErrorOnChildFD "[MENU] 子进程的文件描述符读取错误：%s。\n"
+#define MSGTR_LIBMENU_ConsoleRun "[MENU] 终端运行：%s ...\n"
 #define MSGTR_LIBMENU_AChildIsAlreadyRunning "[MENU] 子进程已经运行。\n"
-#define MSGTR_LIBMENU_ForkFailed "[MENU] Fork 失败!!!\n"
+#define MSGTR_LIBMENU_ForkFailed "[MENU] Fork 失败！！！\n"
 #define MSGTR_LIBMENU_WriteError "[MENU] write 错误\n"
 
 // libmenu/menu_filesel.c
-#define MSGTR_LIBMENU_OpendirError "[MENU] opendir 错误: %s\n"
-#define MSGTR_LIBMENU_ReallocError "[MENU] realloc 错误: %s\n"
-#define MSGTR_LIBMENU_MallocError "[MENU] 内存分配错误: %s\n"
-#define MSGTR_LIBMENU_ReaddirError "[MENU] readdir 错误: %s\n"
-#define MSGTR_LIBMENU_CantOpenDirectory "[MENU] 打不开目录 %s。\n"
+#define MSGTR_LIBMENU_OpendirError "[MENU] opendir 错误：%s\n"
+#define MSGTR_LIBMENU_ReallocError "[MENU] realloc 错误：%s\n"
+#define MSGTR_LIBMENU_MallocError "[MENU] 内存分配错误：%s\n"
+#define MSGTR_LIBMENU_ReaddirError "[MENU] readdir 错误：%s\n"
+#define MSGTR_LIBMENU_CantOpenDirectory "[MENU] 无法打开目录 %s。\n"
 
 // libmenu/menu_param.c
-#define MSGTR_LIBMENU_SubmenuDefinitionNeedAMenuAttribut "[MENU] 子菜单定义需要 'menu' 属性。\n"
-#define MSGTR_LIBMENU_InvalidProperty "[MENU] 首选项菜单中存在无效的属性值'%s'。（行%d）。\n"
-#define MSGTR_LIBMENU_PrefMenuEntryDefinitionsNeed "[MENU] 首选项菜单条目的定义需一个有效的'property'或'txt'属性（行%d）。\n"
-#define MSGTR_LIBMENU_PrefMenuNeedsAnArgument "[MENU] 首选项菜单需要参数。\n"
+#define MSGTR_LIBMENU_SubmenuDefinitionNeedAMenuAttribut "[MENU] 定义子菜单需给出‘menu’属性。\n"
+#define MSGTR_LIBMENU_InvalidProperty "[MENU] 首选项菜单中存在无效的属性值‘%s’。（行 %d）。\n"
+#define MSGTR_LIBMENU_PrefMenuEntryDefinitionsNeed "[MENU] 定义首选项菜单条目需给出一个有效的‘property’或‘txt’属性（行 %d）。\n"
+#define MSGTR_LIBMENU_PrefMenuNeedsAnArgument "[MENU] 首选项菜单需要给出参数。\n"
 
 // libmenu/menu_pt.c
-#define MSGTR_LIBMENU_CantfindTheTargetItem "[MENU] 找不到目标项 ????\n"
-#define MSGTR_LIBMENU_FailedToBuildCommand "[MENU] 生成命令失败: %s。\n"
+#define MSGTR_LIBMENU_CantfindTheTargetItem "[MENU] 无法找到目标项目？？\n"
+#define MSGTR_LIBMENU_FailedToBuildCommand "[MENU] 未能生成菜单命令：%s。\n"
 
 // libmenu/menu_txt.c
-#define MSGTR_LIBMENU_MenuTxtNeedATxtFileName "[MENU] 文本菜单需要文本文件名(参数文件)。\n"
-#define MSGTR_LIBMENU_MenuTxtCantOpen "[MENU] 打不开 %s。\n"
-#define MSGTR_LIBMENU_WarningTooLongLineSplitting "[MENU] 警告, 行过长. 分割之。\n"
-#define MSGTR_LIBMENU_ParsedLines "[MENU] 解析了行 %d。\n"
+#define MSGTR_LIBMENU_MenuTxtNeedATxtFileName "[MENU] 文本菜单需要给出文本文件名（参数文件）。\n"
+#define MSGTR_LIBMENU_MenuTxtCantOpen "[MENU] 无法打开 %s。\n"
+#define MSGTR_LIBMENU_WarningTooLongLineSplitting "[MENU] 警告，行过长。将其分割。\n"
+#define MSGTR_LIBMENU_ParsedLines "[MENU] 已解析行 %d。\n"
 
 // libmenu/vf_menu.c
-#define MSGTR_LIBMENU_UnknownMenuCommand "[MENU] 未知命令: '%s'。\n"
-#define MSGTR_LIBMENU_FailedToOpenMenu "[MENU] 打开菜单失败: '%s'。\n"
+#define MSGTR_LIBMENU_UnknownMenuCommand "[MENU] 未知命令：‘%s’。\n"
+#define MSGTR_LIBMENU_FailedToOpenMenu "[MENU] 未能打开菜单：‘%s’。\n"
 
 
 // ========================== LIBMPCODECS ===================================
 
 // dec_video.c & dec_audio.c:
-#define MSGTR_CantOpenCodec "打不开解码器。\n"
-#define MSGTR_CantCloseCodec "不能关闭解码器。\n"
+#define MSGTR_CantOpenCodec "无法打开解码器。\n"
+#define MSGTR_CantCloseCodec "无法关闭解码器。\n"
 
 #define MSGTR_MissingDLLcodec "错误: 打不开所需的 DirectShow 编解码器: %s\n"
 #define MSGTR_ACMiniterror "不能加载/初始化 Win32/ACM 音频解码器(缺少 DLL 文件?)。\n"
@@ -1763,7 +1757,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_AIALSA_UnavailableAccessType "访问类型不可用。\n"
 #define MSGTR_MPDEMUX_AIALSA_UnavailableSampleFmt "采样文件不可用。\n"
 #define MSGTR_MPDEMUX_AIALSA_UnavailableChanCount "通道记数不可用 - 使用默认: %d\n"
-#define MSGTR_MPDEMUX_AIALSA_CannotInstallHWParams "无法安装硬件参数: %s"
+#define MSGTR_MPDEMUX_AIALSA_CannotInstallHWParams "无法设置硬件参数: %s"
 #define MSGTR_MPDEMUX_AIALSA_PeriodEqualsBufferSize "不能使用等于缓冲大小的间隔 (%u == %lu)\n"
 #define MSGTR_MPDEMUX_AIALSA_CannotInstallSWParams "无法安装软件参数:\n"
 #define MSGTR_MPDEMUX_AIALSA_ErrorOpeningAudio "打开音频错误: %s\n"
@@ -1829,7 +1823,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_ASF_UnknownASFStreamType "未知的 ASF 流类型\n"
 #define MSGTR_MPDEMUX_ASF_Failed2ParseHTTPResponse "解析 HTTP 响应失败。\n"
 #define MSGTR_MPDEMUX_ASF_ServerReturn "服务器返回 %d:%s\n"
-#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP 解析警告 : Pragma %s 被从 %d 字节切到 %d\n"
+#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP 解析警告 : Pragma %s 被从 %zd 字节切到 %d\n"
 #define MSGTR_MPDEMUX_ASF_SocketWriteError "Socket 写错误: %s\n"
 #define MSGTR_MPDEMUX_ASF_HeaderParseFailed "解析头部失败。\n"
 #define MSGTR_MPDEMUX_ASF_NoStreamFound "找不到流。\n"
@@ -1880,16 +1874,17 @@ static const char help_text[]=
 #define MSGTR_ConnToServer "连接到服务器: %s\n"
 #define MSGTR_FileNotFound "找不到文件: '%s'\n"
 
-#define MSGTR_SMBInitError "不能初始 libsmbclient 库: %d\n"
-#define MSGTR_SMBFileNotFound "打不开局域网内的: '%s'\n"
+#define MSGTR_SMBInitError "无法初始化 libsmbclient 库: %d\n"
+#define MSGTR_SMBFileNotFound "无法打开局域网内的: '%s'\n"
 #define MSGTR_SMBNotCompiled "MPlayer 没有编译成支持 SMB 的读取。\n"
 
-#define MSGTR_CantOpenDVD "打不开 DVD 设备：%s（%s）\n"
+#define MSGTR_CantOpenBluray "无法打开蓝光设备：%s\n"
+#define MSGTR_CantOpenDVD "无法打开 DVD 设备：%s（%s）\n"
 
 // stream_cdda.c
 #define MSGTR_MPDEMUX_CDDA_CantOpenCDDADevice "打不开 CDDA 设备。\n"
 #define MSGTR_MPDEMUX_CDDA_CantOpenDisc "打不开盘。\n"
-#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "发现音频 CD，共 %ld 音轨。\n"
+#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "发现音频 CD，共 %d 音轨。\n"
 
 // stream_cddb.c
 #define MSGTR_MPDEMUX_CDDB_FailedToReadTOC "读取 TOC 失败。\n"
@@ -1955,7 +1950,12 @@ static const char help_text[]=
 #define MSGTR_DVDsubtitleLanguage "字幕号(sid): %d 语言: %s\n"
 #define MSGTR_DVDnumSubtitles "盘上的字幕数: %d\n"
 
-// stream/stream_radio.c
+// stream_bluray.c
+#define MSGTR_BlurayNoDevice "未指定蓝光 DVD 的设备/位置...\n"
+#define MSGTR_BlurayNoTitles "无法在此找到与蓝光 DVD 相兼容的标题内容。\n"
+#define MSGTR_BlurayOK "成功打开蓝光 DVD。\n"
+
+// stream_radio.c
 #define MSGTR_RADIO_ChannelNamesDetected "[radio] 检测到广播通道名。\n"
 #define MSGTR_RADIO_FreqRange "[radio] 允许的频率范围是 %.2f-%.2f MHz。\n"
 #define MSGTR_RADIO_WrongFreqForChannel "[radio] 错误的通道频率 %s\n"
@@ -2098,3 +2098,7 @@ static const char help_text[]=
 
 // url.c
 #define MSGTR_MPDEMUX_URL_StringAlreadyEscaped "字符串似乎已经经过 url_escape %c%c1%c2 换码了。\n"
+
+// subtitles
+#define MSGTR_SUBTITLES_SubRip_UnknownFontColor "SubRip：字幕含有未知字体颜色：%s\n"
+

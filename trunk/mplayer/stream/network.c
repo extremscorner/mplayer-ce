@@ -43,14 +43,12 @@
 #include "stream.h"
 #include "libmpdemux/demuxer.h"
 #include "m_config.h"
-
+#include "mpcommon.h"
 #include "network.h"
 #include "tcp.h"
 #include "http.h"
 #include "cookies.h"
 #include "url.h"
-
-#include "version.h"
 
 extern int stream_cache_size;
 
@@ -62,6 +60,7 @@ char *network_password=NULL;
 int   network_bandwidth=0;
 int   network_cookies_enabled = 0;
 char *network_useragent=NULL;
+char *network_referrer=NULL;
 
 /* IPv6 options */
 int   network_ipv4_only_proxy = 0;
@@ -219,12 +218,27 @@ http_send_request( URL_t *url, off_t pos ) {
 	    snprintf(str, 256, "Host: %s", server_url->hostname );
 	http_set_field( http_hdr, str);
 	if (network_useragent)
-	{
 	    snprintf(str, 256, "User-Agent: %s", network_useragent);
-	    http_set_field(http_hdr, str);
-	}
 	else
-	    http_set_field( http_hdr, "User-Agent: MPlayer/"VERSION);
+	    snprintf(str, 256, "User-Agent: %s", mplayer_version);
+        http_set_field(http_hdr, str);
+
+	if (network_referrer) {
+	    char *referrer = NULL;
+	    size_t len = strlen(network_referrer) + 10;
+
+	    // Check len to ensure we don't do something really bad in case of an overflow
+	    if (len > 10)
+		referrer = malloc(len);
+
+	    if (referrer == NULL) {
+		mp_msg(MSGT_NETWORK, MSGL_FATAL, MSGTR_MemAllocFailed);
+	    } else {
+		snprintf(referrer, len, "Referer: %s", network_referrer);
+		http_set_field(http_hdr, referrer);
+		free(referrer);
+	    }
+	}
 
 	if( strcasecmp(url->protocol, "noicyx") )
 	    http_set_field(http_hdr, "Icy-MetaData: 1");
@@ -234,9 +248,9 @@ http_send_request( URL_t *url, off_t pos ) {
 	    snprintf(str, 256, "Range: bytes=%"PRId64"-", (int64_t)pos);
 	    http_set_field(http_hdr, str);
 	}
-#if !defined(GEKKO)	    
+
 	if (network_cookies_enabled) cookies_set( http_hdr, server_url->hostname, server_url->url );
-#endif	
+
 	http_set_field( http_hdr, "Connection: close");
 	http_add_basic_authentication( http_hdr, url->username, url->password );
 	if( http_build_request( http_hdr )==NULL ) {
@@ -257,7 +271,7 @@ http_send_request( URL_t *url, off_t pos ) {
 	}
 	mp_msg(MSGT_NETWORK,MSGL_DBG2,"Request: [%s]\n", http_hdr->buffer );
 
-	ret = send( fd, http_hdr->buffer, http_hdr->buffer_size, 0 );
+	ret = send( fd, http_hdr->buffer, http_hdr->buffer_size, DEFAULT_SEND_FLAGS );
 	if( ret!=(int)http_hdr->buffer_size ) {
 		mp_msg(MSGT_NETWORK,MSGL_ERR,MSGTR_MPDEMUX_NW_ErrSendingHTTPRequest);
 		goto err_out;

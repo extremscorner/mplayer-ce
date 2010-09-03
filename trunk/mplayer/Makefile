@@ -21,8 +21,6 @@
 
 include config.mak
 
-.SUFFIXES:
-
 ###### variable declarations #######
 
 SRCS_AUDIO_INPUT-$(ALSA1X)           += stream/ai_alsa1x.c
@@ -108,18 +106,9 @@ SRCS_COMMON-$(HAVE_SYS_MMAN_H)       += libaf/af_export.c osdep/mmap_anon.c
 SRCS_COMMON-$(JPEG)                  += libmpcodecs/vd_ijpg.c
 SRCS_COMMON-$(LADSPA)                += libaf/af_ladspa.c
 SRCS_COMMON-$(LIBA52)                += libmpcodecs/ad_liba52.c
-SRCS_LIBA52_INTERNAL                 += liba52/crc.c \
-                                        liba52/resample.c \
-                                        liba52/bit_allocate.c \
-                                        liba52/bitstream.c \
-                                        liba52/downmix.c \
-                                        liba52/imdct.c \
-                                        liba52/parse.c \
-
-SRCS_COMMON-$(LIBA52_INTERNAL)       += $(SRCS_LIBA52_INTERNAL)
-
 SRCS_COMMON-$(LIBASS)                += libmpcodecs/vf_ass.c \
                                         libass/ass_mp.c \
+                                        subassconvert.c \
 
 SRCS_COMMON-$(LIBASS_INTERNAL)       += libass/ass.c \
                                         libass/ass_bitmap.c \
@@ -130,10 +119,12 @@ SRCS_COMMON-$(LIBASS_INTERNAL)       += libass/ass.c \
                                         libass/ass_library.c \
                                         libass/ass_parse.c \
                                         libass/ass_render.c \
+                                        libass/ass_render_api.c \
                                         libass/ass_strtod.c \
                                         libass/ass_utils.c \
 
 SRCS_COMMON-$(LIBAVCODEC)            += av_opts.c \
+                                        av_sub.c \
                                         libaf/af_lavcresample.c \
                                         libmpcodecs/ad_ffmpeg.c \
                                         libmpcodecs/vd_ffmpeg.c \
@@ -153,6 +144,7 @@ SRCS_COMMON-$(LIBAVCODEC_A)          += libaf/af_lavcac3enc.c \
 SRCS_COMMON-$(LIBAVFORMAT)           += libmpdemux/demux_lavf.c \
                                         stream/stream_ffmpeg.c \
 
+SRCS_COMMON-$(LIBBLURAY)             += stream/stream_bluray.c
 SRCS_COMMON-$(LIBBS2B)               += libaf/af_bs2b.c
 SRCS_COMMON-$(LIBDCA)                += libmpcodecs/ad_libdca.c
 SRCS_COMMON-$(LIBDV)                 += libmpcodecs/ad_libdv.c \
@@ -166,17 +158,17 @@ SRCS_COMMON-$(LIBDVDCSS_INTERNAL)    += libdvdcss/css.c \
 
 SRCS_COMMON-$(LIBMAD)                += libmpcodecs/ad_libmad.c
 
-SRCS_LIBMPEG2-$(ARCH_ALPHA)          += libmpeg2/idct_alpha.c \
+SRCS_COMMON-$(LIBMPEG2)              += libmpcodecs/vd_libmpeg2.c
+SRCS_LIBMPEG2-INTERNAL-$(ARCH_ALPHA) += libmpeg2/idct_alpha.c \
                                         libmpeg2/motion_comp_alpha.c
-SRCS_LIBMPEG2-$(ARCH_ARM)            += libmpeg2/motion_comp_arm.c \
+SRCS_LIBMPEG2-INTERNAL-$(ARCH_ARM)   += libmpeg2/motion_comp_arm.c \
                                         libmpeg2/motion_comp_arm_s.S
-SRCS_LIBMPEG2-$(HAVE_ALTIVEC)        += libmpeg2/idct_altivec.c \
+SRCS_LIBMPEG2-INTERNAL-$(HAVE_ALTIVEC) += libmpeg2/idct_altivec.c \
                                         libmpeg2/motion_comp_altivec.c
-SRCS_LIBMPEG2-$(HAVE_MMX)            += libmpeg2/idct_mmx.c \
+SRCS_LIBMPEG2-INTERNAL-$(HAVE_MMX)   += libmpeg2/idct_mmx.c \
                                         libmpeg2/motion_comp_mmx.c
-SRCS_LIBMPEG2-$(HAVE_VIS)            += libmpeg2/motion_comp_vis.c
-SRCS_COMMON-$(LIBMPEG2)              += libmpcodecs/vd_libmpeg2.c \
-                                        libmpeg2/alloc.c \
+SRCS_LIBMPEG2-INTERNAL-$(HAVE_VIS)   += libmpeg2/motion_comp_vis.c
+SRCS_COMMON-$(LIBMPEG2_INTERNAL)     += libmpeg2/alloc.c \
                                         libmpeg2/cpu_accel.c\
                                         libmpeg2/cpu_state.c \
                                         libmpeg2/decode.c \
@@ -184,7 +176,7 @@ SRCS_COMMON-$(LIBMPEG2)              += libmpcodecs/vd_libmpeg2.c \
                                         libmpeg2/idct.c \
                                         libmpeg2/motion_comp.c \
                                         libmpeg2/slice.c \
-                                        $(SRCS_LIBMPEG2-yes)
+                                        $(SRCS_LIBMPEG2-INTERNAL-yes)
 
 SRCS_COMMON-$(LIBNEMESI)             += libmpdemux/demux_nemesi.c \
                                         stream/stream_nemesi.c
@@ -197,6 +189,7 @@ SRCS_COMMON-$(LIVE555)               += libmpdemux/demux_rtp.cpp \
                                         stream/stream_live555.c
 SRCS_COMMON-$(MACOSX_FINDER)         += osdep/macosx_finder_args.c
 SRCS_COMMON-$(MNG)                   += libmpdemux/demux_mng.c
+SRCS_COMMON-$(MPG123)                += libmpcodecs/ad_mpg123.c
 
 SRCS_MP3LIB-X86-$(HAVE_AMD3DNOW)     += mp3lib/dct36_3dnow.c \
                                         mp3lib/dct64_3dnow.c
@@ -231,7 +224,7 @@ SRCS_COMMON-$(NEED_SHMEM)            += osdep/shmem.c
 SRCS_COMMON-$(NEED_STRSEP)           += osdep/strsep.c
 SRCS_COMMON-$(NEED_SWAB)             += osdep/swab.c
 SRCS_COMMON-$(NEED_VSSCANF)          += osdep/vsscanf.c
-SRCS_COMMON-$(NETWORK)               += stream/stream_netstream.c \
+SRCS_COMMON-$(NETWORKING)            += stream/stream_netstream.c \
                                         stream/asf_mmst_streaming.c \
                                         stream/asf_streaming.c \
                                         stream/cookies.c \
@@ -269,7 +262,7 @@ SRCS_COMMON-$(TREMOR_INTERNAL)       += tremor/bitwise.c \
                                         tremor/floor1.c \
                                         tremor/framing.c \
                                         tremor/info.c \
-										tremor/mapping0.c \
+                                        tremor/mapping0.c \
                                         tremor/mdct.c \
                                         tremor/registry.c \
                                         tremor/res012.c \
@@ -339,14 +332,17 @@ SRCS_COMMON-$(XVID4)                 += libmpcodecs/vd_xvid4.c
 SRCS_COMMON-$(ZR)                    += libmpcodecs/vd_zrmjpeg.c \
                                         libmpcodecs/vf_zrmjpeg.c
 SRCS_COMMON = asxparser.c \
+              bstr.c \
               codec-cfg.c \
               cpudetect.c \
               edl.c \
+              eosd.c \
               find_sub.c \
               fmt-conversion.c \
               m_config.c \
               m_option.c \
               m_struct.c \
+              mp_msg.c \
               mpcommon.c \
               parser-cfg.c \
               path.c \
@@ -392,14 +388,12 @@ SRCS_COMMON = asxparser.c \
               libmpcodecs/ad_hwmpa.c \
               libmpcodecs/ad_imaadpcm.c \
               libmpcodecs/ad_msadpcm.c \
-              libmpcodecs/ad_msgsm.c \
               libmpcodecs/ad_pcm.c \
               libmpcodecs/dec_audio.c \
               libmpcodecs/dec_teletext.c \
               libmpcodecs/dec_video.c \
               libmpcodecs/img_format.c \
               libmpcodecs/mp_image.c \
-              libmpcodecs/native/xa_gsm.c \
               libmpcodecs/pullup.c \
               libmpcodecs/vd.c \
               libmpcodecs/vd_hmblck.c \
@@ -455,7 +449,6 @@ SRCS_COMMON = asxparser.c \
               libmpcodecs/vf_pullup.c \
               libmpcodecs/vf_rectangle.c \
               libmpcodecs/vf_remove_logo.c \
-              libmpcodecs/vf_rgb2bgr.c \
               libmpcodecs/vf_rgbtest.c \
               libmpcodecs/vf_rotate.c \
               libmpcodecs/vf_sab.c \
@@ -473,7 +466,6 @@ SRCS_COMMON = asxparser.c \
               libmpcodecs/vf_vo.c \
               libmpcodecs/vf_yadif.c \
               libmpcodecs/vf_yuvcsp.c \
-              libmpcodecs/vf_yuy2.c \
               libmpcodecs/vf_yvu9.c \
               libmpdemux/aac_hdr.c \
               libmpdemux/asfheader.c \
@@ -524,6 +516,7 @@ SRCS_COMMON = asxparser.c \
               osdep/$(TIMER) \
               stream/open.c \
               stream/stream.c \
+              stream/stream_bd.c \
               stream/stream_cue.c \
               stream/stream_file.c \
               stream/stream_mf.c \
@@ -695,7 +688,6 @@ SRCS_MPLAYER = command.c \
                m_property.c \
                mixer.c \
                mp_fifo.c \
-               mp_msg.c \
                mplayer.c \
                parser-mpcmd.c \
                input/input.c \
@@ -727,7 +719,6 @@ SRCS_MENCODER-$(X264)             += libmpcodecs/ve_x264.c
 SRCS_MENCODER-$(XVID4)            += libmpcodecs/ve_xvid4.c
 
 SRCS_MENCODER = mencoder.c \
-                mp_msg-mencoder.c \
                 parser-mecmd.c \
                 xvid_vbr.c \
                 libmpcodecs/ae.c \
@@ -741,8 +732,10 @@ SRCS_MENCODER = mencoder.c \
                 libmpdemux/muxer_rawvideo.c \
                 $(SRCS_MENCODER-yes)
 
+
 COMMON_LIBS-$(LIBAVFORMAT_A)      += libavformat/libavformat.a
 COMMON_LIBS-$(LIBAVCODEC_A)       += libavcodec/libavcodec.a
+COMMON_LIBS-$(LIBAVCORE_A)        += libavcore/libavcore.a
 COMMON_LIBS-$(LIBAVUTIL_A)        += libavutil/libavutil.a
 COMMON_LIBS-$(LIBPOSTPROC_A)      += libpostproc/libpostproc.a
 COMMON_LIBS-$(LIBSWSCALE_A)       += libswscale/libswscale.a
@@ -775,7 +768,6 @@ DIRS =  . \
         gui/wm \
         gui/win32 \
         input \
-        liba52 \
         libaf \
         libao2 \
         libass \
@@ -788,6 +780,7 @@ DIRS =  . \
         libavcodec/sh4 \
         libavcodec/sparc \
         libavcodec/x86 \
+        libavcore \
         libavformat \
         libavutil \
         libavutil/arm \
@@ -835,6 +828,7 @@ ADD_ALL_DIRS    = $(call ADDSUFFIXES,$(1),$(DIRS))
 ADD_ALL_EXESUFS = $(1) $(call ADDSUFFIXES,$(EXESUFS_ALL),$(1))
 
 FFMPEGPARTS = libavcodec \
+              libavcore \
               libavformat \
               libavutil \
               libpostproc \
@@ -859,21 +853,18 @@ mplayer.dol: mplayer$(EXESUF)
 	$(CC) $(ASFLAGS) -c -o $@ $<
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CC_DEPFLAGS) $(CFLAGS) -c -o $@ $<
 
 %.o: %.cpp
-	$(CC) $(CXXFLAGS) -c -o $@ $<
+	$(CC) $(CC_DEPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 %.o: %.m
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CC_DEPFLAGS) $(CFLAGS) -c -o $@ $<
 
 #%-rc.o: %.rc
 #	$(WINDRES) -I. $< $@
 
 checkheaders: $(ALLHEADERS:.h=.ho)
-
-dep depend: $(DEPS)
-	for part in $(FFMPEGPARTS); do $(MAKE) -C $$part depend; done
 
 $(FFMPEGLIBS): $(FFMPEGFILES) config.h
 	$(MAKE) -C $(@D)
@@ -881,12 +872,13 @@ $(FFMPEGLIBS): $(FFMPEGFILES) config.h
 
 mencoder$(EXESUF): $(MENCODER_DEPS)
 mencoder$(EXESUF): EXTRALIBS += $(EXTRALIBS_MENCODER)
-
-mplayer$(EXESUF): $(MPLAYER_DEPS) 
+mplayer$(EXESUF): $(MPLAYER_DEPS)
 mplayer$(EXESUF): EXTRALIBS += $(EXTRALIBS_MPLAYER)
 mencoder$(EXESUF) mplayer$(EXESUF):
 	$(CC) -o $@ $^ $(EXTRALIBS)
 
+codec-cfg$(EXESUF): codec-cfg.c codec-cfg.h help_mp.h
+	$(HOST_CC) -O -DCODECS2HTML -I. -o $@ $<
 
 #TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(filter-out %mencoder.o,$(OBJS_MENCODER)) $(OBJS_COMMON) $(COMMON_LIBS)
 #	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
@@ -914,7 +906,8 @@ endif
 version.h: version.sh
 	./$< `$(CC) -dumpversion`
 
-%(EXESUF): %.c
+%$(EXESUF): %.c
+	$(CC) $(CFLAGS) -o $@ $^
 
 
 
@@ -923,7 +916,11 @@ version.h: version.sh
 # Make sure all generated header files are created.
 codec-cfg.d codec-cfg.o: codecs.conf.h
 $(DEPS) $(MENCODER_DEPS) $(MPLAYER_DEPS): help_mp.h
-$(call ADDSUFFIXES,.d .o,mpcommon vobsub stream/stream_cddb stream/network libmpdemux/muxer_avi gui/win32/gui osdep/mplayer.rc): version.h
+$(call ADDSUFFIXES,.d .o,mpcommon osdep/mplayer.rc): version.h
+
+osdep/mplayer-rc.o: osdep/mplayer.exe.manifest
+
+gui/%: CFLAGS += -Wno-strict-prototypes
 
 libdvdcss/%:   CFLAGS := -Ilibdvdcss -D__USE_UNIX98 -D_GNU_SOURCE -DVERSION=\"1.2.10\" $(CFLAGS_LIBDVDCSS) $(CFLAGS)
 libdvdnav/%:   CFLAGS := -Ilibdvdnav -D__USE_UNIX98 -D_GNU_SOURCE -DHAVE_CONFIG_H -DVERSION=\"MPlayer-custom\" $(CFLAGS)
@@ -1021,9 +1018,10 @@ clean:
 distclean: clean testsclean toolsclean driversclean dhahelperclean dhahelperwinclean
 	-rm -rf DOCS/tech/doxygen
 	-rm -f $(call ADD_ALL_DIRS,/*.d)
-	-rm -f configure.log config.mak config.h codecs.conf.h help_mp.h \
+	-rm -f config.log config.mak config.h codecs.conf.h help_mp.h \
            version.h $(VIDIX_PCI_FILES) TAGS tags
 	-rm -f $(call ADD_ALL_EXESUFS,codec-cfg cpuinfo)
+	-rm -f libavutil/avconfig.h
 
 doxygen:
 	doxygen DOCS/tech/Doxyfile
@@ -1038,7 +1036,7 @@ tags:
 
 ###### tests / tools #######
 
-TEST_OBJS = mp_msg-mencoder.o mp_fifo.o osdep/$(GETCH) osdep/$(TIMER) -ltermcap -lm
+TEST_OBJS = mp_msg.o mp_fifo.o osdep/$(GETCH) osdep/$(TIMER) -ltermcap -lm
 
 codec-cfg-test$(EXESUF): codec-cfg.c codecs.conf.h help_mp.h $(TEST_OBJS)
 	$(CC) -I. -DTESTING -o $@ $^
@@ -1046,19 +1044,16 @@ codec-cfg-test$(EXESUF): codec-cfg.c codecs.conf.h help_mp.h $(TEST_OBJS)
 codecs2html$(EXESUF): codec-cfg.c help_mp.h $(TEST_OBJS)
 	$(CC) -I. -DCODECS2HTML -o $@ $^
 
-liba52/test$(EXESUF): cpudetect.o $(SRCS_LIBA52_INTERNAL:.c=.o) -lm
-
 libvo/aspecttest$(EXESUF): libvo/aspect.o libvo/geometry.o $(TEST_OBJS)
 
-LOADER_TEST_OBJS = $(SRCS_WIN32_EMULATION:.c=.o) $(SRCS_QTX_EMULATION:.S=.o) libavutil/libavutil.a osdep/mmap_anon.o cpudetect.o $(TEST_OBJS)
+LOADER_TEST_OBJS = $(SRCS_WIN32_EMULATION:.c=.o) $(SRCS_QTX_EMULATION:.S=.o) libavutil/libavutil.a osdep/mmap_anon.o cpudetect.o path.o $(TEST_OBJS)
 
 loader/qtx/list$(EXESUF) loader/qtx/qtxload$(EXESUF): CFLAGS += -g
 loader/qtx/list$(EXESUF) loader/qtx/qtxload$(EXESUF): $(LOADER_TEST_OBJS)
 
 mp3lib/test$(EXESUF) mp3lib/test2$(EXESUF): $(SRCS_MP3LIB:.c=.o) libvo/aclib.o cpudetect.o $(TEST_OBJS)
 
-TESTS = codecs2html codec-cfg-test liba52/test libvo/aspecttest \
-        mp3lib/test mp3lib/test2
+TESTS = codecs2html codec-cfg-test libvo/aspecttest mp3lib/test mp3lib/test2
 
 ifdef ARCH_X86
 TESTS += loader/qtx/list loader/qtx/qtxload
@@ -1188,10 +1183,11 @@ dhahelperwinclean:
 
 
 
-# Do not include dependencies when they are about to be removed anyway.
-ifneq ($(MAKECMDGOALS),distclean)
 -include $(DEPS)
-endif
 
 .PHONY: all doxygen *install* *tools drivers dhahelper*
-.PHONY: checkheaders *clean dep depend tests
+.PHONY: checkheaders *clean tests
+
+# Disable suffix rules.  Most of the builtin rules are suffix rules,
+# so this saves some time on slow systems.
+.SUFFIXES:

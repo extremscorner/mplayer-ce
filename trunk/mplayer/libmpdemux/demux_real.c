@@ -43,7 +43,7 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 #include "mpbswap.h"
-
+#include "libavutil/common.h"
 #include "stream/stream.h"
 #include "aviprint.h"
 #include "demuxer.h"
@@ -51,8 +51,6 @@
 #include "demux_real.h"
 
 //#define mp_dbg(mod,lev, args... ) mp_msg_c((mod<<8)|lev, ## args )
-
-#define MKTAG(a, b, c, d) (a | (b << 8) | (c << 16) | (d << 24))
 
 #define MAX_STREAMS 32
 
@@ -1266,7 +1264,7 @@ static demuxer_t* demux_open_real(demuxer_t* demuxer)
 		    mp_msg(MSGT_DEMUX,MSGL_V,"Audio: can't find .ra in codec data\n");
 		} else {
 		    /* audio header */
-		    sh_audio_t *sh = new_sh_audio(demuxer, stream_id);
+		    sh_audio_t *sh = new_sh_audio(demuxer, stream_id, NULL);
 		    char buf[128]; /* for codec name */
 		    int frame_size;
 		    int sub_packet_size;
@@ -1478,7 +1476,7 @@ static demuxer_t* demux_open_real(demuxer_t* demuxer)
 #endif
 		}
 	  } else if (strstr(mimet,"X-MP3-draft-00")) {
-		    sh_audio_t *sh = new_sh_audio(demuxer, stream_id);
+		    sh_audio_t *sh = new_sh_audio(demuxer, stream_id, NULL);
     		    mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "real", stream_id);
 
 		    /* Emulate WAVEFORMATEX struct: */
@@ -1712,7 +1710,8 @@ header_end:
 
     switch (index_mode){
 	case -1: // untouched
-	    if (priv->index_chunk_offset && parse_index_chunk(demuxer))
+	    if ((demuxer->stream->flags & MP_STREAM_SEEK) == MP_STREAM_SEEK &&
+                priv->index_chunk_offset && parse_index_chunk(demuxer))
 	    {
 		demuxer->seekable = 1;
 	    }

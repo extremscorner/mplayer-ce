@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "avi.h"
 #include "dv.h"
@@ -48,6 +49,11 @@ typedef struct AVIStream {
     int prefix_count;
     uint32_t pal[256];
     int has_pal;
+    int dshow_block_align;            ///< block align variable used to emulate bugs in the MS dshow demuxer
+
+    AVFormatContext *sub_ctx;
+    AVPacket sub_pkt;
+    uint8_t *sub_buffer;
 } AVIStream;
 
 typedef struct {
@@ -61,6 +67,8 @@ typedef struct {
     int non_interleaved;
     int stream_index;
     DVDemuxContext* dv_demux;
+    int odml_depth;
+#define MAX_ODML_DEPTH 1000
 } AVIContext;
 
 static const char avi_headers[][8] = {
@@ -86,6 +94,15 @@ static void print_tag(const char *str, unsigned int tag, int size)
            size);
 }
 #endif
+
+static inline int get_duration(AVIStream *ast, int len){
+    if(ast->sample_size){
+        return len;
+    }else if (ast->dshow_block_align){
+        return (len + ast->dshow_block_align - 1)/ast->dshow_block_align;
+    }else
+        return 1;
+}
 
 static int get_riff(AVFormatContext *s, ByteIOContext *pb)
 {
@@ -173,10 +190,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
             if(last_pos != pos && (len || !ast->sample_size))
                 av_add_index_entry(st, pos, ast->cum_len, len, 0, key ? AVINDEX_KEYFRAME : 0);
 
-            if(ast->sample_size)
-                ast->cum_len += len;
-            else
-                ast->cum_len ++;
+            ast->cum_len += get_duration(ast, len);
             last_pos= pos;
         }else{
             int64_t offset, pos;
@@ -190,8 +204,15 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 
             pos = url_ftell(pb);
 
+            if(avi->odml_depth > MAX_ODML_DEPTH){
+                av_log(s, AV_LOG_ERROR, "Too deeply nested ODML indexes\n");
+                return -1;
+            }
+
             url_fseek(pb, offset+8, SEEK_SET);
+            avi->odml_depth++;
             read_braindead_odml_indx(s, frame_num);
+            avi->odml_depth--;
             frame_num += duration;
 
             url_fseek(pb, pos, SEEK_SET);
@@ -381,6 +402,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
                 ast = s->streams[0]->priv_data;
                 av_freep(&s->streams[0]->codec->extradata);
+                av_freep(&s->streams[0]->codec);
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
                 if (CONFIG_DV_DEMUXER) {
@@ -450,8 +472,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 codec_type = AVMEDIA_TYPE_AUDIO;
                 break;
             case MKTAG('t', 'x', 't', 's'):
-                //FIXME
-                codec_type = AVMEDIA_TYPE_DATA; //AVMEDIA_TYPE_SUB ?  FIXME
+                codec_type = AVMEDIA_TYPE_SUBTITLE;
                 break;
             case MKTAG('d', 'a', 't', 's'):
                 codec_type = AVMEDIA_TYPE_DATA;
@@ -523,7 +544,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->codec->palctrl = av_mallocz(sizeof(AVPaletteControl));
 #if HAVE_BIGENDIAN
                         for (i = 0; i < FFMIN(st->codec->extradata_size, AVPALETTE_SIZE)/4; i++)
-                            st->codec->palctrl->palette[i] = bswap_32(((uint32_t*)st->codec->extradata)[i]);
+                            st->codec->palctrl->palette[i] = av_bswap32(((uint32_t*)st->codec->extradata)[i]);
 #else
                         memcpy(st->codec->palctrl->palette, st->codec->extradata,
                                FFMIN(st->codec->extradata_size, AVPALETTE_SIZE));
@@ -556,6 +577,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
                 case AVMEDIA_TYPE_AUDIO:
                     ff_get_wav_header(pb, st->codec, size);
+                    ast->dshow_block_align= st->codec->block_align;
                     if(ast->sample_size && st->codec->block_align && ast->sample_size != st->codec->block_align){
                         av_log(s, AV_LOG_WARNING, "sample size (%d) != block align (%d)\n", ast->sample_size, st->codec->block_align);
                         ast->sample_size= st->codec->block_align;
@@ -576,8 +598,14 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->codec->codec_id  = CODEC_ID_XAN_DPCM;
                         st->codec->codec_tag = 0;
                     }
-                    if (amv_file_format)
+                    if (amv_file_format){
                         st->codec->codec_id  = CODEC_ID_ADPCM_IMA_AMV;
+                        ast->dshow_block_align = 0;
+                    }
+                    break;
+                case AVMEDIA_TYPE_SUBTITLE:
+                    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+                    st->codec->codec_id   = CODEC_ID_PROBE;
                     break;
                 default:
                     st->codec->codec_type = AVMEDIA_TYPE_DATA;
@@ -650,12 +678,104 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         avi_load_index(s);
     avi->index_loaded = 1;
     avi->non_interleaved |= guess_ni_flag(s);
+    for(i=0; i<s->nb_streams; i++){
+        AVStream *st = s->streams[i];
+        if(st->nb_index_entries)
+            break;
+    }
+    if(i==s->nb_streams && avi->non_interleaved) {
+        av_log(s, AV_LOG_WARNING, "non-interleaved AVI without index, switching to interleaved\n");
+        avi->non_interleaved=0;
+    }
+
     if(avi->non_interleaved) {
         av_log(s, AV_LOG_INFO, "non-interleaved AVI\n");
         clean_index(s);
     }
 
     return 0;
+}
+
+static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
+    if (!strcmp(pkt->data, "GAB2") && AV_RL16(pkt->data+5) == 2) {
+        uint8_t desc[256], *d = desc;
+        uint8_t *end, *ptr = pkt->data+7;
+        unsigned int size, desc_len = bytestream_get_le32(&ptr);
+        int score = AVPROBE_SCORE_MAX / 2;
+        AVIStream *ast = st->priv_data;
+        AVInputFormat *sub_demuxer;
+        AVRational time_base;
+        ByteIOContext *pb;
+        AVProbeData pd;
+
+        if (desc_len > FFMAX(pkt->size-17, 0))
+            return 0;
+
+        end = ptr + desc_len;
+        while (ptr < end-1) {
+            uint8_t tmp;
+            uint32_t ch;
+            GET_UTF16(ch, ptr < end-1 ? bytestream_get_le16(&ptr) : 0, break;);
+            PUT_UTF8(ch, tmp, if(d-desc < sizeof(desc)-1)  *d++ = tmp;);
+        }
+        *d = 0;
+        if (*desc)
+            av_metadata_set2(&st->metadata, "title", desc, 0);
+
+        ptr = end + 2;
+        size = bytestream_get_le32(&ptr);
+        size = FFMIN(size, pkt->size+pkt->data-ptr);
+
+        pd = (AVProbeData) { .buf = ptr, .buf_size = size };
+        if (!(sub_demuxer = av_probe_input_format2(&pd, 1, &score)))
+            return 0;
+
+        pb = av_alloc_put_byte(ptr, size, 0, NULL, NULL, NULL, NULL);
+        if (!av_open_input_stream(&ast->sub_ctx, pb, "", sub_demuxer, NULL)) {
+            av_read_packet(ast->sub_ctx, &ast->sub_pkt);
+            *st->codec = *ast->sub_ctx->streams[0]->codec;
+            ast->sub_ctx->streams[0]->codec->extradata = NULL;
+            time_base = ast->sub_ctx->streams[0]->time_base;
+            av_set_pts_info(st, 64, time_base.num, time_base.den);
+        }
+        ast->sub_buffer = pkt->data;
+        memset(pkt, 0, sizeof(*pkt));
+        return 1;
+    }
+    return 0;
+}
+
+static AVStream *get_subtitle_pkt(AVFormatContext *s, AVStream *next_st,
+                                  AVPacket *pkt)
+{
+    AVIStream *ast, *next_ast = next_st->priv_data;
+    int64_t ts, next_ts, ts_min = INT64_MAX;
+    AVStream *st, *sub_st = NULL;
+    int i;
+
+    next_ts = av_rescale_q(next_ast->frame_offset, next_st->time_base,
+                           AV_TIME_BASE_Q);
+
+    for (i=0; i<s->nb_streams; i++) {
+        st  = s->streams[i];
+        ast = st->priv_data;
+        if (st->discard < AVDISCARD_ALL && ast && ast->sub_pkt.data) {
+            ts = av_rescale_q(ast->sub_pkt.dts, st->time_base, AV_TIME_BASE_Q);
+            if (ts <= next_ts && ts < ts_min) {
+                ts_min = ts;
+                sub_st = st;
+            }
+        }
+    }
+
+    if (sub_st) {
+        ast = sub_st->priv_data;
+        *pkt = ast->sub_pkt;
+        pkt->stream_index = sub_st->index;
+        if (av_read_packet(ast->sub_ctx, &ast->sub_pkt) < 0)
+            ast->sub_pkt.data = NULL;
+    }
+    return sub_st;
 }
 
 static int get_stream_idx(int *d){
@@ -746,6 +866,9 @@ resync:
         AVIStream *ast= st->priv_data;
         int size, err;
 
+        if(get_subtitle_pkt(s, st, pkt))
+            return 0;
+
         if(ast->sample_size <= 1) // minorityreport.AVI block_align=1024 sample_size=1 IMA-ADPCM
             size= INT_MAX;
         else if(ast->sample_size < 32)
@@ -778,6 +901,14 @@ resync:
                                     pkt->data, pkt->size);
             pkt->destruct = dstr;
             pkt->flags |= AV_PKT_FLAG_KEY;
+            if (size < 0)
+                av_free_packet(pkt);
+        } else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
+                   && !st->codec->codec_tag && read_gab2_sub(st, pkt)) {
+            ast->frame_offset++;
+            avi->stream_index = -1;
+            ast->remaining = 0;
+            goto resync;
         } else {
             /* XXX: How to handle B-frames in AVI? */
             pkt->dts = ast->frame_offset;
@@ -802,10 +933,7 @@ resync:
             } else {
                 pkt->flags |= AV_PKT_FLAG_KEY;
             }
-            if(ast->sample_size)
-                ast->frame_offset += pkt->size;
-            else
-                ast->frame_offset++;
+            ast->frame_offset += get_duration(ast, pkt->size);
         }
         ast->remaining -= size;
         if(!ast->remaining){
@@ -887,8 +1015,7 @@ resync:
             if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
                /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & AV_PKT_FLAG_KEY))*/ //FIXME needs a little reordering
                || st->discard >= AVDISCARD_ALL){
-                if(ast->sample_size) ast->frame_offset += size;
-                else                 ast->frame_offset++;
+                ast->frame_offset += get_duration(ast, size);
                 url_fskip(pb, size);
                 goto resync;
             }
@@ -981,10 +1108,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
             avi->non_interleaved= 1;
         else if(len || !ast->sample_size)
             av_add_index_entry(st, pos, ast->cum_len, len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
-        if(ast->sample_size)
-            ast->cum_len += len;
-        else
-            ast->cum_len ++;
+        ast->cum_len += get_duration(ast, len);
         last_pos= pos;
     }
     return 0;
@@ -1067,6 +1191,16 @@ static int avi_load_index(AVFormatContext *s)
     return ret;
 }
 
+static void seek_subtitle(AVStream *st, AVStream *st2, int64_t timestamp)
+{
+    AVIStream *ast2 = st2->priv_data;
+    int64_t ts2 = av_rescale_q(timestamp, st->time_base, st2->time_base);
+    av_free_packet(&ast2->sub_pkt);
+    if (avformat_seek_file(ast2->sub_ctx, 0, INT64_MIN, ts2, ts2, 0) >= 0 ||
+        avformat_seek_file(ast2->sub_ctx, 0, ts2, ts2, INT64_MAX, 0) >= 0)
+        av_read_packet(ast2->sub_ctx, &ast2->sub_pkt);
+}
+
 static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     AVIContext *avi = s->priv_data;
@@ -1116,6 +1250,11 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         ast2->packet_size=
         ast2->remaining= 0;
 
+        if (ast2->sub_ctx) {
+            seek_subtitle(st, st2, timestamp);
+            continue;
+        }
+
         if (st2->nb_index_entries <= 0)
             continue;
 
@@ -1153,7 +1292,16 @@ static int avi_read_close(AVFormatContext *s)
 
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
+        AVIStream *ast = st->priv_data;
         av_free(st->codec->palctrl);
+        if (ast) {
+            if (ast->sub_ctx) {
+                av_freep(&ast->sub_ctx->pb);
+                av_close_input_stream(ast->sub_ctx);
+            }
+            av_free(ast->sub_buffer);
+            av_free_packet(&ast->sub_pkt);
+        }
     }
 
     if (avi->dv_demux)

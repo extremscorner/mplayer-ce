@@ -45,7 +45,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
 
-    ff_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
+    av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
     if (strcmp(proto,"tcp") || port <= 0 || port >= 65536)
         return AVERROR(EINVAL);
@@ -54,8 +54,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);
-    if (getaddrinfo(hostname, portstr, &hints, &ai))
+    ret = getaddrinfo(hostname, portstr, &hints, &ai);
+    if (ret) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Failed to resolve hostname %s: %s\n",
+               hostname, gai_strerror(ret));
         return AVERROR(EIO);
+    }
 
     cur_ai = ai;
 
@@ -93,8 +98,12 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         /* test error */
         optlen = sizeof(ret);
         getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen);
-        if (ret != 0)
+        if (ret != 0) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "TCP connection to %s:%d failed: %s\n",
+                   hostname, port, strerror(ret));
             goto fail;
+        }
     }
     s = av_malloc(sizeof(TCPContext));
     if (!s) {
@@ -154,7 +163,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
     }
 }
 
-static int tcp_write(URLContext *h, uint8_t *buf, int size)
+static int tcp_write(URLContext *h, const uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int ret, size1, fd_max, len;

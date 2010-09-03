@@ -33,9 +33,6 @@
 
 #include "gl_common.h"
 #include "aspect.h"
-#ifdef CONFIG_GUI
-#include "gui/interface.h"
-#endif
 
 #undef TEXTUREFORMAT_ALWAYS
 #ifdef __APPLE__
@@ -212,7 +209,7 @@ static int initTextures(void)
     mp_msg (MSGT_VO, MSGL_V, "[%dx%d] !\n", texture_width, texture_height);
 
     if(texture_width < 64 || texture_height < 64) {
-      mp_msg (MSGT_VO, MSGL_FATAL, "[gl2] Give up .. usable texture size not avaiable, or texture config error !\n");
+      mp_msg (MSGT_VO, MSGL_FATAL, "[gl2] Give up .. usable texture size not available, or texture config error !\n");
       return -1;
     }
   } while (texture_width > 1 && texture_height > 1);
@@ -433,9 +430,10 @@ static void resize(int x,int y){
   } else {
     //aspect(x, y, A_NOZOOM);
     if (WinID >= 0) {
-      int top = 0, left = 0, w = x, h = y;
-      geometry(&top, &left, &w, &h, vo_screenwidth, vo_screenheight);
-      glViewport(top, left, w, h);
+      int left = 0, top = 0, w = x, h = y;
+      geometry(&left, &top, &w, &h, vo_dwidth, vo_dheight);
+      top = y - h - top;
+      glViewport(left, top, w, h);
     } else
       glViewport( 0, 0, x, y );
   }
@@ -550,13 +548,6 @@ static int config_glx(uint32_t width, uint32_t height, uint32_t d_width, uint32_
 }
 #endif
 
-#ifdef CONFIG_GUI
-static int config_glx_gui(uint32_t d_width, uint32_t d_height) {
-  guiGetEvent( guiSetShVideo,0 ); // the GUI will set up / resize the window
-  return 0;
-}
-#endif
-
 static int initGl(uint32_t d_width, uint32_t d_height)
 {
   fragprog = lookupTex = 0;
@@ -631,15 +622,6 @@ config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uin
 
   int_pause = 0;
 
-#ifdef CONFIG_GUI
-  if (use_gui) {
-    if (config_glx_gui(d_width, d_height) == -1)
-      return -1;
-  }
-#ifndef CONFIG_GL_WIN32
-  else
-#endif
-#endif
 #ifdef CONFIG_GL_WIN32
   if (config_w32(width, height, d_width, d_height, flags, title, format) == -1)
 #endif

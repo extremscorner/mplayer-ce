@@ -110,7 +110,7 @@ static void scroll_buffer(subtitle* buf)
 void subcc_init(void)
 {
 	int i;
-	printf("subcc_init(): initing...\n");
+	//printf("subcc_init(): initing...\n");
 	build_char_table();
 	for(i=0;i<SUB_MAX_TEXT;i++) {buf1.text[i]=buf2.text[i]=NULL;}
 	buf1.lines=buf2.lines=0;
@@ -122,7 +122,6 @@ void subcc_init(void)
 
 static void append_char(char c)
 {
-	printf("append_char\n");
 	if(!bb->lines) {bb->lines++; cursor_pos=0;}
 	if(bb->text[bb->lines - 1]==NULL)
 	{
@@ -146,7 +145,7 @@ static void append_char(char c)
 	{
 		if(cursor_pos==CC_MAX_LINE_LENGTH-1)
 		{
-			//fprintf(stderr,"CC: append_char() reached CC_MAX_LINE_LENGTH!\n");
+			fprintf(stderr,"CC: append_char() reached CC_MAX_LINE_LENGTH!\n");
 			return;
 		}
 		bb->text[bb->lines - 1][cursor_pos++]=c;
@@ -288,7 +287,7 @@ static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
 
     if (inputlength - curbytes < 2) {
 #ifdef LOG_DEBUG
-      //fprintf(stderr, "Not enough data for 2-byte CC encoding\n");
+      fprintf(stderr, "Not enough data for 2-byte CC encoding\n");
 #endif
       break;
     }
@@ -301,7 +300,6 @@ static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
     case 0xfe:
       /* expect 2 byte encoding (perhaps CC3, CC4?) */
       /* ignore for time being */
-      skip = 2;
       break;
 
     case 0xff:
@@ -315,22 +313,18 @@ static void subcc_decode(unsigned char *inputbuffer, unsigned int inputlength)
 
     case 0x00:
       /* This seems to be just padding */
-      skip = 2;
       break;
 
     case 0x01:
       odd_offset = data2 & 0x80;
-      if (odd_offset)
-	skip = 2;
-      else
+      if (!odd_offset)
 	skip = 5;
       break;
 
     default:
 //#ifdef LOG_DEBUG
-      //fprintf(stderr, "Unknown CC encoding: %x\n", cc_code);
+      fprintf(stderr, "Unknown CC encoding: %x\n", cc_code);
 //#endif
-      skip = 2;
       break;
     }
     current += skip;

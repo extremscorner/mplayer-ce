@@ -287,7 +287,7 @@ typedef struct {
 } WMAVoiceContext;
 
 /**
- * Sets up the variable bit mode (VBM) tree from container extradata.
+ * Set up the variable bit mode (VBM) tree from container extradata.
  * @param gb bit I/O context.
  *           The bit context (s->gb) should be loaded with byte 23-46 of the
  *           container extradata (i.e. the ones containing the VBM tree).
@@ -582,14 +582,14 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
                                                           (5.0 / 14.7));
     angle_mul = gain_mul * (8.0 * M_LN10 / M_PI);
     for (n = 0; n <= 64; n++) {
-        float pow;
+        float pwr;
 
         idx = FFMAX(0, lrint((max - lpcs[n]) * irange) - 1);
-        pow = wmavoice_denoise_power_table[s->denoise_strength][idx];
-        lpcs[n] = angle_mul * pow;
+        pwr = wmavoice_denoise_power_table[s->denoise_strength][idx];
+        lpcs[n] = angle_mul * pwr;
 
         /* 70.57 =~ 1/log10(1.0331663) */
-        idx = (pow * gain_mul - 0.0295) * 70.570526123;
+        idx = (pwr * gain_mul - 0.0295) * 70.570526123;
         if (idx > 127) { // fallback if index falls outside table range
             coeffs[n] = wmavoice_energy_table[127] *
                         powf(1.0331663, idx - 127);
@@ -660,7 +660,7 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
  *    overlap-add method (otherwise you get clicking-artifacts).
  *
  * @param s WMA Voice decoding context
- * @param s fcb_type Frame (codebook) type
+ * @param fcb_type Frame (codebook) type
  * @param synth_pf input: the noisy speech signal, output: denoised speech
  *                 data; should be 16-byte aligned (for ASM purposes)
  * @param size size of the speech data
@@ -744,6 +744,7 @@ static void wiener_denoise(WMAVoiceContext *s, int fcb_type,
  * @param samples Output buffer for filtered samples
  * @param size Buffer size of synth & samples
  * @param lpcs Generated LPCs used for speech synthesis
+ * @param zero_exc_pf destination for zero synthesis filter (16-byte aligned)
  * @param fcb_type Frame type (silence, hardcoded, AW-pulses or FCB-pulses)
  * @param pitch Pitch of the input signal
  */
@@ -1032,7 +1033,8 @@ static void aw_parse_coords(WMAVoiceContext *s, GetBitContext *gb,
 static void aw_pulse_set2(WMAVoiceContext *s, GetBitContext *gb,
                           int block_idx, AMRFixed *fcb)
 {
-    uint16_t use_mask[7]; // only 5 are used, rest is padding
+    uint16_t use_mask_mem[9]; // only 5 are used, rest is padding
+    uint16_t *use_mask = use_mask_mem + 2;
     /* in this function, idx is the index in the 80-bit (+ padding) use_mask
      * bit-array. Since use_mask consists of 16-bit values, the lower 4 bits
      * of idx are the position of the bit within a particular item in the
@@ -1064,6 +1066,7 @@ static void aw_pulse_set2(WMAVoiceContext *s, GetBitContext *gb,
     /* aw_pulse_set1() already applies pulses around pulse_off (to be exactly,
      * in the range of [pulse_off, pulse_off + s->aw_pulse_range], and thus
      * we exclude that range from being pulsed again in this function. */
+    memset(&use_mask[-2], 0, 2 * sizeof(use_mask[0]));
     memset( use_mask,   -1, 5 * sizeof(use_mask[0]));
     memset(&use_mask[5], 0, 2 * sizeof(use_mask[0]));
     if (s->aw_n_pulses[block_idx] > 0)
@@ -1342,7 +1345,7 @@ static void synth_block_fcb_acb(WMAVoiceContext *s, GetBitContext *gb,
                                   wmavoice_ipol2_coeffs, 4,
                                   idx, 8, size);
         } else
-            av_memcpy_backptr(excitation, sizeof(float) * block_pitch,
+            av_memcpy_backptr((uint8_t *) excitation, sizeof(float) * block_pitch,
                               sizeof(float) * size);
     }
 
@@ -1901,7 +1904,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
 
     if (*data_size < 480 * sizeof(float)) {
         av_log(ctx, AV_LOG_ERROR,
-               "Output buffer too small (%d given - %lu needed)\n",
+               "Output buffer too small (%d given - %zu needed)\n",
                *data_size, 480 * sizeof(float));
         return -1;
     }

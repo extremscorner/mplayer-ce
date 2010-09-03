@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 
@@ -62,7 +63,7 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
 {
     QtrleEncContext *s = avctx->priv_data;
 
-    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
+    if (av_check_image_size(avctx->width, avctx->height, 0, avctx) < 0) {
         return -1;
     }
     s->avctx=avctx;
@@ -104,7 +105,7 @@ static av_cold int qtrle_encode_init(AVCodecContext *avctx)
 }
 
 /**
- * Computes the best RLE sequence for a line
+ * Compute the best RLE sequence for a line
  */
 static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t **buf)
 {
@@ -235,7 +236,7 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
     bytestream_put_byte(buf, -1); // end RLE line
 }
 
-/** Encodes frame including header */
+/** Encode frame including header */
 static int encode_frame(QtrleEncContext *s, AVFrame *p, uint8_t *buf)
 {
     int i;

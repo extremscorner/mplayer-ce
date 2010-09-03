@@ -3,7 +3,6 @@
 // Helped by: Jan Knutar <jknutar AT nic DOT fi>
 // ========================= MPlayer hjälp ===========================
 
-#ifdef HELP_MP_DEFINE_STATIC
 static const char help_text[]=
 "Användning:   mplayer [argument] [url|sökväg/]filnamn\n"
 "\n"
@@ -43,7 +42,6 @@ static const char help_text[]=
 "\n"
 " * * * LÄS MANUALEN FÖR FLER DETALJER, MER AVANCERADE ARGUMENT OCH KOMMANDON * * *\n"
 "\n";
-#endif
 
 // libmpcodecs/ad_dvdpcm.c:
 #define MSGTR_SamplesWanted "Fler exempel på detta format behövs för att vidare öka support. Var vänlig kontakta utvecklarna.\n"
@@ -810,8 +808,6 @@ static const char help_text[]=
 #define MSGTR_VO_CantCreateDirectory "Oförmögen att skapa ut-katalog."
 #define MSGTR_VO_CantCreateFile "Oförmögen att skapa utfil."
 #define MSGTR_VO_DirectoryCreateSuccess "Ut-katalog skapad."
-#define MSGTR_VO_ParsingSuboptions "Tolkar suboptions." // FIXME suboptions?
-#define MSGTR_VO_SuboptionsParsedOK "Suboptions tolkad OK." // -''-
 #define MSGTR_VO_ValueOutOfRange "Värden utanför godkänd rymd"
 #define MSGTR_VO_NoValueSpecified "Inget värde angett."
 #define MSGTR_VO_UnknownSuboptions "Okänd suboption" // -''-

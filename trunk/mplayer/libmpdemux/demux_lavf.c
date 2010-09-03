@@ -47,9 +47,6 @@
 #define SMALL_MAX_PROBE_SIZE (32 * 1024)
 #define PROBE_BUF_SIZE (2*1024*1024)
 
-extern char *audio_lang;
-extern char *dvdsub_lang;
-extern int dvdsub_id;
 static unsigned int opt_probesize = 0;
 static unsigned int opt_analyzeduration = 0;
 static char *opt_format;
@@ -67,7 +64,7 @@ const m_option_t lavfdopts_conf[] = {
 
 #define BIO_BUFFER_SIZE 32768
 
-typedef struct lavf_priv_t{
+typedef struct lavf_priv {
     AVInputFormat *avif;
     AVFormatContext *avfc;
     ByteIOContext *pb;
@@ -83,19 +80,20 @@ typedef struct lavf_priv_t{
 }lavf_priv_t;
 
 static int mp_read(void *opaque, uint8_t *buf, int size) {
-    stream_t *stream = opaque;
+    demuxer_t *demuxer = opaque;
+    stream_t *stream = demuxer->stream;
     int ret;
 
-    if(stream_eof(stream)) //needed?
-        return -1;
     ret=stream_read(stream, buf, size);
 
-    mp_msg(MSGT_HEADER,MSGL_DBG2,"%d=mp_read(%p, %p, %d), eof:%d\n", ret, stream, buf, size, stream->eof);
+    mp_msg(MSGT_HEADER,MSGL_DBG2,"%d=mp_read(%p, %p, %d), pos: %"PRId64", eof:%d\n",
+           ret, stream, buf, size, stream_tell(stream), stream->eof);
     return ret;
 }
 
 static int64_t mp_seek(void *opaque, int64_t pos, int whence) {
-    stream_t *stream = opaque;
+    demuxer_t *demuxer = opaque;
+    stream_t *stream = demuxer->stream;
     int64_t current_pos;
     mp_msg(MSGT_HEADER,MSGL_DBG2,"mp_seek(%p, %"PRId64", %d)\n", stream, pos, whence);
     if(whence == SEEK_CUR)
@@ -111,8 +109,6 @@ static int64_t mp_seek(void *opaque, int64_t pos, int whence) {
 
     if(pos<0)
         return -1;
-    if(pos<stream->end_pos && stream->eof)
-        stream_reset(stream);
     current_pos = stream_tell(stream);
     if(stream_seek(stream, pos)==0) {
         stream_reset(stream);
@@ -121,6 +117,21 @@ static int64_t mp_seek(void *opaque, int64_t pos, int whence) {
     }
 
     return pos - stream->start_pos;
+}
+
+static int64_t mp_read_seek(void *opaque, int stream_idx, int64_t ts, int flags) {
+    demuxer_t *demuxer = opaque;
+    stream_t *stream = demuxer->stream;
+    lavf_priv_t *priv = demuxer->priv;
+    AVStream *st = priv->avfc->streams[stream_idx];
+    int ret;
+    double pts;
+
+    pts = (double)ts * st->time_base.num / st->time_base.den;
+    ret = stream_control(stream, STREAM_CTRL_SEEK_TO_TIME, &pts);
+    if (ret < 0)
+        ret = AVERROR(ENOSYS);
+    return ret;
 }
 
 static void list_formats(void) {
@@ -167,6 +178,10 @@ static int lavf_check_file(demuxer_t *demuxer){
         }
         probe_data_size += read_size;
         avpd.filename= demuxer->stream->url;
+        if (!avpd.filename) {
+            mp_msg(MSGT_DEMUX, MSGL_WARN, "Stream url is not set!\n");
+            avpd.filename = "";
+        }
         if (!strncmp(avpd.filename, "ffmpeg://", 9))
             avpd.filename += 9;
         avpd.buf_size= probe_data_size;
@@ -195,10 +210,12 @@ static const char * const preferred_list[] = {
     "gxf",
     "nut",
     "nuv",
+    "webm",
     "mov,mp4,m4a,3gp,3g2,mj2",
     "mpc",
     "mpc8",
     "mxf",
+    "ogg",
     "swf",
     "vqf",
     "w64",
@@ -254,7 +271,7 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
         case CODEC_TYPE_AUDIO:{
             WAVEFORMATEX *wf;
             sh_audio_t* sh_audio;
-            sh_audio = new_sh_audio_aid(demuxer, i, priv->audio_streams);
+            sh_audio = new_sh_audio_aid(demuxer, i, priv->audio_streams, lang ? lang->value : NULL);
             if(!sh_audio)
                 break;
             stream_type = "audio";
@@ -312,10 +329,6 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
             }
             if (title && title->value)
                 mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_AID_%d_NAME=%s\n", priv->audio_streams, title->value);
-            if (lang && lang->value) {
-              sh_audio->lang = strdup(lang->value);
-              mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_AID_%d_LANG=%s\n", priv->audio_streams, sh_audio->lang);
-            }
             if (st->disposition & AV_DISPOSITION_DEFAULT)
               sh_audio->default_track = 1;
             if(mp_msg_test(MSGT_HEADER,MSGL_V) ) print_wave_header(sh_audio->wf, MSGL_V);
@@ -409,11 +422,17 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
                 type = 'a';
             else if(codec->codec_id == CODEC_ID_DVD_SUBTITLE)
                 type = 'v';
+            else if(codec->codec_id == CODEC_ID_XSUB)
+                type = 'x';
+            else if(codec->codec_id == CODEC_ID_DVB_SUBTITLE)
+                type = 'b';
             else if(codec->codec_id == CODEC_ID_DVB_TELETEXT)
                 type = 'd';
+            else if(codec->codec_id == CODEC_ID_HDMV_PGS_SUBTITLE)
+                type = 'p';
             else
                 break;
-            sh_sub = new_sh_sub_sid(demuxer, i, priv->sub_streams);
+            sh_sub = new_sh_sub_sid(demuxer, i, priv->sub_streams, lang ? lang->value : NULL);
             if(!sh_sub) break;
             stream_type = "subtitle";
             priv->sstreams[priv->sub_streams] = i;
@@ -425,10 +444,6 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
             }
             if (title && title->value)
                 mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_SID_%d_NAME=%s\n", priv->sub_streams, title->value);
-            if (lang && lang->value) {
-              sh_sub->lang = strdup(lang->value);
-              mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_SID_%d_LANG=%s\n", priv->sub_streams, sh_sub->lang);
-            }
             if (st->disposition & AV_DISPOSITION_DEFAULT)
               sh_sub->default_track = 1;
             stream_id = priv->sub_streams++;
@@ -446,7 +461,10 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
     }
     if (stream_type) {
         AVCodec *avc = avcodec_find_decoder(codec->codec_id);
-        mp_msg(MSGT_DEMUX, MSGL_INFO, "[lavf] stream %d: %s (%s), -%cid %d", i, stream_type, avc ? avc->name : "unknown", *stream_type, stream_id);
+        const char *codec_name = avc ? avc->name : "unknown";
+        if (!avc && *stream_type == 's' && demuxer->s_streams[stream_id])
+            codec_name = sh_sub_type2str(((sh_sub_t *)demuxer->s_streams[stream_id])->type);
+        mp_msg(MSGT_DEMUX, MSGL_INFO, "[lavf] stream %d: %s (%s), -%cid %d", i, stream_type, codec_name, *stream_type, stream_id);
         if (lang && lang->value && *stream_type != 'v')
             mp_msg(MSGT_DEMUX, MSGL_INFO, ", -%clang %s", *stream_type, lang->value);
         if (title && title->value)
@@ -503,7 +521,8 @@ static demuxer_t* demux_open_lavf(demuxer_t *demuxer){
         av_strlcat(mp_filename, "foobar.dummy", sizeof(mp_filename));
 
     priv->pb = av_alloc_put_byte(priv->buffer, BIO_BUFFER_SIZE, 0,
-                                 demuxer->stream, mp_read, NULL, mp_seek);
+                                 demuxer, mp_read, NULL, mp_seek);
+    priv->pb->read_seek = mp_read_seek;
     priv->pb->is_streamed = !demuxer->stream->end_pos || (demuxer->stream->flags & MP_STREAM_SEEK) != MP_STREAM_SEEK;
 
     if(av_open_input_stream(&avfc, priv->pb, mp_filename, priv->avif, &ap)<0){
@@ -595,13 +614,9 @@ static int demux_lavf_fill_buffer(demuxer_t *demux, demux_stream_t *dsds){
         return 1;
     }
 
-    if(0/*pkt.destruct == av_destruct_packet*/){
-        //ok kids, dont try this at home :)
-        dp=malloc(sizeof(demux_packet_t));
+    if(pkt.destruct == av_destruct_packet && !CONFIG_MEMALIGN_HACK){
+        dp=new_demux_packet(0);
         dp->len=pkt.size;
-        dp->next=NULL;
-        dp->refcount=1;
-        dp->master=NULL;
         dp->buffer=pkt.data;
         pkt.destruct= NULL;
     }else{
@@ -613,7 +628,10 @@ static int demux_lavf_fill_buffer(demuxer_t *demux, demux_stream_t *dsds){
     if(pkt.pts != AV_NOPTS_VALUE){
         dp->pts=pkt.pts * av_q2d(priv->avfc->streams[id]->time_base);
         priv->last_pts= dp->pts * AV_TIME_BASE;
-        if(pkt.convergence_duration)
+        // always set endpts for subtitles, even if PKT_FLAG_KEY is not set,
+        // otherwise they will stay on screen to long if e.g. ASS is demuxed from mkv
+        if((ds == demux->sub || (pkt.flags & PKT_FLAG_KEY)) &&
+           pkt.convergence_duration > 0)
             dp->endpts = dp->pts + pkt.convergence_duration * av_q2d(priv->avfc->streams[id]->time_base);
     }
     dp->pos=demux->filepos;
@@ -652,9 +670,6 @@ static int demux_lavf_control(demuxer_t *demuxer, int cmd, void *arg)
 
     switch (cmd) {
         case DEMUXER_CTRL_CORRECT_PTS:
-            if (!strcmp("matroska", priv->avif->name) ||
-                !strcmp("mpegts",   priv->avif->name))
-                return DEMUXER_CTRL_NOTIMPL;
 	    return DEMUXER_CTRL_OK;
         case DEMUXER_CTRL_GET_TIME_LENGTH:
 	    if (priv->avfc->duration == 0 || priv->avfc->duration == AV_NOPTS_VALUE)

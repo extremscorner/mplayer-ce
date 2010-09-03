@@ -33,6 +33,7 @@
 #include "parse_es.h"
 #include "stheader.h"
 #include "mp3_hdr.h"
+#include "demux_mpg.h"
 
 //#define MAX_PS_PACKETSIZE 2048
 #define MAX_PS_PACKETSIZE (224*1024)
@@ -268,7 +269,7 @@ static void new_audio_stream(demuxer_t *demux, int aid){
   if(!demux->a_streams[aid]){
     mpg_demuxer_t *mpg_d=(mpg_demuxer_t*)demux->priv;
     sh_audio_t* sh_a;
-    new_sh_audio(demux,aid);
+    new_sh_audio(demux,aid, NULL);
     sh_a = (sh_audio_t*)demux->a_streams[aid];
     sh_a->needs_parsing = 1;
     switch(aid & 0xE0){  // 1110 0000 b  (high 3 bit: type  low 5: id)
@@ -476,7 +477,7 @@ static int demux_mpg_read_packet(demuxer_t *demux,int id){
         aid&=0x1F;
 
         if(!demux->s_streams[aid]){
-            sh_sub_t *sh = new_sh_sub(demux, aid);
+            sh_sub_t *sh = new_sh_sub(demux, aid, NULL);
             if (sh) sh->type = 'v';
             mp_msg(MSGT_DEMUX,MSGL_V,"==> Found subtitle: %d\n",aid);
         }

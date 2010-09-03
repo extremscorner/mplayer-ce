@@ -5,7 +5,6 @@
 
 // ========================= MPlayer help ===========================
 
-#ifdef HELP_MP_DEFINE_STATIC
 static const char help_text[]=
 "Употреба:   mplayer [опции] [url|път/]име_на_файл\n"
 "\n"
@@ -46,7 +45,6 @@ static const char help_text[]=
 "\n"
 " * * * ЗА ПОДРОБНОСТИ, ДОПЪЛНИТЕЛНИ ОПЦИИ И КЛАВИШИ, ВИЖТЕ РЪКОВОДСТВОТО! * * *\n"
 "\n";
-#endif
 
 #define MSGTR_SamplesWanted "Мостри от този формат са нужни за подобряване на поддръжката. Свържете се с нас!\n"
 
@@ -855,8 +853,6 @@ static const char help_text[]=
 #define MSGTR_VO_CantCreateDirectory "Директорията не може да бъде създадена."
 #define MSGTR_VO_CantCreateFile "Файлът не може да бъде създаден."
 #define MSGTR_VO_DirectoryCreateSuccess "Директорията е успешно създадена."
-#define MSGTR_VO_ParsingSuboptions "Обработка на подопциите."
-#define MSGTR_VO_SuboptionsParsedOK "Завърши обработката на подопциите."
 #define MSGTR_VO_ValueOutOfRange "Стойността е извън допустимите граници"
 #define MSGTR_VO_NoValueSpecified "Не е указана стойност."
 #define MSGTR_VO_UnknownSuboptions "Неизвестна подопция(и)"

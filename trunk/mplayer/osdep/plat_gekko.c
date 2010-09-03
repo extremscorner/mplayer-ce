@@ -277,33 +277,6 @@ static void * watchdogthreadfunc (void *arg)
 	return NULL;
 }
 
-#ifdef WIILIB
-void plat_init (int *argc, char **argv[])
-{
-	sprintf(MPLAYER_DATADIR,"%s",appPath);
-	sprintf(MPLAYER_CONFDIR,"%s",appPath);
-	sprintf(MPLAYER_LIBDIR,"%s",appPath);
-	chdir(appPath);
-
-	setenv("HOME", MPLAYER_DATADIR, 1);
-	setenv("DVDCSS_CACHE", "off", 1);
-	setenv("DVDCSS_VERBOSE", "0", 1);
-	setenv("DVDREAD_VERBOSE", "0", 1);
-	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
-
-	//LWP_MutexInit(watchdogmutex, false);
-
-	stream_cache_size=8*1024; //default cache size (8MB)
-
-	// only used for cache_mem
-	InitMem2Manager((stream_cache_size*1024)+(8*1024));
-}
-void plat_deinit (int rc)
-{
-
-}
-#else
-
 #include "osdep/mem2_manager.h"
 
 
@@ -908,6 +881,9 @@ static void * exithreadfunc (void *arg)
 	while(1){sleep(1);}
 }
 
+extern u32 __di_check_ahbprot(void);
+extern bool have_ahbprot;
+
 void plat_init (int *argc, char **argv[])
 {
 	mpviSetup(0, true);
@@ -915,10 +891,20 @@ void plat_init (int *argc, char **argv[])
 
 	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);
 	
-	if (FindIOS(202))
+	if ((IOS_GetVersion() != 202) && FindIOS(202))
 	{
 		printf(" Found cIOS 202, reloading.\n");
 		IOS_ReloadIOS(202);
+	}
+	else
+	{
+		have_ahbprot = (__di_check_ahbprot() == TRUE);
+		
+		if ((IOS_GetVersion() != 58) && FindIOS(58) && !have_ahbprot)
+		{
+			printf(" Found IOS 58, reloading.\n");
+			IOS_ReloadIOS(58);
+		}
 	}
 	
 	s32 ios_version = IOS_GetVersion();
@@ -931,7 +917,7 @@ void plat_init (int *argc, char **argv[])
 	bool badstuff = (ios_version == 202);
 	printf(" Enabling DVD access... ");
 	
-	if (WIIDVD_Init(!badstuff))
+	if (WIIDVD_Init(!badstuff) || have_ahbprot)
 		printf("\x1b[32;1mSUCCESS.");
 	else
 		printf("\x1b[31;1mFAILED!");
@@ -1185,6 +1171,3 @@ bool ftpConnect(char *device)
 	if(!ftp_conf[number].init) return mount_ftp(number);
 	return CheckFTPConnection(device);
 }
-
-
-#endif

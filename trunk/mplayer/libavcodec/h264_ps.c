@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavcore/imgutils.h"
 #include "internal.h"
 #include "dsputil.h"
 #include "avcodec.h"
@@ -205,6 +206,12 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->num_reorder_frames= get_ue_golomb(&s->gb);
         get_ue_golomb(&s->gb); /*max_dec_frame_buffering*/
 
+        if(s->gb.size_in_bits < get_bits_count(&s->gb)){
+            av_log(h->s.avctx, AV_LOG_ERROR, "Overread VUI by %d bits\n", get_bits_count(&s->gb) - s->gb.size_in_bits);
+            sps->num_reorder_frames=0;
+            sps->bitstream_restriction_flag= 0;
+        }
+
         if(sps->num_reorder_frames > 16U /*max_dec_frame_buffering || max_dec_frame_buffering > 16*/){
             av_log(h->s.avctx, AV_LOG_ERROR, "illegal num_reorder_frames %d\n", sps->num_reorder_frames);
             return -1;
@@ -335,7 +342,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     sps->mb_width = get_ue_golomb(&s->gb) + 1;
     sps->mb_height= get_ue_golomb(&s->gb) + 1;
     if((unsigned)sps->mb_width >= INT_MAX/16 || (unsigned)sps->mb_height >= INT_MAX/16 ||
-       avcodec_check_dimensions(NULL, 16*sps->mb_width, 16*sps->mb_height)){
+       av_check_image_size(16*sps->mb_width, 16*sps->mb_height, 0, h->s.avctx)){
         av_log(h->s.avctx, AV_LOG_ERROR, "mb_width/height overflow\n");
         goto fail;
     }

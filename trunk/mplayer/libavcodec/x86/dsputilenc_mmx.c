@@ -1350,6 +1350,8 @@ static int ssd_int8_vs_int16_mmx(const int8_t *pix1, const int16_t *pix2, int si
 
 void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
+    int mm_flags = mm_support();
+
     if (mm_flags & FF_MM_MMX) {
         const int dct_algo = avctx->dct_algo;
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
@@ -1409,9 +1411,10 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
             c->hadamard8_diff[0]= hadamard8_diff16_sse2;
             c->hadamard8_diff[1]= hadamard8_diff_sse2;
-#if CONFIG_LPC
+        }
+
+        if (CONFIG_LPC && mm_flags & (FF_MM_SSE2|FF_MM_SSE2SLOW)) {
             c->lpc_compute_autocorr = ff_lpc_compute_autocorr_sse2;
-#endif
         }
 
 #if HAVE_SSSE3

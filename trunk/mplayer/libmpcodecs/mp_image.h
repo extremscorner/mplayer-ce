@@ -86,6 +86,10 @@
 #define MP_IMGTYPE_IPB 4
 // Upper 16 bits give desired buffer number, -1 means get next available
 #define MP_IMGTYPE_NUMBERED 5
+// Doesn't need any buffer, incomplete image (probably a first field only)
+// we need this type to be able to differentiate between half frames and
+// all other cases
+#define MP_IMGTYPE_INCOMPLETE 6
 
 #define MP_MAX_PLANES	4
 
@@ -96,7 +100,7 @@
 #define MP_IMGFIELD_BOTTOM 0x10
 #define MP_IMGFIELD_INTERLACED 0x20
 
-typedef struct mp_image_s {
+typedef struct mp_image {
     unsigned int flags;
     unsigned char type;
     int number;

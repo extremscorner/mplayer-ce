@@ -428,7 +428,9 @@ retry:
     if(s->xvid_build==-1 && s->divx_version==-1 && s->lavc_build==-1){
         if(s->stream_codec_tag == AV_RL32("XVID") ||
            s->codec_tag == AV_RL32("XVID") || s->codec_tag == AV_RL32("XVIX") ||
-           s->codec_tag == AV_RL32("RMP4"))
+           s->codec_tag == AV_RL32("RMP4") ||
+           s->codec_tag == AV_RL32("SIPP")
+           )
             s->xvid_build= 0;
 #if 0
         if(s->codec_tag == AV_RL32("DIVX") && s->vo_type==0 && s->vol_control_parameters==1
@@ -551,7 +553,7 @@ retry:
 #endif
 
 #if HAVE_MMX
-    if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build>=0 && avctx->idct_algo == FF_IDCT_AUTO && (mm_flags & FF_MM_MMX)){
+    if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build>=0 && avctx->idct_algo == FF_IDCT_AUTO && (mm_support() & FF_MM_MMX)){
         avctx->idct_algo= FF_IDCT_XVIDMMX;
         avctx->coded_width= 0; // force reinit
 //        dsputil_init(&s->dsp, avctx);
@@ -736,6 +738,7 @@ AVCodec h263_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
     .flush= ff_mpeg_flush,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2"),
     .pix_fmts= ff_hwaccel_pixfmt_list_420,
 };

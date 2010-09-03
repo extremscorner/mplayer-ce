@@ -28,7 +28,7 @@
  */
 
 #include "avformat.h"
-#include "raw.h"
+#include "pcm.h"
 #include "riff.h"
 
 /* if we don't know the size in advance */
@@ -138,6 +138,11 @@ static int au_read_header(AVFormatContext *s,
     channels = get_be32(pb);
 
     codec = ff_codec_get_id(codec_au_tags, id);
+
+    if (!av_get_bits_per_sample(codec)) {
+        av_log_ask_for_sample(s, "could not determine bits per sample\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (size >= 24) {
         /* skip unused data */

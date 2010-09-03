@@ -347,9 +347,6 @@ static WIN_BOOL MODULE_FreeLibrary( WINE_MODREF *wm )
 {
     TRACE("(%s) - START\n", wm->modname );
 
-    /* Recursively decrement reference counts */
-    //MODULE_DecRefCount( wm );
-
     /* Call process detach notifications */
     MODULE_DllProcessDetach( wm, FALSE, NULL );
 
@@ -383,6 +380,10 @@ HMODULE WINAPI LoadLibraryExA(LPCSTR libname, HANDLE hfile, DWORD flags)
 
 //	if(fs_installed==0)
 //	    install_fs();
+
+	// Do not load libraries from a path relative to the current directory
+	if (*libname != '/')
+	    i++;
 
 	while (wm == 0 && listpath[++i])
 	{
@@ -610,36 +611,6 @@ WIN_BOOL WINAPI FreeLibrary(HINSTANCE hLibModule)
 }
 
 /***********************************************************************
- *           MODULE_DecRefCount
- *
- * NOTE: Assumes that the process critical section is held!
- */
-static void MODULE_DecRefCount( WINE_MODREF *wm )
-{
-    int i;
-
-    if ( wm->flags & WINE_MODREF_MARKER )
-        return;
-
-    if ( wm->refCount <= 0 )
-        return;
-
-    --wm->refCount;
-    TRACE("(%s) refCount: %d\n", wm->modname, wm->refCount );
-
-    if ( wm->refCount == 0 )
-    {
-        wm->flags |= WINE_MODREF_MARKER;
-
-        for ( i = 0; i < wm->nDeps; i++ )
-            if ( wm->deps[i] )
-                MODULE_DecRefCount( wm->deps[i] );
-
-        wm->flags &= ~WINE_MODREF_MARKER;
-    }
-}
-
-/***********************************************************************
  *           GetProcAddress   		(KERNEL32.257)
  */
 FARPROC WINAPI GetProcAddress( HMODULE hModule, LPCSTR function )
@@ -734,7 +705,7 @@ static int dump_component(char* name, int type, void* orig, ComponentParameters 
 	return dump_component(name,type,real_ ## sname, params, glob); \
     }
 
-#include "qt_comp.h"
+#include "qt_comp_template.c"
 
 #undef DECL_COMPONENT
 
@@ -1075,7 +1046,7 @@ FARPROC MODULE_GetProcAddress(
 	fprintf(stderr,name "dispatcher catched -> %p\n",retproc); \
 	real_ ## sname = retproc; retproc = fake_ ## sname; \
     }
-#include "qt_comp.h"
+#include "qt_comp_template.c"
 #undef DECL_COMPONENT
 #endif
 

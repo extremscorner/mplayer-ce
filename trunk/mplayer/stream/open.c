@@ -39,7 +39,6 @@
 #include "libmenu/fsysloc.h"
 
 
-
 /// We keep these 2 for the gui atm, but they will be removed.
 int vcd_track=0;
 char* cdrom_device=NULL;
@@ -57,6 +56,8 @@ stream_t* open_stream(const char* filename,char** options, int* file_format){
    const fsysloc_t *fsysloc = NULL;
    char* filename_iconv = NULL;
 
+  int dummy = DEMUXER_TYPE_UNKNOWN;
+  if (!file_format) file_format = &dummy;
   // Check if playlist or unknown
   if (*file_format != DEMUXER_TYPE_PLAYLIST){
     *file_format=DEMUXER_TYPE_UNKNOWN;

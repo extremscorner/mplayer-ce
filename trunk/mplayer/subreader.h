@@ -88,12 +88,12 @@ sub_data* sub_read_file (char *filename, float pts);
 subtitle* subcp_recode (subtitle *sub);
 // enca_fd is the file enca uses to determine the codepage.
 // setting to NULL disables enca.
-struct stream_st;
-void subcp_open (struct stream_st *st); /* for demux_ogg.c */
+struct stream;
+void subcp_open (struct stream *st); /* for demux_ogg.c */
 void subcp_close (void); /* for demux_ogg.c */
 #ifdef CONFIG_ENCA
 const char* guess_buffer_cp(unsigned char* buffer, int buflen, const char *preferred_language, const char *fallback);
-const char* guess_cp(struct stream_st *st, const char *preferred_language, const char *fallback);
+const char* guess_cp(struct stream *st, const char *preferred_language, const char *fallback);
 #endif
 char ** sub_filenames(const char *path, char *fname);
 void list_sub_file(sub_data* subd);
@@ -105,7 +105,7 @@ void dump_sami(sub_data* subd, float fps);
 void sub_free( sub_data * subd );
 void find_sub(sub_data* subd,int key);
 void step_sub(sub_data *subd, float pts, int movement);
-void sub_add_text(subtitle *sub, const char *txt, int len, double endpts);
+void sub_add_text(subtitle *sub, const char *txt, int len, double endpts, int strip_markup);
 int sub_clear_text(subtitle *sub, double pts);
 
 #endif /* MPLAYER_SUBREADER_H */

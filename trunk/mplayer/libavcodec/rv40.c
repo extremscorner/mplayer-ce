@@ -24,6 +24,8 @@
  * RV40 decoder
  */
 
+#include "libavcore/imgutils.h"
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -142,7 +144,7 @@ static int rv40_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     si->pts = get_bits(gb, 13);
     if(!si->type || !get_bits1(gb))
         rv40_parse_picture_size(gb, &w, &h);
-    if(avcodec_check_dimensions(r->s.avctx, w, h) < 0)
+    if(av_check_image_size(w, h, 0, r->s.avctx) < 0)
         return -1;
     si->width  = w;
     si->height = h;
@@ -307,7 +309,7 @@ static inline void rv40_weak_loop_filter(uint8_t *src, const int step,
     }
 }
 
-static inline void rv40_adaptive_loop_filter(uint8_t *src, const int step,
+static av_always_inline void rv40_adaptive_loop_filter(uint8_t *src, const int step,
                                              const int stride, const int dmode,
                                              const int lim_q1, const int lim_p1,
                                              const int alpha,

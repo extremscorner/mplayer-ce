@@ -2,7 +2,8 @@
 
 usb2storage.c -- USB mass storage support, inside starlet
 Copyright (C) 2008 Kwiirk
-Improved for homebrew by rodries
+Improved for homebrew by rodries and Tantric
+Modified by Dimok
 
 If this driver is linked before libogc, this will replace the original 
 usbstorage driver by svpe from libogc
@@ -210,12 +211,13 @@ void USB2Enable(bool enable)
 
 	if(!enable)
 	{
-		__io_usbstorage = __io_usb1storage;
+		USBStorage_Initialize();
+		memcpy(&__io_usbstorage, &__io_usb1storage, sizeof(DISC_INTERFACE));
 	}
 	else
 	{
 		//USB2Storage_Initialize(0);
-		__io_usbstorage = __io_usb2storage;
+		memcpy(&__io_usbstorage, &__io_usb2storage, sizeof(DISC_INTERFACE));
 	}
 }
 

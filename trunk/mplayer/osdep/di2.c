@@ -48,20 +48,15 @@ distribution.
 
 #include "di2.h"
 
-int di_fd = -1;
+extern int di_fd;
 
 int _DI2_ReadDVD_ReadID(void* buf, uint32_t len, uint32_t lba);
 int _DI2_ReadDVD_ReadID_Async(void* buf, uint32_t len, uint32_t lba, ipccallback ipc_cb);
-
-int _DI_ReadDVD_A8(void* buf, uint32_t len, uint32_t lba);
-int _DI_ReadDVD_D0(void* buf, uint32_t len, uint32_t lba);
-
-int _DI_ReadDVD_A8_Async(void* buf, uint32_t len, uint32_t lba,	ipccallback ipc_cb);
-int _DI_ReadDVD_D0_Async(void* buf, uint32_t len, uint32_t lba,	ipccallback ipc_cb);
-
 void _DI2_SetCallback(int di_command, ipccallback);
+int _DI2_ReadDVD_Check(void* buf, uint32_t len, uint32_t lba);
 static int _cover_callback(int ret, void* usrdata);
 
+bool have_ahbprot = false;
 int state = DVD_INIT | DVD_NO_DISC;
 
 static mutex_t bufferMutex = LWP_MUTEX_NULL;
@@ -81,7 +76,99 @@ static bool motor_stopped = true;
 static u64 LastAccess = 0;
 static unsigned int TimeStopMotor = DEFAULT_TIME_STOP_MOTOR;
 
-int _DI2_ReadDVD_Check(void* buf, uint32_t len, uint32_t lba);
+static int _DI2_ReadDVD_A8_Async(void* buf, uint32_t len, uint32_t lba, ipccallback ipc_cb){
+	int ret;
+	
+	if(!buf)
+		return -EINVAL;
+
+	if((uint32_t)buf & 0x1F) // This only works with 32 byte aligned addresses!
+		return -EFAULT;
+	
+	dic[0] = DVD_READ_UNENCRYPTED << 24;
+	dic[1] = len << 11; // 1 LB is 2048 bytes
+	dic[2] = lba << 9; // Nintendo's read function uses byteOffset >> 2, so we only shift 9 left, not 11.
+
+	ret = IOS_IoctlAsync(di_fd, DVD_READ_UNENCRYPTED, dic, 0x20, buf, len << 11,ipc_cb, buf);
+
+	if(ret == 2)
+		ret = EIO;
+
+	return (ret == 1)? 0 : -ret;
+}
+
+static int _DI2_ReadDVD_D0_Async(void* buf, uint32_t len, uint32_t lba, ipccallback ipc_cb){
+	int ret;
+
+	if(!buf)
+		return -EINVAL;
+	
+	if((uint32_t)buf & 0x1F)
+		return -EFAULT;
+
+	dic[0] = DVD_READ << 24;
+	dic[1] = 0;		// Unknown what this does as of now. (Sets some value to 0x10 in the drive if set).
+	dic[2] = 0;		// USE_DEFAULT_CONFIG flag. Drive will use default config if this bit is set.
+	dic[3] = len;
+	dic[4] = lba;
+	
+	ret = IOS_IoctlAsync(di_fd, DVD_READ, dic, 0x20, buf, len << 11,ipc_cb, buf);
+
+	if(ret == 2)
+		ret = EIO;
+
+	return (ret == 1)? 0 : -ret;
+}
+
+static int _DI2_ReadDVD_A8(void* buf, uint32_t len, uint32_t lba){
+	int ret, retry_count = LIBDI_MAX_RETRIES;
+	
+	if(!buf)
+		return -EINVAL;
+
+	if((uint32_t)buf & 0x1F) // This only works with 32 byte aligned addresses!
+		return -EFAULT;
+	
+	dic[0] = DVD_READ_UNENCRYPTED << 24;
+	dic[1] = len << 11; // 1 LB is 2048 bytes
+	dic[2] = lba << 9; // Nintendo's read function uses byteOffset >> 2, so we only shift 9 left, not 11.
+
+	do{	
+		ret = IOS_Ioctl(di_fd, DVD_READ_UNENCRYPTED, dic, 0x20, buf, len << 11);
+		retry_count--;
+	}while(ret != 1 && retry_count > 0);
+
+	if(ret == 2)
+		ret = EIO;
+
+	return (ret == 1)? 0 : -ret;
+}
+
+static int _DI2_ReadDVD_D0(void* buf, uint32_t len, uint32_t lba){
+	int ret, retry_count = LIBDI_MAX_RETRIES;
+	
+	if(!buf)
+		return -EINVAL;
+	
+	if((uint32_t)buf & 0x1F)
+		return -EFAULT;
+
+	dic[0] = DVD_READ << 24;
+	dic[1] = 0; // Unknown what this does as of now. (Sets some value to 0x10 in the drive if set).
+	dic[2] = 0; // USE_DEFAULT_CONFIG flag. Drive will use default config if this bit is set.
+	dic[3] = len;
+	dic[4] = lba;
+
+	do{	
+		ret = IOS_Ioctl(di_fd, DVD_READ, dic, 0x20, buf, len << 11);
+		retry_count--;
+	}while(ret != 1 && retry_count > 0);
+
+	if(ret == 2)
+		ret = EIO;
+
+	return (ret == 1)? 0 : -ret;
+}
 
 void DI2_SetDVDMotorStopSecs(int secs) //in seconds
 {
@@ -122,7 +209,7 @@ static void * motorthreadfunc(void *arg)
 			if (first) // change state from stop to start
 			{
 				sleeptime = 10*1000*1000; // 10 sec
-				
+
 				while(sleeptime > 0)
 				{
 					if(motorthreadexit)
@@ -134,7 +221,7 @@ static void * motorthreadfunc(void *arg)
 				first = false;
 			}
 			if ((ticks_to_secs(gettime()) - LastAccess) > TimeStopMotor)
-			{ // we have to stop motor
+			{ // we have to stop motor        
 				if (DVD_DiscPresent()) // only stop if dvd is present
 					DI2_StopMotor();
 			}
@@ -176,21 +263,16 @@ int DI2_StartMotor()
 
 	if (motor_stopped && motorthreadexit == false)
 	{
-		DI2_Reset();
-		uint32_t val;
-		int i = 200;
-		do
+		DI2_Mount();
+		unsigned int t1,t2;
+		t1=ticks_to_secs(gettime());
+		while(DI2_GetStatus() & DVD_INIT)
 		{
-			usleep(100);
-			DI2_GetCoverRegister(&val);
-			i--;
-			if (i == 0)
-				break;
-		} while (!(val & 0x2)); // wait until dvd is ok
-		LastAccess = ticks_to_secs(gettime());
-		if (i > 0)
-			motor_stopped = false; // if you can't start motor then dvd is hang	
-		return 1;
+			t2=ticks_to_secs(gettime());
+			if(t2-t1 > 15) return -1;
+			usleep(5000);
+		}
+		motor_stopped = false;
 	}
 	return 0;
 }
@@ -266,17 +348,20 @@ static int ReadBlockFromCache(void *buf, uint32_t len, uint32_t block)
  Initialize the DI interface, should always be called first!
  */
 
-s32 __DI_LoadStub();
+s32 __DI_StubLaunch();
 
 int DI2_Init(bool dvdx)
 {
 	static int dvdxinit = 0;
+	
+	if (dvdx && have_ahbprot)
+		return DI_Init();
 
 	state = DVD_INIT | DVD_NO_DISC;
 
 	if (dvdx && !dvdxinit)
 	{
-		__DI_LoadStub(); // Marcan's 1337 magics happen here!
+		__DI_StubLaunch(); // Marcan's 1337 magics happen here!
 		dvdxinit = 1;
 	}
 
@@ -293,6 +378,12 @@ int DI2_Init(bool dvdx)
 
 void DI2_Mount()
 {
+	if (have_ahbprot)
+	{
+		DI_Mount();
+		return;
+	}
+	
 	uint32_t status;
 
 	if (DI2_GetCoverRegister(&status) != 0)
@@ -320,6 +411,12 @@ void DI2_Mount()
 
 void DI2_Close()
 {
+	if (have_ahbprot)
+	{
+		DI_Close();
+		return;
+	}
+	
 	DI2_StopMotorThread();
 	LastAccess = 0;
 
@@ -346,22 +443,22 @@ int _DI2_ReadDVD_Check(void* buf, uint32_t len, uint32_t lba)
 {
 	int ret;
 
-	ret = _DI_ReadDVD_D0(buf, len, lba);
+	ret = _DI2_ReadDVD_D0(buf, len, lba);
 	if (ret >= 0)
 	{
 		state = state | DVD_D0;
-		DI2_ReadDVDptr = _DI_ReadDVD_D0;
-		DI2_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
+		DI2_ReadDVDptr = _DI2_ReadDVD_D0;
+		DI2_ReadDVDAsyncptr = _DI2_ReadDVD_D0_Async;
 		motor_stopped = false;
 		//printf("libdi: D0 functions detected\n");
 		return ret;
 	}
-	ret = _DI_ReadDVD_A8(buf, len, lba);
+	ret = _DI2_ReadDVD_A8(buf, len, lba);
 	if (ret >= 0)
 	{
 		state = state | DVD_A8;
-		DI2_ReadDVDptr = _DI_ReadDVD_A8;
-		DI2_ReadDVDAsyncptr = _DI_ReadDVD_A8_Async;
+		DI2_ReadDVDptr = _DI2_ReadDVD_A8;
+		DI2_ReadDVDAsyncptr = _DI2_ReadDVD_A8_Async;
 		motor_stopped = false;
 		//printf("libdi: A8 functions detected\n");
 		return ret;
@@ -374,21 +471,21 @@ int _DI2_ReadDVD_Check_Async(void* buf, uint32_t len, uint32_t lba,	ipccallback 
 { // is bad code has to be done correctly using callback func
 	int ret;
 
-	ret = _DI_ReadDVD_D0_Async(buf, len, lba, ipc_cb);
+	ret = _DI2_ReadDVD_D0_Async(buf, len, lba, ipc_cb);
 	if (ret >= 0)
 	{
 		state = state | DVD_D0;
-		DI2_ReadDVDptr = _DI_ReadDVD_D0;
-		DI2_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
+		DI2_ReadDVDptr = _DI2_ReadDVD_D0;
+		DI2_ReadDVDAsyncptr = _DI2_ReadDVD_D0_Async;
 		motor_stopped = false;
 		return ret;
 	}
-	ret = _DI_ReadDVD_A8_Async(buf, len, lba, ipc_cb);
+	ret = _DI2_ReadDVD_A8_Async(buf, len, lba, ipc_cb);
 	if (ret >= 0)
 	{
 		state = state | DVD_A8;
-		DI2_ReadDVDptr = _DI_ReadDVD_A8;
-		DI2_ReadDVDAsyncptr = _DI_ReadDVD_A8_Async;
+		DI2_ReadDVDptr = _DI2_ReadDVD_A8;
+		DI2_ReadDVDAsyncptr = _DI2_ReadDVD_A8_Async;
 		motor_stopped = false;
 		return ret;
 	}
@@ -442,27 +539,6 @@ static int _cover_callback(int ret, void* usrdata)
 		DI2_ReadDVDptr = _DI2_ReadDVD_Check;
 		DI2_ReadDVDAsyncptr = _DI2_ReadDVD_Check_Async;
 
-		/*
-		 DI2_ReadDVDptr = _DI_ReadDVD_D0;
-		 DI2_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
-		 
-		 _DI_ReadDVD_D0_Async(tmpblock,1,0,_di_read_chipcheck_cb);
-		 */
-		/*
-		 if(IOS_GetVersion() < 200)
-		 {
-		 state |= DVD_D0;
-		 DI2_ReadDVDptr = _DI_ReadDVD_D0;
-		 DI2_ReadDVDAsyncptr = _DI_ReadDVD_D0_Async;
-		 }
-		 else
-		 {
-		 state |= DVD_A8;
-		 DI2_ReadDVDptr = _DI_ReadDVD_A8;
-		 DI2_ReadDVDAsyncptr = _DI_ReadDVD_A8_Async;
-		 }
-		 */
-
 		if (di_cb)
 			di_cb(state, 0);
 
@@ -476,11 +552,17 @@ static int _cover_callback(int ret, void* usrdata)
 /* Get current status, will return the API status */
 int DI2_GetStatus()
 {
+	if (have_ahbprot)
+		return DI_GetStatus();	
+	
 	return state;
 }
 
 void DI2_SetInitCallback(di_callback cb)
 {
+	if (have_ahbprot)
+		return DI_SetInitCallback(cb);
+	
 	di_cb = cb;
 }
 
@@ -506,6 +588,9 @@ void _DI2_SetCallback(int ioctl_nr, ipccallback ipc_cb)
  */
 int DI2_Identify(DI_DriveID* id)
 {
+	if (have_ahbprot)
+		return DI_Identify(id);
+	
 	if (!id)
 	{
 		errno = EINVAL;
@@ -533,6 +618,9 @@ int DI2_Identify(DI_DriveID* id)
  */
 int DI2_GetError(uint32_t* error)
 {
+	if (have_ahbprot)
+		return DI_GetError(error);
+	
 	if (!error)
 	{
 		errno = EINVAL;
@@ -561,6 +649,9 @@ int DI2_GetError(uint32_t* error)
  */
 int DI2_Reset()
 {
+	if (have_ahbprot)
+		return DI_Reset();
+	
 	LWP_MutexLock(bufferMutex);
 
 	dic[0] = DVD_RESET << 24;
@@ -582,6 +673,9 @@ int DI2_Reset()
  */
 int DI2_ReadDVD(void* buf, uint32_t len, uint32_t lba)
 {
+	if (have_ahbprot)
+		return DI_ReadDVD(buf, len, lba);
+	
 	int ret;
 	if (DI2_ReadDVDptr)
 	{
@@ -598,6 +692,9 @@ int DI2_ReadDVD(void* buf, uint32_t len, uint32_t lba)
 
 int DI2_ReadDVDAsync(void* buf, uint32_t len, uint32_t lba, ipccallback ipc_cb)
 {
+	if (have_ahbprot)
+		return DI_ReadDVDAsync(buf, len, lba, ipc_cb);
+	
 	int ret;
 	if (DI2_ReadDVDAsyncptr)
 	{
@@ -615,6 +712,9 @@ int DI2_ReadDVDAsync(void* buf, uint32_t len, uint32_t lba, ipccallback ipc_cb)
  */
 int DI2_ReadDVDConfig(uint32_t* val, uint32_t flag)
 {
+	if (have_ahbprot)
+		return DI_ReadDVDConfig(val, flag);
+	
 	if (!val)
 	{
 		errno = EINVAL;
@@ -644,6 +744,9 @@ int DI2_ReadDVDConfig(uint32_t* val, uint32_t flag)
  */
 int DI2_ReadDVDCopyright(uint32_t* copyright)
 {
+	if (have_ahbprot)
+		return DI_ReadDVDCopyright(copyright);
+	
 	if (!copyright)
 	{
 		errno = EINVAL;
@@ -670,6 +773,9 @@ int DI2_ReadDVDCopyright(uint32_t* copyright)
  */
 int DI2_ReadDVDDiscKey(void* buf)
 {
+	if (have_ahbprot)
+		return DI_ReadDVDDiscKey(buf);
+	
 	int ret;
 	int retry_count = LIBDI_MAX_RETRIES;
 
@@ -708,6 +814,9 @@ int DI2_ReadDVDDiscKey(void* buf)
  */
 int DI2_ReadDVDPhysical(void* buf)
 {
+	if (have_ahbprot)
+		return DI_ReadDVDPhysical(buf);
+	
 	int ret;
 	int retry_count = LIBDI_MAX_RETRIES;
 
@@ -744,6 +853,9 @@ int DI2_ReadDVDPhysical(void* buf)
 
 int DI2_ReportKey(int keytype, uint32_t lba, void* buf)
 {
+	if (have_ahbprot)
+		return DI_ReportKey(keytype, lba, buf);
+	
 	if (!buf)
 	{
 		errno = EINVAL;
@@ -774,6 +886,9 @@ int DI2_ReportKey(int keytype, uint32_t lba, void* buf)
 
 int DI2_GetCoverRegister(uint32_t* status)
 {
+	if (have_ahbprot)
+		return DI_GetCoverRegister(status);
+	
 	LWP_MutexLock(bufferMutex);
 
 	memset(dic, 0x00, 0x20);
@@ -813,12 +928,18 @@ int _DI2_SetMotor(int flag)
 /* Stop the drives motor, needs a reset afterwards for normal operation */
 int DI2_StopMotor()
 {
+	if (have_ahbprot)
+		return DI_StopMotor();
+	
 	return _DI2_SetMotor(0);
 }
 
 /* Stop the motor, and eject the disc. Also needs a reset afterwards for normal operation */
 int DI2_Eject()
 {
+	if (have_ahbprot)
+		return DI_Eject();
+	
 	return _DI2_SetMotor(1);
 }
 
@@ -835,6 +956,9 @@ int DI2_KillDrive()
 
 int DI2_ClosePartition()
 {
+	if (have_ahbprot)
+		return DI_ClosePartition();
+	
 	CheckAccess();
 	LWP_MutexLock(bufferMutex);
 
@@ -851,6 +975,9 @@ int DI2_ClosePartition()
 
 int DI2_OpenPartition(uint32_t offset)
 {
+	if (have_ahbprot)
+		return DI_OpenPartition(offset);
+	
 	static ioctlv vectors[5] __attribute__((aligned(32)));
 	static char certs[0x49e4] __attribute__((aligned(32)));
 	CheckAccess();
@@ -882,6 +1009,9 @@ int DI2_OpenPartition(uint32_t offset)
 
 int DI2_Read(void *buf, uint32_t size, uint32_t offset)
 {
+	if (have_ahbprot)
+		return DI_Read(buf, size, offset);
+	
 	if (!buf)
 	{
 		errno = EINVAL;
@@ -912,6 +1042,9 @@ int DI2_Read(void *buf, uint32_t size, uint32_t offset)
 
 int DI2_UnencryptedRead(void *buf, uint32_t size, uint32_t offset)
 {
+	if (have_ahbprot)
+		return DI_UnencryptedRead(buf, size, offset);
+	
 	int ret, retry_count = LIBDI_MAX_RETRIES;
 
 	if (!buf)
@@ -949,6 +1082,9 @@ int DI2_UnencryptedRead(void *buf, uint32_t size, uint32_t offset)
 
 int DI2_ReadDiscID(uint64_t *id)
 {
+	if (have_ahbprot)
+		return DI_ReadDiscID(id);
+	
 	CheckAccess();
 	LWP_MutexLock(bufferMutex);
 
@@ -1000,7 +1136,7 @@ bool diio_IsInitialized()
 	return true;
 }
 
-const DISC_INTERFACE __io_wiidvd = {
+const DISC_INTERFACE __io_wiidvd2 = {
 	DEVICE_TYPE_WII_DVD,
 	FEATURE_MEDIUM_CANREAD | FEATURE_WII_DVD,
 	(FN_MEDIUM_STARTUP)&diio_Startup,

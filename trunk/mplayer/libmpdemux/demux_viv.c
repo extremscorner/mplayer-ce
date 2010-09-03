@@ -32,6 +32,7 @@
 #include "stream/stream.h"
 #include "demuxer.h"
 #include "stheader.h"
+#include "demux_viv.h"
 
 /* parameters ! */
 int vivo_param_version = -1;
@@ -647,7 +648,7 @@ if (demuxer->audio->id >= -1){
   if(!ds_fill_buffer(demuxer->audio)){
     mp_msg(MSGT_DEMUX,MSGL_ERR,"VIVO: " MSGTR_MissingAudioStream);
   } else
-{		sh_audio_t* sh=new_sh_audio(demuxer,1);
+{		sh_audio_t* sh=new_sh_audio(demuxer,1, NULL);
 
 		/* Select audio codec */
 		if (priv->audio_codec == 0)

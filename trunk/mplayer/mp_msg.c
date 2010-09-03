@@ -29,13 +29,6 @@
 #include <errno.h>
 #endif
 
-#if defined(FOR_MENCODER)
-#undef CONFIG_GUI
-int use_gui;
-#else
-#include "gui/interface.h"
-#endif
-
 #include "mp_msg.h"
 
 #ifdef GEKKO
@@ -192,6 +185,9 @@ void mp_msg(int mod, int lev, const char *format, ... ){
     char tmp[MSGSIZE_MAX];
     FILE *stream = lev <= MSGL_WARN ? stderr : stdout;
     static int header = 1;
+    // indicates if last line printed was a status line
+    static int statusline;
+    size_t len;
 
     if (!mp_msg_test(mod, lev)) return; // do not display
     va_start(va, format);
@@ -199,11 +195,6 @@ void mp_msg(int mod, int lev, const char *format, ... ){
     va_end(va);
     tmp[MSGSIZE_MAX-2] = '\n';
     tmp[MSGSIZE_MAX-1] = 0;
-
-#ifdef CONFIG_GUI
-    if(use_gui)
-        guiMessageBox(lev, tmp);
-#endif
 
 #if defined(CONFIG_ICONV) && defined(MSG_CHARSET)
     if (mp_msg_charset && strcasecmp(mp_msg_charset, "noconv")) {
@@ -236,10 +227,16 @@ void mp_msg(int mod, int lev, const char *format, ... ){
     }
 #endif
 
+    // as a status line normally is intended to be overwitten by next status line
+    // output a '\n' to get a normal message on a separate line
+    if (statusline && lev != MSGL_STATUS) fprintf(stream, "\n");
+    statusline = lev == MSGL_STATUS;
+
     if (header)
         print_msg_module(stream, mod);
     set_msg_color(stream, lev);
-    header = tmp[strlen(tmp)-1] == '\n' || tmp[strlen(tmp)-1] == '\r';
+    len = strlen(tmp);
+    header = len && (tmp[len-1] == '\n' || tmp[len-1] == '\r');
 #ifdef GEKKO
 	if (mod == MSGT_STATUSLINE)
 		log_console_enable_log(false);

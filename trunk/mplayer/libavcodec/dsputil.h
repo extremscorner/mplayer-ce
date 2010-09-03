@@ -82,6 +82,11 @@ extern const uint8_t ff_zigzag248_direct[64];
 extern uint32_t ff_squareTbl[512];
 extern uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
+void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
+
 /* VP3 DSP functions */
 void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
 void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
@@ -91,24 +96,10 @@ void ff_vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size, const DCTELEM
 void ff_vp3_v_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 
-/* VP6 DSP functions */
-void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, int stride,
-                           const int16_t *h_weights, const int16_t *v_weights);
-
 /* Bink functions */
 void ff_bink_idct_c    (DCTELEM *block);
 void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block);
 void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
-
-/* CAVS functions */
-void ff_put_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_put_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride);
-
-/* VC1 functions */
-void ff_put_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
-void ff_avg_vc1_mspel_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int rnd);
 
 /* EA functions */
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
@@ -197,7 +188,7 @@ typedef struct ScanTable{
 
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
 
-void ff_emulated_edge_mc(uint8_t *buf, uint8_t *src, int linesize,
+void ff_emulated_edge_mc(uint8_t *buf, const uint8_t *src, int linesize,
                          int block_w, int block_h,
                          int src_x, int src_y, int w, int h);
 
@@ -339,15 +330,6 @@ typedef struct DSPContext {
     qpel_mc_func put_2tap_qpel_pixels_tab[4][16];
     qpel_mc_func avg_2tap_qpel_pixels_tab[4][16];
 
-    /* AVS specific */
-    qpel_mc_func put_cavs_qpel_pixels_tab[2][16];
-    qpel_mc_func avg_cavs_qpel_pixels_tab[2][16];
-    void (*cavs_filter_lv)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_filter_lh)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_filter_cv)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_filter_ch)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
-    void (*cavs_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
-
     me_cmp_func pix_abs[2][4];
 
     /* huffyuv specific */
@@ -377,9 +359,6 @@ typedef struct DSPContext {
     void (*vp3_idct_dc_add)(uint8_t *dest/*align 8*/, int line_size, const DCTELEM *block/*align 16*/);
     void (*vp3_v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
     void (*vp3_h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
-
-    void (*vp6_filter_diag4)(uint8_t *dst, uint8_t *src, int stride,
-                             const int16_t *h_weights,const int16_t *v_weights);
 
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
@@ -544,14 +523,14 @@ typedef struct DSPContext {
      * @param len length of vectors, should be multiple of 16
      * @param shift number of bits to discard from product
      */
-    int32_t (*scalarproduct_int16)(int16_t *v1, int16_t *v2/*align 16*/, int len, int shift);
+    int32_t (*scalarproduct_int16)(const int16_t *v1, const int16_t *v2/*align 16*/, int len, int shift);
     /* ape functions */
     /**
      * Calculate scalar product of v1 and v2,
      * and v1[i] += v3[i] * mul
      * @param len length of vectors, should be multiple of 16
      */
-    int32_t (*scalarproduct_and_madd_int16)(int16_t *v1/*align 16*/, int16_t *v2, int16_t *v3, int len, int mul);
+    int32_t (*scalarproduct_and_madd_int16)(int16_t *v1/*align 16*/, const int16_t *v2, const int16_t *v3, int len, int mul);
 
     /* rv30 functions */
     qpel_mc_func put_rv30_tpel_pixels_tab[4][16];
@@ -627,7 +606,6 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 /* should be defined by architectures supporting
    one or more MultiMedia extension */
 int mm_support(void);
-extern int mm_flags;
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
@@ -640,7 +618,6 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
-void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_rv40dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_vc1dsp_init(DSPContext* c, AVCodecContext *avctx);
@@ -657,12 +634,7 @@ static inline void emms(void)
     __asm__ volatile ("emms;":::"memory");
 }
 
-
-#define emms_c() \
-{\
-    if (mm_flags & FF_MM_MMX)\
-        emms();\
-}
+#define emms_c() emms()
 
 #elif ARCH_ARM
 
@@ -680,7 +652,6 @@ static inline void emms(void)
 
 #else
 
-#define mm_flags 0
 #define mm_support() 0
 
 #endif
