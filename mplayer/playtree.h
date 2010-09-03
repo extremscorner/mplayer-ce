@@ -22,7 +22,7 @@
 /// \file
 /// \ingroup Playtree
 
-struct stream_st;
+struct stream;
 struct m_config;
 
 /// \defgroup PlaytreeIterReturn Playtree iterator return code
@@ -256,7 +256,7 @@ play_tree_iter_get_file(play_tree_iter_t* iter, int d);
 /** \ingroup PlaytreeParser
  */
 play_tree_t*
-parse_playtree(struct stream_st *stream, int forced);
+parse_playtree(struct stream *stream, int forced);
 
 /// Clean a tree by destroying all empty elements.
 play_tree_t*
@@ -296,13 +296,8 @@ void pt_iter_replace_entry(play_tree_iter_t* iter, play_tree_t* entry);
 /// Adds a new file to the playtree, if it is not valid it is created.
 void pt_add_file(play_tree_t** ppt, char* filename);
 
-/// \brief Performs a convert to playtree-syntax, by concat path/file
-/// and performs pt_add_file
-void pt_add_gui_file(play_tree_t** ppt, char* path, char* file);
-
-// Two macros to use only the iter and not the other things.
+// Macro to use only the iter and not the other things.
 #define pt_iter_add_file(iter, filename) pt_add_file(&iter->tree, filename)
-#define pt_iter_add_gui_file(iter, path, name) pt_add_gui_file(&iter->tree, path, name)
 
 /// Resets the iter and goes back to head.
 void pt_iter_goto_head(play_tree_iter_t* iter);

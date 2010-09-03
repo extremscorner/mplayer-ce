@@ -23,28 +23,20 @@
  * config for cfgparser
  */
 
+#include "libmpcodecs/ae_faac.h"
+#include "libmpcodecs/ae_lame.h"
+#include "libmpcodecs/ae_toolame.h"
+#include "libmpcodecs/ae_twolame.h"
+#include "libmpcodecs/ve.h"
 #include "libmpcodecs/ve_x264.h"
+#include "libmpdemux/muxer.h"
+#include "libmpdemux/muxer_avi.h"
 #include "cfg-common.h"
-
-extern int sws_flags;
-extern char *pp_help;
-
-extern const m_option_t faacopts_conf[];
-extern const m_option_t lameopts_conf[];
-extern const m_option_t lavcopts_conf[];
-extern const m_option_t lavfopts_conf[];
-extern const m_option_t mpegopts_conf[];
-extern const m_option_t nuvopts_conf[];
-extern const m_option_t toolameopts_conf[];
-extern const m_option_t twolameopts_conf[];
-extern const m_option_t vfwopts_conf[];
-extern const m_option_t xvidencopts_conf[];
 
 const m_option_t ovc_conf[]={
     {"copy", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_COPY, NULL},
     {"frameno", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_FRAMENO, NULL},
     {"lavc", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_LIBAVCODEC, NULL},
-//    {"null", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_NULL, NULL},
     {"raw", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_RAW, NULL},
     {"vfw", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_VFW, NULL},
     {"libdv", &out_video_codec, CONF_TYPE_FLAG, 0, 0, VCODEC_LIBDV, NULL},
@@ -169,9 +161,6 @@ const m_option_t of_conf[]={
     {NULL, NULL, 0, 0, 0, 0, NULL}
 };
 
-extern float avi_aspect_override; /* defined in libmpdemux/muxer_avi.c */
-extern int write_odml; /* defined in libmpdemux/muxer_avi.c */
-
 const m_option_t mencoder_opts[]={
     /* name, pointer, type, flags, min, max */
 
@@ -272,11 +261,6 @@ const m_option_t mencoder_opts[]={
     {"lavfopts",  lavfopts_conf, CONF_TYPE_SUBCONFIG, CONF_GLOBAL, 0, 0, NULL},
 #endif
 
-#include "cfg-common-opts.h"
-
-//   {"-help", help_text, CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
-//   {"help", help_text, CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
-//   {"h", help_text, CONF_TYPE_PRINT, CONF_NOCFG, 0, 0, NULL},
     {NULL, NULL, 0, 0, 0, 0, NULL}
 };
 

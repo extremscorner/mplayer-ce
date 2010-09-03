@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * $Id: pnm.c 29305 2009-05-13 02:58:57Z diego $
+ * $Id: pnm.c 31913 2010-08-03 15:55:17Z siretart $
  *
  * pnm protocol implementation
  * based upon code from joschka
@@ -55,8 +55,6 @@
 #include "pnm.h"
 #include "tcp.h"
 //#include "libreal/rmff.h"
-
-extern int network_bandwidth;
 
 #define FOURCC_TAG( ch0, ch1, ch2, ch3 ) \
         (((long)(unsigned char)(ch3)       ) | \
@@ -382,7 +380,7 @@ static int pnm_get_chunk(pnm_t *p,
     case MDPR_TAG:
     case CONT_TAG:
       if (chunk_size > max || chunk_size < PREAMBLE_SIZE) {
-        mp_msg(MSGT_OPEN, MSGL_ERR, "error: max chunk size exceded (max was 0x%04x)\n", max);
+        mp_msg(MSGT_OPEN, MSGL_ERR, "error: max chunk size exceeded (max was 0x%04x)\n", max);
 #ifdef LOG
         n=rm_read (p->s, &data[PREAMBLE_SIZE], 0x100 - PREAMBLE_SIZE);
         hexdump(data,n+PREAMBLE_SIZE);

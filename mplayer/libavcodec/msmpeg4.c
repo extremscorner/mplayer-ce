@@ -1395,8 +1395,7 @@ return -1;
 #endif
 
     if(s->msmpeg4_version==1){
-        int start_code;
-        start_code = (get_bits(&s->gb, 16)<<16) | get_bits(&s->gb, 16);
+        int start_code = get_bits_long(&s->gb, 32);
         if(start_code!=0x00000100){
             av_log(s->avctx, AV_LOG_ERROR, "invalid startcode\n");
             return -1;
@@ -1929,6 +1928,7 @@ AVCodec msmpeg4v1_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
     .pix_fmts= ff_pixfmt_list_420,
 };
@@ -1943,6 +1943,7 @@ AVCodec msmpeg4v2_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
     .pix_fmts= ff_pixfmt_list_420,
 };
@@ -1957,6 +1958,7 @@ AVCodec msmpeg4v3_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
     .pix_fmts= ff_pixfmt_list_420,
 };
@@ -1971,6 +1973,7 @@ AVCodec wmv1_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
     .pix_fmts= ff_pixfmt_list_420,
 };

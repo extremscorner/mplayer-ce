@@ -35,7 +35,6 @@
 #define INITIALIZED_AO      2
 #define INITIALIZED_GUI     4
 #define INITIALIZED_GETCH2  8
-#define INITIALIZED_SPUDEC  32
 #define INITIALIZED_STREAM  64
 #define INITIALIZED_INPUT   128
 #define INITIALIZED_VOBSUB  256
@@ -112,11 +111,11 @@ typedef struct MPContext {
     int global_sub_pos; // this encompasses all subtitle sources
     int set_of_sub_pos;
     int set_of_sub_size;
-    int global_sub_indices[SUB_SOURCES];
+    int sub_counts[SUB_SOURCES];
 #ifdef CONFIG_ASS
     // set_of_ass_tracks[i] contains subtitles from set_of_subtitles[i]
     // parsed by libass or NULL if format unsupported
-    ass_track_t* set_of_ass_tracks[MAX_SUBTITLE_FILES];
+    ASS_Track* set_of_ass_tracks[MAX_SUBTITLE_FILES];
 #endif
     sub_data* set_of_subtitles[MAX_SUBTITLE_FILES];
 
@@ -130,7 +129,7 @@ typedef struct MPContext {
     int was_paused;
 
 #ifdef CONFIG_DVDNAV
-    struct mp_image_s *nav_smpi; ///< last decoded dvdnav video image
+    struct mp_image *nav_smpi;   ///< last decoded dvdnav video image
     unsigned char *nav_buffer;   ///< last read dvdnav video frame
     unsigned char *nav_start;    ///< pointer to last read video buffer
     int            nav_in_size;  ///< last read size

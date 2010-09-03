@@ -24,8 +24,6 @@
 #include "internal.h"
 #include "libavutil/random_seed.h"
 
-#include <unistd.h>
-
 #include "rtpenc.h"
 
 //#define DEBUG
@@ -55,6 +53,9 @@ static int is_supported(enum CodecID id)
     case CODEC_ID_MPEG2TS:
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
+    case CODEC_ID_VORBIS:
+    case CODEC_ID_THEORA:
+    case CODEC_ID_VP8:
         return 1;
     default:
         return 0;
@@ -80,10 +81,10 @@ static int rtp_write_header(AVFormatContext *s1)
     if (s->payload_type < 0)
         s->payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == AVMEDIA_TYPE_AUDIO);
 
-    s->base_timestamp = ff_random_get_seed();
+    s->base_timestamp = av_get_random_seed();
     s->timestamp = s->base_timestamp;
     s->cur_timestamp = 0;
-    s->ssrc = ff_random_get_seed();
+    s->ssrc = av_get_random_seed();
     s->first_packet = 1;
     s->first_rtcp_ntp_time = ff_ntp_time();
     if (s1->start_time_realtime)
@@ -131,6 +132,22 @@ static int rtp_write_header(AVFormatContext *s1)
         s->max_payload_size = n * TS_PACKET_SIZE;
         s->buf_ptr = s->buf;
         break;
+    case CODEC_ID_H264:
+        /* check for H.264 MP4 syntax */
+        if (st->codec->extradata_size > 4 && st->codec->extradata[0] == 1) {
+            s->nal_length_size = (st->codec->extradata[4] & 0x03) + 1;
+        }
+        break;
+    case CODEC_ID_VORBIS:
+    case CODEC_ID_THEORA:
+        if (!s->max_frames_per_packet) s->max_frames_per_packet = 15;
+        s->max_frames_per_packet = av_clip(s->max_frames_per_packet, 1, 15);
+        s->max_payload_size -= 6; // ident+frag+tdt/vdt+pkt_num+pkt_length
+        s->num_frames = 0;
+        goto defaultcase;
+    case CODEC_ID_VP8:
+        av_log(s1, AV_LOG_WARNING, "RTP VP8 payload is still experimental\n");
+        break;
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
         if (!s->max_frames_per_packet)
@@ -151,6 +168,7 @@ static int rtp_write_header(AVFormatContext *s1)
     case CODEC_ID_AAC:
         s->num_frames = 0;
     default:
+defaultcase:
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             av_set_pts_info(st, 32, 1, st->codec->sample_rate);
         }
@@ -173,7 +191,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
     rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, (AVRational){1, 1000000},
                           s1->streams[0]->time_base) + s->base_timestamp;
     put_byte(s1->pb, (RTP_VERSION << 6));
-    put_byte(s1->pb, 200);
+    put_byte(s1->pb, RTCP_SR);
     put_be16(s1->pb, 6); /* length in words - 1 */
     put_be32(s1->pb, s->ssrc);
     put_be32(s1->pb, ntp_time / 1000000);
@@ -388,6 +406,13 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case CODEC_ID_H263:
     case CODEC_ID_H263P:
         ff_rtp_send_h263(s1, pkt->data, size);
+        break;
+    case CODEC_ID_VORBIS:
+    case CODEC_ID_THEORA:
+        ff_rtp_send_xiph(s1, pkt->data, size);
+        break;
+    case CODEC_ID_VP8:
+        ff_rtp_send_vp8(s1, pkt->data, size);
         break;
     default:
         /* better than nothing : send the codec raw data */

@@ -20,6 +20,7 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "flv.h"
+#include "libavcore/imgutils.h"
 
 void ff_flv2_decode_ac_esc(GetBitContext *gb, int *level, int *run, int *last){
     int is11 = get_bits1(gb);
@@ -82,7 +83,7 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
         width = height = 0;
         break;
     }
-    if(avcodec_check_dimensions(s->avctx, width, height))
+    if(av_check_image_size(width, height, 0, s->avctx))
         return -1;
     s->width = width;
     s->height = height;
@@ -127,6 +128,7 @@ AVCodec flv_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
     .pix_fmts= ff_pixfmt_list_420,
 };

@@ -33,6 +33,7 @@
 #include "stheader.h"
 #include "libvo/fastmemcpy.h"
 
+#include "loader/wine/winbase.h"
 #include "loader/wine/windef.h"
 
 #ifdef WIN32_LOADER
@@ -42,10 +43,6 @@
 #include "demux_avs.h"
 
 #define MAX_AVS_SIZE    16 * 1024 /* 16k should be enough */
-
-HMODULE WINAPI LoadLibraryA(LPCSTR);
-FARPROC WINAPI GetProcAddress(HMODULE,LPCSTR);
-int     WINAPI FreeLibrary(HMODULE);
 
 typedef WINAPI AVS_ScriptEnvironment* (*imp_avs_create_script_environment)(int version);
 typedef WINAPI AVS_Value (*imp_avs_invoke)(AVS_ScriptEnvironment *, const char * name, AVS_Value args, const char** arg_names);
@@ -327,7 +324,7 @@ static demuxer_t* demux_open_avs(demuxer_t* demuxer)
       }
     if (audio_samplesize)
     {
-        sh_audio_t *sh_audio = new_sh_audio(demuxer, 0);
+        sh_audio_t *sh_audio = new_sh_audio(demuxer, 0, NULL);
         found = 1;
         mp_msg(MSGT_DEMUX, MSGL_V, "AVS: Clip has audio -> Channels = %d - Freq = %d\n", AVS->video_info->nchannels, AVS->video_info->audio_samples_per_second);
 

@@ -30,10 +30,11 @@
 #include <QuickTime/QuickTimeComponents.h>
 #else
 #include "loader/ldt_keeper.h"
+#include "loader/wine/winbase.h"
 #include "loader/wine/windef.h"
 #endif
 
-static const ad_info_t info =  {
+static const ad_info_t info = {
 	"QuickTime Audio Decoder",
 	"qtaudio",
 	"A'rpi",
@@ -94,10 +95,6 @@ static LPFUNC8 SoundConverterEndConversion;
 static LPFUNC9 SoundConverterBeginConversion;
 
 #define siDecompressionParams 2002876005 // siDecompressionParams = FOUR_CHAR_CODE('wave')
-
-HMODULE   WINAPI LoadLibraryA(LPCSTR);
-FARPROC   WINAPI GetProcAddress(HMODULE,LPCSTR);
-int       WINAPI FreeLibrary(HMODULE);
 
 static int loader_init(void)
 {

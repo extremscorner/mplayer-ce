@@ -30,6 +30,9 @@
 #include "aspect.h"
 #include "geometry.h"
 
+#ifdef CONFIG_GUI
+#include "gui/interface.h"
+#endif
 #include "mp_msg.h"
 #include "help_mp.h"
 #include "input/input.h"
@@ -195,15 +198,15 @@ const vo_functions_t* const video_out_drivers[] =
         &video_out_x11,
         &video_out_xover,
 #endif
+#ifdef CONFIG_SDL
+        &video_out_sdl,
+#endif
 #ifdef CONFIG_GL
         &video_out_gl,
         &video_out_gl2,
 #endif
 #ifdef CONFIG_DGA
         &video_out_dga,
-#endif
-#ifdef CONFIG_SDL
-        &video_out_sdl,
 #endif
 #ifdef CONFIG_GGI
         &video_out_ggi,
@@ -355,15 +358,22 @@ int config_video_out(const vo_functions_t *vo, uint32_t width, uint32_t height,
   aspect_save_prescale(d_width,d_height);
 
   if (vo->control(VOCTRL_UPDATE_SCREENINFO, NULL) == VO_TRUE) {
-  aspect(&d_width,&d_height,A_NOZOOM);
-  vo_dx = (int)(vo_screenwidth - d_width) / 2;
-  vo_dy = (int)(vo_screenheight - d_height) / 2;
-  geometry(&vo_dx, &vo_dy, &d_width, &d_height,
-           vo_screenwidth, vo_screenheight);
-  vo_dx += xinerama_x;
-  vo_dy += xinerama_y;
-  vo_dwidth = d_width;
-  vo_dheight = d_height;
+    aspect(&d_width,&d_height,A_NOZOOM);
+    vo_dx = (int)(vo_screenwidth - d_width) / 2;
+    vo_dy = (int)(vo_screenheight - d_height) / 2;
+    geometry(&vo_dx, &vo_dy, &d_width, &d_height,
+             vo_screenwidth, vo_screenheight);
+    geometry_xy_changed |= xinerama_screen >= 0;
+    vo_dx += xinerama_x;
+    vo_dy += xinerama_y;
+    vo_dwidth = d_width;
+    vo_dheight = d_height;
+#ifdef CONFIG_GUI
+    if (use_gui) {
+      // GUI creates and manages window for us
+      guiGetEvent(guiSetShVideo, 0);
+    }
+#endif
   }
 
   return vo->config(width, height, d_width, d_height, flags, title, format);

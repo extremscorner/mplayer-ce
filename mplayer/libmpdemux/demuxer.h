@@ -28,6 +28,7 @@
 #ifdef CONFIG_ASS
 #include "libass/ass_mp.h"
 #endif
+#include "m_option.h"
 
 #ifdef HAVE_BUILTIN_EXPECT
 #define likely(x) __builtin_expect ((x) != 0, 1)
@@ -147,7 +148,7 @@ typedef struct {
 //---------------
   int packs;              // number of packets in buffer
   int bytes;              // total bytes of packets in buffer
-  demux_packet_t *first;  // read to current buffer from here
+  demux_packet_t *first;  // read to first buffer after the current buffer from here
   demux_packet_t *last;   // append new packets from input stream to here
   demux_packet_t *current;// needed for refcounting of the buffer
   int id;                 // stream ID  (for multiple audio/video streams)
@@ -175,8 +176,23 @@ typedef struct demuxer_info {
 
 struct demuxer;
 
+extern int demuxer_type;
+extern int audio_demuxer_type;
+extern int sub_demuxer_type;
+extern int audio_stream_cache;
 extern int correct_pts;
 extern int user_correct_pts;
+extern char *sub_stream;
+
+extern int rtsp_port;
+extern int rtsp_transport_http;
+extern int rtsp_transport_sctp;
+extern int rtsp_transport_tcp;
+
+extern const m_option_t demux_rawaudio_opts[];
+extern const m_option_t demux_rawvideo_opts[];
+extern const m_option_t lavfdopts_conf[];
+
 
 /**
  * Demuxer description structure
@@ -380,7 +396,8 @@ static inline int demux_getc(demux_stream_t *ds){
 void ds_free_packs(demux_stream_t *ds);
 int ds_get_packet(demux_stream_t *ds,unsigned char **start);
 int ds_get_packet_pts(demux_stream_t *ds, unsigned char **start, double *pts);
-int ds_get_packet_sub(demux_stream_t *ds,unsigned char **start);
+int ds_get_packet_sub(demux_stream_t *ds,unsigned char **start,
+                      double *pts, double *endpts);
 double ds_get_next_pts(demux_stream_t *ds);
 int ds_parse(demux_stream_t *sh, uint8_t **buffer, int *len, double pts, off_t pos);
 void ds_clear_parser(demux_stream_t *sh);

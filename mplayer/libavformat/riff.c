@@ -59,6 +59,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('S', 'E', 'D', 'G') },
     { CODEC_ID_MPEG4,        MKTAG('R', 'M', 'P', '4') },
     { CODEC_ID_MPEG4,        MKTAG('3', 'I', 'V', '2') },
+    { CODEC_ID_MPEG4,        MKTAG('W', 'A', 'W', 'V') }, /* WaWv MPEG-4 Video Codec */
     { CODEC_ID_MPEG4,        MKTAG('F', 'F', 'D', 'S') },
     { CODEC_ID_MPEG4,        MKTAG('F', 'V', 'F', 'W') },
     { CODEC_ID_MPEG4,        MKTAG('D', 'C', 'O', 'D') },
@@ -80,8 +81,9 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_MPEG4,        MKTAG('V', 'S', 'P', 'X') },
     { CODEC_ID_MPEG4,        MKTAG('U', 'L', 'D', 'X') },
     { CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'V') },
-    { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
+    { CODEC_ID_MPEG4,        MKTAG('S', 'I', 'P', 'P') }, /* Samsung SHR-6040 */
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
+    { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '5') },
     { CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '6') },
@@ -122,6 +124,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_MPEG2VIDEO,   MKTAG('L', 'M', 'P', '2') }, /* Lead MPEG2 in avi */
     { CODEC_ID_MPEG2VIDEO,   MKTAG('s', 'l', 'i', 'f') },
     { CODEC_ID_MPEG2VIDEO,   MKTAG('E', 'M', '2', 'V') },
+    { CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '1') }, /* Matrox MPEG2 intra-only */
     { CODEC_ID_MJPEG,        MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('d', 'm', 'b', '1') },
@@ -129,6 +132,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_LJPEG,        MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('J', 'P', 'G', 'L') }, /* Pegasus lossless JPEG */
     { CODEC_ID_JPEGLS,       MKTAG('M', 'J', 'L', 'S') }, /* JPEG-LS custom FOURCC for avi - encoder */
+    { CODEC_ID_JPEGLS,       MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG,        MKTAG('M', 'J', 'L', 'S') }, /* JPEG-LS custom FOURCC for avi - decoder */
     { CODEC_ID_MJPEG,        MKTAG('j', 'p', 'e', 'g') },
     { CODEC_ID_MJPEG,        MKTAG('I', 'J', 'P', 'G') },
@@ -167,6 +171,13 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_RAWVIDEO,     MKTAG('H', 'D', 'Y', 'C') },
     { CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', 'U', '9') },
     { CODEC_ID_RAWVIDEO,     MKTAG('V', 'D', 'T', 'Z') }, /* SoftLab-NSK VideoTizer */
+    { CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '1', '1') },
+    { CODEC_ID_RAWVIDEO,     MKTAG('N', 'V', '1', '2') },
+    { CODEC_ID_RAWVIDEO,     MKTAG('N', 'V', '2', '1') },
+    { CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '1', 'B') },
+    { CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '2', 'B') },
+    { CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'V', '9') },
+    { CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', 'U', '9') },
     { CODEC_ID_FRWU,         MKTAG('F', 'R', 'W', 'U') },
     { CODEC_ID_R210,         MKTAG('r', '2', '1', '0') },
     { CODEC_ID_V210,         MKTAG('v', '2', '1', '0') },
@@ -182,6 +193,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_VP6,          MKTAG('V', 'P', '6', '2') },
     { CODEC_ID_VP6F,         MKTAG('V', 'P', '6', 'F') },
     { CODEC_ID_VP6F,         MKTAG('F', 'L', 'V', '4') },
+    { CODEC_ID_VP8,          MKTAG('V', 'P', '8', '0') },
     { CODEC_ID_ASV1,         MKTAG('A', 'S', 'V', '1') },
     { CODEC_ID_ASV2,         MKTAG('A', 'S', 'V', '2') },
     { CODEC_ID_VCR1,         MKTAG('V', 'C', 'R', '1') },

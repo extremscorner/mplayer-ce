@@ -24,6 +24,7 @@ extern "C" {
 #ifdef __MINGW32__    // with.  they are each protected from
 #include <windows.h>  // windows.h, but not the other way around.
 #endif
+#include "demuxer.h"
 #include "demux_rtp.h"
 #include "stheader.h"
 }
@@ -112,11 +113,12 @@ static char* openURL_sip(SIPClient* client, char const* url) {
 
 #ifdef CONFIG_LIBNEMESI
 extern int rtsp_transport_tcp;
+extern int rtsp_transport_http;
 #else
 int rtsp_transport_tcp = 0;
+int rtsp_transport_http = 0;
 #endif
 
-extern int rtsp_port;
 #ifdef CONFIG_LIBAVCODEC
 extern AVCodecContext *avcctx;
 #endif
@@ -146,7 +148,11 @@ extern "C" demuxer_t* demux_open_rtp(demuxer_t* demuxer) {
       char const* url = demuxer->stream->streaming_ctrl->url->url;
       extern int verbose;
       if (strcmp(protocol, "rtsp") == 0) {
-	rtspClient = RTSPClient::createNew(*env, verbose, "MPlayer");
+	if (rtsp_transport_http == 1) {
+	  rtsp_transport_http = demuxer->stream->streaming_ctrl->url->port;
+	  rtsp_transport_tcp = 1;
+	}
+	rtspClient = RTSPClient::createNew(*env, verbose, "MPlayer", rtsp_transport_http);
 	if (rtspClient == NULL) {
 	  fprintf(stderr, "Failed to create RTSP client: %s\n",
 		  env->getResultMsg());

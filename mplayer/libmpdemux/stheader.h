@@ -72,8 +72,8 @@ typedef struct sh_audio {
   int a_out_buffer_len;
   int a_out_buffer_size;
 //  void* audio_out;        // the audio_out handle, used for this audio stream
-  struct af_stream_s *afilter;          // the audio filter stream
-  struct ad_functions_s* ad_driver;
+  struct af_stream *afilter;          // the audio filter stream
+  const struct ad_functions *ad_driver;
 #ifdef CONFIG_DYNAMIC_PLUGINS
   void *dec_handle;
 #endif
@@ -126,19 +126,21 @@ typedef struct sh_sub {
   unsigned char* extradata; // extra header data passed from demuxer
   int extradata_len;
 #ifdef CONFIG_ASS
-  ass_track_t* ass_track;  // for SSA/ASS streams (type == 'a')
+  ASS_Track* ass_track;  // for SSA/ASS streams (type == 'a')
 #endif
 } sh_sub_t;
 
 // demuxer.c:
-#define new_sh_audio(d, i) new_sh_audio_aid(d, i, i)
-sh_audio_t* new_sh_audio_aid(demuxer_t *demuxer,int id,int aid);
+#define new_sh_audio(d, i, l) new_sh_audio_aid(d, i, i, l)
+sh_audio_t* new_sh_audio_aid(demuxer_t *demuxer,int id,int aid, const char *lang);
 #define new_sh_video(d, i) new_sh_video_vid(d, i, i)
 sh_video_t* new_sh_video_vid(demuxer_t *demuxer,int id,int vid);
-#define new_sh_sub(d, i) new_sh_sub_sid(d, i, i)
-sh_sub_t *new_sh_sub_sid(demuxer_t *demuxer, int id, int sid);
+#define new_sh_sub(d, i, l) new_sh_sub_sid(d, i, i, l)
+sh_sub_t *new_sh_sub_sid(demuxer_t *demuxer, int id, int sid, const char *lang);
 void free_sh_audio(demuxer_t *demuxer, int id);
 void free_sh_video(sh_video_t *sh);
+
+const char *sh_sub_type2str(int type);
 
 // video.c:
 int video_read_properties(sh_video_t *sh_video);

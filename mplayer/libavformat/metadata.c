@@ -87,7 +87,7 @@ int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int fl
     return 0;
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR == 52
+#if FF_API_OLD_METADATA
 int av_metadata_set(AVMetadata **pm, const char *key, const char *value)
 {
     return av_metadata_set2(pm, key, value, 0);
@@ -118,22 +118,23 @@ void metadata_conv(AVMetadata **pm, const AVMetadataConv *d_conv,
     AVMetadata *dst = NULL;
     const char *key;
 
+    if (d_conv == s_conv)
+        return;
+
     while((mtag=av_metadata_get(*pm, "", mtag, AV_METADATA_IGNORE_SUFFIX))) {
         key = mtag->key;
-        if (s_conv != d_conv) {
-            if (s_conv)
-                for (sc=s_conv; sc->native; sc++)
-                    if (!strcasecmp(key, sc->native)) {
-                        key = sc->generic;
-                        break;
-                    }
-            if (d_conv)
-                for (dc=d_conv; dc->native; dc++)
-                    if (!strcasecmp(key, dc->generic)) {
-                        key = dc->native;
-                        break;
-                    }
-        }
+        if (s_conv)
+            for (sc=s_conv; sc->native; sc++)
+                if (!strcasecmp(key, sc->native)) {
+                    key = sc->generic;
+                    break;
+                }
+        if (d_conv)
+            for (dc=d_conv; dc->native; dc++)
+                if (!strcasecmp(key, dc->generic)) {
+                    key = dc->native;
+                    break;
+                }
         av_metadata_set2(&dst, key, mtag->value, 0);
     }
     av_metadata_free(pm);

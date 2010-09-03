@@ -18,16 +18,11 @@
 #include "mp3.h"
 #include "mpbswap.h"
 #include "cpudetect.h"
-//#include "liba52/mm_accel.h"
 #include "mp_msg.h"
 #include "libmpcodecs/ad_mp3lib.h"
 #include "libvo/fastmemcpy.h"
 
 #include "libavutil/common.h"
-#include "libavutil/internal.h"
-
-#undef fprintf
-#undef printf
 
 #if ARCH_X86_64
 // 3DNow! and 3DNow!Ext routines don't compile under AMD64
@@ -68,7 +63,7 @@ int mp3_read(char *buf,int size);
 /*
  * Modified for use with MPlayer, for details see the changelog at
  * http://svn.mplayerhq.hu/mplayer/trunk/
- * $Id: sr1.c 31032 2010-04-12 10:56:17Z diego $
+ * $Id: sr1.c 31892 2010-08-01 21:06:51Z diego $
  */
 
 
@@ -368,7 +363,7 @@ retry1:
 
   /* read main data into memory */
   if(!stream_read_frame_body(fr->framesize)){
-    //printf("\nBroken frame at 0x%X                                                  \n",resyncpos);
+    printf("\nBroken frame at 0x%X                                                  \n",resyncpos);
     return 0;
   }
   ++frames;

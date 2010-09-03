@@ -26,8 +26,9 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
-#include "colorspace.h"
 #include "bytestream.h"
+#include "libavutil/colorspace.h"
+#include "libavcore/imgutils.h"
 
 //#define DEBUG_PACKET_CONTENTS
 
@@ -44,8 +45,6 @@ enum SegmentType {
 typedef struct PGSSubPresentation {
     int x;
     int y;
-    int video_w;
-    int video_h;
     int id_number;
 } PGSSubPresentation;
 
@@ -64,7 +63,7 @@ typedef struct PGSSubContext {
 
 static av_cold int init_decoder(AVCodecContext *avctx)
 {
-    avctx->pix_fmt     = PIX_FMT_RGB32;
+    avctx->pix_fmt = PIX_FMT_PAL8;
 
     return 0;
 }
@@ -80,7 +79,7 @@ static av_cold int close_decoder(AVCodecContext *avctx)
 }
 
 /**
- * Decodes the RLE data.
+ * Decode the RLE data.
  *
  * The subtitle is stored as an Run Length Encoded image.
  *
@@ -141,7 +140,7 @@ static int decode_rle(AVCodecContext *avctx, AVSubtitle *sub,
 }
 
 /**
- * Parses the picture segment packet.
+ * Parse the picture segment packet.
  *
  * The picture segment contains details on the sequence id,
  * width, height and Run Length Encoded (RLE) bitmap data.
@@ -186,7 +185,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
     height = bytestream_get_be16(&buf);
 
     /* Make sure the bitmap is not too large */
-    if (ctx->presentation.video_w < width || ctx->presentation.video_h < height) {
+    if (avctx->width < width || avctx->height < height) {
         av_log(avctx, AV_LOG_ERROR, "Bitmap dimensions larger then video.\n");
         return -1;
     }
@@ -205,7 +204,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
 }
 
 /**
- * Parses the palette segment packet.
+ * Parse the palette segment packet.
  *
  * The palette segment contains details of the palette,
  * a maximum of 256 colors can be defined.
@@ -246,7 +245,7 @@ static void parse_palette_segment(AVCodecContext *avctx,
 }
 
 /**
- * Parses the presentation segment packet.
+ * Parse the presentation segment packet.
  *
  * The presentation segment contains details on the video
  * width, video height, x & y subtitle position.
@@ -266,11 +265,13 @@ static void parse_presentation_segment(AVCodecContext *avctx,
     int x, y;
     uint8_t block;
 
-    ctx->presentation.video_w = bytestream_get_be16(&buf);
-    ctx->presentation.video_h = bytestream_get_be16(&buf);
+    int w = bytestream_get_be16(&buf);
+    int h = bytestream_get_be16(&buf);
 
     dprintf(avctx, "Video Dimensions %dx%d\n",
-            ctx->presentation.video_w, ctx->presentation.video_h);
+            w, h);
+    if (av_check_image_size(w, h, 0, avctx) >= 0)
+        avcodec_set_dimensions(avctx, w, h);
 
     /* Skip 1 bytes of unknown, frame rate? */
     buf++;
@@ -298,9 +299,9 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
         dprintf(avctx, "Subtitle Placement x=%d, y=%d\n", x, y);
 
-        if (x > ctx->presentation.video_w || y > ctx->presentation.video_h) {
+        if (x > avctx->width || y > avctx->height) {
             av_log(avctx, AV_LOG_ERROR, "Subtitle out of video bounds. x = %d, y = %d, video width = %d, video height = %d.\n",
-                   x, y, ctx->presentation.video_w, ctx->presentation.video_h);
+                   x, y, avctx->width, avctx->height);
             x = 0; y = 0;
         }
 
@@ -317,7 +318,7 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 }
 
 /**
- * Parses the display segment packet.
+ * Parse the display segment packet.
  *
  * The display segment controls the updating of the display.
  *

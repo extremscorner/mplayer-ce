@@ -20,6 +20,11 @@
  * You should have received a copy of the GNU General Public License along
  * with MPlayer; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * You can alternatively redistribute this file and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  */
 
 /**
@@ -87,6 +92,7 @@ void (GLAPIENTRY *mpglLightfv)(GLenum, GLenum, const GLfloat *);
 void (GLAPIENTRY *mpglColorMaterial)(GLenum, GLenum);
 void (GLAPIENTRY *mpglShadeModel)(GLenum);
 void (GLAPIENTRY *mpglGetIntegerv)(GLenum, GLint *);
+void (GLAPIENTRY *mpglColorMask)(GLboolean, GLboolean, GLboolean, GLboolean);
 
 /**
  * \defgroup glextfunctions OpenGL extension functions
@@ -431,6 +437,7 @@ static const extfunc_desc_t extfuncs[] = {
   DEF_FUNC_DESC(ColorMaterial),
   DEF_FUNC_DESC(ShadeModel),
   DEF_FUNC_DESC(GetIntegerv),
+  DEF_FUNC_DESC(ColorMask),
 
   // here start the real extensions
   {&mpglGenBuffers, NULL, {"glGenBuffers", "glGenBuffersARB", NULL}},
@@ -528,8 +535,11 @@ void glCreateClearTex(GLenum target, GLenum fmt, GLenum format, GLenum type, GLi
                       int w, int h, unsigned char val) {
   GLfloat fval = (GLfloat)val / 255.0;
   GLfloat border[4] = {fval, fval, fval, fval};
-  int stride = w * glFmt2bpp(format, type);
+  int stride;
   char *init;
+  if (w == 0) w = 1;
+  if (h == 0) h = 1;
+  stride = w * glFmt2bpp(format, type);
   if (!stride) return;
   init = malloc(stride * h);
   memset(init, val, stride * h);
@@ -1421,6 +1431,8 @@ int glAutodetectYUVConversion(void) {
 void glSetupYUVConversion(gl_conversion_params_t *params) {
   float uvcos = params->csp_params.saturation * cos(params->csp_params.hue);
   float uvsin = params->csp_params.saturation * sin(params->csp_params.hue);
+  if (params->chrom_texw == 0) params->chrom_texw = 1;
+  if (params->chrom_texh == 0) params->chrom_texh = 1;
   switch (YUV_CONVERSION(params->type)) {
     case YUV_CONVERSION_COMBINERS:
       glSetupYUVCombiners(uvcos, uvsin);
@@ -1528,6 +1540,89 @@ void glDisableYUVConversion(GLenum target, int type) {
     case YUV_CONVERSION_FRAGMENT:
     case YUV_CONVERSION_NONE:
       mpglDisable(GL_FRAGMENT_PROGRAM);
+      break;
+  }
+}
+
+void glEnable3DLeft(int type) {
+  GLint buffer;
+  switch (type) {
+    case GL_3D_RED_CYAN:
+      mpglColorMask(GL_TRUE,  GL_FALSE, GL_FALSE, GL_FALSE);
+      break;
+    case GL_3D_GREEN_MAGENTA:
+      mpglColorMask(GL_FALSE, GL_TRUE,  GL_FALSE, GL_FALSE);
+      break;
+    case GL_3D_QUADBUFFER:
+      mpglGetIntegerv(GL_DRAW_BUFFER, &buffer);
+      switch (buffer) {
+        case GL_FRONT:
+        case GL_FRONT_LEFT:
+        case GL_FRONT_RIGHT:
+          buffer = GL_FRONT_LEFT;
+          break;
+        case GL_BACK:
+        case GL_BACK_LEFT:
+        case GL_BACK_RIGHT:
+          buffer = GL_BACK_LEFT;
+          break;
+      }
+      mpglDrawBuffer(buffer);
+      break;
+  }
+}
+
+void glEnable3DRight(int type) {
+  GLint buffer;
+  switch (type) {
+    case GL_3D_RED_CYAN:
+      mpglColorMask(GL_FALSE, GL_TRUE,  GL_TRUE,  GL_FALSE);
+      break;
+    case GL_3D_GREEN_MAGENTA:
+      mpglColorMask(GL_TRUE,  GL_FALSE, GL_TRUE,  GL_FALSE);
+      break;
+    case GL_3D_QUADBUFFER:
+      mpglGetIntegerv(GL_DRAW_BUFFER, &buffer);
+      switch (buffer) {
+        case GL_FRONT:
+        case GL_FRONT_LEFT:
+        case GL_FRONT_RIGHT:
+          buffer = GL_FRONT_RIGHT;
+          break;
+        case GL_BACK:
+        case GL_BACK_LEFT:
+        case GL_BACK_RIGHT:
+          buffer = GL_BACK_RIGHT;
+          break;
+      }
+      mpglDrawBuffer(buffer);
+      break;
+  }
+}
+
+void glDisable3D(int type) {
+  GLint buffer;
+  switch (type) {
+    case GL_3D_RED_CYAN:
+    case GL_3D_GREEN_MAGENTA:
+      mpglColorMask(GL_TRUE,  GL_TRUE,  GL_TRUE,  GL_TRUE);
+      break;
+    case GL_3D_QUADBUFFER:
+      mpglDrawBuffer(vo_doublebuffering ? GL_BACK : GL_FRONT);
+      mpglGetIntegerv(GL_DRAW_BUFFER, &buffer);
+      switch (buffer) {
+        case GL_FRONT:
+        case GL_FRONT_LEFT:
+        case GL_FRONT_RIGHT:
+          buffer = GL_FRONT;
+          break;
+        case GL_BACK:
+        case GL_BACK_LEFT:
+        case GL_BACK_RIGHT:
+          buffer = GL_BACK;
+          break;
+      }
+      mpglDrawBuffer(buffer);
       break;
   }
 }

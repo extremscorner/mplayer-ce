@@ -39,9 +39,11 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 #include "osdep/shmem.h"
+#include "osdep/timer.h"
 #include "network.h"
 #include "stream.h"
 #include "libmpdemux/demuxer.h"
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 
 #include "m_option.h"
@@ -51,6 +53,7 @@
 
 static int (*stream_check_interrupt_cb)(int time) = NULL;
 
+extern const stream_info_t stream_info_bd;
 extern const stream_info_t stream_info_vcd;
 extern const stream_info_t stream_info_cdda;
 extern const stream_info_t stream_info_netstream;
@@ -79,15 +82,17 @@ extern const stream_info_t stream_info_ffmpeg;
 extern const stream_info_t stream_info_file;
 extern const stream_info_t stream_info_ifo;
 extern const stream_info_t stream_info_dvd;
+extern const stream_info_t stream_info_bluray;
 
 static const stream_info_t* const auto_open_streams[] = {
+  &stream_info_bd,
 #ifdef CONFIG_VCD
   &stream_info_vcd,
 #endif
 #ifdef CONFIG_CDDA
   &stream_info_cdda,
 #endif
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_NETWORKING
   #if !defined(GEKKO)
   &stream_info_netstream,
   #endif
@@ -134,6 +139,9 @@ static const stream_info_t* const auto_open_streams[] = {
 #ifdef CONFIG_DVDNAV
   &stream_info_dvdnav,
 #endif
+#ifdef CONFIG_LIBBLURAY
+  &stream_info_bluray,
+#endif
 #ifdef CONFIG_LIBAVFORMAT
   &stream_info_ffmpeg,
 #endif
@@ -178,10 +186,9 @@ static stream_t* open_stream_plugin(const stream_info_t* sinfo, const char* file
   s = new_stream(-2,-2);
   s->url=strdup(filename);
   s->flags |= mode;
-  
   *ret = sinfo->open(s,mode,arg,file_format);
   if((*ret) != STREAM_OK) {
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_NETWORKING
     if (*ret == STREAM_REDIRECTED && redirected_url) {
         if (s->streaming_ctrl && s->streaming_ctrl->url
             && s->streaming_ctrl->url->url)
@@ -273,7 +280,7 @@ int stream_fill_buffer(stream_t *s){
   if (/*s->fd == NULL ||*/ s->eof) { s->buf_pos = s->buf_len = 0; return 0; }
   switch(s->type){
   case STREAMTYPE_STREAM:
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_NETWORKING
     if( s->streaming_ctrl!=NULL && s->streaming_ctrl->streaming_read ) {
 	    len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);
     } else
@@ -343,7 +350,7 @@ if(newpos==0 || newpos!=s->pos){
     // Some streaming protocol allow to seek backward and forward
     // A function call that return -1 can tell that the protocol
     // doesn't support seeking.
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_NETWORKING
     if(s->seek) { // new stream seek is much cleaner than streaming_ctrl one
       if(!s->seek(s,newpos)) {
       	mp_msg(MSGT_STREAM,MSGL_ERR, "Seek failed\n");
@@ -399,8 +406,6 @@ while(stream_fill_buffer(s) > 0 && pos >= 0) {
 
 
 void stream_reset(stream_t *s){
-//  printf("\n*** stream_reset() called ***\n");
-
   if(s->eof){
     s->pos=0;
     s->buf_pos=s->buf_len=0;
@@ -455,11 +460,11 @@ stream_t* new_stream(int fd,int type){
   s->url=NULL;
   s->cache_pid=0;
   stream_reset(s);
-   
   return s;
 }
 
 void free_stream(stream_t *s){
+//  printf("\n*** free_stream() called ***\n");
 #ifdef CONFIG_STREAM_CACHE
     cache_uninit(s);
 #endif
@@ -497,7 +502,10 @@ void stream_set_interrupt_callback(int (*cb)(int)) {
 }
 
 int stream_check_interrupt(int time) {
-    if(!stream_check_interrupt_cb) return 0;
+    if(!stream_check_interrupt_cb) {
+        usleep(time * 1000);
+        return 0;
+    }
     return stream_check_interrupt_cb(time);
 }
 
@@ -617,7 +625,7 @@ unsigned char* stream_read_line(stream_t *s,unsigned char* mem, int max, int utf
     }
     s->buf_pos += len;
   } while(!end);
-  if(s->eof && ptr == mem) return NULL;
   ptr[0] = 0;
+  if(s->eof && ptr == mem) return NULL;
   return mem;
 }

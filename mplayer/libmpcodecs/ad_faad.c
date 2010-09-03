@@ -126,6 +126,32 @@ static int init(sh_audio_t *sh)
     faacDecSetConfiguration(faac_hdec, faac_conf);
 
     sh->a_in_buffer_len = demux_read_data(sh->ds, sh->a_in_buffer, sh->a_in_buffer_size);
+#if CONFIG_FAAD_INTERNAL
+    /* init the codec, look for LATM */
+    faac_init = faacDecInit(faac_hdec, sh->a_in_buffer,
+                            sh->a_in_buffer_len, &faac_samplerate, &faac_channels,1);
+    if (faac_init < 0 && sh->a_in_buffer_len >= 3 && sh->format == mmioFOURCC('M', 'P', '4', 'L')) {
+        // working LATM not found at first try, look further on in stream
+        int i;
+
+        for (i = 0; i < 5; i++) {
+            pos = sh->a_in_buffer_len-3;
+            memmove(sh->a_in_buffer, &(sh->a_in_buffer[pos]), 3);
+            sh->a_in_buffer_len  = 3;
+            sh->a_in_buffer_len += demux_read_data(sh->ds,&sh->a_in_buffer[sh->a_in_buffer_len],
+                                                   sh->a_in_buffer_size - sh->a_in_buffer_len);
+            faac_init = faacDecInit(faac_hdec, sh->a_in_buffer,
+                                    sh->a_in_buffer_len, &faac_samplerate, &faac_channels,1);
+            if (faac_init >= 0) break;
+        }
+    }
+#else
+    /* external faad does not have latm lookup support */
+    faac_init = faacDecInit(faac_hdec, sh->a_in_buffer,
+                            sh->a_in_buffer_len, &faac_samplerate, &faac_channels);
+#endif
+
+    if (faac_init < 0) {
     pos = aac_probe(sh->a_in_buffer, sh->a_in_buffer_len);
     if(pos) {
       sh->a_in_buffer_len -= pos;
@@ -137,8 +163,14 @@ static int init(sh_audio_t *sh)
     }
 
     /* init the codec */
+#if CONFIG_FAAD_INTERNAL
     faac_init = faacDecInit(faac_hdec, sh->a_in_buffer,
-       sh->a_in_buffer_len, &faac_samplerate, &faac_channels);
+          sh->a_in_buffer_len, &faac_samplerate, &faac_channels,0);
+#else
+    faac_init = faacDecInit(faac_hdec, sh->a_in_buffer,
+          sh->a_in_buffer_len, &faac_samplerate, &faac_channels);
+#endif
+    }
 
     sh->a_in_buffer_len -= (faac_init > 0)?faac_init:0; // how many bytes init consumed
     // XXX FIXME: shouldn't we memcpy() here in a_in_buffer ?? --A'rpi
@@ -189,7 +221,8 @@ static void uninit(sh_audio_t *sh)
 static int aac_sync(sh_audio_t *sh)
 {
   int pos = 0;
-  if(!sh->codecdata_len) {
+  // do not probe LATM, faad does that
+  if(!sh->codecdata_len && sh->format != mmioFOURCC('M', 'P', '4', 'L')) {
     if(sh->a_in_buffer_len < sh->a_in_buffer_size){
       sh->a_in_buffer_len +=
 	demux_read_data(sh->ds,&sh->a_in_buffer[sh->a_in_buffer_len],

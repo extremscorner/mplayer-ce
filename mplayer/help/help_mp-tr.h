@@ -6,7 +6,6 @@
 
 // ========================= MPlayer help ===========================
 
-#ifdef HELP_MP_DEFINE_STATIC
 static const char help_text[]=
 "Kullanım: mplayer [seçenekler] [adres|yol/]dosya adı\n"
 "\n"
@@ -46,7 +45,6 @@ static const char help_text[]=
 "\n"
 " * * AYRINTILAR, DAHA FAZLA (GELİŞMİŞ) SEÇENEKLER VE TUŞLAR İÇİN MAN SAYFALARINA BAKINIZ * *\n"
 "\n";
-#endif
 
 // libmpcodecs/ad_dvdpcm.c:
 #define MSGTR_SamplesWanted "Bu şekildeki örnekler için geliştirme desteği gerekiyor. Lütfen geliştiricilerle bağlantı kurunuz.\n"
@@ -1029,8 +1027,6 @@ static const char help_text[]=
 #define MSGTR_VO_CantCreateDirectory "Çıktı dizini oluşturulamıyor."
 #define MSGTR_VO_CantCreateFile "Çıktı dosyası oluşturulamıyor."
 #define MSGTR_VO_DirectoryCreateSuccess "Çıktı dizini başarıyla oluşturuldu."
-#define MSGTR_VO_ParsingSuboptions "Ayrıştırma altseçenekleri."
-#define MSGTR_VO_SuboptionsParsedOK "Altseçenekler ayrıştırıldı tamam."
 #define MSGTR_VO_ValueOutOfRange "Değer erişim dışı"
 #define MSGTR_VO_NoValueSpecified "Değer tanımlanmadı."
 #define MSGTR_VO_UnknownSuboptions "Bilinmeyen altseçenek(ler)"
@@ -1416,7 +1412,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_ASF_UnknownASFStreamType "Bilinmeyen asf yayın türü\n"
 #define MSGTR_MPDEMUX_ASF_Failed2ParseHTTPResponse "HTTP yanıtı ayrıştırılamadı\n"
 #define MSGTR_MPDEMUX_ASF_ServerReturn "Sunucu dönüşü %d:%s\n"
-#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP AYRIŞTIMA UYARISI : Pragma %s cuted from %d bytes to %d\n"
+#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP AYRIŞTIMA UYARISI : Pragma %s cuted from %zd bytes to %d\n"
 #define MSGTR_MPDEMUX_ASF_SocketWriteError "Soket yazma hatası: %s\n"
 #define MSGTR_MPDEMUX_ASF_HeaderParseFailed "Başlık ayrıştırılamadı\n"
 #define MSGTR_MPDEMUX_ASF_NoStreamFound "Yayın(stream) bulunamadı\n"
@@ -1466,7 +1462,7 @@ static const char help_text[]=
 
 #define MSGTR_MPDEMUX_CDDA_CantOpenCDDADevice "CDDA aygıtı açılamıyor.\n"
 #define MSGTR_MPDEMUX_CDDA_CantOpenDisc "CD açılamıyor.\n"
-#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "%ld parça içeren ses CD'si bulundu.\n"
+#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "%d parça içeren ses CD'si bulundu.\n"
 
 // cddb.c
 
@@ -1688,7 +1684,7 @@ static const char help_text[]=
 
 // ================================== LIBMPVO ====================================
 
-// mga_common.c
+// mga_template.c
 
 #define MSGTR_LIBVO_MGA_ErrorInConfigIoctl "[MGA] mga_video_ayarı'nda ioctl hatası (yanlış mga_vid.o sürümü?)"
 #define MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule "[MGA] Kernel modülünden luma değerlerine ulaşılamadı!\n"

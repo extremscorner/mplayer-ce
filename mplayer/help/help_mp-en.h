@@ -1,4 +1,4 @@
-// $Revision: 31032 $
+// $Revision: 31938 $
 // MASTER FILE. Use this file as base for translations.
 // Translated files should be sent to the mplayer-DOCS mailing list or
 // to the help messages maintainer, see DOCS/tech/MAINTAINERS.
@@ -12,7 +12,6 @@
 
 // ========================= MPlayer help ===========================
 
-#ifdef HELP_MP_DEFINE_STATIC
 static const char help_text[]=
 "Usage:   mplayer [options] [url|path/]filename\n"
 "\n"
@@ -52,7 +51,6 @@ static const char help_text[]=
 "\n"
 " * * * SEE THE MAN PAGE FOR DETAILS, FURTHER (ADVANCED) OPTIONS AND KEYS * * *\n"
 "\n";
-#endif
 
 // ========================= MPlayer messages ===========================
 
@@ -837,8 +835,6 @@ static const char help_text[]=
 #define MSGTR_VO_CantCreateDirectory "Unable to create output directory."
 #define MSGTR_VO_CantCreateFile "Unable to create output file."
 #define MSGTR_VO_DirectoryCreateSuccess "Output directory successfully created."
-#define MSGTR_VO_ParsingSuboptions "Parsing suboptions."
-#define MSGTR_VO_SuboptionsParsedOK "Suboptions parsed OK."
 #define MSGTR_VO_ValueOutOfRange "value out of range"
 #define MSGTR_VO_NoValueSpecified "No value specified."
 #define MSGTR_VO_UnknownSuboptions "unknown suboption(s)"
@@ -948,7 +944,7 @@ static const char help_text[]=
 #define MSGTR_LIBVO_MGA_AspectResized "[VO_MGA] aspect(): resized to %dx%d.\n"
 #define MSGTR_LIBVO_MGA_Uninit "[VO] uninit!\n"
 
-// mga_common.c
+// mga_template.c
 #define MSGTR_LIBVO_MGA_ErrorInConfigIoctl "[MGA] error in mga_vid_config ioctl (wrong mga_vid.o version?)"
 #define MSGTR_LIBVO_MGA_CouldNotGetLumaValuesFromTheKernelModule "[MGA] Could not get luma values from the kernel module!\n"
 #define MSGTR_LIBVO_MGA_CouldNotSetLumaValuesFromTheKernelModule "[MGA] Could not set luma values from the kernel module!\n"
@@ -1110,9 +1106,7 @@ static const char help_text[]=
 // vo_yuv4mpeg.c
 #define MSGTR_VO_YUV4MPEG_InterlacedHeightDivisibleBy4 "Interlaced mode requires image height to be divisible by 4."
 #define MSGTR_VO_YUV4MPEG_InterlacedLineBufAllocFail "Unable to allocate line buffer for interlaced mode."
-#define MSGTR_VO_YUV4MPEG_InterlacedInputNotRGB "Input not RGB, can't separate chrominance by fields!"
 #define MSGTR_VO_YUV4MPEG_WidthDivisibleBy2 "Image width must be divisible by 2."
-#define MSGTR_VO_YUV4MPEG_NoMemRGBFrameBuf "Not enough memory to allocate RGB framebuffer."
 #define MSGTR_VO_YUV4MPEG_OutFileOpenError "Can't get memory or file handle to write \"%s\"!"
 #define MSGTR_VO_YUV4MPEG_OutFileWriteError "Error writing image to output!"
 #define MSGTR_VO_YUV4MPEG_UnknownSubDev "Unknown subdevice: %s"
@@ -1781,7 +1775,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_AIALSA_UnavailableAccessType "Access type not available.\n"
 #define MSGTR_MPDEMUX_AIALSA_UnavailableSampleFmt "Sample format not available.\n"
 #define MSGTR_MPDEMUX_AIALSA_UnavailableChanCount "Channel count not available - reverting to default: %d\n"
-#define MSGTR_MPDEMUX_AIALSA_CannotInstallHWParams "Unable to install hardware paramameters: %s"
+#define MSGTR_MPDEMUX_AIALSA_CannotInstallHWParams "Unable to install hardware parameters: %s"
 #define MSGTR_MPDEMUX_AIALSA_PeriodEqualsBufferSize "Can't use period equal to buffer size (%u == %lu)\n"
 #define MSGTR_MPDEMUX_AIALSA_CannotInstallSWParams "Unable to install software parameters:\n"
 #define MSGTR_MPDEMUX_AIALSA_ErrorOpeningAudio "Error opening audio: %s\n"
@@ -1847,7 +1841,7 @@ static const char help_text[]=
 #define MSGTR_MPDEMUX_ASF_UnknownASFStreamType "unknown ASF stream type\n"
 #define MSGTR_MPDEMUX_ASF_Failed2ParseHTTPResponse "Failed to parse HTTP response.\n"
 #define MSGTR_MPDEMUX_ASF_ServerReturn "Server returned %d:%s\n"
-#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP PARSE WARNING : Pragma %s cut from %d bytes to %d\n"
+#define MSGTR_MPDEMUX_ASF_ASFHTTPParseWarnCuttedPragma "ASF HTTP PARSE WARNING : Pragma %s cut from %zd bytes to %d\n"
 #define MSGTR_MPDEMUX_ASF_SocketWriteError "socket write error: %s\n"
 #define MSGTR_MPDEMUX_ASF_HeaderParseFailed "Failed to parse header.\n"
 #define MSGTR_MPDEMUX_ASF_NoStreamFound "No stream found.\n"
@@ -1901,12 +1895,13 @@ static const char help_text[]=
 #define MSGTR_SMBFileNotFound "Could not open from LAN: '%s'\n"
 #define MSGTR_SMBNotCompiled "MPlayer was not compiled with SMB reading support.\n"
 
+#define MSGTR_CantOpenBluray "Couldn't open Blu-ray device: %s\n"
 #define MSGTR_CantOpenDVD "Couldn't open DVD device: %s (%s)\n"
 
 // stream_cdda.c
 #define MSGTR_MPDEMUX_CDDA_CantOpenCDDADevice "Can't open CDDA device.\n"
 #define MSGTR_MPDEMUX_CDDA_CantOpenDisc "Can't open disc.\n"
-#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "Found audio CD with %ld tracks.\n"
+#define MSGTR_MPDEMUX_CDDA_AudioCDFoundWithNTracks "Found audio CD with %d tracks.\n"
 
 // stream_cddb.c
 #define MSGTR_MPDEMUX_CDDB_FailedToReadTOC "Failed to read TOC.\n"
@@ -1971,6 +1966,11 @@ static const char help_text[]=
 #define MSGTR_DVDsubtitleChannel "Selected DVD subtitle channel: %d language: %c%c\n"
 #define MSGTR_DVDsubtitleLanguage "subtitle ( sid ): %d language: %s\n"
 #define MSGTR_DVDnumSubtitles "number of subtitles on disk: %d\n"
+
+// stream_bluray.c
+#define MSGTR_BlurayNoDevice "No Blu-ray device/location was specified ...\n"
+#define MSGTR_BlurayNoTitles "Can't find any Blu-ray-compatible title here.\n"
+#define MSGTR_BlurayOK "Blu-ray successfully opened.\n"
 
 // stream_radio.c
 #define MSGTR_RADIO_ChannelNamesDetected "[radio] Radio channel names detected.\n"
@@ -2116,3 +2116,7 @@ static const char help_text[]=
 
 // url.c
 #define MSGTR_MPDEMUX_URL_StringAlreadyEscaped "String appears to be already escaped in url_escape %c%c1%c2\n"
+
+// subtitles
+#define MSGTR_SUBTITLES_SubRip_UnknownFontColor "SubRip: unknown font color in subtitle: %s\n"
+

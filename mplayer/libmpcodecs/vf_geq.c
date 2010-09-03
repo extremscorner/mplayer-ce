@@ -34,7 +34,7 @@
 #include "vf.h"
 
 #include "libavcodec/avcodec.h"
-#include "libavcodec/eval.h"
+#include "libavutil/eval.h"
 
 struct vf_priv_s {
     AVExpr * e[3];
@@ -66,15 +66,15 @@ static inline double getpix(struct vf_instance *vf, double x, double y, int plan
 
 //FIXME cubic interpolate
 //FIXME keep the last few frames
-static double lum(struct vf_instance *vf, double x, double y){
+static double lum(void *vf, double x, double y){
     return getpix(vf, x, y, 0);
 }
 
-static double cb(struct vf_instance *vf, double x, double y){
+static double cb(void *vf, double x, double y){
     return getpix(vf, x, y, 1);
 }
 
-static double cr(struct vf_instance *vf, double x, double y){
+static double cr(void *vf, double x, double y){
     return getpix(vf, x, y, 2);
 }
 
@@ -116,7 +116,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
             const_values[3]=y;
             for(x=0; x<w; x++){
                 const_values[2]=x;
-                dst[x + y * dst_stride] = ff_eval_expr(vf->priv->e[plane],
+                dst[x + y * dst_stride] = av_eval_expr(vf->priv->e[plane],
                                                        const_values, vf);
             }
         }
@@ -137,7 +137,7 @@ static void uninit(struct vf_instance *vf){
 //===========================================================================//
 static int vf_open(vf_instance_t *vf, char *args){
     char eq[3][2000] = { { 0 }, { 0 }, { 0 } };
-    int plane;
+    int plane, res;
 
     vf->config=config;
     vf->put_image=put_image;
@@ -178,11 +178,11 @@ static int vf_open(vf_instance_t *vf, char *args){
             plane==0 ? lum : (plane==1 ? cb : cr),
             NULL
         };
-        char * a;
-        vf->priv->e[plane] = ff_parse_expr(eq[plane], const_names, NULL, NULL, func2, func2_names, &a);
+        res = av_parse_expr(&vf->priv->e[plane], eq[plane], const_names, NULL, NULL, func2_names, func2, 0, NULL);
 
-        if (!vf->priv->e[plane]) {
-            mp_msg(MSGT_VFILTER, MSGL_ERR, "geq: error loading equation `%s': %s\n", eq[plane], a);
+        if (res < 0) {
+            mp_msg(MSGT_VFILTER, MSGL_ERR, "geq: error loading equation `%s'\n", eq[plane]);
+            return 0;
         }
     }
 

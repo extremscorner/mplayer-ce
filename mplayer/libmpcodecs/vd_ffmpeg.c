@@ -103,6 +103,11 @@ static int lavc_param_threads=1;
 static int lavc_param_bitexact=0;
 static char *lavc_avopt = NULL;
 
+static const mp_image_t mpi_no_picture =
+{
+	.type = MP_IMGTYPE_INCOMPLETE
+};
+
 const m_option_t lavc_decode_opts_conf[]={
     {"bug", &lavc_param_workaround_bugs, CONF_TYPE_INT, CONF_RANGE, -1, 999999, NULL},
     {"er", &lavc_param_error_resilience, CONF_TYPE_INT, CONF_RANGE, 0, 99, NULL},
@@ -189,8 +194,6 @@ static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
     default          :  mp_level= MSGL_ERR ; break;
     }
 
-    if (!mp_msg_test(type, mp_level)) return;
-
     if(ptr){
         if(!strcmp(avc->class_name, "AVCodecContext")){
             AVCodecContext *s= ptr;
@@ -214,6 +217,8 @@ static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
 #endif
         }
     }
+
+    if (!mp_msg_test(type, mp_level)) return;
 
     if(print_prefix && avc) {
         mp_msg(type, mp_level, "[%s @ %p]", avc->item_name(ptr), avc);
@@ -264,7 +269,7 @@ static int init(sh_video_t *sh){
         return 0;
     memset(ctx, 0, sizeof(vd_ffmpeg_ctx));
 
-    lavc_codec = (AVCodec *)avcodec_find_decoder_by_name(sh->codec->dll);
+    lavc_codec = avcodec_find_decoder_by_name(sh->codec->dll);
     if(!lavc_codec){
         mp_msg(MSGT_DECVIDEO, MSGL_ERR, MSGTR_MissingLAVCcodec, sh->codec->dll);
         uninit(sh);
@@ -274,7 +279,7 @@ static int init(sh_video_t *sh){
     if(vd_use_slices && (lavc_codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND) && !do_vis_debug)
         ctx->do_slices=1;
 
-    if(lavc_codec->capabilities&CODEC_CAP_DR1 && !do_vis_debug && lavc_codec->id != CODEC_ID_H264 && lavc_codec->id != CODEC_ID_INTERPLAY_VIDEO && lavc_codec->id != CODEC_ID_ROQ)
+    if(lavc_codec->capabilities&CODEC_CAP_DR1 && !do_vis_debug && lavc_codec->id != CODEC_ID_H264 && lavc_codec->id != CODEC_ID_INTERPLAY_VIDEO && lavc_codec->id != CODEC_ID_ROQ && lavc_codec->id != CODEC_ID_VP8)
         ctx->do_dr1=1;
     ctx->b_age= ctx->ip_age[0]= ctx->ip_age[1]= 256*256*256*64;
     ctx->ip_count= ctx->b_count= 0;
@@ -308,8 +313,8 @@ static int init(sh_video_t *sh){
 
     avctx->flags|= lavc_param_bitexact;
 
-    avctx->width = sh->disp_w;
-    avctx->height= sh->disp_h;
+    avctx->coded_width = sh->disp_w;
+    avctx->coded_height= sh->disp_h;
     avctx->workaround_bugs= lavc_param_workaround_bugs;
     avctx->error_recognition= lavc_param_error_resilience;
     if(lavc_param_gray) avctx->flags|= CODEC_FLAG_GRAY;
@@ -515,7 +520,8 @@ static void draw_slice(struct AVCodecContext *s,
         }
     }
     if (y < sh->disp_h) {
-        mpcodecs_draw_slice (sh, source, strides, sh->disp_w, (y+height)<=sh->disp_h?height:sh->disp_h-y, 0, y);
+        height = FFMIN(height, sh->disp_h-y);
+        mpcodecs_draw_slice (sh, source, strides, sh->disp_w, height, 0, y);
     }
 }
 
@@ -612,9 +618,8 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
 
     if (IMGFMT_IS_XVMC(ctx->best_csp) || IMGFMT_IS_VDPAU(ctx->best_csp)) {
         type =  MP_IMGTYPE_NUMBERED | (0xffff << 16);
-    }
-    else if (!pic->buffer_hints) {
-/*
+    } else
+    if (!pic->buffer_hints) {
         if(ctx->b_count>1 || ctx->ip_count>2){
             mp_msg(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_DRIFailure);
 
@@ -622,16 +627,15 @@ static int get_buffer(AVCodecContext *avctx, AVFrame *pic){
             avctx->get_buffer= avcodec_default_get_buffer;
             return avctx->get_buffer(avctx, pic);
         }
-*/
-/*
+
         if(avctx->has_b_frames){
             type= MP_IMGTYPE_IPB;
         }else{
             type= MP_IMGTYPE_IP;
         }
         mp_msg(MSGT_DECVIDEO, MSGL_DBG2, type== MP_IMGTYPE_IPB ? "using IPB\n" : "using IP\n");
-*/
     }
+
     if (ctx->best_csp == IMGFMT_RGB8 || ctx->best_csp == IMGFMT_BGR8)
         flags |= MP_IMGFLAG_RGB_PALETTE;
     mpi= mpcodecs_get_image(sh, type, flags, width, height);
@@ -781,7 +785,7 @@ typedef struct dp_hdr_s {
     uint32_t chunktab;        // offset to chunk offset array
 } dp_hdr_t;
 
-static void swap_palette(void *pal)
+static av_unused void swap_palette(void *pal)
 {
     int i;
     uint32_t *p = pal;
@@ -803,7 +807,6 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
     if(len<=0) return NULL; // skipped frame
 
 //ffmpeg interlace (mpeg2) bug have been fixed. no need of -noslices
-
     if (!dr1)
     avctx->draw_horiz_band=NULL;
     if(ctx->vo_initialized && !(flags&3) && !dr1){
@@ -903,7 +906,12 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
     }
 //--
 
-    if(!got_picture) return NULL;        // skipped image
+    if(!got_picture) {
+	if (avctx->codec->id == CODEC_ID_H264)
+	    return &mpi_no_picture; // H.264 first field only
+	else
+	    return NULL;    // skipped image
+    }
 
     if(init_vo(sh, avctx->pix_fmt) < 0) return NULL;
 
@@ -916,12 +924,10 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
         avctx->width, avctx->height);
     if(!mpi){        // temporary!
         mp_msg(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_CouldntAllocateImageForCodec);
-        printf(MSGT_DECVIDEO, MSGL_WARN, MSGTR_MPCODECS_CouldntAllocateImageForCodec);
         return NULL;
     }
 
-    if(!dr1)
-	{
+    if(!dr1){
         mpi->planes[0]=pic->data[0];
         mpi->planes[1]=pic->data[1];
         mpi->planes[2]=pic->data[2];

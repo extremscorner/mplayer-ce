@@ -20,6 +20,7 @@
 #define MPLAYER_STREAM_H
 
 #include "config.h"
+#include "m_option.h"
 #include "mp_msg.h"
 #include "url.h"
 #include <string.h>
@@ -50,8 +51,11 @@
 #define STREAMTYPE_TV 17
 #define STREAMTYPE_MF 18
 #define STREAMTYPE_RADIO 19
+#define STREAMTYPE_BLURAY 20
+#define STREAMTYPE_BD 21
 
 #define STREAM_BUFFER_SIZE 4096
+#define STREAM_MAX_SECTOR_SIZE (8*1024)
 
 #define VCD_SECTOR_SIZE 2352
 #define VCD_SECTOR_OFFS 24
@@ -114,7 +118,7 @@ typedef struct streaming_control {
 	void *data;
 } streaming_ctrl_t;
 
-struct stream_st;
+struct stream;
 typedef struct stream_info_st {
   const char *info;
   const char *name;
@@ -123,7 +127,7 @@ typedef struct stream_info_st {
   /// mode isn't used atm (ie always READ) but it shouldn't be ignored
   /// opts is at least in it's defaults settings and may have been
   /// altered by url parsing if enabled and the options string parsing.
-  int (*open)(struct stream_st* st, int mode, void* opts, int* file_format);
+  int (*open)(struct stream* st, int mode, void* opts, int* file_format);
   const char* protocols[MAX_STREAM_PROTOCOLS];
   const void* opts;
   int opts_url; /* If this is 1 we will parse the url as an option string
@@ -131,19 +135,19 @@ typedef struct stream_info_st {
 		 * options string given to open_stream_plugin */
 } stream_info_t;
 
-typedef struct stream_st {
+typedef struct stream {
   // Read
-  int (*fill_buffer)(struct stream_st *s, char* buffer, int max_len);
+  int (*fill_buffer)(struct stream *s, char* buffer, int max_len);
   // Write
-  int (*write_buffer)(struct stream_st *s, char* buffer, int len);
+  int (*write_buffer)(struct stream *s, char* buffer, int len);
   // Seek
-  int (*seek)(struct stream_st *s,off_t pos);
+  int (*seek)(struct stream *s,off_t pos);
   // Control
   // Will be later used to let streams like dvd and cdda report
   // their structure (ie tracks, chapters, etc)
-  int (*control)(struct stream_st *s,int cmd,void* arg);
+  int (*control)(struct stream *s,int cmd,void* arg);
   // Close
-  void (*close)(struct stream_st *s);
+  void (*close)(struct stream *s);
 
   int fd;   // file descriptor, see man open(2)
   int type; // see STREAMTYPE_*
@@ -158,13 +162,13 @@ typedef struct stream_st {
   void* cache_data;
   void* priv; // used for DVD, TV, RTSP etc
   char* url;  // strdup() of filename/url
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_NETWORKING
   streaming_ctrl_t *streaming_ctrl;
 #endif
-  unsigned char buffer[STREAM_BUFFER_SIZE>VCD_SECTOR_SIZE?STREAM_BUFFER_SIZE:VCD_SECTOR_SIZE];
+  unsigned char buffer[STREAM_BUFFER_SIZE>STREAM_MAX_SECTOR_SIZE?STREAM_BUFFER_SIZE:STREAM_MAX_SECTOR_SIZE];
 } stream_t;
 
-#ifdef CONFIG_NETWORK
+#ifdef CONFIG_NETWORKING
 #include "network.h"
 #endif
 
@@ -286,8 +290,6 @@ inline static int stream_seek(stream_t *s,off_t pos){
 
   mp_dbg(MSGT_DEMUX, MSGL_DBG3, "seek to 0x%qX\n",(long long)pos);
 
-  if(s->eof)
-    return 0;
   if(pos<s->pos){
     off_t x=pos-(s->pos-s->buf_len);
     if(x>=0){
@@ -301,7 +303,7 @@ inline static int stream_seek(stream_t *s,off_t pos){
 }
 
 inline static int stream_skip(stream_t *s,off_t len){
-  if( (len<0 && (s->flags & MP_STREAM_SEEK_BW)) || (len>2*STREAM_BUFFER_SIZE && (s->flags & MP_STREAM_SEEK_FW)) ) {
+  if( len<0 || (len>2*STREAM_BUFFER_SIZE && (s->flags & MP_STREAM_SEEK_FW)) ) {
     // negative or big skip!
     return stream_seek(s,stream_tell(s)+len);
   }
@@ -329,15 +331,27 @@ stream_t* open_output_stream(const char* filename,char** options);
 /// Set the callback to be used by libstream to check for user
 /// interruption during long blocking operations (cache filling, etc).
 void stream_set_interrupt_callback(int (*cb)(int));
-/// Call the interrupt checking callback if there is one.
+/// Call the interrupt checking callback if there is one and
+/// wait for time milliseconds
 int stream_check_interrupt(int time);
 
+extern int bluray_angle;
+extern int bluray_chapter;
+extern int dvd_speed;
 extern int dvd_title;
 extern int dvd_chapter;
 extern int dvd_last_chapter;
 extern int dvd_angle;
+extern int vcd_track;
 
+extern char *bluray_device;
 extern char * audio_stream;
+extern char *cdrom_device;
+extern char *dvd_device;
+
+extern const m_option_t dvbin_opts_conf[];
+
+extern char *rtsp_destination;
 
 typedef struct {
  int id; // 0 - 31 mpeg; 128 - 159 ac3; 160 - 191 pcm
