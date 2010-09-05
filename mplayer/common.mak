@@ -39,6 +39,12 @@ CFLAGS   += $(ECFLAGS)
 
 HOSTCFLAGS += $(IFLAGS)
 
+ifdef HAVE_PAIRED
+%_paired.o: %_paired.c
+	$(CCDEP)
+	$(CPS) $(CPPFLAGS) $(CFLAGS) $(CC_DEPFLAGS) -c $(CC_O) $<
+endif
+
 %.o: %.c
 	$(CCDEP)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CC_DEPFLAGS) -c $(CC_O) $<

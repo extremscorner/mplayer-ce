@@ -21,6 +21,7 @@ CONFDIR = $(DESTDIR)/tmp/mplayerhaxx/etc/mplayer
 AR      = $(DEVKITPPC)/bin/powerpc-eabi-ar
 AS      = $(DEVKITPPC)/bin/powerpc-eabi-as
 CC      = $(DEVKITPPC)/bin/powerpc-eabi-gcc
+CPS     = $(DEVKITPPC)/bin/powerpc-eabipaired-gcc
 CXX     = $(DEVKITPPC)/bin/powerpc-eabi-g++
 HOST_CC = gcc
 INSTALL = install
@@ -28,9 +29,9 @@ INSTALLSTRIP = -s
 WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-CFLAGS   = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mdouble-float -mpaired -fno-tree-vectorize -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I.  -D_REENTRANT
+CFLAGS   = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mdouble-float -mpaired -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I.  -D_REENTRANT
 ASFLAGS  = $(CFLAGS)
-CXXFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mdouble-float -mpaired -fno-tree-vectorize -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I.  -D_REENTRANT
+CXXFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mdouble-float -mpaired -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I.  -D_REENTRANT
 CC_DEPFLAGS = -MMD -MF $(@:.o=.d) -MT $@
 AS_DEPFLAGS = -MMD -MF $(@:.o=.d) -MT $@
 
@@ -59,6 +60,7 @@ ARCH = ppc
 ARCH_PPC = yes
 
 HAVE_FAST_CLZ = yes
+HAVE_PAIRED = yes
 
 MENCODER = no
 MPLAYER  = yes
