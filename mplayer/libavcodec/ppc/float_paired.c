@@ -43,7 +43,7 @@ static void vector_fmul_reverse_paired(float *dst, const float *src0, const floa
 	for (int i=0; i<len*4-7; i+=8)
 	{
 		pair[0] = paired_lx(i, src0);
-		pair[1] = paired_lx(i, src1);
+		pair[1] = paired_lx(-i, src1);
 		pair[1] = paired_merge10(pair[1], pair[1]);
 		
 		result = paired_mul(pair[0], pair[1]);
@@ -74,8 +74,8 @@ static void vector_fmul_window_paired(float *dst, const float *src0, const float
 	vector float result;
 	
 	dst += len;
-    win += len;
-    src0 += len;
+	win += len;
+	src0 += len;
 	
 	int i, j;
 	for (i=-len*4, j=len*4-8; i<0; i+=8, j-=8)
@@ -93,9 +93,8 @@ static void vector_fmul_window_paired(float *dst, const float *src0, const float
 		result = paired_add(result, bias);
 		paired_stx(result, i, dst);
 		
-		result = paired_mul(pair[1], window[1]);
+		result = paired_madd(pair[1], window[1], bias);
 		result = paired_madd(pair[0], window[0], result);
-		result = paired_add(result, bias);
 		result = paired_merge10(result, result);
 		paired_stx(result, j, dst);
 	}
@@ -123,7 +122,7 @@ static void butterflies_float_paired(float *restrict v1, float *restrict v2, int
 static void vector_fmul_scalar_paired(float *dst, const float *src, float mul, int len)
 {
 	vector float pair, result;
-	vector float scalar = {mul, 1.0};
+	vector float scalar = {mul};
 	
 	for (int i=0; i<len*4-7; i+=8)
 	{
@@ -136,7 +135,7 @@ static void vector_fmul_scalar_paired(float *dst, const float *src, float mul, i
 void float_init_paired(DSPContext* c, AVCodecContext *avctx)
 {
 	c->vector_fmul = vector_fmul_paired;
-    c->vector_fmul_reverse = vector_fmul_reverse_paired;
+	c->vector_fmul_reverse = vector_fmul_reverse_paired;
 	c->vector_fmul_add = vector_fmul_add_paired;
 	c->vector_fmul_window = vector_fmul_window_paired;
 	c->butterflies_float = butterflies_float_paired;
