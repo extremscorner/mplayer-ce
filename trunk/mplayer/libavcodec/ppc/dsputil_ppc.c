@@ -22,6 +22,7 @@
 
 #include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
+#include "dsputil_paired.h"
 
 int mm_support(void)
 {
@@ -210,5 +211,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         }
 
     }
+#elif HAVE_PAIRED
+	float_init_paired(c, avctx);
 #endif /* HAVE_ALTIVEC */
 }

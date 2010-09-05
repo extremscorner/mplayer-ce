@@ -1812,6 +1812,9 @@ void set_osd_subtitle(subtitle *subs) {
  *
  */
 
+extern u8 __Arena1Lo[], __Arena1Hi[];
+extern u8 __Arena2Lo[], __Arena2Hi[];
+
 void update_osd_msg(void) {
     mp_osd_msg_t *msg;
     static char osd_text[128] = "";
@@ -1857,8 +1860,10 @@ void update_osd_msg(void) {
 							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f) m2(%.2f)",
 							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
 							len/3600,(len/60)%60,len%60,percentage_text, (int)cache_fill_status,
-								((float)((char*)SYS_GetArenaHi()-(char*)SYS_GetArenaLo()))/0x100000,
-								((float)((char*)SYS_GetArena2Hi()-(char*)SYS_GetArena2Lo()))/0x100000);
+								((float)((u32)SYS_GetArena1Hi() - (u32)SYS_GetArena1Lo())
+										/ ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0,
+								((float)((u32)SYS_GetArena2Hi() - (u32)SYS_GetArena2Lo())
+										/ ((u32)__Arena2Hi - (u32)__Arena2Lo)) * 100.0);
 				else
 					snprintf(osd_text_timer, 63,
 							"%c %02d:%02d:%02d / %02d:%02d:%02d%s",

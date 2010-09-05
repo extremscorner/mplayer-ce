@@ -27,3 +27,5 @@ OBJS-$(HAVE_ALTIVEC)                   += ppc/check_altivec.o           \
                                           ppc/int_altivec.o             \
                                           ppc/mpegvideo_altivec.o       \
                                           $(ALTIVEC-OBJS-yes)
+
+OBJS-$(HAVE_PAIRED)                    += ppc/float_paired.o

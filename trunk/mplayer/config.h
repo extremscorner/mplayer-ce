@@ -162,6 +162,7 @@ char MPLAYER_LIBDIR[100];
 #define ARCH_X86_64 0
 #define ARCH_PPC64 0
 #define HAVE_ALTIVEC 0
+#define HAVE_PAIRED 1
 #define HAVE_MMX 0
 #define HAVE_MMX2 0
 #define HAVE_AMD3DNOW 0
