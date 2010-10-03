@@ -16,8 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <paired.h>
 #include "libavcodec/dsputil.h"
+#include "dsputil_paired.h"
+#include "libavutil/ppc/paired.h"
 
 static void vector_fmul_paired(float *dst, const float *src, int len)
 {
@@ -67,8 +68,8 @@ static void vector_fmul_add_paired(float *dst, const float *src0, const float *s
 static void vector_fmul_window_paired(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len)
 {
 	vector float pair[2], window[2];
-	vector float bias, result;
-	asm("ps_merge00	%0,%1,%1" : "=f"(bias) : "f"(add_bias));
+	vector float bias = {add_bias,add_bias};
+	vector float result;
 	
 	dst += len;
 	win += len;
@@ -98,13 +99,15 @@ static void vector_fmul_window_paired(float *dst, const float *src0, const float
 
 static void float_to_int16_paired(int16_t *dst, const float *src, long len)
 {
+	src -= 2;
+	dst -= 2;
+	
 	for (int i=0; i<len-1; i+=2) {
-		vector float pair = paired_lx(0, src+i);
-		asm("psq_st	%0,0(%1),0,5" : : "f"(pair), "b"(dst+i));
+		vector float pair = psq_lu(8,src,0,0);
+		psq_stu(pair,4,dst,0,5);
 	}
 }
 
-// TODO: Handle odd channels count.
 static void float_to_int16_interleave_paired(int16_t *dst, const float **src, long len, int channels)
 {
 	vector float pair[2];
@@ -118,10 +121,10 @@ static void float_to_int16_interleave_paired(int16_t *dst, const float **src, lo
 				pair[1] = paired_lx(0, src[c+1]+i);
 				
 				result = paired_merge00(pair[0], pair[1]);
-				asm("psq_st	%0,0(%1),0,5" : : "f"(result), "b"(dst+(channels*i)+c));
+				psq_st(result,0,dst+(channels*i)+c,0,5);
 				
 				result = paired_merge11(pair[0], pair[1]);
-				asm("psq_st	%0,0(%1),0,5" : : "f"(result), "b"(dst+(channels*i+1)+c));
+				psq_st(result,0,dst+(channels*i+1)+c,0,5);
 			}
 		}
 	} else {
@@ -131,10 +134,10 @@ static void float_to_int16_interleave_paired(int16_t *dst, const float **src, lo
 				pair[1] = paired_lx(i, src[1]);
 				
 				result = paired_merge00(pair[0], pair[1]);
-				asm("psq_stx	%0,%1,%2,0,5" : : "f"(result), "b"(dst), "r"(i));
+				psq_stx(result,i,dst,0,5);
 				
 				result = paired_merge11(pair[0], pair[1]);
-				asm("psq_stx	%0,%1,%2,0,5" : : "f"(result), "b"(dst), "r"(i+4));
+				psq_stx(result,i+4,dst,0,5);
 			}
 		} else
 			float_to_int16_paired(dst, src[0], len);
@@ -161,12 +164,10 @@ static void butterflies_float_paired(float *restrict v1, float *restrict v2, int
 static void vector_fmul_scalar_paired(float *dst, const float *src, float mul, int len)
 {
 	vector float pair, result;
-	vector float scalar;
-	asm("ps_mr	%0,%1" : "=f"(scalar) : "f"(mul));
 	
 	for (int i=0; i<len*4-7; i+=8) {
 		pair = paired_lx(i, src);
-		result = paired_muls0(pair, scalar);
+		result = ps_muls0(pair, mul);
 		paired_stx(result, i, dst);
 	}
 }
