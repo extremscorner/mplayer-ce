@@ -30,7 +30,7 @@
 #include "mp_msg.h"
 #include "help_mp.h"
 #include "m_config.h"
-#include "mplayer.h"
+#include "mpcommon.h"
 
 #include "libvo/fastmemcpy.h"
 
@@ -41,14 +41,17 @@
 #include "demux_audio.h"
 
 #include "libaf/af_format.h"
+#include "libmpcodecs/dec_audio.h"
+#include "libmpcodecs/dec_video.h"
 #include "libmpcodecs/dec_teletext.h"
+#include "libmpcodecs/vd_ffmpeg.h"
 
 #ifdef CONFIG_ASS
 #include "libass/ass.h"
-#include "libass/ass_mp.h"
+#include "ass_mp.h"
 #endif
 
-#ifdef CONFIG_LIBAVCODEC
+#ifdef CONFIG_FFMPEG
 #include "libavcodec/avcodec.h"
 #if MP_INPUT_BUFFER_PADDING_SIZE < FF_INPUT_BUFFER_PADDING_SIZE
 #error MP_INPUT_BUFFER_PADDING_SIZE is too small!
@@ -63,8 +66,6 @@
 #define PARSE_ON_ADD 0
 
 static void clear_parser(sh_common_t *sh);
-void resync_video_stream(sh_video_t *sh_video);
-void resync_audio_stream(sh_audio_t *sh_audio);
 
 // Demuxer list
 extern const demuxer_desc_t demuxer_desc_rawaudio;
@@ -121,7 +122,7 @@ const demuxer_desc_t *const demuxer_list[] = {
     &demuxer_desc_tv,
 #endif
     &demuxer_desc_mf,
-#ifdef CONFIG_LIBAVFORMAT
+#ifdef CONFIG_FFMPEG
     &demuxer_desc_lavf_preferred,
 #endif
     &demuxer_desc_avi,
@@ -164,7 +165,7 @@ const demuxer_desc_t *const demuxer_list[] = {
 #ifdef CONFIG_LIBNEMESI
     &demuxer_desc_rtp_nemesi,
 #endif
-#ifdef CONFIG_LIBAVFORMAT
+#ifdef CONFIG_FFMPEG
     &demuxer_desc_lavf,
 #endif
 #ifdef CONFIG_MUSEPACK
@@ -305,7 +306,7 @@ static void free_sh_sub(sh_sub_t *sh)
         ass_free_track(sh->ass_track);
 #endif
     free(sh->lang);
-#ifdef CONFIG_LIBAVCODEC
+#ifdef CONFIG_FFMPEG
     clear_parser((sh_common_t *)sh);
 #endif
     free(sh);
@@ -349,7 +350,7 @@ void free_sh_audio(demuxer_t *demuxer, int id)
     free(sh->wf);
     free(sh->codecdata);
     free(sh->lang);
-#ifdef CONFIG_LIBAVCODEC
+#ifdef CONFIG_FFMPEG
     clear_parser((sh_common_t *)sh);
 #endif
     free(sh);
@@ -380,7 +381,7 @@ void free_sh_video(sh_video_t *sh)
 {
     mp_msg(MSGT_DEMUXER, MSGL_DBG2, "DEMUXER: freeing sh_video at %p\n", sh);
     free(sh->bih);
-#ifdef CONFIG_LIBAVCODEC
+#ifdef CONFIG_FFMPEG
     clear_parser((sh_common_t *)sh);
 #endif
     free(sh);
@@ -458,16 +459,13 @@ static void ds_add_packet_internal(demux_stream_t *ds, demux_packet_t *dp)
            ds->demuxer->video->packs);
 }
 
-#ifdef CONFIG_LIBAVCODEC
+#ifdef CONFIG_FFMPEG
 static void allocate_parser(AVCodecContext **avctx, AVCodecParserContext **parser, unsigned format)
 {
     enum CodecID codec_id = CODEC_ID_NONE;
-    extern int avcodec_initialized;
-    if (!avcodec_initialized) {
-        avcodec_init();
-        avcodec_register_all();
-        avcodec_initialized = 1;
-    }
+
+    init_avcodec();
+
     switch (format) {
     case 0x2000:
     case 0x332D6361:
@@ -557,7 +555,7 @@ void ds_clear_parser(demux_stream_t *ds)
 
 void ds_add_packet(demux_stream_t *ds, demux_packet_t *dp)
 {
-#if PARSE_ON_ADD && defined(CONFIG_LIBAVCODEC)
+#if PARSE_ON_ADD && defined(CONFIG_FFMPEG)
     int len = dp->len;
     int pos = 0;
     while (len > 0) {
@@ -685,7 +683,7 @@ int ds_fill_buffer(demux_stream_t *ds)
             break;
         }
         if (!demux_fill_buffer(demux, ds)) {
-#if PARSE_ON_ADD && defined(CONFIG_LIBAVCODEC)
+#if PARSE_ON_ADD && defined(CONFIG_FFMPEG)
             uint8_t *parsed_start = NULL;
             int parsed_len = 0;
             ds_parse(ds->sh, &parsed_start, &parsed_len, MP_NOPTS_VALUE, 0);
@@ -841,11 +839,14 @@ int ds_get_packet_pts(demux_stream_t *ds, unsigned char **start, double *pts)
 int ds_get_packet_sub(demux_stream_t *ds, unsigned char **start,
                       double *pts, double *endpts)
 {
+    double max_pts = MP_NOPTS_VALUE;
     int len;
     *start = NULL;
     // initialize pts
-    if (pts)
+    if (pts) {
+        max_pts = *pts;
         *pts    = MP_NOPTS_VALUE;
+    }
     if (endpts)
         *endpts = MP_NOPTS_VALUE;
     if (ds->buffer_pos >= ds->buffer_size) {
@@ -861,8 +862,8 @@ int ds_get_packet_sub(demux_stream_t *ds, unsigned char **start,
         if (pts) {
             *pts    = ds->current->pts;
             // check if we are too early
-            if (*pts != MP_NOPTS_VALUE && ds->current->pts != MP_NOPTS_VALUE &&
-                ds->current->pts > *pts)
+            if (*pts != MP_NOPTS_VALUE && max_pts != MP_NOPTS_VALUE &&
+                *pts > max_pts)
                 return -1;
         }
     }
@@ -1153,9 +1154,6 @@ int audio_stream_cache = 0;
 char *demuxer_name = NULL;       // parameter from -demuxer
 char *audio_demuxer_name = NULL; // parameter from -audio-demuxer
 char *sub_demuxer_name = NULL;   // parameter from -sub-demuxer
-
-extern float stream_cache_min_percent;
-extern float stream_cache_seek_min_percent;
 
 demuxer_t *demux_open(stream_t *vs, int file_format, int audio_id,
                       int video_id, int dvdsub_id, char *filename)

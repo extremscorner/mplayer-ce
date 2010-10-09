@@ -26,8 +26,10 @@
 
 #include "config.h"
 #include "mp_msg.h"
+#include "mpcommon.h"
 #include "help_mp.h"
 
+#include "libmpcodecs/dec_audio.h"
 #include "stream/stream.h"
 #include "demuxer.h"
 #include "parse_es.h"
@@ -59,7 +61,6 @@ typedef struct mpg_demuxer {
   int a_stream_ids[MAX_A_STREAMS];
 } mpg_demuxer_t;
 
-extern char* dvdsub_lang;
 static int mpeg_pts_error=0;
 off_t ps_probe = 0;
 
@@ -899,8 +900,6 @@ do{
   return 1;
 }
 
-void skip_audio_frame(sh_audio_t *sh_audio);
-
 static void demux_seek_mpg(demuxer_t *demuxer, float rel_seek_secs,
                            float audio_delay, int flags)
 {
@@ -1016,7 +1015,7 @@ static int demux_mpg_control(demuxer_t *demuxer, int cmd, void *arg)
     switch(cmd) {
 	case DEMUXER_CTRL_GET_TIME_LENGTH:
             if(stream_control(demuxer->stream, STREAM_CTRL_GET_TIME_LENGTH, arg) != STREAM_UNSUPPORTED) {
-              mp_msg(MSGT_DEMUXER,MSGL_DBG2,"\r\nDEMUX_MPG_CTRL, (%.3lf)\r\n", *((double*)arg));
+              mp_msg(MSGT_DEMUXER,MSGL_DBG2,"\r\nDEMUX_MPG_CTRL, (%.3f)\r\n", *((double*)arg));
               return DEMUXER_CTRL_GUESS;
             }
             if (mpg_d && mpg_d->has_valid_timestamps) {

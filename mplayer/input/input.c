@@ -76,6 +76,7 @@ static const mp_cmd_t mp_cmds[] = {
   { MP_CMD_RADIO_STEP_FREQ, "radio_step_freq", 1, { {MP_CMD_ARG_FLOAT,{0}}, {-1,{0}} } },
 #endif
   { MP_CMD_SEEK, "seek", 1, { {MP_CMD_ARG_FLOAT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
+  { MP_CMD_EDL_LOADFILE, "edl_loadfile", 1, { {MP_CMD_ARG_STRING, {0}}, {-1,{0}} } },
   { MP_CMD_EDL_MARK, "edl_mark", 0, { {-1,{0}} } },
   { MP_CMD_AUDIO_DELAY, "audio_delay", 1, { {MP_CMD_ARG_FLOAT,{0}}, {MP_CMD_ARG_INT,{0}}, {-1,{0}} } },
   { MP_CMD_SPEED_INCR, "speed_incr", 1, { {MP_CMD_ARG_FLOAT,{0}}, {-1,{0}} } },
@@ -1711,8 +1712,7 @@ mp_input_get_section(void) {
 
 void
 mp_input_init(void) {
-  char *file;
-  
+  char* file;
 
   file = config_file[0] != '/' ? get_path(config_file) : config_file;
   if(!file)
@@ -1726,7 +1726,6 @@ mp_input_init(void) {
       free(file);
     }
     // Try global conf dir
-    //file = MPLAYER_CONFDIR "/input.conf";
     file = (char*)malloc(sizeof(char)*100);
     sprintf(file,"%s%s",MPLAYER_CONFDIR,"/input.conf");
     if(! mp_input_parse_config(file))

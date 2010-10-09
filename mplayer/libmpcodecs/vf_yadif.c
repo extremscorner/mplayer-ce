@@ -31,6 +31,7 @@
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
+#include "libmpdemux/demuxer.h"
 #include "libvo/fastmemcpy.h"
 #include "libavutil/common.h"
 
@@ -196,7 +197,7 @@ static void filter_line_mmx2(struct vf_priv_s *p, uint8_t *dst, uint8_t *prev, u
 \
             /* if(p->mode<2) ... */\
             "movq    %[tmp3], %%mm6 \n\t" /* diff */\
-            "cmp       $2, %[mode] \n\t"\
+            "cmpl      $2, %[mode] \n\t"\
             "jge       1f \n\t"\
             LOAD4("(%["prev2"],%[mrefs],2)", %%mm2) /* prev2[x-2*refs] */\
             LOAD4("(%["next2"],%[mrefs],2)", %%mm4) /* next2[x-2*refs] */\
@@ -382,7 +383,6 @@ static int config(struct vf_instance *vf,
 }
 
 static int continue_buffered_image(struct vf_instance *vf);
-extern int correct_pts;
 
 static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     int tff;

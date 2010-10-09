@@ -46,6 +46,8 @@ extern bool playing_usb;
 
 #include "m_struct.h"
 #include "m_option.h"
+#include "mp_core.h"
+#include "mplayer.h"
 
 #include "libmpcodecs/img_format.h"
 #include "libmpcodecs/mp_image.h"
@@ -65,7 +67,6 @@ static int fsysloc_table_init_flag = 0;
 
 int menu_keepdir = 0;
 char *menu_chroot = NULL;
-extern char *filename;
 
 
 
@@ -288,7 +289,6 @@ static char **get_extensions(menu_t *menu){
     return NULL;
 
   fp = fopen(mpriv->filter, "r");
-  
   if(!fp)
     return NULL;
 
@@ -337,7 +337,6 @@ static int open_dir(menu_t* menu,char* args) {
   char* p = NULL;
   list_entry_t* e;
   DIR* dirp;
-  extern int file_filter;
   char **extensions, **elem, *ext;
   fsysloc_t *fsysloc = NULL;
   char *locale_changed = NULL;
@@ -669,7 +668,7 @@ static void read_cmd(menu_t* menu,int cmd) {
       char *str;
       char *action = mpriv->p.current->d ? mpriv->dir_action:mpriv->file_action;
       sprintf(filename,"%s%s",mpriv->dir,mpriv->p.current->p.txt);
-      str = replace_path(action, filename,1);      
+      str = replace_path(action, filename,1);
       mp_input_parse_and_queue_cmds(str);
       //rodries
       if(strstr(action,"loadfile")!=NULL)

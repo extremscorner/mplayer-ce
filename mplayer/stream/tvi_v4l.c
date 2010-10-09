@@ -309,7 +309,7 @@ static tvi_handle_t *tvi_init_v4l(tv_param_t* tv_param)
     tvi_handle_t *h;
     priv_t *priv;
 
-    h = new_handle();
+    h = tv_new_handle(sizeof(priv_t), &functions);
     if (!h)
         return NULL;
 
@@ -330,7 +330,7 @@ static tvi_handle_t *tvi_init_v4l(tv_param_t* tv_param)
 
     /* allocation failed */
     if (!priv->video_device) {
-        free_handle(h);
+        tv_free_handle(h);
         return NULL;
     }
 
@@ -1673,7 +1673,7 @@ static void *video_grabber(void *data)
                         mp_msg(MSGT_TV, MSGL_V, "\nvideo capture thread: frame delta = 0\n");
                     } else if ((interval - prev_interval < (long long)0.85e6/priv->fps)
                                || (interval - prev_interval > (long long)1.15e6/priv->fps) ) {
-                        mp_msg(MSGT_TV, MSGL_V, "\nvideo capture thread: frame delta ~ %.1lf fps\n",
+                        mp_msg(MSGT_TV, MSGL_V, "\nvideo capture thread: frame delta ~ %.1f fps\n",
                                (double)1e6/(interval - prev_interval));
                     }
                 }
@@ -1702,7 +1702,7 @@ static void *video_grabber(void *data)
                 priv->video_interval_sum += orig_interval-prev_interval;
                 if (priv->video_avg_ptr >= VIDEO_AVG_BUFFER_SIZE) priv->video_avg_ptr = 0;
 
-//              fprintf(stderr, "fps: %lf\n", (double)1e6*VIDEO_AVG_BUFFER_SIZE/priv->video_interval_sum);
+//              fprintf(stderr, "fps: %f\n", (double)1e6*VIDEO_AVG_BUFFER_SIZE/priv->video_interval_sum);
 
                 // interpolate the skew in time
                 pthread_mutex_lock(&priv->skew_mutex);
@@ -1718,7 +1718,7 @@ static void *video_grabber(void *data)
                 }
             }
 
-            mp_msg(MSGT_TV, MSGL_DBG3, "\nfps = %lf, interval = %lf, a_skew = %f, corr_skew = %f\n",
+            mp_msg(MSGT_TV, MSGL_DBG3, "\nfps = %f, interval = %f, a_skew = %f, corr_skew = %f\n",
                    (interval != prev_interval) ? (double)1e6/(interval - prev_interval) : -1,
                    (double)1e-6*interval, (double)1e-6*xskew, (double)1e-6*skew);
             mp_msg(MSGT_TV, MSGL_DBG3, "vcnt = %d, acnt = %d\n", priv->video_cnt, priv->audio_cnt);

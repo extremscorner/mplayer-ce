@@ -50,8 +50,6 @@
 #include "cookies.h"
 #include "url.h"
 
-extern int stream_cache_size;
-
 /* Variables for the command line option -user, -passwd, -bandwidth,
    -user-agent and -nocookies */
 
@@ -67,7 +65,7 @@ int   network_ipv4_only_proxy = 0;
 
 
 const mime_struct_t mime_type_table[] = {
-#ifdef CONFIG_LIBAVFORMAT
+#ifdef CONFIG_FFMPEG
 	// Flash Video
 	{ "video/x-flv", DEMUXER_TYPE_LAVF_PREFERRED},
 	// do not force any demuxer in this case!

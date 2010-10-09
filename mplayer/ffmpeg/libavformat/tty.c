@@ -28,7 +28,9 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "sauce.h"
+#ifndef GEKKO
 #include <strings.h>
+#endif
 
 #define LINE_RATE 6000 /* characters per second */
 
@@ -75,7 +77,7 @@ static int read_header(AVFormatContext *avctx,
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_tag   = 0;
-    st->codec->codec_type  = CODEC_TYPE_VIDEO;
+    st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id    = CODEC_ID_ANSI;
     if (ap->width)  st->codec->width  = ap->width;
     if (ap->height) st->codec->height = ap->height;

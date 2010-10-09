@@ -19,6 +19,8 @@
 #ifndef AVUTIL_PPC_PAIRED_H
 #define AVUTIL_PPC_PAIRED_H
 
+#include "config.h"
+
 #if HAVE_PAIRED_H
 #include <paired.h>
 #else

@@ -77,6 +77,7 @@ typedef struct lavf_priv {
     int vstreams[MAX_V_STREAMS];
     int sstreams[MAX_S_STREAMS];
     int cur_program;
+    int nb_streams_last;
 }lavf_priv_t;
 
 static int mp_read(void *opaque, uint8_t *buf, int size) {
@@ -276,7 +277,7 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
                 break;
             stream_type = "audio";
             priv->astreams[priv->audio_streams] = i;
-            wf= calloc(sizeof(WAVEFORMATEX) + codec->extradata_size, 1);
+            wf= calloc(sizeof(*wf) + codec->extradata_size, 1);
             // mp4a tag is used for all mp4 files no matter what they actually contain
             if(codec->codec_tag == MKTAG('m', 'p', '4', 'a'))
                 codec->codec_tag= 0;
@@ -348,7 +349,7 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
             if(!sh_video) break;
             stream_type = "video";
             priv->vstreams[priv->video_streams] = i;
-            bih=calloc(sizeof(BITMAPINFOHEADER) + codec->extradata_size,1);
+            bih=calloc(sizeof(*bih) + codec->extradata_size,1);
 
             if(codec->codec_id == CODEC_ID_RAWVIDEO) {
                 switch (codec->pix_fmt) {
@@ -358,7 +359,7 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
             }
             if(!codec->codec_tag)
                 codec->codec_tag= av_codec_get_tag(mp_bmp_taglists, codec->codec_id);
-            bih->biSize= sizeof(BITMAPINFOHEADER) + codec->extradata_size;
+            bih->biSize= sizeof(*bih) + codec->extradata_size;
             bih->biWidth= codec->width;
             bih->biHeight= codec->height;
             bih->biBitCount= codec->bits_per_coded_sample;
@@ -552,6 +553,8 @@ static demuxer_t* demux_open_lavf(demuxer_t *demuxer){
 
     for(i=0; i<avfc->nb_streams; i++)
         handle_stream(demuxer, avfc, i);
+    priv->nb_streams_last = avfc->nb_streams;
+
     if(avfc->nb_programs) {
         int p;
         for (p = 0; p < avfc->nb_programs; p++) {
@@ -588,6 +591,11 @@ static int demux_lavf_fill_buffer(demuxer_t *demux, demux_stream_t *dsds){
 
     if(av_read_frame(priv->avfc, &pkt) < 0)
         return 0;
+
+    // handle any new streams that might have been added
+    for (id = priv->nb_streams_last; id < priv->avfc->nb_streams; id++)
+        handle_stream(demux, priv->avfc, id);
+    priv->nb_streams_last = priv->avfc->nb_streams;
 
     id= pkt.stream_index;
 

@@ -42,11 +42,7 @@ static const ad_info_t info =
 LIBAD_EXTERN(libvorbis)
 
 #ifdef CONFIG_TREMOR
-#ifdef GEKKO
-#include "../tremor/ivorbiscodec.h"
-#else
 #include <tremor/ivorbiscodec.h>
-#endif
 #else
 #include <vorbis/codec.h>
 #endif

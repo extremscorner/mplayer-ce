@@ -43,9 +43,6 @@
 #include "help_mp.h"
 
 
-extern const mime_struct_t mime_type_table[];
-extern int stream_cache_size;
-
 typedef struct {
   unsigned metaint;
   unsigned metapos;

@@ -32,7 +32,7 @@
 #include "libavcore/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "opt.h"
+#include "libavutil/opt.h"
 #include "imgconvert.h"
 #include "audioconvert.h"
 #include "internal.h"
@@ -215,7 +215,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
 
 #if LIBAVCODEC_VERSION_MAJOR < 53
 int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h){
-    return av_check_image_size(w, h, 0, av_log_ctx);
+    return av_image_check_size(w, h, 0, av_log_ctx);
 }
 #endif
 
@@ -235,7 +235,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         return -1;
     }
 
-    if(av_check_image_size(w, h, 0, s))
+    if(av_image_check_size(w, h, 0, s))
         return -1;
 
     if(s->internal_buffer==NULL){
@@ -283,7 +283,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         do {
             // NOTE: do not align linesizes individually, this breaks e.g. assumptions
             // that linesize[0] == 2*linesize[1] in the MPEG-encoder for 4:2:2
-            av_fill_image_linesizes(picture.linesize, s->pix_fmt, w);
+            av_image_fill_linesizes(picture.linesize, s->pix_fmt, w);
             // increase alignment of w for next try (rhs gives the lowest bit set in w)
             w += w & ~(w-1);
 
@@ -293,7 +293,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             }
         } while (unaligned);
 
-        tmpsize = av_fill_image_pointers(picture.data, s->pix_fmt, h, NULL, picture.linesize);
+        tmpsize = av_image_fill_pointers(picture.data, s->pix_fmt, h, NULL, picture.linesize);
         if (tmpsize < 0)
             return -1;
 
@@ -471,11 +471,17 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         goto end;
 
     if (codec->priv_data_size > 0) {
+      if(!avctx->priv_data){
         avctx->priv_data = av_mallocz(codec->priv_data_size);
         if (!avctx->priv_data) {
             ret = AVERROR(ENOMEM);
             goto end;
         }
+        if(codec->priv_class){ //this can be droped once all user apps use   avcodec_get_context_defaults3()
+            *(AVClass**)avctx->priv_data= codec->priv_class;
+            av_opt_set_defaults(avctx->priv_data);
+        }
+      }
     } else {
         avctx->priv_data = NULL;
     }
@@ -485,10 +491,15 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     else if(avctx->width && avctx->height)
         avcodec_set_dimensions(avctx, avctx->width, avctx->height);
 
+    if ((avctx->coded_width || avctx->coded_height || avctx->width || avctx->height)
+        && (  av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx) < 0
+           || av_image_check_size(avctx->width,       avctx->height,       0, avctx) < 0)) {
+        av_log(avctx, AV_LOG_WARNING, "ignoring invalid width/height values\n");
+        avcodec_set_dimensions(avctx, 0, 0);
+    }
+
 #define SANE_NB_CHANNELS 128U
-    if (((avctx->coded_width || avctx->coded_height)
-        && av_check_image_size(avctx->coded_width, avctx->coded_height, 0, avctx))
-        || avctx->channels > SANE_NB_CHANNELS) {
+    if (avctx->channels > SANE_NB_CHANNELS) {
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
@@ -504,14 +515,13 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         goto free_and_end;
     }
     avctx->frame_number = 0;
-    if(avctx->codec->init){
-        if(avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
-           avctx->codec->max_lowres < avctx->lowres){
-            av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
-                   avctx->codec->max_lowres);
-            goto free_and_end;
-        }
+    if (avctx->codec->max_lowres < avctx->lowres) {
+        av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
+               avctx->codec->max_lowres);
+        goto free_and_end;
+    }
 
+    if(avctx->codec->init){
         ret = avctx->codec->init(avctx);
         if (ret < 0) {
             goto free_and_end;
@@ -554,7 +564,7 @@ int attribute_align_arg avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf
         av_log(avctx, AV_LOG_ERROR, "buffer smaller than minimum size\n");
         return -1;
     }
-    if(av_check_image_size(avctx->width, avctx->height, 0, avctx))
+    if(av_image_check_size(avctx->width, avctx->height, 0, avctx))
         return -1;
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || pict){
         int ret = avctx->codec->encode(avctx, buf, buf_size, pict);
@@ -581,7 +591,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return ret;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_VIDEO_OLD
 int attribute_align_arg avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          const uint8_t *buf, int buf_size)
@@ -604,7 +614,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     int ret;
 
     *got_picture_ptr= 0;
-    if((avctx->coded_width||avctx->coded_height) && av_check_image_size(avctx->coded_width, avctx->coded_height, 0, avctx))
+    if((avctx->coded_width||avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         return -1;
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size){
         ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
@@ -620,7 +630,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     return ret;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_AUDIO_OLD
 int attribute_align_arg avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          const uint8_t *buf, int buf_size)
@@ -661,7 +671,7 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
     return ret;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 53
+#if FF_API_SUBTITLE_OLD
 int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
                             int *got_sub_ptr,
                             const uint8_t *buf, int buf_size)

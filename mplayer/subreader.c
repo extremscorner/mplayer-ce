@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#include "ass_mp.h"
 #include "config.h"
 #include "mp_msg.h"
 #include "mpcommon.h"
@@ -38,7 +39,6 @@
 #include "stream/stream.h"
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
-#include "libass/ass_mp.h"
 
 #ifdef CONFIG_ENCA
 #include <enca.h>
@@ -56,8 +56,6 @@ char *fribidi_charset = NULL;   ///character set that will be passed to FriBiDi
 int flip_hebrew = 1;            ///flip subtitles using fribidi
 int fribidi_flip_commas = 0;    ///flip comma when fribidi is used
 #endif
-
-extern char* dvdsub_lang;
 
 /* Maximal length of line of a subtitle */
 #define LINE_LEN 1000
@@ -1103,7 +1101,6 @@ static subtitle *sub_read_line_jacosub(stream_t* st, subtitle * current, int utf
 static int sub_autodetect (stream_t* st, int *uses_time, int utf16) {
     char line[LINE_LEN+1];
     int i,j=0;
-    char p;
 
     while (j < 100) {
 	j++;
@@ -1147,7 +1144,7 @@ static int sub_autodetect (stream_t* st, int *uses_time, int utf16) {
 		{*uses_time=1;return SUB_PJS;}
 	if (sscanf (line, "FORMAT=%d", &i) == 1)
 		{*uses_time=0; return SUB_MPSUB;}
-	if (sscanf (line, "FORMAT=TIM%c", &p)==1 && p=='E')
+	if (!memcmp(line, "FORMAT=TIME", 11))
 		{*uses_time=1; return SUB_MPSUB;}
 	if (strstr (line, "-->>"))
 		{*uses_time=0; return SUB_AQTITLE;}
@@ -1928,8 +1925,7 @@ char** sub_filenames(const char* path, char *fname)
 
     tmpresult = malloc(len);
 
-    result = malloc(sizeof(subfn)*MAX_SUBTITLE_FILES);
-    memset(result, 0, sizeof(subfn)*MAX_SUBTITLE_FILES);
+    result = calloc(MAX_SUBTITLE_FILES, sizeof(*result));
 
     subcnt = 0;
 
@@ -2067,8 +2063,7 @@ char** sub_filenames(const char* path, char *fname)
 
     qsort(result, subcnt, sizeof(subfn), compare_sub_priority);
 
-    result2 = malloc(sizeof(char*)*(subcnt+1));
-    memset(result2, 0, sizeof(char*)*(subcnt+1));
+    result2 = calloc(subcnt + 1, sizeof(*result2));
 
     for (i = 0; i < subcnt; i++) {
 	result2[i] = result[i].fname;

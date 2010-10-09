@@ -42,7 +42,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include <libavutil/common.h>
 #include <vbe.h>
 
 #include "video_out.h"
@@ -54,9 +54,7 @@
 #include "mpbswap.h"
 #include "aspect.h"
 #include "vesa_lvo.h"
-#ifdef CONFIG_VIDIX
 #include "vosub_vidix.h"
-#endif
 #include "mp_msg.h"
 
 #include "libswscale/swscale.h"
@@ -64,15 +62,6 @@
 
 
 #define MAX_BUFFERS 3
-
-#ifndef max
-#define max(a,b) ((a)>(b)?(a):(b))
-#endif
-#ifndef min
-#define min(a,b) ((a)<(b)?(a):(b))
-#endif
-
-#define UNUSED(x) ((void)(x)) /**< Removes warning about unused arguments */
 
 static const vo_info_t info =
 {
@@ -238,7 +227,7 @@ static void vbeCopyBlock(unsigned long offset,uint8_t *image,unsigned long size)
    while(size)
    {
 	if(!VALID_WIN_FRAME(offset)) vbeSwitchBank(offset);
-	delta = min(size,win.high - offset);
+	delta = FFMIN(size, win.high - offset);
 	fast_memcpy(VIDEO_PTR(offset),&image[src_idx],delta);
 	src_idx += delta;
 	offset += delta;
@@ -353,13 +342,6 @@ static void draw_alpha_15(int x0,int y0, int w,int h, unsigned char* src, unsign
 
 static void draw_alpha_null(int x0,int y0, int w,int h, unsigned char* src, unsigned char *srca, int stride)
 {
-  UNUSED(x0);
-  UNUSED(y0);
-  UNUSED(w);
-  UNUSED(h);
-  UNUSED(src);
-  UNUSED(srca);
-  UNUSED(stride);
 }
 
 
@@ -536,7 +518,7 @@ static char *model2str(unsigned char type)
   return retval;
 }
 
-unsigned fillMultiBuffer( unsigned long vsize, unsigned nbuffs )
+static unsigned fillMultiBuffer(unsigned long vsize, unsigned nbuffs)
 {
   unsigned long screen_size, offset;
   unsigned total,i;
@@ -547,7 +529,7 @@ unsigned fillMultiBuffer( unsigned long vsize, unsigned nbuffs )
     mp_msg(MSGT_VO,MSGL_V, "vo_vesa: Can use up to %u video buffers\n",total);
   i = 0;
   offset = 0;
-  total = min(total,nbuffs);
+  total = FFMIN(total, nbuffs);
   while(i < total) { multi_buff[i++] = offset; offset += screen_size; }
   if(!i)
     mp_msg(MSGT_VO,MSGL_WARN, MSGTR_LIBVO_VESA_YouHaveTooLittleVideoMemory, screen_size, vsize);
@@ -738,9 +720,9 @@ config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uin
 	    dstH = d_height;
 	}
 	if(vo_screenwidth) w = vo_screenwidth;
-	else w = max(dstW,width);
+	else w = FFMAX(dstW, width);
 	if(vo_screenheight) h = vo_screenheight;
-	else h = max(dstH,height);
+	else h = FFMAX(dstH, height);
         for(i=0;i < num_modes;i++)
 	{
 		if((err=vbeGetModeInfo(mode_ptr[i],&vmib)) != VBE_OK)

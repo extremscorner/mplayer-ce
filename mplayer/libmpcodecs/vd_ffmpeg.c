@@ -32,6 +32,7 @@
 #include "fmt-conversion.h"
 
 #include "vd_internal.h"
+#include "vd_ffmpeg.h"
 
 static const vd_info_t info = {
     "FFmpeg's libavcodec codec family",
@@ -184,7 +185,6 @@ static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
     AVClass *avc= ptr ? *(AVClass **)ptr : NULL;
     int type= MSGT_FIXME;
     int mp_level;
-    char buf[256];
 
     switch(level){
     case AV_LOG_VERBOSE: mp_level = MSGL_V ; break;
@@ -225,8 +225,7 @@ static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
     }
 
     print_prefix= strchr(fmt, '\n') != NULL;
-    vsnprintf(buf, sizeof(buf), fmt, vl);
-    mp_msg(type, mp_level, buf);
+    mp_msg_va(type, mp_level, fmt, vl);
 }
 
 static void set_format_params(struct AVCodecContext *avctx, enum PixelFormat fmt){
@@ -249,6 +248,16 @@ static void set_format_params(struct AVCodecContext *avctx, enum PixelFormat fmt
     }
 }
 
+void init_avcodec(void)
+{
+    if (!avcodec_initialized) {
+        avcodec_init();
+        avcodec_register_all();
+        avcodec_initialized = 1;
+        av_log_set_callback(mp_msp_av_log_callback);
+    }
+}
+
 // init driver
 static int init(sh_video_t *sh){
     AVCodecContext *avctx;
@@ -257,12 +266,7 @@ static int init(sh_video_t *sh){
     int lowres_w=0;
     int do_vis_debug= lavc_param_vismv || (lavc_param_debug&(FF_DEBUG_VIS_MB_TYPE|FF_DEBUG_VIS_QP));
 
-    if(!avcodec_initialized){
-        avcodec_init();
-        avcodec_register_all();
-        avcodec_initialized=1;
-        av_log_set_callback(mp_msp_av_log_callback);
-    }
+    init_avcodec();
 
     ctx = sh->context = malloc(sizeof(vd_ffmpeg_ctx));
     if (!ctx)
@@ -367,10 +371,10 @@ static int init(sh_video_t *sh){
     /* AVRn stores huffman table in AVI header */
     /* Pegasus MJPEG stores it also in AVI header, but it uses the common
        MJPG fourcc :( */
-        if (!sh->bih || sh->bih->biSize <= sizeof(BITMAPINFOHEADER))
+        if (!sh->bih || sh->bih->biSize <= sizeof(*sh->bih))
             break;
         avctx->flags |= CODEC_FLAG_EXTERN_HUFF;
-        avctx->extradata_size = sh->bih->biSize-sizeof(BITMAPINFOHEADER);
+        avctx->extradata_size = sh->bih->biSize-sizeof(*sh->bih);
         avctx->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
         memcpy(avctx->extradata, sh->bih+1, avctx->extradata_size);
 
@@ -400,7 +404,7 @@ static int init(sh_video_t *sh){
                 (sh->format == mmioFOURCC('R', 'V', '1', '3')) ? 0x10003001 : 0x10000000;
         } else {
             /* has extra slice header (demux_rm or rm->avi streamcopy) */
-            avctx->extradata_size = sh->bih->biSize-sizeof(BITMAPINFOHEADER);
+            avctx->extradata_size = sh->bih->biSize-sizeof(*sh->bih);
             avctx->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             memcpy(avctx->extradata, sh->bih+1, avctx->extradata_size);
         }
@@ -410,9 +414,9 @@ static int init(sh_video_t *sh){
         break;
 
     default:
-        if (!sh->bih || sh->bih->biSize <= sizeof(BITMAPINFOHEADER))
+        if (!sh->bih || sh->bih->biSize <= sizeof(*sh->bih))
             break;
-        avctx->extradata_size = sh->bih->biSize-sizeof(BITMAPINFOHEADER);
+        avctx->extradata_size = sh->bih->biSize-sizeof(*sh->bih);
         avctx->extradata = av_mallocz(avctx->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
         memcpy(avctx->extradata, sh->bih+1, avctx->extradata_size);
         break;
@@ -421,10 +425,10 @@ static int init(sh_video_t *sh){
     if (sh->bih && (sh->bih->biBitCount <= 8)) {
         avctx->palctrl = calloc(1, sizeof(AVPaletteControl));
         avctx->palctrl->palette_changed = 1;
-        if (sh->bih->biSize-sizeof(BITMAPINFOHEADER))
+        if (sh->bih->biSize-sizeof(*sh->bih))
             /* Palette size in biSize */
             memcpy(avctx->palctrl->palette, sh->bih+1,
-                   FFMIN(sh->bih->biSize-sizeof(BITMAPINFOHEADER), AVPALETTE_SIZE));
+                   FFMIN(sh->bih->biSize-sizeof(*sh->bih), AVPALETTE_SIZE));
         else
             /* Palette size in biClrUsed */
             memcpy(avctx->palctrl->palette, sh->bih+1,

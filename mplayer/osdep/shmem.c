@@ -58,9 +58,6 @@
 static int shmem_type=0;
 
 void* shmem_alloc(int size){
-#ifdef GEKKO
-return malloc(size);
-#endif
 void* p;
 static int devzero = -1;
 while(1){
@@ -114,12 +111,6 @@ while(1){
 }
 
 void shmem_free(void* p,int size){
-#ifdef GEKKO
-free(p);
-p=NULL;
-return;
-#endif
-
   switch(shmem_type){
     case 0:
     case 1:

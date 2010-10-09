@@ -475,14 +475,11 @@ static int real_check_file(demuxer_t* demuxer)
     if (c != MKTAG('.', 'R', 'M', 'F'))
 	return 0; /* bad magic */
 
-    priv = malloc(sizeof(real_priv_t));
-    memset(priv, 0, sizeof(real_priv_t));
+    priv = calloc(1, sizeof(real_priv_t));
     demuxer->priv = priv;
 
     return DEMUXER_TYPE_REAL;
 }
-
-void hexdump(char *, unsigned long);
 
 #define SKIP_BITS(n) buffer<<=n
 #define SHOW_BITS(n) ((buffer)>>(32-(n)))
@@ -785,7 +782,7 @@ got_audio:
             if (++(priv->sub_packet_cnt) < sph)
                 audioreorder_getnextpk = 1;
             else {
-                int apk_usize = ((WAVEFORMATEX*)((sh_audio_t*)ds->sh)->wf)->nBlockAlign;
+                int apk_usize = ((sh_audio_t*)ds->sh)->wf->nBlockAlign;
                 audioreorder_getnextpk = 0;
                 priv->sub_packet_cnt = 0;
                 // Release all the audio packets
@@ -1374,8 +1371,7 @@ static demuxer_t* demux_open_real(demuxer_t* demuxer)
                    }
 
 		    /* Emulate WAVEFORMATEX struct: */
-		    sh->wf = malloc(sizeof(WAVEFORMATEX));
-		    memset(sh->wf, 0, sizeof(WAVEFORMATEX));
+		    sh->wf = calloc(1, sizeof(*sh->wf));
 		    sh->wf->nChannels = sh->channels;
 		    sh->wf->wBitsPerSample = sh->samplesize*8;
 		    sh->wf->nSamplesPerSec = sh->samplerate;
@@ -1412,7 +1408,7 @@ static demuxer_t* demux_open_real(demuxer_t* demuxer)
 				goto skip_this_chunk;
 			    }
 			    sh->wf->cbSize = codecdata_length;
-			    sh->wf = realloc(sh->wf, sizeof(WAVEFORMATEX)+sh->wf->cbSize);
+			    sh->wf = realloc(sh->wf, sizeof(*sh->wf)+sh->wf->cbSize);
 			    stream_read(demuxer->stream, ((char*)(sh->wf+1)), codecdata_length); // extras
                 if (priv->intl_id[stream_id] == MKTAG('g', 'e', 'n', 'r'))
     			    sh->wf->nBlockAlign = sub_packet_size;
@@ -1480,8 +1476,7 @@ static demuxer_t* demux_open_real(demuxer_t* demuxer)
     		    mp_msg(MSGT_DEMUX, MSGL_INFO, MSGTR_AudioID, "real", stream_id);
 
 		    /* Emulate WAVEFORMATEX struct: */
-		    sh->wf = malloc(sizeof(WAVEFORMATEX));
-		    memset(sh->wf, 0, sizeof(WAVEFORMATEX));
+		    sh->wf = calloc(1, sizeof(*sh->wf));
 		    sh->wf->nChannels = 0;//sh->channels;
 		    sh->wf->wBitsPerSample = 16;
 		    sh->wf->nSamplesPerSec = 0;//sh->samplerate;
@@ -1519,9 +1514,8 @@ static demuxer_t* demux_open_real(demuxer_t* demuxer)
 		    mp_msg(MSGT_DEMUX,MSGL_V,"video fourcc: %.4s (%x)\n", (char *)&sh->format, sh->format);
 
 		    /* emulate BITMAPINFOHEADER */
-		    sh->bih = malloc(sizeof(BITMAPINFOHEADER));
-		    memset(sh->bih, 0, sizeof(BITMAPINFOHEADER));
-	    	    sh->bih->biSize = sizeof(BITMAPINFOHEADER);
+		    sh->bih = calloc(1, sizeof(*sh->bih));
+	    	    sh->bih->biSize = sizeof(*sh->bih);
 		    sh->disp_w = sh->bih->biWidth = stream_read_word(demuxer->stream);
 		    sh->disp_h = sh->bih->biHeight = stream_read_word(demuxer->stream);
 		    sh->bih->biPlanes = 1;
@@ -1556,10 +1550,10 @@ static demuxer_t* demux_open_real(demuxer_t* demuxer)
 		    {
 			    // read and store codec extradata
 			    unsigned int cnt = codec_data_size - (stream_tell(demuxer->stream) - codec_pos);
-			    if (cnt > 0x7fffffff - sizeof(BITMAPINFOHEADER)) {
+			    if (cnt > 0x7fffffff - sizeof(*sh->bih)) {
 			        mp_msg(MSGT_DEMUX, MSGL_ERR,"Extradata too big (%u)\n", cnt);
 			    } else  {
-				sh->bih = realloc(sh->bih, sizeof(BITMAPINFOHEADER) + cnt);
+				sh->bih = realloc(sh->bih, sizeof(*sh->bih) + cnt);
 			        sh->bih->biSize += cnt;
 				stream_read(demuxer->stream, ((unsigned char*)(sh->bih+1)), cnt);
 			    }

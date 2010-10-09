@@ -22,6 +22,7 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
+#include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/h264dsp.h"
@@ -47,6 +48,7 @@ DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_8  ) = {0x0008000800080008ULL, 0x00080
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_9  ) = {0x0009000900090009ULL, 0x0009000900090009ULL};
 DECLARE_ALIGNED(8,  const uint64_t, ff_pw_15 ) = 0x000F000F000F000FULL;
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_16 ) = {0x0010001000100010ULL, 0x0010001000100010ULL};
+DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_17 ) = {0x0011001100110011ULL, 0x0011001100110011ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_18 ) = {0x0012001200120012ULL, 0x0012001200120012ULL};
 DECLARE_ALIGNED(8,  const uint64_t, ff_pw_20 ) = 0x0014001400140014ULL;
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_27 ) = {0x001B001B001B001BULL, 0x001B001B001B001BULL};
@@ -60,6 +62,7 @@ DECLARE_ALIGNED(8,  const uint64_t, ff_pw_96 ) = 0x0060006000600060ULL;
 DECLARE_ALIGNED(8,  const uint64_t, ff_pw_128) = 0x0080008000800080ULL;
 DECLARE_ALIGNED(8,  const uint64_t, ff_pw_255) = 0x00ff00ff00ff00ffULL;
 
+DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_0  ) = {0x0000000000000000ULL, 0x0000000000000000ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_1  ) = {0x0101010101010101ULL, 0x0101010101010101ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_3  ) = {0x0303030303030303ULL, 0x0303030303030303ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_4  ) = {0x0404040404040404ULL, 0x0404040404040404ULL};
@@ -68,7 +71,7 @@ DECLARE_ALIGNED(8,  const uint64_t, ff_pb_1F ) = 0x1F1F1F1F1F1F1F1FULL;
 DECLARE_ALIGNED(8,  const uint64_t, ff_pb_3F ) = 0x3F3F3F3F3F3F3F3FULL;
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_80 ) = {0x8080808080808080ULL, 0x8080808080808080ULL};
 DECLARE_ALIGNED(8,  const uint64_t, ff_pb_81 ) = 0x8181818181818181ULL;
-DECLARE_ALIGNED(8,  const uint64_t, ff_pb_A1 ) = 0xA1A1A1A1A1A1A1A1ULL;
+DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_A1 ) = {0xA1A1A1A1A1A1A1A1ULL, 0xA1A1A1A1A1A1A1A1ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_F8 ) = {0xF8F8F8F8F8F8F8F8ULL, 0xF8F8F8F8F8F8F8F8ULL};
 DECLARE_ALIGNED(8,  const uint64_t, ff_pb_FC ) = 0xFCFCFCFCFCFCFCFCULL;
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_FE ) = {0xFEFEFEFEFEFEFEFEULL, 0xFEFEFEFEFEFEFEFEULL};
@@ -2521,10 +2524,10 @@ float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
-    int mm_flags = mm_support();
+    int mm_flags = av_get_cpu_flags();
 
     if (avctx->dsp_mask) {
-        if (avctx->dsp_mask & FF_MM_FORCE)
+        if (avctx->dsp_mask & AV_CPU_FLAG_FORCE)
             mm_flags |= (avctx->dsp_mask & 0xffff);
         else
             mm_flags &= ~(avctx->dsp_mask & 0xffff);
@@ -2532,20 +2535,20 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
 #if 0
     av_log(avctx, AV_LOG_INFO, "libavcodec: CPU flags:");
-    if (mm_flags & FF_MM_MMX)
+    if (mm_flags & AV_CPU_FLAG_MMX)
         av_log(avctx, AV_LOG_INFO, " mmx");
-    if (mm_flags & FF_MM_MMX2)
+    if (mm_flags & AV_CPU_FLAG_MMX2)
         av_log(avctx, AV_LOG_INFO, " mmx2");
-    if (mm_flags & FF_MM_3DNOW)
+    if (mm_flags & AV_CPU_FLAG_3DNOW)
         av_log(avctx, AV_LOG_INFO, " 3dnow");
-    if (mm_flags & FF_MM_SSE)
+    if (mm_flags & AV_CPU_FLAG_SSE)
         av_log(avctx, AV_LOG_INFO, " sse");
-    if (mm_flags & FF_MM_SSE2)
+    if (mm_flags & AV_CPU_FLAG_SSE2)
         av_log(avctx, AV_LOG_INFO, " sse2");
     av_log(avctx, AV_LOG_INFO, "\n");
 #endif
 
-    if (mm_flags & FF_MM_MMX) {
+    if (mm_flags & AV_CPU_FLAG_MMX) {
         const int idct_algo= avctx->idct_algo;
 
         if(avctx->lowres==0){
@@ -2556,7 +2559,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
 #if CONFIG_GPL
             }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
-                if(mm_flags & FF_MM_MMX2){
+                if(mm_flags & AV_CPU_FLAG_MMX2){
                     c->idct_put= ff_libmpeg2mmx2_idct_put;
                     c->idct_add= ff_libmpeg2mmx2_idct_add;
                     c->idct    = ff_mmxext_idct;
@@ -2569,7 +2572,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
             }else if((CONFIG_VP3_DECODER || CONFIG_VP5_DECODER || CONFIG_VP6_DECODER) &&
                      idct_algo==FF_IDCT_VP3 && HAVE_YASM){
-                if(mm_flags & FF_MM_SSE2){
+                if(mm_flags & AV_CPU_FLAG_SSE2){
                     c->idct_put= ff_vp3_idct_put_sse2;
                     c->idct_add= ff_vp3_idct_add_sse2;
                     c->idct    = ff_vp3_idct_sse2;
@@ -2583,12 +2586,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }else if(idct_algo==FF_IDCT_CAVS){
                     c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
             }else if(idct_algo==FF_IDCT_XVIDMMX){
-                if(mm_flags & FF_MM_SSE2){
+                if(mm_flags & AV_CPU_FLAG_SSE2){
                     c->idct_put= ff_idct_xvid_sse2_put;
                     c->idct_add= ff_idct_xvid_sse2_add;
                     c->idct    = ff_idct_xvid_sse2;
                     c->idct_permutation_type= FF_SSE2_IDCT_PERM;
-                }else if(mm_flags & FF_MM_MMX2){
+                }else if(mm_flags & AV_CPU_FLAG_MMX2){
                     c->idct_put= ff_idct_xvid_mmx2_put;
                     c->idct_add= ff_idct_xvid_mmx2_add;
                     c->idct    = ff_idct_xvid_mmx2;
@@ -2605,7 +2608,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->add_pixels_clamped = ff_add_pixels_clamped_mmx;
         c->clear_block  = clear_block_mmx;
         c->clear_blocks = clear_blocks_mmx;
-        if ((mm_flags & FF_MM_SSE) &&
+        if ((mm_flags & AV_CPU_FLAG_SSE) &&
             !(CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)){
             /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
             c->clear_block  = clear_block_sse;
@@ -2648,7 +2651,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->put_rv40_chroma_pixels_tab[1]= ff_put_rv40_chroma_mc4_mmx;
 #endif
 
-        if (mm_flags & FF_MM_MMX2) {
+        if (mm_flags & AV_CPU_FLAG_MMX2) {
             c->prefetch = prefetch_mmx2;
 
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
@@ -2739,7 +2742,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 #endif
 #if HAVE_7REGS && HAVE_TEN_OPERANDS
-            if( mm_flags&FF_MM_3DNOW )
+            if( mm_flags&AV_CPU_FLAG_3DNOW )
                 c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif
 
@@ -2747,7 +2750,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 ff_vc1dsp_init_mmx(c, avctx);
 
             c->add_png_paeth_prediction= add_png_paeth_prediction_mmx2;
-        } else if (mm_flags & FF_MM_3DNOW) {
+        } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
             c->prefetch = prefetch_3dnow;
 
             c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
@@ -2815,13 +2818,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->put_h264_qpel_pixels_tab[1][x+y*4] = put_h264_qpel8_mc##x##y##_##CPU;\
             c->avg_h264_qpel_pixels_tab[0][x+y*4] = avg_h264_qpel16_mc##x##y##_##CPU;\
             c->avg_h264_qpel_pixels_tab[1][x+y*4] = avg_h264_qpel8_mc##x##y##_##CPU;
-        if((mm_flags & FF_MM_SSE2) && !(mm_flags & FF_MM_3DNOW)){
+        if((mm_flags & AV_CPU_FLAG_SSE2) && !(mm_flags & AV_CPU_FLAG_3DNOW)){
             // these functions are slower than mmx on AMD, but faster on Intel
             c->put_pixels_tab[0][0] = put_pixels16_sse2;
+            c->put_no_rnd_pixels_tab[0][0] = put_pixels16_sse2;
             c->avg_pixels_tab[0][0] = avg_pixels16_sse2;
             H264_QPEL_FUNCS(0, 0, sse2);
         }
-        if(mm_flags & FF_MM_SSE2){
+        if(mm_flags & AV_CPU_FLAG_SSE2){
             H264_QPEL_FUNCS(0, 1, sse2);
             H264_QPEL_FUNCS(0, 2, sse2);
             H264_QPEL_FUNCS(0, 3, sse2);
@@ -2836,7 +2840,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 3, sse2);
         }
 #if HAVE_SSSE3
-        if(mm_flags & FF_MM_SSSE3){
+        if(mm_flags & AV_CPU_FLAG_SSSE3){
             H264_QPEL_FUNCS(1, 0, ssse3);
             H264_QPEL_FUNCS(1, 1, ssse3);
             H264_QPEL_FUNCS(1, 2, ssse3);
@@ -2858,13 +2862,13 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->put_h264_chroma_pixels_tab[1]= ff_put_h264_chroma_mc4_ssse3;
             c->avg_h264_chroma_pixels_tab[1]= ff_avg_h264_chroma_mc4_ssse3;
             c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_ssse3;
-            if (mm_flags & FF_MM_SSE4) // not really sse4, just slow on Conroe
+            if (mm_flags & AV_CPU_FLAG_SSE4) // not really sse4, just slow on Conroe
                 c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_sse4;
 #endif
         }
 #endif
 
-        if(mm_flags & FF_MM_3DNOW){
+        if(mm_flags & AV_CPU_FLAG_3DNOW){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
             c->vector_fmul = vector_fmul_3dnow;
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
@@ -2872,20 +2876,20 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->float_to_int16_interleave = float_to_int16_interleave_3dnow;
             }
         }
-        if(mm_flags & FF_MM_3DNOWEXT){
+        if(mm_flags & AV_CPU_FLAG_3DNOWEXT){
             c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
             c->vector_fmul_window = vector_fmul_window_3dnow2;
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->float_to_int16_interleave = float_to_int16_interleave_3dn2;
             }
         }
-        if(mm_flags & FF_MM_MMX2){
+        if(mm_flags & AV_CPU_FLAG_MMX2){
 #if HAVE_YASM
             c->scalarproduct_int16 = ff_scalarproduct_int16_mmx2;
             c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_mmx2;
 #endif
         }
-        if(mm_flags & FF_MM_SSE){
+        if(mm_flags & AV_CPU_FLAG_SSE){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
             c->ac3_downmix = ac3_downmix_sse;
             c->vector_fmul = vector_fmul_sse;
@@ -2900,9 +2904,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->scalarproduct_float = ff_scalarproduct_float_sse;
 #endif
         }
-        if(mm_flags & FF_MM_3DNOW)
+        if(mm_flags & AV_CPU_FLAG_3DNOW)
             c->vector_fmul_add = vector_fmul_add_3dnow; // faster than sse
-        if(mm_flags & FF_MM_SSE2){
+        if(mm_flags & AV_CPU_FLAG_SSE2){
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse2;
             c->float_to_int16 = float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;
@@ -2911,7 +2915,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
 #endif
         }
-        if((mm_flags & FF_MM_SSSE3) && !(mm_flags & (FF_MM_SSE42|FF_MM_3DNOW)) && HAVE_YASM) // cachesplit
+        if((mm_flags & AV_CPU_FLAG_SSSE3) && !(mm_flags & (AV_CPU_FLAG_SSE42|AV_CPU_FLAG_3DNOW)) && HAVE_YASM) // cachesplit
             c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
     }
 
