@@ -23,7 +23,6 @@
 #include <ws2tcpip.h>
 #endif
 #endif
-
 #include <errno.h>
 #include "network.h"
 #include "stream.h"

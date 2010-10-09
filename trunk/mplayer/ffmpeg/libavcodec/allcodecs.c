@@ -163,6 +163,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (QDRAW, qdraw);
     REGISTER_DECODER (QPEG, qpeg);
     REGISTER_ENCDEC  (QTRLE, qtrle);
+    REGISTER_DECODER (R10K,  r10k);
     REGISTER_DECODER (R210,  r210);
     REGISTER_ENCDEC  (RAWVIDEO, rawvideo);
     REGISTER_DECODER (RL2, rl2);
@@ -282,6 +283,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (PCM_F32LE, pcm_f32le);
     REGISTER_ENCDEC  (PCM_F64BE, pcm_f64be);
     REGISTER_ENCDEC  (PCM_F64LE, pcm_f64le);
+    REGISTER_DECODER (PCM_LXF, pcm_lxf);
     REGISTER_ENCDEC  (PCM_MULAW, pcm_mulaw);
     REGISTER_ENCDEC  (PCM_S8, pcm_s8);
     REGISTER_ENCDEC  (PCM_S16BE, pcm_s16be);
@@ -317,6 +319,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (ADPCM_EA_R2, adpcm_ea_r2);
     REGISTER_DECODER (ADPCM_EA_R3, adpcm_ea_r3);
     REGISTER_DECODER (ADPCM_EA_XAS, adpcm_ea_xas);
+    REGISTER_ENCDEC  (ADPCM_G722, adpcm_g722);
     REGISTER_ENCDEC  (ADPCM_G726, adpcm_g726);
     REGISTER_DECODER (ADPCM_IMA_AMV, adpcm_ima_amv);
     REGISTER_DECODER (ADPCM_IMA_DK3, adpcm_ima_dk3);

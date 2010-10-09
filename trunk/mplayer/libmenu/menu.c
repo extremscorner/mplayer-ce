@@ -40,16 +40,17 @@
 #include "m_struct.h"
 #include "menu.h"
 
-extern menu_info_t menu_info_cmdlist;
-extern menu_info_t menu_info_chapsel;
-extern menu_info_t menu_info_pt;
-extern menu_info_t menu_info_filesel;
-extern menu_info_t menu_info_txt;
-extern menu_info_t menu_info_console;
-extern menu_info_t menu_info_pref;
-extern menu_info_t menu_info_dvbsel;
+extern const menu_info_t menu_info_cmdlist;
+extern const menu_info_t menu_info_chapsel;
+extern const menu_info_t menu_info_pt;
+extern const menu_info_t menu_info_filesel;
+extern const menu_info_t menu_info_txt;
+extern const menu_info_t menu_info_console;
+extern const menu_info_t menu_info_pref;
+extern const menu_info_t menu_info_dvbsel;
 
-menu_info_t* menu_info_list[] = {
+
+const menu_info_t * const menu_info_list[] = {
   &menu_info_pt,
   &menu_info_cmdlist,
   &menu_info_chapsel,
@@ -104,7 +105,7 @@ static menu_cmd_bindings_t *get_cmd_bindings(const char *name)
 
 static int menu_parse_config(char* buffer) {
   char *element,*body, **attribs, *name;
-  menu_info_t* minfo = NULL;
+  const menu_info_t* minfo = NULL;
   int r,i;
   ASX_Parser_t* parser = asx_parser_new();
 
@@ -551,6 +552,7 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
 
   // How many space do we need to draw this ?
   menu_text_size(txt,w,vspace,warp,&need_w,&need_h);
+
   // Find the first line
   if(align & MENU_TEXT_VCENTER)
     sy = ymin + ((h - need_h)/2);
@@ -597,7 +599,6 @@ void menu_draw_text_full(mp_image_t* mpi,char* txt,
       txt++;
       continue;
     }
-
 
     // Get the length and end of this line
     char* txt1=txt;

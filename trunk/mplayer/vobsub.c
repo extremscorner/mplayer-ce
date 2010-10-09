@@ -39,7 +39,6 @@
 #include "unrar_exec.h"
 #include "libavutil/common.h"
 
-extern int vobsub_id;
 // Record the original -vobsubid set by commandline, since vobsub_id will be
 // overridden if slang match any of vobsub streams.
 static int vobsubid = -2;
@@ -882,7 +881,7 @@ int vobsub_parse_ifo(void* this, const char *const name, unsigned int *palette,
                      unsigned int *width, unsigned int *height, int force,
                      int sid, char *langid)
 {
-    vobsub_t *vob = (vobsub_t*)this;
+    vobsub_t *vob = this;
     int res = -1;
     rar_stream_t *fd = rar_open(name, "rb");
     if (fd == NULL) {
@@ -1074,7 +1073,7 @@ void *vobsub_open(const char *const name, const char *const ifo,
 
 void vobsub_close(void *this)
 {
-    vobsub_t *vob = (vobsub_t *)this;
+    vobsub_t *vob = this;
     if (vob->spu_streams) {
         while (vob->spu_streams_size--)
             packet_queue_destroy(vob->spu_streams + vob->spu_streams_size);
@@ -1085,13 +1084,13 @@ void vobsub_close(void *this)
 
 unsigned int vobsub_get_indexes_count(void *vobhandle)
 {
-    vobsub_t *vob = (vobsub_t *) vobhandle;
+    vobsub_t *vob = vobhandle;
     return vob->spu_valid_streams_size;
 }
 
 char *vobsub_get_id(void *vobhandle, unsigned int index)
 {
-    vobsub_t *vob = (vobsub_t *) vobhandle;
+    vobsub_t *vob = vobhandle;
     return (index < vob->spu_streams_size) ? vob->spu_streams[index].id : NULL;
 }
 
@@ -1127,7 +1126,7 @@ int vobsub_get_index_by_id(void *vobhandle, int id)
 int vobsub_set_from_lang(void *vobhandle, unsigned char * lang)
 {
     int i;
-    vobsub_t *vob= (vobsub_t *) vobhandle;
+    vobsub_t *vob= vobhandle;
     while (lang && strlen(lang) >= 2) {
         for (i = 0; i < vob->spu_streams_size; i++)
             if (vob->spu_streams[i].id)
@@ -1176,7 +1175,7 @@ static void vobsub_queue_reseek(packet_queue_t *queue, unsigned int pts100)
 
 int vobsub_get_packet(void *vobhandle, float pts, void** data, int* timestamp)
 {
-    vobsub_t *vob = (vobsub_t *)vobhandle;
+    vobsub_t *vob = vobhandle;
     unsigned int pts100 = 90000 * pts;
     if (vob->spu_streams && 0 <= vobsub_id && (unsigned) vobsub_id < vob->spu_streams_size) {
         packet_queue_t *queue = vob->spu_streams + vobsub_id;
@@ -1202,7 +1201,7 @@ int vobsub_get_packet(void *vobhandle, float pts, void** data, int* timestamp)
 
 int vobsub_get_next_packet(void *vobhandle, void** data, int* timestamp)
 {
-    vobsub_t *vob = (vobsub_t *)vobhandle;
+    vobsub_t *vob = vobhandle;
     if (vob->spu_streams && 0 <= vobsub_id && (unsigned) vobsub_id < vob->spu_streams_size) {
         packet_queue_t *queue = vob->spu_streams + vobsub_id;
         if (queue->current_index < queue->packets_size) {
@@ -1218,7 +1217,7 @@ int vobsub_get_next_packet(void *vobhandle, void** data, int* timestamp)
 
 void vobsub_seek(void * vobhandle, float pts)
 {
-    vobsub_t * vob = (vobsub_t *)vobhandle;
+    vobsub_t * vob = vobhandle;
     packet_queue_t * queue;
     int seek_pts100 = pts * 90000;
 
@@ -1234,7 +1233,7 @@ void vobsub_seek(void * vobhandle, float pts)
 
 void vobsub_reset(void *vobhandle)
 {
-    vobsub_t *vob = (vobsub_t *)vobhandle;
+    vobsub_t *vob = vobhandle;
     if (vob->spu_streams) {
         unsigned int n = vob->spu_streams_size;
         while (n-- > 0)
@@ -1323,7 +1322,7 @@ void *vobsub_out_open(const char *basename, const unsigned int *palette,
 
 void vobsub_out_close(void *me)
 {
-    vobsub_out_t *vob = (vobsub_out_t*)me;
+    vobsub_out_t *vob = me;
     if (vob->fidx)
         fclose(vob->fidx);
     if (vob->fsub)
@@ -1336,7 +1335,7 @@ void vobsub_out_output(void *me, const unsigned char *packet,
 {
     static double last_pts;
     static int last_pts_set = 0;
-    vobsub_out_t *vob = (vobsub_out_t*)me;
+    vobsub_out_t *vob = me;
     if (vob->fsub) {
         /*  Windows' Vobsub require that every packet is exactly 2kB long */
         unsigned char buffer[2048];

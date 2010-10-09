@@ -136,8 +136,8 @@ OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o
 OBJS-$(CONFIG_FRWU_DECODER)            += frwu.o
 OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
 OBJS-$(CONFIG_GIF_ENCODER)             += gif.o lzwenc.o
-OBJS-$(CONFIG_GSM_DECODER)             += gsmdec.o
-OBJS-$(CONFIG_GSM_MS_DECODER)          += gsmdec.o
+OBJS-$(CONFIG_GSM_DECODER)             += gsmdec.o gsmdec_data.o msgsmdec.o
+OBJS-$(CONFIG_GSM_MS_DECODER)          += gsmdec.o gsmdec_data.o msgsmdec.o
 OBJS-$(CONFIG_H261_DECODER)            += h261dec.o h261.o \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261.o             \
@@ -289,6 +289,7 @@ OBJS-$(CONFIG_QDRAW_DECODER)           += qdrw.o
 OBJS-$(CONFIG_QPEG_DECODER)            += qpeg.o
 OBJS-$(CONFIG_QTRLE_DECODER)           += qtrle.o
 OBJS-$(CONFIG_QTRLE_ENCODER)           += qtrleenc.o
+OBJS-$(CONFIG_R10K_DECODER)            += r210dec.o
 OBJS-$(CONFIG_R210_DECODER)            += r210dec.o
 OBJS-$(CONFIG_RA_144_DECODER)          += ra144dec.o ra144.o celp_filters.o
 OBJS-$(CONFIG_RA_144_ENCODER)          += ra144enc.o ra144.o celp_filters.o
@@ -475,6 +476,8 @@ OBJS-$(CONFIG_ADPCM_EA_R1_DECODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_R2_DECODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_R3_DECODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_EA_XAS_DECODER)       += adpcm.o
+OBJS-$(CONFIG_ADPCM_G722_DECODER)         += g722.o
+OBJS-$(CONFIG_ADPCM_G722_ENCODER)         += g722.o
 OBJS-$(CONFIG_ADPCM_G726_DECODER)         += g726.o
 OBJS-$(CONFIG_ADPCM_G726_ENCODER)         += g726.o
 OBJS-$(CONFIG_ADPCM_IMA_AMV_DECODER)      += adpcm.o
@@ -522,7 +525,7 @@ OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o flac.o \
                                           dirac.o mpeg12data.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
-OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o
+OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o xiph.o
 OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
                                           flacdec.o flacdata.o flac.o
 
@@ -634,7 +637,6 @@ SKIPHEADERS                            += mpegaudio3.h
 EXAMPLES = api
 
 TESTPROGS = cabac dct eval fft h264 iirfilter rangecoder snow
-TESTPROGS-$(ARCH_X86) += x86/cpuid
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 

@@ -575,6 +575,20 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, ByteIOContext *pb,
     return read;
 }
 
+/**
+ * Read a EBML length value.
+ * This needs special handling for the "unknown length" case which has multiple
+ * encodings.
+ */
+static int ebml_read_length(MatroskaDemuxContext *matroska, ByteIOContext *pb,
+                            uint64_t *number)
+{
+    int res = ebml_read_num(matroska, pb, 8, number);
+    if (res > 0 && *number + 1 == 1ULL << (7 * res))
+        *number = 0xffffffffffffffULL;
+    return res;
+}
+
 /*
  * Read the next element as an unsigned int.
  * 0 is success, < 0 is failure.
@@ -583,7 +597,7 @@ static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
 {
     int n = 0;
 
-    if (size < 1 || size > 8)
+    if (size > 8)
         return AVERROR_INVALIDDATA;
 
     /* big-endian ordering; build up number */
@@ -600,7 +614,9 @@ static int ebml_read_uint(ByteIOContext *pb, int size, uint64_t *num)
  */
 static int ebml_read_float(ByteIOContext *pb, int size, double *num)
 {
-    if (size == 4) {
+    if (size == 0) {
+        *num = 0;
+    } else if (size == 4) {
         *num= av_int2flt(get_be32(pb));
     } else if(size==8){
         *num= av_int2dbl(get_be64(pb));
@@ -780,7 +796,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
 
     if (syntax->type != EBML_PASS && syntax->type != EBML_STOP) {
         matroska->current_id = 0;
-        if ((res = ebml_read_num(matroska, pb, 8, &length)) < 0)
+        if ((res = ebml_read_length(matroska, pb, &length)) < 0)
             return res;
     }
 

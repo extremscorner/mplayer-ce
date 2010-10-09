@@ -85,6 +85,8 @@ OBJS-$(CONFIG_GIF_MUXER)                 += gif.o
 OBJS-$(CONFIG_GSM_DEMUXER)               += rawdec.o
 OBJS-$(CONFIG_GXF_DEMUXER)               += gxf.o
 OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o audiointerleave.o
+OBJS-$(CONFIG_G722_DEMUXER)              += rawdec.o
+OBJS-$(CONFIG_G722_MUXER)                += rawenc.o
 OBJS-$(CONFIG_H261_DEMUXER)              += h261dec.o rawdec.o
 OBJS-$(CONFIG_H261_MUXER)                += rawenc.o
 OBJS-$(CONFIG_H263_DEMUXER)              += h263dec.o rawdec.o
@@ -103,6 +105,7 @@ OBJS-$(CONFIG_ISS_DEMUXER)               += iss.o
 OBJS-$(CONFIG_IV8_DEMUXER)               += iv8.o
 OBJS-$(CONFIG_IVF_DEMUXER)               += ivfdec.o riff.o
 OBJS-$(CONFIG_LMLM4_DEMUXER)             += lmlm4.o
+OBJS-$(CONFIG_LXF_DEMUXER)               += lxfdec.o
 OBJS-$(CONFIG_M4V_DEMUXER)               += m4vdec.o rawdec.o
 OBJS-$(CONFIG_M4V_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)          += matroskadec.o matroska.o \
@@ -226,6 +229,7 @@ OBJS-$(CONFIG_RTP_MUXER)                 += rtp.o         \
                                             avc.o
 OBJS-$(CONFIG_RTSP_DEMUXER)              += rtsp.o httpauth.o
 OBJS-$(CONFIG_RTSP_MUXER)                += rtsp.o rtspenc.o httpauth.o
+OBJS-$(CONFIG_SAP_MUXER)                 += sapenc.o rtpenc_chain.o
 OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rdt.o         \
                                             rtp.o         \
@@ -237,9 +241,11 @@ OBJS-$(CONFIG_SDP_DEMUXER)               += rtsp.o        \
                                             rtpdec_latm.o \
                                             rtpdec_mpeg4.o \
                                             rtpdec_qdm2.o \
+                                            rtpdec_qt.o   \
                                             rtpdec_svq3.o \
                                             rtpdec_vp8.o  \
-                                            rtpdec_xiph.o
+                                            rtpdec_xiph.o \
+                                            rtpenc_chain.o
 OBJS-$(CONFIG_SEGAFILM_DEMUXER)          += segafilm.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += rawdec.o
 OBJS-$(CONFIG_SIFF_DEMUXER)              += siff.o
@@ -290,6 +296,7 @@ OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 # protocols I/O
 OBJS+= avio.o aviobuf.o
 
+OBJS-$(CONFIG_CONCAT_PROTOCOL)           += concat.o
 OBJS-$(CONFIG_FILE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_GOPHER_PROTOCOL)           += gopher.o
 OBJS-$(CONFIG_HTTP_PROTOCOL)             += http.o httpauth.o
@@ -306,7 +313,6 @@ OBJS-$(CONFIG_RTMP_PROTOCOL)             += $(RTMP-OBJS-yes)
 OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
-OBJS-$(CONFIG_CONCAT_PROTOCOL)           += concat.o
 
 # libavdevice dependencies
 OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o

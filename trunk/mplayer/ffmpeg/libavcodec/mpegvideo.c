@@ -511,7 +511,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
         return -1;
     }
 
-    if((s->width || s->height) && av_check_image_size(s->width, s->height, 0, s->avctx))
+    if((s->width || s->height) && av_image_check_size(s->width, s->height, 0, s->avctx))
         return -1;
 
     dsputil_init(&s->dsp, s->avctx);
@@ -1262,7 +1262,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                         av_log(s->avctx, AV_LOG_DEBUG, "?");
 
 
-                    if(IS_INTERLACED(mb_type) && s->codec_id == CODEC_ID_H264)
+                    if(IS_INTERLACED(mb_type))
                         av_log(s->avctx, AV_LOG_DEBUG, "=");
                     else
                         av_log(s->avctx, AV_LOG_DEBUG, " ");

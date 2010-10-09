@@ -841,7 +841,7 @@ static int open_s(stream_t *stream,int mode, void* opts, int* file_format) {
       }
       if (DVDUDFVolumeInfo(dvd, volid, sizeof(volid), NULL, 0) >= 0 || DVDISOVolumeInfo(dvd, volid, sizeof(volid), NULL, 0) >= 0)
         mp_msg(MSGT_IDENTIFY, MSGL_V, "ID_DVD_VOLUME_ID=%s\n", volid);
-    }  
+    }
 /**
  * Try to autodetect main title if title number not specified.
  */

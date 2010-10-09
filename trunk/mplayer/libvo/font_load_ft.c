@@ -47,7 +47,7 @@
 #include "font_load.h"
 #include "mp_msg.h"
 #include "help_mp.h"
-#include "mplayer.h"
+#include "mpcommon.h"
 #include "path.h"
 #include "osd_font.h"
 
@@ -202,8 +202,8 @@ static int check_font(font_desc_t *desc, float ppem, int padding, int pic_idx,
 	}
 	desc->glyph_index[unicode?character:code] = glyph_index;
     }
-//    fprintf(stderr, "font height: %lf\n", (double)(face->bbox.yMax-face->bbox.yMin)/(double)face->units_per_EM*ppem);
-//    fprintf(stderr, "font width: %lf\n", (double)(face->bbox.xMax-face->bbox.xMin)/(double)face->units_per_EM*ppem);
+//    fprintf(stderr, "font height: %f\n", (double)(face->bbox.yMax-face->bbox.yMin)/(double)face->units_per_EM*ppem);
+//    fprintf(stderr, "font width: %f\n", (double)(face->bbox.xMax-face->bbox.xMin)/(double)face->units_per_EM*ppem);
 
     ymax = (double)(face->bbox.yMax)/(double)face->units_per_EM*ppem+1;
     ymin = (double)(face->bbox.yMin)/(double)face->units_per_EM*ppem-1;
@@ -593,13 +593,13 @@ void render_one_glyph(font_desc_t *desc, int c)
 		desc->tables.omt, desc->tables.o_r, desc->tables.o_w,
 		desc->tables.o_size);
     }
-//    fprintf(stderr, "fg: outline t = %lf\n", GetTimer()-t);
+//    fprintf(stderr, "fg: outline t = %f\n", GetTimer()-t);
 
     if (desc->tables.g_r) {
 	blur(abuffer+off, desc->tables.tmp, width, height, stride,
 	     desc->tables.gt2, desc->tables.g_r,
 	     desc->tables.g_w);
-//	fprintf(stderr, "fg: blur t = %lf\n", GetTimer()-t);
+//	fprintf(stderr, "fg: blur t = %f\n", GetTimer()-t);
     }
 
     resample_alpha(abuffer+off, bbuffer+off, width, height, stride, font_factor);
@@ -638,9 +638,9 @@ static int prepare_font(font_desc_t *desc, FT_Face face, float ppem, int pic_idx
 //    ttime = GetTimer();
     err = check_font(desc, ppem, padding, pic_idx, charset_size, charset, charcodes, unicode);
 //    ttime=GetTimer()-ttime;
-//    printf("render:   %7lf us\n",ttime);
+//    printf("render:   %7f us\n",ttime);
     if (err) return -1;
-//    fprintf(stderr, "fg: render t = %lf\n", GetTimer()-t);
+//    fprintf(stderr, "fg: render t = %f\n", GetTimer()-t);
 
     desc->pic_a[pic_idx]->w = desc->pic_b[pic_idx]->w;
     desc->pic_a[pic_idx]->h = desc->pic_b[pic_idx]->h;
@@ -1036,7 +1036,7 @@ font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_widt
     goto err_out;
 #endif
 
-//    fprintf(stderr, "fg: prepare t = %lf\n", GetTimer()-t);
+//    fprintf(stderr, "fg: prepare t = %f\n", GetTimer()-t);
 
     err = prepare_font(desc, face, subtitle_font_ppem, desc->face_cnt-1,
 		       charset_size, my_charset, my_charcodes, unicode,
@@ -1046,6 +1046,7 @@ font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_widt
 	mp_msg(MSGT_OSD, MSGL_ERR, MSGTR_LIBVO_FONT_LOAD_FT_CannotPrepareSubtitleFont);
 	goto err_out;
     }
+
 gen_osd:
 
     /* generate the OSD font */
@@ -1063,6 +1064,7 @@ gen_osd:
 	mp_msg(MSGT_OSD, MSGL_ERR, MSGTR_LIBVO_FONT_LOAD_FT_CannotPrepareOSDFont);
 	goto err_out;
     }
+
     err = generate_tables(desc, subtitle_font_thickness, subtitle_font_radius);
 
     if (err) {
@@ -1138,7 +1140,6 @@ void ReInitTTFLib()
 }
 void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_name, float font_scale_factor)
 {
-//printf("load_font_ft(%s) w: %i  h: %i  sc: %f\n",font_name,width, height,font_scale_factor);
 #ifdef CONFIG_FONTCONFIG
     FcPattern *fc_pattern;
     FcPattern *fc_pattern2;
@@ -1153,6 +1154,7 @@ void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_n
 
     // protection against vo_aa font hacks
     if (vo_font && !vo_font->dynamic) return;
+
     if (vo_font) free_font_desc(vo_font);
 
 #ifdef CONFIG_FONTCONFIG
@@ -1187,8 +1189,5 @@ void load_font_ft(int width, int height, font_desc_t** fontp, const char *font_n
         mp_msg(MSGT_OSD, MSGL_ERR, MSGTR_LIBVO_FONT_LOAD_FT_FontconfigNoMatch);
     }
 #endif
-	{
     *fontp=read_font_desc_ft(font_name, 0, width, height, font_scale_factor);
-    }    
-//  printf("load_font_ft end\n");  
 }

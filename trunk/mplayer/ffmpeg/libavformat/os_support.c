@@ -216,7 +216,6 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
         } else
     #endif
             snprintf(serv, servlen, "%d", ntohs(sin->sin_port));
-            
     }
 
     return 0;

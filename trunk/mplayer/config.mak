@@ -18,21 +18,19 @@ LIBDIR  = $(DESTDIR)/tmp/mplayerhaxx/lib
 MANDIR  = $(DESTDIR)/tmp/mplayerhaxx/share/man
 CONFDIR = $(DESTDIR)/tmp/mplayerhaxx/etc/mplayer
 
-AR      = $(DEVKITPPC)/bin/powerpc-eabipaired-ar
-AS      = $(DEVKITPPC)/bin/powerpc-eabipaired-as
-CC      = $(DEVKITPPC)/bin/powerpc-eabipaired-gcc
-CXX     = $(DEVKITPPC)/bin/powerpc-eabipaired-g++
+AR      = $(DEVKITPPC)/bin/powerpc-eabi-ar
+AS      = $(DEVKITPPC)/bin/powerpc-eabi-as
+CC      = $(DEVKITPPC)/bin/powerpc-eabi-gcc
+CXX     = $(DEVKITPPC)/bin/powerpc-eabi-g++
 HOST_CC = gcc
 INSTALL = install
 INSTALLSTRIP = -s
 WINDRES = windres
-OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabipaired-objcopy
+OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-CFLAGS   = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mdouble-float -mpaired -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I.  -D_REENTRANT
-ASFLAGS  = $(CFLAGS)
-CXXFLAGS = -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include  -MD -MP -Wstrict-prototypes -Wmissing-prototypes -Wundef -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99 -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -g -O3 -pipe -DGEKKO -mrvl -mcpu=750 -mtune=750 -meabi -mhard-float -mdouble-float -mpaired -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I.  -D_REENTRANT
-CC_DEPFLAGS = -MMD -MF $(@:.o=.d) -MT $@
-AS_DEPFLAGS = -MMD -MF $(@:.o=.d) -MT $@
+CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
+CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
+CC_DEPFLAGS = -MD -MP -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math
 
 CFLAGS_DHAHELPER         = 
 CFLAGS_FAAD_FIXED        = 
@@ -44,7 +42,7 @@ CFLAGS_STACKREALIGN      =
 CFLAGS_SVGALIB_HELPER    = 
 CFLAGS_TREMOR_LOW        = 
 
-EXTRALIBS          = -Wl,-z,noexecstack  -g -mrvl -ffast-math   -lfreetype -liconv -lfribidi -lz -laesnd -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii  -lm
+EXTRALIBS          = -Wl,-z,noexecstack  -mrvl -ffast-math   -lfreetype -liconv -lfribidi -lz -laesnd -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii  -lm
 EXTRALIBS_MPLAYER  = -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
 
@@ -52,8 +50,8 @@ GETCH = getch2-gekko.c
 HELP_FILE = help/help_mp-en.h
 TIMER = timer-gekko.c
 
-EXESUF      =  .elf
-EXESUFS_ALL = .elf
+EXESUF      = .elf
+EXESUFS_ALL = .dol .elf
 
 ARCH = ppc
 ARCH_PPC = yes
@@ -239,37 +237,23 @@ YUV4MPEG = no
 ZR = no
 
 # FFmpeg
-LIBAVUTIL      = yes
-LIBAVUTIL_A    = yes
-LIBAVUTIL_SO   = auto
-LIBAVCODEC     = yes
-LIBAVCODEC_A   = yes
-LIBAVCODEC_SO  = auto
-LIBAVCORE      = yes
-LIBAVCORE_A    = yes
-LIBAVCORE_SO   = 
-LIBAVFORMAT    = yes
-LIBAVFORMAT_A  = yes
-LIBAVFORMAT_SO = auto
-LIBPOSTPROC    = yes
-LIBPOSTPROC_A  = yes
-LIBPOSTPROC_SO = auto
-LIBSWSCALE     = yes
-LIBSWSCALE_A   = yes
-LIBSWSCALE_SO  = auto
+FFMPEG     = yes
+FFMPEG_A   = yes
 
+ASFLAGS    = $(CFLAGS)
+AS_DEPFLAGS= -MD -MP -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math
 HOSTCC     = $(HOST_CC)
 HOSTCFLAGS = -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112 -O3
 HOSTLIBS   = -lm
 CC_O       = -o $@
-LD         = $(DEVKITPPC)/bin/powerpc-eabipaired-ld
-RANLIB     = $(DEVKITPPC)/bin/powerpc-eabipaired-ranlib
-YASM       = 
-YASMDEP    = 
+LD         = $(DEVKITPPC)/bin/powerpc-eabi-ld
+RANLIB     = true
+YASM       = yasm
+YASMDEP    = yasm
 YASMFLAGS  = 
 
 CONFIG_STATIC = yes
-SRC_PATH      = ..
+SRC_PATH      = ../../
 BUILD_ROOT    = ..
 LIBPREF       = lib
 LIBSUF        = .a
@@ -400,6 +384,7 @@ CONFIG_PTX_DECODER=yes
 CONFIG_QDRAW_DECODER=yes
 CONFIG_QPEG_DECODER=yes
 CONFIG_QTRLE_DECODER=yes
+CONFIG_R10K_DECODER=yes
 CONFIG_R210_DECODER=yes
 CONFIG_RAWVIDEO_DECODER=yes
 CONFIG_RL2_DECODER=yes
@@ -512,6 +497,7 @@ CONFIG_PCM_F32BE_DECODER=yes
 CONFIG_PCM_F32LE_DECODER=yes
 CONFIG_PCM_F64BE_DECODER=yes
 CONFIG_PCM_F64LE_DECODER=yes
+CONFIG_PCM_LXF_DECODER=yes
 CONFIG_PCM_MULAW_DECODER=yes
 CONFIG_PCM_S8_DECODER=yes
 CONFIG_PCM_S16BE_DECODER=yes
@@ -543,6 +529,7 @@ CONFIG_ADPCM_EA_R1_DECODER=yes
 CONFIG_ADPCM_EA_R2_DECODER=yes
 CONFIG_ADPCM_EA_R3_DECODER=yes
 CONFIG_ADPCM_EA_XAS_DECODER=yes
+CONFIG_ADPCM_G722_DECODER=yes
 CONFIG_ADPCM_G726_DECODER=yes
 CONFIG_ADPCM_IMA_AMV_DECODER=yes
 CONFIG_ADPCM_IMA_DK3_DECODER=yes
@@ -566,6 +553,8 @@ CONFIG_DVBSUB_DECODER=yes
 CONFIG_DVDSUB_DECODER=yes
 CONFIG_PGSSUB_DECODER=yes
 CONFIG_XSUB_DECODER=yes
+CONFIG_A64MULTI_ENCODER=no
+CONFIG_A64MULTI5_ENCODER=no
 CONFIG_ASV1_ENCODER=no
 CONFIG_ASV2_ENCODER=no
 CONFIG_BMP_ENCODER=no
@@ -611,8 +600,6 @@ CONFIG_WMV1_ENCODER=no
 CONFIG_WMV2_ENCODER=no
 CONFIG_ZLIB_ENCODER=no
 CONFIG_ZMBV_ENCODER=no
-CONFIG_A64MULTI_ENCODER=no
-CONFIG_A64MULTI5_ENCODER=no
 CONFIG_AC3_ENCODER=no
 CONFIG_ALAC_ENCODER=no
 CONFIG_FLAC_ENCODER=no
@@ -648,6 +635,7 @@ CONFIG_PCM_U32LE_ENCODER=no
 CONFIG_PCM_ZORK_ENCODER=no
 CONFIG_ROQ_DPCM_ENCODER=no
 CONFIG_ADPCM_ADX_ENCODER=no
+CONFIG_ADPCM_G722_ENCODER=no
 CONFIG_ADPCM_G726_ENCODER=no
 CONFIG_ADPCM_IMA_QT_ENCODER=no
 CONFIG_ADPCM_IMA_WAV_ENCODER=no
@@ -714,6 +702,7 @@ CONFIG_FLAC_DEMUXER=yes
 CONFIG_FLIC_DEMUXER=yes
 CONFIG_FLV_DEMUXER=yes
 CONFIG_FOURXM_DEMUXER=yes
+CONFIG_G722_DEMUXER=yes
 CONFIG_GSM_DEMUXER=yes
 CONFIG_GXF_DEMUXER=yes
 CONFIG_H261_DEMUXER=yes
@@ -729,6 +718,7 @@ CONFIG_ISS_DEMUXER=yes
 CONFIG_IV8_DEMUXER=yes
 CONFIG_IVF_DEMUXER=yes
 CONFIG_LMLM4_DEMUXER=yes
+CONFIG_LXF_DEMUXER=yes
 CONFIG_M4V_DEMUXER=yes
 CONFIG_MATROSKA_DEMUXER=yes
 CONFIG_MJPEG_DEMUXER=yes
@@ -839,6 +829,7 @@ CONFIG_FLAC_MUXER=no
 CONFIG_FLV_MUXER=no
 CONFIG_FRAMECRC_MUXER=no
 CONFIG_FRAMEMD5_MUXER=no
+CONFIG_G722_MUXER=no
 CONFIG_GIF_MUXER=no
 CONFIG_GXF_MUXER=no
 CONFIG_H261_MUXER=no
@@ -909,21 +900,21 @@ CONFIG_VOC_MUXER=no
 CONFIG_WAV_MUXER=no
 CONFIG_WEBM_MUXER=no
 CONFIG_YUV4MPEGPIPE_MUXER=no
-CONFIG_CONCAT_PROTOCOL=no
-CONFIG_FILE_PROTOCOL=no
-CONFIG_GOPHER_PROTOCOL=no
-CONFIG_HTTP_PROTOCOL=no
-CONFIG_MMSH_PROTOCOL=no
-CONFIG_MMST_PROTOCOL=no
-CONFIG_MD5_PROTOCOL=no
-CONFIG_PIPE_PROTOCOL=no
-CONFIG_RTMP_PROTOCOL=no
-CONFIG_RTMPT_PROTOCOL=no
-CONFIG_RTMPE_PROTOCOL=no
-CONFIG_RTMPTE_PROTOCOL=no
-CONFIG_RTMPS_PROTOCOL=no
+CONFIG_CONCAT_PROTOCOL=yes
+CONFIG_FILE_PROTOCOL=yes
+CONFIG_GOPHER_PROTOCOL=yes
+CONFIG_HTTP_PROTOCOL=yes
+CONFIG_MMSH_PROTOCOL=yes
+CONFIG_MMST_PROTOCOL=yes
+CONFIG_MD5_PROTOCOL=yes
+CONFIG_PIPE_PROTOCOL=yes
+CONFIG_RTMP_PROTOCOL=yes
+CONFIG_RTMPT_PROTOCOL=yes
+CONFIG_RTMPE_PROTOCOL=yes
+CONFIG_RTMPTE_PROTOCOL=yes
+CONFIG_RTMPS_PROTOCOL=yes
 CONFIG_RTP_PROTOCOL=no
-CONFIG_TCP_PROTOCOL=no
+CONFIG_TCP_PROTOCOL=yes
 CONFIG_UDP_PROTOCOL=no
 CONFIG_AAC_ADTSTOASC_BSF=yes
 CONFIG_CHOMP_BSF=yes

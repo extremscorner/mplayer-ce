@@ -105,7 +105,14 @@ void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 
 /* 1/2^n downscaling functions from imgconvert.c */
+#if LIBAVCODEC_VERSION_MAJOR < 53
+/**
+ * @deprecated Use av_image_copy_plane() instead.
+ */
+attribute_deprecated
 void ff_img_copy_plane(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+#endif
+
 void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink88(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
@@ -603,10 +610,6 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
  */
 #define emms_c()
 
-/* should be defined by architectures supporting
-   one or more MultiMedia extension */
-int mm_support(void);
-
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
@@ -649,10 +652,6 @@ static inline void emms(void)
 #elif HAVE_MMI
 
 #define STRIDE_ALIGN 16
-
-#else
-
-#define mm_support() 0
 
 #endif
 

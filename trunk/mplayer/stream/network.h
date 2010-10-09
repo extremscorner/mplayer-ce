@@ -40,15 +40,17 @@
 
 #if defined(GEKKO)
 #include <network.h>
-#define send(a, b, c, d) net_send(a, b, c, d)
-#define recv(a, b, c, d) net_recv(a, b, c, d)
-#define select(a, b, c, d, e) net_select(a, b, c, d, e)
-#define socket(a, b, c) net_socket(a, b, c)
-#define gethostbyname(a) net_gethostbyname(a)
-#define closesocket(a) net_close(a)
-#define setsockopt(a, b, c, d, e) net_setsockopt(a, b, c, d, e)
-#define bind(a, b, c) net_bind(a, b, c)
-#define connect(a, b, c) net_connect(a, b, c)
+#define send net_send
+#define sendto net_sendto
+#define recv net_recv
+#define recvfrom net_recvfrom
+#define select net_select
+#define socket net_socket
+#define gethostbyname net_gethostbyname
+#define closesocket net_close
+#define setsockopt net_setsockopt
+#define bind net_bind
+#define connect net_connect
 #endif
 
 #include "stream.h"
@@ -74,6 +76,8 @@ typedef struct {
 	const char *mime_type;
 	int demuxer_type;
 } mime_struct_t;
+
+extern const mime_struct_t mime_type_table[];
 
 extern char *cookies_file;
 extern char *network_password;

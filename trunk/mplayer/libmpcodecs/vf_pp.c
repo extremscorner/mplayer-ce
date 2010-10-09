@@ -30,13 +30,14 @@
 #include <malloc.h>
 #endif
 
+#include "dec_video.h"
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
 #include "libavutil/internal.h"
 #include "libpostproc/postprocess.h"
 
-#ifdef CONFIG_LIBPOSTPROC_A
+#ifdef CONFIG_FFMPEG_A
 #define EMU_OLD
 #include "libpostproc/postprocess_internal.h"
 #endif
@@ -156,8 +157,6 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 }
 
 //===========================================================================//
-
-extern int divx_quality;
 
 static const unsigned int fmt_list[]={
     IMGFMT_YV12,
