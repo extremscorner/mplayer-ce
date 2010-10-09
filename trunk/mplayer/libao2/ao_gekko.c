@@ -39,6 +39,7 @@
 #include "osdep/plat_gekko.h"
 #include "osdep/ave-rvl.h"
 #include "osdep/wiilight.h"
+#include "osdep/mem2.h"
 
 
 #define BUFFER_SIZE 8192
@@ -47,8 +48,8 @@
 #define HW_CHANNELS 2
 
 #define PAN_CENTER 0.7071067811865475		// sqrt(1/2)
-#define PAN_SIDE 0.816496580927726			// sqrt(2/3)
-#define PAN_SIDE_INV 0.5773502691896258		// sqrt(1/3)
+#define PAN_SIDE 0.871779788708134			// sqrt(19/25)
+#define PAN_SIDE_INV 0.4898979485566356		// sqrt(6/25)
 
 #define PHASE_SHF 0.25						// "90 degrees"
 #define PHASE_SHF_INV 0.75
@@ -63,7 +64,7 @@ static const ao_info_t info = {
 
 LIBAO_EXTERN(gekko)
 
-static u8 buffers[BUFFER_COUNT][BUFFER_SIZE] ATTRIBUTE_ALIGN(32);
+static u8 *buffers[BUFFER_COUNT];
 static u8 buffer_fill = 0;
 static u8 buffer_play = 0;
 static int buffered = 0;
@@ -77,6 +78,7 @@ static bool playing = false;
 static s32 snd_mode = CONF_SOUND_STEREO;
 static s32 led_mode = CONF_LED_OFF;
 
+static st_mem2_area *ao_area = NULL;
 static ao_control_vol_t volume = { 0x8E, 0x8E };
 
 
@@ -139,7 +141,7 @@ static int init(int rate, int channels, int format, int flags)
 	AUDIO_SetDSPSampleRate(quality ? AI_SAMPLERATE_48KHZ : AI_SAMPLERATE_32KHZ);
 	AUDIO_RegisterDMACallback(switch_buffers);
 	
-	ao_data.channels = clamp(channels, (rate < 32000) ? 2 : 1, 6);
+	ao_data.channels = clamp(channels, 2, 6);
 	
 	request_mult = (float)ao_data.channels / HW_CHANNELS;
 	request_size = BUFFER_SIZE * request_mult;
@@ -150,8 +152,11 @@ static int init(int rate, int channels, int format, int flags)
 	ao_data.buffersize = request_size * BUFFER_COUNT;
 	ao_data.outburst = request_size;
 	
+	ao_area = mem2_area_alloc(BUFFER_SIZE * BUFFER_COUNT);
+	
 	for (int counter = 0; counter < BUFFER_COUNT; counter++)
 	{
+		buffers[counter] = (u8 *)__lwp_heap_allocate(&ao_area->heap, BUFFER_SIZE);
 		memset(buffers[counter], 0x00, BUFFER_SIZE);
 		DCFlushRange(buffers[counter], BUFFER_SIZE);
 	}
@@ -197,6 +202,7 @@ static void uninit(int immed)
 {
 	AUDIO_StopDMA();
 	AUDIO_RegisterDMACallback(NULL);
+	mem2_area_free(ao_area);
 	
 	if (led_mode > 0)
 		WIILIGHT_TurnOff();

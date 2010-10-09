@@ -258,6 +258,7 @@ char MPLAYER_LIBDIR[100];
 
 
 /* Audio output drivers */
+#define CONFIG_AESND 1
 #undef CONFIG_ALSA
 #undef CONFIG_ALSA1X
 #undef CONFIG_ALSA5
