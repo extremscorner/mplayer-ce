@@ -65,8 +65,6 @@ MPlayer Wii port
 #undef abort
 
 
-#define MPCE_VERSION "0.77"
-
 //#define DEBUG_INIT
 
 #ifdef DEBUG_INIT
@@ -78,7 +76,6 @@ MPlayer Wii port
 
 
 extern char appPath[1024];
-extern int stream_cache_size;
 extern int enable_restore_points;
 
 static off_t get_filesize(char *FileName)
@@ -276,8 +273,6 @@ static void * watchdogthreadfunc (void *arg)
 	}
 	return NULL;
 }
-
-#include "osdep/mem2_manager.h"
 
 
 bool playing_usb = false;
@@ -763,7 +758,6 @@ static int LoadParams()
 	m_config_t *comp_conf;
 	m_option_t comp_opts[] =
 	{
-		{	"cache", &stream_cache_size, CONF_TYPE_INT, CONF_RANGE, 32, 1048576, NULL},	 
 	    {   "restore_points", &enable_restore_points, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "watchdog", &enable_watchdog, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
@@ -886,83 +880,42 @@ extern bool have_ahbprot;
 
 void plat_init (int *argc, char **argv[])
 {
-	mpviSetup(0, true);
-	log_console_init(vmode, 0);
-
-	printf("\x1b[37mLoading \x1b[32mMPlayer CE v%s %s ... \x1b[39;0m\n\n\n", MPCE_VERSION, BUILD_DATE);
-	
 	if ((IOS_GetVersion() != 202) && FindIOS(202))
-	{
-		printf(" Found cIOS 202, reloading.\n");
 		IOS_ReloadIOS(202);
-	}
-	else
-	{
+	else {
 		have_ahbprot = (__di_check_ahbprot() == TRUE);
 		
 		if ((IOS_GetVersion() != 58) && FindIOS(58) && !have_ahbprot)
-		{
-			printf(" Found IOS 58, reloading.\n");
 			IOS_ReloadIOS(58);
-		}
 	}
 	
-	s32 ios_version = IOS_GetVersion();
-	if (ios_version < 0) ios_version = 0;
-	s32 ios_revision = IOS_GetRevision();
-	if (ios_revision < 0) ios_revision = 0;
-	
-	printf(" Using IOS %i v%i (%i.%i)\n", ios_version, ios_revision, (ios_revision >> 8) & 0xFF, ios_revision & 0xFF);
-	
-	bool badstuff = (ios_version == 202);
-	printf(" Enabling DVD access... ");
-	
-	if (WIIDVD_Init(!badstuff) || have_ahbprot)
-		printf("\x1b[32;1mSUCCESS.");
-	else
-		printf("\x1b[31;1mFAILED!");
-	
-	printf("\x1b[39;0m\n");
+	bool badstuff = (IOS_GetVersion() == 202);
+	WIIDVD_Init(!badstuff);
 	USB2Enable(false);
-
-	if (badstuff)
-	{
-		if (mload_init())
-		{
-			printf(" Loading EHCI module... ");
-			
-			if(load_ehci_module())
-			{
-				USB2Enable(true);
-				printf("\x1b[32;1mSUCCESS.");
-			}
-			else
-				printf("\x1b[31;1mFAILED!");
-			
-			printf("\x1b[39;0m\n");
-		}
-	}
 	
-	printf("\n");
-
-	if (!DetectValidPath())
-	{
+	if (badstuff)
+		if (mload_init())
+			if (load_ehci_module())
+				USB2Enable(true);
+	
+	mpviSetup(0, true);
+	log_console_init(vmode, 0);
+	
+	if (!DetectValidPath()) {
 		printf("\nSD/USB access failed\n");
 		printf("Please check that you have installed MPlayer CE in the right folder\n");
 		printf("Valid folders:\n");
 		printf(" sd:/apps/mplayer-ce\n sd:/mplayer\n usb:/apps/mplayer-ce\n usb:/mplayer\n");
 				
 		VIDEO_WaitVSync();
-		sleep(6);
+		sleep(10);
+		mpviClear();
 		if (!hbc_stub()) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 		exit(0);
 	}
 	
-	SYS_SetPowerCallback (power_cb);
-	SYS_SetResetCallback (reset_cb);
-
-	stream_cache_size=8*1024; //default cache size (8MB)
-	printf(" Reading configuration.\n");
+	SYS_SetPowerCallback(power_cb);
+	SYS_SetResetCallback(reset_cb);
 	
 	LoadParams();
 	read_net_config();
@@ -982,21 +935,13 @@ void plat_init (int *argc, char **argv[])
 		VIDEO_WaitVSync();
 		sleep(10);
 	}
-	else 
-	{
-		printf(" Creating network thread.\n");
-		LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
-
-		//InitNetworkThreads();
-	}
+	else LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
 
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
 	setenv("DVDCSS_VERBOSE", "0", 1);
 	setenv("DVDREAD_VERBOSE", "0", 1);
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
-
-	printf(" Set environment variables.\n\t\x1b[37m%s\x1b[39;0m\n", MPLAYER_DATADIR);
 
 	if(*argc<3)
 	{
@@ -1031,20 +976,10 @@ void plat_init (int *argc, char **argv[])
 	}
 
 	if(enable_watchdog)
-	{
-		printf(" Watchdog thread enabled.\n");
 		LWP_MutexInit(&watchdogmutex, false);
-	}
+	
 	LWP_CreateThread(&watchdogthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
-
-	printf(" Starting mount thread.\n");
 	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
-
-
-	// only used for cache_mem at now  (stream_cache_size + 8kb(paranoid)
-	u32 uppermem = (stream_cache_size * 1024) + (8 * 1024);
-	printf(" Allocating upper memory.\n\t\x1b[37m%u bytes\x1b[39;0m\n", uppermem);
-	InitMem2Manager(uppermem);
 	
 	VIDEO_WaitVSync();
 	

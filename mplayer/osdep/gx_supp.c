@@ -39,7 +39,7 @@
 
 #include "gx_supp.h"
 #include "ave-rvl.h"
-#include "mem2_manager.h"
+#include "mem2.h"
 #include "libvo/video_out.h"
 
 
@@ -50,6 +50,8 @@
 
 
 /*** 2D ***/
+static st_mem2_area *vi_area = NULL;
+
 static u32 whichfb;
 static u32 *xfb[2];
 GXRModeObj *vmode = NULL;
@@ -62,7 +64,7 @@ static u8 *gp_fifo;
 static bool flip_ready, wait_ready;
 
 /*** Texture memory ***/
-static heap_cntrl heap_ctrl;
+static st_mem2_area *gx_area = NULL;
 
 static u8 *Ytexture = NULL;
 static u8 *Utexture = NULL;
@@ -104,8 +106,7 @@ void mpviSetup(int video_mode, bool overscan)
 {
 	VIDEO_Init();
 	
-	switch(video_mode)
-	{
+	switch(video_mode) {
 		case 1:		// NTSC (480i)
 			vmode = &TVNtsc480IntDf;
 			break;
@@ -131,37 +132,29 @@ void mpviSetup(int video_mode, bool overscan)
 	float scanwidth = wide_mode == CONF_ASPECT_16_9 ? 0.95 : 0.93;
 	float scanheight = !is_pal ? 0.95 : 0.94;
 	
-	if (overscan)
-	{
+	if (overscan) {
 		vmode->viHeight = videoheight * scanheight;
 		vmode->viHeight += vmode->viHeight % 2;
-	}
-	else
-		vmode->viHeight = videoheight;
+	} else vmode->viHeight = videoheight;
 	
 	vmode->xfbHeight = vmode->viHeight;
 	vmode->efbHeight = MIN(vmode->xfbHeight, 528);
 	
 	if (wide_mode == CONF_ASPECT_16_9)
 		screenwidth = ((float)screenheight / 9) * 16;
-	else
-		screenwidth = ((float)screenheight / 3) * 4;
+	else screenwidth = ((float)screenheight / 3) * 4;
 	
-	if (overscan)
-	{
+	if (overscan) {
 		vmode->viWidth = videowidth * scanwidth;
 		vmode->viWidth = ceil((float)vmode->viWidth / 16) * 16;
-	}
-	else
-		vmode->viWidth = videowidth;
+	} else vmode->viWidth = videowidth;
 	
 	vmode->fbWidth = vmode->viWidth;
 	
 	vmode->viXOrigin = (videowidth - vmode->viWidth) / 2;
 	vmode->viYOrigin = (videoheight - vmode->viHeight) / 2;
 	
-	if (overscan)
-	{
+	if (overscan) {
 		s8 hor_offset = 0;
 		
 		if (CONF_GetDisplayOffsetH(&hor_offset) > 0)
@@ -169,12 +162,16 @@ void mpviSetup(int video_mode, bool overscan)
 	}
 	
 	VIDEO_Configure(vmode);
-	u32 xfbsize = (VI_MAX_WIDTH_PAL * VI_DISPLAY_PIX_SZ) * (VI_MAX_HEIGHT_PAL + 4);
 	
-	if (xfb[0] == NULL)
-		xfb[0] = (u32 *)MEM_K0_TO_K1(memalign(32, xfbsize));
-	if (xfb[1] == NULL)
-		xfb[1] = (u32 *)MEM_K0_TO_K1(memalign(32, xfbsize));
+	if (vi_area == NULL) {
+		u32 xfbsize = (VI_MAX_WIDTH_PAL * VI_DISPLAY_PIX_SZ) * (VI_MAX_HEIGHT_PAL + 4);
+		vi_area = mem2_area_alloc(xfbsize * 2);
+		
+		if (xfb[0] == NULL)
+			xfb[0] = (u32 *)MEM_K0_TO_K1(__lwp_heap_allocate(&vi_area->heap, xfbsize));
+		if (xfb[1] == NULL)
+			xfb[1] = (u32 *)MEM_K0_TO_K1(__lwp_heap_allocate(&vi_area->heap, xfbsize));
+	}
 	
 	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
@@ -204,33 +201,23 @@ void mpviClear()
 	
 	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
-	
-	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
-	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
 }
 
 
 static void render_cb(void)
 {
-	if (vo_vsync)
-	{
-		flip_ready = true;
-	}
-	else
-	{
+	if (!vo_vsync) {
 		whichfb ^= 1;
 		VIDEO_Flush();
-	}
+	} else flip_ready = true;
 	
 	wait_ready = false;
 }
 
 static void vsync_cb(void)
 {
-	if (vo_vsync)
-	{
-		if (flip_ready)
-		{
+	if (vo_vsync) {
+		if (flip_ready) {
 			whichfb ^= 1;
 			VIDEO_Flush();
 			flip_ready = false;
@@ -453,40 +440,15 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 	
 	UVtexsize = UVwidth * UVheight;
 	
-	static void *heap_start = NULL;
-	static u32 heap_size = 0;
+	u32 heapsize = Ytexsize + (UVtexsize * 2);
 	
-	u32 heap_new = Ytexsize + (UVtexsize * 2);
-	heap_new += ((heap_new / 32) * HEAP_BLOCK_USED_OVERHEAD) + HEAP_MIN_SIZE;	
+	if (gx_area == NULL) gx_area = mem2_area_alloc(heapsize);
+	else mem2_area_realloc(gx_area, heapsize);
 	
-	if (heap_new > heap_size)
-	{
-		u32 level;
-		_CPU_ISR_Disable(level);
-		
-		if (heap_start == NULL)
-			heap_start = (u32)SYS_GetArena2Hi() - heap_new;
-		else
-			heap_start = ((u32)heap_start + heap_size) - heap_new;
-		
-		SYS_SetArena2Hi(heap_start);
-		_CPU_ISR_Restore(level);
-		
-		__lwp_heap_init(&heap_ctrl, heap_start, heap_new, 32);
-		heap_size = heap_new;
-	}
-	else
-	{
-		mem2_free(MEM_K1_TO_K0(Vtexture), true, &heap_ctrl);
-		mem2_free(MEM_K1_TO_K0(Utexture), true, &heap_ctrl);
-		mem2_free(MEM_K1_TO_K0(Ytexture), true, &heap_ctrl);
-	}
+	Ytexture = (u8 *)MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, Ytexsize));
+	Utexture = (u8 *)MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
+	Vtexture = (u8 *)MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
 	
-	Ytexture = (u8 *)MEM_K0_TO_K1(mem2_align(32, Ytexsize, &heap_ctrl));
-	Utexture = (u8 *)MEM_K0_TO_K1(mem2_align(32, UVtexsize, &heap_ctrl));
-	Vtexture = (u8 *)MEM_K0_TO_K1(mem2_align(32, UVtexsize, &heap_ctrl));
-	
-	// Dodging nasty optimizations.
 	f32 YtexcoordS = (double)luma_width / (double)Ywidth;
 	f32 UVtexcoordS = (double)chroma_width / (double)UVwidth;
 	
@@ -544,12 +506,10 @@ void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 	
 	// Copy strides into 8x4 tiles.
 	// Luminance (Y) plane.
-	while (rows--)
-	{
+	while (rows--) {
 		int tiles = Ywidth / 8;
 		
-		while (tiles--)
-		{
+		while (tiles--) {
 			*++Ydst = *++Ysrc1;
 			*++Ydst = *++Ysrc2;
 			*++Ydst = *++Ysrc3;
@@ -565,12 +525,10 @@ void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 	rows = UVheight / 4;
 	
 	// Chrominance (U&V) planes.
-	while (rows--)
-	{
+	while (rows--) {
 		int tiles = UVwidth / 8;
 		
-		while (tiles--)
-		{
+		while (tiles--) {
 			*++Udst = *++Usrc1;
 			*++Udst = *++Usrc2;
 			*++Udst = *++Usrc3;
@@ -604,12 +562,9 @@ void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char
 	u8 *Ycached = MEM_K1_TO_K0(Ytexture);
 	DCInvalidateRange(Ycached, Ytexsize);
 	
-	for (int y = 0; y < h; y++)
-	{
-		for (int x = 0; x < w; x++)
-		{
-			if (*Asrc)
-			{
+	for (int y = 0; y < h; y++) {
+		for (int x = 0; x < w; x++) {
+			if (*Asrc) {
 				int dxs = x + x0;
 				int dys = y + y0;
 				
@@ -646,8 +601,7 @@ void mpgxPushFrame()
 	u16 efb_drawpt = ceil((float)xfb_copypt / 16) * 16;
 	int difference = efb_drawpt - xfb_copypt;
 	
-	for (int dxs = 0; dxs < 2; dxs++)
-	{
+	for (int dxs = 0; dxs < 2; dxs++) {
 		u16 efb_offset = (xfb_copypt - difference) * dxs;
 		
 		GX_SetScissorBoxOffset(efb_offset, 0);

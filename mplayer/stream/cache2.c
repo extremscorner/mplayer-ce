@@ -52,9 +52,9 @@ static void ThreadProc( void *s );
 #elif defined(GEKKO)
 #include <ogcsys.h>
 #include <ogc/lwp_watchdog.h>
-#include "osdep/mem2_manager.h"
+#include "osdep/mem2.h"
 static void *ThreadProc( void *s );
-static unsigned char *global_buffer=NULL;
+static st_mem2_area *sc_area = NULL;
 #elif defined(PTHREAD_CACHE)
 #include <pthread.h>
 static void *ThreadProc(void *s);
@@ -125,13 +125,6 @@ static void cache_wakeup(stream_t *s)
   // signal process to wake up immediately
   kill(s->cache_pid, SIGUSR1);
 #endif
-}
-
-static void cache_stats(cache_vars_t *s)
-{
-  int newb=s->max_filepos-s->read_filepos; // new bytes in the buffer
-  mp_msg(MSGT_CACHE,MSGL_INFO,"0x%06X  [0x%06X]  0x%06X   ",(int)s->min_filepos,(int)s->read_filepos,(int)s->max_filepos);
-  mp_msg(MSGT_CACHE,MSGL_INFO,"%3d %%  (%3d%%)\n",100*newb/s->buffer_size,100*min_fill/s->buffer_size);
 }
 
 static int cache_read(cache_vars_t *s, unsigned char *buf, int size)
@@ -362,23 +355,35 @@ static int cache_execute_control(cache_vars_t *s) {
 }
 
 static void *shared_alloc(int size) {
+#ifdef GEKKO
+    if(sc_area==NULL) return NULL;
+    return __lwp_heap_allocate(&sc_area->heap,size);
+#else
 #if FORKED_CACHE
     return shmem_alloc(size);
 #else
     return malloc(size);
 #endif
+#endif
 }
 
 static void shared_free(void *ptr, int size) {
+#ifdef GEKKO
+    __lwp_heap_free(&sc_area->heap,ptr);
+#else
 #if FORKED_CACHE
     shmem_free(ptr, size);
 #else
     free(ptr);
 #endif
+#endif
 }
 
 static cache_vars_t* cache_init(int size,int sector){
   int num;
+#ifdef GEKKO
+  sc_area=mem2_area_alloc(size);
+#endif
   cache_vars_t* s=shared_alloc(sizeof(cache_vars_t));
   if(s==NULL) return NULL;
 
@@ -389,12 +394,7 @@ static cache_vars_t* cache_init(int size,int sector){
   }//32kb min_size
   s->buffer_size=num*sector;
   s->sector_size=sector;
-#ifndef GEKKO
   s->buffer=shared_alloc(s->buffer_size);
-#else
-  if(global_buffer==NULL) global_buffer=mem2_malloc(size);
-  s->buffer=global_buffer;
-#endif
 
   if(s->buffer == NULL){
     shared_free(s, sizeof(cache_vars_t));
@@ -434,17 +434,18 @@ void cache_uninit(stream_t *s) {
 #if defined(GEKKO)
   if(c->stream)
     free(c->stream);
-  c->buffer=NULL;
-  free(s->cache_data);
-  s->cache_data=NULL;
-  s->cache_pid=0;
-#else
+#endif //GEKKO
   shared_free(c->buffer, c->buffer_size);
   c->buffer = NULL;
+#ifdef GEKKO
   c->stream = NULL;
+#endif
   shared_free(s->cache_data, sizeof(cache_vars_t));
   s->cache_data = NULL;
-#endif //GEKKO
+#ifdef GEKKO
+  mem2_area_free(sc_area);
+  sc_area = NULL;
+#endif
 }
 
 static void exit_sighandler(int x){
@@ -485,7 +486,6 @@ static void cache_mainloop(cache_vars_t *s) {
 #endif
         } else
             sleep_count = 0;
-//        cache_stats(s->cache_data);
 #ifndef GEKKO
     } while (cache_execute_control(s));
 #else
@@ -614,8 +614,6 @@ int cache_stream_fill_buffer(stream_t *s){
   int len;
   int sector_size;
   if(!s->cache_pid) return stream_fill_buffer(s);
-
-//  cache_stats(s->cache_data);
 
   if(s->pos!=((cache_vars_t*)s->cache_data)->read_filepos) mp_msg(MSGT_CACHE,MSGL_ERR,"!!! read_filepos differs!!! report this bug...\n");
   sector_size = ((cache_vars_t*)s->cache_data)->sector_size;

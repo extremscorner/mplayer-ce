@@ -44,7 +44,7 @@ CFLAGS_STACKREALIGN      =
 CFLAGS_SVGALIB_HELPER    = 
 CFLAGS_TREMOR_LOW        = 
 
-EXTRALIBS          = -Wl,-z,noexecstack  -g -mrvl -ffast-math   -lfreetype -liconv -lfribidi -lz -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii  -lm
+EXTRALIBS          = -Wl,-z,noexecstack  -g -mrvl -ffast-math   -lfreetype -liconv -lfribidi -lz -laesnd -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib/wii  -lm
 EXTRALIBS_MPLAYER  = -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
 
@@ -76,6 +76,7 @@ NEED_VSSCANF      = no
 # features
 3DFX = no
 AA = no
+AESND = yes
 ALSA1X = 
 ALSA9 = 
 ALSA5 = 

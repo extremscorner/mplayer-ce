@@ -527,6 +527,7 @@ SRCS_COMMON = asxparser.c \
 
 SRCS_MPLAYER-$(3DFX)         += libvo/vo_3dfx.c
 SRCS_MPLAYER-$(AA)           += libvo/vo_aa.c
+SRCS_MPLAYER-$(AESND)        += libao2/ao_aesnd.c
 SRCS_MPLAYER-$(ALSA1X)       += libao2/ao_alsa.c
 SRCS_MPLAYER-$(ALSA5)        += libao2/ao_alsa5.c
 SRCS_MPLAYER-$(ALSA9)        += libao2/ao_alsa.c
@@ -678,7 +679,7 @@ SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
 							 osdep/glob_gekko.c \
 							 osdep/libdvdiso.c \
 							 osdep/plat_gekko.c \
-							 osdep/mem2_manager.c \
+							 osdep/mem2.c \
 							 osdep/wiilight.c \
 							 libao2/ao_gekko.c \
 							 libvo/vo_gekko.c \
