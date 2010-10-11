@@ -67,6 +67,12 @@
 	asm volatile("psq_stux	%0,%1,%2,%3,%4" : : "f"(frD), "b"(rA), "r"(rB), "i"(W), "i"(I));	\
 })
 
+#define ps_neg(frB) ({							\
+	vector float frD;							\
+	asm("ps_neg	%0,%1" : "=f"(frD) : "f"(frB));	\
+	frD;										\
+})
+
 #define ps_add(frA, frB) ({										\
 	vector float frD;											\
 	asm("ps_add	%0,%1,%2" : "=f"(frD) : "f"(frA), "f"(frB));	\
@@ -91,6 +97,18 @@
 	frD;																		\
 })
 
+#define ps_madds0(frA, frC, frB) ({												\
+	vector float frD;															\
+	asm("ps_madds0	%0,%1,%2,%3" : "=f"(frD) : "f"(frA), "f"(frC), "f"(frB));	\
+	frD;																		\
+})
+
+#define ps_madds1(frA, frC, frB) ({												\
+	vector float frD;															\
+	asm("ps_madds1	%0,%1,%2,%3" : "=f"(frD) : "f"(frA), "f"(frC), "f"(frB));	\
+	frD;																		\
+})
+
 #define ps_msub(frA, frC, frB) ({												\
 	vector float frD;															\
 	asm("ps_msub	%0,%1,%2,%3" : "=f"(frD) : "f"(frA), "f"(frC), "f"(frB));	\
@@ -103,9 +121,33 @@
 	frD;															\
 })
 
+#define ps_muls1(frA, frC) ({										\
+	vector float frD;												\
+	asm("ps_muls1	%0,%1,%2" : "=f"(frD) : "f"(frA), "f"(frC));	\
+	frD;															\
+})
+
+#define ps_nmadd(frA, frC, frB) ({												\
+	vector float frD;															\
+	asm("ps_nmadd	%0,%1,%2,%3" : "=f"(frD) : "f"(frA), "f"(frC), "f"(frB));	\
+	frD;																		\
+})
+
+#define ps_nmsub(frA, frC, frB) ({												\
+	vector float frD;															\
+	asm("ps_nmsub	%0,%1,%2,%3" : "=f"(frD) : "f"(frA), "f"(frC), "f"(frB));	\
+	frD;																		\
+})
+
 #define ps_merge00(frA, frB) ({										\
 	vector float frD;												\
 	asm("ps_merge00	%0,%1,%2" : "=f"(frD) : "f"(frA), "f"(frB));	\
+	frD;															\
+})
+
+#define ps_merge01(frA, frB) ({										\
+	vector float frD;												\
+	asm("ps_merge01	%0,%1,%2" : "=f"(frD) : "f"(frA), "f"(frB));	\
 	frD;															\
 })
 
@@ -121,16 +163,37 @@
 	frD;															\
 })
 
+#define ps_sum0(frA, frC, frB) ({												\
+	vector float frD;															\
+	asm("ps_sum0	%0,%1,%2,%3" : "=f"(frD) : "f"(frA), "f"(frC), "f"(frB));	\
+	frD;																		\
+})
+
+#define ps_sum1(frA, frC, frB) ({												\
+	vector float frD;															\
+	asm("ps_sum1	%0,%1,%2,%3" : "=f"(frD) : "f"(frA), "f"(frC), "f"(frB));	\
+	frD;																		\
+})
+
 #if !HAVE_PAIRED_H
 #define paired_msub ps_msub
 #define paired_madd ps_madd
+#define paired_nmsub ps_nmsub
+#define paired_nmadd ps_nmadd
+#define paired_sum0 ps_sum0
+#define paired_sum1 ps_sum1
 #define paired_add ps_add
 #define paired_sub ps_sub
 #define paired_mul ps_mul
 #define paired_muls0 ps_muls0
+#define paired_muls1 ps_muls1
+#define paired_madds0 ps_madds0
+#define paired_madds1 ps_madds1
 #define paired_merge00 ps_merge00
+#define paired_merge01 ps_merge01
 #define paired_merge10 ps_merge10
 #define paired_merge11 ps_merge11
+#define paired_neg ps_neg
 #define paired_stx(frD,rB,rA) psq_stx(frD,rA,rB,0,0)
 #define paired_lx(rB,rA) psq_lx(rA,rB,0,0)
 #endif

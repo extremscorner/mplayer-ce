@@ -27,4 +27,7 @@ OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o         \
                                           ppc/mpegvideo_altivec.o       \
                                           $(ALTIVEC-OBJS-yes)
 
-OBJS-$(HAVE_PAIRED)                    += ppc/float_paired.o
+PAIRED-OBJS-$(CONFIG_RDFT)             += ppc/rdft_paired.o             \
+
+OBJS-$(HAVE_PAIRED)                    += ppc/float_paired.o            \
+                                          $(PAIRED-OBJS-yes)
