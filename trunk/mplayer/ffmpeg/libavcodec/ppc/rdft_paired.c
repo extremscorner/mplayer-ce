@@ -21,68 +21,68 @@
 
 static void ff_rdft_calc_paired(RDFTContext *s, FFTSample *data)
 {
-	int i, i1, i2;
-	vector float pair, even, odd;
+	vector float result, pair[2];
 	const int n = 1 << s->nbits;
 	const float k1 = 0.5;
 	vector float k2 = {0.5-s->inverse,-(0.5-s->inverse)};
 	const FFTSample *tcos = s->tcos;
 	const FFTSample *tsin = s->tsin;
-	vector float d1, d2, ng, mr;
 	
 	if (!s->inverse) {
 		ff_fft_permute(&s->fft, (FFTComplex *)data);
 		ff_fft_calc(&s->fft, (FFTComplex *)data);
 	}
 	
-	pair = psq_l(0,data,0,0);
-	even = paired_sum0(pair, pair, pair);
-	odd = paired_neg(pair);
-	pair = paired_sum1(pair, even, odd);
-	psq_st(pair,0,data,0,0);
+	result = psq_l(0,data,0,0);
+	pair[0] = paired_sum0(result, result, result);
+	pair[1] = paired_neg(result);
+	result = paired_sum1(result, pair[0], pair[1]);
+	psq_st(result,0,data,0,0);
 	
-	for (i = 1; i < (n>>2); i++) {
-		i1 = 8*i;
-		i2 = 4*n-i1;
+	FFTSample *base[2] = {data,data+n};
+	vector float even, odd;
+	vector float merge, neg;
+	
+	int i;
+	for (i=1; i<(n>>2); i++) {
+		pair[0] = psq_lu(8,base[0],0,0);
+		pair[1] = psq_lu(-8,base[1],0,0);
 		
-		d1 = psq_lx(i1,data,0,0);
-		d2 = psq_lx(i2,data,0,0);
-		
-		ng = paired_neg(d2);
-		mr = paired_merge01(d2, ng);
-		even = paired_add(d1, mr);
+		neg = paired_neg(pair[1]);
+		merge = paired_merge01(pair[1], neg);
+		even = paired_add(pair[0], merge);
 		even = ps_muls0(even, k1);
 		
-		d1 = paired_merge10(d1, d1);
-		mr = paired_merge10(d2, ng);
-		odd = paired_add(d1, mr);
+		merge = paired_merge10(pair[0], pair[0]);
+		neg = paired_merge10(pair[1], neg);
+		odd = paired_add(merge, neg);
 		odd = paired_mul(odd, k2);
 		
-		float vcos = tcos[i];
-		float vsin = tsin[i];
+		float cos = tcos[i];
+		float sin = tsin[i];
 		
-		mr = paired_merge10(odd, odd);
-		ng = paired_neg(mr);
-		ng = paired_merge01(ng, mr);
+		merge = paired_merge10(odd, odd);
+		neg = paired_neg(merge);
+		neg = paired_merge01(neg, merge);
 		
-		pair = ps_madds0(ng, vsin, even);
-		pair = ps_madds0(odd, vcos, pair);
-		psq_stx(pair,i1,data,0,0);
+		result = ps_madds0(neg, sin, even);
+		result = ps_madds0(odd, cos, result);
+		psq_st(result,0,base[0],0,0);
 		
-		pair = ps_muls0(odd, vcos);
-		d1 = paired_merge01(even, pair);
-		d2 = paired_merge01(pair, even);
-		pair = paired_sub(d1, d2);
-		pair = ps_madds0(mr, vsin, pair);
-		psq_stx(pair,i2,data,0,0);
+		result = ps_muls0(odd, cos);
+		pair[0] = paired_merge01(even, result);
+		pair[1] = paired_merge01(result, even);
+		result = paired_sub(pair[0], pair[1]);
+		result = ps_madds0(merge, sin, result);
+		psq_st(result,0,base[1],0,0);
 	}
 	
 	data[2*i+1] = s->sign_convention * data[2*i+1];
 	
 	if (s->inverse) {
-		pair = psq_l(0,data,0,0);
-		pair = ps_muls0(pair, k1);
-		psq_st(pair,0,data,0,0);
+		result = psq_l(0,data,0,0);
+		result = ps_muls0(result, k1);
+		psq_st(result,0,data,0,0);
 		
 		ff_fft_permute(&s->fft, (FFTComplex *)data);
 		ff_fft_calc(&s->fft, (FFTComplex *)data);

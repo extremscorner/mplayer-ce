@@ -41,13 +41,13 @@
 
 #define psq_lu(d, rA, W, I) ({																	\
 	vector float frD;																			\
-	asm volatile("psq_lu	%0,%1(%2),%3,%4" : "=f"(frD) : "i"(d), "b"(rA), "i"(W), "i"(I));	\
+	asm volatile("psq_lu	%0,%2(%1),%3,%4" : "=f"(frD), "+b"(rA) : "i"(d), "i"(W), "i"(I));	\
 	frD;																						\
 })
 
 #define psq_lux(rA, rB, W, I) ({																\
 	vector float frD;																			\
-	asm volatile("psq_lux	%0,%1,%2,%3,%4" : "=f"(frD) : "b"(rA), "r"(rB), "i"(W), "i"(I));	\
+	asm volatile("psq_lux	%0,%1,%2,%3,%4" : "=f"(frD), "+b"(rA) : "r"(rB), "i"(W), "i"(I));	\
 	frD;																						\
 })
 
@@ -60,11 +60,11 @@
 })
 
 #define psq_stu(frD, d, rA, W, I) ({															\
-	asm volatile("psq_stu	%0,%1(%2),%3,%4" : : "f"(frD), "i"(d), "b"(rA), "i"(W), "i"(I));	\
+	asm volatile("psq_stu	%1,%2(%0),%3,%4" : "+b"(rA) : "f"(frD), "i"(d), "i"(W), "i"(I));	\
 })
 
 #define psq_stux(frD, rA, rB, W, I) ({															\
-	asm volatile("psq_stux	%0,%1,%2,%3,%4" : : "f"(frD), "b"(rA), "r"(rB), "i"(W), "i"(I));	\
+	asm volatile("psq_stux	%1,%0,%2,%3,%4" : "+b"(rA) : "f"(frD), "r"(rB), "i"(W), "i"(I));	\
 })
 
 #define ps_neg(frB) ({							\
