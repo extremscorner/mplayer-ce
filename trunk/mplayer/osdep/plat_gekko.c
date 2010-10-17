@@ -317,7 +317,7 @@ bool mount_sd_ntfs()
 	boot=partitions[0];
 	free(partitions);
 	
-	return ntfsMount("ntfs_sd", sd, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
+	return ntfsMount("ntfs_sd", sd, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
 }
 
 bool mount_usb_ntfs()
@@ -335,7 +335,7 @@ bool mount_usb_ntfs()
 	}
 	boot=partitions[0];
 	free(partitions);
-	return ntfsMount("ntfs_usb", usb, boot, 256, 4, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
+	return ntfsMount("ntfs_usb", usb, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
 }
 
 
@@ -372,7 +372,7 @@ static void * mountthreadfunc (void *arg)
 				}else 
 				{
 					//printf("mount usb\n");
-					fatMount("usb",usb,0,3,256);
+					fatMount("usb",usb,0,2,128);
 					if(mount_usb_ntfs())printf_debug("ntfs partition mounted\n");
 					else printf_debug("error mounting ntfs partition\n");
 				}
@@ -807,7 +807,7 @@ static bool DetectValidPath()
 {
 	if(sd->startup()) 
 	{
-		if(fatMount("sd",sd,0,3,256))
+		if(fatMount("sd",sd,0,2,128))
 		{
 			if(CheckPath("sd:/apps/mplayer-ce")) return true;	
 			if(CheckPath("sd:/apps/mplayer_ce")) return true;	
@@ -827,7 +827,7 @@ static bool DetectValidPath()
 	if (usb->isInserted())
 	{
 		printf_debug("mounting usb fat partition\n");
-		if(fatMount("usb",usb,0,3,256))
+		if(fatMount("usb",usb,0,2,128))
 		{
 			usb_init=true;
 			if(CheckPath("usb:/apps/mplayer-ce")) return true;
@@ -970,7 +970,7 @@ void plat_init (int *argc, char **argv[])
 		if(usb->isInserted())
 		{
 			usb_init=true;
-			fatMount("usb",usb,0,3,256);
+			fatMount("usb",usb,0,2,128);
 			mount_usb_ntfs();
 		}
 	}
