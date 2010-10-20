@@ -31,5 +31,6 @@ PAIRED-OBJS-$(CONFIG_FFT)              += ppc/fft_paired.o
 PAIRED-OBJS-$(CONFIG_MDCT)             += ppc/mdct_paired.o
 PAIRED-OBJS-$(CONFIG_RDFT)             += ppc/rdft_paired.o
 
-OBJS-$(HAVE_PAIRED)                    += ppc/float_paired.o            \
+OBJS-$(HAVE_PAIRED)                    += ppc/dsputil_paired.o          \
+                                          ppc/float_paired.o            \
                                           $(PAIRED-OBJS-yes)

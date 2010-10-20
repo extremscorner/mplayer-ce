@@ -201,7 +201,10 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         }
 
     }
-#elif HAVE_PAIRED
-	float_init_paired(c, avctx);
 #endif /* HAVE_ALTIVEC */
+
+#if HAVE_PAIRED
+    dsputil_init_paired(c, avctx);
+    float_init_paired(c, avctx);
+#endif /* HAVE_PAIRED */
 }

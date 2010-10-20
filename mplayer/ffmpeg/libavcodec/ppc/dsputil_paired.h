@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "libavcodec/dsputil.h"
 
-void float_init_paired(DSPContext* c, AVCodecContext *avctx);
+void dsputil_init_paired(DSPContext *c, AVCodecContext *avctx);
+void float_init_paired(DSPContext *c, AVCodecContext *avctx);
 
 #endif /* AVCODEC_PPC_DSPUTIL_PAIRED_H */

@@ -172,7 +172,7 @@ static void vector_fmul_scalar_paired(float *dst, const float *src, float mul, i
 	}
 }
 
-void float_init_paired(DSPContext* c, AVCodecContext *avctx)
+void float_init_paired(DSPContext *c, AVCodecContext *avctx)
 {
 	register uint32_t gqr;
 	asm volatile(
