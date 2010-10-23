@@ -24,7 +24,7 @@ static void vorbis_inverse_coupling_paired(float *mag, float *ang, int blocksize
 {
 	const vector float zero = {0.0,0.0};
 	
-	vector float pair[2];
+	vector float pair[2], result[2];
 	vector float neg, sel;
 	
 	for (int i=0; i<blocksize*4-7; i+=8) {
@@ -36,21 +36,18 @@ static void vorbis_inverse_coupling_paired(float *mag, float *ang, int blocksize
 		neg = paired_neg(sel);
 		sel = paired_sel(pair[1], neg, sel);
 		sel = paired_add(pair[0], sel);
+		result[0] = result[1] = pair[0];
 		
-		if (paired_cmpu0(LT, pair[1], zero)) {
-			pair[1] = paired_merge01(pair[0], pair[1]);
-			pair[0] = paired_merge01(sel, pair[0]);
-		} else
-			pair[1] = paired_merge01(sel, pair[1]);
+		if (paired_cmpu0(GT, pair[1], zero))
+			result[1] = paired_merge01(sel, result[1]);
+		else result[0] = paired_merge01(sel, result[0]);
 		
-		if (paired_cmpu1(LT, pair[1], zero)) {
-			pair[1] = paired_merge01(pair[1], pair[0]);
-			pair[0] = paired_merge01(pair[0], sel);
-		} else
-			pair[1] = paired_merge01(pair[1], sel);
+		if (paired_cmpu1(GT, pair[1], zero))
+			result[1] = paired_merge01(result[1], sel);
+		else result[0] = paired_merge01(result[0], sel);
 		
-		paired_stx(pair[0], i, mag);
-		paired_stx(pair[1], i, ang);
+		paired_stx(result[0], i, mag);
+		paired_stx(result[1], i, ang);
 	}
 }
 
