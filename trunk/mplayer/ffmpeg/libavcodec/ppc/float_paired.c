@@ -104,7 +104,7 @@ static void float_to_int16_paired(int16_t *dst, const float *src, long len)
 	
 	for (int i=0; i<len-1; i+=2) {
 		vector float pair = psq_lu(8,src,0,0);
-		psq_stu(pair,4,dst,0,5);
+		psq_stu(pair,4,dst,0,7);
 	}
 }
 
@@ -121,10 +121,10 @@ static void float_to_int16_interleave_paired(int16_t *dst, const float **src, lo
 				pair[1] = paired_lx(0, src[c+1]+i);
 				
 				result = paired_merge00(pair[0], pair[1]);
-				psq_st(result,0,dst+(channels*i)+c,0,5);
+				psq_st(result,0,dst+(channels*i)+c,0,7);
 				
 				result = paired_merge11(pair[0], pair[1]);
-				psq_st(result,0,dst+(channels*i+1)+c,0,5);
+				psq_st(result,0,dst+(channels*i+1)+c,0,7);
 			}
 		}
 	} else {
@@ -134,10 +134,10 @@ static void float_to_int16_interleave_paired(int16_t *dst, const float **src, lo
 				pair[1] = paired_lx(i, src[1]);
 				
 				result = paired_merge00(pair[0], pair[1]);
-				psq_stx(result,i,dst,0,5);
+				psq_stx(result,i,dst,0,7);
 				
 				result = paired_merge11(pair[0], pair[1]);
-				psq_stx(result,i+4,dst,0,5);
+				psq_stx(result,i+4,dst,0,7);
 			}
 		} else
 			float_to_int16_paired(dst, src[0], len);
@@ -178,7 +178,7 @@ void float_init_paired(DSPContext *c, AVCodecContext *avctx)
 	asm volatile(
 		"li		%0,7\n"
 		"oris	%0,%0,7\n"
-		"mtspr	917,%0"
+		"mtspr	919,%0"
 		: "=r"(gqr)
 	);
 	

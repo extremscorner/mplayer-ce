@@ -20,6 +20,76 @@
 #include "dsputil_paired.h"
 #include "libavutil/ppc/paired.h"
 
+static void put_pixels_clamped_paired(const DCTELEM *block, uint8_t *restrict pixels, int line_size)
+{
+	vector float pair;
+	
+	for(int i=0; i<8; i++, pixels+=line_size, block+=8) {
+		pair = psq_l(0,block,0,7);
+		psq_st(pair,0,pixels,0,4);
+		
+		pair = psq_l(4,block,0,7);
+		psq_st(pair,2,pixels,0,4);
+		
+		pair = psq_l(8,block,0,7);
+		psq_st(pair,4,pixels,0,4);
+		
+		pair = psq_l(12,block,0,7);
+		psq_st(pair,6,pixels,0,4);
+	}
+}
+
+static void put_signed_pixels_clamped_paired(const DCTELEM *block, uint8_t *restrict pixels, int line_size)
+{
+	const vector float bias = {128.0,128.0};
+	vector float pair;
+	
+	for (int i=0; i<8; i++, pixels+=line_size, block+=8) {
+		pair = psq_l(0,block,0,7);
+		pair = paired_add(pair, bias);
+		psq_st(pair,0,pixels,0,4);
+		
+		pair = psq_l(4,block,0,7);
+		pair = paired_add(pair, bias);
+		psq_st(pair,2,pixels,0,4);
+		
+		pair = psq_l(8,block,0,7);
+		pair = paired_add(pair, bias);
+		psq_st(pair,4,pixels,0,4);
+		
+		pair = psq_l(12,block,0,7);
+		pair = paired_add(pair, bias);
+		psq_st(pair,6,pixels,0,4);
+	}
+}
+
+static void add_pixels_clamped_paired(const DCTELEM *block, uint8_t *restrict pixels, int line_size)
+{
+	vector float pair[2];
+	
+	for(int i=0; i<8; i++, pixels+=line_size, block+=8) {
+		pair[0] = psq_l(0,pixels,0,4);
+		pair[1] = psq_l(0,block,0,7);
+		pair[0] = paired_add(pair[0], pair[1]);
+		psq_st(pair[0],0,pixels,0,4);
+		
+		pair[0] = psq_l(2,pixels,0,4);
+		pair[1] = psq_l(4,block,0,7);
+		pair[0] = paired_add(pair[0], pair[1]);
+		psq_st(pair[0],2,pixels,0,4);
+		
+		pair[0] = psq_l(4,pixels,0,4);
+		pair[1] = psq_l(8,block,0,7);
+		pair[0] = paired_add(pair[0], pair[1]);
+		psq_st(pair[0],4,pixels,0,4);
+		
+		pair[0] = psq_l(6,pixels,0,4);
+		pair[1] = psq_l(12,block,0,7);
+		pair[0] = paired_add(pair[0], pair[1]);
+		psq_st(pair[0],6,pixels,0,4);
+	}
+}
+
 static void vorbis_inverse_coupling_paired(float *mag, float *ang, int blocksize)
 {
 	const vector float zero = {0.0,0.0};
@@ -93,6 +163,21 @@ static void ac3_downmix_paired(float (*samples)[256], float (*matrix)[2], int ou
 
 void dsputil_init_paired(DSPContext *c, AVCodecContext *avctx)
 {
+	register uint32_t gqr;
+	asm volatile(
+		"li		%0,4\n"
+		"oris	%0,%0,4\n"
+		"mtspr	916,%0\n"
+		"li		%0,7\n"
+		"oris	%0,%0,7\n"
+		"mtspr	919,%0"
+		: "=r"(gqr)
+	);
+	
+	c->put_pixels_clamped = put_pixels_clamped_paired;
+	c->put_signed_pixels_clamped = put_signed_pixels_clamped_paired;
+	c->add_pixels_clamped = add_pixels_clamped_paired;
+	
 	if (CONFIG_VORBIS_DECODER)
 		c->vorbis_inverse_coupling = vorbis_inverse_coupling_paired;
 	
