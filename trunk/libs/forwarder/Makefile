@@ -39,7 +39,7 @@ LDFLAGS = -g $(MACHDEP) -Wl,-Map,$(notdir $@).map,--section-start,.init=0x810000
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
 #LIBS	:=	-lz -lwiiuse -lfat -lbte  -ltinysmb  -logc -lm
-LIBS	:=	-lz -lfat -logc
+LIBS	:=	-lfat -logc
 #LIBS	:=	-lwiiuse -lbte -ldb -lfat -logc -lm
 
 #---------------------------------------------------------------------------------
