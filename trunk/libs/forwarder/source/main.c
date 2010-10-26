@@ -37,16 +37,6 @@ static GXRModeObj *rmode = NULL;
 
 //u32 load_dol_image (void *);
 
-long get_filesize(char *FileName)
-{
-    struct stat file;
-    if(!stat(FileName,&file))
-    {
-        return file.st_size;
-    }
-    return 0;
-}
-
 void restart()
 {
 printf("Rebooting Wii...\n");
@@ -79,6 +69,8 @@ void load_USB2_driver()
 {
 	//Try to load IOS202 to use usb2
 	int ret;
+	USB2Enable(false);
+	if (IOS_GetVersion() == 58) return;
 	IOS_ReloadIOS(202);
 	ret=-1;
 	ret=mload_init();
@@ -90,6 +82,7 @@ void load_USB2_driver()
 		mload_elf((void *) ehcmodule_elf, &my_data_elf);
 		mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio);
 		usleep(2000);
+		USB2Enable(true);
 		//printf("Running... at 0x%x\n", (u32) my_data_elf.start);
 	}
 	
@@ -159,9 +152,7 @@ int main(int argc, char **argv) {
 		inputFile = fopen( "sd:/apps/mplayer_ce/boot.dol", "rb");
 		if(inputFile == NULL) {
 			inputFile = fopen( "sd:/mplayer/boot.dol", "rb");
-			if(inputFile != NULL)
-				size = get_filesize("sd:/mplayer/boot.dol");
-		}else size = get_filesize("sd:/apps/mplayer_ce/boot.dol");	
+		}
 	}
 	
 	if(inputFile == NULL)
@@ -176,9 +167,8 @@ int main(int argc, char **argv) {
 			if(inputFile == NULL) {
 				printf("boot.dol does not exist in the /apps/mplayer_ce or /mplayer folder on sd/usb !\n");
 				restart();		
-			}
-			size = get_filesize("usb:/mplayer/boot.dol");
-		}else size = get_filesize("usb:/apps/mplayer_ce/boot.dol");
+			}			
+		}
 	}
 
 	//create a buffer for the elf/dol content
@@ -190,12 +180,11 @@ int main(int argc, char **argv) {
 	setvbuf(inputFile,NULL,_IONBF,0);
 	printf("Found boot.dol on sd or usb!\n");
 	
-	/*
-	int pos = ftell(inputFile);
+	
 	fseek(inputFile, 0, SEEK_END);
-	int size = ftell(inputFile);
-	fseek(inputFile, pos, SEEK_SET); //return to previous position
-	*/
+	size = ftell(inputFile);
+	fseek(inputFile, 0, SEEK_SET); 
+	
 
   printf("File size: %ld bytes\n",size);
   myBuffer = malloc(size);
