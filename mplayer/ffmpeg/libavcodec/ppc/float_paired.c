@@ -161,6 +161,22 @@ static void butterflies_float_paired(float *restrict v1, float *restrict v2, int
 	}
 }
 
+static float scalarproduct_float_paired(const float *v1, const float *v2, int len)
+{
+	vector float pair[2];
+	vector float result = {0.0,0.0};
+	
+	for (int i=0; i<len*4-7; i+=8) {
+		pair[0] = paired_lx(i, v1);
+		pair[1] = paired_lx(i, v2);
+		result = paired_madd(pair[0], pair[1], result);
+	}
+	
+	register float scalar;
+	asm("ps_sum0	%0,%1,%1,%1" : "=f"(scalar) : "f"(result));
+	return scalar;
+}
+
 static void vector_fmul_scalar_paired(float *dst, const float *src, float mul, int len)
 {
 	vector float pair, result;
@@ -189,5 +205,6 @@ void float_init_paired(DSPContext *c, AVCodecContext *avctx)
 	c->float_to_int16 = float_to_int16_paired;
 	c->float_to_int16_interleave = float_to_int16_interleave_paired;
 	c->butterflies_float = butterflies_float_paired;
+	c->scalarproduct_float = scalarproduct_float_paired;
 	c->vector_fmul_scalar = vector_fmul_scalar_paired;
 }
