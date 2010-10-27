@@ -90,6 +90,37 @@ static void add_pixels_clamped_paired(const DCTELEM *block, uint8_t *restrict pi
 	}
 }
 
+static void scale_block_paired(const uint8_t src[64], uint8_t *dst, int linesize)
+{
+	const float scalar = 257.0;
+	vector float pair;
+	
+	uint16_t *dst1 = (uint16_t *)dst;
+	uint16_t *dst2 = (uint16_t *)(dst + linesize);
+	
+	for (int i=0; i<8; i++, src+=8, dst1+=linesize, dst2+=linesize) {
+		pair = psq_l(0,src,0,4);
+		pair = ps_muls0(pair, scalar);
+		psq_st(pair,0,dst1,0,5);
+		psq_st(pair,0,dst2,0,5);
+		
+		pair = psq_l(2,src,0,4);
+		pair = ps_muls0(pair, scalar);
+		psq_st(pair,4,dst1,0,5);
+		psq_st(pair,4,dst2,0,5);
+		
+		pair = psq_l(4,src,0,4);
+		pair = ps_muls0(pair, scalar);
+		psq_st(pair,8,dst1,0,5);
+		psq_st(pair,8,dst2,0,5);
+		
+		pair = psq_l(6,src,0,4);
+		pair = ps_muls0(pair, scalar);
+		psq_st(pair,12,dst1,0,5);
+		psq_st(pair,12,dst2,0,5);
+	}
+}
+
 static void vorbis_inverse_coupling_paired(float *mag, float *ang, int blocksize)
 {
 	const vector float zero = {0.0,0.0};
@@ -168,6 +199,9 @@ void dsputil_init_paired(DSPContext *c, AVCodecContext *avctx)
 		"li		%0,4\n"
 		"oris	%0,%0,4\n"
 		"mtspr	916,%0\n"
+		"li		%0,5\n"
+		"oris	%0,%0,5\n"
+		"mtspr	917,%0\n"
 		"li		%0,7\n"
 		"oris	%0,%0,7\n"
 		"mtspr	919,%0"
@@ -177,6 +211,7 @@ void dsputil_init_paired(DSPContext *c, AVCodecContext *avctx)
 	c->put_pixels_clamped = put_pixels_clamped_paired;
 	c->put_signed_pixels_clamped = put_signed_pixels_clamped_paired;
 	c->add_pixels_clamped = add_pixels_clamped_paired;
+	c->scale_block = scale_block_paired;
 	
 	if (CONFIG_VORBIS_DECODER)
 		c->vorbis_inverse_coupling = vorbis_inverse_coupling_paired;
