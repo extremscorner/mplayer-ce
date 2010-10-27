@@ -24,9 +24,12 @@ static void put_pixels_clamped_paired(const DCTELEM *block, uint8_t *restrict pi
 {
 	vector float pair;
 	
-	for(int i=0; i<8; i++, pixels+=line_size, block+=8) {
-		pair = psq_l(0,block,0,7);
-		psq_st(pair,0,pixels,0,4);
+	pixels -= line_size;
+	block -= 8;
+	
+	for (int i=0; i<8; i++) {
+		pair = psq_lu(16,block,0,7);
+		psq_stux(pair,pixels,line_size,0,4);
 		
 		pair = psq_l(4,block,0,7);
 		psq_st(pair,2,pixels,0,4);
@@ -44,10 +47,13 @@ static void put_signed_pixels_clamped_paired(const DCTELEM *block, uint8_t *rest
 	const vector float bias = {128.0,128.0};
 	vector float pair;
 	
-	for (int i=0; i<8; i++, pixels+=line_size, block+=8) {
-		pair = psq_l(0,block,0,7);
+	pixels -= line_size;
+	block -= 8;
+	
+	for (int i=0; i<8; i++) {
+		pair = psq_lu(16,block,0,7);
 		pair = paired_add(pair, bias);
-		psq_st(pair,0,pixels,0,4);
+		psq_stux(pair,pixels,line_size,0,4);
 		
 		pair = psq_l(4,block,0,7);
 		pair = paired_add(pair, bias);
@@ -67,9 +73,12 @@ static void add_pixels_clamped_paired(const DCTELEM *block, uint8_t *restrict pi
 {
 	vector float pair[2];
 	
-	for(int i=0; i<8; i++, pixels+=line_size, block+=8) {
-		pair[0] = psq_l(0,pixels,0,4);
-		pair[1] = psq_l(0,block,0,7);
+	pixels -= line_size;
+	block -= 8;
+	
+	for (int i=0; i<8; i++) {
+		pair[0] = psq_lux(pixels,line_size,0,4);
+		pair[1] = psq_lu(16,block,0,7);
 		pair[0] = paired_add(pair[0], pair[1]);
 		psq_st(pair[0],0,pixels,0,4);
 		
@@ -95,14 +104,15 @@ static void scale_block_paired(const uint8_t src[64], uint8_t *dst, int linesize
 	const float scalar = 257.0;
 	vector float pair;
 	
-	uint16_t *dst1 = (uint16_t *)dst;
-	uint16_t *dst2 = (uint16_t *)(dst + linesize);
+	uint8_t *dst1 = dst - linesize*2;
+	uint8_t *dst2 = dst - linesize;
+	src -= 8;
 	
-	for (int i=0; i<8; i++, src+=8, dst1+=linesize, dst2+=linesize) {
-		pair = psq_l(0,src,0,4);
+	for (int i=0; i<8; i++) {
+		pair = psq_lu(8,src,0,4);
 		pair = ps_muls0(pair, scalar);
-		psq_st(pair,0,dst1,0,5);
-		psq_st(pair,0,dst2,0,5);
+		psq_stux(pair,dst1,linesize*2,0,5);
+		psq_stux(pair,dst2,linesize*2,0,5);
 		
 		pair = psq_l(2,src,0,4);
 		pair = ps_muls0(pair, scalar);
