@@ -170,7 +170,7 @@ static void ff_h264_idct_add16intra_paired(uint8_t *dst, const int *block_offset
 static void ff_h264_idct_add8_paired(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[48])
 {
 	for (int i=16; i<16+8; i++) {
-		if(nnzc[scan8[i]])
+		if (nnzc[scan8[i]])
 			ff_h264_idct_add_paired(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
 		else if (block[i*16])
 			ff_h264_idct_dc_add_paired(dest[(i&4)>>2] + block_offset[i], block + i*16, stride);
@@ -183,7 +183,7 @@ static void ff_h264_idct8_add_paired(uint8_t *dst, DCTELEM *block, int stride)
 	const vector float half = {0.5,0.5};
 	const vector float quarter = {0.25,0.25};
 	const float scalar = 0.015625;
-	vector float pair[4], sub[8], add[8];
+	vector float pair[4], sub[4], add[4];
 	vector float result, pre[4];
 	
 	block[0] += 32;
@@ -329,7 +329,7 @@ static void ff_h264_idct8_dc_add_paired(uint8_t *dst, DCTELEM *block, int stride
 	
 	dst -= stride;
 	
-	for(int i=0; i<8; i++) {
+	for (int i=0; i<8; i++) {
 		pair = psq_lux(dst,stride,0,4);
 		pair = paired_add(pair, offset);
 		psq_st(pair,0,dst,0,4);
@@ -353,7 +353,7 @@ static void ff_h264_idct8_add4_paired(uint8_t *dst, const int *block_offset, DCT
 	for (int i=0; i<16; i+=4) {
 		int nnz = nnzc[scan8[i]];
 		if (nnz) {
-			if(nnz==1 && block[i*16])
+			if (nnz==1 && block[i*16])
 				ff_h264_idct8_dc_add_paired(dst + block_offset[i], block + i*16, stride);
 			else
 				ff_h264_idct8_add_paired(dst + block_offset[i], block + i*16, stride);
