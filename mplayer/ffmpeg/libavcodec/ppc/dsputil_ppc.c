@@ -205,6 +205,8 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 
 #if HAVE_PAIRED
     dsputil_init_paired(c, avctx);
+    if (CONFIG_VC1_DECODER)
+        vc1dsp_init_paired(c, avctx);
     float_init_paired(c, avctx);
 #endif /* HAVE_PAIRED */
 }
