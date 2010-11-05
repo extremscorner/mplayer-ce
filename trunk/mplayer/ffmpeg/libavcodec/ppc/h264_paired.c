@@ -361,6 +361,129 @@ static void ff_h264_idct8_add4_paired(uint8_t *dst, const int *block_offset, DCT
 	}
 }
 
+#define H264_WEIGHT(W,H) \
+static void weight_h264_pixels ## W ## x ## H ## _paired(uint8_t *block, int stride, int log2_denom, int weight, int offset) \
+{ \
+	int power = 1<<log2_denom; \
+	 \
+	float weightf = (double)weight/(double)power; \
+	vector float offsetf = {offset+0.5,offset+0.5}; \
+	vector float pair; \
+	 \
+	block -= stride; \
+	 \
+	for (int y=0; y<H; y++) { \
+		pair = psq_lux(block,stride,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,0,block,0,4); \
+		 \
+		if(W==2) continue; \
+		 \
+		pair = psq_l(2,block,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,2,block,0,4); \
+		 \
+		if(W==4) continue; \
+		 \
+		pair = psq_l(4,block,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,4,block,0,4); \
+		 \
+		pair = psq_l(6,block,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,6,block,0,4); \
+		 \
+		if (W==8) continue; \
+		 \
+		pair = psq_l(8,block,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,8,block,0,4); \
+		 \
+		pair = psq_l(10,block,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,10,block,0,4); \
+		 \
+		pair = psq_l(12,block,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,12,block,0,4); \
+		 \
+		pair = psq_l(14,block,0,4); \
+		pair = ps_madds0(pair, weightf, offsetf); \
+		psq_st(pair,14,block,0,4); \
+	} \
+} \
+static void biweight_h264_pixels ## W ## x ## H ## _paired(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset) \
+{ \
+	int power = 1<<log2_denom+1; \
+	 \
+	float weightdf = (double)weightd/(double)power; \
+	float weightsf = (double)weights/(double)power; \
+	vector float offsetf = {offset+0.5,offset+0.5}; \
+	vector float pair[2]; \
+	 \
+	dst -= stride; \
+	src -= stride; \
+	 \
+	for (int y=0; y<H; y++) { \
+		pair[0] = psq_lux(dst,stride,0,4); \
+		pair[1] = psq_lux(src,stride,0,4); \
+		pair[0] = ps_madds0(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],0,dst,0,4); \
+		 \
+		if (W==2) continue; \
+		 \
+		pair[0] = psq_l(2,dst,0,4); \
+		pair[1] = psq_l(2,src,0,4); \
+		pair[0] = ps_madds1(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],2,dst,0,4); \
+		 \
+		if (W==4) continue; \
+		 \
+		pair[0] = psq_l(4,dst,0,4); \
+		pair[1] = psq_l(4,src,0,4); \
+		pair[0] = ps_madds1(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],4,dst,0,4); \
+		 \
+		pair[0] = psq_l(6,dst,0,4); \
+		pair[1] = psq_l(6,src,0,4); \
+		pair[0] = ps_madds1(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],6,dst,0,4); \
+		 \
+		if (W==8) continue; \
+		 \
+		pair[0] = psq_l(8,dst,0,4); \
+		pair[1] = psq_l(8,src,0,4); \
+		pair[0] = ps_madds1(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],8,dst,0,4); \
+		 \
+		pair[0] = psq_l(10,dst,0,4); \
+		pair[1] = psq_l(10,src,0,4); \
+		pair[0] = ps_madds1(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],10,dst,0,4); \
+		 \
+		pair[0] = psq_l(12,dst,0,4); \
+		pair[1] = psq_l(12,src,0,4); \
+		pair[0] = ps_madds1(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],12,dst,0,4); \
+		 \
+		pair[0] = psq_l(14,dst,0,4); \
+		pair[1] = psq_l(14,src,0,4); \
+		pair[0] = ps_madds1(pair[1], weightsf, ps_madds0(pair[0], weightdf, offsetf)); \
+		psq_st(pair[0],14,dst,0,4); \
+	} \
+}
+
+H264_WEIGHT(16,16)
+H264_WEIGHT(16,8)
+H264_WEIGHT(8,16)
+H264_WEIGHT(8,8)
+H264_WEIGHT(8,4)
+H264_WEIGHT(4,8)
+H264_WEIGHT(4,4)
+H264_WEIGHT(4,2)
+H264_WEIGHT(2,4)
+H264_WEIGHT(2,2)
+
 void ff_h264dsp_init_ppc(H264DSPContext *c)
 {
 	c->h264_idct_add = ff_h264_idct_add_paired;
@@ -371,4 +494,25 @@ void ff_h264dsp_init_ppc(H264DSPContext *c)
 	c->h264_idct8_dc_add = ff_h264_idct8_dc_add_paired;
 	c->h264_idct8_add = ff_h264_idct8_add_paired;
 	c->h264_idct8_add4 = ff_h264_idct8_add4_paired;
+	
+	c->weight_h264_pixels_tab[0] = weight_h264_pixels16x16_paired;
+	c->weight_h264_pixels_tab[1] = weight_h264_pixels16x8_paired;
+	c->weight_h264_pixels_tab[2] = weight_h264_pixels8x16_paired;
+	c->weight_h264_pixels_tab[3] = weight_h264_pixels8x8_paired;
+	c->weight_h264_pixels_tab[4] = weight_h264_pixels8x4_paired;
+	c->weight_h264_pixels_tab[5] = weight_h264_pixels4x8_paired;
+	c->weight_h264_pixels_tab[6] = weight_h264_pixels4x4_paired;
+	c->weight_h264_pixels_tab[7] = weight_h264_pixels4x2_paired;
+	c->weight_h264_pixels_tab[8] = weight_h264_pixels2x4_paired;
+	c->weight_h264_pixels_tab[9] = weight_h264_pixels2x2_paired;
+	c->biweight_h264_pixels_tab[0] = biweight_h264_pixels16x16_paired;
+	c->biweight_h264_pixels_tab[1] = biweight_h264_pixels16x8_paired;
+	c->biweight_h264_pixels_tab[2] = biweight_h264_pixels8x16_paired;
+	c->biweight_h264_pixels_tab[3] = biweight_h264_pixels8x8_paired;
+	c->biweight_h264_pixels_tab[4] = biweight_h264_pixels8x4_paired;
+	c->biweight_h264_pixels_tab[5] = biweight_h264_pixels4x8_paired;
+	c->biweight_h264_pixels_tab[6] = biweight_h264_pixels4x4_paired;
+	c->biweight_h264_pixels_tab[7] = biweight_h264_pixels4x2_paired;
+	c->biweight_h264_pixels_tab[8] = biweight_h264_pixels2x4_paired;
+	c->biweight_h264_pixels_tab[9] = biweight_h264_pixels2x2_paired;
 }
