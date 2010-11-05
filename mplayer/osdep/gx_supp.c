@@ -478,26 +478,26 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 
 void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 {
-	u64 *Ydst = (u64 *)Ytexture - 1;
-	u64 *Udst = (u64 *)Utexture - 1;
-	u64 *Vdst = (u64 *)Vtexture - 1;
+	double *Ydst = (double *)Ytexture - 1;
+	double *Udst = (double *)Utexture - 1;
+	double *Vdst = (double *)Vtexture - 1;
 	
-	u64 *Ysrc1 = (u64 *)buffer[0] - 1;
-	u64 *Ysrc2 = (u64 *)(buffer[0] + stride[0]) - 1;
-	u64 *Ysrc3 = (u64 *)(buffer[0] + (stride[0] * 2)) - 1;
-	u64 *Ysrc4 = (u64 *)(buffer[0] + (stride[0] * 3)) - 1;
+	double *Ysrc1 = (double *)buffer[0] - 1;
+	double *Ysrc2 = (double *)(buffer[0] + stride[0]) - 1;
+	double *Ysrc3 = (double *)(buffer[0] + (stride[0] * 2)) - 1;
+	double *Ysrc4 = (double *)(buffer[0] + (stride[0] * 3)) - 1;
 	
 	s16 Yrowpitch = (stride[0] * 4) - Ywidth;
 	
-	u64 *Usrc1 = (u64 *)buffer[1] - 1;
-	u64 *Usrc2 = (u64 *)(buffer[1] + stride[1]) - 1;
-	u64 *Usrc3 = (u64 *)(buffer[1] + (stride[1] * 2)) - 1;
-	u64 *Usrc4 = (u64 *)(buffer[1] + (stride[1] * 3)) - 1;
+	double *Usrc1 = (double *)buffer[1] - 1;
+	double *Usrc2 = (double *)(buffer[1] + stride[1]) - 1;
+	double *Usrc3 = (double *)(buffer[1] + (stride[1] * 2)) - 1;
+	double *Usrc4 = (double *)(buffer[1] + (stride[1] * 3)) - 1;
 	
-	u64 *Vsrc1 = (u64 *)buffer[2] - 1;
-	u64 *Vsrc2 = (u64 *)(buffer[2] + stride[2]) - 1;
-	u64 *Vsrc3 = (u64 *)(buffer[2] + (stride[2] * 2)) - 1;
-	u64 *Vsrc4 = (u64 *)(buffer[2] + (stride[2] * 3)) - 1;
+	double *Vsrc1 = (double *)buffer[2] - 1;
+	double *Vsrc2 = (double *)(buffer[2] + stride[2]) - 1;
+	double *Vsrc3 = (double *)(buffer[2] + (stride[2] * 2)) - 1;
+	double *Vsrc4 = (double *)(buffer[2] + (stride[2] * 3)) - 1;
 	
 	s16 UVrowpitch = (stride[1] * 4) - UVwidth;
 	
@@ -516,10 +516,10 @@ void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 			*++Ydst = *++Ysrc4;
 		}
 		
-		Ysrc1 = (u64 *)((u32)Ysrc1 + Yrowpitch);
-		Ysrc2 = (u64 *)((u32)Ysrc2 + Yrowpitch);
-		Ysrc3 = (u64 *)((u32)Ysrc3 + Yrowpitch);
-		Ysrc4 = (u64 *)((u32)Ysrc4 + Yrowpitch);
+		Ysrc1 = (double *)((u32)Ysrc1 + Yrowpitch);
+		Ysrc2 = (double *)((u32)Ysrc2 + Yrowpitch);
+		Ysrc3 = (double *)((u32)Ysrc3 + Yrowpitch);
+		Ysrc4 = (double *)((u32)Ysrc4 + Yrowpitch);
 	}
 	
 	rows = UVheight / 4;
@@ -540,15 +540,15 @@ void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 			*++Vdst = *++Vsrc4;
 		}
 		
-		Usrc1 = (u64 *)((u32)Usrc1 + UVrowpitch);
-		Usrc2 = (u64 *)((u32)Usrc2 + UVrowpitch);
-		Usrc3 = (u64 *)((u32)Usrc3 + UVrowpitch);
-		Usrc4 = (u64 *)((u32)Usrc4 + UVrowpitch);
+		Usrc1 = (double *)((u32)Usrc1 + UVrowpitch);
+		Usrc2 = (double *)((u32)Usrc2 + UVrowpitch);
+		Usrc3 = (double *)((u32)Usrc3 + UVrowpitch);
+		Usrc4 = (double *)((u32)Usrc4 + UVrowpitch);
 		
-		Vsrc1 = (u64 *)((u32)Vsrc1 + UVrowpitch);
-		Vsrc2 = (u64 *)((u32)Vsrc2 + UVrowpitch);
-		Vsrc3 = (u64 *)((u32)Vsrc3 + UVrowpitch);
-		Vsrc4 = (u64 *)((u32)Vsrc4 + UVrowpitch);
+		Vsrc1 = (double *)((u32)Vsrc1 + UVrowpitch);
+		Vsrc2 = (double *)((u32)Vsrc2 + UVrowpitch);
+		Vsrc3 = (double *)((u32)Vsrc3 + UVrowpitch);
+		Vsrc4 = (double *)((u32)Vsrc4 + UVrowpitch);
 	}
 }
 

@@ -149,9 +149,12 @@ int main(int argc, char **argv) {
 	}
 	else 
 	{ // try sd
-		inputFile = fopen( "sd:/apps/mplayer_ce/boot.dol", "rb");
+		inputFile = fopen( "sd:/apps/mplayer-ce/boot.dol", "rb");
 		if(inputFile == NULL) {
-			inputFile = fopen( "sd:/mplayer/boot.dol", "rb");
+			inputFile = fopen( "sd:/apps/mplayer_ce/boot.dol", "rb");
+			if(inputFile == NULL) {
+				inputFile = fopen( "sd:/mplayer/boot.dol", "rb");
+			}
 		}
 	}
 	
@@ -161,13 +164,16 @@ int main(int argc, char **argv) {
 			printf("FAT could not be initialized!\n");
 			restart();		
 		}
-		inputFile = fopen( "usb:/apps/mplayer_ce/boot.dol", "rb");
+		inputFile = fopen( "usb:/apps/mplayer-ce/boot.dol", "rb");
 		if(inputFile == NULL) {
-			inputFile = fopen( "usb:/mplayer/boot.dol", "rb");
+			inputFile = fopen( "usb:/apps/mplayer_ce/boot.dol", "rb");
 			if(inputFile == NULL) {
-				printf("boot.dol does not exist in the /apps/mplayer_ce or /mplayer folder on sd/usb !\n");
-				restart();		
-			}			
+				inputFile = fopen( "usb:/mplayer/boot.dol", "rb");
+				if(inputFile == NULL) {
+					printf("boot.dol does not exist in the /apps/mplayer-ce or /mplayer folder on sd/usb !\n");
+					restart();
+				}
+			}
 		}
 	}
 
