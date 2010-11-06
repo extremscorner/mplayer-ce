@@ -3,7 +3,7 @@
 *	softdev 2007
 *	dhewg 2008
 *	sepp256 2008 - Coded YUV->RGB conversion in TEV.
-*	Tantric 2009 - rewritten using threads, with GUI overlaid
+*	Extrems 2009-2010
 *
 *	This program is free software; you can redistribute it and/or modify
 *	it under the terms of the GNU General Public License as published by
@@ -60,8 +60,9 @@ int screenwidth = 640;
 int screenheight = 480;
 
 /*** 3D GX ***/
-static u8 *gp_fifo;
+static u8 *gp_fifo, *dlist;
 static bool flip_ready, wait_ready;
+static u32 dsize;
 
 /*** Texture memory ***/
 static st_mem2_area *gx_area = NULL;
@@ -231,9 +232,10 @@ void mpgxInit()
 	Mtx44 perspective;
 	
 	/*** Clear out FIFO area ***/
-	gp_fifo = (u8 *)memalign(32, DEFAULT_FIFO_SIZE);
+	gp_fifo = memalign(32, DEFAULT_FIFO_SIZE);
+	dlist = memalign(32, GX_FIFO_MINSIZE);
 	memset(gp_fifo, 0x00, DEFAULT_FIFO_SIZE);
-
+	
 	/*** Initialise GX ***/
 	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
 	GX_SetCopyClear((GXColor){0x00, 0x00, 0x00, 0xFF}, GX_MAX_Z24);
@@ -445,9 +447,9 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 	if (gx_area == NULL) gx_area = mem2_area_alloc(heapsize);
 	else mem2_area_realloc(gx_area, heapsize);
 	
-	Ytexture = (u8 *)MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, Ytexsize));
-	Utexture = (u8 *)MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
-	Vtexture = (u8 *)MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
+	Ytexture = MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, Ytexsize));
+	Utexture = MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
+	Vtexture = MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
 	
 	f32 YtexcoordS = (double)luma_width / (double)Ywidth;
 	f32 UVtexcoordS = (double)chroma_width / (double)UVwidth;
@@ -474,82 +476,102 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 	GX_InitTexObjLOD(&UtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
 	GX_InitTexObj(&VtexObj, Vtexture, UVwidth, UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	GX_InitTexObjLOD(&VtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
+	
+	GX_BeginDispList(dlist, GX_FIFO_MINSIZE);
+	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+		GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
+		GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
+		GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
+		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
+	GX_End();
+	dsize = GX_EndDispList();
+}
+
+#define LUMA_COPY(type) \
+{ \
+	type *Ydst = (type *)Ytexture - 1; \
+	 \
+	type *Ysrc1 = (type *)buffer[0] - 1; \
+	type *Ysrc2 = (type *)(buffer[0] + stride[0]) - 1; \
+	type *Ysrc3 = (type *)(buffer[0] + (stride[0] * 2)) - 1; \
+	type *Ysrc4 = (type *)(buffer[0] + (stride[0] * 3)) - 1; \
+	 \
+	int rows = Yheight / 4; \
+	 \
+	while (rows--) { \
+		int tiles = Ywidth / 8; \
+		 \
+		while (tiles--) { \
+			*++Ydst = *++Ysrc1; \
+			*++Ydst = *++Ysrc2; \
+			*++Ydst = *++Ysrc3; \
+			*++Ydst = *++Ysrc4; \
+		} \
+		 \
+		Ysrc1 = (type *)((u32)Ysrc1 + Yrowpitch); \
+		Ysrc2 = (type *)((u32)Ysrc2 + Yrowpitch); \
+		Ysrc3 = (type *)((u32)Ysrc3 + Yrowpitch); \
+		Ysrc4 = (type *)((u32)Ysrc4 + Yrowpitch); \
+	} \
+}
+
+#define CHROMA_COPY(type) \
+{ \
+	type *Udst = (type *)Utexture - 1; \
+	type *Vdst = (type *)Vtexture - 1; \
+	 \
+	type *Usrc1 = (type *)buffer[1] - 1; \
+	type *Usrc2 = (type *)(buffer[1] + stride[1]) - 1; \
+	type *Usrc3 = (type *)(buffer[1] + (stride[1] * 2)) - 1; \
+	type *Usrc4 = (type *)(buffer[1] + (stride[1] * 3)) - 1; \
+	 \
+	type *Vsrc1 = (type *)buffer[2] - 1; \
+	type *Vsrc2 = (type *)(buffer[2] + stride[2]) - 1; \
+	type *Vsrc3 = (type *)(buffer[2] + (stride[2] * 2)) - 1; \
+	type *Vsrc4 = (type *)(buffer[2] + (stride[2] * 3)) - 1; \
+	 \
+	int rows = UVheight / 4; \
+	 \
+	while (rows--) { \
+		int tiles = UVwidth / 8; \
+		 \
+		while (tiles--) { \
+			*++Udst = *++Usrc1; \
+			*++Udst = *++Usrc2; \
+			*++Udst = *++Usrc3; \
+			*++Udst = *++Usrc4; \
+			 \
+			*++Vdst = *++Vsrc1; \
+			*++Vdst = *++Vsrc2; \
+			*++Vdst = *++Vsrc3; \
+			*++Vdst = *++Vsrc4; \
+		} \
+		 \
+		Usrc1 = (type *)((u32)Usrc1 + UVrowpitch); \
+		Usrc2 = (type *)((u32)Usrc2 + UVrowpitch); \
+		Usrc3 = (type *)((u32)Usrc3 + UVrowpitch); \
+		Usrc4 = (type *)((u32)Usrc4 + UVrowpitch); \
+		 \
+		Vsrc1 = (type *)((u32)Vsrc1 + UVrowpitch); \
+		Vsrc2 = (type *)((u32)Vsrc2 + UVrowpitch); \
+		Vsrc3 = (type *)((u32)Vsrc3 + UVrowpitch); \
+		Vsrc4 = (type *)((u32)Vsrc4 + UVrowpitch); \
+	} \
 }
 
 void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 {
-	double *Ydst = (double *)Ytexture - 1;
-	double *Udst = (double *)Utexture - 1;
-	double *Vdst = (double *)Vtexture - 1;
-	
-	double *Ysrc1 = (double *)buffer[0] - 1;
-	double *Ysrc2 = (double *)(buffer[0] + stride[0]) - 1;
-	double *Ysrc3 = (double *)(buffer[0] + (stride[0] * 2)) - 1;
-	double *Ysrc4 = (double *)(buffer[0] + (stride[0] * 3)) - 1;
-	
 	s16 Yrowpitch = (stride[0] * 4) - Ywidth;
 	
-	double *Usrc1 = (double *)buffer[1] - 1;
-	double *Usrc2 = (double *)(buffer[1] + stride[1]) - 1;
-	double *Usrc3 = (double *)(buffer[1] + (stride[1] * 2)) - 1;
-	double *Usrc4 = (double *)(buffer[1] + (stride[1] * 3)) - 1;
-	
-	double *Vsrc1 = (double *)buffer[2] - 1;
-	double *Vsrc2 = (double *)(buffer[2] + stride[2]) - 1;
-	double *Vsrc3 = (double *)(buffer[2] + (stride[2] * 2)) - 1;
-	double *Vsrc4 = (double *)(buffer[2] + (stride[2] * 3)) - 1;
+	if (stride[0] & 7)
+		LUMA_COPY(u64)
+	else LUMA_COPY(double)
 	
 	s16 UVrowpitch = (stride[1] * 4) - UVwidth;
 	
-	int rows = 0;
-	rows = Yheight / 4;
-	
-	// Copy strides into 8x4 tiles.
-	// Luminance (Y) plane.
-	while (rows--) {
-		int tiles = Ywidth / 8;
-		
-		while (tiles--) {
-			*++Ydst = *++Ysrc1;
-			*++Ydst = *++Ysrc2;
-			*++Ydst = *++Ysrc3;
-			*++Ydst = *++Ysrc4;
-		}
-		
-		Ysrc1 = (double *)((u32)Ysrc1 + Yrowpitch);
-		Ysrc2 = (double *)((u32)Ysrc2 + Yrowpitch);
-		Ysrc3 = (double *)((u32)Ysrc3 + Yrowpitch);
-		Ysrc4 = (double *)((u32)Ysrc4 + Yrowpitch);
-	}
-	
-	rows = UVheight / 4;
-	
-	// Chrominance (U&V) planes.
-	while (rows--) {
-		int tiles = UVwidth / 8;
-		
-		while (tiles--) {
-			*++Udst = *++Usrc1;
-			*++Udst = *++Usrc2;
-			*++Udst = *++Usrc3;
-			*++Udst = *++Usrc4;
-			
-			*++Vdst = *++Vsrc1;
-			*++Vdst = *++Vsrc2;
-			*++Vdst = *++Vsrc3;
-			*++Vdst = *++Vsrc4;
-		}
-		
-		Usrc1 = (double *)((u32)Usrc1 + UVrowpitch);
-		Usrc2 = (double *)((u32)Usrc2 + UVrowpitch);
-		Usrc3 = (double *)((u32)Usrc3 + UVrowpitch);
-		Usrc4 = (double *)((u32)Usrc4 + UVrowpitch);
-		
-		Vsrc1 = (double *)((u32)Vsrc1 + UVrowpitch);
-		Vsrc2 = (double *)((u32)Vsrc2 + UVrowpitch);
-		Vsrc3 = (double *)((u32)Vsrc3 + UVrowpitch);
-		Vsrc4 = (double *)((u32)Vsrc4 + UVrowpitch);
-	}
+	if (stride[1] & 7)
+		CHROMA_COPY(u64)
+	else CHROMA_COPY(double)
 }
 
 void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
@@ -606,13 +628,7 @@ void mpgxPushFrame()
 		
 		GX_SetScissorBoxOffset(efb_offset, 0);
 		GX_SetDispCopySrc(0, 0, efb_drawpt, vmode->efbHeight);
-		
-		GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-			GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
-			GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
-			GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
-			GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
-		GX_End();
+		GX_CallDispList(dlist, dsize);
 		
 		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * dxs;
 		GX_CopyDisp((void *)((u32)xfb[whichfb ^ 1] + xfb_offset), GX_TRUE);
