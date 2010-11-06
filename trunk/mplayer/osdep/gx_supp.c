@@ -24,7 +24,6 @@
 * These are pretty standard functions to setup and use GX scaling.
 ****************************************************************************/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,12 +41,10 @@
 #include "mem2.h"
 #include "libvo/video_out.h"
 
-
 #define DEFAULT_FIFO_SIZE (256 * 1024)
 
 #define HASPECT 320
 #define VASPECT 240
-
 
 /*** 2D ***/
 static st_mem2_area *vi_area = NULL;
@@ -102,7 +99,6 @@ static f32 UVtexcoords[] ATTRIBUTE_ALIGN(32) = {
 	0.0, 1.0,
 };
 
-
 void mpviSetup(int video_mode, bool overscan)
 {
 	VIDEO_Init();
@@ -142,12 +138,12 @@ void mpviSetup(int video_mode, bool overscan)
 	vmode->efbHeight = MIN(vmode->xfbHeight, 528);
 	
 	if (wide_mode == CONF_ASPECT_16_9)
-		screenwidth = ((float)screenheight / 9) * 16;
-	else screenwidth = ((float)screenheight / 3) * 4;
+		screenwidth = ceil((screenheight / 9.0) * 16.0);
+	else screenwidth = ceil((screenheight / 3.0) * 4.0);
 	
 	if (overscan) {
 		vmode->viWidth = videowidth * scanwidth;
-		vmode->viWidth = ceil((float)vmode->viWidth / 16) * 16;
+		vmode->viWidth = (vmode->viWidth + 15) & ~15;
 	} else vmode->viWidth = videowidth;
 	
 	vmode->fbWidth = vmode->viWidth;
@@ -204,7 +200,6 @@ void mpviClear()
 		VIDEO_WaitVSync();
 }
 
-
 static void render_cb(void)
 {
 	if (!vo_vsync) {
@@ -215,7 +210,7 @@ static void render_cb(void)
 	wait_ready = false;
 }
 
-static void vsync_cb(void)
+static void vsync_cb(u32 retraceCnt)
 {
 	if (vo_vsync) {
 		if (flip_ready) {
@@ -245,7 +240,7 @@ void mpgxInit()
 	u32 xfbHeight = GX_SetDispCopyYScale(yscale);
 	
 	GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
-	GX_SetDispCopySrc(0, 0, MIN(vmode->fbWidth, 640), vmode->efbHeight);
+	GX_SetDispCopySrc(0, 0, ((vmode->fbWidth >> 1) + 15) & ~15, vmode->efbHeight);
 	GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
 	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
 	GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
@@ -261,7 +256,7 @@ void mpgxInit()
 	guMtxTransApply(GXmodelView2D, GXmodelView2D, 0.0, 0.0, 0.0);
 	GX_LoadPosMtxImm(GXmodelView2D, GX_PNMTX0);
 	
-	guOrtho(perspective, screenheight / 2, -(screenheight / 2), -(screenwidth / 2), screenwidth / 2, 0.0, 1.0);
+	guOrtho(perspective, screenheight / 2.0, -(screenheight / 2.0), -(screenwidth / 2.0), screenwidth / 2.0, 0.0, 1.0);
 	GX_LoadProjectionMtx(perspective, GX_ORTHOGRAPHIC);
 	
 	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
@@ -406,14 +401,14 @@ void mpgxUpdateSquare()
 {
 	memcpy(mysquare, square, sizeof(square));
 	
-	mysquare[0] -= m_screenleft_shift * 100;
-	mysquare[6] -= m_screenleft_shift * 100;
-	mysquare[2] -= m_screenright_shift * 100;
-	mysquare[4] -= m_screenright_shift * 100;
-	mysquare[1] -= m_screentop_shift * 100;
-	mysquare[3] -= m_screentop_shift * 100;
-	mysquare[5] -= m_screenbottom_shift * 100;
-	mysquare[7] -= m_screenbottom_shift * 100;
+	mysquare[0] -= m_screenleft_shift * 100.0;
+	mysquare[6] -= m_screenleft_shift * 100.0;
+	mysquare[2] -= m_screenright_shift * 100.0;
+	mysquare[4] -= m_screenright_shift * 100.0;
+	mysquare[1] -= m_screentop_shift * 100.0;
+	mysquare[3] -= m_screentop_shift * 100.0;
+	mysquare[5] -= m_screenbottom_shift * 100.0;
+	mysquare[7] -= m_screenbottom_shift * 100.0;
 	
 	DCFlushRange(mysquare, sizeof(mysquare));
 	GX_SetArray(GX_VA_POS, mysquare, sizeof(f32) * 2);
@@ -432,13 +427,13 @@ void mpgxSetSquare(f32 haspect, f32 vaspect)
 
 void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chroma_height)
 {
-	Ywidth = MIN(ceil((float)luma_width / 8) * 8, 1024);
-	Yheight = MIN(ceil((float)luma_height / 4) * 4, 1024);
+	Ywidth = MIN((luma_width + 7) & ~7, 1024);
+	Yheight = MIN((luma_height + 3) & ~3, 1024);
 	
 	Ytexsize = Ywidth * Yheight;
 	
-	UVwidth = MIN(ceil((float)chroma_width / 8) * 8, 1024);
-	UVheight = MIN(ceil((float)chroma_height / 4) * 4, 1024);
+	UVwidth = MIN((chroma_width + 7) & ~7, 1024);
+	UVheight = MIN((chroma_height + 3) & ~3, 1024);
 	
 	UVtexsize = UVwidth * UVheight;
 	
@@ -604,7 +599,7 @@ void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char
 	DCFlushRange(Ycached, Ytexsize);
 }
 
-inline void mpgxIsDrawDone()
+void mpgxIsDrawDone()
 {
 	if (wait_ready)
 		GX_WaitDrawDone();
@@ -619,15 +614,13 @@ void mpgxPushFrame()
 	GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
 	GX_LoadTexObj(&VtexObj, GX_TEXMAP2);	// MAP2 <- V
 	
-	u16 xfb_copypt = vmode->fbWidth / 2;
-	u16 efb_drawpt = ceil((float)xfb_copypt / 16) * 16;
-	int difference = efb_drawpt - xfb_copypt;
+	u16 xfb_copypt = vmode->fbWidth >> 1;
+	u16 efb_drawpt = (xfb_copypt + 15) & ~15;
+	int diff = efb_drawpt - xfb_copypt;
 	
 	for (int dxs = 0; dxs < 2; dxs++) {
-		u16 efb_offset = (xfb_copypt - difference) * dxs;
-		
+		u16 efb_offset = (xfb_copypt - diff) * dxs;
 		GX_SetScissorBoxOffset(efb_offset, 0);
-		GX_SetDispCopySrc(0, 0, efb_drawpt, vmode->efbHeight);
 		GX_CallDispList(dlist, dsize);
 		
 		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * dxs;

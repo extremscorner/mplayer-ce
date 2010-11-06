@@ -85,10 +85,11 @@ void mem2_area_realloc(st_mem2_area *area, u32 size)
 		return;
 	
 	st_mem2_range usable = area->range;
+	bool adjacent;
 	
-	if (usable.floor == stray.ceiling)
+	if (adjacent = (usable.floor == stray.ceiling))
 		usable.floor = stray.floor;
-	else if (usable.ceiling == stray.floor)
+	else if (adjacent = (usable.ceiling == stray.floor))
 		usable.ceiling = stray.ceiling;
 	
 	u32 overhead = (size / 32) * HEAP_BLOCK_USED_OVERHEAD;
@@ -107,15 +108,25 @@ void mem2_area_realloc(st_mem2_area *area, u32 size)
 		if (usable.floor != SYS_GetArena2Hi()) {
 			stray.ceiling = working.floor;
 			stray.floor = usable.floor;
-		} else
+		} else {
 			SYS_SetArena2Hi(working.floor);
+			if (adjacent) {
+				stray.floor = NULL;
+				stray.ceiling = NULL;
+			}
+		}
 	} else {
 		if (usable.floor != SYS_GetArena2Hi()) {
 			working.ceiling = SYS_GetArena2Hi();
 			stray.floor = usable.floor;
 			stray.ceiling = usable.ceiling;
-		} else
+		} else {
 			working.ceiling = usable.ceiling;
+			if (adjacent) {
+				stray.floor = NULL;
+				stray.ceiling = NULL;
+			}
+		}
 		
 		working.floor = ROUNDDOWN32(working.ceiling - total_size);
 		
@@ -142,7 +153,7 @@ void mem2_area_free(st_mem2_area *area)
 		return;
 	
 	st_mem2_range usable = area->range;
-	bool adjacent = false;
+	bool adjacent;
 	
 	if (adjacent = (usable.floor == stray.ceiling))
 		usable.floor = stray.floor;
