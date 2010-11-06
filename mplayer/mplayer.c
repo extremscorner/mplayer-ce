@@ -2672,7 +2672,7 @@ int reinit_video_chain(void) {
     }
     else
     {
-      m_config_set_option(mconfig, "lavdopts", "fast:skipframe=nonref:skiploopfilter=all");
+      m_config_set_option(mconfig, "lavdopts", "skipframe=nonref:skiploopfilter=all");
       frame_dropping = 0;
     }
   }
