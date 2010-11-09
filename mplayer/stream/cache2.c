@@ -209,7 +209,7 @@ static int cache_fill(cache_vars_t *s)
         s->offset= // FIXME!?
         s->min_filepos=s->max_filepos=read; // drop cache content :(
         if(s->stream->eof) stream_reset(s->stream);
-        stream_seek(s->stream,read);
+        stream_seek_internal(s->stream,read);
         mp_msg(MSGT_CACHE,MSGL_DBG2,"Seek done. new pos: 0x%"PRIX64"  \n",(int64_t)stream_tell(s->stream));
       }
   }
@@ -243,10 +243,8 @@ static int cache_fill(cache_vars_t *s)
   // reduce space if needed:
   if(space>s->buffer_size-pos) space=s->buffer_size-pos;
 
-//  if(space>32768) space=32768; // limit one-time block size
+  // limit one-time block size
   if(space>4*s->sector_size) space=4*s->sector_size;
-
-//  if(s->seek_lock) return 0; // FIXME
 
 #if 1
   // back+newb+space <= buffer_size
@@ -256,12 +254,7 @@ static int cache_fill(cache_vars_t *s)
   s->min_filepos=read-back; // avoid seeking-back to temp area...
 #endif
 
-  // ....
-  //printf("Buffer fill: %d bytes of %d\n",space,s->buffer_size);
-  //len=stream_fill_buffer(s->stream);
-  //memcpy(&s->buffer[pos],s->stream->buffer,len); // avoid this extra copy!
-  // ....
-  len=stream_read(s->stream,&s->buffer[pos],space);
+  len = stream_read_internal(s->stream, &s->buffer[pos], space);
   if(len==0) 
   {
   	if(s->stream->error>0)
@@ -437,9 +430,7 @@ void cache_uninit(stream_t *s) {
 #endif //GEKKO
   shared_free(c->buffer, c->buffer_size);
   c->buffer = NULL;
-#ifdef GEKKO
   c->stream = NULL;
-#endif
   shared_free(s->cache_data, sizeof(cache_vars_t));
   s->cache_data = NULL;
 #ifdef GEKKO
@@ -631,6 +622,8 @@ int cache_stream_fill_buffer(stream_t *s){
   s->buf_len=len;
   s->pos+=len;
 //  printf("[%d]",len);fflush(stdout);
+  if (s->capture_file)
+    stream_capture_do(s);
   return len;
 
 }

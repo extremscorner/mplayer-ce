@@ -132,6 +132,13 @@ int url_read(URLContext *h, unsigned char *buf, int size);
  * certain there was either an error or the end of file was reached.
  */
 int url_read_complete(URLContext *h, unsigned char *buf, int size);
+
+/**
+ * Write size bytes from buf to the resource accessed by h.
+ *
+ * @return the number of bytes actually written, or a negative value
+ * corresponding to an AVERROR code in case of failure
+ */
 int url_write(URLContext *h, const unsigned char *buf, int size);
 
 /**
@@ -182,7 +189,6 @@ int64_t url_filesize(URLContext *h);
 /**
  * Return the file descriptor associated with this URL. For RTP, this
  * will return only the RTP file descriptor, not the RTCP file descriptor.
- * To get both, use rtp_get_file_handles().
  *
  * @return the file descriptor associated with this URL, or <0 on error.
  */
@@ -562,7 +568,7 @@ void init_checksum(ByteIOContext *s,
 /* udp.c */
 int udp_set_remote_url(URLContext *h, const char *uri);
 int udp_get_local_port(URLContext *h);
-#if (LIBAVFORMAT_VERSION_MAJOR <= 52)
+#if FF_API_UDP_GET_FILE
 int udp_get_file_handle(URLContext *h);
 #endif
 

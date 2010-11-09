@@ -1,5 +1,5 @@
 /*
- * Bluray stream playback
+ * Blu-ray stream playback
  * by cRTrn13 <crtrn13-at-gmail.com> 2009
  *
  * This file is part of MPlayer.
@@ -276,6 +276,9 @@ static int bd_get_uks(struct bd_priv *bd)
 static off_t bd_read(struct bd_priv *bd, uint8_t *buf, int len)
 {
     int read_len;
+    // TODO: would be nicer if this function also worked for larger reads
+    int max_len = BD_UNIT_SIZE - (bd->pos % BD_UNIT_SIZE);
+    len = FFMIN(len, max_len);
     len &= ~15;
     if (!len)
         return 0;
@@ -493,7 +496,7 @@ static int bd_stream_open(stream_t *s, int mode, void* opts, int* file_format)
 }
 
 const stream_info_t stream_info_bd = {
-    "Bluray",
+    "Blu-ray",
     "bd",
     "cRTrn13",
     "",

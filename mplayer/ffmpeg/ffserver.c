@@ -92,6 +92,10 @@ static const char *http_state[] = {
     "RTSP_SEND_PACKET",
 };
 
+#if !FF_API_MAX_STREAMS
+#define MAX_STREAMS 20
+#endif
+
 #define IOBUFFER_INIT_SIZE 8192
 
 /* timeouts are in ms */
@@ -2930,7 +2934,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
                                    struct in_addr my_ip)
 {
     AVFormatContext *avc;
-    AVStream avs[MAX_STREAMS];
+    AVStream *avs = NULL;
     int i;
 
     avc =  avformat_alloc_context();
@@ -2948,14 +2952,29 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         snprintf(avc->filename, 1024, "rtp://0.0.0.0");
     }
 
+#if !FF_API_MAX_STREAMS
+    if (avc->nb_streams >= INT_MAX/sizeof(*avc->streams) ||
+        !(avc->streams = av_malloc(avc->nb_streams * sizeof(*avc->streams))))
+        goto sdp_done;
+#endif
+    if (avc->nb_streams >= INT_MAX/sizeof(*avs) ||
+        !(avs = av_malloc(avc->nb_streams * sizeof(*avs))))
+        goto sdp_done;
+
     for(i = 0; i < stream->nb_streams; i++) {
         avc->streams[i] = &avs[i];
         avc->streams[i]->codec = stream->streams[i]->codec;
     }
     *pbuffer = av_mallocz(2048);
     avf_sdp_create(&avc, 1, *pbuffer, 2048);
+
+ sdp_done:
+#if !FF_API_MAX_STREAMS
+    av_free(avc->streams);
+#endif
     av_metadata_free(&avc->metadata);
     av_free(avc);
+    av_free(avs);
 
     return strlen(*pbuffer);
 }
@@ -3953,27 +3972,11 @@ static int ffserver_opt_preset(const char *arg,
 {
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
-    int i, ret = 0;
-    const char *base[3]= { getenv("FFMPEG_DATADIR"),
-                           getenv("HOME"),
-                           FFMPEG_DATADIR,
-                         };
+    int ret = 0;
+    AVCodec *codec = avcodec_find_encoder(avctx->codec_id);
 
-    for(i=0; i<3 && !f; i++){
-        if(!base[i])
-            continue;
-        snprintf(filename, sizeof(filename), "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.ffmpeg", arg);
-        f= fopen(filename, "r");
-        if(!f){
-            AVCodec *codec = avcodec_find_encoder(avctx->codec_id);
-            if (codec) {
-                snprintf(filename, sizeof(filename), "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.ffmpeg", codec->name, arg);
-                f= fopen(filename, "r");
-            }
-        }
-    }
-
-    if(!f){
+    if (!(f = get_preset_file(filename, sizeof(filename), arg, 0,
+                              codec ? codec->name : NULL))) {
         fprintf(stderr, "File for preset '%s' not found\n", arg);
         return 1;
     }

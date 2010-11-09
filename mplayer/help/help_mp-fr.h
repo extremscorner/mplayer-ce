@@ -1302,7 +1302,6 @@ static const char help_text[]=
 #define MSGTR_INPUT_INPUT_ErrBuffer2SmallForCmd "Tampon trop petit pour commande %s\n"
 #define MSGTR_INPUT_INPUT_ErrWhyHere "Que faisons-nous ici ?\n"
 #define MSGTR_INPUT_INPUT_ErrCantInitJoystick "Impossible d'initier manette entrée\n"
-#define MSGTR_INPUT_INPUT_ErrCantStatFile "Impossible lire %s : %s\n"
 #define MSGTR_INPUT_INPUT_ErrCantOpenFile "Impossible ouvrir %s : %s\n"
 #define MSGTR_INPUT_INPUT_ErrCantInitAppleRemote "Impossible d'initier télécommande Apple Remote.\n"
 
@@ -1758,7 +1757,7 @@ static const char help_text[]=
 #define MSGTR_LIBVO_DXR3_XCorrection "[VO_DXR3] Correction X : %d.\n"
 #define MSGTR_LIBVO_DXR3_FailedSetSignalMix "[VO_DXR3] Echec réglage du mix signal !\n"
 
-// libvo/font_load_ft.c
+// font_load_ft.c
 
 #define MSGTR_LIBVO_FONT_LOAD_FT_NewFaceFailed "New_Face a échoué.  Le chemin vers les fonts est peut-être faux.\nSpécifiez un fichier de police, svp. (~/.mplayer/subfont.ttf).\n"
 #define MSGTR_LIBVO_FONT_LOAD_FT_NewMemoryFaceFailed "New_Memory_Face a échoué.\n"

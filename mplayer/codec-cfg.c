@@ -391,14 +391,14 @@ static int validate_codec(codecs_t *c, int type)
     }
 
 #if 0
-#warning codec->driver == 4;... <- this should not be put in here...
-#warning Where are they defined ????????????
+//FIXME: codec->driver == 4;... <- this should not be put in here...
+//FIXME: Where are they defined ????????????
     if (!c->dll && (c->driver == 4 ||
                 (c->driver == 2 && type == TYPE_VIDEO))) {
         mp_msg(MSGT_CODECCFG,MSGL_ERR,MSGTR_CodecNeedsDLL, c->name);
         return 0;
     }
-#warning Can guid.f1 be 0? How does one know that it was not given?
+// FIXME: Can guid.f1 be 0? How does one know that it was not given?
 //      if (!(codec->flags & CODECS_FLAG_AUDIO) && codec->driver == 4)
 
     if (type == TYPE_VIDEO)
@@ -782,20 +782,14 @@ static void codecs_free(codecs_t* codecs,int count) {
     for ( i = 0; i < count; i++)
     {
         if ( codecs[i].name ) {
-            if( codecs[i].name )
-                free(codecs[i].name);
-            if( codecs[i].info )
-                free(codecs[i].info);
-            if( codecs[i].comment )
-                free(codecs[i].comment);
-            if( codecs[i].dll )
-                free(codecs[i].dll);
-            if( codecs[i].drv )
-                free(codecs[i].drv);
+            free(codecs[i].name);
+            free(codecs[i].info);
+            free(codecs[i].comment);
+            free(codecs[i].dll);
+            free(codecs[i].drv);
         }
     }
-    if (codecs)
-        free(codecs);
+    free(codecs);
 }
 
 void codecs_uninit_free(void) {

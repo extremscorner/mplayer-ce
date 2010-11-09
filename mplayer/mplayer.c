@@ -86,8 +86,8 @@
 #include "libmpcodecs/vf.h"
 #include "libmpdemux/demuxer.h"
 #include "libmpdemux/stheader.h"
-#include "libvo/font_load.h"
-#include "libvo/sub.h"
+#include "sub/font_load.h"
+#include "sub/sub.h"
 #include "libvo/video_out.h"
 #include "stream/cache2.h"
 #include "stream/stream.h"
@@ -96,7 +96,7 @@
 #include "stream/stream_radio.h"
 #include "stream/tv.h"
 #include "access_mpcontext.h"
-#include "ass_mp.h"
+#include "sub/ass_mp.h"
 #include "cfg-mplayer-def.h"
 #include "codec-cfg.h"
 #include "command.h"
@@ -114,17 +114,16 @@
 #include "mpcommon.h"
 #include "mplayer.h"
 #include "osdep/getch2.h"
-#include "osdep/priority.h"
 #include "osdep/timer.h"
 #include "parser-cfg.h"
 #include "parser-mpcmd.h"
 #include "path.h"
 #include "playtree.h"
 #include "playtreeparser.h"
-#include "spudec.h"
-#include "subreader.h"
-#include "vobsub.h"
-#include "eosd.h"
+#include "sub/spudec.h"
+#include "sub/subreader.h"
+#include "sub/vobsub.h"
+#include "sub/eosd.h"
 #include "osdep/getch2.h"
 #include "osdep/timer.h"
 
@@ -464,8 +463,9 @@ static char next_filename[MAXPATHLEN];
 #endif
 
 // dump:
-static char *stream_dump_name="stream.dump";
-       int stream_dump_type=0;
+char *stream_dump_name = "stream.dump";
+int stream_dump_type = 0;
+int capture_dump = 0;
 
 // A-V sync:
 static float default_max_pts_correction=-1;
@@ -805,7 +805,7 @@ static void print_file_properties(const MPContext *mpctx, const char *filename)
 static void mp_dvdnav_context_free(MPContext *ctx){
     if (ctx->nav_smpi) free_mp_image(ctx->nav_smpi);
     ctx->nav_smpi = NULL;
-    if (ctx->nav_buffer) free(ctx->nav_buffer);
+    free(ctx->nav_buffer);
     ctx->nav_buffer = NULL;
     ctx->nav_start = NULL;
     ctx->nav_in_size = 0;
@@ -978,7 +978,7 @@ void exit_player_with_rc(enum exit_reason how, int rc)
   mpctx->playtree = NULL;
 
 
-  if(edl_records != NULL) free(edl_records); // free mem allocated for EDL
+  free(edl_records); // free mem allocated for EDL
   edl_records = NULL;
   switch(how) {
   case EXIT_QUIT:
@@ -2339,8 +2339,7 @@ static void mp_dvdnav_save_smpi(int in_size,
     if (mpctx->stream->type != STREAMTYPE_DVDNAV)
         return;
 
-    if (mpctx->nav_buffer)
-        free(mpctx->nav_buffer);
+    free(mpctx->nav_buffer);
 
     mpctx->nav_buffer = malloc(in_size);
     mpctx->nav_start = start;
@@ -3199,8 +3198,6 @@ static int error_playing;
 int main(int argc,char* argv[]){
 
 
-char * mem_ptr;
-
 // movie info:
 
 /* Flag indicating whether MPlayer should exit without playing anything. */
@@ -3209,9 +3206,6 @@ int i;
 
 int gui_no_filename=0;
 
-  InitTimer();
-  srand(GetTimerMS());
-
 #ifdef GEKKO
   __exception_setreload(8);
   plat_init (&argc, &argv);
@@ -3219,7 +3213,7 @@ int gui_no_filename=0;
   load_restore_points();
 #endif
 
-  mp_msg_init();
+  common_preinit();
 
   // Create the config context and register the options
   mconfig = m_config_new();
@@ -3229,10 +3223,6 @@ int gui_no_filename=0;
 
   // Preparse the command line
   m_config_preparse_command_line(mconfig,argc,argv);
-
-#if (defined(__MINGW32__) || defined(__CYGWIN__)) && defined(CONFIG_WIN32DLL)
-  set_path_env();
-#endif
 
 #ifdef CONFIG_TV
   stream_tv_defaults.immediate = 1;
@@ -3277,15 +3267,13 @@ int gui_no_filename=0;
     }
 
   print_version("MPlayer");
-
-#if defined(__MINGW32__) || defined(__CYGWIN__)
-#ifdef CONFIG_GUI
+#if (defined(__MINGW32__) || defined(__CYGWIN__)) && defined(CONFIG_GUI)
     void *runningmplayer = FindWindow("MPlayer GUI for Windows", "MPlayer for Windows");
-    if(runningmplayer && filename && use_gui){
+    if (runningmplayer && filename && use_gui) {
         COPYDATASTRUCT csData;
         char file[MAX_PATH];
         char *filepart = filename;
-        if(GetFullPathName(filename, MAX_PATH, file, &filepart)){
+        if (GetFullPathName(filename, MAX_PATH, file, &filepart)) {
             csData.dwData = 0;
             csData.cbData = strlen(file)*2;
             csData.lpData = file;
@@ -3293,30 +3281,8 @@ int gui_no_filename=0;
         }
     }
 #endif
-
-	{
-		HMODULE kernel32 = GetModuleHandle("Kernel32.dll");
-		BOOL WINAPI (*setDEP)(DWORD) = NULL;
-		BOOL WINAPI (*setDllDir)(LPCTSTR) = NULL;
-		if (kernel32) {
-			setDEP = GetProcAddress(kernel32, "SetProcessDEPPolicy");
-			setDllDir = GetProcAddress(kernel32, "SetDllDirectoryA");
-		}
-		if (setDEP) setDEP(3);
-		if (setDllDir) setDllDir("");
-	}
-	// stop Windows from showing all kinds of annoying error dialogs
-	SetErrorMode(0x8003);
-	// request 1ms timer resolution
-	timeBeginPeriod(1);
-#endif
-
-#ifdef CONFIG_PRIORITY
-    set_priority();
-#endif
-
-  if (codec_path)
-    set_codec_path(codec_path);
+    if (!common_init())
+        exit_player_with_rc(EXIT_NONE, 0);
 
 #ifndef CONFIG_GUI
     if(use_gui){
@@ -3356,33 +3322,7 @@ int gui_no_filename=0;
       list_audio_out();
       opt_exit = 1;
     }
-#ifdef GEKKO
-load_builtin_codecs();
-#else
-/* Check codecs.conf. */
-if(!codecs_file || !parse_codec_cfg(codecs_file)){
-  mem_ptr=get_path("codecs.conf");
-  if(!parse_codec_cfg(mem_ptr)){
-  	char cad[100];
-  	sprintf(cad,"%s%s",MPLAYER_CONFDIR,"/codecs.conf");
-    if(!parse_codec_cfg(cad)){
-      if(!parse_codec_cfg(NULL)){
-        exit_player_with_rc(EXIT_NONE, 0);
-      }
-      mp_msg(MSGT_CPLAYER,MSGL_V,MSGTR_BuiltinCodecsConf);
-    }
-  }
-  free( mem_ptr ); // release the buffer created by get_path()
-}
-#endif
-#if 0
-    if(video_codec_list){
-	int i;
-	video_codec=video_codec_list[0];
-	for(i=0;video_codec_list[i];i++)
-	    mp_msg(MSGT_FIXME,MSGL_FIXME,"vc#%d: '%s'\n",i,video_codec_list[i]);
-    }
-#endif
+
     if(audio_codec_list && strcmp(audio_codec_list[0],"help")==0){
       mp_msg(MSGT_CPLAYER, MSGL_INFO, MSGTR_AvailableAudioCodecs);
       mp_msg(MSGT_IDENTIFY, MSGL_INFO, "ID_AUDIO_CODECS\n");
@@ -3458,46 +3398,6 @@ if(!codecs_file || !parse_codec_cfg(codecs_file)){
     }
 
 //------ load global data first ------
-
-// check font
-#ifdef CONFIG_FREETYPE
-  init_freetype();
-#endif
-#ifdef CONFIG_FONTCONFIG
-  if(font_fontconfig <= 0)
-  {
-#endif
-#ifdef CONFIG_BITMAP_FONT
-  if(font_name){
-       vo_font=read_font_desc(font_name,font_factor,verbose>1);
-       if(!vo_font) mp_msg(MSGT_CPLAYER,MSGL_ERR,MSGTR_CantLoadFont,
-		filename_recode(font_name));
-  } else {
-      // try default:
-       vo_font=read_font_desc( mem_ptr=get_path("font/font.desc"),font_factor,verbose>1);
-       free(mem_ptr); // release the buffer created by get_path()
-       if(!vo_font)
-       {
-       char cad[200];
-       sprintf(cad,"%s%s",MPLAYER_DATADIR,"/font/font.desc");
-       //printf("read_font_desc (%s)\n",cad);
-       vo_font=read_font_desc(cad,font_factor,verbose>1);
-       }
-  }
-  if (sub_font_name)
-    sub_font = read_font_desc(sub_font_name, font_factor, verbose>1);
-  else
-    sub_font = vo_font;
-#endif
-#ifdef CONFIG_FONTCONFIG
-  }
-#endif
-
-  vo_init_osd();
-
-#ifdef CONFIG_ASS
-  ass_library = ass_init();
-#endif
 
 #ifdef HAVE_RTC
   if(!nortc)
@@ -4648,7 +4548,7 @@ if(!mpctx->sh_video) {
   vo_fps=mpctx->sh_video->fps;
 
   if (!mpctx->num_buffered_frames) {
-	  double frame_time = update_video(&blit_frame);
+      double frame_time = update_video(&blit_frame);
 	  if (mpctx->startup_decode_retry > 0 && !(mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh)) {
       while (!blit_frame && mpctx->startup_decode_retry > 0) {
           double delay = mpctx->delay;
@@ -4855,8 +4755,7 @@ if(step_sec>0) {
   while( !brk_cmd && (cmd = mp_input_get_cmd(0,0,0)) != NULL) {
       brk_cmd = run_command(mpctx, cmd);
       if (cmd->id == MP_CMD_EDL_LOADFILE) {
-          if (edl_filename)
-              free(edl_filename);
+          free(edl_filename);
           edl_filename = strdup(cmd->args[0].v.s);
           if (edl_filename)
               edl_loadfile();

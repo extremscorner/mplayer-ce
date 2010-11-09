@@ -2357,7 +2357,7 @@ EOF
     _optimizing="$proc"
     ;;
 
-  mips)
+  mips*)
     arch='mips'
     iproc='mips'
 
@@ -3320,14 +3320,16 @@ test $_winsock2_h = no && test $inet_pton = no &&
 if test "$networking" = yes ; then
   def_network='#define CONFIG_NETWORK 1'
   def_networking='#define CONFIG_NETWORKING 1'
+  def_rtpdec='#define CONFIG_RTPDEC 1'
   extra_ldflags="$extra_ldflags $_ld_sock"
   inputmodules="networking $inputmodules"
 else
   noinputmodules="networking $noinputmodules"
   def_network='#define CONFIG_NETWORK 0'
   def_networking='#undef CONFIG_NETWORKING'
+  def_rtpdec='#define CONFIG_RTPDEC 0'
   libavprotocols=$(echo $libavprotocols | sed -e s/GOPHER_PROTOCOL// -e s/HTTP_PROTOCOL// -e s/RTMP_PROTOCOL// -e s/RTP_PROTOCOL// -e s/TCP_PROTOCOL// -e s/UDP_PROTOCOL// -e s/MMSH_PROTOCOL// -e s/MMST_PROTOCOL//)
-  libavdemuxers=$(echo $libavdemuxers | sed -e s/RTSP_DEMUXER// -e s/SDP_DEMUXER//)
+  libavdemuxers=$(echo $libavdemuxers | sed -e s/RTSP_DEMUXER// -e s/SDP_DEMUXER// -e s/RTP_DEMUXER//)
 fi
 echores "$networking"
 
@@ -3584,7 +3586,6 @@ test "$_w32threads" = yes && def_threads='#define HAVE_THREADS 1'
 echores "$_w32threads"
 
 echocheck "rpath"
-netbsd &&_rpath=yes
 if test "$_rpath" = yes ; then
   for I in $(echo $extra_ldflags | sed 's/-L//g') ; do
     tmp="$tmp $(echo $I | sed 's/.*/ -L& -Wl,-R&/')"
@@ -5892,7 +5893,7 @@ echores "$_dvdread"
 echocheck "internal libdvdcss"
 if test "$_libdvdcss_internal" = auto ; then
   _libdvdcss_internal=no
-  test "$_dvdread_internal" = yes && _libdvdcss_internal=yes
+  test "$_dvdread_internal" = yes && test -d libdvdcss && _libdvdcss_internal=yes
   hpux && test "$_hpux_scsi_h" = no && _libdvdcss_internal=no
 fi
 if test "$_libdvdcss_internal" = yes ; then
@@ -7064,7 +7065,7 @@ if test "$_x264" = auto ; then
   cat > $TMPC << EOF
 #include <inttypes.h>
 #include <x264.h>
-#if X264_BUILD < 98
+#if !(X264_BUILD >= 99)
 #error We do not support old versions of x264. Get the latest from git.
 #endif
 int main(void) { x264_encoder_open((void*)0); return 0; }
@@ -7835,7 +7836,7 @@ test "$_debug" != "" && def_debug='#define MP_DEBUG 1'
 echocheck "joystick"
 def_joystick='#undef CONFIG_JOYSTICK'
 if test "$_joystick" = yes ; then
-  if linux ; then
+  if linux || freebsd ; then
     # TODO add some check
     def_joystick='#define CONFIG_JOYSTICK 1'
   else
@@ -8261,6 +8262,7 @@ CONFIG_GPL      = yes
 CONFIG_MLIB     = $_mlib
 CONFIG_MUXERS   = $_mencoder
 CONFIG_POSTPROC = yes
+CONFIG_RTPDEC   = $networking
 CONFIG_VDPAU    = $_vdpau
 CONFIG_XVMC     = $_xvmc
 CONFIG_ZLIB     = $_zlib
@@ -8682,6 +8684,7 @@ $def_ffmpeg_so
 #define CONFIG_ENCODERS 1
 #define CONFIG_DEMUXERS 1
 $def_muxers
+$def_rtpdec
 
 $def_arpa_inet_h
 $def_bswap

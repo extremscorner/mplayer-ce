@@ -35,7 +35,7 @@
 #include "mpcommon.h"
 #include "subreader.h"
 #include "subassconvert.h"
-#include "libvo/sub.h"
+#include "sub.h"
 #include "stream/stream.h"
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
@@ -1129,13 +1129,8 @@ static int sub_autodetect (stream_t* st, int *uses_time, int utf16) {
 		{*uses_time=1;return SUB_VPLAYER;}
 	if (sscanf (line, "%d:%d:%d ",     &i, &i, &i )==3)
 		{*uses_time=1;return SUB_VPLAYER;}
-	//TODO: just checking if first line of sub starts with "<" is WAY
-	// too weak test for RT
-	// Please someone who knows the format of RT... FIX IT!!!
-	// It may conflict with other sub formats in the future (actually it doesn't)
-	if ( *line == '<' )
+	if (!strncasecmp(line, "<window", 7))
 		{*uses_time=1;return SUB_RT;}
-
 	if (!memcmp(line, "Dialogue: Marked", 16))
 		{*uses_time=1; return SUB_SSA;}
 	if (!memcmp(line, "Dialogue: ", 10))
@@ -1518,7 +1513,7 @@ sub_data* sub_read_file (char *filename, float fps) {
 #ifdef CONFIG_ICONV
           subcp_close();
 #endif
-    	  if ( first ) free(first);
+	  free(first);
 	  free(alloced_sub);
 	  return NULL;
 	 }
@@ -2048,7 +2043,7 @@ char** sub_filenames(const char* path, char *fname)
 
     }
 
-    if (tmp_sub_id) free(tmp_sub_id);
+    free(tmp_sub_id);
 
     free(f_dir);
     free(f_fname);

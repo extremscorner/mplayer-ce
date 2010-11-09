@@ -21,9 +21,9 @@
 
 #include "m_config.h"
 #include "m_option.h"
-#include "subreader.h"
+#include "sub/subreader.h"
 #include "libmpdemux/demuxer.h"
-#include "ass_mp.h"
+#include "sub/ass_mp.h"
 
 struct sh_video;
 
@@ -67,5 +67,8 @@ void update_subtitles(struct sh_video *sh_video, double refpts, demux_stream_t *
 void update_teletext(struct sh_video *sh_video, demuxer_t *demuxer, int reset);
 int select_audio(demuxer_t* demuxer, int audio_id, char* audio_lang);
 void set_osd_subtitle(subtitle *subs);
+
+void common_preinit(void);
+int common_init(void);
 
 #endif /* MPLAYER_MPCOMMON_H */
