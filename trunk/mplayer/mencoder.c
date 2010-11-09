@@ -72,10 +72,9 @@
 #include "libmpdemux/muxer.h"
 #include "libmpdemux/stheader.h"
 #include "libvo/fastmemcpy.h"
-#include "libvo/font_load.h"
-#include "libvo/sub.h"
+#include "sub/font_load.h"
+#include "sub/sub.h"
 #include "libvo/video_out.h"
-#include "osdep/priority.h"
 #include "osdep/timer.h"
 #include "stream/stream.h"
 #include "stream/stream_bd.h"
@@ -83,7 +82,7 @@
 #include "stream/stream_dvd.h"
 #endif
 #include "stream/stream_dvdnav.h"
-#include "ass_mp.h"
+#include "sub/ass_mp.h"
 #include "codec-cfg.h"
 #include "edl.h"
 #include "help_mp.h"
@@ -95,9 +94,9 @@
 #include "parser-cfg.h"
 #include "parser-mecmd.h"
 #include "path.h"
-#include "spudec.h"
-#include "vobsub.h"
-#include "eosd.h"
+#include "sub/spudec.h"
+#include "sub/vobsub.h"
+#include "sub/eosd.h"
 #include "mencoder.h"
 
 
@@ -355,15 +354,30 @@ static void add_subtitles(char *filename, float fps, int silent)
     subdata = subd;
 }
 
+/* Provide a timer value suitable for use in A/V sync calculations.
+ * mux->timer records the current position of the muxer stream.
+ * mux->encoder_delay is how many frames are currently buffered by the
+ * encoder. To mencoder core, encoder-buffered frames have been "dealt with"--
+ * they'll get to the muxer eventually. So, for the purposes of A/V sync,
+ * we need to add the total time length of buffered frames to the muxer stream
+ * position. */
+static double adjusted_muxer_time(muxer_stream_t *mux)
+{
+    if (! mux) return MP_NOPTS_VALUE;
+    return mux->timer + (double) mux->encoder_delay * mux->h.dwScale/mux->h.dwRate;
+}
+
 /* This function returns the absolute time for which MEncoder will switch files
  * or move in the file so audio can be cut correctly. -1 if there is no limit. */
 static float stop_time(demuxer_t* demuxer, muxer_stream_t* mux_v)
 {
 	float timeleft = -1;
-	if (play_n_frames >= 0) timeleft = mux_v->timer + play_n_frames * (double)(mux_v->h.dwScale) / mux_v->h.dwRate;
-	if (end_at.type == END_AT_TIME && (timeleft > end_at.pos || timeleft == -1)) timeleft = end_at.pos;
+	if (play_n_frames >= 0)
+		timeleft = adjusted_muxer_time(mux_v) + play_n_frames * (double)(mux_v->h.dwScale) / mux_v->h.dwRate;
+	if (end_at.type == END_AT_TIME && (timeleft > end_at.pos || timeleft == -1))
+		timeleft = end_at.pos;
 	if (next_edl_record && demuxer && demuxer->video) { // everything is OK to be checked
-		float tmp = mux_v->timer + next_edl_record->start_sec - demuxer->video->pts;
+		float tmp = adjusted_muxer_time(mux_v) + next_edl_record->start_sec - demuxer->video->pts;
 		if (timeleft == -1 || timeleft > tmp) {
 			// There's less time in EDL than what we already know
 			if (next_edl_record->action == EDL_SKIP && edl_seeking) {
@@ -575,7 +589,7 @@ audio_encoder_t *aencoder = NULL;
 
 user_correct_pts = 0;
 
-  mp_msg_init();
+  common_preinit();
 
   // Create the config context and register the options
   mconfig = m_config_new();
@@ -587,27 +601,11 @@ user_correct_pts = 0;
 
   print_version("MEncoder");
 
-#if (defined(__MINGW32__) || defined(__CYGWIN__)) && defined(CONFIG_WIN32DLL)
-  set_path_env();
-#endif
-
-  InitTimer();
-
-// check codec.conf
-if(!codecs_file || !parse_codec_cfg(codecs_file)){
-  if(!parse_codec_cfg(get_path("codecs.conf"))){
-    if(!parse_codec_cfg(MPLAYER_CONFDIR "/codecs.conf")){
-      if(!parse_codec_cfg(NULL)){
-	mencoder_exit(1,NULL);
-      }
-      mp_msg(MSGT_MENCODER,MSGL_V,MSGTR_BuiltinCodecsConf);
-    }
-  }
-}
-
  parse_cfgfiles(mconfig);
  filelist = m_config_parse_me_command_line(mconfig, argc, argv);
  if(!filelist) mencoder_exit(1, MSGTR_ErrorParsingCommandLine);
+ if (!common_init())
+   mencoder_exit(1,NULL);
 
 {
 	char *extension;
@@ -647,38 +645,6 @@ if (frameno_filename) {
   }
 }
 
-#ifdef CONFIG_PRIORITY
-  set_priority();
-#endif
-
-  if (codec_path)
-    set_codec_path(codec_path);
-
-// check font
-#ifdef CONFIG_FREETYPE
-  init_freetype();
-#endif
-#ifdef CONFIG_FONTCONFIG
-  if(font_fontconfig <= 0)
-  {
-#endif
-#ifdef CONFIG_BITMAP_FONT
-  if(font_name){
-       vo_font=read_font_desc(font_name,font_factor,verbose>1);
-       if(!vo_font) mp_msg(MSGT_CPLAYER,MSGL_ERR,MSGTR_CantLoadFont,font_name);
-  } else {
-      // try default:
-       vo_font=read_font_desc(get_path("font/font.desc"),font_factor,verbose>1);
-       if(!vo_font)
-         vo_font=read_font_desc(MPLAYER_DATADIR "/font/font.desc",font_factor,verbose>1);
-  }
-#endif
-#ifdef CONFIG_FONTCONFIG
-  }
-#endif
-
-  vo_init_osd();
-
   /* HACK, for some weird reason, push() has to be called twice,
      otherwise options are not saved correctly */
   m_config_push(mconfig);
@@ -686,10 +652,6 @@ play_next_file:
   m_config_push(mconfig);
   m_entry_set_options(mconfig,&filelist[curfile]);
   filename = filelist[curfile].name;
-
-#ifdef CONFIG_ASS
-  ass_library = ass_init();
-#endif
 
   if(!filename){
 	mp_msg(MSGT_CPLAYER, MSGL_FATAL, MSGTR_MissingFilename);
@@ -1278,7 +1240,7 @@ if(file_format == DEMUXER_TYPE_TV)
 	}
 
 play_n_frames=play_n_frames_mf;
-if (curfile && end_at.type == END_AT_TIME) end_at.pos += mux_v->timer;
+if (curfile && end_at.type == END_AT_TIME) end_at.pos += adjusted_muxer_time(mux_v);
 
 if (edl_records) free_edl(edl_records);
 next_edl_record = edl_records = NULL;
@@ -1296,9 +1258,14 @@ while(!at_eof){
     float a_pts=0;
     float v_pts=0;
     int skip_flag=0; // 1=skip  -1=duplicate
+    double a_muxer_time;
+    double v_muxer_time;
+
+    a_muxer_time = adjusted_muxer_time(mux_a);
+    v_muxer_time = adjusted_muxer_time(mux_v);
 
     if((end_at.type == END_AT_SIZE && end_at.pos <= stream_tell(muxer->stream))  ||
-       (end_at.type == END_AT_TIME && end_at.pos < mux_v->timer))
+       (end_at.type == END_AT_TIME && end_at.pos < v_muxer_time))
         break;
 
     if(play_n_frames>=0){
@@ -1352,7 +1319,7 @@ goto_redo_edl:
 
 if(sh_audio){
     // get audio:
-    while(mux_a->timer-audio_preload<mux_v->timer){
+    while(a_muxer_time-audio_preload<v_muxer_time){
         float tottime;
 	int len=0;
 
@@ -1361,7 +1328,7 @@ if(sh_audio){
 	// or until the end of video:
 	tottime = stop_time(demuxer, mux_v);
 	if (tottime != -1) {
-		tottime -= mux_a->timer;
+		tottime -= a_muxer_time;
 		if (tottime > 1./audio_density) tottime = 1./audio_density;
 	}
 	else tottime = 1./audio_density;
@@ -1412,7 +1379,7 @@ if(sh_audio){
 				mux_a->buffer_len += len;
 			}
 	    }
-	    if (mux_v->timer == 0) mux_a->h.dwInitialFrames++;
+	    if (v_muxer_time == 0) mux_a->h.dwInitialFrames++;
 	}
 	else {
 	if(mux_a->h.dwSampleSize){
@@ -1435,8 +1402,9 @@ if(sh_audio){
 	}
 	if(len<=0) break; // EOF?
 	muxer_write_chunk(mux_a,len,AVIIF_KEYFRAME, MP_NOPTS_VALUE, MP_NOPTS_VALUE);
-	if(!mux_a->h.dwSampleSize && mux_a->timer>0)
-	    mux_a->wf->nAvgBytesPerSec=0.5f+(double)mux_a->size/mux_a->timer; // avg bps (VBR)
+	a_muxer_time = adjusted_muxer_time(mux_a); // update after muxing
+	if(!mux_a->h.dwSampleSize && a_muxer_time>0)
+	    mux_a->wf->nAvgBytesPerSec=0.5f+(double)mux_a->size/a_muxer_time; // avg bps (VBR)
 	if(mux_a->buffer_len>=len){
 	    mux_a->buffer_len-=len;
 	    fast_memcpy(mux_a->buffer,mux_a->buffer+len,mux_a->buffer_len);
@@ -1531,6 +1499,7 @@ default:
     void *decoded_frame = decode_video(sh_video,frame_data.start,frame_data.in_size,
                                        drop_frame, MP_NOPTS_VALUE, NULL);
     blit_frame = decoded_frame && filter_video(sh_video, decoded_frame, MP_NOPTS_VALUE);}
+    v_muxer_time = adjusted_muxer_time(mux_v); // update after muxing
 
     if (sh_video->vf_initialized < 0) mencoder_exit(1, NULL);
 
@@ -1603,10 +1572,7 @@ if(sh_audio && !demuxer2){
     AV_delay=(a_pts-v_pts);
     AV_delay-=audio_delay;
     AV_delay /= playback_speed;
-    AV_delay-=mux_a->timer-(mux_v->timer-(v_timer_corr+v_pts_corr));
-    // adjust for encoder delays
-    AV_delay -= (float) mux_a->encoder_delay * mux_a->h.dwScale/mux_a->h.dwRate;
-    AV_delay += (float) mux_v->encoder_delay * mux_v->h.dwScale/mux_v->h.dwRate;
+    AV_delay-=a_muxer_time-(v_muxer_time-(v_timer_corr+v_pts_corr));
 	// compensate input video timer by av:
         x=AV_delay*0.1f;
         if(x<-max_pts_correction) x=-max_pts_correction; else
@@ -1634,25 +1600,25 @@ if(sh_audio && !demuxer2){
       if(!quiet) {
 	if( mp_msg_test(MSGT_STATUSLINE,MSGL_V) ) {
 		mp_msg(MSGT_STATUSLINE,MSGL_STATUS,"Pos:%6.1fs %6df (%2d%%) %3dfps Trem:%4dmin %3dmb  A-V:%5.3f [%d:%d] A/Vms %d/%d D/B/S %d/%d/%d \r",
-	    	mux_v->timer, decoded_frameno, (int)(p*100),
+	    	v_muxer_time, decoded_frameno, (int)(p*100),
 	    	(t>1) ? (int)(decoded_frameno/t+0.5) : 0,
 	    	(p>0.001) ? (int)((t/p-t)/60) : 0,
 	    	(p>0.001) ? (int)(stream_tell(muxer->stream)/p/1024/1024) : 0,
 	    	v_pts_corr,
-	    	(mux_v->timer>1) ? (int)(mux_v->size/mux_v->timer/125) : 0,
-	    	(mux_a && mux_a->timer>1) ? (int)(mux_a->size/mux_a->timer/125) : 0,
+	    	(v_muxer_time>1) ? (int)(mux_v->size/v_muxer_time/125) : 0,
+	    	(mux_a && a_muxer_time>1) ? (int)(mux_a->size/a_muxer_time/125) : 0,
 			audiorate/audiosamples, videorate/videosamples,
 			duplicatedframes, badframes, skippedframes
 		);
 	} else
 	mp_msg(MSGT_STATUSLINE,MSGL_STATUS,"Pos:%6.1fs %6df (%2d%%) %5.2ffps Trem:%4dmin %3dmb  A-V:%5.3f [%d:%d]\r",
-	    mux_v->timer, decoded_frameno, (int)(p*100),
+	    v_muxer_time, decoded_frameno, (int)(p*100),
 	    (t>1) ? (float)(decoded_frameno/t) : 0,
 	    (p>0.001) ? (int)((t/p-t)/60) : 0,
 	    (p>0.001) ? (int)(stream_tell(muxer->stream)/p/1024/1024) : 0,
 	    v_pts_corr,
-	    (mux_v->timer>1) ? (int)(mux_v->size/mux_v->timer/125) : 0,
-	    (mux_a && mux_a->timer>1) ? (int)(mux_a->size/mux_a->timer/125) : 0
+	    (v_muxer_time>1) ? (int)(mux_v->size/v_muxer_time/125) : 0,
+	    (mux_a && a_muxer_time>1) ? (int)(mux_a->size/a_muxer_time/125) : 0
 	);
       }
     }
@@ -1665,7 +1631,7 @@ if(sh_audio && !demuxer2){
      int len;
      while((len=ds_get_packet_sub(d_dvdsub,&packet, NULL, NULL))>0){
 	 mp_msg(MSGT_MENCODER,MSGL_V,"\rDVD sub: len=%d  v_pts=%5.3f  s_pts=%5.3f  \n",len,sh_video->pts,d_dvdsub->pts);
-	     vobsub_out_output(vobsub_writer,packet,len,mux_v->timer + d_dvdsub->pts - sh_video->pts);
+	     vobsub_out_output(vobsub_writer,packet,len,v_muxer_time + d_dvdsub->pts - sh_video->pts);
      }
  }
  else

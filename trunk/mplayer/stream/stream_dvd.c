@@ -413,16 +413,16 @@ static void dvd_close(dvd_priv_t *d)
   dvd_set_speed(dvd_device_current, -1); /* -1 => restore default */
 }
 
-static int fill_buffer(stream_t *s, char *but, int len)
+static int fill_buffer(stream_t *s, char *buf, int len)
 {
-  if(s->type == STREAMTYPE_DVD) {
-    off_t pos=dvd_read_sector(s->priv,s->buffer);
-    if(pos>=0) {
-      len=2048; // full sector
-      s->pos=2048*pos-len;
-    } else len=-1; // error
-  }
-  return len;
+  off_t pos;
+  if (len < 2048)
+    return -1;
+  pos = dvd_read_sector(s->priv, buf);
+  if (pos < 0)
+    return -1;
+  s->pos = 2048*(pos - 1);
+  return 2048; // full sector
 }
 
 static int seek(stream_t *s, off_t newpos) {
@@ -542,7 +542,7 @@ static int seek_to_chapter(stream_t *stream, ifo_handle_t *vts_file, tt_srpt_t *
 static void list_chapters(ifo_handle_t *vts_file, tt_srpt_t *tt_srpt, int title_no)
 {
     unsigned int i, cell, last_cell;
-    unsigned int t=0, t2=0;
+    unsigned int t=0;
     ptt_info_t *ptt;
     pgc_t *pgc;
 
@@ -560,8 +560,7 @@ static void list_chapters(ifo_handle_t *vts_file, tt_srpt_t *tt_srpt, int title_
             last_cell = pgc->program_map[ptt[i].pgn];
         else
             last_cell = 0;
-        t2 = t/1000;
-        mp_msg(MSGT_IDENTIFY, MSGL_INFO, "%02d:%02d:%02d,", t2/3600, (t2/60)%60, t2%60);
+        mp_msg(MSGT_IDENTIFY, MSGL_INFO, "%02d:%02d:%02d.%03d,", t/3600000, (t/60000)%60, (t/1000)%60, t%1000);
         do {
             if(!(pgc->cell_playback[cell-1].block_type == BLOCK_TYPE_ANGLE_BLOCK &&
                  pgc->cell_playback[cell-1].block_mode != BLOCK_MODE_FIRST_CELL)

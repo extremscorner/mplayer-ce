@@ -184,6 +184,7 @@ static stream_t* open_stream_plugin(const stream_info_t* sinfo, const char* file
     }
   }
   s = new_stream(-2,-2);
+  s->capture_file = NULL;
   s->url=strdup(filename);
   s->flags |= mode;
   *ret = sinfo->open(s,mode,arg,file_format);
@@ -274,37 +275,55 @@ stream_t* open_output_stream(const char* filename, char** options) {
 
 //=================== STREAMER =========================
 #include <errno.h>
-int stream_fill_buffer(stream_t *s){
-  int len;
+void stream_capture_do(stream_t *s)
+{
+  if (fwrite(s->buffer, s->buf_len, 1, s->capture_file) < 1) {
+    mp_msg(MSGT_GLOBAL, MSGL_ERR, "Error writing capture file: %s\n",
+           strerror(errno));
+    fclose(s->capture_file);
+    s->capture_file = NULL;
+  }
+}
+
+int stream_read_internal(stream_t *s, void *buf, int len)
+{
   static int try=0;
   if (/*s->fd == NULL ||*/ s->eof) { s->buf_pos = s->buf_len = 0; return 0; }
   switch(s->type){
   case STREAMTYPE_STREAM:
 #ifdef CONFIG_NETWORKING
     if( s->streaming_ctrl!=NULL && s->streaming_ctrl->streaming_read ) {
-	    len=s->streaming_ctrl->streaming_read(s->fd,s->buffer,STREAM_BUFFER_SIZE, s->streaming_ctrl);
+      len=s->streaming_ctrl->streaming_read(s->fd, buf, len, s->streaming_ctrl);
     } else
 #endif
     if (s->fill_buffer)
-      len = s->fill_buffer(s, s->buffer, STREAM_BUFFER_SIZE);
+      len = s->fill_buffer(s, buf, len);
     else
-      len=read(s->fd,s->buffer,STREAM_BUFFER_SIZE);
+      len = read(s->fd, buf, len);
     break;
   case STREAMTYPE_DS:
-    len = demux_read_data((demux_stream_t*)s->priv,s->buffer,STREAM_BUFFER_SIZE);
+    len = demux_read_data((demux_stream_t*)s->priv, buf, len);
     break;
 
 
   default:
-    len= s->fill_buffer ? s->fill_buffer(s,s->buffer,STREAM_BUFFER_SIZE) : 0;
+    len= s->fill_buffer ? s->fill_buffer(s, buf, len) : 0;
   }
   if(len==0){ if(try>3)s->eof=1; try++; s->buf_pos=s->buf_len=0; return 0; }
   if(len<0) { s->eof=1; s->buf_pos=s->buf_len=0;/*printf("errno: %i\n",errno);*/if(s->error==0 && errno==EIO )s->error=1;return 0; } 
+  s->pos+=len;
+  return len;
+}
+
+int stream_fill_buffer(stream_t *s){
+  int len = stream_read_internal(s, s->buffer, STREAM_BUFFER_SIZE);
+  if (len <= 0)
+    return 0;
   s->buf_pos=0;
   s->buf_len=len;
-  s->pos+=len;
-  try=0;
 //  printf("[%d]",len);fflush(stdout);
+  if (s->capture_file)
+    stream_capture_do(s);
   return len;
 }
 
@@ -319,7 +338,56 @@ int stream_write_buffer(stream_t *s, unsigned char *buf, int len) {
   return rd;
 }
 
+int stream_seek_internal(stream_t *s, off_t newpos)
+{
+if(newpos==0 || newpos!=s->pos){
+  switch(s->type){
+  case STREAMTYPE_STREAM:
+    //s->pos=newpos; // real seek
+    // Some streaming protocol allow to seek backward and forward
+    // A function call that return -1 can tell that the protocol
+    // doesn't support seeking.
+#ifdef CONFIG_NETWORKING
+    if(s->seek) { // new stream seek is much cleaner than streaming_ctrl one
+      if(!s->seek(s,newpos)) {
+      	mp_msg(MSGT_STREAM,MSGL_ERR, "Seek failed\n");
+      	return 0;
+      }
+      break;
+    }
+
+    if( s->streaming_ctrl!=NULL && s->streaming_ctrl->streaming_seek ) {
+      if( s->streaming_ctrl->streaming_seek( s->fd, newpos, s->streaming_ctrl )<0 ) {
+        mp_msg(MSGT_STREAM,MSGL_INFO,"Stream not seekable!\n");
+        return 1;
+      }
+      break;
+    }
+#endif
+    if(newpos<s->pos){
+      mp_msg(MSGT_STREAM,MSGL_INFO,"Cannot seek backward in linear streams!\n");
+      return 1;
+    }
+    break;
+  default:
+    // This should at the beginning as soon as all streams are converted
+    if(!s->seek)
+      return 0;
+    // Now seek
+    if(!s->seek(s,newpos)) {
+      mp_msg(MSGT_STREAM,MSGL_ERR, "Seek failed\n");
+      return 0;
+    }
+  }
+//   putchar('.');fflush(stdout);
+//} else {
+//   putchar('%');fflush(stdout);
+}
+  return -1;
+}
+
 int stream_seek_long(stream_t *s,off_t pos){
+  int res;
 off_t newpos=0;
 
 //  if( mp_msg_test(MSGT_STREAM,MSGL_DBG3) ) printf("seek_long to 0x%X\n",(unsigned int)pos);
@@ -343,52 +411,13 @@ if( mp_msg_test(MSGT_STREAM,MSGL_DBG3) ){
 }
   pos-=newpos;
 
-if(newpos==0 || newpos!=s->pos){
-  switch(s->type){
-  case STREAMTYPE_STREAM:
-    //s->pos=newpos; // real seek
-    // Some streaming protocol allow to seek backward and forward
-    // A function call that return -1 can tell that the protocol
-    // doesn't support seeking.
-#ifdef CONFIG_NETWORKING
-    if(s->seek) { // new stream seek is much cleaner than streaming_ctrl one
-      if(!s->seek(s,newpos)) {
-      	mp_msg(MSGT_STREAM,MSGL_ERR, "Seek failed\n");
-      	return 0;
-      }
-      break;
-    }
+  res = stream_seek_internal(s, newpos);
+  if (res >= 0)
+    return res;
 
-    if( s->streaming_ctrl!=NULL && s->streaming_ctrl->streaming_seek ) {
-      if( s->streaming_ctrl->streaming_seek( s->fd, pos, s->streaming_ctrl )<0 ) {
-        mp_msg(MSGT_STREAM,MSGL_INFO,"Stream not seekable!\n");
-        return 1;
-      }
-      break;
-    }
-#endif
-    if(newpos<s->pos){
-      mp_msg(MSGT_STREAM,MSGL_INFO,"Cannot seek backward in linear streams!\n");
-      return 1;
-    }
-    while(s->pos<newpos){
-      if(stream_fill_buffer(s)<=0) break; // EOF
-    }
-    break;
-  default:
-    // This should at the beginning as soon as all streams are converted
-    if(!s->seek)
-      return 0;
-    // Now seek
-    if(!s->seek(s,newpos)) {
-      mp_msg(MSGT_STREAM,MSGL_ERR, "Seek failed\n");
-      return 0;
-    }
+  while(s->pos<newpos){
+    if(stream_fill_buffer(s)<=0) break; // EOF
   }
-//   putchar('.');fflush(stdout);
-//} else {
-//   putchar('%');fflush(stdout);
-}
 
 while(stream_fill_buffer(s) > 0 && pos >= 0) {
   if(pos<=s->buf_len){
@@ -468,6 +497,11 @@ void free_stream(stream_t *s){
 #ifdef CONFIG_STREAM_CACHE
     cache_uninit(s);
 #endif
+  if (s->capture_file) {
+    fclose(s->capture_file);
+    s->capture_file = NULL;
+  }
+
   if(s->close) s->close(s);
   if(s->fd>0){
     /* on unix we define closesocket to close
@@ -485,8 +519,8 @@ void free_stream(stream_t *s){
 #endif
   // Disabled atm, i don't like that. s->priv can be anything after all
   // streams should destroy their priv on close
-  //if(s->priv) free(s->priv);
-  if(s->url) free(s->url);
+  //free(s->priv);
+  free(s->url);
   s->url=NULL;
   free(s);
 }

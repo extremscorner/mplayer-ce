@@ -48,7 +48,7 @@
 #include "input/input.h"
 #include "input/mouse.h"
 #include "subopt-helper.h"
-#include "sub.h"
+#include "sub/sub.h"
 
 #include "cpudetect.h"
 #include "libswscale/swscale.h"
@@ -140,8 +140,17 @@ struct {
 
 static inline void setAspectRatio(ULONG ulRatio)
 {
+    ULONG ulValue;
+    int   i;
+
     m_int.kvas.ulRatio = ulRatio;
     kvaSetup(&m_int.kvas);
+
+    // Setup initializes all attributes, so need to restore them.
+    for (i = 0; i < KVAA_LAST; i++) {
+        kvaQueryAttr(i, &ulValue);
+        kvaSetAttr(i, &ulValue);
+    }
 }
 
 static int query_format_info(int format, PBOOL pfHWAccel, PFOURCC pfcc,
@@ -569,8 +578,14 @@ static int preinit(const char *arg)
         flFrameFlags = FCF_SYSMENU    | FCF_TITLEBAR | FCF_MINMAX |
                        FCF_SIZEBORDER | FCF_TASKLIST;
     } else {
+        ULONG ulStyle;
+
         hwndParent   = HWNDFROMWINID(WinID);
         flFrameFlags = 0;
+
+        // Prevent a parent window from painting over our window
+        ulStyle = WinQueryWindowULong(hwndParent, QWL_STYLE);
+        WinSetWindowULong(hwndParent, QWL_STYLE, ulStyle | WS_CLIPCHILDREN);
     }
 
     m_int.hwndFrame =

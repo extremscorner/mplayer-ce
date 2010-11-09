@@ -419,7 +419,7 @@ void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *
 
 const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt)
 {
-    if (pix_fmt < 0 || pix_fmt >= PIX_FMT_NB)
+    if ((unsigned)pix_fmt >= PIX_FMT_NB)
         return NULL;
     else
         return av_pix_fmt_descriptors[pix_fmt].name;
@@ -437,19 +437,16 @@ void avcodec_pix_fmt_string (char *buf, int buf_size, enum PixelFormat pix_fmt)
     /* print header */
     if (pix_fmt < 0)
         snprintf (buf, buf_size,
-                  "name      " " nb_channels" " depth" " is_alpha"
+                  "name      " " nb_channels" " depth"
             );
     else{
         PixFmtInfo info= pix_fmt_info[pix_fmt];
 
-        char is_alpha_char= info.is_alpha ? 'y' : 'n';
-
         snprintf (buf, buf_size,
-                  "%-11s %5d %9d %6c",
+                  "%-11s %5d %9d",
                   av_pix_fmt_descriptors[pix_fmt].name,
                   info.nb_channels,
-                  info.depth,
-                  is_alpha_char
+                  av_get_bits_per_pixel(&av_pix_fmt_descriptors[pix_fmt])
             );
     }
 }
@@ -514,12 +511,13 @@ int ff_fill_pointer(AVPicture *picture, uint8_t *ptr, enum PixelFormat pix_fmt,
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    enum PixelFormat pix_fmt, int width, int height)
 {
+    int ret;
 
-    if(av_image_check_size(width, height, 0, NULL))
-        return -1;
+    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
+        return ret;
 
-    if (av_image_fill_linesizes(picture->linesize, pix_fmt, width))
-        return -1;
+    if ((ret = av_image_fill_linesizes(picture->linesize, pix_fmt, width)) < 0)
+        return ret;
 
     return av_image_fill_pointers(picture->data, pix_fmt, height, ptr, picture->linesize);
 }

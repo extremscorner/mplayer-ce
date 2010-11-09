@@ -1309,7 +1309,6 @@ static const char help_text[]=
 #define MSGTR_INPUT_INPUT_ErrBuffer2SmallForCmd "%s komutu için tampon çok küçük\n"
 #define MSGTR_INPUT_INPUT_ErrWhyHere "Burada ne yapıyoruz?\n"
 #define MSGTR_INPUT_INPUT_ErrCantInitJoystick "Kumanda kolu girdisi açılamıyor\n"
-#define MSGTR_INPUT_INPUT_ErrCantStatFile " %s sabitlenemiyor: %s\n"
 #define MSGTR_INPUT_INPUT_ErrCantOpenFile "%s açılamıyor: %s\n"
 #define MSGTR_INPUT_INPUT_ErrCantInitAppleRemote "Apple Remote açılamıyor.\n"
 
@@ -1764,7 +1763,7 @@ static const char help_text[]=
 #define MSGTR_LIBVO_DXR3_XCorrection "[VO_DXR3] X-düzeltimi: %d.\n"
 #define MSGTR_LIBVO_DXR3_FailedSetSignalMix "[VO_DXR3] Sinyal karıştırma ayarlanamadı!\n"
 
-// libvo/font_load_ft.c
+// font_load_ft.c
 
 #define MSGTR_LIBVO_FONT_LOAD_FT_NewFaceFailed "New_Face başarısız. Yazıtipi yolu yanlış olabilir.\nLütfen yazıtipi dosyasını sağlayın (~/.mplayer/subfont.ttf).\n"
 #define MSGTR_LIBVO_FONT_LOAD_FT_NewMemoryFaceFailed "New_Memory_Face başarısız..\n"

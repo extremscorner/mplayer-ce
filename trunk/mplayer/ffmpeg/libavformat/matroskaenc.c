@@ -26,6 +26,7 @@
 #include "avc.h"
 #include "flacenc.h"
 #include "avlanguage.h"
+#include "libavcore/samplefmt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/lfg.h"
@@ -540,7 +541,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         AVMetadataTag *tag;
 
         if (!bit_depth)
-            bit_depth = av_get_bits_per_sample_format(codec->sample_fmt);
+            bit_depth = av_get_bits_per_sample_fmt(codec->sample_fmt);
 
         if (codec->codec_id == CODEC_ID_AAC)
             get_aac_sample_rates(s, codec, &sample_rate, &output_sample_rate);
@@ -751,6 +752,8 @@ static int mkv_write_tags(AVFormatContext *s)
 {
     ebml_master tags = {0};
     int i, ret;
+
+    ff_metadata_conv_ctx(s, ff_mkv_metadata_conv, NULL);
 
     if (av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX)) {
         ret = mkv_write_tag(s, s->metadata, 0, 0, &tags);
@@ -1186,7 +1189,6 @@ AVOutputFormat matroska_muxer = {
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
-    .metadata_conv = ff_mkv_metadata_conv,
 };
 #endif
 
@@ -1220,6 +1222,5 @@ AVOutputFormat matroska_audio_muxer = {
     mkv_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
-    .metadata_conv = ff_mkv_metadata_conv,
 };
 #endif

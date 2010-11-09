@@ -26,10 +26,9 @@
 #include "mp_image.h"
 #include "vf.h"
 
-#include "libvo/sub.h"
+#include "sub/sub.h"
 #include "libvo/video_out.h"
-
-#include "eosd.h"
+#include "sub/eosd.h"
 
 //===========================================================================//
 
@@ -123,13 +122,14 @@ static int control(struct vf_instance *vf, int request, void* data)
     }
     case VFCTRL_DRAW_EOSD:
     {
-        EOSD_ImageList images = {NULL, 2};
-        mp_eosd_res_t res = {0};
+        struct mp_eosd_image_list images;
+        struct mp_eosd_settings res = {0};
         double pts = vf->priv->pts;
         if (!vo_config_count) return CONTROL_FALSE;
+        res.unscaled = !!(vf->default_caps & VFCAP_EOSD_UNSCALED);
         if (video_out->control(VOCTRL_GET_EOSD_RES, &res) == VO_TRUE)
-            eosd_configure(&res, !!(vf->default_caps & VFCAP_EOSD_UNSCALED));
-        images.imgs = eosd_render_frame(pts, &images.changed);
+            eosd_configure(&res);
+        eosd_render_frame(pts, &images);
         return (video_out->control(VOCTRL_DRAW_EOSD, &images) == VO_TRUE) ? CONTROL_TRUE : CONTROL_FALSE;
     }
 #endif
@@ -157,7 +157,7 @@ static void get_image(struct vf_instance *vf,
     if(!vo_config_count) return;
     // GET_IMAGE is required for hardware-accelerated formats
     if(vo_directrendering ||
-       IMGFMT_IS_XVMC(mpi->imgfmt) || IMGFMT_IS_VDPAU(mpi->imgfmt))
+       IMGFMT_IS_HWACCEL(mpi->imgfmt))
 	video_out->control(VOCTRL_GET_IMAGE,mpi);
 }
 

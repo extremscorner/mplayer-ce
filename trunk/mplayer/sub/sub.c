@@ -35,7 +35,7 @@
 #include "mpcommon.h"
 #include "mp_msg.h"
 #include "help_mp.h"
-#include "video_out.h"
+#include "libvo/video_out.h"
 #include "font_load.h"
 #include "sub.h"
 #include "spudec.h"

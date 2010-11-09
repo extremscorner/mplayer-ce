@@ -35,7 +35,7 @@
 #include "libvo/vo_fbdev.h"
 #include "libvo/vo_zr.h"
 #include "mp_fifo.h"
-#include "unrar_exec.h"
+#include "sub/unrar_exec.h"
 
 
 extern int dir_play;
@@ -294,6 +294,8 @@ const m_option_t mplayer_opts[]={
     {"dumpmicrodvdsub", &stream_dump_type, CONF_TYPE_FLAG, 0, 0, 7, NULL},
     {"dumpjacosub", &stream_dump_type, CONF_TYPE_FLAG, 0, 0, 8, NULL},
     {"dumpsami", &stream_dump_type, CONF_TYPE_FLAG, 0, 0, 9, NULL},
+
+    {"capture", &capture_dump, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 
 #ifdef CONFIG_LIRC
     {"lircconf", &lirc_configfile, CONF_TYPE_STRING, CONF_GLOBAL, 0, 0, NULL},
