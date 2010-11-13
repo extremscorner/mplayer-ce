@@ -378,11 +378,11 @@ dvd_reader_t *DVDOpen( const char *ppath )
     }
 
 #ifdef GEKKO
-		if (!strcmp(path,"/dev/di")) {
-			ret_val = DVDOpenImageFile( path, have_css );
-			free(path);
-			return ret_val;
-		}
+  if (!strcmp(path, "/dev/di")) {
+    ret_val = DVDOpenImageFile( path, have_css );
+    free(path);
+    return ret_val;
+  }
 #endif
 
     /* If we can't stat the file, give up */
@@ -422,6 +422,7 @@ dvd_reader_t *DVDOpen( const char *ppath )
     /* XXX: We should scream real loud here. */
     if( !(path_copy = strdup( path ) ) )
       goto DVDOpen_error;
+
 #if !defined(WIN32) && !defined(GEKKO)
               /* don't have fchdir, and getcwd( NULL, ... ) is strange */
               /* Also WIN32 does not have symlinks, so we don't need this bit of code. */
@@ -635,8 +636,6 @@ static dvd_file_t *DVDOpenFileUDF( dvd_reader_t *dvd, char *filename )
  */
 static int findDirFile( const char *path, const char *file, char *filename )
 {
-#ifndef GEKKO
-
   DIR *dir;
   struct dirent *ent;
 
@@ -653,7 +652,6 @@ static int findDirFile( const char *path, const char *file, char *filename )
     }
   }
   closedir(dir);
-#endif  
   return -1;
 }
 
