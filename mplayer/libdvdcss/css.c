@@ -50,11 +50,7 @@
 #include <fcntl.h>
 
 #ifdef HAVE_LIMITS_H
-#ifdef GEKKO
-#include <limits.h>
-#else
-#   include <syslimits.h>
-#endif
+#   include <limits.h>
 #endif
 
 #include "dvdcss/dvdcss.h"
