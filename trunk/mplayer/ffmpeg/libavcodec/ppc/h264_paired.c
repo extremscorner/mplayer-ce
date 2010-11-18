@@ -22,6 +22,710 @@
 #include "dsputil_paired.h"
 #include "libavutil/ppc/paired.h"
 
+static void put_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y)
+{
+	const double scale = 0.015625;
+	const vector float half = {0.5,0.5};
+	
+	const float fA = (double)((8-x)*(8-y))*scale;
+	const float fB = (double)((  x)*(8-y))*scale;
+	const float fC = (double)((8-x)*(  y))*scale;
+	const float fD = (double)((  x)*(  y))*scale;
+	
+	vector float pair[4];
+	vector float result;
+	
+	dst -= stride;
+	uint8_t *src1 = src - stride;
+	uint8_t *src2 = src;
+	
+	int i;
+	if (fD) {
+		for (i=0; i<h; i++) {
+			pair[0] = psq_lux(src1,stride,0,4);
+			pair[1] = psq_l(2,src1,0,4);
+			
+			pair[2] = psq_lux(src2,stride,0,4);
+			pair[3] = psq_l(2,src2,0,4);
+			
+			result = ps_madds0(pair[0], fA, half);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_stux(result,dst,stride,0,4);
+			
+			pair[0] = psq_l(4,src1,1,4);
+			pair[2] = psq_l(4,src2,1,4);
+			
+			result = ps_madds0(pair[1], fA, half);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(result,2,dst,0,4);
+		}
+	} else {
+		const float fE = fB+fC;
+		
+		if (fC) {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[2] = psq_lux(src2,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(pair[2], fE, result);
+				psq_stux(result,dst,stride,0,4);
+				
+				pair[0] = psq_l(2,src1,0,4);
+				pair[2] = psq_l(2,src2,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(pair[2], fE, result);
+				psq_st(result,2,dst,0,4);
+			}
+		} else {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_l(2,src1,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_stux(result,dst,stride,0,4);
+				
+				pair[0] = psq_l(4,src1,1,4);
+				
+				result = ps_madds0(pair[1], fA, half);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(result,2,dst,0,4);
+			}
+		}
+	}
+}
+
+static void put_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y)
+{
+	const double scale = 0.015625;
+	const vector float half = {0.5,0.5};
+	
+	const float fA = (double)((8-x)*(8-y))*scale;
+	const float fB = (double)((  x)*(8-y))*scale;
+	const float fC = (double)((8-x)*(  y))*scale;
+	const float fD = (double)((  x)*(  y))*scale;
+	
+	vector float pair[4];
+	vector float result;
+	
+	dst -= stride;
+	uint8_t *src1 = src - stride;
+	uint8_t *src2 = src;
+	
+	int i;
+	if (fD) {
+		for (i=0; i<h; i++) {
+			pair[0] = psq_lux(src1,stride,0,4);
+			pair[1] = psq_l(2,src1,0,4);
+			
+			pair[2] = psq_lux(src2,stride,0,4);
+			pair[3] = psq_l(2,src2,0,4);
+			
+			result = ps_madds0(pair[0], fA, half);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_stux(result,dst,stride,0,4);
+			
+			pair[0] = psq_l(4,src1,0,4);
+			pair[2] = psq_l(4,src2,0,4);
+			
+			result = ps_madds0(pair[1], fA, half);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(result,2,dst,0,4);
+			
+			pair[1] = psq_l(6,src1,0,4);
+			pair[3] = psq_l(6,src2,0,4);
+			
+			result = ps_madds0(pair[0], fA, half);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_st(result,4,dst,0,4);
+			
+			pair[0] = psq_l(8,src1,1,4);
+			pair[2] = psq_l(8,src2,1,4);
+			
+			result = ps_madds0(pair[1], fA, half);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(result,6,dst,0,4);
+		}
+	} else {
+		const float fE = fB+fC;
+		
+		if (fC) {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[2] = psq_lux(src2,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(pair[2], fE, result);
+				psq_stux(result,dst,stride,0,4);
+				
+				pair[0] = psq_l(2,src1,0,4);
+				pair[2] = psq_l(2,src2,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(pair[2], fE, result);
+				psq_st(result,2,dst,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				pair[2] = psq_l(4,src2,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(pair[2], fE, result);
+				psq_st(result,4,dst,0,4);
+				
+				pair[0] = psq_l(6,src1,0,4);
+				pair[2] = psq_l(6,src2,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(pair[2], fE, result);
+				psq_st(result,6,dst,0,4);
+			}
+		} else {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_l(2,src1,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_stux(result,dst,stride,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				
+				result = ps_madds0(pair[1], fA, half);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(result,2,dst,0,4);
+				
+				pair[1] = psq_l(6,src1,0,4);
+				
+				result = ps_madds0(pair[0], fA, half);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_st(result,4,dst,0,4);
+				
+				pair[0] = psq_l(8,src1,1,4);
+				
+				result = ps_madds0(pair[1], fA, half);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(result,6,dst,0,4);
+			}
+		}
+	}
+}
+
+static void avg_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y)
+{
+	const double scale = 0.015625;
+	const vector float half = {0.5,0.5};
+	
+	const float fA = (double)((8-x)*(8-y))*scale;
+	const float fB = (double)((  x)*(8-y))*scale;
+	const float fC = (double)((8-x)*(  y))*scale;
+	const float fD = (double)((  x)*(  y))*scale;
+	
+	vector float pair[4];
+	vector float result;
+	
+	dst -= stride;
+	uint8_t *src1 = src - stride;
+	uint8_t *src2 = src;
+	
+	int i;
+	if (fD) {
+		for (i=0; i<h; i++) {
+			pair[0] = psq_lux(src1,stride,0,4);
+			pair[1] = psq_l(2,src1,0,4);
+			
+			pair[2] = psq_lux(src2,stride,0,4);
+			pair[3] = psq_l(2,src2,0,4);
+			
+			result = psq_lux(dst,stride,0,4);
+			
+			result = ps_madds0(pair[0], fA, result);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_st(paired_madd(result, half, half),0,dst,0,4);
+			
+			pair[0] = psq_l(4,src1,1,4);
+			pair[2] = psq_l(4,src2,1,4);
+			
+			result = psq_l(2,dst,0,4);
+			
+			result = ps_madds0(pair[1], fA, result);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(paired_madd(result, half, half),2,dst,0,4);
+		}
+	} else {
+		const float fE = fB+fC;
+		
+		if (fC) {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_lux(src2,stride,0,4);
+				
+				result = psq_lux(dst,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, half),0,dst,0,4);
+				
+				pair[0] = psq_l(2,src1,0,4);
+				pair[1] = psq_l(2,src2,0,4);
+				
+				result = psq_l(2,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, half),2,dst,0,4);
+			}
+		} else {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_l(2,src1,0,4);
+				
+				result = psq_lux(dst,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_st(paired_madd(result, half, half),0,dst,0,4);
+				
+				pair[0] = psq_l(4,src1,1,4);
+				result = psq_l(2,dst,0,4);
+				
+				result = ps_madds0(pair[1], fA, result);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(paired_madd(result, half, half),2,dst,0,4);
+			}
+		}
+	}
+}
+
+static void avg_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y)
+{
+	const double scale = 0.015625;
+	const vector float half = {0.5,0.5};
+	
+	const float fA = (double)((8-x)*(8-y))*scale;
+	const float fB = (double)((  x)*(8-y))*scale;
+	const float fC = (double)((8-x)*(  y))*scale;
+	const float fD = (double)((  x)*(  y))*scale;
+	
+	vector float pair[4];
+	vector float result;
+	
+	dst -= stride;
+	uint8_t *src1 = src - stride;
+	uint8_t *src2 = src;
+	
+	int i;
+	if (fD) {
+		for (i=0; i<h; i++) {
+			pair[0] = psq_lux(src1,stride,0,4);
+			pair[1] = psq_l(2,src1,0,4);
+			
+			pair[2] = psq_lux(src2,stride,0,4);
+			pair[3] = psq_l(2,src2,0,4);
+			
+			result = psq_lux(dst,stride,0,4);
+			
+			result = ps_madds0(pair[0], fA, result);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_st(paired_madd(result, half, half),0,dst,0,4);
+			
+			pair[0] = psq_l(4,src1,0,4);
+			pair[2] = psq_l(4,src2,0,4);
+			
+			result = psq_l(2,dst,0,4);
+			
+			result = ps_madds0(pair[1], fA, result);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(paired_madd(result, half, half),2,dst,0,4);
+			
+			pair[1] = psq_l(6,src1,0,4);
+			pair[3] = psq_l(6,src2,0,4);
+			
+			result = psq_l(4,dst,0,4);
+			
+			result = ps_madds0(pair[0], fA, result);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_st(paired_madd(result, half, half),4,dst,0,4);
+			
+			pair[0] = psq_l(8,src1,1,4);
+			pair[2] = psq_l(8,src2,1,4);
+			
+			result = psq_l(6,dst,0,4);
+			
+			result = ps_madds0(pair[1], fA, result);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(paired_madd(result, half, half),6,dst,0,4);
+		}
+	} else {
+		const float fE = fB+fC;
+		
+		if (fC) {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_lux(src2,stride,0,4);
+				
+				result = psq_lux(dst,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, half),0,dst,0,4);
+				
+				pair[0] = psq_l(2,src1,0,4);
+				pair[1] = psq_l(2,src2,0,4);
+				
+				result = psq_l(2,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, half),2,dst,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				pair[1] = psq_l(4,src2,0,4);
+				
+				result = psq_l(4,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, half),4,dst,0,4);
+				
+				pair[0] = psq_l(6,src1,0,4);
+				pair[1] = psq_l(6,src2,0,4);
+				
+				result = psq_l(6,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, half),6,dst,0,4);
+			}
+		} else {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_l(2,src1,0,4);
+				
+				result = psq_lux(dst,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_st(paired_madd(result, half, half),0,dst,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				result = psq_l(2,dst,0,4);
+				
+				result = ps_madds0(pair[1], fA, result);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(paired_madd(result, half, half),2,dst,0,4);
+				
+				pair[1] = psq_l(6,src1,0,4);
+				result = psq_l(4,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_st(paired_madd(result, half, half),4,dst,0,4);
+				
+				pair[0] = psq_l(8,src1,1,4);
+				result = psq_l(6,dst,0,4);
+				
+				result = ps_madds0(pair[1], fA, result);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(paired_madd(result, half, half),6,dst,0,4);
+			}
+		}
+	}
+}
+
+static void put_no_rnd_vc1_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y)
+{
+	const double scale = 0.015625;
+	const vector float offset = {0.4375,0.4375};
+	
+	const float fA = (double)((8-x)*(8-y))*scale;
+	const float fB = (double)((  x)*(8-y))*scale;
+	const float fC = (double)((8-x)*(  y))*scale;
+	const float fD = (double)((  x)*(  y))*scale;
+	
+	vector float pair[4];
+	vector float result;
+	
+	dst -= stride;
+	uint8_t *src1 = src - stride;
+	uint8_t *src2 = src;
+	
+	int i;
+	if (fD) {
+		for (i=0; i<h; i++) {
+			pair[0] = psq_lux(src1,stride,0,4);
+			pair[1] = psq_l(2,src1,0,4);
+			
+			pair[2] = psq_lux(src2,stride,0,4);
+			pair[3] = psq_l(2,src2,0,4);
+			
+			result = ps_madds0(pair[0], fA, offset);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_stux(result,dst,stride,0,4);
+			
+			pair[0] = psq_l(4,src1,0,4);
+			pair[2] = psq_l(4,src2,0,4);
+			
+			result = ps_madds0(pair[1], fA, offset);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(result,2,dst,0,4);
+			
+			pair[1] = psq_l(6,src1,0,4);
+			pair[3] = psq_l(6,src2,0,4);
+			
+			result = ps_madds0(pair[0], fA, offset);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_st(result,4,dst,0,4);
+			
+			pair[0] = psq_l(8,src1,1,4);
+			pair[2] = psq_l(8,src2,1,4);
+			
+			result = ps_madds0(pair[1], fA, offset);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(result,6,dst,0,4);
+		}
+	} else {
+		const float fE = fB+fC;
+		
+		if (fC) {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[2] = psq_lux(src2,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, offset);
+				result = ps_madds0(pair[2], fE, result);
+				psq_stux(result,dst,stride,0,4);
+				
+				pair[0] = psq_l(2,src1,0,4);
+				pair[2] = psq_l(2,src2,0,4);
+				
+				result = ps_madds0(pair[0], fA, offset);
+				result = ps_madds0(pair[2], fE, result);
+				psq_st(result,2,dst,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				pair[2] = psq_l(4,src2,0,4);
+				
+				result = ps_madds0(pair[0], fA, offset);
+				result = ps_madds0(pair[2], fE, result);
+				psq_st(result,4,dst,0,4);
+				
+				pair[0] = psq_l(6,src1,0,4);
+				pair[2] = psq_l(6,src2,0,4);
+				
+				result = ps_madds0(pair[0], fA, offset);
+				result = ps_madds0(pair[2], fE, result);
+				psq_st(result,6,dst,0,4);
+			}
+		} else {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_l(2,src1,0,4);
+				
+				result = ps_madds0(pair[0], fA, offset);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_stux(result,dst,stride,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				
+				result = ps_madds0(pair[1], fA, offset);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(result,2,dst,0,4);
+				
+				pair[1] = psq_l(6,src1,0,4);
+				
+				result = ps_madds0(pair[0], fA, offset);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_st(result,4,dst,0,4);
+				
+				pair[0] = psq_l(8,src1,1,4);
+				
+				result = ps_madds0(pair[1], fA, offset);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(result,6,dst,0,4);
+			}
+		}
+	}
+}
+
+static void avg_no_rnd_vc1_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y)
+{
+	const double scale = 0.015625;
+	const vector float offset = {0.4375,0.4375};
+	const vector float half = {0.5,0.5};
+	
+	const float fA = (double)((8-x)*(8-y))*scale;
+	const float fB = (double)((  x)*(8-y))*scale;
+	const float fC = (double)((8-x)*(  y))*scale;
+	const float fD = (double)((  x)*(  y))*scale;
+	
+	vector float pair[4];
+	vector float result;
+	
+	dst -= stride;
+	uint8_t *src1 = src - stride;
+	uint8_t *src2 = src;
+	
+	int i;
+	if (fD) {
+		for (i=0; i<h; i++) {
+			pair[0] = psq_lux(src1,stride,0,4);
+			pair[1] = psq_l(2,src1,0,4);
+			
+			pair[2] = psq_lux(src2,stride,0,4);
+			pair[3] = psq_l(2,src2,0,4);
+			
+			result = psq_lux(dst,stride,0,4);
+			
+			result = ps_madds0(pair[0], fA, result);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_st(paired_madd(result, half, offset),0,dst,0,4);
+			
+			pair[0] = psq_l(4,src1,0,4);
+			pair[2] = psq_l(4,src2,0,4);
+			
+			result = psq_l(2,dst,0,4);
+			
+			result = ps_madds0(pair[1], fA, result);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(paired_madd(result, half, offset),2,dst,0,4);
+			
+			pair[1] = psq_l(6,src1,0,4);
+			pair[3] = psq_l(6,src2,0,4);
+			
+			result = psq_l(4,dst,0,4);
+			
+			result = ps_madds0(pair[0], fA, result);
+			result = ps_madds0(paired_merge10(pair[0], pair[1]), fB, result);
+			result = ps_madds0(pair[2], fC, result);
+			result = ps_madds0(paired_merge10(pair[2], pair[3]), fD, result);
+			psq_st(paired_madd(result, half, offset),4,dst,0,4);
+			
+			pair[0] = psq_l(8,src1,1,4);
+			pair[2] = psq_l(8,src2,1,4);
+			
+			result = psq_l(6,dst,0,4);
+			
+			result = ps_madds0(pair[1], fA, result);
+			result = ps_madds0(paired_merge10(pair[1], pair[0]), fB, result);
+			result = ps_madds0(pair[3], fC, result);
+			result = ps_madds0(paired_merge10(pair[3], pair[2]), fD, result);
+			psq_st(paired_madd(result, half, offset),6,dst,0,4);
+		}
+	} else {
+		const float fE = fB+fC;
+		
+		if (fC) {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_lux(src2,stride,0,4);
+				
+				result = psq_lux(dst,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, offset),0,dst,0,4);
+				
+				pair[0] = psq_l(2,src1,0,4);
+				pair[1] = psq_l(2,src2,0,4);
+				
+				result = psq_l(2,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, offset),2,dst,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				pair[1] = psq_l(4,src2,0,4);
+				
+				result = psq_l(4,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, offset),4,dst,0,4);
+				
+				pair[0] = psq_l(6,src1,0,4);
+				pair[1] = psq_l(6,src2,0,4);
+				
+				result = psq_l(6,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(pair[1], fE, result);
+				psq_st(paired_madd(result, half, offset),6,dst,0,4);
+			}
+		} else {
+			for (i=0; i<h; i++) {
+				pair[0] = psq_lux(src1,stride,0,4);
+				pair[1] = psq_l(2,src1,0,4);
+				
+				result = psq_lux(dst,stride,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_st(paired_madd(result, half, offset),0,dst,0,4);
+				
+				pair[0] = psq_l(4,src1,0,4);
+				result = psq_l(2,dst,0,4);
+				
+				result = ps_madds0(pair[1], fA, result);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(paired_madd(result, half, offset),2,dst,0,4);
+				
+				pair[1] = psq_l(6,src1,0,4);
+				result = psq_l(4,dst,0,4);
+				
+				result = ps_madds0(pair[0], fA, result);
+				result = ps_madds0(paired_merge10(pair[0], pair[1]), fE, result);
+				psq_st(paired_madd(result, half, offset),4,dst,0,4);
+				
+				pair[0] = psq_l(8,src1,1,4);
+				result = psq_l(6,dst,0,4);
+				
+				result = ps_madds0(pair[1], fA, result);
+				result = ps_madds0(paired_merge10(pair[1], pair[0]), fE, result);
+				psq_st(paired_madd(result, half, offset),6,dst,0,4);
+			}
+		}
+	}
+}
+
 static void ff_h264_idct_add_paired(uint8_t *dst, DCTELEM *block, int stride)
 {
 	const vector float half = {0.5,0.5};
@@ -483,6 +1187,16 @@ H264_WEIGHT(4,4)
 H264_WEIGHT(4,2)
 H264_WEIGHT(2,4)
 H264_WEIGHT(2,2)
+
+void dsputil_h264_init_ppc(DSPContext *c, AVCodecContext *avctx)
+{
+	c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_paired;
+	c->put_h264_chroma_pixels_tab[1] = put_h264_chroma_mc4_paired;
+	c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_paired;
+	c->avg_h264_chroma_pixels_tab[1] = avg_h264_chroma_mc4_paired;
+	c->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_paired;
+	c->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_paired;
+}
 
 void ff_h264dsp_init_ppc(H264DSPContext *c)
 {
