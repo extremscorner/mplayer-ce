@@ -39,7 +39,6 @@ const static DISC_INTERFACE* usb = &__io_usbstorage;
 extern bool playing_usb;
 #endif
 
-
 #include "config.h"
 #include "mp_msg.h"
 #include "help_mp.h"
@@ -67,8 +66,6 @@ static int fsysloc_table_init_flag = 0;
 
 int menu_keepdir = 0;
 char *menu_chroot = NULL;
-
-
 
 struct list_entry_s {
   struct list_entry p;
@@ -346,8 +343,7 @@ fast_pause();
 
   menu_list_init(menu);
 
-  if(mpriv->dir)
-    free(mpriv->dir);
+  free(mpriv->dir);
   mpriv->dir = strdup(args);
   if(mpriv->p.title && mpriv->p.title != mpriv->title && mpriv->p.title != cfg_dflt.p.title)
     free(mpriv->p.title);
@@ -355,7 +351,6 @@ fast_pause();
 strcpy(menu_dir,mpriv->dir);
 
 #ifdef GEKKO
-#ifndef WIILIB
   if(!strcmp(mpriv->dir,"sd:/"))
   {
 	if(!DeviceMounted("sd")) 
@@ -367,10 +362,10 @@ strcpy(menu_dir,mpriv->dir);
 		goto error_exit;
 	}
   } 
-  else if(!strcmp(mpriv->dir,"ntfs_sd:/"))
+  else if(!strcmp(mpriv->dir,"ntfs.sd:/"))
   {
 	mount_sd_ntfs(); //mounted when needed (only once, see code)
-	if(!DeviceMounted("ntfs_sd")) 
+	if(!DeviceMounted("ntfs.sd")) 
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
 	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS SD device not mounted");
@@ -400,7 +395,7 @@ strcpy(menu_dir,mpriv->dir);
   		//mounting_usb=0;
 	}
   } 
-  else if(!strcmp(mpriv->dir,"ntfs_usb:/"))
+  else if(!strcmp(mpriv->dir,"ntfs.usb:/"))
   {
 	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
   	//if(!playing_usb)
@@ -409,7 +404,7 @@ strcpy(menu_dir,mpriv->dir);
   		//mounting_usb=1;
   		//usleep(500);
   		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
-  		if(!DeviceMounted("ntfs_usb")) 
+  		if(!DeviceMounted("ntfs.usb")) 
 		{
 			rm_osd_msg(OSD_MSG_TEXT);
 		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
@@ -420,6 +415,19 @@ strcpy(menu_dir,mpriv->dir);
 		}
   		//mounting_usb=0;
 	}
+  } 
+  else if(!strcmp(mpriv->dir,"ext2.usb:/"))
+  {
+  		while(mounting_usb)usleep(5000);
+  		if(!DeviceMounted("ext2.usb")) 
+		{
+			rm_osd_msg(OSD_MSG_TEXT);
+		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "EXT2 USB device not mounted");
+		  	update_osd_msg();
+  			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+  			mounting_usb=0;
+			goto error_exit;
+		}
   } 
   else if(!strcmp(mpriv->dir,"dvd:/"))
   {  
@@ -475,7 +483,6 @@ strcpy(menu_dir,mpriv->dir);
 	  }
   } 
 #endif
-#endif
 
 bool firsttry=true;
 retry:
@@ -508,7 +515,6 @@ retry:
       close (path_fp);
     }
   }
-
 
   namelist = malloc(sizeof(char *));
   extensions = get_extensions(menu);
