@@ -443,7 +443,7 @@ static char *default_args[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-	"-vo","gekko","-ao","nai",
+	"-vo","gekko","-ao","gekko",
 	"-menu","-menu-startup",
 	"-quiet"
 }; 
