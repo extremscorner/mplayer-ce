@@ -3787,7 +3787,7 @@ int vob_sub_auto = 1; //scip
 	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));  
 	  playing_dvd=true;
   }
-  if(!strncmp(filename,"usb:",4) || !strncmp(filename,"ntfs_usb:",9)) playing_usb=true;
+  if(!strncmp(filename,"usb:",4) || !strncmp(filename,"ntfs.usb:",9) || !strncmp(filename,"ext2.usb:",9)) playing_usb=true;
 
 	if(!IsLoopAvi(NULL))
 	{

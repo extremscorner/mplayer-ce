@@ -40,6 +40,7 @@ MPlayer Wii port
 
 #include <fat.h>
 #include <ntfs.h>
+#include <ext2.h>
 #include <smb.h>
 
 #include <network.h>
@@ -317,7 +318,7 @@ bool mount_sd_ntfs()
 	boot=partitions[0];
 	free(partitions);
 	
-	return ntfsMount("ntfs_sd", sd, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
+	return ntfsMount("ntfs.sd", sd, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
 }
 
 bool mount_usb_ntfs()
@@ -335,9 +336,46 @@ bool mount_usb_ntfs()
 	}
 	boot=partitions[0];
 	free(partitions);
-	return ntfsMount("ntfs_usb", usb, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
+	return ntfsMount("ntfs.usb", usb, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
 }
 
+// Temporary solution until ext2FindPartitions actually works.
+typedef struct _PARTITION_RECORD {
+	u8 status;
+	u8 chs_start[3];
+	u8 type;
+	u8 chs_end[3];
+	u32 lba_start;
+	u32 block_count;
+} ATTRIBUTE_PACKED PARTITION_RECORD;
+
+typedef struct _MASTER_BOOT_RECORD {
+	u8 code_area[446];
+	PARTITION_RECORD partitions[4];
+	u16 signature;
+} ATTRIBUTE_PACKED MASTER_BOOT_RECORD;
+
+#define MBR_SIGNATURE			0x55AA
+#define PARTITION_TYPE_LINUX	0x83
+
+#include "mpbswap.h"
+
+bool mount_usb_ext2()
+{
+	MASTER_BOOT_RECORD mbr;
+	
+	if (!usb->readSectors(0, 1, &mbr))
+		return false;
+	
+	if (mbr.signature != MBR_SIGNATURE)
+		return false;
+	
+	for (int i = 0; i < 4; i++) {
+		PARTITION_RECORD *partition = (PARTITION_RECORD *)&mbr.partitions[i];
+		if (partition->type == PARTITION_TYPE_LINUX)
+			return ext2Mount("ext2.usb", usb, le2me_32(partition->lba_start), 2, 128, EXT2_FLAG_64BITS | EXT2_FLAG_JOURNAL_DEV_OK) ;
+	}
+}
 
 static void * mountthreadfunc (void *arg)
 {
@@ -367,14 +405,16 @@ static void * mountthreadfunc (void *arg)
 				if(!dp)
 				{
 					//printf("unmount usb\n");
-					fatUnmount("usb:");
-					ntfsUnmount ("ntfs_usb", true);
+					fatUnmount("usb");
+					ntfsUnmount("ntfs.usb", true);
+					ext2Unmount("ext2.usb");
 				}else 
 				{
 					//printf("mount usb\n");
 					fatMount("usb",usb,0,2,128);
 					if(mount_usb_ntfs())printf_debug("ntfs partition mounted\n");
 					else printf_debug("error mounting ntfs partition\n");
+					mount_usb_ext2();
 				}
 				usleep(800);
 			}
@@ -403,7 +443,7 @@ static char *default_args[] = {
 	"sd:/apps/mplayer_ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-	"-vo","gekko","-ao","gekko",
+	"-vo","gekko","-ao","nai",
 	"-menu","-menu-startup",
 	"-quiet"
 }; 
@@ -815,9 +855,9 @@ static bool DetectValidPath()
 		}
 		else if(mount_sd_ntfs())
 		{
-			if(CheckPath("ntfs_sd:/apps/mplayer-ce")) return true;	
-			if(CheckPath("ntfs_sd:/apps/mplayer_ce")) return true;	
-			if(CheckPath("ntfs_sd:/mplayer")) return true;
+			if(CheckPath("ntfs.sd:/apps/mplayer-ce")) return true;	
+			if(CheckPath("ntfs.sd:/apps/mplayer_ce")) return true;	
+			if(CheckPath("ntfs.sd:/mplayer")) return true;
 		}
 
 	}
@@ -837,9 +877,9 @@ static bool DetectValidPath()
 		else if(mount_usb_ntfs())
 		{
 			usb_init=true;
-			if(CheckPath("ntfs_usb:/apps/mplayer-ce")) return true;	
-			if(CheckPath("ntfs_usb:/apps/mplayer_ce")) return true;	
-			if(CheckPath("ntfs_usb:/mplayer")) return true;
+			if(CheckPath("ntfs.usb:/apps/mplayer-ce")) return true;	
+			if(CheckPath("ntfs.usb:/apps/mplayer_ce")) return true;	
+			if(CheckPath("ntfs.usb:/mplayer")) return true;
 		}
 	}
 	return false;	
@@ -972,6 +1012,7 @@ void plat_init (int *argc, char **argv[])
 			usb_init=true;
 			fatMount("usb",usb,0,2,128);
 			mount_usb_ntfs();
+			mount_usb_ext2();
 		}
 	}
 

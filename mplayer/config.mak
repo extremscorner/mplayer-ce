@@ -42,7 +42,7 @@ CFLAGS_STACKREALIGN      =
 CFLAGS_SVGALIB_HELPER    = 
 CFLAGS_TREMOR_LOW        = 
 
-EXTRALIBS          = -Wl,-z,noexecstack  -mrvl -ffast-math   -lfreetype -liconv -lfribidi -lz -laesnd -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib  -lm
+EXTRALIBS          = -Wl,-z,noexecstack  -mrvl -ffast-math   -lfreetype -liconv -lfribidi -lz -laesnd -lwiikeyboard -ldi -ltinysmb -lwiiuse -lbte -lfat -lntfs -lext2fs -logc -static -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/portlibs/ppc/lib  -lm
 EXTRALIBS_MPLAYER  = -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
 
@@ -927,6 +927,7 @@ CONFIG_CHOMP_BSF=yes
 CONFIG_DUMP_EXTRADATA_BSF=yes
 CONFIG_H264_MP4TOANNEXB_BSF=yes
 CONFIG_IMX_DUMP_HEADER_BSF=yes
+CONFIG_MJPEG2JPEG_BSF=yes
 CONFIG_MJPEGA_DUMP_HEADER_BSF=yes
 CONFIG_MP3_HEADER_COMPRESS_BSF=yes
 CONFIG_MP3_HEADER_DECOMPRESS_BSF=yes
