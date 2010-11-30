@@ -33,6 +33,7 @@
 #include "help_mp.h"
 #include "libaf/af.h"
 #include "libaf/af_format.h"
+#include "libvo/fastmemcpy.h"
 #include "osdep/mem2.h"
 
 #define BURST_SIZE 5760
@@ -172,7 +173,7 @@ static int play(void *data, int len, int flags)
 		if (bytes < BURST_SIZE)
 			memset(buffers[fill_buffer] + bytes, 0x00, BURST_SIZE - bytes);
 		
-		memcpy(buffers[fill_buffer], data + copied, bytes);
+		fast_memcpy(buffers[fill_buffer], data + copied, bytes);
 		fill_buffer = (fill_buffer + 1) % NUM_BUFFERS;
 		
 		length -= bytes;
