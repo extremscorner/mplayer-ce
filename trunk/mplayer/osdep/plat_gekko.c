@@ -776,10 +776,10 @@ bool DVDGekkoMount()
 	LWP_MutexLock(dvd_mutex);
 	
 	if (dvd->isInserted()) {
-		set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Mounting DVD, please wait");
-		force_osd();
-		
 		if (!dvd_lasttick) {
+			set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Mounting DVD, please wait");
+			force_osd();
+			
 			if (!dvd->startup()) {
 				LWP_MutexUnlock(dvd_mutex);
 				return false;
