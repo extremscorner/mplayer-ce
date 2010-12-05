@@ -23,6 +23,7 @@ extern int watchdogcounter;
 
 
 void gekko_abort(void);
+void DVDGekkoTick(bool silent);
 bool DVDGekkoMount();
 
 #define abort(x) gekko_abort(x)

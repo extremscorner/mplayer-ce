@@ -51,13 +51,14 @@
 
 #if defined( WIN32 ) && !defined( SYS_CYGWIN )
 #   include <io.h>                                                 /* read() */
-#elif !defined ( GEKKO )
+#elif !defined( GEKKO )
 #   include <sys/uio.h>                                      /* struct iovec */
 #endif
 
 #ifdef GEKKO
-#    include "../osdep/di2.h"
+#    include <di/di.h>
 #    include <malloc.h>
+#    include "osdep/plat_gekko.h"
 #endif
 
 #ifdef DARWIN_DVD_IOCTL
@@ -1127,12 +1128,12 @@ static int di_open(dvdcss_t dvdcss, char const * psz_device) {
 	}
 
 	print_debug(dvdcss, "DI: initializing dvd...");
-	//DI2_Mount();   //rodries: not needed I always mount dvd, don't uncomment or dvd hang
+	DVDGekkoTick(false);
 
 	print_debug(dvdcss, "DI: waiting for device to become ready...");
 
 	while (retry > 0) {
-		status = DI2_GetStatus();
+		status = DI_GetStatus();
 
 		if (!(status & DVD_INIT))
 			break;
@@ -1182,7 +1183,9 @@ static int di_read(dvdcss_t dvdcss, void *buffer, int blocks) {
 		return -1;
 	}
 
-	ret = DI2_ReadDVD(bfr, blocks, dvdcss->i_pos);
+	DVDGekkoTick(true);
+
+	ret = DI_ReadDVD(bfr, blocks, dvdcss->i_pos);
 
 	if (ret < 0) {
 		print_debug(dvdcss, "DI: read failed with %d", ret);
@@ -1214,7 +1217,9 @@ static int di_readv(dvdcss_t dvdcss, struct iovec *iov, int iovcnt) {
 		return -1;
 	}
 
-	ret = DI2_ReadDVD(bfr, len / DVDCSS_BLOCK_SIZE, dvdcss->i_pos);
+	DVDGekkoTick(true);
+
+	ret = DI_ReadDVD(bfr, len / DVDCSS_BLOCK_SIZE, dvdcss->i_pos);
 	if (ret < 0) {
 		print_debug( dvdcss, "DI: readv failed with %d", ret);
 		free(bfr);

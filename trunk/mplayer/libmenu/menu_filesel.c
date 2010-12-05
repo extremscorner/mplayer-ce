@@ -323,7 +323,6 @@ static void free_extensions(char **extensions){
 }
 #ifdef GEKKO
 extern int network_initied;
-extern int mounting_usb;
 #endif
 static int open_dir(menu_t* menu,char* args) {
   char **namelist=NULL, **tp;
@@ -356,19 +355,7 @@ strcpy(menu_dir,mpriv->dir);
 	if(!DeviceMounted("sd")) 
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
-	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT SD device not mounted");
-	  	update_osd_msg();
-		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		goto error_exit;
-	}
-  } 
-  else if(!strcmp(mpriv->dir,"ntfs.sd:/"))
-  {
-	mount_sd_ntfs(); //mounted when needed (only once, see code)
-	if(!DeviceMounted("ntfs.sd")) 
-	{
-		rm_osd_msg(OSD_MSG_TEXT);
-	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS SD device not mounted");
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Front SD device not mounted");
 	  	update_osd_msg();
 		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		goto error_exit;
@@ -376,58 +363,36 @@ strcpy(menu_dir,mpriv->dir);
   } 
   else if(!strcmp(mpriv->dir,"usb:/"))
   {
-	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
-  	//if(!playing_usb)
-  	{
-  		while(mounting_usb)usleep(50);
-  		mounting_usb=1;
-  		//usleep(500);
-  		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
-  		if(!DeviceMounted("usb")) 
-		{
-			rm_osd_msg(OSD_MSG_TEXT);
-		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
-		  	update_osd_msg();
-  			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-  			mounting_usb=0;
-			goto error_exit;
-		}
-  		//mounting_usb=0;
+  	if(!DeviceMounted("usb")) 
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
+	  	update_osd_msg();
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		goto error_exit;
 	}
   } 
-  else if(!strcmp(mpriv->dir,"ntfs.usb:/"))
+  else if(!strcmp(mpriv->dir,"ntfs:/"))
   {
-	//printf("playing_usb: %i\n",playing_usb);VIDEO_WaitVSync();
-  	//if(!playing_usb)
-  	{
-  		while(mounting_usb)usleep(5000);
-  		//mounting_usb=1;
-  		//usleep(500);
-  		//printf("checking DeviceMounted\n");VIDEO_WaitVSync();
-  		if(!DeviceMounted("ntfs.usb")) 
-		{
-			rm_osd_msg(OSD_MSG_TEXT);
-		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
-		  	update_osd_msg();
-  			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-  			mounting_usb=0;
-			goto error_exit;
-		}
-  		//mounting_usb=0;
+  	if(!DeviceMounted("ntfs")) 
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
+		update_osd_msg();
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		goto error_exit;
 	}
   } 
-  else if(!strcmp(mpriv->dir,"ext2.usb:/"))
+  else if(!strcmp(mpriv->dir,"ext2:/"))
   {
-  		while(mounting_usb)usleep(5000);
-  		if(!DeviceMounted("ext2.usb")) 
-		{
-			rm_osd_msg(OSD_MSG_TEXT);
-		  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "EXT2 USB device not mounted");
-		  	update_osd_msg();
-  			mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-  			mounting_usb=0;
-			goto error_exit;
-		}
+  	if(!DeviceMounted("ext2")) 
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "EXT2 USB device not mounted");
+		update_osd_msg();
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		goto error_exit;
+	}
   } 
   else if(!strcmp(mpriv->dir,"dvd:/"))
   {  
@@ -440,6 +405,28 @@ strcpy(menu_dir,mpriv->dir);
 		  goto error_exit;
 	  }
   }
+  else if(!strcmp(mpriv->dir,"carda:/"))
+  {
+	if(!DeviceMounted("carda")) 
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-A SD device not mounted");
+	  	update_osd_msg();
+		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		goto error_exit;
+	}
+  } 
+  else if(!strcmp(mpriv->dir,"cardb:/"))
+  {
+	if(!DeviceMounted("cardb")) 
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-B SD device not mounted");
+	  	update_osd_msg();
+		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		goto error_exit;
+	}
+  } 
   else if(mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')
   { // reconnect samba if needed
 	  char device[5]="smbx";
@@ -617,7 +604,6 @@ bailout:
     free(namelist[n]);
   }
   if(namelist!=NULL) free(namelist);
-  if(!strcmp(mpriv->dir,"usb:/"))mounting_usb=0;
   fast_continue();
   return 1;
   
@@ -628,7 +614,6 @@ error_exit:
     fsysloc_restorelocale( fsysloc, locale_changed);
     if(namelist!=NULL) free(namelist);
 
-    if(!strcmp(mpriv->dir,"usb:/"))mounting_usb=0;
     fast_continue();
 
 return 0;  
