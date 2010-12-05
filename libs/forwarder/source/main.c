@@ -3,6 +3,7 @@
 Elf/Dol FOrwarder -- loads an elf or dol specified in the code.
 
 by SpaceJump (2008)
+modified by MrGreg 12/02/2010
 
 Thanks to svpe, the creator of Front SD Loader and TCPLoad for giving me permission for using some of his
 functions.
@@ -35,25 +36,11 @@ void __exception_closeall();
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
 
-//u32 load_dol_image (void *);
-
 void restart()
 {
 printf("Rebooting Wii...\n");
-sleep(3);
+sleep(5);
 SYS_ResetSystem(SYS_RESTART,0,0);
-/*
-	WPAD_Init();
-		printf("Press A to reboot Wii...\n");
-		while (1) {
-			WPAD_ScanPads();
-			u32 pressed = WPAD_ButtonsDown(0);
-			if (pressed & WPAD_BUTTON_A) {
-				SYS_ResetSystem(SYS_RESTART,0,0);
-				//exit(0);
-			}
-		}
-*/		
 }
 
 typedef void (*entrypoint) (void);
@@ -64,28 +51,41 @@ typedef void (*entrypoint) (void);
 const DISC_INTERFACE* sd = &__io_wiisd;
 const DISC_INTERFACE* usb = &__io_usbstorage;
 
-
 void load_USB2_driver()
 {
-	//Try to load IOS202 to use usb2
-	int ret;
+	int  ret;
+	bool usb2;
+	u32  iosversion;
+	
+	//Load usb2 is possible
+	usb2 = false;
 	USB2Enable(false);
-	if (IOS_GetVersion() == 58) return;
-	IOS_ReloadIOS(202);
-	ret=-1;
-	ret=mload_init();
-	data_elf my_data_elf;
-	
-	if(ret)
+	if (IOS_GetVersion() == 58)
 	{
-		printf("usb2 IOS detectected!\n");
-		mload_elf((void *) ehcmodule_elf, &my_data_elf);
-		mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio);
-		usleep(2000);
-		USB2Enable(true);
-		//printf("Running... at 0x%x\n", (u32) my_data_elf.start);
+		usb2 = true;
 	}
+	else
+	{
+		IOS_ReloadIOS(202);
+		ret=-1;
+		ret=mload_init();
+		data_elf my_data_elf;
 	
+		if(ret)
+		{
+			mload_elf((void *) ehcmodule_elf, &my_data_elf);
+			mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio);
+			USB2Enable(true);
+			usb2 = true;
+			//printf("Running... at 0x%x\n", (u32) my_data_elf.start);
+		}
+	}	
+	if (usb2 && (IOS_GetVersion() == 58 || IOS_GetVersion() == 202))
+	{
+		iosversion = IOS_GetVersion();
+		printf("usb2 IOS%u detected!\n",iosversion);
+	}	
+	else printf("usb2 IOS not detected\n");
 }
 
 //---------------------------------------------------------------------------------
@@ -95,9 +95,6 @@ int main(int argc, char **argv) {
 	
 	// Initialise the video system
 	VIDEO_Init();
-	
-	// This function initialises the attached controllers
-	//WPAD_Init();
 	
 	// Obtain the preferred video mode from the system
 	// This will correspond to the settings in the Wii menu
@@ -124,175 +121,160 @@ int main(int argc, char **argv) {
 	// Wait for Video setup to complete
 	VIDEO_WaitVSync();
 	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
-	
-	//------------------------------------------------------------------------------------------------------
-	
 	printf("\x1b[2;0H");
 	
-	
-	VIDEO_WaitVSync();
+	//------------------------------------------------------------------------------------------------------
 
 	FILE* inputFile=NULL;
-	long size=0;
+	long  size=0;
+	char* device;
 
-	if(!fatMount("sd",sd,0,3,256)) {
-		load_USB2_driver();
-		printf("Detecting usb device...\n");
-		if(usb->isInserted()) 
-		{
-			printf("Mounting USB fat\n");
-			if (!fatMount("usb",usb,0,3,256)) {
-			printf("FAT could not be initialized!\n");
-			restart();		
-			}
-		}
-	}
-	else 
-	{ // try sd
-		inputFile = fopen( "sd:/apps/mplayer-ce/boot.dol", "rb");
-		if(inputFile == NULL) {
-			inputFile = fopen( "sd:/apps/mplayer_ce/boot.dol", "rb");
-			if(inputFile == NULL) {
-				inputFile = fopen( "sd:/mplayer/boot.dol", "rb");
-			}
-		}
-	}
-	
-	if(inputFile == NULL)
+	// Try to find app on sd
+	if(sd->startup() && sd->isInserted()) 
 	{
-		if (!fatMount("usb",usb,0,3,256)) {
-			printf("FAT could not be initialized!\n");
-			restart();		
-		}
-		inputFile = fopen( "usb:/apps/mplayer-ce/boot.dol", "rb");
-		if(inputFile == NULL) {
-			inputFile = fopen( "usb:/apps/mplayer_ce/boot.dol", "rb");
+		printf("Mounting sd FAT partition\n");
+		if(fatMount("sd",sd,0,2,128))
+		{
+			device = "sd";
+			inputFile = fopen("sd:/apps/mplayer-ce/boot.dol", "rb");
 			if(inputFile == NULL) {
-				inputFile = fopen( "usb:/mplayer/boot.dol", "rb");
+				inputFile = fopen("sd:/apps/mplayer_ce/boot.dol", "rb");
 				if(inputFile == NULL) {
-					printf("boot.dol does not exist in the /apps/mplayer-ce or /mplayer folder on sd/usb !\n");
-					restart();
+					inputFile = fopen("sd:/mplayer/boot.dol", "rb");
 				}
 			}
 		}
+		else
+			printf("Failed to mount FAT partition on sd!\n");
 	}
+	// If the app was not found on sd, try and find it on usb
+	if(inputFile == NULL && usb->startup() && usb->isInserted())
+	{
+		printf("Detecting usb device...\n");
+		load_USB2_driver();
+		printf("Mounting usb FAT partition\n");
+		if(fatMount("usb",usb,0,2,128))
+		{
+			device = "usb";
+			inputFile = fopen("usb:/apps/mplayer-ce/boot.dol", "rb");
+			if(inputFile == NULL) {
+				inputFile = fopen("usb:/apps/mplayer_ce/boot.dol", "rb");
+				if(inputFile == NULL) {
+					inputFile = fopen("usb:/mplayer/boot.dol", "rb");
+				}
+			}	
+		}	
+		else
+			printf("Failed to mount FAT partition on usb!\n");
+	}
+	if(inputFile != NULL)
+		printf("Found boot.dol on %s!\n",device);
+	else
+	{
+		printf("boot.dol does not exist in the /apps/mplayer-ce or /mplayer folder on sd/usb !\n");
+		restart();
+	}		
 
-	//create a buffer for the elf/dol content
+	//create a buffer for the dol content
 	void* myBuffer=NULL;
-	//u8 *myBuffer = (u8 *)0x92000000;
 	
-	//read elf/dol from given path:
-	
+	//read dol from given path:
 	setvbuf(inputFile,NULL,_IONBF,0);
-	printf("Found boot.dol on sd or usb!\n");
-	
-	
 	fseek(inputFile, 0, SEEK_END);
 	size = ftell(inputFile);
 	fseek(inputFile, 0, SEEK_SET); 
-	
-
-  printf("File size: %ld bytes\n",size);
-  myBuffer = malloc(size);
-  if(myBuffer == NULL) {
-    printf("Error allocating memory\n");
-    restart();	
-  } 
-  else
-    printf("Memory allocated\n");
-      
-  printf("Reading file file, please wait\n");
-  
-  printf("[");
-  printf("\x1b[s");  
-  printf("                                                 ]");
-  printf("\x1b[u");
-  
-  
-  u32 bytes_read,readed=0;
-  int aux,old=0;
-  while(1)	
+	printf("File size: %ld bytes\n",size);
+	myBuffer = malloc(size);
+	if(myBuffer == NULL)
 	{
-	   bytes_read = fread(myBuffer+readed, 1, CHUNCK, inputFile); 
-	   if (bytes_read < CHUNCK)
-	   {
-        s32 result = -!feof(inputFile);
-        readed+=bytes_read;
-        if (result < 0 || readed!=size) 
-        {
-          printf("fread error: [%i] %s\n", ferror(inputFile), strerror(ferror(inputFile)));
-          fclose(inputFile);
-          restart();	
-        }
-        break;
-       }
+		printf("Error allocating memory\n");
+		restart();	
+	} 
+	else
+	{
+		printf("Memory allocated\n");
+		printf("Reading file, please wait...\n");
+		printf("[");
+		printf("\x1b[s");  
+		printf("                                                 ]");
+		printf("\x1b[u");
+	}
+	u32 bytes_read,readed=0;
+	int aux,old=0;
+	while(1)	
+	{
+		bytes_read = fread(myBuffer+readed, 1, CHUNCK, inputFile); 
+		if (bytes_read < CHUNCK)
+		{
+			s32 result = -!feof(inputFile);
+			readed+=bytes_read;
+			if (result < 0 || readed!=size) 
+			{
+				printf("fread error: [%i] %s\n", ferror(inputFile), strerror(ferror(inputFile)));
+				fclose(inputFile);
+				restart();	
+			}
+		break;
+		}
      
-     readed+=bytes_read;
-     aux=(readed*50)/size;
-     if(old!=aux)
-     {
-       old=aux;
-       printf(".");
-       VIDEO_WaitVSync();
-     }
-  }  
+		readed+=bytes_read;
+		aux=(readed*50)/size;
+		if(old!=aux)
+		{
+			old=aux;
+			printf(".");
+			VIDEO_WaitVSync();
+		}
+	}
+	
+    printf("\nFile read successfully\n"); 
+  
+	// Cleanup
 	fclose(inputFile);
-    
-	//fread (myBuffer, 1, size, inputFile);
+	fatUnmount("sd");
+    fatUnmount("usb");
+	USB_Deinitialize();
 	
-  printf("\nFile readed successfully\n"); 
-	
-	//is a dol
+	//Load the dol
 	printf("Loading dol...\n");
 	VIDEO_WaitVSync();
-	
-	
-    u32 exeEntryPointAddress = 0;
+
+	u32 exeEntryPointAddress = 0;
     entrypoint exeEntryPoint;
 	
 	struct __argv args[10];
 	exeEntryPointAddress = load_dol_image(myBuffer,args);		
 	printf("dol loaded, executing...\n");
-	
-  if (exeEntryPointAddress == 0) {
-        printf ("Invalid entry point, press any key to quit\n");
+
+	if (exeEntryPointAddress == 0)
+	{
+		printf ("Invalid entry point\n");
         restart();
     }
+	exeEntryPoint = (entrypoint) exeEntryPointAddress;	
+    //printf("Entry point: 0x%X\n", (unsigned int)exeEntryPointAddress);sleep(3);
 
-    exeEntryPoint = (entrypoint) exeEntryPointAddress;	
-	//dol_relocstart(myBuffer);
-	
-	//not need it, we know is a dol
-	//Check if valid elf file:
-	/*
-	s32 res;
-	res = valid_elf_image(myBuffer);
-    if(res == 1) {
-		//elf ok! -> Load entry point of elf file:
-		ep = (void(*)())load_elf_image(myBuffer);
-	} else {
-		//Elf not valid, load dol:
-		ep = (void(*)())load_dol_image(myBuffer);		
-	}*/
-		
-	
-	//printf("Entry point: 0x%X\n", (unsigned int)ep);
-  fatUnmount("usb:");
-  //sdio_Deinitialize();
-//  printf("1\n");VIDEO_WaitVSync();sleep(3);
+	// Reinitialize Video
 	VIDEO_WaitVSync();	
-	//sleep(5);
-	// code from geckoloader
-	u32 level;
+	//printf("VIDEO_WaitVSync() done\n");
+
+	// Shutdown Subsystems
 	__IOS_ShutdownSubsystems ();
 	//printf("IOS_ShutdownSubsystems() done\n");
-//  printf("2\n");VIDEO_WaitVSync();sleep(3);
+
+	// Disable CPU ISR
+	u32 level;
 	_CPU_ISR_Disable (level);
 	//printf("_CPU_ISR_Disable() done\n");
+	
+	// Exception Close All
 	__exception_closeall ();
 	//printf("__exception_closeall() done. Jumping to ep now...\n");
-//  printf("3\n");VIDEO_WaitVSync();sleep(3);
+
+	// Execute the entrypoint
 	exeEntryPoint();
+	
+	// Restore CPU ISR
 	_CPU_ISR_Restore (level);
 		
 	exit(0);
