@@ -2922,13 +2922,13 @@ static void pause_loop(void)
 
 #ifdef CONFIG_GUI
     if (use_gui)
-	guiGetEvent(guiCEvent, (char *)guiSetPause);
+        guiGetEvent(guiCEvent, (char *)guiSetPause);
 #endif
+    if (mpctx->video_out && mpctx->sh_video && vo_config_count)
+        mpctx->video_out->control(VOCTRL_PAUSE, NULL);
+
     if (mpctx->audio_out && mpctx->sh_audio)
         mpctx->audio_out->pause(); // pause audio, keep data if possible
-
-    if (mpctx->video_out && mpctx->sh_video && vo_config_count)
-	mpctx->video_out->control(VOCTRL_PAUSE, NULL);
 
     while ( (cmd = mp_input_get_cmd(20, 1, 1)) == NULL || cmd->pausing == 4) {
         if (cmd) {
@@ -2958,22 +2958,12 @@ static void pause_loop(void)
         mp_cmd_free(cmd);
     }
     mpctx->osd_function=OSD_PLAY;
-    
-    cmd = mp_input_get_cmd(0, 0, 1);
-	if(cmd && cmd->id!=MP_CMD_PAUSE)
-	{
-		if (mpctx->audio_out && mpctx->sh_audio)
-        	mpctx->audio_out->reset();	// reset audio
-	}
-	else
-	{    
-    	    
-
-	    if (mpctx->audio_out && mpctx->sh_audio)
-    	    mpctx->audio_out->resume();	// resume audio
-    	    
+    if (mpctx->audio_out && mpctx->sh_audio) {
+        if (mpctx->eof) // do not play remaining audio if we e.g.  switch to the next file
+          mpctx->audio_out->reset();
+        else
+          mpctx->audio_out->resume(); // resume audio
     }
-
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL); // resume video
     (void)GetRelativeTime(); // ignore time that passed during pause
