@@ -35,18 +35,17 @@ MPlayer Wii port
 #include <ogc/lwp_watchdog.h>
 #include <ogc/lwp.h>
 #include <debug.h>
-#include <wiiuse/wpad.h>
-//#include <wiikeyboard/keyboard.h>
 
 #include <fat.h>
 #include <ntfs.h>
 #include <ext2.h>
 #include <smb.h>
+#include "fst.h"
+#include "gcfst.h"
+#include "iso.h"
 
 #include <network.h>
 #include <errno.h>
-#include "di2.h"
-#include "libdvdiso.h"
 #include "mp_osd.h"
 #include "timer.h"
 #include "version.h"
@@ -276,13 +275,10 @@ static void * watchdogthreadfunc (void *arg)
 }
 
 
-bool playing_usb = false;
-bool playing_dvd = false;
 //bool loading_ehc = true;
 int network_initied = 0;
-int mounting_usb=0;
-static bool dvd_mounted = false;
-static bool dvd_mounting = false;
+static mutex_t dvd_mutex = LWP_MUTEX_NULL;
+u64 dvd_lasttick = 0;
 static int dbg_network = false;
 static int overscan = true;
 
@@ -298,48 +294,14 @@ static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
 #include <ogc/usbstorage.h>
+#include <di/di.h>
 
 const static DISC_INTERFACE* sd = &__io_wiisd;
 const static DISC_INTERFACE* usb = &__io_usbstorage;
+static const DISC_INTERFACE* dvd = &__io_wiidvd;
+const static DISC_INTERFACE* carda = &__io_gcsda;
+const static DISC_INTERFACE* cardb = &__io_gcsdb;
 
-bool mount_sd_ntfs()
-{ // at now sd can be mounted only once
-	static bool mounted=false;
-
-	if(mounted) return true;
-	//only mount the first ntfs partition
-	int partition_count = 0;
-	sec_t *partitions = NULL;
-	sec_t boot;
-	
-	partition_count = ntfsFindPartitions (sd, &partitions);
-	if(partition_count<1) return 0;
-
-	boot=partitions[0];
-	free(partitions);
-	
-	return ntfsMount("ntfs.sd", sd, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
-}
-
-bool mount_usb_ntfs()
-{
-	//only mount the first ntfs partition
-	int partition_count = 0;
-	sec_t *partitions = NULL;
-	sec_t boot;
-	
-	partition_count = ntfsFindPartitions (usb, &partitions);
-	if(partition_count<1) 
-	{
-		printf_debug("no ntfs partitions found\n");
-		return 0;
-	}
-	boot=partitions[0];
-	free(partitions);
-	return ntfsMount("ntfs.usb", usb, boot, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY ) ;
-}
-
-// Temporary solution until ext2FindPartitions actually works.
 typedef struct _PARTITION_RECORD {
 	u8 status;
 	u8 chs_start[3];
@@ -355,92 +317,144 @@ typedef struct _MASTER_BOOT_RECORD {
 	u16 signature;
 } ATTRIBUTE_PACKED MASTER_BOOT_RECORD;
 
-#define MBR_SIGNATURE			0x55AA
-#define PARTITION_TYPE_LINUX	0x83
+#define MBR_SIGNATURE	0x55AA
+
+#define PARTITION_TYPE_FREE				0x00
+#define PARTITION_TYPE_FAT12			0x01
+#define PARTITION_TYPE_FAT16_32MB		0x04
+#define PARTITION_TYPE_FAT16			0x06
+#define PARTITION_TYPE_NTFS				0x07
+#define PARTITION_TYPE_FAT32			0x0b
+#define PARTITION_TYPE_FAT32_LBA		0x0c
+#define PARTITION_TYPE_FAT16_LBA		0x0e
+#define PARTITION_TYPE_LINUX			0x83
 
 #include "mpbswap.h"
 
-bool mount_usb_ext2()
+enum {
+	DEVICE_CARDA = 0,
+	DEVICE_CARDB,
+	DEVICE_DVD,
+	DEVICE_SD,
+	DEVICE_USB,
+	DEVICE_MAX,
+};
+
+static bool isInserted[DEVICE_MAX];
+
+static void mountproc()
 {
-	MASTER_BOOT_RECORD mbr;
+	if (isInserted[DEVICE_SD]) {
+		if (!sd->isInserted()) {
+			fatUnmount("sd:");
+			sd->shutdown();
+			isInserted[DEVICE_SD] = false;
+		}
+	} else if (sd->startup() && sd->isInserted()) {
+		fatMount("sd", sd, 0, 2, 128);
+		isInserted[DEVICE_SD] = true;
+	}
 	
-	if (!usb->readSectors(0, 1, &mbr))
-		return false;
+	if (isInserted[DEVICE_USB]) {
+		if (!usb->isInserted()) {
+			fatUnmount("usb:");
+			ntfsUnmount("ntfs", true);
+			ext2Unmount("ext2");
+			usb->shutdown();
+			isInserted[DEVICE_USB] = false;
+		}
+	} else if (usb->startup() && usb->isInserted()) {
+		MASTER_BOOT_RECORD mbr;
+		
+		if (usb->readSectors(0, 1, &mbr) && (mbr.signature == MBR_SIGNATURE)) {
+			for (int i = 0; i < 4; i++) {
+				PARTITION_RECORD *partition = &mbr.partitions[i];
+				sec_t sector = le2me_32(partition->lba_start);
+				
+				switch (partition->type) {
+					case PARTITION_TYPE_FREE:
+						continue;
+					case PARTITION_TYPE_FAT12:
+					case PARTITION_TYPE_FAT16_32MB:
+					case PARTITION_TYPE_FAT16:
+					case PARTITION_TYPE_FAT32:
+					case PARTITION_TYPE_FAT32_LBA:
+					case PARTITION_TYPE_FAT16_LBA:
+					{
+						fatMount("usb", usb, sector, 2, 128);
+					}
+					case PARTITION_TYPE_NTFS:
+						ntfsMount("ntfs", usb, sector, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY);
+					case PARTITION_TYPE_LINUX:
+						ext2Mount("ext2", usb, sector, 2, 128, EXT2_FLAG_64BITS | EXT2_FLAG_JOURNAL_DEV_OK);
+				}
+			}
+		} else fatMount("usb", usb, 0, 2, 128);
+		
+		isInserted[DEVICE_USB] = true;
+	}
 	
-	if (mbr.signature != MBR_SIGNATURE)
-		return false;
+	if (isInserted[DEVICE_CARDA]) {
+		if (!carda->isInserted()) {
+			fatUnmount("carda:");
+			carda->shutdown();
+			isInserted[DEVICE_CARDA] = false;
+		}
+	} else if (carda->startup() && carda->isInserted()) {
+		fatMount("carda", carda, 0, 4, 64);
+		isInserted[DEVICE_CARDA] = true;
+	}
 	
-	for (int i = 0; i < 4; i++) {
-		PARTITION_RECORD *partition = (PARTITION_RECORD *)&mbr.partitions[i];
-		if (partition->type == PARTITION_TYPE_LINUX)
-			return ext2Mount("ext2.usb", usb, le2me_32(partition->lba_start), 2, 128, EXT2_FLAG_64BITS | EXT2_FLAG_JOURNAL_DEV_OK) ;
+	if (isInserted[DEVICE_CARDB]) {
+		if (!cardb->isInserted()) {
+			fatUnmount("cardb:");
+			cardb->shutdown();
+			isInserted[DEVICE_CARDB] = false;
+		}
+	} else if (cardb->startup() && cardb->isInserted()) {
+		fatMount("cardb", cardb, 0, 4, 64);
+		isInserted[DEVICE_CARDB] = true;
 	}
 }
 
-static void * mountthreadfunc (void *arg)
+static void *mountloop(void *arg)
 {
-	int dp, dvd_inserted=0,usb_inserted=0;
-//todo: add sd automount
-	usleep(400000);
-	//sleep(1);
-		
-	usb_inserted=usb_init;
+	usleep(200 * TB_MSPERSEC);
 	
-	while(!exit_automount_thread)
-	{	
-
-		if(!playing_usb)
-		{
-	  		while(mounting_usb)usleep(50);
-			mounting_usb=1;
-			dp=usb->isInserted();
+	while (!exit_automount_thread) {
+		if (!LWP_MutexTryLock(dvd_mutex)) {
+			LWP_MutexLock(dvd_mutex);
 			
-			//printf(".");fflush(stdout);
-			if(dp!=usb_inserted)
-			{
-//				printf("usb isInserted: %d\n",dp);
-
-				usleep(1000); // needed, I don't know why, but sometimes hang if it's deleted
-				usb_inserted=dp;
-				if(!dp)
-				{
-					//printf("unmount usb\n");
-					fatUnmount("usb");
-					ntfsUnmount("ntfs.usb", true);
-					ext2Unmount("ext2.usb");
-				}else 
-				{
-					//printf("mount usb\n");
-					fatMount("usb",usb,0,2,128);
-					if(mount_usb_ntfs())printf_debug("ntfs partition mounted\n");
-					else printf_debug("error mounting ntfs partition\n");
-					mount_usb_ext2();
+			if (isInserted[DEVICE_DVD]) {
+				if (!dvd->isInserted()) {
+					FST_Unmount();
+					GCFST_Unmount();
+					ISO9660_Unmount();
+					isInserted[DEVICE_DVD] = false;
+					dvd_lasttick = 0;
+				} else if (dvd_lasttick > 0) {
+					if (diff_sec(dvd_lasttick, gettime()) > 60) {
+						DI_StopMotor();
+						dvd_lasttick = 0;
+					}
 				}
-				usleep(800);
-			}
-
-			mounting_usb=0;
-
-
-		}	
-		if(dvd_mounting==false)
-		{
-			dp=WIIDVD_DiscPresent();
-			if(dp!=dvd_inserted)
-			{
-				dvd_inserted=dp;
-				if(!dp)dvd_mounted=false; // eject
-			}
+			} else if (dvd->isInserted())
+				isInserted[DEVICE_DVD] = true;
+			
+			LWP_MutexUnlock(dvd_mutex);
 		}
-		if(exit_automount_thread) break;
-		usleep(600000);
+		
+		mountproc();
+		if (exit_automount_thread) break;
+		usleep(2 * TB_USPERSEC);
 	}
+	
 	return NULL;
 }
 
 
 static char *default_args[] = {
-	"sd:/apps/mplayer_ce/mplayer.dol",
+	"sd:/apps/mplayer-ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
 	"-vo","gekko","-ao","gekko",
@@ -730,30 +744,55 @@ static void * networkthreadfunc (void *arg)
 /*        END NETWORK FUNCTIONS           */
 /******************************************/
 
+void DVDGekkoTick(bool silent)
+{
+	if (!dvd_lasttick) {
+		LWP_MutexLock(dvd_mutex);
+		
+		if (dvd->isInserted()) {
+			if (!silent) {
+				set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Mounting DVD, please wait");
+				force_osd();
+			}
+			
+			if (dvd->startup()) {
+				dvd_lasttick = gettime();
+				LWP_MutexUnlock(dvd_mutex);
+				return;
+			}
+		}
+		
+		if (!silent) {
+			set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
+			force_osd();
+		}
+		
+		LWP_MutexUnlock(dvd_mutex);
+	} else dvd_lasttick = gettime();
+}
+
 bool DVDGekkoMount()
 {
-	if(playing_dvd || dvd_mounted) return true;
-	set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Mounting DVD, please wait");
-	force_osd();
-
-	//if(dvd_mounted) return true;
-	dvd_mounting=true;
-	if(WIIDVD_DiscPresent())
-	{
-		int ret;
-		WIIDVD_Unmount();
-		ret = WIIDVD_Mount();
-		dvd_mounted=true;
-		dvd_mounting=false;
-		if(ret==-1)
-		{
-			dvd_mounted=false;
-			return false;
+	LWP_MutexLock(dvd_mutex);
+	
+	if (dvd->isInserted()) {
+		set_osd_msg(OSD_MSG_TEXT, 1, 5000, "Mounting DVD, please wait");
+		force_osd();
+		
+		if (!dvd_lasttick) {
+			if (!dvd->startup()) {
+				LWP_MutexUnlock(dvd_mutex);
+				return false;
+			} else dvd_lasttick = gettime();
 		}
-		return true;		
+		
+		if (ISO9660_Mount() || FST_Mount() || GCFST_Mount()) {
+			LWP_MutexUnlock(dvd_mutex);
+			return true;
+		}
 	}
-	dvd_mounting=false;
-	dvd_mounted=false;
+	
+	LWP_MutexUnlock(dvd_mutex);
 	return false;
 }
 
@@ -845,101 +884,56 @@ static bool CheckPath(char *path)
 
 static bool DetectValidPath()
 {
-	if(sd->startup()) 
-	{
-		if(fatMount("sd",sd,0,2,128))
-		{
-			if(CheckPath("sd:/apps/mplayer-ce")) return true;	
-			if(CheckPath("sd:/apps/mplayer_ce")) return true;	
-			if(CheckPath("sd:/mplayer")) return true;
-		}
-		else if(mount_sd_ntfs())
-		{
-			if(CheckPath("ntfs.sd:/apps/mplayer-ce")) return true;	
-			if(CheckPath("ntfs.sd:/apps/mplayer_ce")) return true;	
-			if(CheckPath("ntfs.sd:/mplayer")) return true;
-		}
-
+	if (isInserted[DEVICE_SD] && DeviceMounted("sd")) {
+		if (CheckPath("sd:/apps/mplayer-ce")) return true;
+		if (CheckPath("sd:/apps/mplayer_ce")) return true;
+		if (CheckPath("sd:/mplayer")) return true;
 	}
-	printf_debug("MplayerCE not found in sd, checking usb device\n");
-	usb->startup();
-	//usb->isInserted();
-	if (usb->isInserted())
-	{
-		printf_debug("mounting usb fat partition\n");
-		if(fatMount("usb",usb,0,2,128))
-		{
-			usb_init=true;
-			if(CheckPath("usb:/apps/mplayer-ce")) return true;
-			if(CheckPath("usb:/apps/mplayer_ce")) return true;
-			if(CheckPath("usb:/mplayer")) return true;
-		}
-		else if(mount_usb_ntfs())
-		{
-			usb_init=true;
-			if(CheckPath("ntfs.usb:/apps/mplayer-ce")) return true;	
-			if(CheckPath("ntfs.usb:/apps/mplayer_ce")) return true;	
-			if(CheckPath("ntfs.usb:/mplayer")) return true;
-		}
+	
+	if (isInserted[DEVICE_USB] && DeviceMounted("usb")) {
+		if (CheckPath("usb:/apps/mplayer-ce")) return true;
+		if (CheckPath("usb:/apps/mplayer_ce")) return true;
+		if (CheckPath("usb:/mplayer")) return true;
 	}
+	
+	if (isInserted[DEVICE_CARDA] && DeviceMounted("carda")) {
+		if (CheckPath("carda:/apps/mplayer-ce")) return true;
+		if (CheckPath("carda:/mplayer")) return true;
+	}
+	
+	if (isInserted[DEVICE_CARDB] && DeviceMounted("cardb")) {
+		if (CheckPath("cardb:/apps/mplayer-ce")) return true;
+		if (CheckPath("cardb:/mplayer")) return true;
+	}
+	
 	return false;	
 }
 
-void show_mem()
-{
-printf("m1(%.2f) m2(%.2f)\n",
-						 	((float)((char*)SYS_GetArenaHi()-(char*)SYS_GetArenaLo()))/0x100000,
-							 ((float)((char*)SYS_GetArena2Hi()-(char*)SYS_GetArena2Lo()))/0x100000);
-
-}
-
-#include "../input/input.h"
-static void * exithreadfunc (void *arg)
-{
-	sleep(8);
-
-	mp_cmd_t * cmd = calloc( 1,sizeof( *cmd ) );
-	cmd->id=MP_CMD_SEEK;
-	cmd->name=strdup("seek");
-	cmd->nargs = 2;
-	cmd->args[0].v.f = 30; // # seconds
-	cmd->args[1].v.i = 2;
-	printf("seek\n");
-	mp_input_queue_cmd(cmd);
-
-	sleep(15);
-	cmd = calloc( 1,sizeof( *cmd ) );
-	cmd->id=MP_CMD_QUIT;
-	cmd->name=strdup("quit");
-	mp_input_queue_cmd(cmd);
-	while(1){sleep(1);}
-}
-
 extern u32 __di_check_ahbprot(void);
-extern bool have_ahbprot;
 
 void plat_init (int *argc, char **argv[])
 {
-	if ((IOS_GetVersion() != 202) && FindIOS(202))
+	if ((IOS_GetVersion() != 202) && FindIOS(202)) {
 		IOS_ReloadIOS(202);
-	else {
-		have_ahbprot = (__di_check_ahbprot() == TRUE);
-		
-		if ((IOS_GetVersion() != 58) && FindIOS(58) && !have_ahbprot)
-			IOS_ReloadIOS(58);
+	} else {
+		if ((IOS_GetVersion() != 58) && !__di_check_ahbprot()) {
+			if (FindIOS(58))
+				IOS_ReloadIOS(58);
+			else DI_LoadDVDX(true);
+		}
 	}
 	
-	bool badstuff = (IOS_GetVersion() == 202);
-	WIIDVD_Init(!badstuff);
+	DI_Init();
 	USB2Enable(false);
 	
-	if (badstuff)
+	if (IOS_GetVersion() == 202)
 		if (mload_init())
 			if (load_ehci_module())
 				USB2Enable(true);
 	
 	mpviSetup(0, true);
 	log_console_init(vmode, 0);
+	mountproc();
 	
 	if (!DetectValidPath()) {
 		printf("\nSD/USB access failed\n");
@@ -1005,22 +999,14 @@ void plat_init (int *argc, char **argv[])
 		*argc = sizeof(default_args) / sizeof(char *);
 
 	}
-	else
-	{
-		if(usb->isInserted())
-		{
-			usb_init=true;
-			fatMount("usb",usb,0,2,128);
-			mount_usb_ntfs();
-			mount_usb_ext2();
-		}
-	}
-
+	
 	if(enable_watchdog)
 		LWP_MutexInit(&watchdogmutex, false);
 	
+	LWP_MutexInit(&dvd_mutex, false);
+	
 	LWP_CreateThread(&watchdogthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
-	LWP_CreateThread(&mountthread, mountthreadfunc, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
+	LWP_CreateThread(&mountthread, mountloop, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
 	
 	VIDEO_WaitVSync();
 	
@@ -1059,19 +1045,6 @@ void plat_deinit (int rc)
     if (!hbc_stub())
 		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
 }
-
-#if 0 // change 0 by 1 if you are using devkitppc r17
-int _gettimeofday_r(struct _reent *ptr,	struct timeval *ptimeval ,	void *ptimezone)
-{
-	u64 t;
-	t=gettime();
-	if(ptimeval!=NULL)
-	{
-		ptimeval->tv_sec = ticks_to_secs(t);
-		ptimeval->tv_usec = ticks_to_microsecs(t);
-	}
-} 
-#endif
 
 extern float m_screenleft_shift, m_screenright_shift;
 extern float m_screentop_shift, m_screenbottom_shift;

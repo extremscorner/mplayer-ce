@@ -672,12 +672,13 @@ SRCS_MPLAYER-$(ZR)            += libvo/jpeg_enc.c libvo/vo_zr.c libvo/vo_zr2.c
 
 SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
 							 osdep/ave-rvl.c \
-							 osdep/di2.c \
 							 osdep/usb2storage.c \
+							 osdep/fst.c \
 							 osdep/ftp_devoptab.c \
+							 osdep/gcfst.c \
 							 osdep/gx_supp.c \
 							 osdep/glob_gekko.c \
-							 osdep/libdvdiso.c \
+							 osdep/iso.c \
 							 osdep/plat_gekko.c \
 							 osdep/mem2.c \
 							 osdep/wiilight.c \

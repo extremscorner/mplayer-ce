@@ -155,7 +155,6 @@ char *heartbeat_cmd;
 #ifdef GEKKO
 #include "osdep/plat_gekko.h"
 #include "osdep/gx_supp.h"
-#include "osdep/di2.h"
 #include <ogc/system.h>
 #endif
 
@@ -260,8 +259,6 @@ char* audio_lang=NULL;
 char* dvdsub_lang=NULL;
 static char* spudec_ifo=NULL;
 char* filename=NULL; //"MI2-Trailer.avi";
-
-
 static char* bg_video = NULL;  //geexbox bgvideo patch
 int forced_subs_only=0;
 int file_filter=1;
@@ -304,10 +301,6 @@ bool IsLoopAvi(char *_file)
 	if(!strcmp("loop-wide.avi",&_file[i])) return true;
 	return false;
 }
-
-extern bool playing_usb;
-extern bool playing_dvd;
-
 
 typedef struct st_restore_points restore_points_t;
 struct st_restore_points{
@@ -1090,8 +1083,6 @@ static void exit_sighandler(int x){
   getch2_disable();
   exit(1);
 }
-
-#include "cfg-mplayer.h"
 
 static void parse_cfgfiles( m_config_t* conf )
 {
@@ -2034,7 +2025,7 @@ static double written_audio_pts(sh_audio_t *sh_audio, demux_stream_t *d_audio)
 double playing_audio_pts(sh_audio_t *sh_audio, demux_stream_t *d_audio,
 				const ao_functions_t *audio_out)
 {
-	if(!audio_out) return written_audio_pts(sh_audio, d_audio);
+    if (!audio_out) return written_audio_pts(sh_audio, d_audio);
     return written_audio_pts(sh_audio, d_audio) - playback_speed *
 	audio_out->get_delay();
 }
@@ -2117,10 +2108,7 @@ static int generate_video_frame(sh_video_t *sh_video, demux_stream_t *d_video)
 
 static double timing_sleep(double time_frame)
 {
-    //int x=0,y=0;
-    //double t=time_frame;
     s32 frame=time_frame*1000000; //in us
-
 #ifdef HAVE_RTC
     if (rtc_fd >= 0){
 	// -------- RTC -----------
@@ -2136,47 +2124,23 @@ static double timing_sleep(double time_frame)
     {
 	// assume kernel HZ=100 for softsleep, works with larger HZ but with
 	// unnecessarily high CPU usage
-    //double margin = softsleep ? 0.0011 : 0.0;
     s32 margin = softsleep ? 500 : 0;  //in us
-
     current_module = "sleep_timer";
-	//printf("timing_sleep run: %li\n",frame);
 	while (frame > margin) {
 	    usec_sleep(frame - margin);
-	    //y++;
 	    frame -= GetRelativeTime();
 	    break;
 	}
-	//printf("-end\n");
 	if (softsleep){
-		//printf("sleep_soft run: %li\n",frame);
 	    current_module = "sleep_soft";
 	    if (frame < 0)
-	    {
-		//mp_msg(MSGT_AVSYNC, MSGL_WARN, MSGTR_SoftsleepUnderflow);
-		printf("SoftsleepUnderflow: %li\n",frame);
-	    }
+		mp_msg(MSGT_AVSYNC, MSGL_WARN, MSGTR_SoftsleepUnderflow);
 	    else
-	    {
-			while (frame > 5)
-			{
-				//x++;
-				frame-=GetRelativeTime(); // burn the CPU
-				//if(x>10000) break;
-			}
-	    }
+	    while (frame > 5)
+		    frame-=GetRelativeTime(); // burn the CPU
 	}
-	time_frame=frame * 0.000001F;
     }
-    //printf("timeframe: %f   \n",time_frame);
-
-/*
-    if(time_frame >0.000050 || time_frame<-0.00006 || x>10000 || y>1)
-    {
-    	printf("orig: %f  timeframe: %f   x: %i  y: %i  frame: %li\n",t,time_frame,x,y,frame);
-
-    }
-*/
+    time_frame=frame * 0.000001F;
     return time_frame;
 }
 
@@ -2902,14 +2866,7 @@ static void low_cache_loop(void)
 		usec_sleep(50000);		
     }
 	rm_osd_msg(OSD_MSG_PAUSE);
-
-	if(strncmp(filename,"dvd:",4) == 0 || strncmp(filename,"dvdnav:",7) == 0)
-	{
-		void *ptr=(void *)memalign(32, 0x800*2);
-		DI2_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
-		DI2_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
-		free(ptr);
-	}
+	
     mpctx->osd_function=OSD_PLAY;
 	
     if (mpctx->audio_out && mpctx->sh_audio)
@@ -3011,17 +2968,6 @@ static void pause_loop(void)
 	else
 	{    
     	    
-		if(strncmp(filename,"dvd:",4) == 0 || strncmp(filename,"dvdnav:",7) == 0)
-		{
-			//DI_StartMotor();
-			//printf("start motor\n");
-			void *ptr=memalign(32, 0x800*2);
-			//printf("read sector 1\n");
-			DI2_ReadDVD(ptr, 1, 1); // to be sure motor is spinning
-			//printf("read sector 5000\n");
-			DI2_ReadDVD(ptr, 1, 5000); // to be sure motor is spinning (to be sure not in cache)
-			free(ptr);
-		}
 
 	    if (mpctx->audio_out && mpctx->sh_audio)
     	    mpctx->audio_out->resume();	// resume audio
@@ -3759,36 +3705,6 @@ int vob_sub_auto = 1; //scip
   else
   	stream_cache_size=orig_stream_cache_size;
 
-  playing_usb=false;
-  playing_dvd=false;
-  
-  if(!strncmp(filename,"dvd://",6) || !strncmp(filename,"dvdnav://",9))
-  {
-	  if(!DVDGekkoMount())
-	  {
-  		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
-  		force_osd();
-  		
-  		//filename = play_tree_iter_get_file(mpctx->playtree_iter,1);
-  		
-  		mpctx->eof = PT_NEXT_ENTRY;
-  		goto load_next_file;
-    		
-  		
-  		
-  		mpctx->eof = 0;
-	    //mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY);
-  		//mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-			mpctx->eof = 0;
-    		goto play_next_file;
-	  		//goto goto_next_file;
-	  }
-	  else
-	    mp_input_queue_cmd(mp_input_parse_cmd("menu hide"));  
-	  playing_dvd=true;
-  }
-  if(!strncmp(filename,"usb:",4) || !strncmp(filename,"ntfs.usb:",9) || !strncmp(filename,"ext2.usb:",9)) playing_usb=true;
-
 	if(!IsLoopAvi(NULL))
 	{
 		set_osd_msg(OSD_MSG_TEXT, 1, 0, "Opening Stream...");
@@ -3963,7 +3879,8 @@ if (mpctx->demuxer && mpctx->demuxer->type==DEMUXER_TYPE_PLAYLIST)
   current_module="handle_demux_playlist";
   while (ds_get_packet(mpctx->demuxer->video,&playlist_entry)>0)
   {
-    char *temp, *bname;
+    char *temp;
+    const char *bname;
 
     mp_msg(MSGT_CPLAYER,MSGL_V,"Adding file %s to element entry.\n",
 	    filename_recode(playlist_entry));
