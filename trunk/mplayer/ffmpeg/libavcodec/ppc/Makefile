@@ -27,7 +27,8 @@ OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o         \
                                           ppc/mpegvideo_altivec.o       \
                                           $(ALTIVEC-OBJS-yes)
 
-PAIRED-OBJS-$(CONFIG_H264DSP)          += ppc/h264_paired.o
+PAIRED-OBJS-$(CONFIG_H264DSP)          += ppc/h264dsp_paired.o
+PAIRED-OBJS-$(CONFIG_H264PRED)         += ppc/h264pred_paired.o
 PAIRED-OBJS-$(CONFIG_VC1_DECODER)      += ppc/vc1dsp_paired.o
 
 PAIRED-OBJS-$(CONFIG_FFT)              += ppc/fft_paired.o
