@@ -913,7 +913,7 @@ extern u32 __di_check_ahbprot(void);
 
 void plat_init (int *argc, char **argv[])
 {
-	if ((IOS_GetVersion() != 202) && FindIOS(202)) {
+	if (FindIOS(202)) {
 		IOS_ReloadIOS(202);
 	} else {
 		if ((IOS_GetVersion() != 58) && !__di_check_ahbprot()) {

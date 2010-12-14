@@ -16,12 +16,18 @@ the use of this software.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 #include <gccore.h>
 #include <wiiuse/wpad.h>
 #include <sys/stat.h>
 #include <fat.h>
 #include <string.h>
 #include <gccore.h>
+#include <ogc/lwp_watchdog.h>
+#include <unistd.h>
+#include <sdcard/wiisd_io.h>
+#include <sdcard/gcsd.h>
+#include <ogc/usbstorage.h>
 
 //#include "elf_abi.h"
 #include <ogc/machine/processor.h>
@@ -35,6 +41,10 @@ void __exception_closeall();
 
 static void *xfb = NULL;
 static GXRModeObj *rmode = NULL;
+typedef void (*entrypoint) (void);
+const DISC_INTERFACE* sd = &__io_wiisd;
+const DISC_INTERFACE* usb = &__io_usbstorage;
+bool USB2Enable();
 
 void restart()
 {
@@ -43,49 +53,95 @@ sleep(5);
 SYS_ResetSystem(SYS_RESTART,0,0);
 }
 
-typedef void (*entrypoint) (void);
-#include <sdcard/wiisd_io.h>
-#include <sdcard/gcsd.h>
-#include <ogc/usbstorage.h>
+bool FindIOS(u32 ios)
+{
+	//u32 len_buf;
+	s32 ret;
+	int n;
 
-const DISC_INTERFACE* sd = &__io_wiisd;
-const DISC_INTERFACE* usb = &__io_usbstorage;
+	u64 *titles = NULL;
+	u32 num_titles=0;
+
+	ret = ES_GetNumTitles(&num_titles);
+	if (ret < 0)
+	{
+		printf("error ES_GetNumTitles\n");
+		return false;
+	}
+
+	if(num_titles<1) 
+	{
+		printf("error num_titles<1\n");
+		return false;
+	}
+
+	titles = (u64 *)memalign(32, num_titles * sizeof(u64) + 32);
+	if (!titles)
+	{
+		printf("error memalign\n");
+		return false;
+	}
+
+	ret = ES_GetTitles(titles, num_titles);
+	if (ret < 0)
+	{
+		free(titles);
+		printf("error ES_GetTitles\n");
+		return false;	
+	}
+		
+	for(n=0; n<num_titles; n++) {
+		if((titles[n] &  0xFFFFFFFF)==ios) 
+		{
+			free(titles); 
+			return true;
+		}
+	}
+	
+    free(titles); 
+	return false;
+}
 
 void load_USB2_driver()
 {
-	int  ret;
-	bool usb2;
+	int  ret = -1;
+	bool usb2 = false;
 	u32  iosversion;
 	
-	//Load usb2 is possible
-	usb2 = false;
+	//Load usb2 if possible
 	USB2Enable(false);
 	if (IOS_GetVersion() == 58)
-	{
 		usb2 = true;
-	}
-	else
+	else if (FindIOS(58))
+	{
+		IOS_ReloadIOS(58);
+		usb2 = true;
+	}	
+	else if (FindIOS(202))
 	{
 		IOS_ReloadIOS(202);
-		ret=-1;
 		ret=mload_init();
-		data_elf my_data_elf;
 	
 		if(ret)
 		{
+			data_elf my_data_elf;
 			mload_elf((void *) ehcmodule_elf, &my_data_elf);
 			mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio);
 			USB2Enable(true);
 			usb2 = true;
-			//printf("Running... at 0x%x\n", (u32) my_data_elf.start);
+//			//printf("Running... at 0x%x\n", (u32) my_data_elf.start);
 		}
 	}	
-	if (usb2 && (IOS_GetVersion() == 58 || IOS_GetVersion() == 202))
+	else if (FindIOS(61))
+			IOS_ReloadIOS(61);
+
+	if (usb2)
 	{
 		iosversion = IOS_GetVersion();
 		printf("usb2 IOS%u detected!\n",iosversion);
 	}	
-	else printf("usb2 IOS not detected\n");
+	else
+		printf("usb2 IOS not detected\n");
 }
 
 //---------------------------------------------------------------------------------
@@ -129,6 +185,10 @@ int main(int argc, char **argv) {
 	long  size=0;
 	char* device;
 
+	// Try to load usb2 if available
+	printf("Detecting usb2 ios...\n");
+	load_USB2_driver();
+	
 	// Try to find app on sd
 	if(sd->startup() && sd->isInserted()) 
 	{
@@ -148,25 +208,30 @@ int main(int argc, char **argv) {
 			printf("Failed to mount FAT partition on sd!\n");
 	}
 	// If the app was not found on sd, try and find it on usb
-	if(inputFile == NULL && usb->startup() && usb->isInserted())
-	{
-		printf("Detecting usb device...\n");
-		load_USB2_driver();
-		printf("Mounting usb FAT partition\n");
-		if(fatMount("usb",usb,0,2,128))
+	u64 start = gettime();
+    while(inputFile == NULL && diff_sec(start, gettime()) < 5) // 5 sec
+    {
+		if(usb->startup() && usb->isInserted())
 		{
-			device = "usb";
-			inputFile = fopen("usb:/apps/mplayer-ce/boot.dol", "rb");
-			if(inputFile == NULL) {
-				inputFile = fopen("usb:/apps/mplayer_ce/boot.dol", "rb");
+			printf("Mounting usb FAT partition\n");
+			if(fatMount("usb",usb,0,2,128))
+			{
+				device = "usb";
+				inputFile = fopen("usb:/apps/mplayer-ce/boot.dol", "rb");
 				if(inputFile == NULL) {
-					inputFile = fopen("usb:/mplayer/boot.dol", "rb");
-				}
+					inputFile = fopen("usb:/apps/mplayer_ce/boot.dol", "rb");
+					if(inputFile == NULL) {
+						inputFile = fopen("usb:/mplayer/boot.dol", "rb");
+					}
+				}	
 			}	
-		}	
+			else
+				printf("Failed to mount FAT partition on usb!\n");
+		}
 		else
-			printf("Failed to mount FAT partition on usb!\n");
-	}
+			usleep(250000); // 1/4 sec;
+    }
+		
 	if(inputFile != NULL)
 		printf("Found boot.dol on %s!\n",device);
 	else
@@ -252,8 +317,9 @@ int main(int argc, char **argv) {
         restart();
     }
 	exeEntryPoint = (entrypoint) exeEntryPointAddress;	
-    //printf("Entry point: 0x%X\n", (unsigned int)exeEntryPointAddress);sleep(3);
+    //printf("Entry point: 0x%X\n", (unsigned int)exeEntryPointAddress);
 
+	//sleep(5);
 	// Reinitialize Video
 	VIDEO_WaitVSync();	
 	//printf("VIDEO_WaitVSync() done\n");
