@@ -204,7 +204,5 @@ static const u8 VI_GM_3_0[] = {
 };
 
 
-void VIWriteI2CRegister8(u8 reg, u8 data);
-void VIWriteI2CRegister16(u8 reg, u16 data);
-void VIWriteI2CRegister32(u8 reg, u32 data);
-void VIWriteI2CRegisterBuf(u8 reg, int size, u8 *data);
+void AVE_GetVolume(u8 *left, u8 *right);
+void AVE_SetVolume(u8 left, u8 right);
