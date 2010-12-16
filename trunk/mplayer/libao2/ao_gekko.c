@@ -113,18 +113,17 @@ static int control(int cmd, void *arg)
 			
 			if (cmd == AOCONTROL_SET_VOLUME)
 			{
-				volume.left = (vol->left / 100.0) * 0x80;
-				volume.right = (vol->right / 100.0) * 0x80;
+				volume.left = vol->left * 2.55;
+				volume.right = vol->right * 2.55;
 				
 				if (snd_mode == CONF_SOUND_MONO)
 					volume.left = volume.right = (volume.left + volume.right) / 2;
 				
-				VIWriteI2CRegister8(AVE_AI_VOLUME, clamp(volume.left, 0x00, 0xFF));
-				VIWriteI2CRegister8(AVE_AI_VOLUME + 1, clamp(volume.right, 0x00, 0xFF));
+				AVE_SetVolume(clamp(ceil(volume.right), 0x00, 0xFF), clamp(ceil(volume.left), 0x00, 0xFF));
 			}
 			
-			vol->left = (volume.left / 0x80) * 100.0;
-			vol->right = (volume.right / 0x80) * 100.0;
+			vol->left = volume.left / 2.55;
+			vol->right = volume.right / 2.55;
 			
 			return CONTROL_OK;
 		}
@@ -342,7 +341,7 @@ static float get_delay(void)
 					average = (average + value) / 2;
 			}
 			
-			double level = (fabs((average + reference) / 2) * (((volume.left + volume.right) / 2) / 0x80)) * ((float)led_mode / 2);
+			double level = (fabs((average + reference) / 2) * (((volume.left + volume.right) / 2) / 0xFF)) * ((float)led_mode / 2);
 			WIILIGHT_SetLevel(clamp(level * UCHAR_MAX, 0x00, 0xFF));
 			
 			last = current;

@@ -34,6 +34,7 @@
 #include "libaf/af.h"
 #include "libaf/af_format.h"
 #include "libvo/fastmemcpy.h"
+#include "osdep/ave-rvl.h"
 #include "osdep/mem2.h"
 
 #define BURST_SIZE 5760
@@ -60,9 +61,9 @@ static void aesnd_callback(AESNDPB *pb, u32 state)
 {
 	if (state == VOICE_STATE_STREAM) {
 		if (queued > 0) {
-			queued -= BURST_SIZE;
-			play_buffer = (play_buffer + 1) % NUM_BUFFERS;
 			AESND_SetVoiceBuffer(pb, buffers[play_buffer], BURST_SIZE);
+			play_buffer = (play_buffer + 1) % NUM_BUFFERS;
+			queued -= BURST_SIZE;
 		} else {
 			AESND_SetVoiceStop(pb, true);
 			active = false;
@@ -75,6 +76,22 @@ static int control(int cmd, void *arg)
 	switch (cmd) {
 		case AOCONTROL_QUERY_FORMAT:
 			return CONTROL_TRUE;
+		case AOCONTROL_GET_VOLUME:
+		{
+			u8 volume[2];
+			AVE_GetVolume(&volume[0], &volume[1]);
+			((ao_control_vol_t *)arg)->left = volume[0] / 2.55;
+			((ao_control_vol_t *)arg)->right = volume[1] / 2.55;
+			return CONTROL_OK;
+		}
+		case AOCONTROL_SET_VOLUME:
+		{
+			u8 volume[2];
+			volume[0] = clamp(ceil(((ao_control_vol_t *)arg)->left * 2.55), 0x00, 0xFF);
+			volume[1] = clamp(ceil(((ao_control_vol_t *)arg)->right * 2.55), 0x00, 0xFF);
+			AVE_SetVolume(volume[0], volume[1]);
+			return CONTROL_OK;
+		}
 		default:
 			return CONTROL_UNKNOWN;
 	}
