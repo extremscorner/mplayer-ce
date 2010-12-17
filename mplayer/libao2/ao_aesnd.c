@@ -78,18 +78,18 @@ static int control(int cmd, void *arg)
 			return CONTROL_TRUE;
 		case AOCONTROL_GET_VOLUME:
 		{
-			u8 volume[2];
-			AVE_GetVolume(&volume[0], &volume[1]);
-			((ao_control_vol_t *)arg)->left = volume[0] / 2.55;
-			((ao_control_vol_t *)arg)->right = volume[1] / 2.55;
+			u8 left, right;
+			AVE_GetVolume(&left, &right);
+			((ao_control_vol_t *)arg)->left = left / 2.55;
+			((ao_control_vol_t *)arg)->right = right / 2.55;
 			return CONTROL_OK;
 		}
 		case AOCONTROL_SET_VOLUME:
 		{
-			u8 volume[2];
-			volume[0] = clamp(ceil(((ao_control_vol_t *)arg)->left * 2.55), 0x00, 0xFF);
-			volume[1] = clamp(ceil(((ao_control_vol_t *)arg)->right * 2.55), 0x00, 0xFF);
-			AVE_SetVolume(volume[0], volume[1]);
+			u8 left, right;
+			left = clamp(ceil(((ao_control_vol_t *)arg)->left * 2.55), 0x00, 0xFF);
+			right = clamp(ceil(((ao_control_vol_t *)arg)->right * 2.55), 0x00, 0xFF);
+			AVE_SetVolume(left, right);
 			return CONTROL_OK;
 		}
 		default:
