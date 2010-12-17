@@ -298,7 +298,7 @@ static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
 
 const static DISC_INTERFACE* sd = &__io_wiisd;
 const static DISC_INTERFACE* usb = &__io_usbstorage;
-static const DISC_INTERFACE* dvd = &__io_wiidvd;
+const static DISC_INTERFACE* dvd = &__io_wiidvd;
 const static DISC_INTERFACE* carda = &__io_gcsda;
 const static DISC_INTERFACE* cardb = &__io_gcsdb;
 
@@ -1006,7 +1006,7 @@ void plat_init (int *argc, char **argv[])
 	LWP_MutexInit(&dvd_mutex, false);
 	
 	LWP_CreateThread(&watchdogthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
-	LWP_CreateThread(&mountthread, mountloop, NULL, mount_Stack, MOUNT_STACKSIZE, 64); // auto mount fs (usb, dvd)
+	LWP_CreateThread(&mountthread, mountloop, NULL, mount_Stack, MOUNT_STACKSIZE, 40); // auto mount fs (usb, dvd)
 	
 	VIDEO_WaitVSync();
 	
