@@ -91,11 +91,11 @@ const ao_functions_t* const audio_out_drivers[] =
 #ifdef CONFIG_SUN_AUDIO
         &audio_out_sun,
 #endif
-#ifdef GEKKO
-        &audio_out_gekko,
-#endif
 #ifdef CONFIG_AESND
         &audio_out_aesnd,
+#endif
+#ifdef GEKKO
+        &audio_out_gekko,
 #endif
 // wrappers:
 #ifdef CONFIG_ARTS

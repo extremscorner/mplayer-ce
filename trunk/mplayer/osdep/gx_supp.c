@@ -41,8 +41,6 @@
 #include "mem2.h"
 #include "libvo/video_out.h"
 
-#define DEFAULT_FIFO_SIZE (256 * 1024)
-
 #define HASPECT 320
 #define VASPECT 240
 
@@ -50,16 +48,16 @@
 static st_mem2_area *vi_area = NULL;
 
 static u32 whichfb;
-static u32 *xfb[2];
+static void *xfb[2];
 GXRModeObj *vmode = NULL;
 
 int screenwidth = 640;
 int screenheight = 480;
 
 /*** 3D GX ***/
-static u8 *gp_fifo, *dlist;
+static u8 *gp_fifo;
+static u8 dlist[32] ATTRIBUTE_ALIGN(32);
 static bool flip_ready, wait_ready;
-static u32 dsize;
 
 /*** Texture memory ***/
 static st_mem2_area *gx_area = NULL;
@@ -227,12 +225,11 @@ void mpgxInit()
 	Mtx44 perspective;
 	
 	/*** Clear out FIFO area ***/
-	gp_fifo = memalign(32, DEFAULT_FIFO_SIZE);
-	dlist = memalign(32, GX_FIFO_MINSIZE);
-	memset(gp_fifo, 0x00, DEFAULT_FIFO_SIZE);
+	gp_fifo = memalign(32, GX_FIFO_MINSIZE);
+	memset(gp_fifo, 0x00, GX_FIFO_MINSIZE);
 	
 	/*** Initialise GX ***/
-	GX_Init(gp_fifo, DEFAULT_FIFO_SIZE);
+	GX_Init(gp_fifo, GX_FIFO_MINSIZE);
 	GX_SetCopyClear((GXColor){0x00, 0x00, 0x00, 0xFF}, GX_MAX_Z24);
 	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
 	
@@ -389,6 +386,15 @@ void mpgxSetupYUVp()
 	GX_SetArray(GX_VA_CLR0, colors, sizeof(GXColor));
 	GX_SetArray(GX_VA_TEX0, Ytexcoords, sizeof(f32) * 2);
 	GX_SetArray(GX_VA_TEX1, UVtexcoords, sizeof(f32) * 2);
+	
+	GX_BeginDispList(dlist, 32);
+	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+		GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
+		GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
+		GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
+		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
+	GX_End();
+	GX_EndDispList();
 }
 
 //nunchuk control
@@ -412,6 +418,7 @@ void mpgxUpdateSquare()
 	
 	DCFlushRange(mysquare, sizeof(mysquare));
 	GX_SetArray(GX_VA_POS, mysquare, sizeof(f32) * 2);
+	GX_InvVtxCache();
 }
 
 void mpgxSetSquare(f32 haspect, f32 vaspect)
@@ -471,15 +478,6 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 	GX_InitTexObjLOD(&UtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
 	GX_InitTexObj(&VtexObj, Vtexture, UVwidth, UVheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	GX_InitTexObjLOD(&VtexObj, GX_LINEAR, GX_LINEAR, 0.0, 0.0, 0.0, GX_TRUE, GX_TRUE, GX_ANISO_4);
-	
-	GX_BeginDispList(dlist, GX_FIFO_MINSIZE);
-	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-		GX_Position1x8(0); GX_Color1x8(0); GX_TexCoord1x8(0); GX_TexCoord1x8(0);
-		GX_Position1x8(1); GX_Color1x8(0); GX_TexCoord1x8(1); GX_TexCoord1x8(1);
-		GX_Position1x8(2); GX_Color1x8(0); GX_TexCoord1x8(2); GX_TexCoord1x8(2);
-		GX_Position1x8(3); GX_Color1x8(0); GX_TexCoord1x8(3); GX_TexCoord1x8(3);
-	GX_End();
-	dsize = GX_EndDispList();
 }
 
 #define LUMA_COPY(type) \
@@ -607,7 +605,6 @@ void mpgxIsDrawDone()
 
 void mpgxPushFrame()
 {
-	GX_InvVtxCache();
 	GX_InvalidateTexAll();
 	
 	GX_LoadTexObj(&YtexObj, GX_TEXMAP0);	// MAP0 <- Y
@@ -621,10 +618,10 @@ void mpgxPushFrame()
 	for (int dxs = 0; dxs < 2; dxs++) {
 		u16 efb_offset = (xfb_copypt - diff) * dxs;
 		GX_SetScissorBoxOffset(efb_offset, 0);
-		GX_CallDispList(dlist, dsize);
+		GX_CallDispList(dlist, 32);
 		
 		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * dxs;
-		GX_CopyDisp((void *)((u32)xfb[whichfb ^ 1] + xfb_offset), GX_TRUE);
+		GX_CopyDisp(xfb[whichfb ^ 1] + xfb_offset, GX_TRUE);
 	}
 	
 	VIDEO_SetNextFramebuffer(xfb[whichfb ^ 1]);

@@ -43,6 +43,8 @@ distribution.
 #include <unistd.h> 
 #include <ogc/machine/processor.h>
 
+#include "libvo/fastmemcpy.h"
+
 //#define DEBUG_USB2
 
 #ifdef DEBUG_USB2
@@ -361,7 +363,7 @@ static bool __usb2storage_ReadSectors(u32 sector, u32 numSectors, void *buffer)
 		{
 			ret = IOS_IoctlvFormat(hId, fd, USB_IOCTL_UMS_READ_SECTORS, "ii:d",
 					sector, sectors, fixed_buffer, sector_size * sectors);
-			memcpy(dest, fixed_buffer, sector_size * sectors);
+			fast_memcpy(dest, fixed_buffer, sector_size * sectors);
 		}
 		else
 			ret = IOS_IoctlvFormat(hId, fd, USB_IOCTL_UMS_READ_SECTORS, "ii:d",
@@ -403,7 +405,7 @@ static bool __usb2storage_WriteSectors(u32 sector, u32 numSectors, const void *b
 
 		if (!is_MEM2_buffer(dest)) // libfat is not providing us good buffers :-(
 		{
-			memcpy(fixed_buffer, dest, sector_size * sectors);
+			fast_memcpy(fixed_buffer, dest, sector_size * sectors);
 			ret = IOS_IoctlvFormat(hId, fd, USB_IOCTL_UMS_WRITE_SECTORS,
 					"ii:d", sector, sectors, fixed_buffer, sector_size
 							* sectors);

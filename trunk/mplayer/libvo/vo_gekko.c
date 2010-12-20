@@ -21,7 +21,6 @@
    Boston, MA 02110-1301 USA.
 */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,11 +37,7 @@
 #include "sub/osd.h"
 #include "sub/sub.h"
 #include "aspect.h"
-#include "osdep/keycodes.h"
 #include "osdep/gx_supp.h"
-
-#include <gccore.h>
-
 
 static const vo_info_t info = {
 	"gekko video output",
@@ -57,7 +52,6 @@ static u32 image_width = 0, image_height = 0;
 
 extern int screenwidth;
 extern int screenheight;
-
 
 static void resize(void)
 {
@@ -91,8 +85,7 @@ static void flip_page(void)
 
 static uint32_t draw_image(mp_image_t *mpi)
 {
-	if (mpi->flags & MP_IMGFLAG_PLANAR)
-	{
+	if (mpi->flags & MP_IMGFLAG_PLANAR) {
 		mpgxIsDrawDone();
 		mpgxCopyYUVp(mpi->planes, mpi->stride);
 	}
@@ -108,9 +101,8 @@ static int draw_frame(uint8_t *src[])
 static int query_format(uint32_t format)
 {
 	if (mp_get_chroma_shift(format, NULL, NULL))	// Accept any planar YUV format.
-		return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_OSD | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_ACCEPT_STRIDE;
-	else
-		return VO_FALSE;
+		return VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW | VFCAP_OSD | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_ACCEPT_STRIDE | VOCAP_NOSLICES;
+	else return VO_FALSE;
 }
 
 static int config(uint32_t width, uint32_t height, uint32_t d_width, uint32_t d_height, uint32_t flags, char *title, uint32_t format)
@@ -158,8 +150,7 @@ static int preinit(const char *arg)
 
 static int control(uint32_t request, void *data, ...)
 {
-	switch (request)
-	{
+	switch (request) {
 		case VOCTRL_QUERY_FORMAT:
 			return query_format(*((uint32_t *)data));
 		case VOCTRL_DRAW_IMAGE:
