@@ -457,7 +457,7 @@ static char *default_args[] = {
 	"sd:/apps/mplayer-ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-	"-vo","gekko","-ao","gekko",
+	"-vo","gekko","-ao","aesnd",
 	"-menu","-menu-startup",
 	"-quiet"
 }; 
@@ -924,12 +924,12 @@ void plat_init (int *argc, char **argv[])
 	}
 	
 	DI_Init();
-	USB2Enable(false);
+	bool ehci = false;
 	
 	if (IOS_GetVersion() == 202)
-		if (mload_init())
-			if (load_ehci_module())
-				USB2Enable(true);
+		if (mload_init()) ehci = load_ehci_module();
+	
+	USB2Enable(ehci);
 	
 	mpviSetup(0, true);
 	log_console_init(vmode, 0);
