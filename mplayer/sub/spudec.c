@@ -881,10 +881,7 @@ void spudec_draw_scaled(void *me, unsigned int dxs, unsigned int dys, void (*dra
   spudec_handle_t *spu = me;
   scale_pixel *table_x;
   scale_pixel *table_y;
-  
-  if (!spu)
-    return;
-  
+
   if (spudec_visible(spu)) {
 
     // check if only forced subtitles are requested

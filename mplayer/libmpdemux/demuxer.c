@@ -492,6 +492,9 @@ static void allocate_parser(AVCodecContext **avctx, AVCodecParserContext **parse
     case 0x86:
         codec_id = CODEC_ID_DTS;
         break;
+    case MKTAG('f', 'L', 'a', 'C'):
+        codec_id = CODEC_ID_FLAC;
+        break;
     case MKTAG('M', 'L', 'P', ' '):
         codec_id = CODEC_ID_MLP;
         break;
@@ -1324,6 +1327,7 @@ int demux_seek(demuxer_t *demuxer, float rel_seek_secs, float audio_delay,
             mp_msg(MSGT_SEEK, MSGL_WARN, MSGTR_CantSeekFile);
         return 0;
     }
+
     demux_flush(demuxer);
 
     demuxer->stream->eof = 0;
@@ -1332,28 +1336,27 @@ int demux_seek(demuxer_t *demuxer, float rel_seek_secs, float audio_delay,
     demuxer->sub->eof = 0;
 
     if (flags & SEEK_ABSOLUTE)
-    {
         pts = 0.0f;
-    }
     else {
         if (demuxer->stream_pts == MP_NOPTS_VALUE)
             goto dmx_seek;
         pts = demuxer->stream_pts;
     }
+
     if (flags & SEEK_FACTOR) {
         if (stream_control(demuxer->stream, STREAM_CTRL_GET_TIME_LENGTH, &tmp)
             == STREAM_UNSUPPORTED)
-        {
             goto dmx_seek;
-        }
         pts += tmp * rel_seek_secs;
     } else
         pts += rel_seek_secs;
+
     if (stream_control(demuxer->stream, STREAM_CTRL_SEEK_TO_TIME, &pts) !=
         STREAM_UNSUPPORTED) {
         demux_resync(demuxer);
         return 1;
     }
+
   dmx_seek:
     if (demuxer->desc->seek)
         demuxer->desc->seek(demuxer, rel_seek_secs, audio_delay, flags);

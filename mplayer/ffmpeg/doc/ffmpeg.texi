@@ -522,7 +522,7 @@ Force video tag/fourcc.
 @item -qphist
 Show QP histogram.
 @item -vbsf @var{bitstream_filter}
-Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump".
+Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump", "mjpeg2jpeg".
 @example
 ffmpeg -i h264.mp4 -vcodec copy -vbsf h264_mp4toannexb -an out.h264
 @end example
@@ -625,11 +625,21 @@ Optional @var{metadata} parameters specify, which metadata to copy - (g)lobal
 per-(p)rogram. All metadata specifiers other than global must be followed by the
 stream/chapter/program number. If metadata specifier is omitted, it defaults to
 global.
+
+By default, global metadata is copied from the first input file to all output files,
+per-stream and per-chapter metadata is copied along with streams/chapters. These
+default mappings are disabled by creating any mapping of the relevant type. A negative
+file index can be used to create a dummy mapping that just disables automatic copying.
+
 For example to copy metadata from the first stream of the input file to global metadata
 of the output file:
 @example
 ffmpeg -i in.ogg -map_meta_data 0:0,s0 out.mp3
 @end example
+@item -map_chapters @var{outfile}:@var{infile}
+Copy chapters from @var{infile} to @var{outfile}. If no chapter mapping is specified,
+then chapters are copied from the first input file with at least one chapter to all
+output files. Use a negative file index to disable any chapter copying.
 @item -debug
 Print specific debug info.
 @item -benchmark

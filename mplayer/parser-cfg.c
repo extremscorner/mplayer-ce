@@ -106,8 +106,6 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 #ifndef GEKKO
 		if (errors >= 16) {
 			mp_msg(MSGT_CFGPARSER,MSGL_FATAL,"too many errors\n");
-			free(line);
-			fclose(fp);
 			goto out;
 		}
 #endif

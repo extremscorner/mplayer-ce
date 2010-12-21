@@ -235,6 +235,7 @@ Advanced options (experts only):
   --enable-pic             build position-independent code
   --malloc-prefix=PFX      prefix malloc and related names with PFX
   --enable-sram            allow use of on-chip SRAM
+  --disable-symver         disable symbol versioning
 
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
@@ -1097,6 +1098,7 @@ CMDLINE_SELECT="
     logging
     optimizations
     stripping
+    symver
     yasm
 "
 
@@ -1192,6 +1194,7 @@ aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="mdct ac3_parser"
 alac_encoder_select="lpc"
 amrnb_decoder_select="lsp"
+amrwb_decoder_select="lsp"
 atrac1_decoder_select="mdct"
 atrac3_decoder_select="mdct"
 binkaudio_dct_decoder_select="mdct rdft dct"
@@ -1351,6 +1354,7 @@ asf_stream_muxer_select="asf_muxer"
 avisynth_demuxer_deps="avisynth"
 dirac_demuxer_deps="dirac_parser"
 eac3_demuxer_select="ac3_parser"
+flac_demuxer_deps="flac_parser"
 ipod_muxer_select="mov_muxer"
 libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
@@ -1406,6 +1410,8 @@ udp_protocol_deps="network"
 blackframe_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
 frei0r_filter_deps="frei0r dlopen strtok_r"
+frei0r_src_filter_deps="frei0r dlopen strtok_r"
+hqdn3d_filter_deps="gpl"
 ocv_smooth_filter_deps="libopencv"
 yadif_filter_deps="gpl"
 
@@ -3241,7 +3247,11 @@ test -n "$malloc_prefix" &&
 
 if enabled small || disabled optimizations; then
     echo "#undef  av_always_inline"  >> $TMPH
-    echo "#define av_always_inline"  >> $TMPH
+    if enabled small; then
+        echo "#define av_always_inline inline"  >> $TMPH
+    else
+        echo "#define av_always_inline av_unused"  >> $TMPH
+    fi
 fi
 
 if enabled yasm; then

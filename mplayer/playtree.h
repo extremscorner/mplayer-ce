@@ -69,8 +69,6 @@ struct m_config;
 ///@}
 /// end denper's changes
 
-
-
 /// \defgroup Playtree
 ///@{
 

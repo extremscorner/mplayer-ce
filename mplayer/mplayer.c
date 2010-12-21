@@ -197,7 +197,7 @@ int fixed_vo=1;
 double video_time_usage=0;
 double vout_time_usage=0;
 static double audio_time_usage=0;
-static u64 total_time_usage_start=0;
+static int total_time_usage_start=0;
 static int total_frame_cnt=0;
 static int drop_frame_cnt=0; // total number of dropped frames
 int benchmark=0;
@@ -219,7 +219,7 @@ static int list_properties = 0;
 
 int osd_level=1;
 // if nonzero, hide current OSD contents when GetTimerMS() reaches this
-unsigned long long osd_visible;
+unsigned int osd_visible;
 int osd_duration = 1000;
 
 int term_osd = 1;
@@ -464,7 +464,7 @@ int capture_dump = 0;
 static float default_max_pts_correction=-1;
 static float max_pts_correction=0;//default_max_pts_correction;
 static float c_total=0;
-       double audio_delay=0;
+       float audio_delay=0;
 static int ignore_start=0;
 
 static int softsleep=0;
@@ -541,8 +541,6 @@ static int crash_debug = 0;
 /* This header requires all the global variable declarations. */
 #include "cfg-mplayer.h"
 
-
-#define mp_basename2(s) (strrchr(s,'/')==NULL?(char*)s:(strrchr(s,'/')+1))
 
 const void *mpctx_get_video_out(MPContext *mpctx)
 {
@@ -644,7 +642,7 @@ static char *get_demuxer_info (char *tag) {
 }
 
 char *get_metadata (metadata_t type) {
-  char *meta = NULL;
+  char meta[128];
   sh_audio_t * const sh_audio = mpctx->sh_audio;
   sh_video_t * const sh_video = mpctx->sh_video;
 
@@ -654,67 +652,43 @@ char *get_metadata (metadata_t type) {
   switch (type)
   {
   case META_NAME:
-  {
-    return strdup (mp_basename2 (filename));
-  }
+    return strdup(mp_basename(filename));
 
   case META_VIDEO_CODEC:
-  {
     if (sh_video->format == 0x10000001)
-      meta = strdup ("mpeg1");
+      return strdup("mpeg1");
     else if (sh_video->format == 0x10000002)
-      meta = strdup ("mpeg2");
+      return strdup("mpeg2");
     else if (sh_video->format == 0x10000004)
-      meta = strdup ("mpeg4");
+      return strdup("mpeg4");
     else if (sh_video->format == 0x10000005)
-      meta = strdup ("h264");
+      return strdup("h264");
     else if (sh_video->format >= 0x20202020)
-    {
-      meta = malloc (8);
-      sprintf (meta, "%.4s", (char *) &sh_video->format);
-    }
+      snprintf(meta, sizeof(meta), "%.4s", (char *) &sh_video->format);
     else
-    {
-      meta = malloc (8);
-      sprintf (meta, "0x%08X", sh_video->format);
-    }
-    return meta;
-  }
+      snprintf(meta, sizeof(meta), "0x%08X", sh_video->format);
+    return strdup(meta);
 
   case META_VIDEO_BITRATE:
-  {
-    meta = malloc (16);
-    sprintf (meta, "%d kbps", (int) (sh_video->i_bps * 8 / 1024));
-    return meta;
-  }
+    snprintf(meta, sizeof(meta), "%d kbps", (int) (sh_video->i_bps * 8 / 1024));
+    return strdup(meta);
 
   case META_VIDEO_RESOLUTION:
-  {
-    meta = malloc (16);
-    sprintf (meta, "%d x %d", sh_video->disp_w, sh_video->disp_h);
-    return meta;
-  }
+    snprintf(meta, sizeof(meta), "%d x %d", sh_video->disp_w, sh_video->disp_h);
+    return strdup(meta);
 
   case META_AUDIO_CODEC:
-  {
     if (sh_audio->codec && sh_audio->codec->name)
-      meta = strdup (sh_audio->codec->name);
-    return meta;
-  }
+      return strdup(sh_audio->codec->name);
+    break;
 
   case META_AUDIO_BITRATE:
-  {
-    meta = malloc (16);
-    sprintf (meta, "%d kbps", (int) (sh_audio->i_bps * 8/1000));
-    return meta;
-  }
+    snprintf(meta, sizeof(meta), "%d kbps", (int)(sh_audio->i_bps * 8 / 1000));
+    return strdup(meta);
 
   case META_AUDIO_SAMPLES:
-  {
-    meta = malloc (16);
-    sprintf (meta, "%d Hz, %d ch.", sh_audio->samplerate, sh_audio->channels);
-    return meta;
-  }
+    snprintf(meta, sizeof(meta), "%d Hz, %d ch.", sh_audio->samplerate, sh_audio->channels);
+    return strdup(meta);
 
   /* check for valid demuxer */
   case META_INFO_TITLE:
@@ -742,7 +716,7 @@ char *get_metadata (metadata_t type) {
     break;
   }
 
-  return meta;
+  return NULL;
 }
 
 static void print_file_properties(const MPContext *mpctx, const char *filename)
@@ -1201,7 +1175,7 @@ static void load_per_file_config (m_config_t* conf, const char *const file)
 {
     char *confpath;
     char cfg[PATH_MAX];
-    char *name;
+    const char *name;
 
     if (strlen(file) > PATH_MAX - 14) {
         mp_msg(MSGT_CPLAYER, MSGL_WARN, "Filename is too long, can not load file or directory specific config files\n");
@@ -1209,20 +1183,7 @@ static void load_per_file_config (m_config_t* conf, const char *const file)
     }
     sprintf (cfg, "%s.conf", file);
 
-    name = strrchr(cfg, '/');
-    if (HAVE_DOS_PATHS) {
-        char *tmp = strrchr(cfg, '\\');
-        if (!name || tmp > name)
-            name = tmp;
-        tmp = strrchr(cfg, ':');
-        if (!name || tmp > name)
-            name = tmp;
-    }
-    if (!name)
-	name = cfg;
-    else
-	name++;
-
+    name = mp_basename(cfg);
     if (use_filedir_conf) {
         char dircfg[PATH_MAX];
         strcpy(dircfg, cfg);
@@ -1266,8 +1227,6 @@ static int libmpdemux_was_interrupted(int eof) {
   }
   return eof;
 }
-
-#define mp_basename(s) (strrchr(s,'\\')==NULL?(mp_basename2(s)):(strrchr(s,'\\')+1))
 
 static int playtree_add_playlist(play_tree_t* entry)
 {
@@ -1373,8 +1332,7 @@ void update_set_of_subtitles(void)
 }
 
 void init_vo_spudec(void) {
-  if (vo_spudec)
-    spudec_free(vo_spudec);
+  spudec_free(vo_spudec);
   vo_spudec = NULL;
 
   // we currently can't work without video stream
@@ -1560,7 +1518,7 @@ static void print_status(float a_pos, float a_v, float corr)
  * \param sh_audio describes the requested input format of the chain.
  * \param ao_data describes the requested output format of the chain.
  */
-int build_afilter_chain(sh_audio_t *sh_audio, ao_data_t *ao_data)
+static int build_afilter_chain(sh_audio_t *sh_audio, ao_data_t *ao_data)
 {
   int new_srate;
   int result;
@@ -1605,7 +1563,7 @@ struct mp_osd_msg {
     char msg[128];
     int  id,level,started;
     /// Display duration in ms.
-    u64  time;
+    unsigned  time;
 };
 
 /// OSD message stack.
@@ -1619,7 +1577,7 @@ static mp_osd_msg_t* osd_msg_stack = NULL;
  *
  */
 
-void set_osd_msg(int id, int level, unsigned long time, const char* fmt, ...) {
+void set_osd_msg(int id, int level, int time, const char* fmt, ...) {
     mp_osd_msg_t *msg,*last=NULL;
     va_list va;
     int r;
@@ -1697,9 +1655,9 @@ static void clear_osd_msgs(void) {
 
 static mp_osd_msg_t* get_osd_msg(void) {
     mp_osd_msg_t *msg,*prev,*last = NULL;
-    static u64 last_update = 0;
-    u64 now = GetTimerMS();
-    u64 diff;
+    static unsigned last_update = 0;
+    unsigned now = GetTimerMS();
+    unsigned diff;
     char hidden_dec_done = 0;
 
     if (osd_visible) {
@@ -2391,7 +2349,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
 
 static int fill_audio_out_buffers(void)
 {
-    u64 t;
+    unsigned int t;
     double tt;
     int playsize;
     int playflags=0;
@@ -2495,7 +2453,7 @@ static int sleep_until_update(double *time_frame, double *aq_sleep_time)
     }
 #endif /* CONFIG_NETWORKING */
 
-    *time_frame -= GetRelativeTime() * (double)0.000001; // reset timer;
+    *time_frame -= GetRelativeTime() * 0.000001F; // reset timer
 
     if (mpctx->sh_audio && !mpctx->d_audio->eof) {
 	float delay = mpctx->audio_out->get_delay();
@@ -2701,7 +2659,6 @@ static double update_video(int *blit_frame)
 
     do {
 	current_module = "video_read_frame";
-	if(!sh_video) return -1;
 	frame_time = sh_video->next_frame_time;
 	in_size = video_read_frame(sh_video, &sh_video->next_frame_time,
 				   &start, force_fps);
@@ -3144,8 +3101,8 @@ int gui_no_filename=0;
 
 #ifdef GEKKO
   __exception_setreload(8);
-  plat_init (&argc, &argv);
-  fileplaying=(char*)malloc(sizeof(char)*MAXPATHLEN);
+  plat_init(&argc, &argv);
+  fileplaying = (char *)malloc(sizeof(char) * MAXPATHLEN);
   load_restore_points();
 #endif
 
@@ -3168,14 +3125,7 @@ int gui_no_filename=0;
       (!strcmp(argv[1], "-gui") || !strcmp(argv[1], "-nogui"))) {
     use_gui = !strcmp(argv[1], "-gui");
   } else
-  if ( argv[0] )
-  {
-    char *base = strrchr(argv[0], '/');
-    if (!base)
-      base = strrchr(argv[0], '\\');
-    if (!base)
-      base = argv[0];
-    if(strstr(base, "gmplayer"))
+  if (argv[0] && strstr(mp_basename(argv[0]), "gmplayer")) {
           use_gui=1;
   }
 
@@ -3590,7 +3540,7 @@ while (player_idle_mode && !filename) {
 	mp_msg(MSGT_CPLAYER,MSGL_INFO,MSGTR_Playing,
 		filename_recode(filename));
         if(use_filename_title && vo_wintitle == NULL)
-            vo_wintitle = strdup ( mp_basename2 (filename));
+            vo_wintitle = strdup(mp_basename(filename));
     }
 
     edl_loadfile();
@@ -3605,7 +3555,6 @@ while (player_idle_mode && !filename) {
     }
 
 //==================== Open VOB-Sub ============================
-int vob_sub_auto = 1; //scip
 
     current_module="vobsub";
     if(!IsLoopAvi(NULL) && !InternetStream())
@@ -3618,8 +3567,7 @@ int vob_sub_auto = 1; //scip
       if(vo_vobsub==NULL)
         mp_msg(MSGT_CPLAYER,MSGL_ERR,MSGTR_CantLoadSub,
 		filename_recode(vobsub_name));
-    } else
-	if (vo_vobsub==NULL && vob_sub_auto && filename){ //scip sub_auto -> vob_sub_auto
+    } else if (sub_auto && filename){
       /* try to autodetect vobsub from movie filename ::atmos */
       char *buf = strdup(filename), *psub;
       char *pdot = strrchr(buf, '.');
@@ -3632,14 +3580,8 @@ int vob_sub_auto = 1; //scip
       vo_vobsub=vobsub_open(buf,spudec_ifo,0,&vo_spudec);
       /* try from ~/.mplayer/sub */
       if(!vo_vobsub && (psub = get_path( "sub/" ))) {
-          char *bname;
+          const char *bname = mp_basename(buf);
           int l;
-          bname = strrchr(buf,'/');
-#if defined(__MINGW32__) || defined(__CYGWIN__)
-          if(!bname) bname = strrchr(buf,'\\');
-#endif
-          if(bname) bname++;
-          else bname = buf;
           l = strlen(psub) + strlen(bname) + 1;
           psub = realloc(psub,l);
           strcat(psub,bname);
@@ -3813,8 +3755,6 @@ stream_cache_min_percent=1.0;
   res = stream_enable_cache(mpctx->stream,stream_cache_size*1024,
                           stream_cache_size*1024*(stream_cache_min_percent / 100.0),
                           stream_cache_size*1024*(stream_cache_seek_min_percent / 100.0));
-  if(res < 0) printf("error cache_init\n");
-if(mpctx->stream->cache_data==NULL) printf("no cache generated?\n");// review
   if(res == 0)
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
@@ -4098,14 +4038,11 @@ if(1 || mpctx->sh_video) {
     for (i = 0; sub_name[i] != NULL; ++i)
         add_subtitles (sub_name[i], fps, 0);
   }
-  //scip:
-  sub_auto = 1;
-  if(vo_vobsub==NULL && sub_auto) { // auto load sub file ...
-    //char *psub = get_path( "sub/" );
-    //char **tmp = sub_filenames((psub ? psub : ""), filename);
-    char **tmp = sub_filenames("", filename);
+  if(sub_auto) { // auto load sub file ...
+    char *psub = get_path( "sub/" );
+    char **tmp = sub_filenames((psub ? psub : ""), filename);
     int i = 0;
-    //free(psub); // release the buffer created by get_path() above
+    free(psub); // release the buffer created by get_path() above
     while (tmp[i]) {
         add_subtitles (tmp[i], fps, 1);
         free(tmp[i++]);
@@ -4509,8 +4446,8 @@ if(!mpctx->sh_video) {
 
 #ifndef GEKKO
     if (heartbeat_cmd) {
-        static u64 last_heartbeat;
-        u64 now = GetTimerMS();
+        static unsigned last_heartbeat;
+        unsigned now = GetTimerMS();
         if (now - last_heartbeat > 30000) {
             last_heartbeat = now;
             system(heartbeat_cmd);
@@ -4521,15 +4458,17 @@ if(!mpctx->sh_video) {
 
 //====================== FLIP PAGE (VIDEO BLT): =========================
 
-        current_module="flip_page";
-        if (!frame_time_remaining && blit_frame) {
-       u64 t2=GetTimer();
+if (!edl_needs_reset) {
+    current_module="flip_page";
+    if (!frame_time_remaining && blit_frame) {
+        unsigned int t2=GetTimer();
 
-	   if(vo_config_count && first_frame) mpctx->video_out->flip_page();
-	   mpctx->num_buffered_frames--;
+        if(vo_config_count && first_frame) mpctx->video_out->flip_page();
+        mpctx->num_buffered_frames--;
 
-	   vout_time_usage += (GetTimer() - t2) * 0.000001;
-        }
+        vout_time_usage += (GetTimer() - t2) * 0.000001;
+    }
+}
 //====================== A-V TIMESTAMP CORRECTION: =========================
 
   adjust_sync_and_print_status(frame_time_remaining, mpctx->time_frame);
@@ -4764,7 +4703,7 @@ if(benchmark){
     double tot=video_time_usage+vout_time_usage+audio_time_usage;
     double total_time_usage;
     total_time_usage_start=GetTimer()-total_time_usage_start;
-    total_time_usage = total_time_usage_start*0.000001;
+    total_time_usage = (float)total_time_usage_start*0.000001;
     mp_msg(MSGT_CPLAYER,MSGL_INFO,"\nBENCHMARKs: VC:%8.3fs VO:%8.3fs A:%8.3fs Sys:%8.3fs = %8.3fs\n",
            video_time_usage,vout_time_usage,audio_time_usage,
            total_time_usage-tot,total_time_usage);

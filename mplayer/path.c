@@ -195,3 +195,43 @@ void set_codec_path(const char *path)
     strcpy(codec_path, path);
     needs_free = 1;
 }
+
+const char *mp_basename(const char *path)
+{
+    char *s;
+
+#if HAVE_DOS_PATHS
+    s = strrchr(path, '\\');
+    if (s)
+        path = s + 1;
+    s = strrchr(path, ':');
+    if (s)
+        path = s + 1;
+#endif
+    s = strrchr(path, '/');
+    return s ? s + 1 : path;
+}
+
+/**
+ * \brief Allocates a new buffer containing the directory name
+ * \param path Original path. Must be a valid string.
+ *
+ * The path returned always contains a trailing slash '/'.
+ * On systems supporting DOS paths, '\' is also considered as a directory
+ * separator in addition to the '/'.
+ */
+char *mp_dirname(const char *path)
+{
+    const char *base = mp_basename(path);
+    size_t len = base - path;
+    char *dirname;
+
+    if (len == 0)
+        return strdup("./");
+    dirname = malloc(len + 1);
+    if (!dirname)
+        return NULL;
+    strncpy(dirname, path, len);
+    dirname[len] = '\0';
+    return dirname;
+}

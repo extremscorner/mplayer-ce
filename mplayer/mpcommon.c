@@ -358,7 +358,7 @@ const m_option_t noconfig_opts[] = {
 };
 
 /**
- * Initialization code to be run at the very start, most not depend
+ * Initialization code to be run at the very start, must not depend
  * on option values.
  */
 void common_preinit(void)
@@ -410,7 +410,7 @@ int common_init(void)
         set_codec_path(codec_path);
 
 #ifdef GEKKO
-load_builtin_codecs();
+    load_builtin_codecs();
 #else
     /* Check codecs.conf. */
     if (!codecs_file || !parse_codec_cfg(codecs_file)) {
@@ -450,10 +450,10 @@ load_builtin_codecs();
             vo_font = read_font_desc(desc_path, font_factor, verbose>1);
             free(desc_path);
             if (!vo_font) {
-				char cad[200];
-				sprintf(cad,"%s%s",MPLAYER_DATADIR,"/font/font.desc");
+                char cad[200];
+                sprintf(cad,"%s%s",MPLAYER_DATADIR,"/font/font.desc");
                 vo_font = read_font_desc(cad, font_factor, verbose>1);
-			}
+            }
         }
         if (sub_font_name)
             sub_font = read_font_desc(sub_font_name, font_factor, verbose>1);

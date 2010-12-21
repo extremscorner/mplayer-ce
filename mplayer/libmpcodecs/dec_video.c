@@ -172,10 +172,11 @@ int get_current_video_decoder_lag(sh_video_t *sh_video)
 
 void uninit_video(sh_video_t *sh_video)
 {
-    if (!sh_video || !sh_video->initialized)
+    if (!sh_video->initialized)
         return;
     mp_msg(MSGT_DECVIDEO, MSGL_V, MSGTR_UninitVideoStr, sh_video->codec->drv);
     mpvdec->uninit(sh_video);
+    mpvdec = NULL;
 #ifdef CONFIG_DYNAMIC_PLUGINS
     if (sh_video->dec_handle)
         dlclose(sh_video->dec_handle);
@@ -382,8 +383,8 @@ void *decode_video(sh_video_t *sh_video, unsigned char *start, int in_size,
                    int drop_frame, double pts, int *full_frame)
 {
     mp_image_t *mpi = NULL;
-    u64 t = GetTimer();
-    u64 t2;
+    unsigned int t = GetTimer();
+    unsigned int t2;
     double tt;
     int delay;
     int got_picture = 1;
@@ -473,7 +474,7 @@ void *decode_video(sh_video_t *sh_video, unsigned char *start, int in_size,
 int filter_video(sh_video_t *sh_video, void *frame, double pts)
 {
     mp_image_t *mpi = frame;
-    u64 t2 = GetTimer();
+    unsigned int t2 = GetTimer();
     vf_instance_t *vf = sh_video->vfilter;
     // apply video filters and call the leaf vo/ve
     int ret = vf->put_image(vf, mpi, pts);

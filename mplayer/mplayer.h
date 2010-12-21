@@ -27,13 +27,13 @@ extern char **video_driver_list;
 extern char **audio_driver_list;
 
 extern int osd_level;
-extern unsigned long long osd_visible;
+extern unsigned int osd_visible;
 extern int autosync;
 extern int frame_dropping;
 extern int slave_mode;
 extern int use_menu;
 
-extern double audio_delay;
+extern float  audio_delay;
 extern double start_pts;
 
 /* for the GUI */

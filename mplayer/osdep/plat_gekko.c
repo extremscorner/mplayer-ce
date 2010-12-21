@@ -75,7 +75,6 @@ MPlayer Wii port
 #endif // DEBUG_INIT
 
 
-extern char appPath[1024];
 extern int enable_restore_points;
 
 static off_t get_filesize(char *FileName)
@@ -457,7 +456,7 @@ static char *default_args[] = {
 	"sd:/apps/mplayer-ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-	"-vo","gekko","-ao","aesnd",
+	"-vo","gekko","-ao","gekko",
 	"-menu","-menu-startup",
 	"-quiet"
 }; 
@@ -906,7 +905,7 @@ static bool DetectValidPath()
 		if (CheckPath("cardb:/mplayer")) return true;
 	}
 	
-	return false;	
+	return false;
 }
 
 extern u32 __di_check_ahbprot(void);
@@ -919,7 +918,11 @@ void plat_init (int *argc, char **argv[])
 		if ((IOS_GetVersion() != 58) && !__di_check_ahbprot()) {
 			if (FindIOS(58))
 				IOS_ReloadIOS(58);
-			else DI_LoadDVDX(true);
+			else if (IOS_GetVersion() != 61) {
+				if (FindIOS(61))
+					IOS_ReloadIOS(61);
+				else DI_LoadDVDX(true);
+			}
 		}
 	}
 	

@@ -31,8 +31,6 @@
 #include "avformat.h"
 #include "riff.h"
 #include "isom.h"
-#include "libavcodec/mpeg4audio.h"
-#include "libavcodec/mpegaudiodata.h"
 #include "libavcodec/get_bits.h"
 
 #if CONFIG_ZLIB
@@ -154,6 +152,7 @@ static int mov_read_udta_string(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'d','a','y'): key = "date";      break;
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
     case MKTAG(0xa9,'t','o','o'):
+    case MKTAG(0xa9,'s','w','r'): key = "encoder";   break;
     case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
     case MKTAG( 'd','e','s','c'): key = "description";break;
     case MKTAG( 'l','d','e','s'): key = "synopsis";  break;
@@ -461,41 +460,6 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-int ff_mp4_read_descr_len(ByteIOContext *pb)
-{
-    int len = 0;
-    int count = 4;
-    while (count--) {
-        int c = get_byte(pb);
-        len = (len << 7) | (c & 0x7f);
-        if (!(c & 0x80))
-            break;
-    }
-    return len;
-}
-
-static int mp4_read_descr(AVFormatContext *fc, ByteIOContext *pb, int *tag)
-{
-    int len;
-    *tag = get_byte(pb);
-    len = ff_mp4_read_descr_len(pb);
-    dprintf(fc, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
-    return len;
-}
-
-#define MP4ESDescrTag                   0x03
-#define MP4DecConfigDescrTag            0x04
-#define MP4DecSpecificDescrTag          0x05
-
-static const AVCodecTag mp4_audio_types[] = {
-    { CODEC_ID_MP3ON4, AOT_PS   }, /* old mp3on4 draft */
-    { CODEC_ID_MP3ON4, AOT_L1   }, /* layer 1 */
-    { CODEC_ID_MP3ON4, AOT_L2   }, /* layer 2 */
-    { CODEC_ID_MP3ON4, AOT_L3   }, /* layer 3 */
-    { CODEC_ID_MP4ALS, AOT_ALS  }, /* MPEG-4 ALS */
-    { CODEC_ID_NONE,   AOT_NULL },
-};
-
 int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -506,55 +470,16 @@ int ff_mov_read_esds(AVFormatContext *fc, ByteIOContext *pb, MOVAtom atom)
     st = fc->streams[fc->nb_streams-1];
 
     get_be32(pb); /* version + flags */
-    len = mp4_read_descr(fc, pb, &tag);
+    len = ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4ESDescrTag) {
         get_be16(pb); /* ID */
         get_byte(pb); /* priority */
     } else
         get_be16(pb); /* ID */
 
-    len = mp4_read_descr(fc, pb, &tag);
-    if (tag == MP4DecConfigDescrTag) {
-        int object_type_id = get_byte(pb);
-        get_byte(pb); /* stream type */
-        get_be24(pb); /* buffer size db */
-        get_be32(pb); /* max bitrate */
-        get_be32(pb); /* avg bitrate */
-
-        st->codec->codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
-        dprintf(fc, "esds object type id 0x%02x\n", object_type_id);
-        len = mp4_read_descr(fc, pb, &tag);
-        if (tag == MP4DecSpecificDescrTag) {
-            dprintf(fc, "Specific MPEG4 header len=%d\n", len);
-            if((uint64_t)len > (1<<30))
-                return -1;
-            av_free(st->codec->extradata);
-            st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codec->extradata)
-                return AVERROR(ENOMEM);
-            get_buffer(pb, st->codec->extradata, len);
-            st->codec->extradata_size = len;
-            if (st->codec->codec_id == CODEC_ID_AAC) {
-                MPEG4AudioConfig cfg;
-                ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
-                                         st->codec->extradata_size);
-                st->codec->channels = cfg.channels;
-                if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
-                    st->codec->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
-                else if (cfg.ext_sample_rate)
-                    st->codec->sample_rate = cfg.ext_sample_rate;
-                else
-                    st->codec->sample_rate = cfg.sample_rate;
-                dprintf(fc, "mp4a config channels %d obj %d ext obj %d "
-                        "sample rate %d ext sample rate %d\n", st->codec->channels,
-                        cfg.object_type, cfg.ext_object_type,
-                        cfg.sample_rate, cfg.ext_sample_rate);
-                if (!(st->codec->codec_id = ff_codec_get_id(mp4_audio_types,
-                                                            cfg.object_type)))
-                    st->codec->codec_id = CODEC_ID_AAC;
-            }
-        }
-    }
+    len = ff_mp4_read_descr(fc, pb, &tag);
+    if (tag == MP4DecConfigDescrTag)
+        ff_mp4_read_dec_config_descr(fc, st, pb);
     return 0;
 }
 
@@ -662,6 +587,16 @@ static int mov_read_moof(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     return mov_read_default(c, pb, atom);
 }
 
+static void mov_metadata_creation_time(AVMetadata **metadata, time_t time)
+{
+    char buffer[32];
+    if (time) {
+        time -= 2082844800;  /* seconds between 1904-01-01 and Epoch */
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&time));
+        av_metadata_set2(metadata, "creation_time", buffer, 0);
+    }
+}
+
 static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -669,6 +604,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
     int version;
     char language[4] = {0};
     unsigned lang;
+    time_t creation_time;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -681,12 +617,13 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
     get_be24(pb); /* flags */
     if (version == 1) {
-        get_be64(pb);
+        creation_time = get_be64(pb);
         get_be64(pb);
     } else {
-        get_be32(pb); /* creation time */
+        creation_time = get_be32(pb);
         get_be32(pb); /* modification time */
     }
+    mov_metadata_creation_time(&st->metadata, creation_time);
 
     sc->time_scale = get_be32(pb);
     st->duration = (version == 1) ? get_be64(pb) : get_be32(pb); /* duration */
@@ -701,16 +638,18 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
 static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 {
+    time_t creation_time;
     int version = get_byte(pb); /* version */
     get_be24(pb); /* flags */
 
     if (version == 1) {
-        get_be64(pb);
+        creation_time = get_be64(pb);
         get_be64(pb);
     } else {
-        get_be32(pb); /* creation time */
+        creation_time = get_be32(pb);
         get_be32(pb); /* modification time */
     }
+    mov_metadata_creation_time(&c->fc->metadata, creation_time);
     c->time_scale = get_be32(pb); /* time scale */
 
     dprintf(c->fc, "time scale = %i\n", c->time_scale);
@@ -1000,10 +939,14 @@ int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries)
             /* Multiple fourcc, we skip JPEG. This is not correct, we should
              * export it as a separate AVStream but this needs a few changes
              * in the MOV demuxer, patch welcome. */
+        multiple_stsd:
             av_log(c->fc, AV_LOG_WARNING, "multiple fourcc not supported\n");
             url_fskip(pb, size - (url_ftell(pb) - start_pos));
             continue;
         }
+        /* we cannot demux concatenated h264 streams because of different extradata */
+        if (st->codec->codec_tag && st->codec->codec_tag == AV_RL32("avc1"))
+            goto multiple_stsd;
         sc->pseudo_stream_id = st->codec->codec_tag ? -1 : pseudo_stream_id;
         sc->dref_id= dref_id;
 
@@ -1287,6 +1230,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries)
         if (st->codec->extradata_size == 36) {
             st->codec->frame_size = AV_RB32(st->codec->extradata+12);
             st->codec->channels   = AV_RB8 (st->codec->extradata+21);
+            st->codec->sample_rate = AV_RB32(st->codec->extradata+32);
         }
         break;
     default:

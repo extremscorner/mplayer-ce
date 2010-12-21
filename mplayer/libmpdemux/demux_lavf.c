@@ -221,6 +221,7 @@ static const char * const preferred_list[] = {
     "vqf",
     "w64",
     "wv",
+    "yuv4mpegpipe",
     NULL
 };
 
@@ -356,6 +357,8 @@ static void handle_stream(demuxer_t *demuxer, AVFormatContext *avfc, int i) {
                 switch (codec->pix_fmt) {
                     case PIX_FMT_RGB24:
                         codec->codec_tag= MKTAG(24, 'B', 'G', 'R');
+                    case PIX_FMT_BGR24:
+                        codec->codec_tag= MKTAG(24, 'R', 'G', 'B');
                 }
             }
             if(!codec->codec_tag)
