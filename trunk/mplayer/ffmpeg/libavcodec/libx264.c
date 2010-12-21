@@ -273,9 +273,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->level > 0)
         x4->params.i_level_idc = avctx->level;
 
-    x4->params.rc.f_rate_tolerance =
-        (float)avctx->bit_rate_tolerance/avctx->bit_rate;
-
     if ((avctx->rc_buffer_size != 0) &&
         (avctx->rc_initial_buffer_occupancy <= avctx->rc_buffer_size)) {
         x4->params.rc.f_vbv_buffer_init =
@@ -299,6 +296,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.b_interlaced   = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
 
     x4->params.i_slice_count  = avctx->slices;
+
+    x4->params.vui.b_fullrange = avctx->pix_fmt == PIX_FMT_YUVJ420P;
 
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER)
         x4->params.b_repeat_headers = 0;
@@ -335,6 +334,6 @@ AVCodec libx264_encoder = {
     .encode         = X264_frame,
     .close          = X264_close,
     .capabilities   = CODEC_CAP_DELAY,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_YUVJ420P, PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
 };

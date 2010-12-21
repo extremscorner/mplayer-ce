@@ -303,16 +303,16 @@ static inline void resize_demux_packet(demux_packet_t* dp, int len)
 {
   if(len > 0)
   {
-     dp->buffer=(unsigned char *)realloc(dp->buffer,len+8);
+     dp->buffer=(unsigned char *)realloc(dp->buffer,len + MP_INPUT_BUFFER_PADDING_SIZE);
   }
   else
   {
-     if(dp->buffer) free(dp->buffer);
+     free(dp->buffer);
      dp->buffer=NULL;
   }
   dp->len=len;
   if (dp->buffer)
-     memset(dp->buffer + len, 0, 8);
+     memset(dp->buffer + len, 0, MP_INPUT_BUFFER_PADDING_SIZE);
   else
      dp->len = 0;
 }
@@ -332,7 +332,7 @@ static inline void free_demux_packet(demux_packet_t* dp){
   if (dp->master==NULL){  //dp is a master packet
     dp->refcount--;
     if (dp->refcount==0){
-      if (dp->buffer) free(dp->buffer);
+      free(dp->buffer);
       free(dp);
     }
     return;

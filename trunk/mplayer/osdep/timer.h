@@ -25,17 +25,18 @@ void InitTimer(void);
 #ifdef GEKKO
 #include <gctypes.h>
 #include <ogc/lwp_watchdog.h>
-inline static u64 GetTimer(void) {return ticks_to_microsecs(gettime());}
-inline static u64 GetTimerMS(void){return ticks_to_millisecs(gettime());}
-inline static int usec_sleep(unsigned int usec_delay){return usleep(usec_delay);}
+#define GetTimer() ticks_to_microsecs(gettime())
+#define GetTimerMS() ticks_to_millisecs(gettime())
 u64 GetRelativeTime(void);
+
+#define usec_sleep(usec_delay) usleep(usec_delay)
 #else
 unsigned int GetTimer(void);
 unsigned int GetTimerMS(void);
-double GetRelativeTime(void);
-int usec_sleep(unsigned int usec_delay);
-#endif
+float GetRelativeTime(void);
 
+int usec_sleep(int usec_delay);
+#endif
 
 /* timer's callback handling */
 typedef void timer_callback( void );

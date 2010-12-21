@@ -427,6 +427,7 @@ static const mp_cmd_bind_t def_cmd_binds[] = {
   { { 'a', 0 }, "sub_alignment" },
   { { 'v', 0 }, "sub_visibility" },
   { { 'j', 0 }, "sub_select" },
+  { { 'J', 0 }, "sub_select -3" },
   { { 'F', 0 }, "forced_subs_only" },
   { { '#', 0 }, "switch_audio" },
   { { '_', 0 }, "step_property switch_video" },
@@ -653,8 +654,7 @@ mp_input_rm_cmd_fd(int fd) {
     return;
   if(cmd_fds[i].close_func)
     cmd_fds[i].close_func(cmd_fds[i].fd);
-  if(cmd_fds[i].buffer)
-    free(cmd_fds[i].buffer);
+  free(cmd_fds[i].buffer);
 
   if(i + 1 < num_cmd_fd)
     memmove(&cmd_fds[i],&cmd_fds[i+1],(num_cmd_fd - i - 1)*sizeof(mp_input_fd_t));
@@ -1151,10 +1151,8 @@ interpret_key(int code, int paused)
     num_key_down--;
     last_key_down = 0;
     ar_state = -1;
-    if(ar_cmd) {
-      mp_cmd_free(ar_cmd);
-      ar_cmd = NULL;
-    }
+    mp_cmd_free(ar_cmd);
+    ar_cmd = NULL;
     return ret;
 }
 
@@ -1387,11 +1385,10 @@ mp_cmd_free(mp_cmd_t* cmd) {
 //#endif
   if ( !cmd ) return;
 
-  if(cmd->name)
-    free(cmd->name);
+  free(cmd->name);
 
   for(i=0; i < MP_CMD_MAX_ARGS && cmd->args[i].type != -1; i++) {
-    if(cmd->args[i].type == MP_CMD_ARG_STRING && cmd->args[i].v.s != NULL)
+    if(cmd->args[i].type == MP_CMD_ARG_STRING)
       free(cmd->args[i].v.s);
   }
   free(cmd);
@@ -1524,8 +1521,7 @@ mp_input_bind_keys(const int keys[MP_MAX_KEY_DOWN+1], char* cmd) {
     memset(&bind_section->cmd_binds[i],0,2*sizeof(mp_cmd_bind_t));
     bind = &bind_section->cmd_binds[i];
   }
-  if(bind->cmd)
-    free(bind->cmd);
+  free(bind->cmd);
   bind->cmd = strdup(cmd);
   memcpy(bind->input,keys,(MP_MAX_KEY_DOWN+1)*sizeof(int));
 }
@@ -1701,7 +1697,7 @@ mp_input_set_section(char *name) {
 
   cmd_binds=NULL;
   cmd_binds_default=NULL;
-  if(section) free(section);
+  free(section);
   if(name) section=strdup(name); else section=strdup("default");
   if((bind_section=mp_input_get_bind_section(section)))
     cmd_binds=bind_section->cmd_binds;

@@ -121,7 +121,7 @@ static dvdnav_priv_t * new_dvdnav_stream(char * filename) {
 
   if(1)	//from vlc: if not used dvdnav from cvs will fail
   {
-    int len=2048, event=1;
+    int len, event;
     char buf[2048];
 
     dvdnav_get_next_block(priv->dvdnav,buf,&event,&len);

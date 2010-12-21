@@ -62,9 +62,9 @@ static void put_double(int code) {
 }
 
 void mplayer_put_key(int code) {
-  static u64 last_key_time[2];
+  static unsigned last_key_time[2];
   static int last_key[2];
-  u64 now = GetTimerMS();
+  unsigned now = GetTimerMS();
   // ignore system-doubleclick if we generate these events ourselves
   if (doubleclick_time &&
       (code & ~MP_KEY_DOWN) >= MOUSE_BTN0_DBL &&

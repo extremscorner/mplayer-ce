@@ -1,6 +1,6 @@
 /*
  * filter layer
- * copyright (c) 2007 Bobby Bingham
+ * Copyright (c) 2007 Bobby Bingham
  *
  * This file is part of FFmpeg.
  *
@@ -115,7 +115,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->srcpad  = &src->output_pads[srcpad];
     link->dstpad  = &dst->input_pads[dstpad];
     link->type    = src->output_pads[srcpad].type;
-    assert(PIX_FMT_NONE == -1 && SAMPLE_FMT_NONE == -1);
+    assert(PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
     link->format  = -1;
 
     return 0;
@@ -201,8 +201,8 @@ char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
              perms & AV_PERM_READ      ? "r" : "",
              perms & AV_PERM_WRITE     ? "w" : "",
              perms & AV_PERM_PRESERVE  ? "p" : "",
-             perms & AV_PERM_REUSE     ? "r" : "",
-             perms & AV_PERM_REUSE2    ? "R" : "");
+             perms & AV_PERM_REUSE     ? "u" : "",
+             perms & AV_PERM_REUSE2    ? "U" : "");
     return buf;
 }
 
@@ -267,8 +267,48 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms, int 
     return ret;
 }
 
+AVFilterBufferRef *
+avfilter_get_video_buffer_ref_from_arrays(uint8_t *data[4], int linesize[4], int perms,
+                                          int w, int h, enum PixelFormat format)
+{
+    AVFilterBuffer *pic = av_mallocz(sizeof(AVFilterBuffer));
+    AVFilterBufferRef *picref = av_mallocz(sizeof(AVFilterBufferRef));
+
+    if (!pic || !picref)
+        goto fail;
+
+    picref->buf = pic;
+    picref->buf->free = ff_avfilter_default_free_buffer;
+    if (!(picref->video = av_mallocz(sizeof(AVFilterBufferRefVideoProps))))
+        goto fail;
+
+    picref->video->w = w;
+    picref->video->h = h;
+
+    /* make sure the buffer gets read permission or it's useless for output */
+    picref->perms = perms | AV_PERM_READ;
+
+    pic->refcount = 1;
+    picref->type = AVMEDIA_TYPE_VIDEO;
+    picref->format = format;
+
+    memcpy(pic->data,        data,          sizeof(pic->data));
+    memcpy(pic->linesize,    linesize,      sizeof(pic->linesize));
+    memcpy(picref->data,     pic->data,     sizeof(picref->data));
+    memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
+
+    return picref;
+
+fail:
+    if (picref && picref->video)
+        av_free(picref->video);
+    av_free(picref);
+    av_free(pic);
+    return NULL;
+}
+
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             enum SampleFormat sample_fmt, int size,
+                                             enum AVSampleFormat sample_fmt, int size,
                                              int64_t channel_layout, int planar)
 {
     AVFilterBufferRef *ret = NULL;
@@ -376,9 +416,9 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
         for (i = 0; i < 4; i++) {
             if (link->src_buf->data[i]) {
                 src[i] = link->src_buf-> data[i] +
-                    (y >> (i==0 ? 0 : vsub)) * link->src_buf-> linesize[i];
+                    (y >> (i==1 || i==2 ? vsub : 0)) * link->src_buf-> linesize[i];
                 dst[i] = link->cur_buf->data[i] +
-                    (y >> (i==0 ? 0 : vsub)) * link->cur_buf->linesize[i];
+                    (y >> (i==1 || i==2 ? vsub : 0)) * link->cur_buf->linesize[i];
             } else
                 src[i] = dst[i] = NULL;
         }
@@ -389,7 +429,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
 
             if (!src[i]) continue;
 
-            for (j = 0; j < h >> (i==0 ? 0 : vsub); j++) {
+            for (j = 0; j < h >> (i==1 || i==2 ? vsub : 0); j++) {
                 memcpy(dst[i], src[i], planew);
                 src[i] += link->src_buf->linesize[i];
                 dst[i] += link->cur_buf->linesize[i];

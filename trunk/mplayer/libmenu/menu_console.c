@@ -58,8 +58,8 @@ struct menu_priv_s {
   int last_line;
   int num_lines;
   int add_line;
-  u64 hide_ts;
-  u64 show_ts;
+  unsigned int hide_ts;
+  unsigned int show_ts;
   pid_t child; // Child process if we are running a shell cmd
   int child_fd[3]; // The 3 default fd
   char* prompt;
@@ -75,8 +75,8 @@ struct menu_priv_s {
   int minb;
   int vspace;
   int bg,bg_alpha;
-  u64 hide_time;
-  u64 show_time;
+  unsigned int hide_time;
+  unsigned int show_time;
   int history_max;
   int raw_child;
 };
@@ -142,7 +142,7 @@ static void add_line(struct menu_priv_s* priv, char* l) {
     return;
   }
 
-  if(priv->num_lines >= priv->buf_lines && priv->lines[priv->last_line])
+  if(priv->num_lines >= priv->buf_lines)
     free(priv->lines[priv->last_line]);
   else
     priv->num_lines++;
@@ -190,7 +190,7 @@ static void draw(menu_t* menu, mp_image_t* mpi) {
   ll = mpriv->last_line - 1;
 
   if(mpriv->hide_ts) {
-    u64 t = GetTimerMS() - mpriv->hide_ts;
+    unsigned int t = GetTimerMS() - mpriv->hide_ts;
     if(t >= mpriv->hide_time) {
       mpriv->hide_ts = 0;
       menu->show = 0;

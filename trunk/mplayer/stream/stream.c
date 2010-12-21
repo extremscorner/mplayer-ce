@@ -274,7 +274,7 @@ stream_t* open_output_stream(const char* filename, char** options) {
 }
 
 //=================== STREAMER =========================
-#include <errno.h>
+
 void stream_capture_do(stream_t *s)
 {
   if (fwrite(s->buffer, s->buf_len, 1, s->capture_file) < 1) {
@@ -509,9 +509,7 @@ void free_stream(stream_t *s){
        network socket and file */
     if(s->url && strstr(s->url,"://"))
       closesocket(s->fd);
-    else 
-	  close(s->fd);
-    s->fd=-1;
+    else close(s->fd);
   }
 #if HAVE_WINSOCK2_H
   mp_msg(MSGT_STREAM,MSGL_V,"WINSOCK2 uninit\n");
@@ -521,7 +519,6 @@ void free_stream(stream_t *s){
   // streams should destroy their priv on close
   //free(s->priv);
   free(s->url);
-  s->url=NULL;
   free(s);
 }
 
@@ -537,7 +534,7 @@ void stream_set_interrupt_callback(int (*cb)(int)) {
 
 int stream_check_interrupt(int time) {
     if(!stream_check_interrupt_cb) {
-        usleep(time * 1000);
+        usec_sleep(time * 1000);
         return 0;
     }
     return stream_check_interrupt_cb(time);

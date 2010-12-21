@@ -39,6 +39,32 @@ extern const demuxer_desc_t demuxer_desc_avi_nini;
 // PTS:  0=interleaved  1=BPS-based
 int pts_from_bps=1;
 
+static void update_audio_block_size(demuxer_t *demux)
+{
+  avi_priv_t *priv = demux->priv;
+  sh_audio_t *sh = demux->audio->sh;
+  if (!sh)
+    return;
+  priv->audio_block_size = sh->audio.dwSampleSize;
+  if (sh->wf) {
+    priv->audio_block_size = sh->wf->nBlockAlign;
+    if (!priv->audio_block_size) {
+      // for PCM audio we can calculate the blocksize:
+      if (sh->format == 1)
+        priv->audio_block_size = sh->wf->nChannels*(sh->wf->wBitsPerSample/8);
+      else
+        priv->audio_block_size = 1; // hope the best...
+    } else {
+      // workaround old mencoder bug:
+      if (sh->audio.dwSampleSize == 1 && sh->audio.dwScale == 1 &&
+          (sh->wf->nBlockAlign == 1152 || sh->wf->nBlockAlign == 576)) {
+        mp_msg(MSGT_DEMUX, MSGL_WARN, MSGTR_WorkAroundBlockAlignHeaderBug);
+        priv->audio_block_size = 1;
+      }
+    }
+  }
+}
+
 // Select ds from ID
 static demux_stream_t *demux_avi_select_stream(demuxer_t *demux,
                                                unsigned int id)
@@ -56,29 +82,9 @@ static demux_stream_t *demux_avi_select_stream(demuxer_t *demux,
 
   if(stream_id==demux->audio->id){
       if(!demux->audio->sh){
-        sh_audio_t* sh;
-	avi_priv_t *priv=demux->priv;
-        sh=demux->audio->sh=demux->a_streams[stream_id];
+        demux->audio->sh=demux->a_streams[stream_id];
         mp_msg(MSGT_DEMUX,MSGL_V,"Auto-selected AVI audio ID = %d\n",demux->audio->id);
-	if(sh->wf){
-	  priv->audio_block_size=sh->wf->nBlockAlign;
-	  if(!priv->audio_block_size){
-	    // for PCM audio we can calculate the blocksize:
-	    if(sh->format==1)
-		priv->audio_block_size=sh->wf->nChannels*(sh->wf->wBitsPerSample/8);
-	    else
-		priv->audio_block_size=1; // hope the best...
-	  } else {
-	    // workaround old mencoder's bug:
-	    if(sh->audio.dwSampleSize==1 && sh->audio.dwScale==1 &&
-	       (sh->wf->nBlockAlign==1152 || sh->wf->nBlockAlign==576)){
-		mp_msg(MSGT_DEMUX,MSGL_WARN,MSGTR_WorkAroundBlockAlignHeaderBug);
-		priv->audio_block_size=1;
-	    }
-	  }
-	} else {
-	  priv->audio_block_size=sh->audio.dwSampleSize;
-	}
+        update_audio_block_size(demux);
       }
       return demux->audio;
   }
@@ -128,8 +134,8 @@ static int demux_avi_read_packet(demuxer_t *demux,demux_stream_t *ds,unsigned in
   int skip;
   float pts=0;
 
-  if(!ds || !demux)return 0;
   mp_dbg(MSGT_DEMUX,MSGL_DBG3,"demux_avi.read_packet: %X\n",id);
+
   if(ds==demux->audio){
       if(priv->pts_corrected==0){
           if(priv->pts_has_video){
@@ -153,8 +159,8 @@ static int demux_avi_read_packet(demuxer_t *demux,demux_stream_t *ds,unsigned in
           pts=priv->avi_audio_pts; //+priv->pts_correction;
       priv->avi_audio_pts=0;
       // update blockcount:
-      priv->audio_block_no+=priv->audio_block_size ?
-	((len+priv->audio_block_size-1)/priv->audio_block_size) : 1;
+      priv->audio_block_no+=
+	(len+priv->audio_block_size-1)/priv->audio_block_size;
   } else
   if(ds==demux->video){
      // video
@@ -442,6 +448,7 @@ static demuxer_t* demux_open_avi(demuxer_t* demuxer){
 
   //---- AVI header:
   read_avi_header(demuxer,(demuxer->stream->flags & MP_STREAM_SEEK_BW)?index_mode:-2);
+  update_audio_block_size(demuxer);
 
   if(demuxer->audio->id>=0 && !demuxer->a_streams[demuxer->audio->id]){
       mp_msg(MSGT_DEMUX,MSGL_WARN,MSGTR_InvalidAudioStreamNosound,demuxer->audio->id);
@@ -680,8 +687,8 @@ static void demux_seek_avi(demuxer_t *demuxer, float rel_seek_secs,
                   break;
                 }
                 ++d_audio->pack_no;
-                priv->audio_block_no+=priv->audio_block_size ?
-		    ((len+priv->audio_block_size-1)/priv->audio_block_size) : 1;
+                priv->audio_block_no+=
+		    (len+priv->audio_block_size-1)/priv->audio_block_size;
                 d_audio->dpos+=len;
             }
           }
@@ -706,12 +713,11 @@ static void demux_seek_avi(demuxer_t *demuxer, float rel_seek_secs,
 		  skip_audio_bytes+=len;
 		} else {
 		  ++d_audio->pack_no;
-                  priv->audio_block_no+=priv->audio_block_size ?
-		    ((len+priv->audio_block_size-1)/priv->audio_block_size) : 1;
+                  priv->audio_block_no+=
+		    (len+priv->audio_block_size-1)/priv->audio_block_size;
                   d_audio->dpos+=len;
 		  audio_chunk_pos=i;
 		}
-		if(priv->audio_block_size)
 		    chunks-=(len+priv->audio_block_size-1)/priv->audio_block_size;
             }
           }
@@ -767,14 +773,10 @@ static void demux_close_avi(demuxer_t *demuxer)
   avi_priv_t* priv=demuxer->priv;
 
   if(!priv)
-  {
     return;
-  }
 
-  if(priv->idx && priv->idx_size > 0 )
-  {
+  if(priv->idx_size > 0)
     free(priv->idx);
-  }
   free(priv);
 }
 

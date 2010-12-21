@@ -29,7 +29,9 @@
 #include "libavutil/integer.h"
 #include "libavutil/crc.h"
 #include "libavutil/pixdesc.h"
+#include "libavcore/audioconvert.h"
 #include "libavcore/imgutils.h"
+#include "libavcore/internal.h"
 #include "libavcore/samplefmt.h"
 #include "avcodec.h"
 #include "dsputil.h"
@@ -46,29 +48,32 @@ static int volatile entangled_thread_counter=0;
 int (*ff_lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
 
-void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
+void *av_fast_realloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size)
 {
     if(min_size < *size)
         return ptr;
 
-    *size= FFMAX(17*min_size/16 + 32, min_size);
+    min_size= FFMAX(17*min_size/16 + 32, min_size);
 
-    ptr= av_realloc(ptr, *size);
+    ptr= av_realloc(ptr, min_size);
     if(!ptr) //we could set this to the unmodified min_size but this is safer if the user lost the ptr and uses NULL now
-        *size= 0;
+        min_size= 0;
+
+    *size= min_size;
 
     return ptr;
 }
 
-void av_fast_malloc(void *ptr, unsigned int *size, unsigned int min_size)
+void av_fast_malloc(void *ptr, unsigned int *size, FF_INTERNALC_MEM_TYPE min_size)
 {
     void **p = ptr;
     if (min_size < *size)
         return;
-    *size= FFMAX(17*min_size/16 + 32, min_size);
-    if(*p) av_free(*p);
-    *p = av_malloc(*size);
-    if (!*p) *size = 0;
+    min_size= FFMAX(17*min_size/16 + 32, min_size);
+    av_free(*p);
+    *p = av_malloc(min_size);
+    if (!*p) min_size = 0;
+    *size= min_size;
 }
 
 /* encoder management */
@@ -180,8 +185,9 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
 
     *width = FFALIGN(*width , w_align);
     *height= FFALIGN(*height, h_align);
-    if(s->codec_id == CODEC_ID_H264)
+    if(s->codec_id == CODEC_ID_H264 || s->lowres)
         *height+=2; // some of the optimized chroma MC reads one line too much
+                    // which is also done in mpeg decoders with lowres > 0
 
     linesize_align[0] =
     linesize_align[1] =
@@ -323,7 +329,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
                 buf->data[i] = buf->base[i] + FFALIGN((buf->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift), stride_align[i]);
         }
         if(size[1] && !size[2])
-            ff_set_systematic_pal((uint32_t*)buf->data[1], s->pix_fmt);
+            ff_set_systematic_pal2((uint32_t*)buf->data[1], s->pix_fmt);
         buf->width  = s->width;
         buf->height = s->height;
         buf->pix_fmt= s->pix_fmt;
@@ -921,8 +927,8 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      ", %d Hz", enc->sample_rate);
         }
         av_strlcat(buf, ", ", buf_size);
-        avcodec_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
-        if (enc->sample_fmt != SAMPLE_FMT_NONE) {
+        av_get_channel_layout_string(buf + strlen(buf), buf_size - strlen(buf), enc->channels, enc->channel_layout);
+        if (enc->sample_fmt != AV_SAMPLE_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s", av_get_sample_fmt_name(enc->sample_fmt));
         }
@@ -1066,7 +1072,7 @@ int av_get_bits_per_sample(enum CodecID codec_id){
 }
 
 #if FF_API_OLD_SAMPLE_FMT
-int av_get_bits_per_sample_format(enum SampleFormat sample_fmt) {
+int av_get_bits_per_sample_format(enum AVSampleFormat sample_fmt) {
     return av_get_bits_per_sample_fmt(sample_fmt);
 }
 #endif

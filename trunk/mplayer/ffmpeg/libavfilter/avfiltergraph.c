@@ -1,7 +1,7 @@
 /*
  * filter graphs
- * copyright (c) 2008 Vitor Sessak
- * copyright (c) 2007 Bobby Bingham
+ * Copyright (c) 2008 Vitor Sessak
+ * Copyright (c) 2007 Bobby Bingham
  *
  * This file is part of FFmpeg.
  *
@@ -25,6 +25,7 @@
 
 #include "avfilter.h"
 #include "avfiltergraph.h"
+#include "internal.h"
 
 AVFilterGraph *avfilter_graph_alloc(void)
 {
@@ -52,7 +53,28 @@ int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     return 0;
 }
 
-int avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
+int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
+                                 const char *name, const char *args, void *opaque,
+                                 AVFilterGraph *graph_ctx)
+{
+    int ret;
+
+    if ((ret = avfilter_open(filt_ctx, filt, name)) < 0)
+        goto fail;
+    if ((ret = avfilter_init_filter(*filt_ctx, args, opaque)) < 0)
+        goto fail;
+    if ((ret = avfilter_graph_add_filter(graph_ctx, *filt_ctx)) < 0)
+        goto fail;
+    return 0;
+
+fail:
+    if (*filt_ctx)
+        avfilter_free(*filt_ctx);
+    *filt_ctx = NULL;
+    return ret;
+}
+
+int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
 {
     AVFilterContext *filt;
     int i, j;
@@ -82,7 +104,7 @@ int avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-int avfilter_graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
+int ff_avfilter_graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
 {
     AVFilterContext *filt;
     int i, ret;
@@ -112,7 +134,7 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name)
 
 static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
-    int i, j;
+    int i, j, ret;
     int scaler_count = 0;
     char inst_name[30];
 
@@ -138,17 +160,12 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     /* couldn't merge format lists. auto-insert scale filter */
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count++);
-                    avfilter_open(&scale, avfilter_get_by_name("scale"), inst_name);
-
                     snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
-                    if(!scale || scale->filter->init(scale, scale_args, NULL) ||
-                                 avfilter_insert_filter(link, scale, 0, 0)) {
-                        avfilter_free(scale);
-                        return -1;
-                    }
-
-                    if (avfilter_graph_add_filter(graph, scale) < 0)
-                        return -1;
+                    if ((ret = avfilter_graph_create_filter(&scale, avfilter_get_by_name("scale"),
+                                                            inst_name, scale_args, NULL, graph)) < 0)
+                        return ret;
+                    if ((ret = avfilter_insert_filter(link, scale, 0, 0)) < 0)
+                        return ret;
 
                     scale->filter->query_formats(scale);
                     if (((link = scale-> inputs[0]) &&
@@ -194,7 +211,7 @@ static void pick_formats(AVFilterGraph *graph)
     }
 }
 
-int avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
+int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
     /* find supported formats from sub-filters, and merge along links */
     if(query_formats(graph, log_ctx))
@@ -211,11 +228,11 @@ int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx)
 {
     int ret;
 
-    if ((ret = avfilter_graph_check_validity(graphctx, log_ctx)))
+    if ((ret = ff_avfilter_graph_check_validity(graphctx, log_ctx)))
         return ret;
-    if ((ret = avfilter_graph_config_formats(graphctx, log_ctx)))
+    if ((ret = ff_avfilter_graph_config_formats(graphctx, log_ctx)))
         return ret;
-    if ((ret = avfilter_graph_config_links(graphctx, log_ctx)))
+    if ((ret = ff_avfilter_graph_config_links(graphctx, log_ctx)))
         return ret;
 
     return 0;

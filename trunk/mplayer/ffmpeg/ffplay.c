@@ -163,7 +163,7 @@ typedef struct VideoState {
     int audio_buf_index; /* in bytes */
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
-    enum SampleFormat audio_src_fmt;
+    enum AVSampleFormat audio_src_fmt;
     AVAudioConvert *reformat_ctx;
 
     int show_audio; /* if true, display audio samples */
@@ -1798,12 +1798,12 @@ static int video_thread(void *arg)
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
 
-    if (avfilter_open(&filt_src, &input_filter,  "src") < 0) goto the_end;
-    if (avfilter_open(&filt_out, &ffsink      ,  "out") < 0) goto the_end;
-
-    if(avfilter_init_filter(filt_src, NULL, is))             goto the_end;
-    if(avfilter_init_filter(filt_out, NULL, &ffsink_ctx))    goto the_end;
-
+    if (avfilter_graph_create_filter(&filt_src, &input_filter, "src",
+                                     NULL, is, graph) < 0)
+        goto the_end;
+    if (avfilter_graph_create_filter(&filt_out, &ffsink, "out",
+                                     NULL, &ffsink_ctx, graph) < 0)
+        goto the_end;
 
     if(vfilters) {
         AVFilterInOut *outputs = av_malloc(sizeof(AVFilterInOut));
@@ -1825,8 +1825,6 @@ static int video_thread(void *arg)
     } else {
         if(avfilter_link(filt_src, 0, filt_out, 0) < 0)          goto the_end;
     }
-    avfilter_graph_add_filter(graph, filt_src);
-    avfilter_graph_add_filter(graph, filt_out);
 
     if (avfilter_graph_config(graph, NULL) < 0)
         goto the_end;
@@ -2095,12 +2093,12 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             if (dec->sample_fmt != is->audio_src_fmt) {
                 if (is->reformat_ctx)
                     av_audio_convert_free(is->reformat_ctx);
-                is->reformat_ctx= av_audio_convert_alloc(SAMPLE_FMT_S16, 1,
+                is->reformat_ctx= av_audio_convert_alloc(AV_SAMPLE_FMT_S16, 1,
                                                          dec->sample_fmt, 1, NULL, 0);
                 if (!is->reformat_ctx) {
                     fprintf(stderr, "Cannot convert %s sample format to %s sample format\n",
                         av_get_sample_fmt_name(dec->sample_fmt),
-                        av_get_sample_fmt_name(SAMPLE_FMT_S16));
+                        av_get_sample_fmt_name(AV_SAMPLE_FMT_S16));
                         break;
                 }
                 is->audio_src_fmt= dec->sample_fmt;
@@ -2268,7 +2266,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             return -1;
         }
         is->audio_hw_buf_size = spec.size;
-        is->audio_src_fmt= SAMPLE_FMT_S16;
+        is->audio_src_fmt= AV_SAMPLE_FMT_S16;
     }
 
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;

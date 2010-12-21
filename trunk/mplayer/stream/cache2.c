@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "libavutil/avutil.h"
 #include "input/input.h"
 #include "osdep/shmem.h"
 #include "osdep/timer.h"
@@ -77,8 +78,6 @@ static void *ThreadProc(void *s);
 #define GEKKO_THREAD_STACKSIZE (512 * 1024)
 #define GEKKO_THREAD_PRIO 70
 static u8 gekko_stack[GEKKO_THREAD_STACKSIZE] ATTRIBUTE_ALIGN (32);
-#include <ogc/mutex.h>
-static mutex_t cache_mutex = LWP_MUTEX_NULL;
 #endif
 
 int stream_fill_buffer(stream_t *s);
@@ -190,7 +189,8 @@ static int cache_fill(cache_vars_t *s)
 {
   int back,back2,newb,space,len,pos;
   off_t read=s->read_filepos;
-  
+  int read_chunk;
+
   if(s->eof) 
   {
       cache_fill_status=-1;
@@ -244,7 +244,9 @@ static int cache_fill(cache_vars_t *s)
   if(space>s->buffer_size-pos) space=s->buffer_size-pos;
 
   // limit one-time block size
-  if(space>4*s->sector_size) space=4*s->sector_size;
+  read_chunk = s->stream->read_chunk;
+  if (!read_chunk) read_chunk = 4*s->sector_size;
+  space = FFMIN(space, read_chunk);
 
 #if 1
   // back+newb+space <= buffer_size
@@ -306,7 +308,7 @@ static int cache_fill(cache_vars_t *s)
 }
 
 static int cache_execute_control(cache_vars_t *s) {
-  static u64 last;
+  static unsigned last;
   int quit = s->control == -2;
   if (quit || !s->stream->control) {
     s->stream_time_length = 0;
@@ -498,7 +500,7 @@ int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
     mp_msg(MSGT_CACHE,MSGL_STATUS,"\rThis stream is non-cacheable\n");
     return 1;
   }
-  if(cache_mutex == LWP_MUTEX_NULL) LWP_MutexInit(&cache_mutex, false);	
+
   s=cache_init(size,ss);
   if(s == NULL) return -1;
   stream->cache_data=s;
@@ -632,7 +634,6 @@ int cache_stream_seek_long(stream_t *stream,off_t pos){
   cache_vars_t* s;
   off_t newpos;
   if(!stream->cache_pid) return stream_seek_long(stream,pos);
-  LWP_MutexLock(cache_mutex);
 
   s=stream->cache_data;
 //  s->seek_lock=1;
@@ -644,17 +645,14 @@ int cache_stream_seek_long(stream_t *stream,off_t pos){
   s->eof=0; // !!!!!!!
   cache_wakeup(stream);
 
-	LWP_MutexUnlock(cache_mutex);
   cache_stream_fill_buffer(stream);
-	LWP_MutexLock(cache_mutex);
 
   pos-=newpos;
   if(pos>=0 && pos<=stream->buf_len){
     stream->buf_pos=pos; // byte position in sector
-    LWP_MutexUnlock(cache_mutex);
     return 1;
   }
-	LWP_MutexUnlock(cache_mutex);
+
 //  stream->buf_pos=stream->buf_len=0;
 //  return 1;
 
@@ -720,53 +718,6 @@ int cache_do_control(stream_t *stream, int cmd, void *arg) {
       break;
   }
   return s->control_res;
-}
-
-int stream_read(stream_t *s,char* mem,int total){
-  int len=total;
-  while(len>0){
-    int x;
-    //debug_str="stream_read";
-    
-    
-    if(s->buf_len-s->buf_pos==0){
-    	//debug_str="stream_read: cache_stream_fill_buffer";
-      if(!cache_stream_fill_buffer(s)) 
-	  {
-	  	//debug_str="stream_read: cache_stream_fill_buffer ok return";
-	  	return total-len; // EOF or error
-	  }
-      //debug_str="stream_read: cache_stream_fill_buffer ok";
-      x=s->buf_len-s->buf_pos;
-    } 
-    LWP_MutexLock(cache_mutex);
-    x=s->buf_len-s->buf_pos;
-    if(x>len) x=len;
-    /*
-    if(s->buf_pos+x>s->buf_len) 
-	{
-			//debug_str="stream_read: WARNING! s->buf_pos>s->buf_len\n";
-			usleep(10);
-//			LWP_MutexUnlock(cache_mutex);
-			usleep(10);
-			log_console_enable_video(true);
-			printf("cache er1!!\n");
-			LWP_MutexUnlock(cache_mutex);
-			sleep(3);
-			
-		return total-len;
-		
-	}
-	*/
-	//debug_str="stream_read: memcpy";
-    memcpy(mem,&s->buffer[s->buf_pos],x);
-	//debug_str="stream_read: ok memcpy";
-    s->buf_pos+=x; mem+=x; len-=x;
-    LWP_MutexUnlock(cache_mutex);
-  }
-  
-  //debug_str="stream_read: ok";
-  return total;
 }
 
 void refillcache(stream_t *stream,float min)

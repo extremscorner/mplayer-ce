@@ -1,7 +1,7 @@
 include $(SUBDIR)../config.mak
 
 NAME = avcodec
-FFLIBS = avutil avcore
+FFLIBS = avcore avutil
 
 HEADERS = avcodec.h avfft.h dxva2.h opt.h vaapi.h vdpau.h xvmc.h
 
@@ -62,10 +62,16 @@ OBJS-$(CONFIG_AMRNB_DECODER)           += amrnbdec.o celp_filters.o   \
                                           celp_math.o acelp_filters.o \
                                           acelp_vectors.o             \
                                           acelp_pitch_delay.o
+OBJS-$(CONFIG_AMRWB_DECODER)           += amrwbdec.o celp_filters.o   \
+                                          celp_math.o acelp_filters.o \
+                                          acelp_vectors.o             \
+                                          acelp_pitch_delay.o lsp.o
 OBJS-$(CONFIG_AMV_DECODER)             += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_ANM_DECODER)             += anm.o
 OBJS-$(CONFIG_ANSI_DECODER)            += ansi.o cga_data.o
 OBJS-$(CONFIG_APE_DECODER)             += apedec.o
+OBJS-$(CONFIG_ASS_DECODER)             += assdec.o ass.o
+OBJS-$(CONFIG_ASS_ENCODER)             += assenc.o ass.o
 OBJS-$(CONFIG_ASV1_DECODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV1_ENCODER)            += asv1.o mpeg12data.o
 OBJS-$(CONFIG_ASV2_DECODER)            += asv1.o mpeg12data.o
@@ -518,7 +524,8 @@ OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o \
                                           flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o \
-                                          flacdec.o flacdata.o flac.o
+                                          flacdec.o flacdata.o flac.o \
+                                          mpegaudiodata.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpegvideo.o mpeg4audio.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
@@ -527,7 +534,8 @@ OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o flac.o \
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o xiph.o
 OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
-                                          flacdec.o flacdata.o flac.o
+                                          flacdec.o flacdata.o flac.o \
+                                          mpegaudiodata.o
 
 # external codec libraries
 OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
@@ -568,6 +576,7 @@ OBJS-$(CONFIG_DIRAC_PARSER)            += dirac_parser.o
 OBJS-$(CONFIG_DNXHD_PARSER)            += dnxhd_parser.o
 OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsub_parser.o
 OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsub_parser.o
+OBJS-$(CONFIG_FLAC_PARSER)             += flac_parser.o flacdata.o flac.o
 OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
 OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o            \
@@ -602,6 +611,7 @@ OBJS-$(CONFIG_CHOMP_BSF)                  += chomp_bsf.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_H264_MP4TOANNEXB_BSF)       += h264_mp4toannexb_bsf.o
 OBJS-$(CONFIG_IMX_DUMP_HEADER_BSF)        += imx_dump_header_bsf.o
+OBJS-$(CONFIG_MJPEG2JPEG_BSF)             += mjpeg2jpeg_bsf.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)     += mjpega_dump_header_bsf.o
 OBJS-$(CONFIG_MOV2TEXTSUB_BSF)            += movsub_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_COMPRESS_BSF)    += mp3_header_compress_bsf.o

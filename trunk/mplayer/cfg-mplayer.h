@@ -38,9 +38,6 @@
 #include "sub/unrar_exec.h"
 
 
-extern int dir_play;
-
-
 const m_option_t vd_conf[]={
     {"help", "Use MPlayer with an appropriate video file instead of live partners to avoid vd.\n", CONF_TYPE_PRINT, CONF_NOCFG|CONF_GLOBAL, 0, 0, NULL},
     {NULL, NULL, 0, 0, 0, 0, NULL}

@@ -727,14 +727,12 @@ vf_instance_t* append_filters(vf_instance_t* last){
 //============================================================================
 
 void vf_uninit_filter(vf_instance_t* vf){
-	if(!vf) return;
     if(vf->uninit) vf->uninit(vf);
     free_mp_image(vf->imgctx.static_images[0]);
     free_mp_image(vf->imgctx.static_images[1]);
     free_mp_image(vf->imgctx.temp_images[0]);
     free_mp_image(vf->imgctx.export_images[0]);
     free(vf);
-    vf=NULL;
 }
 
 void vf_uninit_filter_chain(vf_instance_t* vf){

@@ -66,7 +66,7 @@ static struct stream_priv_s {
   int title;
   char* device;
 } stream_priv_dflts = {
-  0,
+  1,
   NULL
 };
 
@@ -1079,7 +1079,6 @@ fail:
 static int ifo_stream_open (stream_t *stream, int mode, void *opts, int *file_format)
 {
 #ifndef GEKKO
-    char *ext;
     char* filename;
     struct stream_priv_s *spriv;
     int len = strlen(stream->url);

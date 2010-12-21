@@ -780,7 +780,6 @@ err_out_release_num:
 static void codecs_free(codecs_t* codecs,int count) {
     int i;
     for ( i = 0; i < count; i++)
-    {
         if ( codecs[i].name ) {
             free(codecs[i].name);
             free(codecs[i].info);
@@ -788,18 +787,15 @@ static void codecs_free(codecs_t* codecs,int count) {
             free(codecs[i].dll);
             free(codecs[i].drv);
         }
-    }
     free(codecs);
 }
 
 void codecs_uninit_free(void) {
     if (video_codecs)
     codecs_free(video_codecs,nr_vcodecs);
-    nr_vcodecs=0;
     video_codecs=NULL;
     if (audio_codecs)
     codecs_free(audio_codecs,nr_acodecs);
-    nr_acodecs=0;
     audio_codecs=NULL;
 }
 

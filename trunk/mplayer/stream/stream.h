@@ -55,7 +55,7 @@
 #define STREAMTYPE_BLURAY 20
 #define STREAMTYPE_BD 21
 
-#define STREAM_BUFFER_SIZE 4096
+#define STREAM_BUFFER_SIZE 2048
 #define STREAM_MAX_SECTOR_SIZE (8*1024)
 
 #define VCD_SECTOR_SIZE 2352
@@ -154,6 +154,7 @@ typedef struct stream {
   int type; // see STREAMTYPE_*
   int flags;
   int sector_size; // sector size (seek will be aligned on this size if non 0)
+  int read_chunk; // maximum amount of data to read at once to limit latency (0 for default)
   unsigned int buf_pos,buf_len;
   off_t pos,start_pos,end_pos;
   int eof;
@@ -260,8 +261,7 @@ inline static unsigned int stream_read_int24(stream_t *s){
   y=(y<<8)|stream_read_char(s);
   return y;
 }
-int stream_read(stream_t *s,char* mem,int total);
-/*
+
 inline static int stream_read(stream_t *s,char* mem,int total){
   int len=total;
   while(len>0){
@@ -278,7 +278,7 @@ inline static int stream_read(stream_t *s,char* mem,int total){
   }
   return total;
 }
-*/
+
 unsigned char* stream_read_line(stream_t *s,unsigned char* mem, int max, int utf16);
 
 inline static int stream_eof(stream_t *s){
@@ -293,6 +293,10 @@ inline static int stream_seek(stream_t *s,off_t pos){
 
   mp_dbg(MSGT_DEMUX, MSGL_DBG3, "seek to 0x%qX\n",(long long)pos);
 
+  if (pos < 0) {
+    mp_msg(MSGT_DEMUX, MSGL_ERR, "Invalid seek to negative position!\n");
+    pos = 0;
+  }
   if(pos<s->pos){
     off_t x=pos-(s->pos-s->buf_len);
     if(x>=0){

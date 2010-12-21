@@ -848,6 +848,7 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
     ASFContext *asf = s->priv_data;
     ASFStream *asf_st = 0;
     for (;;) {
+        int ret;
         if(url_feof(pb))
             return AVERROR_EOF;
         if (asf->packet_size_left < FRAME_HEADER_SIZE
@@ -950,12 +951,26 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
             continue;
         }
 
-        get_buffer(pb, asf_st->pkt.data + asf->packet_frag_offset,
-                   asf->packet_frag_size);
+        ret = get_buffer(pb, asf_st->pkt.data + asf->packet_frag_offset,
+                         asf->packet_frag_size);
+        if (ret != asf->packet_frag_size) {
+            if (ret < 0 || asf->packet_frag_offset + ret == 0)
+                return ret < 0 ? ret : AVERROR_EOF;
+            if (asf_st->ds_span > 1) {
+                // scrambling, we can either drop it completely or fill the remainder
+                // TODO: should we fill the whole packet instead of just the current
+                // fragment?
+                memset(asf_st->pkt.data + asf->packet_frag_offset + ret, 0,
+                       asf->packet_frag_size - ret);
+                ret = asf->packet_frag_size;
+            } else
+                // no scrambling, so we can return partial packets
+                av_shrink_packet(&asf_st->pkt, asf->packet_frag_offset + ret);
+        }
         if (s->key && s->keylen == 20)
             ff_asfcrypt_dec(s->key, asf_st->pkt.data + asf->packet_frag_offset,
-                            asf->packet_frag_size);
-        asf_st->frag_offset += asf->packet_frag_size;
+                            ret);
+        asf_st->frag_offset += ret;
         /* test if whole packet is read */
         if (asf_st->frag_offset == asf_st->pkt.size) {
             //workaround for macroshit radio DVR-MS files
@@ -977,9 +992,10 @@ static int ff_asf_parse_packet(AVFormatContext *s, ByteIOContext *pb, AVPacket *
                     av_log(s, AV_LOG_ERROR, "pkt.size != ds_packet_size * ds_span (%d %d %d)\n", asf_st->pkt.size, asf_st->ds_packet_size, asf_st->ds_span);
               }else{
                 /* packet descrambling */
-                uint8_t *newdata = av_malloc(asf_st->pkt.size);
+                uint8_t *newdata = av_malloc(asf_st->pkt.size + FF_INPUT_BUFFER_PADDING_SIZE);
                 if (newdata) {
                     int offset = 0;
+                    memset(newdata + asf_st->pkt.size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
                     while (offset < asf_st->pkt.size) {
                         int off = offset / asf_st->ds_chunk_size;
                         int row = off / asf_st->ds_span;
@@ -1138,7 +1154,20 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
 
     url_fseek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET);
     get_guid(s->pb, &g);
-    if (!guidcmp(&g, &index_guid)) {
+
+    /* the data object can be followed by other top-level objects,
+       skip them until the simple index object is reached */
+    while (guidcmp(&g, &index_guid)) {
+        int64_t gsize= get_le64(s->pb);
+        if (gsize < 24 || url_feof(s->pb)) {
+            url_fseek(s->pb, current_pos, SEEK_SET);
+            return;
+        }
+        url_fseek(s->pb, gsize-24, SEEK_CUR);
+        get_guid(s->pb, &g);
+    }
+
+    {
         int64_t itime, last_pos=-1;
         int pct, ict;
         int64_t av_unused gsize= get_le64(s->pb);
