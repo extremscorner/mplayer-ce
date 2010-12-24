@@ -34,9 +34,6 @@
 #include <sdcard/gcsd.h>
 #include <ogc/usbstorage.h>
 #include "mp_osd.h"
-const static DISC_INTERFACE* sd = &__io_wiisd;
-const static DISC_INTERFACE* usb = &__io_usbstorage;
-extern bool playing_usb;
 #endif
 
 #include "config.h"
@@ -350,53 +347,32 @@ fast_pause();
 strcpy(menu_dir,mpriv->dir);
 
 #ifdef GEKKO
-  if(!strcmp(mpriv->dir,"sd:/"))
+  if(!strcmp(mpriv->dir,"carda:/"))
   {
-	if(!DeviceMounted("sd")) 
+	if(!DeviceMounted("carda"))
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
-	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Front SD device not mounted");
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-A SD device not mounted");
 	  	update_osd_msg();
 		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		goto error_exit;
 	}
-  } 
-  else if(!strcmp(mpriv->dir,"usb:/"))
+  }
+  else if(!strcmp(mpriv->dir,"cardb:/"))
   {
-  	if(!DeviceMounted("usb")) 
+	if(!DeviceMounted("cardb"))
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
-	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-B SD device not mounted");
 	  	update_osd_msg();
-  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		goto error_exit;
 	}
-  } 
-  else if(!strcmp(mpriv->dir,"ntfs:/"))
-  {
-  	if(!DeviceMounted("ntfs")) 
-	{
-		rm_osd_msg(OSD_MSG_TEXT);
-		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
-		update_osd_msg();
-  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		goto error_exit;
-	}
-  } 
-  else if(!strcmp(mpriv->dir,"ext2:/"))
-  {
-  	if(!DeviceMounted("ext2")) 
-	{
-		rm_osd_msg(OSD_MSG_TEXT);
-		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "EXT2 USB device not mounted");
-		update_osd_msg();
-  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
-		goto error_exit;
-	}
-  } 
+  }
+#ifdef HW_RVL
   else if(!strcmp(mpriv->dir,"dvd:/"))
   {  
-	  if(!DVDGekkoMount()) 
+	  if(!DVDGekkoMount())
 	  {
 	    rm_osd_msg(OSD_MSG_TEXT);
   		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Error mounting DVD");
@@ -405,28 +381,51 @@ strcpy(menu_dir,mpriv->dir);
 		  goto error_exit;
 	  }
   }
-  else if(!strcmp(mpriv->dir,"carda:/"))
+  else if(!strcmp(mpriv->dir,"sd:/"))
   {
-	if(!DeviceMounted("carda")) 
+	if(!DeviceMounted("sd"))
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
-	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-A SD device not mounted");
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Front SD device not mounted");
 	  	update_osd_msg();
 		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		goto error_exit;
 	}
-  } 
-  else if(!strcmp(mpriv->dir,"cardb:/"))
+  }
+  else if(!strcmp(mpriv->dir,"usb:/"))
   {
-	if(!DeviceMounted("cardb")) 
+  	if(!DeviceMounted("usb"))
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
-	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-B SD device not mounted");
+	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
 	  	update_osd_msg();
-		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		goto error_exit;
 	}
-  } 
+  }
+  else if(!strcmp(mpriv->dir,"ntfs:/"))
+  {
+  	if(!DeviceMounted("ntfs"))
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
+		update_osd_msg();
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		goto error_exit;
+	}
+  }
+  else if(!strcmp(mpriv->dir,"ext2:/"))
+  {
+  	if(!DeviceMounted("ext2"))
+	{
+		rm_osd_msg(OSD_MSG_TEXT);
+		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "EXT2 USB device not mounted");
+		update_osd_msg();
+  		mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
+		goto error_exit;
+	}
+  }
+#endif
   else if(mpriv->dir[0]=='s' && mpriv->dir[1]=='m' && mpriv->dir[2]=='b' && mpriv->dir[4]==':')
   { // reconnect samba if needed
 	  char device[5]="smbx";
@@ -449,6 +448,7 @@ strcpy(menu_dir,mpriv->dir);
 	  }	  
 	  
   }
+#ifdef HW_RVL
   else if(mpriv->dir[0]=='f' && mpriv->dir[1]=='t' && mpriv->dir[2]=='p' && mpriv->dir[4]==':')
   { // reconnect ftp if needed
 	  char device[5]="ftpx";
@@ -468,7 +468,8 @@ strcpy(menu_dir,mpriv->dir);
 		  mp_input_queue_cmd(mp_input_parse_cmd("menu show"));
 		  goto error_exit;
 	  }
-  } 
+  }
+#endif
 #endif
 
 bool firsttry=true;

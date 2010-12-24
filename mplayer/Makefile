@@ -670,21 +670,23 @@ SRCS_MPLAYER-$(XVR100)        += libvo/vo_xvr100.c
 SRCS_MPLAYER-$(YUV4MPEG)      += libvo/vo_yuv4mpeg.c
 SRCS_MPLAYER-$(ZR)            += libvo/jpeg_enc.c libvo/vo_zr.c libvo/vo_zr2.c
 
+SRCS_MPLAYER_GEKKO-$(HW_RVL) += osdep/ave-rvl.c \
+                                osdep/usb2storage.c \
+                                osdep/fst.c \
+                                osdep/ftp_devoptab.c \
+                                osdep/gcfst.c \
+                                osdep/iso.c \
+                                osdep/mem2.c \
+                                osdep/wiilight.c \
+                                libao2/ao_gekko.c \
+                                osdep/mload.c \
+
 SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
-							 osdep/ave-rvl.c \
-							 osdep/usb2storage.c \
-							 osdep/fst.c \
-							 osdep/ftp_devoptab.c \
-							 osdep/gcfst.c \
-							 osdep/gx_supp.c \
-							 osdep/glob_gekko.c \
-							 osdep/iso.c \
-							 osdep/plat_gekko.c \
-							 osdep/mem2.c \
-							 osdep/wiilight.c \
-							 libao2/ao_gekko.c \
-							 libvo/vo_gekko.c \
-							 osdep/mload.c \
+                         osdep/gx_supp.c \
+                         osdep/glob_gekko.c \
+                         osdep/plat_gekko.c \
+                         libvo/vo_gekko.c \
+                         $(SRCS_MPLAYER_GEKKO-yes)
 
 SRCS_MPLAYER = command.c \
                m_property.c \
@@ -749,8 +751,8 @@ OBJS_COMMON    += $(addsuffix .o, $(basename $(SRCS_COMMON)))
 OBJS_MENCODER  += $(addsuffix .o, $(basename $(SRCS_MENCODER)))
 OBJS_MPLAYER   += $(addsuffix .o, $(basename $(SRCS_MPLAYER)))
 OBJS_MPLAYER-$(PE_EXECUTABLE) += osdep/mplayer-rc.o
-#OBJS_MPLAYER   += $(OBJS_MPLAYER-yes)
-OBJS_MPLAYER   += osdep/ehcmodule.elf.o
+OBJS_MPLAYER-$(HW_RVL)        += osdep/ehcmodule.elf.o
+OBJS_MPLAYER   += $(OBJS_MPLAYER-yes)
 
 MENCODER_DEPS = $(OBJS_MENCODER) $(OBJS_COMMON) $(COMMON_LIBS)
 MPLAYER_DEPS  = $(OBJS_MPLAYER)  $(OBJS_COMMON) $(COMMON_LIBS)

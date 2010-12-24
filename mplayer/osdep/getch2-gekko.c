@@ -117,6 +117,7 @@ void getch2_enable()
 	{
 		PAD_Init();
 		
+#ifdef HW_RVL
 		WPAD_Init();
 		WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth + (IR_OFFSET * 2), screenheight + (IR_OFFSET * 2));
 		WPAD_SetDataFormat(WPAD_CHAN_ALL, WPAD_FMT_BTNS_ACC_IR);
@@ -124,6 +125,7 @@ void getch2_enable()
 		
 		KEYBOARD_Init(NULL);
 		//MOUSE_Init();
+#endif
 	}
 	
 	getch2_status = true;
@@ -131,6 +133,7 @@ void getch2_enable()
 
 void getch2_disable()
 {
+#ifdef HW_RVL
 	if (getch2_status)
 	{
 		WPAD_Disconnect(WPAD_CHAN_ALL);
@@ -139,10 +142,12 @@ void getch2_disable()
 		KEYBOARD_Deinit();
 		//MOUSE_Deinit();
 	}
+#endif
 	
 	getch2_status = false;
 }
 
+#ifdef HW_RVL
 int getch2_internal(void)
 {
 	keyboard_event event;
@@ -188,6 +193,7 @@ int getch2_internal(void)
 
 	return 0;
 }
+#endif
 
 void getch2(void)
 {
@@ -256,6 +262,7 @@ void getch2(void)
 				m_screenbottom_shift -= (joy_y / SCHAR_MAX) / PAD_MODIFIER;
 		}
 		
+#ifdef HW_RVL
 		u8 battery = 0;
 		WPAD_ScanPads();
 		
@@ -358,6 +365,7 @@ void getch2(void)
 		
 		double scale = (pow((double)battery, 2) / UCHAR_MAX) / UCHAR_MAX;
 		WPAD_SetIdleTimeout((scale * 240) + 60);
+#endif
 		
 		if ((m_screenleft_shift != _m_screenleft_shift) ||
 			(m_screenright_shift != _m_screenright_shift) ||
@@ -368,10 +376,12 @@ void getch2(void)
 			mpgxUpdateSquare();
 		}
 		
+#ifdef HW_RVL
 		int kb_get = getch2_internal();
 		
 		if (kb_get > 0)
 			mplayer_put_key(kb_get);
+#endif
 		
 		lasttime = curtime;
 	}

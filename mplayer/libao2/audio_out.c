@@ -94,7 +94,7 @@ const ao_functions_t* const audio_out_drivers[] =
 #ifdef CONFIG_AESND
         &audio_out_aesnd,
 #endif
-#ifdef GEKKO
+#if defined(GEKKO) && defined(HW_RVL)
         &audio_out_gekko,
 #endif
 // wrappers:

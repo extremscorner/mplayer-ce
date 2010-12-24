@@ -1759,7 +1759,9 @@ void set_osd_subtitle(subtitle *subs) {
  */
 
 extern u8 __Arena1Lo[], __Arena1Hi[];
+#ifdef HW_RVL
 extern u8 __Arena2Lo[], __Arena2Hi[];
+#endif
 
 void update_osd_msg(void) {
     mp_osd_msg_t *msg;
@@ -1802,6 +1804,7 @@ void update_osd_msg(void) {
 
             if (osd_level >= 3) {
 				if (osd_level == 4)
+#ifdef HW_RVL
 					snprintf(osd_text_timer, 63,
 							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f) m2(%.2f)",
 							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
@@ -1810,6 +1813,14 @@ void update_osd_msg(void) {
 										/ ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0,
 								((float)((u32)SYS_GetArena2Hi() - (u32)SYS_GetArena2Lo())
 										/ ((u32)__Arena2Hi - (u32)__Arena2Lo)) * 100.0);
+#else
+					snprintf(osd_text_timer, 63,
+							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  m1(%.2f)",
+							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
+							len/3600,(len/60)%60,len%60,percentage_text,
+								((float)((u32)SYS_GetArena1Hi() - (u32)SYS_GetArena1Lo())
+										/ ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0);
+#endif
 				else
 					snprintf(osd_text_timer, 63,
 							"%c %02d:%02d:%02d / %02d:%02d:%02d%s",
@@ -2281,11 +2292,7 @@ static void adjust_sync_and_print_status(int between_frames, float timing_error)
     if(mpctx->sh_audio){
     //geexbox bgvideo patch
       if(mpctx->bg_demuxer) {
-      	if(!quiet) mp_msg(MSGT_AVSYNC,MSGL_STATUS,"A:%6.1f %4.1f%% %d%%   \r"
- 		       ,mpctx->delay - mpctx->audio_out->get_delay()
- 		       ,(mpctx->delay>0.5)?100.0*audio_time_usage/(double)mpctx->delay:0
- 		       ,(int)cache_fill_status
- 		       );
+      	if(!quiet) print_status(written_audio_pts(mpctx->sh_audio, mpctx->d_audio) - audio_delay, 0, 0);
      } else {
     //
 	double a_pts, v_pts;
@@ -2764,6 +2771,7 @@ static double update_video(int *blit_frame)
     return frame_time;
 }
 
+#ifdef CONFIG_STREAM_CACHE
 static void low_cache_loop(void)
 {
     float percent;
@@ -2839,6 +2847,7 @@ static void low_cache_loop(void)
         guiGetEvent(guiCEvent, (char *)guiSetPause);
 #endif
 }
+#endif
 
 void fast_pause()
 {
@@ -3615,9 +3624,10 @@ while (player_idle_mode && !filename) {
   //mpctx->stream=NULL;
 
   current_module="open_stream";
-  #ifdef GEKKO
+#ifdef GEKKO
 
   // rodries
+#ifdef CONFIG_STREAM_CACHE
   static float orig_stream_cache_min_percent=-1;
   static float orig_stream_cache_seek_min_percent=-1;
   static int orig_stream_cache_size=-1;
@@ -3636,6 +3646,7 @@ while (player_idle_mode && !filename) {
   	stream_cache_size=-1;
   else
   	stream_cache_size=orig_stream_cache_size;
+#endif
 
 	if(!IsLoopAvi(NULL))
 	{
@@ -3643,15 +3654,15 @@ while (player_idle_mode && !filename) {
 		force_osd();
 	}
 
-
+#ifdef CONFIG_STREAM_CACHE
     if(strncmp(filename,"http:",5) == 0)
     {
 	   stream_cache_min_percent=1;
 	   stream_cache_seek_min_percent=5;
     }
-
+#endif
   //end rodries
-  #endif
+#endif
 setwatchdogcounter(-1);
   mpctx->stream=open_stream(filename,0,&mpctx->file_format);
   if(!mpctx->stream) { // error...
@@ -3748,6 +3759,7 @@ if(mpctx->stream->type==STREAMTYPE_DVDNAV){
 
 // CACHE2: initial prefill: 20%  later: 5%  (should be set by -cacheopts)
 goto_enable_cache:
+#ifdef CONFIG_STREAM_CACHE
 if(stream_cache_size>0){
   int res;
   current_module="enable_cache";
@@ -3758,6 +3770,7 @@ stream_cache_min_percent=1.0;
   if(res == 0)
     if((mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY))) goto goto_next_file;
 }
+#endif
 	if(!IsLoopAvi(NULL))
     {
     //printf("Analysing Stream...");
@@ -4233,12 +4246,15 @@ int hasvideo=true;
 	  	hasvideo=false;
 		 //printf("only audio\n");
 
-	  }else 
+	  }
+#ifdef CONFIG_STREAM_CACHE
+	  else 
 	  {
 		 stream_cache_min_percent=orig_stream_cache_min_percent;
 		 stream_cache_seek_min_percent=orig_stream_cache_seek_min_percent;
 	  	//printf("has video\n");
 	  }
+#endif
   }
 //if (mpctx->sh_audio) mpctx->audio_out->reset();
 restore_seek=get_restore_point(fileplaying)-8;
@@ -4270,8 +4286,10 @@ seek_to_sec=restore_seek;
 int aux=mpctx->set_of_sub_size;
 mpctx->set_of_sub_size=0; // to not load subfonts
 mpctx->osd_function=OSD_PAUSE;
+#ifdef CONFIG_STREAM_CACHE
 if(stream_cache_size>0 && hasvideo) // no refill cache on only audio streams  
 	refillcache(mpctx->stream,stream_cache_min_percent);
+#endif
 mpctx->osd_function=OSD_PLAY;
 mpctx->set_of_sub_size=aux;
 }
@@ -4534,6 +4552,7 @@ if(auto_quality>0){
 
   current_module="pause";
 
+#ifdef CONFIG_STREAM_CACHE
     //low cache
 	if (stream_cache_size > 0.0 && stream_cache_min_percent> 1.0 && cache_fill_status<4.0 && cache_fill_status>=0.0 && !IsLoopAvi(NULL)) {
    		if(mpctx->osd_function == OSD_PAUSE)
@@ -4559,6 +4578,11 @@ if(auto_quality>0){
 	  	mpctx->was_paused = 1;
 	  	pause_loop();
 	  }
+#else
+  if (mpctx->osd_function == OSD_PAUSE) {
+      mpctx->was_paused = 1;
+      pause_loop();
+#endif
   }
 
 // handle -sstep
@@ -4681,7 +4705,9 @@ if(rel_seek_secs || abs_seek_pos){
 } // while(!mpctx->eof)
 setwatchdogcounter(-1);
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);
+#ifdef CONFIG_STREAM_CACHE
 error_playing=stream_error(mpctx->stream);
+#endif
 
 #ifdef CONFIG_DVBIN
 if(mpctx->dvbin_reopen)
