@@ -73,23 +73,33 @@ static void aesnd_callback(AESNDPB *pb, u32 state)
 
 static int control(int cmd, void *arg)
 {
+#ifndef HW_RVL
+	static u8 left = 0xFF, right = 0xFF;
+#else
+	u8 left, right;
+#endif
+
 	switch (cmd) {
 		case AOCONTROL_QUERY_FORMAT:
 			return CONTROL_TRUE;
 		case AOCONTROL_GET_VOLUME:
 		{
-			u8 left, right;
+		#ifdef HW_RVL
 			AVE_GetVolume(&left, &right);
+		#endif
 			((ao_control_vol_t *)arg)->left = left / 2.55;
 			((ao_control_vol_t *)arg)->right = right / 2.55;
 			return CONTROL_OK;
 		}
 		case AOCONTROL_SET_VOLUME:
 		{
-			u8 left, right;
 			left = clamp(ceil(((ao_control_vol_t *)arg)->left * 2.55), 0x00, 0xFF);
 			right = clamp(ceil(((ao_control_vol_t *)arg)->right * 2.55), 0x00, 0xFF);
+		#ifndef HW_RVL
+			AESND_SetVoiceVolume(voice, left, right);
+		#else
 			AVE_SetVolume(left, right);
+		#endif
 			return CONTROL_OK;
 		}
 		default:
@@ -121,11 +131,16 @@ static int init(int rate, int channels, int format, int flags)
 	ao_data.buffersize = BURST_SIZE * NUM_BUFFERS;
 	ao_data.outburst = BURST_SIZE;
 	
+#ifndef HW_RVL
+	for (int i = 0; i < NUM_BUFFERS; i++)
+		buffers[i] = memalign(32, BURST_SIZE);
+#else
 	ao_area = mem2_area_alloc(ao_data.buffersize);
 	if (ao_area == NULL) return CONTROL_FALSE;
 	
 	for (int i = 0; i < NUM_BUFFERS; i++)
 		buffers[i] = __lwp_heap_allocate(&ao_area->heap, BURST_SIZE);
+#endif
 	
 	fill_buffer = 0;
 	play_buffer = 0;
@@ -156,7 +171,12 @@ static void reset(void)
 static void uninit(int immed)
 {
 	AESND_FreeVoice(voice);
+#ifndef HW_RVL
+	for (int i = 0; i < NUM_BUFFERS; i++)
+		free(buffers[i]);
+#else
 	mem2_area_free(ao_area);
+#endif
 }
 
 static void audio_pause(void)

@@ -28,8 +28,8 @@ INSTALLSTRIP = -s
 WINDRES = windres
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
-CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
+CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -DHW_RVL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
+CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -DHW_RVL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
 CC_DEPFLAGS = -MD -MP -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math
 
 CFLAGS_DHAHELPER         = 

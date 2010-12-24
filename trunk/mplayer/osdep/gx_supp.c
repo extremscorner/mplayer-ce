@@ -119,11 +119,14 @@ void mpviSetup(int video_mode, bool overscan)
 	}
 	
 	bool is_pal = (vmode->viTVMode >> 2) == VI_PAL;
+#ifdef HW_RVL
 	s32 wide_mode = CONF_GetAspectRatio();
+#endif
 	
 	int videowidth = is_pal ? VI_MAX_WIDTH_PAL : VI_MAX_WIDTH_NTSC;
 	int videoheight = is_pal ? VI_MAX_HEIGHT_PAL : VI_MAX_HEIGHT_NTSC;
 	
+#ifdef HW_RVL
 	float scanwidth = wide_mode == CONF_ASPECT_16_9 ? 0.95 : 0.93;
 	float scanheight = !is_pal ? 0.95 : 0.94;
 	
@@ -131,10 +134,14 @@ void mpviSetup(int video_mode, bool overscan)
 		vmode->viHeight = videoheight * scanheight;
 		vmode->viHeight += vmode->viHeight % 2;
 	} else vmode->viHeight = videoheight;
+#else
+	vmode->viHeight = videoheight;
+#endif
 	
 	vmode->xfbHeight = vmode->viHeight;
 	vmode->efbHeight = MIN(vmode->xfbHeight, 528);
 	
+#ifdef HW_RVL
 	if (wide_mode == CONF_ASPECT_16_9)
 		screenwidth = ceil((screenheight / 9.0) * 16.0);
 	else screenwidth = ceil((screenheight / 3.0) * 4.0);
@@ -143,30 +150,48 @@ void mpviSetup(int video_mode, bool overscan)
 		vmode->viWidth = videowidth * scanwidth;
 		vmode->viWidth = (vmode->viWidth + 15) & ~15;
 	} else vmode->viWidth = videowidth;
+#else
+	if (!overscan) vmode->viWidth = videowidth;
+#endif
 	
+#ifndef HW_DOL
 	vmode->fbWidth = vmode->viWidth;
+#endif
 	
 	vmode->viXOrigin = (videowidth - vmode->viWidth) / 2;
 	vmode->viYOrigin = (videoheight - vmode->viHeight) / 2;
 	
 	if (overscan) {
 		s8 hor_offset = 0;
-		
-		if (CONF_GetDisplayOffsetH(&hor_offset) > 0)
-			vmode->viXOrigin += hor_offset;
+#if defined(HW_DOL)
+		syssram *sram = __SYS_LockSram();
+		hor_offset = sram->display_offsetH;
+		__SYS_UnlockSram(0);
+#elif defined(HW_RVL)
+		CONF_GetDisplayOffsetH(&hor_offset)
+#endif
+		vmode->viXOrigin += hor_offset;
 	}
 	
 	VIDEO_Configure(vmode);
 	
+#ifdef HW_RVL
 	if (vi_area == NULL) {
 		u32 xfbsize = (VI_MAX_WIDTH_PAL * VI_DISPLAY_PIX_SZ) * (VI_MAX_HEIGHT_PAL + 4);
 		vi_area = mem2_area_alloc(xfbsize * 2);
 		
 		if (xfb[0] == NULL)
-			xfb[0] = (u32 *)MEM_K0_TO_K1(__lwp_heap_allocate(&vi_area->heap, xfbsize));
+			xfb[0] = MEM_K0_TO_K1(__lwp_heap_allocate(&vi_area->heap, xfbsize));
 		if (xfb[1] == NULL)
-			xfb[1] = (u32 *)MEM_K0_TO_K1(__lwp_heap_allocate(&vi_area->heap, xfbsize));
+			xfb[1] = MEM_K0_TO_K1(__lwp_heap_allocate(&vi_area->heap, xfbsize));
 	}
+#else
+	if (xfb[1]) free(MEM_K1_TO_K0(xfb[1]));
+	if (xfb[0]) free(MEM_K1_TO_K0(xfb[0]));
+	
+	xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+	xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+#endif
 	
 	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
@@ -237,7 +262,11 @@ void mpgxInit()
 	u32 xfbHeight = GX_SetDispCopyYScale(yscale);
 	
 	GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
+#ifndef HW_DOL
 	GX_SetDispCopySrc(0, 0, ((vmode->fbWidth >> 1) + 15) & ~15, vmode->efbHeight);
+#else
+	GX_SetDispCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
+#endif
 	GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
 	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
 	GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
@@ -444,6 +473,7 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 	
 	UVtexsize = UVwidth * UVheight;
 	
+#ifdef HW_RVL
 	u32 heapsize = Ytexsize + (UVtexsize * 2);
 	
 	if (gx_area == NULL) gx_area = mem2_area_alloc(heapsize);
@@ -452,6 +482,15 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 	Ytexture = MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, Ytexsize));
 	Utexture = MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
 	Vtexture = MEM_K0_TO_K1(__lwp_heap_allocate(&gx_area->heap, UVtexsize));
+#else
+	if (Vtexture) free(MEM_K1_TO_K0(Vtexture));
+	if (Utexture) free(MEM_K1_TO_K0(Utexture));
+	if (Ytexture) free(MEM_K1_TO_K0(Ytexture));
+	
+	Ytexture = MEM_K0_TO_K1(memalign(32, Ytexsize));
+	Utexture = MEM_K0_TO_K1(memalign(32, UVtexsize));
+	Vtexture = MEM_K0_TO_K1(memalign(32, UVtexsize));
+#endif
 	
 	f32 YtexcoordS = (double)luma_width / (double)Ywidth;
 	f32 UVtexcoordS = (double)chroma_width / (double)UVwidth;
@@ -611,6 +650,7 @@ void mpgxPushFrame()
 	GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
 	GX_LoadTexObj(&VtexObj, GX_TEXMAP2);	// MAP2 <- V
 	
+#ifndef HW_DOL
 	u16 xfb_copypt = vmode->fbWidth >> 1;
 	u16 efb_drawpt = (xfb_copypt + 15) & ~15;
 	int diff = efb_drawpt - xfb_copypt;
@@ -623,6 +663,10 @@ void mpgxPushFrame()
 		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * dxs;
 		GX_CopyDisp(xfb[whichfb ^ 1] + xfb_offset, GX_TRUE);
 	}
+#else
+	GX_CallDispList(dlist, 32);
+	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
+#endif
 	
 	VIDEO_SetNextFramebuffer(xfb[whichfb ^ 1]);
 	flip_ready = false;

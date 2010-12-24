@@ -77,6 +77,7 @@ MPlayer Wii port
 
 extern int enable_restore_points;
 
+#ifdef HW_RVL
 static off_t get_filesize(char *FileName)
 {
     struct stat file;
@@ -201,6 +202,7 @@ static bool hbc_stub()
 	   sig[7] == 'X') return true;
     return false;
 }
+#endif
 
 bool reset_pressed = false;
 bool power_pressed = false;
@@ -215,6 +217,7 @@ int watchdogcounter=-1;
 static int enable_watchdog=0;
 static bool exit_watchdog_thread=false;
 
+#ifdef HW_RVL
 static void * watchdogthreadfunc (void *arg)
 {
 	long sleeptime;
@@ -272,6 +275,7 @@ static void * watchdogthreadfunc (void *arg)
 	}
 	return NULL;
 }
+#endif
 
 
 //bool loading_ehc = true;
@@ -293,11 +297,16 @@ static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #include <sdcard/wiisd_io.h>
 #include <sdcard/gcsd.h>
 #include <ogc/usbstorage.h>
+#include <ogc/dvd.h>
 #include <di/di.h>
 
+#ifdef HW_RVL
 const static DISC_INTERFACE* sd = &__io_wiisd;
 const static DISC_INTERFACE* usb = &__io_usbstorage;
 const static DISC_INTERFACE* dvd = &__io_wiidvd;
+#else
+const static DISC_INTERFACE* dvd = &__io_gcdvd;
+#endif
 const static DISC_INTERFACE* carda = &__io_gcsda;
 const static DISC_INTERFACE* cardb = &__io_gcsdb;
 
@@ -334,8 +343,10 @@ enum {
 	DEVICE_CARDA = 0,
 	DEVICE_CARDB,
 	DEVICE_DVD,
+#ifdef HW_RVL
 	DEVICE_SD,
 	DEVICE_USB,
+#endif
 	DEVICE_MAX,
 };
 
@@ -343,6 +354,7 @@ static bool isInserted[DEVICE_MAX];
 
 static void mountproc()
 {
+#ifdef HW_RVL
 	if (isInserted[DEVICE_SD]) {
 		if (!sd->isInserted()) {
 			fatUnmount("sd:");
@@ -392,6 +404,7 @@ static void mountproc()
 		
 		isInserted[DEVICE_USB] = true;
 	}
+#endif
 	
 	if (isInserted[DEVICE_CARDA]) {
 		if (!carda->isInserted()) {
@@ -416,6 +429,7 @@ static void mountproc()
 	}
 }
 
+#ifdef HW_RVL
 static void *mountloop(void *arg)
 {
 	usleep(200 * TB_MSPERSEC);
@@ -450,13 +464,14 @@ static void *mountloop(void *arg)
 	
 	return NULL;
 }
+#endif
 
 
 static char *default_args[] = {
 	"sd:/apps/mplayer-ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-	"-vo","gekko","-ao","gekko",
+	"-vo","gekko","-ao","aesnd",
 	"-menu","-menu-startup",
 	"-quiet"
 }; 
@@ -510,11 +525,13 @@ static t_ftp_conf ftp_conf[5];
 
 static s32 initialise_network() 
 {
-    s32 result;
+    s32 result = 0;
+#ifdef HW_RVL
     while ((result = net_init()) == -EAGAIN) 
 	{
 		usleep(1000);
 	}
+#endif
     return result;
 }
 
@@ -598,6 +615,7 @@ static bool mount_smb(int number)
  
 }
 
+#ifdef HW_RVL
 bool mount_ftp(int number)
 {	
 	char device[10];
@@ -638,6 +656,7 @@ bool mount_ftp(int number)
 	else
 	  return ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,21,ftp_conf[number].passive>0);
 }
+#endif
 
 void read_net_config()
 {
@@ -668,6 +687,7 @@ void read_net_config()
 	    {   "pass5", &smb_conf[4].pass, CONF_TYPE_STRING, 0, 0, 0, NULL },
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};
+#ifdef HW_RVL
 	m_option_t ftp_opts[] =
 	{
 	    {   "ip1", &ftp_conf[0].ip, CONF_TYPE_STRING, 0, 0, 0, NULL },
@@ -698,17 +718,20 @@ void read_net_config()
 
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
 	};
+#endif
 
 	for(i=0;i<5;i++)
 	{
 		smb_conf[i].ip=NULL;
 		smb_conf[i].init=false;
 	}
+#ifdef HW_RVL
 	for(i=0;i<5;i++)
 	{
 		ftp_conf[i].ip=NULL;
 		ftp_conf[i].init=false;
 	}
+#endif
 
 	/* read configuration */
 
@@ -719,23 +742,24 @@ void read_net_config()
 	m_config_parse_config_file(conf, file);
 	m_config_free(conf);
 
+#ifdef HW_RVL
 	printf_debug("reading ftp config");
 	sprintf(file,"%s/ftp.conf",MPLAYER_DATADIR);
 	conf = m_config_new();
 	m_config_register_options(conf, ftp_opts);
 	m_config_parse_config_file(conf, file);
 	m_config_free(conf);
-
+#endif
 }
 
 static void * networkthreadfunc (void *arg)
 {
-	while(1)
-	{
-		wait_for_network_initialisation();
-		LWP_SuspendThread(netthread);
-		net_deinit();
-	}
+	wait_for_network_initialisation();
+#ifdef HW_RVL
+	LWP_SuspendThread(netthread);
+	net_deinit();
+#endif
+	
     return NULL;
 }
 
@@ -743,6 +767,7 @@ static void * networkthreadfunc (void *arg)
 /*        END NETWORK FUNCTIONS           */
 /******************************************/
 
+#ifdef HW_RVL
 void DVDGekkoTick(bool silent)
 {
 	if (!dvd_lasttick) {
@@ -794,6 +819,7 @@ bool DVDGekkoMount()
 	LWP_MutexUnlock(dvd_mutex);
 	return false;
 }
+#endif
 
 #include <sys/iosupport.h>
 bool DeviceMounted(const char *device)
@@ -883,6 +909,7 @@ static bool CheckPath(char *path)
 
 static bool DetectValidPath()
 {
+#ifdef HW_RVL
 	if (isInserted[DEVICE_SD] && DeviceMounted("sd")) {
 		if (CheckPath("sd:/apps/mplayer-ce")) return true;
 		if (CheckPath("sd:/apps/mplayer_ce")) return true;
@@ -894,6 +921,7 @@ static bool DetectValidPath()
 		if (CheckPath("usb:/apps/mplayer_ce")) return true;
 		if (CheckPath("usb:/mplayer")) return true;
 	}
+#endif
 	
 	if (isInserted[DEVICE_CARDA] && DeviceMounted("carda")) {
 		if (CheckPath("carda:/apps/mplayer-ce")) return true;
@@ -912,6 +940,7 @@ extern u32 __di_check_ahbprot(void);
 
 void plat_init (int *argc, char **argv[])
 {
+#ifdef HW_RVL
 	if (FindIOS(202)) {
 		IOS_ReloadIOS(202);
 	} else {
@@ -933,6 +962,7 @@ void plat_init (int *argc, char **argv[])
 		if (mload_init()) ehci = load_ehci_module();
 	
 	USB2Enable(ehci);
+#endif
 	
 	mpviSetup(0, true);
 	log_console_init(vmode, 0);
@@ -947,11 +977,15 @@ void plat_init (int *argc, char **argv[])
 		VIDEO_WaitVSync();
 		sleep(10);
 		mpviClear();
+#ifdef HW_RVL
 		if (!hbc_stub()) SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+#endif
 		exit(0);
 	}
 	
+#ifdef HW_RVL
 	SYS_SetPowerCallback(power_cb);
+#endif
 	SYS_SetResetCallback(reset_cb);
 	
 	LoadParams();
@@ -965,7 +999,9 @@ void plat_init (int *argc, char **argv[])
 		{
 			int i;
 			for(i=0;i<5;i++) mount_smb(i);
+		#ifdef HW_RVL
 	        for(i=0;i<5;i++) mount_ftp(i);
+		#endif
 		}
 		network_initied=1;
 		printf("Pause for reading (10 seconds)...");
@@ -976,9 +1012,11 @@ void plat_init (int *argc, char **argv[])
 
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
+#ifdef HW_RVL
 	setenv("DVDCSS_VERBOSE", "0", 1);
 	setenv("DVDREAD_VERBOSE", "0", 1);
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
+#endif
 
 	if(*argc<3)
 	{
@@ -987,12 +1025,14 @@ void plat_init (int *argc, char **argv[])
 		default_args[4]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
 		strcpy(default_args[4],MPLAYER_DATADIR);
 
+#ifdef HW_RVL
 		if (CONF_GetAspectRatio())
 		{ //16:9
 			strcat(default_args[2],"/loop-wide.avi");
 			strcat(default_args[4],"/loop-wide.avi");
 		}
 		else
+#endif
 		{  // 4:3
 			strcat(default_args[2],"/loop.avi");
 			strcat(default_args[4],"/loop.avi");
@@ -1003,6 +1043,7 @@ void plat_init (int *argc, char **argv[])
 
 	}
 	
+#ifdef HW_RVL
 	if(enable_watchdog)
 		LWP_MutexInit(&watchdogmutex, false);
 	
@@ -1010,6 +1051,7 @@ void plat_init (int *argc, char **argv[])
 	
 	LWP_CreateThread(&watchdogthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
 	LWP_CreateThread(&mountthread, mountloop, NULL, mount_Stack, MOUNT_STACKSIZE, 40); // auto mount fs (usb, dvd)
+#endif
 	
 	VIDEO_WaitVSync();
 	
@@ -1034,19 +1076,23 @@ void plat_deinit (int rc)
 	log_console_deinit();
 	mpviClear();
 	
+#ifdef HW_RVL
 	exit_automount_thread=true;
 	LWP_JoinThread(mountthread,NULL);
 	exit_watchdog_thread=true;
 	LWP_JoinThread(watchdogthread,NULL);
 	if(watchdogmutex!=LWP_MUTEX_NULL)LWP_MutexDestroy(watchdogmutex);
+#endif
 	save_screen_params();
 
+#ifdef HW_RVL
 	if (power_pressed) {
 		//printf("shutting down\n");
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);
 	}
     if (!hbc_stub())
 		SYS_ResetSystem(SYS_RETURNTOMENU,0,0);
+#endif
 }
 
 extern float m_screenleft_shift, m_screenright_shift;
@@ -1114,6 +1160,7 @@ bool smbConnect(char *device)
 	return smbCheckConnection(device);
 }
 
+#ifdef HW_RVL
 bool ftpConnect(char *device)
 {
 	int number;
@@ -1123,3 +1170,4 @@ bool ftpConnect(char *device)
 	if(!ftp_conf[number].init) return mount_ftp(number);
 	return CheckFTPConnection(device);
 }
+#endif

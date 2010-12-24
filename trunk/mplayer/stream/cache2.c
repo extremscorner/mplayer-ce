@@ -350,7 +350,7 @@ static int cache_execute_control(cache_vars_t *s) {
 }
 
 static void *shared_alloc(int size) {
-#ifdef GEKKO
+#if defined(GEKKO) && defined(HW_RVL)
     if(sc_area==NULL) return NULL;
     return __lwp_heap_allocate(&sc_area->heap,size);
 #else
@@ -363,7 +363,7 @@ static void *shared_alloc(int size) {
 }
 
 static void shared_free(void *ptr, int size) {
-#ifdef GEKKO
+#if defined(GEKKO) && defined(HW_RVL)
     __lwp_heap_free(&sc_area->heap,ptr);
 #else
 #if FORKED_CACHE
@@ -376,7 +376,7 @@ static void shared_free(void *ptr, int size) {
 
 static cache_vars_t* cache_init(int size,int sector){
   int num;
-#ifdef GEKKO
+#if defined(GEKKO) && defined(HW_RVL)
   sc_area=mem2_area_alloc(size);
 #endif
   cache_vars_t* s=shared_alloc(sizeof(cache_vars_t));
@@ -435,7 +435,7 @@ void cache_uninit(stream_t *s) {
   c->stream = NULL;
   shared_free(s->cache_data, sizeof(cache_vars_t));
   s->cache_data = NULL;
-#ifdef GEKKO
+#if defined(GEKKO) && defined(HW_RVL)
   mem2_area_free(sc_area);
   sc_area = NULL;
 #endif
