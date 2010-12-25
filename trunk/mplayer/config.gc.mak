@@ -56,6 +56,8 @@ EXESUFS_ALL = .dol .elf
 ARCH = ppc
 ARCH_PPC = yes
 
+HW_DOL = yes
+
 HAVE_FAST_CLZ = yes
 HAVE_PAIRED = yes
 
@@ -242,7 +244,7 @@ FFMPEG_A   = yes
 ASFLAGS    = $(CFLAGS)
 AS_DEPFLAGS= -MD -MP -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer
 HOSTCC     = $(HOST_CC)
-HOSTCFLAGS = -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112 -O2
+HOSTCFLAGS = -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112 -O3
 HOSTLIBS   = -lm
 CC_O       = -o $@
 LD         = $(DEVKITPPC)/bin/powerpc-eabi-ld

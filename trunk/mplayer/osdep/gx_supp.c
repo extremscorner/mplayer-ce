@@ -168,7 +168,7 @@ void mpviSetup(int video_mode, bool overscan)
 		hor_offset = sram->display_offsetH;
 		__SYS_UnlockSram(0);
 #elif defined(HW_RVL)
-		CONF_GetDisplayOffsetH(&hor_offset)
+		CONF_GetDisplayOffsetH(&hor_offset);
 #endif
 		vmode->viXOrigin += hor_offset;
 	}

@@ -56,6 +56,8 @@ EXESUFS_ALL = .dol .elf
 ARCH = ppc
 ARCH_PPC = yes
 
+HW_RVL = yes
+
 HAVE_FAST_CLZ = yes
 HAVE_PAIRED = yes
 
