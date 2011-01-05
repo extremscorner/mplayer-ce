@@ -852,7 +852,7 @@ FFMPEGFILES = $(foreach part, $(FFMPEGPARTS), $(wildcard ffmpeg/$(part)/*.[chS] 
 all: $(ALL_PRG-yes)
 
 mplayer.dol: mplayer$(EXESUF)
-	$(OBJCOPY) -O binary mplayer$(EXESUF) mplayer.dol
+	elf2dol mplayer$(EXESUF) mplayer.dol
 
 %.o: %.S
 	$(CC) $(CC_DEPFLAGS) $(CFLAGS) -c -o $@ $<

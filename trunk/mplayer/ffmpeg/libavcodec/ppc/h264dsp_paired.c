@@ -26,8 +26,8 @@
 	const float scalar = 0.015625;								\
 	int16_t iAB[2] = {(8-x)*(8-y),(  x)*(8-y)};					\
 	int16_t iCD[2] = {(8-x)*(  y),(  x)*(  y)};					\
-	asm volatile("psq_l %0,%1,0,7" : "=f"(fAB) : "Q"(*iAB));	\
-	asm volatile("psq_l %0,%1,0,7" : "=f"(fCD) : "Q"(*iCD));	\
+	asm volatile("psq_l %0,%1,0,7" : "=f"(fAB) : "o"(*iAB));	\
+	asm volatile("psq_l %0,%1,0,7" : "=f"(fCD) : "o"(*iCD));	\
 	fAB = ps_mul(fAB, scalar);									\
 	fCD = ps_mul(fCD, scalar);									\
 }																\
@@ -1070,16 +1070,16 @@ static void weight_h264_pixels ## W ## x ## H ## _paired(uint8_t *block, int str
 	 \
 	uint16_t poweru = 1 << log2_denom; \
 	register float powerf; \
-	asm volatile("psq_l %0,%1,1,5" : "=f"(powerf) : "Q"(poweru)); \
+	asm volatile("psq_l %0,%1,1,5" : "=f"(powerf) : "o"(poweru)); \
 	 \
 	int16_t weighti = weight; \
 	register float weightf; \
-	asm volatile("psq_l %0,%1,1,7" : "=f"(weightf) : "Q"(weighti)); \
+	asm volatile("psq_l %0,%1,1,7" : "=f"(weightf) : "o"(weighti)); \
 	weightf = (weightf / powerf); \
 	 \
 	int16_t offseti = offset; \
 	register float offsetf; \
-	asm volatile("psq_l %0,%1,1,7" : "=f"(offsetf) : "Q"(offseti)); \
+	asm volatile("psq_l %0,%1,1,7" : "=f"(offsetf) : "o"(offseti)); \
 	offsetf = (offsetf + 0.5); \
 	 \
 	block -= stride; \
@@ -1130,17 +1130,17 @@ static void biweight_h264_pixels ## W ## x ## H ## _paired(uint8_t *dst, uint8_t
 	 \
 	uint16_t poweru = 1 << log2_denom + 1; \
 	vector float powerf; \
-	asm volatile("psq_l %0,%1,1,5\n" : "=f"(powerf) : "Q"(poweru)); \
+	asm volatile("psq_l %0,%1,1,5\n" : "=f"(powerf) : "o"(poweru)); \
 	powerf = paired_merge00(powerf, powerf); \
 	 \
 	int16_t weighti[2] = {weightd,weights}; \
 	vector float weightf; \
-	asm volatile("psq_l %0,%1,0,7" : "=f"(weightf) : "Q"(*weighti)); \
+	asm volatile("psq_l %0,%1,0,7" : "=f"(weightf) : "o"(*weighti)); \
 	weightf = paired_div(weightf, powerf); \
 	 \
 	int16_t offseti = offset; \
 	register float offsetf; \
-	asm volatile("psq_l %0,%1,1,7" : "=f"(offsetf) : "Q"(offseti)); \
+	asm volatile("psq_l %0,%1,1,7" : "=f"(offsetf) : "o"(offseti)); \
 	offsetf = (offsetf + 0.5); \
 	 \
 	dst -= stride; \

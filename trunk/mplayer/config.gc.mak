@@ -26,10 +26,9 @@ HOST_CC = gcc
 INSTALL = install
 INSTALLSTRIP = -s
 WINDRES = windres
-OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy
 
-CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
-CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -D_REENTRANT
+CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg
+CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg
 CC_DEPFLAGS = -MD -MP -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer
 
 CFLAGS_DHAHELPER         = 
@@ -37,7 +36,7 @@ CFLAGS_FAAD_FIXED        =
 CFLAGS_LIBDVDCSS         = 
 CFLAGS_LIBDVDCSS_DVDREAD = 
 CFLAGS_LIBDVDNAV         = 
-CFLAGS_NO_OMIT_LEAF_FRAME_POINTER = -mno-omit-leaf-frame-pointer
+CFLAGS_NO_OMIT_LEAF_FRAME_POINTER = 
 CFLAGS_STACKREALIGN      = 
 CFLAGS_SVGALIB_HELPER    = 
 CFLAGS_TREMOR_LOW        = 
