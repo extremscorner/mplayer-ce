@@ -3642,7 +3642,7 @@ while (player_idle_mode && !filename) {
     stream_cache_min_percent=orig_stream_cache_min_percent;
     stream_cache_seek_min_percent=orig_stream_cache_seek_min_percent;
   }
-  if(strncmp(filename,"dvdnav:",7) == 0)
+  if(!strncmp(filename,"dvdnav:",7) || !strncmp(filename,"card",4))
   	stream_cache_size=-1;
   else
   	stream_cache_size=orig_stream_cache_size;
