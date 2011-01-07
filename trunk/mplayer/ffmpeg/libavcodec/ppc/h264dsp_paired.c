@@ -925,7 +925,7 @@ static void ff_h264_idct8_add_paired(uint8_t *dst, DCTELEM *block, int stride)
 		add[2] = ps_madd(pre[3], quarter, pre[0]);
 		add[3] = ps_madd(pre[2], quarter, pre[1]);
 		sub[2] = ps_msub(pre[1], quarter, pre[2]);
-		sub[3] = paired_sub(pre[3], ps_mul(pre[0], quarter));
+		sub[3] = ps_nmsub(pre[0], quarter, pre[3]);
 		
 		pair[0] = paired_add(add[0], sub[3]);
 		pair[1] = paired_add(add[1], sub[2]);
@@ -983,7 +983,7 @@ static void ff_h264_idct8_add_paired(uint8_t *dst, DCTELEM *block, int stride)
 		add[2] = ps_madd(pre[3], quarter, pre[0]);
 		add[3] = ps_madd(pre[2], quarter, pre[1]);
 		sub[2] = ps_msub(pre[1], quarter, pre[2]);
-		sub[3] = paired_sub(pre[3], ps_mul(pre[0], quarter));
+		sub[3] = ps_nmsub(pre[0], quarter, pre[3]);
 		
 		result = psq_lu(2,in_col,0,4);
 		result = ps_madd(paired_add(add[0], sub[3]), scalar, result);
