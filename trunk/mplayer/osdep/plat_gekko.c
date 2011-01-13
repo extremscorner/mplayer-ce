@@ -752,16 +752,16 @@ void read_net_config()
 #endif
 }
 
+#ifdef HW_RVL
 static void * networkthreadfunc (void *arg)
 {
 	wait_for_network_initialisation();
-#ifdef HW_RVL
 	LWP_SuspendThread(netthread);
 	net_deinit();
-#endif
 	
     return NULL;
 }
+#endif
 
 /******************************************/
 /*        END NETWORK FUNCTIONS           */
@@ -1007,8 +1007,12 @@ void plat_init (int *argc, char **argv[])
 		printf("Pause for reading (10 seconds)...");
 		VIDEO_WaitVSync();
 		sleep(10);
-	}
-	else LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
+	} else
+#ifdef HW_RVL
+		LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
+#else
+		wait_for_network_initialisation();
+#endif
 
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
