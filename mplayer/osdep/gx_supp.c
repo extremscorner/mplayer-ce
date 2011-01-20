@@ -118,41 +118,37 @@ void mpviSetup(int video_mode, bool overscan)
 			vmode = VIDEO_GetPreferredMode(NULL);
 	}
 	
-	bool is_pal = (vmode->viTVMode >> 2) == VI_PAL;
+	bool is_pal, wide_mode;
+	
+	is_pal = (vmode->viTVMode >> 2) == VI_PAL;
 #ifdef HW_RVL
-	s32 wide_mode = CONF_GetAspectRatio();
+	wide_mode = CONF_GetAspectRatio() == CONF_ASPECT_16_9;
 #endif
 	
 	int videowidth = is_pal ? VI_MAX_WIDTH_PAL : VI_MAX_WIDTH_NTSC;
 	int videoheight = is_pal ? VI_MAX_HEIGHT_PAL : VI_MAX_HEIGHT_NTSC;
 	
-#ifdef HW_RVL
-	float scanwidth = wide_mode == CONF_ASPECT_16_9 ? 0.95 : 0.93;
+	float scanwidth = wide_mode ? 0.95 : 0.93;
 	float scanheight = !is_pal ? 0.95 : 0.94;
 	
 	if (overscan) {
 		vmode->viHeight = videoheight * scanheight;
 		vmode->viHeight += vmode->viHeight % 2;
 	} else vmode->viHeight = videoheight;
-#else
-	vmode->viHeight = videoheight;
-#endif
 	
 	vmode->xfbHeight = vmode->viHeight;
 	vmode->efbHeight = MIN(vmode->xfbHeight, 528);
 	
 #ifdef HW_RVL
-	if (wide_mode == CONF_ASPECT_16_9)
+	if (wide_mode)
 		screenwidth = ceil((screenheight / 9.0) * 16.0);
 	else screenwidth = ceil((screenheight / 3.0) * 4.0);
+#endif
 	
 	if (overscan) {
 		vmode->viWidth = videowidth * scanwidth;
 		vmode->viWidth = (vmode->viWidth + 15) & ~15;
 	} else vmode->viWidth = videowidth;
-#else
-	if (!overscan) vmode->viWidth = videowidth;
-#endif
 	
 #ifndef HW_DOL
 	vmode->fbWidth = vmode->viWidth;
