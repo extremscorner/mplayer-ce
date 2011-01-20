@@ -1022,7 +1022,9 @@ void plat_init (int *argc, char **argv[])
 	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
 #endif
 
+#ifndef HW_DOL
 	if(*argc<3)
+#endif
 	{
 		default_args[2]=malloc(sizeof(char)*strlen(MPLAYER_DATADIR)+16);
 		strcpy(default_args[2],MPLAYER_DATADIR);
