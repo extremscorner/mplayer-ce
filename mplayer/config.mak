@@ -27,8 +27,8 @@ INSTALL = install
 INSTALLSTRIP = -s
 WINDRES = windres
 
-CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -DHW_RVL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg
-CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -DHW_RVL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg
+CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -DHW_RVL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
+CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -DGEKKO -DHW_RVL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -Ilibdvdread4 -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
 CC_DEPFLAGS = -MD -MP -O3 -meabi -mrvl -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math
 
 CFLAGS_DHAHELPER         = 
@@ -356,6 +356,7 @@ CONFIG_INTERPLAY_VIDEO_DECODER=yes
 CONFIG_JPEGLS_DECODER=yes
 CONFIG_KGV1_DECODER=yes
 CONFIG_KMVC_DECODER=yes
+CONFIG_LAGARITH_DECODER=yes
 CONFIG_LOCO_DECODER=yes
 CONFIG_MDEC_DECODER=yes
 CONFIG_MIMIC_DECODER=yes
@@ -401,6 +402,7 @@ CONFIG_SMACKER_DECODER=yes
 CONFIG_SMC_DECODER=yes
 CONFIG_SNOW_DECODER=yes
 CONFIG_SP5X_DECODER=yes
+CONFIG_SRT_DECODER=yes
 CONFIG_SUNRAST_DECODER=yes
 CONFIG_SVQ1_DECODER=yes
 CONFIG_SVQ3_DECODER=yes
@@ -607,6 +609,7 @@ CONFIG_ZLIB_ENCODER=no
 CONFIG_ZMBV_ENCODER=no
 CONFIG_AAC_ENCODER=no
 CONFIG_AC3_ENCODER=no
+CONFIG_AC3_FIXED_ENCODER=no
 CONFIG_ALAC_ENCODER=no
 CONFIG_FLAC_ENCODER=no
 CONFIG_MP2_ENCODER=no
@@ -705,6 +708,7 @@ CONFIG_EA_DEMUXER=yes
 CONFIG_EA_CDATA_DEMUXER=yes
 CONFIG_EAC3_DEMUXER=yes
 CONFIG_FFM_DEMUXER=yes
+CONFIG_FFMETADATA_DEMUXER=yes
 CONFIG_FILMSTRIP_DEMUXER=yes
 CONFIG_FLAC_DEMUXER=yes
 CONFIG_FLIC_DEMUXER=yes
@@ -812,6 +816,7 @@ CONFIG_WAV_DEMUXER=yes
 CONFIG_WC3_DEMUXER=yes
 CONFIG_WSAUD_DEMUXER=yes
 CONFIG_WSVQA_DEMUXER=yes
+CONFIG_WTV_DEMUXER=yes
 CONFIG_WV_DEMUXER=yes
 CONFIG_XA_DEMUXER=yes
 CONFIG_YOP_DEMUXER=yes
@@ -836,6 +841,7 @@ CONFIG_DTS_MUXER=no
 CONFIG_DV_MUXER=no
 CONFIG_EAC3_MUXER=no
 CONFIG_FFM_MUXER=no
+CONFIG_FFMETADATA_MUXER=no
 CONFIG_FILMSTRIP_MUXER=no
 CONFIG_FLAC_MUXER=no
 CONFIG_FLV_MUXER=no
@@ -850,6 +856,7 @@ CONFIG_H264_MUXER=no
 CONFIG_IMAGE2_MUXER=no
 CONFIG_IMAGE2PIPE_MUXER=no
 CONFIG_IPOD_MUXER=no
+CONFIG_IVF_MUXER=no
 CONFIG_M4V_MUXER=no
 CONFIG_MD5_MUXER=no
 CONFIG_MATROSKA_MUXER=no

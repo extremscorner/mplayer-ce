@@ -20,16 +20,16 @@
 #include "dsputil_paired.h"
 #include "libavutil/ppc/paired.h"
 
-static void vector_fmul_paired(float *dst, const float *src, int len)
+static void vector_fmul_paired(float *dst, const float *src0, const float *src1, int len)
 {
 	vector float pair[2];
 	vector float result;
 	
 	for (int i=0; i<len*4-7; i+=8) {
-		pair[0] = paired_lx(i, src);
-		pair[1] = paired_lx(i, dst);
+		pair[0] = paired_lx(i, src0);
+		pair[1] = paired_lx(i, src1);
 		
-		result = paired_mul(pair[1], pair[0]);
+		result = paired_mul(pair[0], pair[1]);
 		paired_stx(result, i, dst);
 	}
 }

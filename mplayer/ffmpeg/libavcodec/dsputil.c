@@ -36,11 +36,9 @@
 #include "mathops.h"
 #include "mpegvideo.h"
 #include "config.h"
-#include "lpc.h"
 #include "ac3dec.h"
 #include "vorbis.h"
 #include "png.h"
-#include "vp8dsp.h"
 
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
@@ -3752,10 +3750,10 @@ WRAPPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WRAPPER8_16_SQ(rd8x8_c, rd16_c)
 WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
-static void vector_fmul_c(float *dst, const float *src, int len){
+static void vector_fmul_c(float *dst, const float *src0, const float *src1, int len){
     int i;
     for(i=0; i<len; i++)
-        dst[i] *= src[i];
+        dst[i] = src0[i] * src1[i];
 }
 
 static void vector_fmul_reverse_c(float *dst, const float *src0, const float *src1, int len){
@@ -3912,23 +3910,16 @@ static void vector_clipf_c(float *dst, const float *src, float min, float max, i
 }
 
 static av_always_inline int float_to_int16_one(const float *src){
-    int_fast32_t tmp = *(const int32_t*)src;
-    if(tmp & 0xf0000){
-        tmp = (0x43c0ffff - tmp)>>31;
-        // is this faster on some gcc/cpu combinations?
-//      if(tmp > 0x43c0ffff) tmp = 0xFFFF;
-//      else                 tmp = 0;
-    }
-    return tmp - 0x8000;
+    return av_clip_int16(lrintf(*src));
 }
 
-void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
+static void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
     int i;
     for(i=0; i<len; i++)
         dst[i] = float_to_int16_one(src+i);
 }
 
-void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels){
+static void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels){
     int i,j,c;
     if(channels==2){
         for(i=0; i<len; i++){
@@ -4431,9 +4422,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #endif
 #if CONFIG_AC3_DECODER
     c->ac3_downmix = ff_ac3_downmix_c;
-#endif
-#if CONFIG_LPC
-    c->lpc_compute_autocorr = ff_lpc_compute_autocorr;
 #endif
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;

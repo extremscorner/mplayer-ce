@@ -591,8 +591,11 @@ static void mov_metadata_creation_time(AVMetadata **metadata, time_t time)
 {
     char buffer[32];
     if (time) {
+        struct tm *ptm;
         time -= 2082844800;  /* seconds between 1904-01-01 and Epoch */
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&time));
+        ptm = gmtime(&time);
+        if (!ptm) return;
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm);
         av_metadata_set2(metadata, "creation_time", buffer, 0);
     }
 }
@@ -1224,6 +1227,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, ByteIOContext *pb, int entries)
     case CODEC_ID_GSM:
     case CODEC_ID_ADPCM_MS:
     case CODEC_ID_ADPCM_IMA_WAV:
+        st->codec->frame_size = sc->samples_per_frame;
         st->codec->block_align = sc->bytes_per_frame;
         break;
     case CODEC_ID_ALAC:
@@ -1512,10 +1516,11 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     uint64_t stream_size = 0;
 
     /* adjust first dts according to edit list */
-    if (sc->time_offset) {
+    if (sc->time_offset && mov->time_scale > 0) {
         int rescaled = sc->time_offset < 0 ? av_rescale(sc->time_offset, sc->time_scale, mov->time_scale) : sc->time_offset;
         current_dts = -rescaled;
-        if (sc->ctts_data && sc->ctts_data[0].duration / sc->stts_data[0].duration > 16) {
+        if (sc->ctts_data && sc->stts_data &&
+            sc->ctts_data[0].duration / sc->stts_data[0].duration > 16) {
             /* more than 16 frames delay, dts are likely wrong
                this happens with files created by iMovie */
             sc->wrong_dts = 1;
@@ -1746,10 +1751,10 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
         return 0;
     }
 
-    if (!sc->time_scale) {
+    if (sc->time_scale <= 0) {
         av_log(c->fc, AV_LOG_WARNING, "stream %d, timescale not set\n", st->index);
         sc->time_scale = c->time_scale;
-        if (!sc->time_scale)
+        if (sc->time_scale <= 0)
             sc->time_scale = 1;
     }
 
@@ -1784,6 +1789,10 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOVAtom atom)
 
         av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                   sc->time_scale*st->nb_frames, st->duration, INT_MAX);
+
+        if (sc->stts_count == 1 || (sc->stts_count == 2 && sc->stts_data[1].count == 1))
+            av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den,
+                      sc->time_scale, sc->stts_data[0].duration, INT_MAX);
     }
 
     switch (st->codec->codec_id) {
@@ -2275,8 +2284,7 @@ static void mov_read_chapters(AVFormatContext *s)
     AVStream *st = NULL;
     MOVStreamContext *sc;
     int64_t cur_pos;
-    uint8_t *title = NULL;
-    int i, len, i8, i16;
+    int i;
 
     for (i = 0; i < s->nb_streams; i++)
         if (s->streams[i]->id == mov->chapter_track) {
@@ -2295,43 +2303,40 @@ static void mov_read_chapters(AVFormatContext *s)
     for (i = 0; i < st->nb_index_entries; i++) {
         AVIndexEntry *sample = &st->index_entries[i];
         int64_t end = i+1 < st->nb_index_entries ? st->index_entries[i+1].timestamp : st->duration;
+        uint8_t *title;
+        uint16_t ch;
+        int len, title_len;
 
         if (url_fseek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
             av_log(s, AV_LOG_ERROR, "Chapter %d not found in file\n", i);
             goto finish;
         }
 
-        title = av_malloc(sample->size+2);
-        get_buffer(sc->pb, title, sample->size);
-
         // the first two bytes are the length of the title
-        len = AV_RB16(title);
+        len = get_be16(sc->pb);
         if (len > sample->size-2)
             continue;
+        title_len = 2*len + 1;
+        if (!(title = av_mallocz(title_len)))
+            goto finish;
 
         // The samples could theoretically be in any encoding if there's an encd
         // atom following, but in practice are only utf-8 or utf-16, distinguished
         // instead by the presence of a BOM
-        if (AV_RB16(title+2) == 0xfeff) {
-            uint8_t *utf8 = av_malloc(2*len+3);
-
-            i8 = i16 = 0;
-            while (i16 < len) {
-                uint32_t ch;
-                uint8_t tmp;
-                GET_UTF16(ch, i16 < len ? AV_RB16(title + (i16+=2)) : 0, break;)
-                PUT_UTF8(ch, tmp, if (i8 < 2*len) utf8[2+i8++] = tmp;)
-            }
-            utf8[2+i8] = 0;
-            av_freep(&title);
-            title = utf8;
+        ch = get_be16(sc->pb);
+        if (ch == 0xfeff)
+            avio_get_str16be(sc->pb, len, title, title_len);
+        else if (ch == 0xfffe)
+            avio_get_str16le(sc->pb, len, title, title_len);
+        else {
+            AV_WB16(title, ch);
+            get_strz(sc->pb, title + 2, len - 1);
         }
 
-        ff_new_chapter(s, i, st->time_base, sample->timestamp, end, title+2);
+        ff_new_chapter(s, i, st->time_base, sample->timestamp, end, title);
         av_freep(&title);
     }
 finish:
-    av_free(title);
     url_fseek(sc->pb, cur_pos, SEEK_SET);
 }
 
@@ -2559,7 +2564,7 @@ static int mov_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat mov_demuxer = {
+AVInputFormat ff_mov_demuxer = {
     "mov,mp4,m4a,3gp,3g2,mj2",
     NULL_IF_CONFIG_SMALL("QuickTime/MPEG-4/Motion JPEG 2000 format"),
     sizeof(MOVContext),

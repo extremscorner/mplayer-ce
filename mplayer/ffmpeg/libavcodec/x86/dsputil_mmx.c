@@ -28,6 +28,7 @@
 #include "libavcodec/h264dsp.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/simple_idct.h"
+#include "libavcodec/ac3dec.h"
 #include "dsputil_mmx.h"
 #include "idct_xvid.h"
 
@@ -41,7 +42,8 @@ DECLARE_ALIGNED(8,  const uint64_t, ff_wtwo) = 0x0002000200020002ULL;
 DECLARE_ALIGNED(16, const uint64_t, ff_pdw_80000000)[2] =
 {0x8000000080000000ULL, 0x8000000080000000ULL};
 
-DECLARE_ALIGNED(8,  const uint64_t, ff_pw_3  ) = 0x0003000300030003ULL;
+DECLARE_ALIGNED(8,  const uint64_t, ff_pw_1  ) = 0x0001000100010001ULL;
+DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_3  ) = {0x0003000300030003ULL, 0x0003000300030003ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_4  ) = {0x0004000400040004ULL, 0x0004000400040004ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_5  ) = {0x0005000500050005ULL, 0x0005000500050005ULL};
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_8  ) = {0x0008000800080008ULL, 0x0008000800080008ULL};
@@ -79,7 +81,7 @@ DECLARE_ALIGNED(16, const xmm_reg,  ff_pb_FE ) = {0xFEFEFEFEFEFEFEFEULL, 0xFEFEF
 DECLARE_ALIGNED(16, const double, ff_pd_1)[2] = { 1.0, 1.0 };
 DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
-#define JUMPALIGN() __asm__ volatile (ASMALIGN(3)::)
+#define JUMPALIGN() __asm__ volatile (".p2align 3"::)
 #define MOVQ_ZERO(regd)  __asm__ volatile ("pxor %%" #regd ", %%" #regd ::)
 
 #define MOVQ_BFE(regd) \
@@ -366,7 +368,7 @@ static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 {
     __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ASMALIGN(3)
+         ".p2align 3                    \n\t"
          "1:                            \n\t"
          "movd (%1), %%mm0              \n\t"
          "movd (%1, %3), %%mm1          \n\t"
@@ -392,7 +394,7 @@ static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 {
     __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ASMALIGN(3)
+         ".p2align 3                    \n\t"
          "1:                            \n\t"
          "movq (%1), %%mm0              \n\t"
          "movq (%1, %3), %%mm1          \n\t"
@@ -418,7 +420,7 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_siz
 {
     __asm__ volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ASMALIGN(3)
+         ".p2align 3                    \n\t"
          "1:                            \n\t"
          "movq (%1), %%mm0              \n\t"
          "movq 8(%1), %%mm4             \n\t"
@@ -2048,7 +2050,7 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
     } else if(in_ch == 5 && out_ch == 1 && matrix_cmp[0][0]==matrix_cmp[2][0] && matrix_cmp[3][0]==matrix_cmp[4][0]) {
         MIX5(IF1,IF0);
     } else {
-        DECLARE_ALIGNED(16, float, matrix_simd)[in_ch][2][4];
+        DECLARE_ALIGNED(16, float, matrix_simd)[AC3_MAX_CHANNELS][2][4];
         j = 2*in_ch*sizeof(float);
         __asm__ volatile(
             "1: \n"
@@ -2072,38 +2074,38 @@ static void ac3_downmix_sse(float (*samples)[256], float (*matrix)[2], int out_c
     }
 }
 
-static void vector_fmul_3dnow(float *dst, const float *src, int len){
+static void vector_fmul_3dnow(float *dst, const float *src0, const float *src1, int len){
     x86_reg i = (len-4)*4;
     __asm__ volatile(
         "1: \n\t"
-        "movq    (%1,%0), %%mm0 \n\t"
-        "movq   8(%1,%0), %%mm1 \n\t"
-        "pfmul   (%2,%0), %%mm0 \n\t"
-        "pfmul  8(%2,%0), %%mm1 \n\t"
+        "movq    (%2,%0), %%mm0 \n\t"
+        "movq   8(%2,%0), %%mm1 \n\t"
+        "pfmul   (%3,%0), %%mm0 \n\t"
+        "pfmul  8(%3,%0), %%mm1 \n\t"
         "movq   %%mm0,  (%1,%0) \n\t"
         "movq   %%mm1, 8(%1,%0) \n\t"
         "sub  $16, %0 \n\t"
         "jge 1b \n\t"
         "femms  \n\t"
         :"+r"(i)
-        :"r"(dst), "r"(src)
+        :"r"(dst), "r"(src0), "r"(src1)
         :"memory"
     );
 }
-static void vector_fmul_sse(float *dst, const float *src, int len){
+static void vector_fmul_sse(float *dst, const float *src0, const float *src1, int len){
     x86_reg i = (len-8)*4;
     __asm__ volatile(
         "1: \n\t"
-        "movaps    (%1,%0), %%xmm0 \n\t"
-        "movaps  16(%1,%0), %%xmm1 \n\t"
-        "mulps     (%2,%0), %%xmm0 \n\t"
-        "mulps   16(%2,%0), %%xmm1 \n\t"
+        "movaps    (%2,%0), %%xmm0 \n\t"
+        "movaps  16(%2,%0), %%xmm1 \n\t"
+        "mulps     (%3,%0), %%xmm0 \n\t"
+        "mulps   16(%3,%0), %%xmm1 \n\t"
         "movaps  %%xmm0,   (%1,%0) \n\t"
         "movaps  %%xmm1, 16(%1,%0) \n\t"
         "sub  $32, %0 \n\t"
         "jge 1b \n\t"
         :"+r"(i)
-        :"r"(dst), "r"(src)
+        :"r"(dst), "r"(src0), "r"(src1)
         :"memory"
     );
 }

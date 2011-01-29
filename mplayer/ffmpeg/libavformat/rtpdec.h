@@ -172,6 +172,7 @@ struct RTPDemuxContext {
     int64_t last_rtcp_ntp_time;    // TODO: move into statistics
     int64_t first_rtcp_ntp_time;   // TODO: move into statistics
     uint32_t last_rtcp_timestamp;  // TODO: move into statistics
+    int64_t rtcp_ts_offset;
 
     /* rtcp sender statistics */
     unsigned int packet_count;     // TODO: move into statistics (outgoing)
@@ -188,7 +189,6 @@ struct RTPDemuxContext {
     int max_frames_per_packet;
 };
 
-extern RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler;
 void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler);
 RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
                                                   enum AVMediaType codec_type);
