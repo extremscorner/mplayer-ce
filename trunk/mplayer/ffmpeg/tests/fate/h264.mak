@@ -164,7 +164,11 @@ FATE_H264 = aud_mw_e                                                    \
             sva_nl1_b                                                   \
             sva_nl2_e                                                   \
 
-FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%) fate-h264-interlace-crop
+FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
+              fate-h264-interlace-crop                                  \
+              fate-h264-lossless                                        \
+              fate-h264-extreme-plane-pred                              \
+
 FATE_TESTS += $(FATE_H264)
 fate-h264: $(FATE_H264)
 
@@ -335,3 +339,5 @@ fate-h264-conformance-sva_nl1_b: CMD = framecrc  -i $(SAMPLES)/h264-conformance/
 fate-h264-conformance-sva_nl2_e: CMD = framecrc  -i $(SAMPLES)/h264-conformance/SVA_NL2_E.264
 
 fate-h264-interlace-crop: CMD = framecrc  -vframes 3 -i $(SAMPLES)/h264/interlaced_crop.mp4
+fate-h264-lossless: CMD = framecrc -i $(SAMPLES)/h264/lossless.h264
+fate-h264-extreme-plane-pred: CMD = framemd5 -strict 1 -vsync 0 -i $(SAMPLES)/h264/extreme-plane-pred.h264

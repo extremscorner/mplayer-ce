@@ -69,7 +69,6 @@ typedef struct MpegTSWrite {
 /* NOTE: 4 bytes must be left at the end for the crc32 */
 static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
 {
-    MpegTSWrite *ts = ((AVFormatContext*)s->opaque)->priv_data;
     unsigned int crc;
     unsigned char packet[TS_PACKET_SIZE];
     const unsigned char *buf_ptr;
@@ -129,6 +128,8 @@ static int mpegts_write_section1(MpegTSSection *s, int tid, int id,
 {
     uint8_t section[1024], *q;
     unsigned int tot_len;
+    /* reserved_future_use field must be set to 1 for SDT */
+    unsigned int flags = tid == SDT_TID ? 0xf000 : 0xb000;
 
     tot_len = 3 + 5 + len + 4;
     /* check if not too big */
@@ -137,7 +138,7 @@ static int mpegts_write_section1(MpegTSSection *s, int tid, int id,
 
     q = section;
     *q++ = tid;
-    put16(&q, 0xb000 | (len + 5 + 4)); /* 5 byte header + 4 byte CRC */
+    put16(&q, flags | (len + 5 + 4)); /* 5 byte header + 4 byte CRC */
     put16(&q, id);
     *q++ = 0xc1 | (version << 1); /* current_next_indicator = 1 */
     *q++ = sec_num;
@@ -241,6 +242,9 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             break;
         case CODEC_ID_AAC:
             stream_type = STREAM_TYPE_AUDIO_AAC;
+            break;
+        case CODEC_ID_AAC_LATM:
+            stream_type = STREAM_TYPE_AUDIO_AAC_LATM;
             break;
         case CODEC_ID_AC3:
             stream_type = STREAM_TYPE_AUDIO_AC3;
@@ -391,18 +395,22 @@ static int mpegts_write_header(AVFormatContext *s)
     MpegTSWriteStream *ts_st;
     MpegTSService *service;
     AVStream *st, *pcr_st = NULL;
-    AVMetadataTag *title;
+    AVMetadataTag *title, *provider;
     int i, j;
     const char *service_name;
+    const char *provider_name;
     int *pids;
 
     ts->tsid = DEFAULT_TSID;
     ts->onid = DEFAULT_ONID;
     /* allocate a single DVB service */
-    title = av_metadata_get(s->metadata, "title", NULL, 0);
+    title = av_metadata_get(s->metadata, "service_name", NULL, 0);
+    if (!title)
+        title = av_metadata_get(s->metadata, "title", NULL, 0);
     service_name = title ? title->value : DEFAULT_SERVICE_NAME;
-    service = mpegts_add_service(ts, DEFAULT_SID,
-                                 DEFAULT_PROVIDER_NAME, service_name);
+    provider = av_metadata_get(s->metadata, "service_provider", NULL, 0);
+    provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
+    service = mpegts_add_service(ts, DEFAULT_SID, provider_name, service_name);
     service->pmt.write_packet = section_write_packet;
     service->pmt.opaque = s;
     service->pmt.cc = 15;
@@ -570,7 +578,7 @@ static uint8_t* write_pcr_bits(uint8_t *buf, int64_t pcr)
     *buf++ = pcr_high >> 17;
     *buf++ = pcr_high >> 9;
     *buf++ = pcr_high >> 1;
-    *buf++ = ((pcr_high & 1) << 7) | (pcr_low >> 8);
+    *buf++ = pcr_high << 7 | pcr_low >> 8 | 0x7e;
     *buf++ = pcr_low;
 
     return buf;
@@ -579,7 +587,6 @@ static uint8_t* write_pcr_bits(uint8_t *buf, int64_t pcr)
 /* Write a single null transport stream packet */
 static void mpegts_insert_null_packet(AVFormatContext *s)
 {
-    MpegTSWrite *ts = s->priv_data;
     uint8_t *q;
     uint8_t buf[TS_PACKET_SIZE];
 
@@ -946,7 +953,7 @@ static int mpegts_write_end(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat mpegts_muxer = {
+AVOutputFormat ff_mpegts_muxer = {
     "mpegts",
     NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
     "video/x-mpegts",

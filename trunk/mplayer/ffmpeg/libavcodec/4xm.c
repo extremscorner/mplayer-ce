@@ -791,6 +791,14 @@ static int decode_frame(AVCodecContext *avctx,
         if(decode_i_frame(f, buf, frame_size) < 0)
             return -1;
     }else if(frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")){
+        if(!f->last_picture.data[0]){
+            f->last_picture.reference= 1;
+            if(avctx->get_buffer(avctx, &f->last_picture) < 0){
+                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                return -1;
+            }
+        }
+
         p->pict_type= FF_P_TYPE;
         if(decode_p_frame(f, buf, frame_size) < 0)
             return -1;
@@ -857,7 +865,7 @@ static av_cold int decode_end(AVCodecContext *avctx){
     return 0;
 }
 
-AVCodec fourxm_decoder = {
+AVCodec ff_fourxm_decoder = {
     "4xm",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_4XM,

@@ -25,6 +25,30 @@
 #include "avcodec.h"
 
 /**
+ * Default values for ASS style.
+ * @defgroup ass_default
+ * @{
+ */
+#define ASS_DEFAULT_FONT        "Arial"
+#define ASS_DEFAULT_FONT_SIZE   16
+#define ASS_DEFAULT_COLOR       0xffffff
+#define ASS_DEFAULT_BACK_COLOR  0
+#define ASS_DEFAULT_BOLD        0
+#define ASS_DEFAULT_ITALIC      0
+#define ASS_DEFAULT_UNDERLINE   0
+#define ASS_DEFAULT_ALIGNMENT   2
+/** @} */
+
+/**
+ * Generate a suitable AVCodecContext.subtitle_header for SUBTITLE_ASS
+ * with default style.
+ *
+ * @param avctx pointer to the AVCodecContext
+ * @return >= 0 on success otherwise an error code <0
+ */
+int ff_ass_subtitle_header_default(AVCodecContext *avctx);
+
+/**
  * Initialize an AVSubtitle structure for use with ff_ass_add_rect().
  *
  * @param sub pointer to the AVSubtitle

@@ -30,19 +30,19 @@
 
 /* MpegEncContext */
 #if defined(__ARM_EABI__) || defined(__eabi__)
-#define Y_DC_SCALE               0xa54
-#define C_DC_SCALE               0xa58
-#define AC_PRED                  0xa80
-#define BLOCK_LAST_INDEX         0x2160
-#define INTER_SCANTAB_RASTER_END 0x2360
-#define H263_AIC                 0x2610
+#define Y_DC_SCALE               0xab4
+#define C_DC_SCALE               0xab8
+#define AC_PRED                  0xae0
+#define BLOCK_LAST_INDEX         0x21bc
+#define INTER_SCANTAB_RASTER_END 0x23bc
+#define H263_AIC                 0x2668
 #elif defined(__APPLE__)
-#define Y_DC_SCALE               0xa30
-#define C_DC_SCALE               0xa34
-#define AC_PRED                  0xa5c
-#define BLOCK_LAST_INDEX         0x213c
-#define INTER_SCANTAB_RASTER_END 0x233c
-#define H263_AIC                 0x25e0
+#define Y_DC_SCALE               0xa70
+#define C_DC_SCALE               0xa74
+#define AC_PRED                  0xa9c
+#define BLOCK_LAST_INDEX         0x2178
+#define INTER_SCANTAB_RASTER_END 0x2378
+#define H263_AIC                 0x261c
 #endif
 
 #endif

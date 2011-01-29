@@ -64,10 +64,12 @@ void ff_h264_idct_add16intra_c(uint8_t *dst, const int *blockoffset, DCTELEM *bl
 void ff_h264_idct8_add4_c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
 void ff_h264_idct_add8_c(uint8_t **dest, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
 
+void ff_h264_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qmul);
+void ff_svq3_luma_dc_dequant_idct_c(DCTELEM *output, DCTELEM *input, int qp);
+void ff_svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
+
 void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1,
                              const float *win, float add_bias, int len);
-void ff_float_to_int16_c(int16_t *dst, const float *src, long len);
-void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels);
 
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
@@ -370,10 +372,8 @@ typedef struct DSPContext {
     /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
     void (*ac3_downmix)(float (*samples)[256], float (*matrix)[2], int out_ch, int in_ch, int len);
-    /* no alignment needed */
-    void (*lpc_compute_autocorr)(const int32_t *data, int len, int lag, double *autoc);
     /* assume len is a multiple of 8, and arrays are 16-byte aligned */
-    void (*vector_fmul)(float *dst, const float *src, int len);
+    void (*vector_fmul)(float *dst, const float *src0, const float *src1, int len);
     void (*vector_fmul_reverse)(float *dst, const float *src0, const float *src1, int len);
     /* assume len is a multiple of 8, and src arrays are 16-byte aligned */
     void (*vector_fmul_add)(float *dst, const float *src0, const float *src1, const float *src2, int len);
@@ -433,8 +433,7 @@ typedef struct DSPContext {
      */
     void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
 
-    /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
-     * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
+    /* convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
     void (*float_to_int16)(int16_t *dst, const float *src, long len);
     void (*float_to_int16_interleave)(int16_t *dst, const float **src, long len, int channels);
 
@@ -659,20 +658,24 @@ static inline void emms(void)
 #   define STRIDE_ALIGN 8
 #endif
 
-#define LOCAL_ALIGNED(a, t, v, s, ...)                          \
-    uint8_t la_##v[sizeof(t s __VA_ARGS__) + (a)];              \
-    t (*v) __VA_ARGS__ = (void *)FFALIGN((uintptr_t)la_##v, a)
+#define LOCAL_ALIGNED_A(a, t, v, s, o, ...)             \
+    uint8_t la_##v[sizeof(t s o) + (a)];                \
+    t (*v) o = (void *)FFALIGN((uintptr_t)la_##v, a)
+
+#define LOCAL_ALIGNED_D(a, t, v, s, o, ...) DECLARE_ALIGNED(a, t, v) s o
+
+#define LOCAL_ALIGNED(a, t, v, ...) LOCAL_ALIGNED_A(a, t, v, __VA_ARGS__,,)
 
 #if HAVE_LOCAL_ALIGNED_8
-#   define LOCAL_ALIGNED_8(t, v, s, ...) DECLARE_ALIGNED(8, t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_8(t, v, ...) LOCAL_ALIGNED_D(8, t, v, __VA_ARGS__,,)
 #else
-#   define LOCAL_ALIGNED_8(t, v, s, ...) LOCAL_ALIGNED(8, t, v, s, __VA_ARGS__)
+#   define LOCAL_ALIGNED_8(t, v, ...) LOCAL_ALIGNED(8, t, v, __VA_ARGS__)
 #endif
 
 #if HAVE_LOCAL_ALIGNED_16
-#   define LOCAL_ALIGNED_16(t, v, s, ...) DECLARE_ALIGNED(16, t, v) s __VA_ARGS__
+#   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED_D(16, t, v, __VA_ARGS__,,)
 #else
-#   define LOCAL_ALIGNED_16(t, v, s, ...) LOCAL_ALIGNED(16, t, v, s, __VA_ARGS__)
+#   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED(16, t, v, __VA_ARGS__)
 #endif
 
 /* PSNR */

@@ -256,7 +256,7 @@ typedef struct {
     /**
      * @}
      * @defgroup post_filter Postfilter values
-     * Varibales used for postfilter implementation, mostly history for
+     * Variables used for postfilter implementation, mostly history for
      * smoothing and so on, and context variables for FFT/iFFT.
      * @{
      */
@@ -2018,7 +2018,7 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
     }
 }
 
-AVCodec wmavoice_decoder = {
+AVCodec ff_wmavoice_decoder = {
     "wmavoice",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMAVOICE,
