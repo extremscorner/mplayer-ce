@@ -395,9 +395,9 @@ static void mountproc()
 						fatMount("usb", usb, sector, 2, 128);
 					}
 					case PARTITION_TYPE_NTFS:
-						ntfsMount("ntfs", usb, sector, 2, 128, NTFS_DEFAULT | NTFS_RECOVER | NTFS_READ_ONLY);
+						ntfsMount("ntfs", usb, sector, 2, 128, NTFS_DEFAULT | NTFS_RECOVER);
 					case PARTITION_TYPE_LINUX:
-						ext2Mount("ext2", usb, sector, 2, 128, EXT2_FLAG_64BITS | EXT2_FLAG_JOURNAL_DEV_OK);
+						ext2Mount("ext2", usb, sector, 2, 128, EXT2_FLAG_DEFAULT);
 				}
 			}
 		} else fatMount("usb", usb, 0, 2, 128);
