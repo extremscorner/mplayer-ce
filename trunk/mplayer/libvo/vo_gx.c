@@ -1,25 +1,22 @@
 /*
-   vo_gekko.c - MPlayer video driver for Wii
-
-   Copyright (C) 2008 dhewg
-
-   sepp256 - Added YUV frame rendering functions.
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the
-   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301 USA.
-*/
+ * GX video output driver
+ *
+ * This file is part of MPlayer CE.
+ *
+ * MPlayer CE is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * MPlayer CE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with MPlayer CE; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,15 +37,16 @@
 #include "osdep/gx_supp.h"
 
 static const vo_info_t info = {
-	"gekko video output",
-	"gekko",
-	"Team Twiizers",
+	"GX video output",
+	"gx",
+	"Extrems <metaradil@gmail.com>",
 	""
 };
 
-const LIBVO_EXTERN (gekko)
+const LIBVO_EXTERN(gx)
 
-static u32 image_width = 0, image_height = 0;
+static uint32_t image_width = 0;
+static uint32_t image_height = 0;
 
 extern int screenwidth;
 extern int screenheight;
@@ -61,7 +59,7 @@ static void resize(void)
 	vo_dwidth += vo_panscan_x;
 	vo_dheight += vo_panscan_y;
 	
-	mpgxSetSquare((f32)vo_dwidth / 2, (f32)vo_dheight / 2);
+	mpgxSetSquare(vo_dwidth / 2.0, vo_dheight / 2.0);
 }
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x, int y)

@@ -555,6 +555,7 @@ SRCS_MPLAYER-$(GL)           += libvo/gl_common.c libvo/vo_gl.c \
 SRCS_MPLAYER-$(GL_SDL)       += libvo/sdl_common.c
 SRCS_MPLAYER-$(GL_WIN32)     += libvo/w32_common.c
 SRCS_MPLAYER-$(GL_X11)       += libvo/x11_common.c
+SRCS_MPLAYER-$(GX)           += libvo/vo_gx.c
 SRCS_MPLAYER-$(MATRIXVIEW)   += libvo/vo_matrixview.c libvo/matrixview.c
 SRCS_MPLAYER-$(GUI)          += gui/bitmap.c
 SRCS_MPLAYER-$(GUI_GTK)      += gui/app.c \
@@ -685,7 +686,6 @@ SRCS_MPLAYER-$(GEKKO) += osdep/log_console.c \
                          osdep/gx_supp.c \
                          osdep/glob_gekko.c \
                          osdep/plat_gekko.c \
-                         libvo/vo_gekko.c \
                          $(SRCS_MPLAYER_GEKKO-yes)
 
 SRCS_MPLAYER = command.c \

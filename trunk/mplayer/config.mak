@@ -117,6 +117,7 @@ GL = no
 GL_WIN32 = 
 GL_X11 = 
 GL_SDL = 
+GX = yes
 MATRIXVIEW = no
 GUI = no
 GUI_GTK = 
