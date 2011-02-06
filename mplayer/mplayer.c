@@ -1815,9 +1815,9 @@ void update_osd_msg(void) {
 										/ ((u32)__Arena2Hi - (u32)__Arena2Lo)) * 100.0);
 #else
 					snprintf(osd_text_timer, 63,
-							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  m1(%.2f)",
+							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f)",
 							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
-							len/3600,(len/60)%60,len%60,percentage_text,
+							len/3600,(len/60)%60,len%60,percentage_text, (int)cache_fill_status,
 								((float)((u32)SYS_GetArena1Hi() - (u32)SYS_GetArena1Lo())
 										/ ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0);
 #endif

@@ -74,10 +74,14 @@ static void *ThreadProc(void *s);
 #include "stream.h"
 #include "cache2.h"
 
-#ifdef GEKKO
+#if defined(GEKKO)
 #define GEKKO_THREAD_STACKSIZE (512 * 1024)
 #define GEKKO_THREAD_PRIO 70
+#ifndef HW_DOL
 static u8 gekko_stack[GEKKO_THREAD_STACKSIZE] ATTRIBUTE_ALIGN (32);
+#else
+static void *gekko_stack = NULL;
+#endif
 #endif
 
 int stream_fill_buffer(stream_t *s);
@@ -109,8 +113,12 @@ typedef struct {
   volatile int control_res;
   volatile off_t control_new_pos;
   volatile double stream_time_length;
-#ifdef GEKKO
+#if defined(GEKKO)
   int thread_active;
+#ifdef HW_DOL
+  void *arq_read_buffer;
+  void *arq_fill_buffer;
+#endif
 #endif
 } cache_vars_t;
 
@@ -172,7 +180,14 @@ static int cache_read(cache_vars_t *s, unsigned char *buf, int size)
 
     // len=write(mem,newb)
     //printf("Buffer read: %d bytes\n",newb);
+#if defined(GEKKO) && defined(HW_DOL)
+    ARQRequest arq_request;
+    ARQ_PostRequest(&arq_request, 0x1111, AR_ARAMTOMRAM, ARQ_PRIO_HI, (u32)s->buffer+pos, (u32)s->arq_read_buffer, newb);
+    DCInvalidateRange(s->arq_read_buffer,newb);
+    memcpy(buf,s->arq_read_buffer,newb);
+#else
     memcpy(buf,&s->buffer[pos],newb);
+#endif
     buf+=newb;
     len=newb;
     // ...
@@ -256,7 +271,11 @@ static int cache_fill(cache_vars_t *s)
   s->min_filepos=read-back; // avoid seeking-back to temp area...
 #endif
 
+#if defined(GEKKO) && defined(HW_DOL)
+  len = stream_read_internal(s->stream, s->arq_fill_buffer, space);
+#else
   len = stream_read_internal(s->stream, &s->buffer[pos], space);
+#endif
   if(len==0) 
   {
   	if(s->stream->error>0)
@@ -293,6 +312,14 @@ static int cache_fill(cache_vars_t *s)
   		s->eof=1;
   	}
   }
+#if defined(GEKKO) && defined(HW_DOL)
+  else
+  {
+      ARQRequest arq_request;
+      DCFlushRange(s->arq_fill_buffer,space);
+      ARQ_PostRequest(&arq_request, 0x1111, AR_MRAMTOARAM, ARQ_PRIO_LO, (u32)s->buffer+pos, (u32)s->arq_fill_buffer, space);
+  }
+#endif
 
   s->max_filepos+=len;
   if(pos+len>=s->buffer_size){
@@ -389,12 +416,21 @@ static cache_vars_t* cache_init(int size,int sector){
   }//32kb min_size
   s->buffer_size=num*sector;
   s->sector_size=sector;
+#if defined(GEKKO) && defined(HW_DOL)
+  s->buffer=AR_GetBaseAddress()+(AR_GetInternalSize()-s->buffer_size-0x4000);
+
+  if((u32)s->buffer < AR_GetBaseAddress()){
+    shared_free(s, sizeof(cache_vars_t));
+    return NULL;
+  }
+#else
   s->buffer=shared_alloc(s->buffer_size);
 
   if(s->buffer == NULL){
     shared_free(s, sizeof(cache_vars_t));
     return NULL;
   }
+#endif
 
   s->fill_limit=8*sector;
 #ifdef GEKKO
@@ -414,6 +450,10 @@ void cache_uninit(stream_t *s) {
   c->thread_active = 0;
   LWP_JoinThread(s->cache_pid, NULL);  
   s->cache_pid = 0;
+#ifdef HW_DOL
+  free(gekko_stack);
+  gekko_stack = NULL;
+#endif
 #else  
   if(s->cache_pid) {
 #if !FORKED_CACHE
@@ -430,7 +470,14 @@ void cache_uninit(stream_t *s) {
   if(c->stream)
     free(c->stream);
 #endif //GEKKO
+#if defined(GEKKO) && defined(HW_DOL)
+  free(c->arq_read_buffer);
+  c->arq_read_buffer = NULL;
+  free(c->arq_fill_buffer);
+  c->arq_fill_buffer = NULL;
+#else
   shared_free(c->buffer, c->buffer_size);
+#endif
   c->buffer = NULL;
   c->stream = NULL;
   shared_free(s->cache_data, sizeof(cache_vars_t));
@@ -535,7 +582,12 @@ int stream_enable_cache(stream_t *stream,int size,int min,int seek_limit){
     stream->cache_pid = _beginthread( ThreadProc, 0, s );
 #elif defined(GEKKO)
 	s->thread_active = 1;
-	memset(&gekko_stack, 0, GEKKO_THREAD_STACKSIZE);
+#ifdef HW_DOL
+	s->arq_read_buffer = memalign(32, ss > STREAM_MAX_SECTOR_SIZE ? STREAM_MAX_SECTOR_SIZE : ss);
+	s->arq_fill_buffer = memalign(32, stream->read_chunk ? stream->read_chunk : 4 * ss);
+	gekko_stack = memalign(32, GEKKO_THREAD_STACKSIZE);
+#endif
+	memset(gekko_stack, 0x00, GEKKO_THREAD_STACKSIZE);
 	LWP_CreateThread(&stream->cache_pid, ThreadProc, s, gekko_stack,
 					GEKKO_THREAD_STACKSIZE, GEKKO_THREAD_PRIO);
 #elif defined(__OS2__)

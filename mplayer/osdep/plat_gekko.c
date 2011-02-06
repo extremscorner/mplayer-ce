@@ -471,7 +471,7 @@ static char *default_args[] = {
 	"sd:/apps/mplayer-ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-	"-vo","gekko","-ao","aesnd",
+	"-vo","gx","-ao","aesnd",
 	"-menu","-menu-startup",
 	"-quiet"
 }; 
@@ -940,7 +940,13 @@ extern u32 __di_check_ahbprot(void);
 
 void plat_init (int *argc, char **argv[])
 {
-#ifdef HW_RVL
+#if defined(HW_DOL)
+	AR_Init(NULL, 0);
+	AR_Reset();
+	
+	ARQ_Init();
+	ARQ_Reset();
+#elif defined(HW_RVL)
 	if (FindIOS(202)) {
 		IOS_ReloadIOS(202);
 	} else {
