@@ -240,7 +240,7 @@ static void vsync_cb(u32 retraceCnt)
 	}
 }
 
-void mpgxInit()
+void mpgxInit(bool vf)
 {
 	Mtx GXmodelView2D;
 	Mtx44 perspective;
@@ -264,7 +264,7 @@ void mpgxInit()
 	GX_SetDispCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
 #endif
 	GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
-	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
+	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, vf, vmode->vfilter);
 	GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
 	GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 	

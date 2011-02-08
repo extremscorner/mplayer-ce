@@ -471,7 +471,6 @@ static char *default_args[] = {
 	"sd:/apps/mplayer-ce/mplayer.dol",
 	"-bgvideo", NULL,
 	"-idle", NULL,
-	"-vo","gx","-ao","aesnd",
 	"-menu","-menu-startup",
 	"-quiet"
 }; 
