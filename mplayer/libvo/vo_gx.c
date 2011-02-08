@@ -48,6 +48,8 @@ const LIBVO_EXTERN(gx)
 static uint32_t image_width = 0;
 static uint32_t image_height = 0;
 
+static int vfilter = 1;
+
 extern int screenwidth;
 extern int screenheight;
 
@@ -139,9 +141,15 @@ static void check_events(void)
 {
 }
 
+static const opt_t subopts[] = {
+	{"vfilter", OPT_ARG_BOOL, &vfilter, NULL},
+	{NULL}
+};
+
 static int preinit(const char *arg)
 {
-	mpgxInit();
+	subopt_parse(arg, subopts);
+	mpgxInit(vfilter);
 	mpgxSetupYUVp();
 	return VO_FALSE;
 }

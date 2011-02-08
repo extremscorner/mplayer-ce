@@ -36,7 +36,7 @@ extern GXRModeObj *vmode;
 void mpviSetup(int video_mode, bool overscan);
 void mpviClear();
 
-void mpgxInit();
+void mpgxInit(bool vf);
 void mpgxSetupYUVp();
 void mpgxSetSquare(f32 haspect, f32 vaspect);
 void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chroma_height);
