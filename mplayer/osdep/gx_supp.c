@@ -3,7 +3,7 @@
 *	softdev 2007
 *	dhewg 2008
 *	sepp256 2008 - Coded YUV->RGB conversion in TEV.
-*	Extrems 2009-2010
+*	Extrems 2009-2011
 *
 *	This program is free software; you can redistribute it and/or modify
 *	it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@
 #include "gx_supp.h"
 #include "ave-rvl.h"
 #include "mem2.h"
+#include "libvo/csputils.h"
 #include "libvo/video_out.h"
 
 #define HASPECT 320
@@ -73,14 +74,14 @@ static u16 Ywidth, Yheight, UVwidth, UVheight;
 
 /* New texture based scaler */
 static f32 square[] ATTRIBUTE_ALIGN(32) = {
-	-HASPECT, VASPECT,
-	HASPECT, VASPECT,
-	HASPECT, -VASPECT,
+	-HASPECT,  VASPECT,
+	 HASPECT,  VASPECT,
+	 HASPECT, -VASPECT,
 	-HASPECT, -VASPECT,
 };
 
 static GXColor colors[] ATTRIBUTE_ALIGN(32) = {
-	{0, 255, 0, 255}		//G
+	{0, 255, 0, 255}	//G
 };
 
 static f32 Ytexcoords[] ATTRIBUTE_ALIGN(32) = {
@@ -291,7 +292,7 @@ void mpgxInit(bool vf)
 	GX_Flush();
 }
 
-void mpgxSetupYUVp()
+void mpgxSetupYUVp(int colorspace, bool levelconv)
 {
 	//Setup TEV
 	GX_SetNumChans(1);
@@ -301,18 +302,44 @@ void mpgxSetupYUVp()
 	
 	//Y'UV->RGB formulation 2
 	GX_SetNumTevStages(12);
-	GX_SetTevKColor(GX_KCOLOR0, (GXColor){ 255,      0,        0,    18.624});	//R {1, 0, 0, 16*1.164}
-	GX_SetTevKColor(GX_KCOLOR1, (GXColor){  0,       0,       255,   41.82 });	//B {0, 0, 1, 0.164}
-	GX_SetTevKColor(GX_KCOLOR2, (GXColor){203.745, 103.6575,   0,     255  });	// {1.598/2, 0.813/2, 0}
-	GX_SetTevKColor(GX_KCOLOR3, (GXColor){  0,     24.92625, 128.52,  255  });	// {0, 0.391/4, 2.016/4}
+	GX_SetTevKColor(GX_KCOLOR0, (GXColor){255,   0,   0, levelconv ? 18 : 0});	//R {1, 0, 0, 16*1.164}
+	GX_SetTevKColor(GX_KCOLOR1, (GXColor){  0,   0, 255, levelconv ? 41 : 0});	//B {0, 0, 1, 0.164}
+	
+	static const GXColor uv_coeffs[MP_CSP_COUNT][2] = {
+		[MP_CSP_DEFAULT] = {
+			{203, 103,   0, 255},	// {1.596/2, 0.813/2, 0}
+			{  0,  24, 128, 255}	// {0, 0.391/4, 2.018/4}
+		},
+		[MP_CSP_BT_601] = {
+			{179,  90,   0, 255},	// {1.403/2, 0.714/2, 0}
+			{  0,  21, 112, 255}	// {0, 0.344/4, 1.773/4}
+		},
+		[MP_CSP_BT_709] = {
+			{200,  59,   0, 255},	// {1.5701/2, 0.4664/2, 0}
+			{  0,  11, 118, 255}	// {0, 0.187/4, 1.8556/4}
+		},
+		[MP_CSP_SMPTE_240M] = {
+			{201,  63,   0, 255},	// {1.5756/2, 0.5/2, 0}
+			{  0,  13, 116, 255}	// {0, 0.2253/4, 1.827/4}
+		},
+		[MP_CSP_EBU] = {
+			{145,  73,   0, 255},	// {1.140/2, 0.581/2, 0}
+			{  0,  24, 129, 255}	// {0, 0.396/4, 2.029/4}
+		},
+	};
+	
+	GX_SetTevKColor(GX_KCOLOR2, uv_coeffs[colorspace][0]);
+	GX_SetTevKColor(GX_KCOLOR3, uv_coeffs[colorspace][1]);
+	
 	//Stage 0: TEVREG0 <- { 0, 2Um, 2Up }; TEVREG0A <- {16*1.164}
 	GX_SetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K1);
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR0A0);
 	GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_RASC, GX_CC_KONST, GX_CC_TEXC, GX_CC_ZERO);
 	GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_2, GX_ENABLE, GX_TEVREG0);
 	GX_SetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
-	GX_SetTevAlphaIn (GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_KONST, GX_CA_ZERO);
-	GX_SetTevAlphaOp (GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG0);
+	GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_KONST, GX_CA_ZERO);
+	GX_SetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG0);
+	
 	//Stage 1: TEVREG1 <- { 0, 2Up, 2Um };
 	GX_SetTevKColorSel(GX_TEVSTAGE1, GX_TEV_KCSEL_K1);
 	GX_SetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR0A0);
@@ -320,6 +347,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_2, GX_ENABLE, GX_TEVREG1);
 	GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 2: TEVREG2 <- { Vp, Vm, 0 }
 	GX_SetTevKColorSel(GX_TEVSTAGE2, GX_TEV_KCSEL_K0);
 	GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD1, GX_TEXMAP2, GX_COLOR0A0);
@@ -327,6 +355,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG2);
 	GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 3: TEVPREV <- { (Vm), (Vp), 0 }
 	GX_SetTevKColorSel(GX_TEVSTAGE3, GX_TEV_KCSEL_K0);
 	GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD1, GX_TEXMAP2, GX_COLOR0A0);
@@ -334,6 +363,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_SUBHALF, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 	GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 4: TEVPREV <- { (-1.598Vm), (-0.813Vp), 0 }; TEVPREVA <- {Y' - 16*1.164}
 	GX_SetTevKColorSel(GX_TEVSTAGE4, GX_TEV_KCSEL_K2);
 	GX_SetTevOrder(GX_TEVSTAGE4, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
@@ -342,6 +372,7 @@ void mpgxSetupYUVp()
 	GX_SetTevKAlphaSel(GX_TEVSTAGE4, GX_TEV_KASEL_1);
 	GX_SetTevAlphaIn(GX_TEVSTAGE4, GX_CA_ZERO, GX_CA_KONST, GX_CA_A0, GX_CA_TEXA);
 	GX_SetTevAlphaOp(GX_TEVSTAGE4, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
+	
 	//Stage 5: TEVPREV <- { -1.598Vm (+1.139/2Vp), -0.813Vp +0.813/2Vm), 0 }; TEVREG1A <- {Y' -16*1.164 - Y'*0.164} = {(Y'-16)*1.164}
 	GX_SetTevKColorSel(GX_TEVSTAGE5, GX_TEV_KCSEL_K2);
 	GX_SetTevOrder(GX_TEVSTAGE5, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
@@ -350,6 +381,7 @@ void mpgxSetupYUVp()
 	GX_SetTevKAlphaSel(GX_TEVSTAGE5, GX_TEV_KASEL_K1_A);
 	GX_SetTevAlphaIn(GX_TEVSTAGE5, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_APREV);
 	GX_SetTevAlphaOp(GX_TEVSTAGE5, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVREG1);
+	
 	//Stage 6: TEVPREV <- {	-1.598Vm (+1.598Vp), -0.813Vp (+0.813Vm), 0 } = {	(+1.598V), (-0.813V), 0 }
 	GX_SetTevKColorSel(GX_TEVSTAGE6, GX_TEV_KCSEL_K2);
 	GX_SetTevOrder(GX_TEVSTAGE6, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLORNULL);
@@ -357,6 +389,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE6, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
 	GX_SetTevAlphaIn(GX_TEVSTAGE6, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE6, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 7: TEVPREV <- {	((Y'-16)*1.164) +1.598V, ((Y'-16)*1.164) -0.813V, ((Y'-16)*1.164) }
 	GX_SetTevKColorSel(GX_TEVSTAGE7, GX_TEV_KCSEL_1);
 	GX_SetTevOrder(GX_TEVSTAGE7, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLORNULL);
@@ -364,6 +397,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE7, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
 	GX_SetTevAlphaIn(GX_TEVSTAGE7, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE7, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 8: TEVPREV <- {	(Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V (-.394/2Up), (Y'-16)*1.164 (-2.032/2Um)}
 	GX_SetTevKColorSel(GX_TEVSTAGE8, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE8, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLORNULL);
@@ -371,6 +405,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE8, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
 	GX_SetTevAlphaIn(GX_TEVSTAGE8, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE8, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 9: TEVPREV <- { (Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V (-.394Up), (Y'-16)*1.164 (-2.032Um)}
 	GX_SetTevKColorSel(GX_TEVSTAGE9, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE9, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLORNULL);
@@ -378,6 +413,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE9, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
 	GX_SetTevAlphaIn(GX_TEVSTAGE9, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE9, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 10: TEVPREV <- { (Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V -.394Up (+.394/2Um), (Y'-16)*1.164 -2.032Um (+2.032/2Up)}
 	GX_SetTevKColorSel(GX_TEVSTAGE10, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE10, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLORNULL);
@@ -385,6 +421,7 @@ void mpgxSetupYUVp()
 	GX_SetTevColorOp(GX_TEVSTAGE10, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_DISABLE, GX_TEVPREV);
 	GX_SetTevAlphaIn(GX_TEVSTAGE10, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 	GX_SetTevAlphaOp(GX_TEVSTAGE10, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+	
 	//Stage 11: TEVPREV <- { (Y'-16)*1.164 +1.598V, (Y'-16)*1.164 -0.813V -.394Up (+.394Um), (Y'-16)*1.164 -2.032Um (+2.032Up)} = { (Y'-16)*1.164 +1.139V, (Y'-16)*1.164 -0.58V -.394U, (Y'-16)*1.164 +2.032U}
 	GX_SetTevKColorSel(GX_TEVSTAGE11, GX_TEV_KCSEL_K3);
 	GX_SetTevOrder(GX_TEVSTAGE11, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLORNULL);
@@ -632,7 +669,7 @@ void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char
 	DCFlushRange(Ycached, Ytexsize);
 }
 
-void mpgxIsDrawDone()
+void mpgxWaitDrawDone()
 {
 	if (wait_ready)
 		GX_WaitDrawDone();

@@ -37,12 +37,12 @@ void mpviSetup(int video_mode, bool overscan);
 void mpviClear();
 
 void mpgxInit(bool vf);
-void mpgxSetupYUVp();
+void mpgxSetupYUVp(int colorspace, bool levelconv);
 void mpgxSetSquare(f32 haspect, f32 vaspect);
 void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chroma_height);
 void mpgxCopyYUVp(u8 *buffer[3], int stride[3]);
 void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride);
-void mpgxIsDrawDone();
+void mpgxWaitDrawDone();
 void mpgxPushFrame();
 
 
