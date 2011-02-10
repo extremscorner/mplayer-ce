@@ -34,6 +34,7 @@
 #include "sub/osd.h"
 #include "sub/sub.h"
 #include "aspect.h"
+#include "csputils.h"
 #include "osdep/gx_supp.h"
 
 static const vo_info_t info = {
@@ -49,6 +50,8 @@ static uint32_t image_width = 0;
 static uint32_t image_height = 0;
 
 static int vfilter = 1;
+static int colorspace = MP_CSP_DEFAULT;
+static int levelconv = 1;
 
 extern int screenwidth;
 extern int screenheight;
@@ -66,27 +69,27 @@ static void resize(void)
 
 static int draw_slice(uint8_t *image[], int stride[], int w, int h, int x, int y)
 {
-	mpgxIsDrawDone();
+	mpgxWaitDrawDone();
 	mpgxCopyYUVp(image, stride);
 	return VO_FALSE;
 }
 
 static void draw_osd(void)
 {
-	mpgxIsDrawDone();
+	mpgxWaitDrawDone();
 	vo_draw_text(image_width, image_height, mpgxBlitOSD);
 }
 
 static void flip_page(void)
 {
-	mpgxIsDrawDone();
+	mpgxWaitDrawDone();
 	mpgxPushFrame();
 }
 
 static uint32_t draw_image(mp_image_t *mpi)
 {
 	if (mpi->flags & MP_IMGFLAG_PLANAR) {
-		mpgxIsDrawDone();
+		mpgxWaitDrawDone();
 		mpgxCopyYUVp(mpi->planes, mpi->stride);
 	}
 	
@@ -141,8 +144,16 @@ static void check_events(void)
 {
 }
 
+static int valid_csp(void *p)
+{
+	int *csp = p;
+	return *csp > 0 && *csp < MP_CSP_XYZ;
+}
+
 static const opt_t subopts[] = {
-	{"vfilter", OPT_ARG_BOOL, &vfilter, NULL},
+	{"vfilter",    OPT_ARG_BOOL, &vfilter,    NULL},
+	{"colorspace", OPT_ARG_INT,  &colorspace, valid_csp},
+	{"levelconv",  OPT_ARG_BOOL, &levelconv,  NULL},
 	{NULL}
 };
 
@@ -150,7 +161,7 @@ static int preinit(const char *arg)
 {
 	subopt_parse(arg, subopts);
 	mpgxInit(vfilter);
-	mpgxSetupYUVp();
+	mpgxSetupYUVp(colorspace, levelconv);
 	return VO_FALSE;
 }
 
