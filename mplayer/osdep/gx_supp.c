@@ -223,8 +223,9 @@ void mpviClear()
 static void render_cb(void)
 {
 	if (!vo_vsync) {
-		whichfb ^= 1;
+		VIDEO_SetNextFramebuffer(xfb[whichfb]);
 		VIDEO_Flush();
+		whichfb ^= 1;
 	} else flip_ready = true;
 	
 	wait_ready = false;
@@ -234,8 +235,9 @@ static void vsync_cb(u32 retraceCnt)
 {
 	if (vo_vsync) {
 		if (flip_ready) {
-			whichfb ^= 1;
+			VIDEO_SetNextFramebuffer(xfb[whichfb]);
 			VIDEO_Flush();
+			whichfb ^= 1;
 			flip_ready = false;
 		}
 	}
@@ -253,7 +255,7 @@ void mpgxInit(bool vf)
 	/*** Initialise GX ***/
 	GX_Init(gp_fifo, GX_FIFO_MINSIZE);
 	GX_SetCopyClear((GXColor){0x00, 0x00, 0x00, 0xFF}, GX_MAX_Z24);
-	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
+	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0.0, 1.0);
 	
 	f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
 	u32 xfbHeight = GX_SetDispCopyYScale(yscale);
@@ -685,23 +687,20 @@ void mpgxPushFrame()
 	
 #ifndef HW_DOL
 	u16 xfb_copypt = vmode->fbWidth >> 1;
-	u16 efb_drawpt = (xfb_copypt + 15) & ~15;
-	int diff = efb_drawpt - xfb_copypt;
 	
 	for (int dxs = 0; dxs < 2; dxs++) {
-		u16 efb_offset = (xfb_copypt - diff) * dxs;
+		u16 efb_offset = (xfb_copypt & ~15) * dxs;
 		GX_SetScissorBoxOffset(efb_offset, 0);
 		GX_CallDispList(dlist, 32);
 		
 		u32 xfb_offset = (xfb_copypt * VI_DISPLAY_PIX_SZ) * dxs;
-		GX_CopyDisp(xfb[whichfb ^ 1] + xfb_offset, GX_TRUE);
+		GX_CopyDisp(xfb[whichfb] + xfb_offset, GX_TRUE);
 	}
 #else
 	GX_CallDispList(dlist, 32);
-	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 #endif
 	
-	VIDEO_SetNextFramebuffer(xfb[whichfb ^ 1]);
 	flip_ready = false;
 	
 	GX_SetDrawDone();
