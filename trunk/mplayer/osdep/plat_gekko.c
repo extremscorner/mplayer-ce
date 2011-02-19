@@ -209,7 +209,7 @@ bool power_pressed = false;
 
 #define WATCHDOG_STACKSIZE 8*1024
 static u8 watchdog_Stack[WATCHDOG_STACKSIZE] ATTRIBUTE_ALIGN (32);
-lwp_t watchdogthread;
+static lwp_t watchdogthread = LWP_THREAD_NULL;
 
 
 mutex_t watchdogmutex=LWP_MUTEX_NULL;
@@ -278,18 +278,14 @@ static void * watchdogthreadfunc (void *arg)
 #endif
 
 
-//bool loading_ehc = true;
 int network_initied = 0;
 static mutex_t dvd_mutex = LWP_MUTEX_NULL;
-u64 dvd_lasttick = 0;
-static int dbg_network = false;
+static u64 dvd_lasttick = 0;
 static int overscan = true;
 
-static bool usb_init=false;
 static bool exit_automount_thread=false;
-//static bool net_called=false;
 static int video_mode=0;
-lwp_t mountthread;
+static lwp_t mountthread = LWP_THREAD_NULL;
 
 #define MOUNT_STACKSIZE 8*1024
 static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
@@ -301,14 +297,14 @@ static u8 mount_Stack[MOUNT_STACKSIZE] ATTRIBUTE_ALIGN (32);
 #include <di/di.h>
 
 #ifdef HW_RVL
-const static DISC_INTERFACE* sd = &__io_wiisd;
-const static DISC_INTERFACE* usb = &__io_usbstorage;
-const static DISC_INTERFACE* dvd = &__io_wiidvd;
+static const DISC_INTERFACE *sd = &__io_wiisd;
+static const DISC_INTERFACE *usb = &__io_usbstorage;
+static const DISC_INTERFACE *dvd = &__io_wiidvd;
 #else
-const static DISC_INTERFACE* dvd = &__io_gcdvd;
+static const DISC_INTERFACE *dvd = &__io_gcdvd;
 #endif
-const static DISC_INTERFACE* carda = &__io_gcsda;
-const static DISC_INTERFACE* cardb = &__io_gcsdb;
+static const DISC_INTERFACE *carda = &__io_gcsda;
+static const DISC_INTERFACE *cardb = &__io_gcsdb;
 
 typedef struct _PARTITION_RECORD {
 	u8 status;
@@ -499,7 +495,7 @@ void gekko_abort(void) {
 #define NET_STACKSIZE 8*1024
 static u8 net_Stack[NET_STACKSIZE] ATTRIBUTE_ALIGN (32);
 
-lwp_t netthread=LWP_THREAD_NULL;
+static lwp_t netthread = LWP_THREAD_NULL;
 
 typedef struct
 {
@@ -545,117 +541,21 @@ static int wait_for_network_initialisation()
 	        char myIP[16];
 	        if (if_config(myIP, NULL, NULL, true) < 0)
 			{
-			  if(dbg_network) 
-			  {
-			  	printf("Error getting ip\n");
-			  	return 0;
-			  }
 			  sleep(5);
 			  continue;
 			}
 	        else
 			{
 	          network_initied=1;
-			  if(dbg_network) printf("Network initialized. IP: %s\n",myIP);
 			  usleep(1000);
 			  return 1;
 			}
 	    }
-	    if(dbg_network) 
-		{
-			printf("Error initializing network\n");
-			return 0;
-		}
 		sleep(5);
     }
 	
 	return 0;
 }
-
-static bool mount_smb(int number)
-{	
-	char device[10];
-
-	sprintf(device,"smb%d",number+1);
-
-	smb_conf[number].init=true;
-
-	if(smb_conf[number].ip==NULL || smb_conf[number].share==NULL)
-	{
-		if(dbg_network) printf("SMB %s not filled\n",device);
-		usleep(2000); // sync problem on libogc threads
-		return false;
-	}
-
-	if(smb_conf[number].user==NULL) smb_conf[number].user=strdup("");
-	if(smb_conf[number].pass==NULL) smb_conf[number].pass=strdup("");
-	
-	if(dbg_network)
-	{
-		u64 t1,t2;
-		t1=ticks_to_millisecs(gettime());
-
-		printf("Mounting SMB : '%s' ip:%s  share:'%s'\n",device,smb_conf[number].ip,smb_conf[number].share);
-		if(!smbInitDevice(device,smb_conf[number].user,smb_conf[number].pass,smb_conf[number].share,smb_conf[number].ip))
-		{
-			t2=ticks_to_millisecs(gettime());
-			printf("error mounting '%s' (%u ms)\n",device,(unsigned)(t2-t1));
-			return false;
-		}
-		else
-		{
-			t2=ticks_to_millisecs(gettime());
-			printf("ok mounting '%s' (%u ms)\n",device,(unsigned)(t2-t1));
-			return true;
-		}
-	}
-	else
-	  return smbInitDevice(device,smb_conf[number].user,smb_conf[number].pass,smb_conf[number].share,smb_conf[number].ip);
- 
-}
-
-#ifdef HW_RVL
-bool mount_ftp(int number)
-{	
-	char device[10];
-
-	sprintf(device,"ftp%i",number+1);
-
-	ftp_conf[number].init=true;
-
-	if(ftp_conf[number].ip==NULL || ftp_conf[number].share==NULL)
-	{
-		if(dbg_network) printf("FTP %s not filled\n",device);
-		usleep(2000);  // sync problem on libogc threads
-		return false;
-	}
-
-	if(ftp_conf[number].user==NULL) ftp_conf[number].user=strdup("anonymous");
-	if(ftp_conf[number].pass==NULL) ftp_conf[number].pass=strdup("anonymous");
-
-	
-	if(dbg_network)
-	{
-		printf("Mounting FTP : '%s' host:%s  share:'%s'\n",device,ftp_conf[number].ip,ftp_conf[number].share);
-		u64 t1,t2;
-		t1=GetTimerMS();
-		if(!ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,21,ftp_conf[number].passive>0))
-		{
-			t2=GetTimerMS()-t1;
-			printf("error mounting '%s' (%u ms)\n",device,(unsigned)(t2));
-			return false;
-		}
-		else
-		{
-			t2=GetTimerMS()-t1;
-			printf("ok mounting '%s' (%u ms)\n",device,(unsigned)(t2));
-			return true;
-		}
-	}
-	else
-	  return ftpInitDevice(device,ftp_conf[number].user,ftp_conf[number].pass,ftp_conf[number].share,ftp_conf[number].ip,21,ftp_conf[number].passive>0);
-}
-#endif
 
 void read_net_config()
 {
@@ -863,7 +763,6 @@ static int LoadParams()
 	{
 	    {   "restore_points", &enable_restore_points, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   "watchdog", &enable_watchdog, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-	    {   "debug_network", &dbg_network, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 		{	"video_mode", &video_mode, CONF_TYPE_INT, CONF_RANGE, 0, 4, NULL},
 		{	"overscan", &overscan, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	    {   NULL, NULL, 0, 0, 0, 0, NULL }
@@ -996,28 +895,6 @@ void plat_init (int *argc, char **argv[])
 	LoadParams();
 	read_net_config();
 	load_screen_params();
-	
-	if(dbg_network)
-	{
-		printf("\nDebugging Network\n");
-		if(wait_for_network_initialisation()) 
-		{
-			int i;
-			for(i=0;i<5;i++) mount_smb(i);
-		#ifdef HW_RVL
-	        for(i=0;i<5;i++) mount_ftp(i);
-		#endif
-		}
-		network_initied=1;
-		printf("Pause for reading (10 seconds)...");
-		VIDEO_WaitVSync();
-		sleep(10);
-	} else
-#ifdef HW_RVL
-		LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
-#else
-		wait_for_network_initialisation();
-#endif
 
 	chdir(MPLAYER_DATADIR);
 	setenv("HOME", MPLAYER_DATADIR, 1);
@@ -1062,6 +939,9 @@ void plat_init (int *argc, char **argv[])
 	
 	LWP_CreateThread(&watchdogthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
 	LWP_CreateThread(&mountthread, mountloop, NULL, mount_Stack, MOUNT_STACKSIZE, 40); // auto mount fs (usb, dvd)
+	LWP_CreateThread(&netthread, networkthreadfunc, NULL, net_Stack, NET_STACKSIZE, 64); // network initialization
+#else
+	wait_for_network_initialisation();
 #endif
 	
 	VIDEO_WaitVSync();
@@ -1163,22 +1043,50 @@ void save_screen_params()
 
 bool smbConnect(char *device)
 {
-	int number;
-	if(network_initied==0) return false;
-	number=device[3]-'0';
-	number=number-1;
-	if(!smb_conf[number].init) return mount_smb(number);
-	return smbCheckConnection(device);
+	if (network_initied) {
+		int num = (device[3] - '0') - 1;
+		
+		if (smb_conf[num].init) {
+			if (!(smb_conf[num].init = smbCheckConnection(device)))
+				smbClose(device);
+		} else if (smb_conf[num].ip != NULL && smb_conf[num].share != NULL) {
+			if (smb_conf[num].user == NULL)
+				smb_conf[num].user = strdup("");
+			
+			if (smb_conf[num].pass == NULL)
+				smb_conf[num].pass = strdup("");
+			
+			smb_conf[num].init = smbInitDevice(device, smb_conf[num].user, smb_conf[num].pass,
+														smb_conf[num].share, smb_conf[num].ip);
+		}
+		
+		return smb_conf[num].init;
+	}
+	
+	return false;
 }
 
 #ifdef HW_RVL
 bool ftpConnect(char *device)
 {
-	int number;
-	if(network_initied==0) return false;
-	number=device[3]-'0';
-	number=number-1;
-	if(!ftp_conf[number].init) return mount_ftp(number);
-	return CheckFTPConnection(device);
+	if (network_initied) {
+		int num = (device[3] - '0') - 1;
+		
+		if (!ftp_conf[num].init && (ftp_conf[num].ip != NULL && ftp_conf[num].share != NULL)) {
+			if (ftp_conf[num].user == NULL)
+				ftp_conf[num].user = strdup("anonymous");
+			
+			if (ftp_conf[num].pass == NULL)
+				ftp_conf[num].pass = strdup("anonymous");
+			
+			ftp_conf[num].init = ftpInitDevice(device, ftp_conf[num].user, ftp_conf[num].pass,
+														ftp_conf[num].share, ftp_conf[num].ip,
+														21, ftp_conf[num].passive > 0);
+		}
+		
+		return ftp_conf[num].init;
+	}
+	
+	return false;
 }
 #endif
