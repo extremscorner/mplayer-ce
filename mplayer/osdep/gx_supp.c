@@ -56,9 +56,9 @@ int screenwidth = 640;
 int screenheight = 480;
 
 /*** 3D GX ***/
-static u8 *gp_fifo;
+static void *gp_fifo;
 static u8 dlist[32] ATTRIBUTE_ALIGN(32);
-static bool flip_ready, wait_ready;
+static bool draw_pending, flip_pending;
 
 /*** Texture memory ***/
 static st_mem2_area *gx_area = NULL;
@@ -126,16 +126,16 @@ void mpviSetup(int video_mode, bool overscan)
 	wide_mode = CONF_GetAspectRatio() == CONF_ASPECT_16_9;
 #endif
 	
-	int videowidth = is_pal ? VI_MAX_WIDTH_PAL : VI_MAX_WIDTH_NTSC;
-	int videoheight = is_pal ? VI_MAX_HEIGHT_PAL : VI_MAX_HEIGHT_NTSC;
+	int videoWidth = is_pal ? VI_MAX_WIDTH_PAL : VI_MAX_WIDTH_NTSC;
+	int videoHeight = is_pal ? VI_MAX_HEIGHT_PAL : VI_MAX_HEIGHT_NTSC;
 	
-	float scanwidth = wide_mode ? 0.95 : 0.93;
-	float scanheight = !is_pal ? 0.95 : 0.94;
+	float scanX = wide_mode ? 0.95 : 0.93;
+	float scanY = !is_pal ? 0.95 : 0.94;
 	
 	if (overscan) {
-		vmode->viHeight = videoheight * scanheight;
+		vmode->viHeight = videoHeight * scanY;
 		vmode->viHeight += vmode->viHeight % 2;
-	} else vmode->viHeight = videoheight;
+	} else vmode->viHeight = videoHeight;
 	
 	vmode->xfbHeight = vmode->viHeight;
 	vmode->efbHeight = MIN(vmode->xfbHeight, 528);
@@ -147,28 +147,16 @@ void mpviSetup(int video_mode, bool overscan)
 #endif
 	
 	if (overscan) {
-		vmode->viWidth = videowidth * scanwidth;
+		vmode->viWidth = videoWidth * scanX;
 		vmode->viWidth = (vmode->viWidth + 15) & ~15;
-	} else vmode->viWidth = videowidth;
+	} else vmode->viWidth = videoWidth;
 	
 #ifndef HW_DOL
 	vmode->fbWidth = vmode->viWidth;
 #endif
 	
-	vmode->viXOrigin = (videowidth - vmode->viWidth) / 2;
-	vmode->viYOrigin = (videoheight - vmode->viHeight) / 2;
-	
-	if (overscan) {
-		s8 hor_offset = 0;
-#if defined(HW_DOL)
-		syssram *sram = __SYS_LockSram();
-		hor_offset = sram->display_offsetH;
-		__SYS_UnlockSram(0);
-#elif defined(HW_RVL)
-		CONF_GetDisplayOffsetH(&hor_offset);
-#endif
-		vmode->viXOrigin += hor_offset;
-	}
+	vmode->viXOrigin = (videoWidth - vmode->viWidth) / 2;
+	vmode->viYOrigin = (videoHeight - vmode->viHeight) / 2;
 	
 	VIDEO_Configure(vmode);
 	
@@ -220,77 +208,66 @@ void mpviClear()
 		VIDEO_WaitVSync();
 }
 
-static void render_cb(void)
+static void drawdone_cb(void)
 {
+	draw_pending = false;
+	
 	if (!vo_vsync) {
 		VIDEO_SetNextFramebuffer(xfb[whichfb]);
 		VIDEO_Flush();
 		whichfb ^= 1;
-	} else flip_ready = true;
-	
-	wait_ready = false;
+	} else flip_pending = true;
 }
 
-static void vsync_cb(u32 retraceCnt)
+static void vblank_cb(u32 retraceCnt)
 {
-	if (vo_vsync) {
-		if (flip_ready) {
-			VIDEO_SetNextFramebuffer(xfb[whichfb]);
-			VIDEO_Flush();
-			whichfb ^= 1;
-			flip_ready = false;
-		}
+	if (vo_vsync && flip_pending) {
+		VIDEO_SetNextFramebuffer(xfb[whichfb]);
+		VIDEO_Flush();
+		whichfb ^= 1;
+		flip_pending = false;
 	}
 }
 
 void mpgxInit(bool vf)
 {
-	Mtx GXmodelView2D;
 	Mtx44 perspective;
 	
-	/*** Clear out FIFO area ***/
 	gp_fifo = memalign(32, GX_FIFO_MINSIZE);
 	memset(gp_fifo, 0x00, GX_FIFO_MINSIZE);
 	
-	/*** Initialise GX ***/
 	GX_Init(gp_fifo, GX_FIFO_MINSIZE);
-	GX_SetCopyClear((GXColor){0x00, 0x00, 0x00, 0xFF}, GX_MAX_Z24);
+	
 	GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0.0, 1.0);
-	
-	f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
-	u32 xfbHeight = GX_SetDispCopyYScale(yscale);
-	
 	GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
 #ifndef HW_DOL
 	GX_SetDispCopySrc(0, 0, ((vmode->fbWidth >> 1) + 15) & ~15, vmode->efbHeight);
 #else
 	GX_SetDispCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
 #endif
+
+	f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
+	u32 xfbHeight = GX_SetDispCopyYScale(yscale);
+	
 	GX_SetDispCopyDst(vmode->fbWidth, xfbHeight);
-	GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, vf, vmode->vfilter);
-	GX_SetFieldMode(vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
-	GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+	GX_SetCopyClear((GXColor){0x00, 0x00, 0x00, 0xFF}, GX_MAX_Z24);
+	GX_SetCopyFilter(GX_FALSE, NULL, vf, vmode->vfilter);
+	GX_SetFieldMode(GX_FALSE, GX_DISABLE);
 	
 	GX_SetCullMode(GX_CULL_NONE);
 	GX_SetClipMode(GX_DISABLE);
-	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
-	GX_SetDispCopyGamma(GX_GM_1_0);
-	GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_TRUE);
 	
-	guMtxIdentity(GXmodelView2D);
-	guMtxTransApply(GXmodelView2D, GXmodelView2D, 0.0, 0.0, 0.0);
-	GX_LoadPosMtxImm(GXmodelView2D, GX_PNMTX0);
+	GX_SetAlphaCompare(GX_GREATER, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_TRUE);
 	
 	guOrtho(perspective, screenheight / 2.0, -(screenheight / 2.0), -(screenwidth / 2.0), screenwidth / 2.0, 0.0, 1.0);
 	GX_LoadProjectionMtx(perspective, GX_ORTHOGRAPHIC);
 	
-	GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-	GX_SetAlphaUpdate(GX_ENABLE);
-	GX_SetAlphaCompare(GX_GREATER, 0, GX_AOP_AND, GX_ALWAYS, 0);
-	GX_SetColorUpdate(GX_ENABLE);
+	GX_CopyDisp(xfb[whichfb ^ 1], GX_TRUE);
 	
-	VIDEO_SetPreRetraceCallback(vsync_cb);
-	GX_SetDrawDoneCallback(render_cb);
+	VIDEO_SetPreRetraceCallback(vblank_cb);
+	GX_SetDrawDoneCallback(drawdone_cb);
 	GX_Flush();
 }
 
@@ -673,13 +650,16 @@ void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char
 
 void mpgxWaitDrawDone()
 {
-	if (wait_ready)
+	if (draw_pending)
 		GX_WaitDrawDone();
 }
 
 void mpgxPushFrame()
 {
 	GX_InvalidateTexAll();
+	
+	if (vo_vsync && flip_pending)
+		VIDEO_WaitVSync();
 	
 	GX_LoadTexObj(&YtexObj, GX_TEXMAP0);	// MAP0 <- Y
 	GX_LoadTexObj(&UtexObj, GX_TEXMAP1);	// MAP1 <- U
@@ -701,8 +681,6 @@ void mpgxPushFrame()
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 #endif
 	
-	flip_ready = false;
-	
 	GX_SetDrawDone();
-	wait_ready = true;
+	draw_pending = true;
 }
