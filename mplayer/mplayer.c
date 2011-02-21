@@ -3109,7 +3109,6 @@ int i;
 int gui_no_filename=0;
 
 #ifdef GEKKO
-  __exception_setreload(8);
   plat_init(&argc, &argv);
   fileplaying = (char *)malloc(sizeof(char) * MAXPATHLEN);
   load_restore_points();

@@ -7,8 +7,6 @@
 #include <sys/dir.h>
 #include <unistd.h>
 
-#include <fat.h>
-
 #include <gctypes.h>
 #include <ogc/mutex.h>
 
@@ -17,16 +15,8 @@ extern bool power_pressed;
 extern mutex_t watchdogmutex;
 extern int watchdogcounter;
 
-#ifndef PATH_MAX
-#define PATH_MAX MAXPATHLEN
-#endif
-
-
-void gekko_abort(void);
 void DVDGekkoTick(bool silent);
 bool DVDGekkoMount();
-
-#define abort(x) gekko_abort(x)
 
 void plat_init (int *argc, char **argv[]);
 void plat_deinit (int rc);
