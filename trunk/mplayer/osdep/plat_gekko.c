@@ -1,25 +1,20 @@
 /*
-MPlayer Wii port
-
-   Copyright (C) 2008 dhewg
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the
-   Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301 USA.
-
-   Improved by MplayerCE Team
-*/
+ * This file is part of MPlayer CE.
+ *
+ * MPlayer CE is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * MPlayer CE is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with MPlayer CE; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,56 +44,16 @@ MPlayer Wii port
 #include "mload.h"
 #include "ehcmodule_elf.h"
 
-static off_t get_filesize(char *FileName)
-{
-	struct stat file;
-	if(!stat(FileName,&file))
-	{
-		return file.st_size;
-	}
-	return 0;
-}
-
 static bool load_ehci_module()
 {
 	data_elf my_data_elf;
-	off_t fsize;
-	void *external_ehcmodule = NULL;
-	FILE *fp;
-	char file[100];
 	
-	sprintf(file,"%s/ehcmodule.elf",MPLAYER_DATADIR);
+	if (mload_elf(ehcmodule_elf, &my_data_elf) < 0)
+		return false;
 	
-	fp=fopen(file,"rb");
-	if(fp!=NULL)
-	{
-		fsize=get_filesize(file);
-		external_ehcmodule= (void *)memalign(32, fsize);
-		if(!external_ehcmodule) 
-		{
-			fclose(fp);
-			free(external_ehcmodule);
-			external_ehcmodule=NULL;
-		}
-		else
-		{
-			if(fread(external_ehcmodule,1, fsize ,fp)!=fsize)
-			{
-				free(external_ehcmodule);
-				external_ehcmodule=NULL;
-			}
-			else mload_elf((void *) external_ehcmodule, &my_data_elf);
-			fclose(fp);
-		}
-		
-	}
-	else
-		mload_elf((void *) ehcmodule_elf, &my_data_elf);
-	
-	if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio)<0)
-	{
+	if (mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, my_data_elf.prio) < 0) {
 		usleep(1000);
-		if(mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x47)<0)
+		if (mload_run_thread(my_data_elf.start, my_data_elf.stack, my_data_elf.size_stack, 0x47) < 0)
 			return false;
 	}
 	
@@ -107,43 +62,26 @@ static bool load_ehci_module()
 
 static bool FindIOS(u32 ios)
 {
-	s32 ret;
-	int n;
+	u32 num = 0;
 	
-	u64 *titles = NULL;
-	u32 num_titles=0;
-	
-	ret = ES_GetNumTitles(&num_titles);
-	if (ret < 0)
-	{
-		printf("error ES_GetNumTitles\n");
+	if (ES_GetNumTitles(&num) < 0)
 		return false;
-	}
 	
-	if(num_titles<1) 
-	{
-		printf("error num_titles<1\n");
+	if (num < 1) 
 		return false;
-	}
 	
-	titles = (u64 *)memalign(32, num_titles * sizeof(u64) + 32);
-	if (!titles)
-	{
-		printf("error memalign\n");
+	u64 *titles = memalign(32, num * sizeof(u64) + 32);
+	
+	if (titles == NULL)
 		return false;
-	}
 	
-	ret = ES_GetTitles(titles, num_titles);
-	if (ret < 0)
-	{
+	if (ES_GetTitles(titles, num) < 0) {
 		free(titles);
-		printf("error ES_GetTitles\n");
 		return false;
 	}
 	
-	for(n=0; n<num_titles; n++) {
-		if((titles[n] &  0xFFFFFFFF)==ios)
-		{
+	for (int i = 0; i < num; i++) {
+		if ((titles[i] & 0xFFFFFFFF) == ios) {
 			free(titles); 
 			return true;
 		}
@@ -155,74 +93,8 @@ static bool FindIOS(u32 ios)
 #endif
 
 
-#define WATCHDOG_STACKSIZE (8 * 1024)
-static u8 watchdog_Stack[WATCHDOG_STACKSIZE] ATTRIBUTE_ALIGN(32);
-static lwp_t watchdogthread = LWP_THREAD_NULL;
-static bool exit_watchdog_thread = false;
-
-mutex_t watchdogmutex = LWP_MUTEX_NULL;
-int watchdogcounter = -1;
-
 bool reset_pressed = false;
 bool power_pressed = false;
-
-#ifdef HW_RVL
-static void *watchdogthreadfunc(void *arg)
-{
-	long sleeptime;
-	while(!exit_watchdog_thread)
-	{
-		sleeptime = 1000*1000; // 1 sec
-		while(sleeptime > 0)
-		{
-			if(exit_watchdog_thread)
-				return NULL;
-			usleep(100);
-			sleeptime -= 100;
-		}
-
-		if(exit_watchdog_thread)break;
-		if(reset_pressed || power_pressed)
-		{
-			sleeptime = 5*1000*1000; //mplayer has 5 secs to do a clean exit
-			while(sleeptime > 0)
-			{
-				if(exit_watchdog_thread)
-					return NULL;
-				usleep(100);
-				sleeptime -= 100;
-			}
-
-			if(reset_pressed)
-			{
-				printf("reset\n");
-				exit(0);
-			}
-			if (power_pressed)
-			{
-				printf("power off\n");
-				SYS_ResetSystem(SYS_POWEROFF, 0, 0);
-				exit(0);
-			}
-		}
-		if(watchdogcounter>=0)
-		{
-			if(watchdogcounter==0)
-			{
-				printf("timeout: return to loader\n");
-				exit(0);
-			}
-			if(watchdogmutex!=LWP_MUTEX_NULL)
-			{
-				LWP_MutexLock(watchdogmutex);
-				watchdogcounter--;
-				LWP_MutexUnlock(watchdogmutex);
-			}
-		}
-	}
-	return NULL;
-}
-#endif
 
 static void power_cb(void) {
 	power_pressed = true;
@@ -470,36 +342,6 @@ bool DVDGekkoMount()
 }
 #endif
 
-bool DeviceMounted(const char *device)
-{
-	devoptab_t *devops;
-	int i,len;
-	char *buf;
-	
-	len = strlen(device);
-	buf=(char*)malloc(sizeof(char)*len+2);
-	strcpy(buf,device);
-	if ( buf[len-1] != ':')
-	{
-		buf[len]=':';  
-		buf[len+1]='\0';
-	}   
-	devops = (devoptab_t*)GetDeviceOpTab(buf);
-	if (!devops)
-	{
-		free(buf);
-		return false;
-	}
-	for(i=0;buf[i]!='\0' && buf[i]!=':';i++);
-	if (!devops || strncasecmp(buf,devops->name,i))
-	{
-		free(buf);
-		return false;
-	}
-	free(buf);
-	return true;
-}
-
 
 #define NET_STACKSIZE (8 * 1024)
 static u8 netstack[NET_STACKSIZE] ATTRIBUTE_ALIGN(32);
@@ -717,7 +559,6 @@ bool ftpConnect(char *device)
 
 
 extern int enable_restore_points;
-static int enable_watchdog = 0;
 static int video_mode = 0;
 static int overscan = 1;
 
@@ -728,7 +569,6 @@ static void LoadParams()
 	
 	static const m_option_t opts[] = {
 		{"restore_points", &enable_restore_points, CONF_TYPE_FLAG, 0, 0, 1, NULL},
-		{"watchdog", &enable_watchdog, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 		{"video_mode", &video_mode, CONF_TYPE_INT, CONF_RANGE, 0, 4, NULL},
 		{"overscan", &overscan, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 		{NULL, NULL, 0, 0, 0, 0, NULL}
@@ -768,25 +608,25 @@ static bool CheckPath(char *path)
 static bool DetectValidPath()
 {
 #ifdef HW_RVL
-	if (isInserted[DEVICE_SD] && DeviceMounted("sd")) {
+	if (isInserted[DEVICE_SD] && !(FindDevice("sd:") < 0)) {
 		if (CheckPath("sd:/apps/mplayer-ce")) return true;
 		if (CheckPath("sd:/apps/mplayer_ce")) return true;
 		if (CheckPath("sd:/mplayer")) return true;
 	}
 	
-	if (isInserted[DEVICE_USB] && DeviceMounted("usb")) {
+	if (isInserted[DEVICE_USB] && !(FindDevice("usb:") < 0)) {
 		if (CheckPath("usb:/apps/mplayer-ce")) return true;
 		if (CheckPath("usb:/apps/mplayer_ce")) return true;
 		if (CheckPath("usb:/mplayer")) return true;
 	}
 #endif
 	
-	if (isInserted[DEVICE_CARDA] && DeviceMounted("carda")) {
+	if (isInserted[DEVICE_CARDA] && !(FindDevice("carda:") < 0)) {
 		if (CheckPath("carda:/apps/mplayer-ce")) return true;
 		if (CheckPath("carda:/mplayer")) return true;
 	}
 	
-	if (isInserted[DEVICE_CARDB] && DeviceMounted("cardb")) {
+	if (isInserted[DEVICE_CARDB] && !(FindDevice("cardb:") < 0)) {
 		if (CheckPath("cardb:/apps/mplayer-ce")) return true;
 		if (CheckPath("cardb:/mplayer")) return true;
 	}
@@ -816,26 +656,20 @@ void plat_init(int *argc, char **argv[])
 	ARQ_Init();
 	ARQ_Reset();
 #elif defined(HW_RVL)
+	bool ehci = false;
+	
 	if (FindIOS(202)) {
 		IOS_ReloadIOS(202);
-	} else {
-		if ((IOS_GetVersion() != 58) && !__di_check_ahbprot()) {
-			if (FindIOS(58))
-				IOS_ReloadIOS(58);
-			else if (IOS_GetVersion() != 61) {
-				if (FindIOS(61))
-					IOS_ReloadIOS(61);
-				else DI_LoadDVDX(true);
-			}
-		}
+		if (mload_init())
+			ehci = load_ehci_module();
+	} else if (!__di_check_ahbprot()) {
+		s32 preferred = IOS_GetPreferredVersion();
+		if (preferred == 58 || preferred == 61)
+			IOS_ReloadIOS(preferred);
+		else DI_LoadDVDX(true);
 	}
 	
 	DI_Init();
-	bool ehci = false;
-	
-	if (IOS_GetVersion() == 202)
-		if (mload_init()) ehci = load_ehci_module();
-	
 	USB2Enable(ehci);
 #endif
 	
@@ -849,23 +683,13 @@ void plat_init(int *argc, char **argv[])
 		printf("Valid folders:\n");
 		printf(" sd:/apps/mplayer-ce\n sd:/mplayer\n usb:/apps/mplayer-ce\n usb:/mplayer\n");
 		
-		VIDEO_WaitVSync();
 		sleep(10);
 		mpviClear();
 		exit(0);
 	}
 	
-#ifdef HW_RVL
-	SYS_SetPowerCallback(power_cb);
-#endif
-	SYS_SetResetCallback(reset_cb);
-	
 	LoadParams();
 	read_net_config();
-	
-#ifdef HW_RVL
-	setenv("DVDCSS_RAW_DEVICE", "/dev/di", 1);
-#endif
 	
 #ifndef HW_DOL
 	if (*argc < 2)
@@ -894,10 +718,8 @@ void plat_init(int *argc, char **argv[])
 	}
 	
 #ifdef HW_RVL
-	if(enable_watchdog)
-		LWP_MutexInit(&watchdogmutex, false);
-	
-	LWP_CreateThread(&watchdogthread, watchdogthreadfunc, NULL, watchdog_Stack, WATCHDOG_STACKSIZE, 64);
+	SYS_SetPowerCallback(power_cb);
+	SYS_SetResetCallback(reset_cb);
 	
 	LWP_MutexInit(&dvd_mutex, false);
 	LWP_CreateThread(&mountthread, mountloop, NULL, mountstack, MOUNT_STACKSIZE, 40);
@@ -907,13 +729,7 @@ void plat_init(int *argc, char **argv[])
 	wait_for_network_initialisation();
 #endif
 	
-	VIDEO_WaitVSync();
-	
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-		VIDEO_WaitVSync();
-	
 	log_console_enable_video(false);
-	printf("\n\n");
 	
 	if ((video_mode > 0) || !overscan) {
 		log_console_deinit();
@@ -932,12 +748,6 @@ void plat_deinit(int rc)
 #ifdef HW_RVL
 	exit_automount_thread = true;
 	LWP_JoinThread(mountthread, NULL);
-	
-	exit_watchdog_thread = true;
-	LWP_JoinThread(watchdogthread, NULL);
-	
-	if (watchdogmutex != LWP_MUTEX_NULL)
-		LWP_MutexDestroy(watchdogmutex);
 	
 	if (power_pressed)
 		SYS_ResetSystem(SYS_POWEROFF, 0, 0);

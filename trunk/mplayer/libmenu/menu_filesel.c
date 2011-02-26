@@ -349,7 +349,7 @@ strcpy(menu_dir,mpriv->dir);
 #ifdef GEKKO
   if(!strcmp(mpriv->dir,"carda:/"))
   {
-	if(!DeviceMounted("carda"))
+	if(FindDevice("carda:") < 0)
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
 	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-A SD device not mounted");
@@ -360,7 +360,7 @@ strcpy(menu_dir,mpriv->dir);
   }
   else if(!strcmp(mpriv->dir,"cardb:/"))
   {
-	if(!DeviceMounted("cardb"))
+	if(FindDevice("cardb:") < 0)
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
 	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Slot-B SD device not mounted");
@@ -383,7 +383,7 @@ strcpy(menu_dir,mpriv->dir);
   }
   else if(!strcmp(mpriv->dir,"sd:/"))
   {
-	if(!DeviceMounted("sd"))
+	if(FindDevice("sd:") < 0)
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
 	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "Front SD device not mounted");
@@ -394,7 +394,7 @@ strcpy(menu_dir,mpriv->dir);
   }
   else if(!strcmp(mpriv->dir,"usb:/"))
   {
-  	if(!DeviceMounted("usb"))
+  	if(FindDevice("usb:") < 0)
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
 	  	set_osd_msg(OSD_MSG_TEXT, 1, 2000, "FAT USB device not mounted");
@@ -405,7 +405,7 @@ strcpy(menu_dir,mpriv->dir);
   }
   else if(!strcmp(mpriv->dir,"ntfs:/"))
   {
-  	if(!DeviceMounted("ntfs"))
+  	if(FindDevice("ntfs:") < 0)
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
 		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "NTFS USB device not mounted");
@@ -416,7 +416,7 @@ strcpy(menu_dir,mpriv->dir);
   }
   else if(!strcmp(mpriv->dir,"ext2:/"))
   {
-  	if(!DeviceMounted("ext2"))
+  	if(FindDevice("ext2:") < 0)
 	{
 		rm_osd_msg(OSD_MSG_TEXT);
 		set_osd_msg(OSD_MSG_TEXT, 1, 2000, "EXT2 USB device not mounted");
@@ -624,8 +624,8 @@ static char *action;
 
 static void read_cmd(menu_t* menu,int cmd) {
   switch(cmd) {
-  //case MENU_CMD_LEFT: //scip
-    //mpriv->p.current = mpriv->p.menu; // Hack : we consider that the first entry is ../
+  case MENU_CMD_LEFT:
+    mpriv->p.current = mpriv->p.menu; // Hack : we consider that the first entry is ../
   case MENU_CMD_RIGHT:
   case MENU_CMD_OK: {
     // Directory

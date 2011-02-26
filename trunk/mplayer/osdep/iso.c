@@ -39,6 +39,7 @@ misrepresented as being the original software.
 
 #include "iso.h"
 #include "plat_gekko.h"
+#include "path.h"
 
 #define DEVICE_NAME "dvd"
 
@@ -74,7 +75,7 @@ typedef struct DIR_ENTRY_STRUCT {
 
 typedef struct {
     DIR_ENTRY entry;
-    u32 offset;
+    off_t offset;
     bool inUse;
 } FILE_STRUCT;
 
@@ -298,30 +299,6 @@ static bool find_in_directory(DIR_ENTRY *dir_entry, PATH_ENTRY *parent, const ch
     return false;
 }
 
-static char *dirname(char *path) {
-    static char result[1024]; // TODO: find MAXPATHLEN
-    strncpy(result, path, 1024 - 1);
-    result[1024 - 1] = '\0';
-    s32 i;
-    for (i = strlen(result) - 1; i >= 0; i--) {
-        if (result[i] == DIR_SEPARATOR) {
-            result[i] = '\0';
-            return result;
-        }
-    }
-    return "";
-}
-
-static char *basename(char *path) {
-    s32 i;
-    for (i = strlen(path) - 1; i >= 0; i--) {
-        if (path[i] == DIR_SEPARATOR) {
-            return path + i + 1;
-        }
-    }
-    return path;
-}
-
 static bool invalid_drive_specifier(const char *path) {
     if (strchr(path, ':') == NULL) return false;
     int namelen = strlen(DEVICE_NAME);
@@ -347,8 +324,8 @@ static bool entry_from_path(DIR_ENTRY *dir_entry, const char *const_path) {
 
     }
 
-    char *dir = dirname(path);
-    char *base = basename(path);
+    char *dir = mp_dirname(path);
+    char *base = mp_basename(path);
 
     PATH_ENTRY parent_entry;
     if (!path_entry_from_path(&parent_entry, dir)) return false;
@@ -404,7 +381,7 @@ static int _ISO9660_read_r(struct _reent *r, int fd, char *ptr, size_t len) {
         return 0;
     }
 
-    u64 offset = file->entry.sector * SECTOR_SIZE + file->offset;
+    u64 offset = (u64)file->entry.sector * SECTOR_SIZE + file->offset;
     if ((len = _read(ptr, offset, len)) < 0) {
         r->_errno = EIO;
         return -1;
@@ -421,7 +398,7 @@ static off_t _ISO9660_seek_r(struct _reent *r, int fd, off_t pos, int dir) {
         return -1;
     }
 
-    int position;
+    off_t position;
 
     switch (dir) {
         case SEEK_SET:

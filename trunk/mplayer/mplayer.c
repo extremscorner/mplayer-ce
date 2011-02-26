@@ -2779,7 +2779,6 @@ static void low_cache_loop(void)
 	int brk_cmd ;
     mp_cmd_t* cmd;
         
-    setwatchdogcounter(-1);
 	if(stream_cache_min_percent < 10 || stream_cache_min_percent > 100)
 		stream_cache_min_percent = 50; // reset to a sane number
 
@@ -2841,7 +2840,6 @@ static void low_cache_loop(void)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
 	
     GetRelativeTime();	// ignore time that passed during pause
-    setwatchdogcounter(WATCH_TIMEOUT);
 #ifdef CONFIG_GUI
     if (use_gui)
         guiGetEvent(guiCEvent, (char *)guiSetPause);
@@ -2852,7 +2850,6 @@ static void low_cache_loop(void)
 void fast_pause()
 {
 	if(mpctx->osd_function==OSD_PAUSE) return;
-	setwatchdogcounter(-1);
     if (mpctx->audio_out && mpctx->sh_audio)
 	mpctx->audio_out->pause();	// pause audio, keep data if possible
 
@@ -2869,7 +2866,6 @@ void fast_continue()
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL);	// resume video
     (void)GetRelativeTime();	// ignore time that passed during pause
-    setwatchdogcounter(WATCH_TIMEOUT);
 		
 }
 
@@ -2881,7 +2877,6 @@ static void pause_loop(void)
 		mpctx->osd_function=OSD_PLAY;
 		return;	
 	}
-	setwatchdogcounter(-1);
    	set_osd_msg(OSD_MSG_PAUSE, 1, 0, "PAUSE"); //impossible to see in wiigui, we haven't vf_menu
     //update_osd_msg();
     force_osd();
@@ -2933,7 +2928,6 @@ static void pause_loop(void)
     if (mpctx->video_out && mpctx->sh_video && vo_config_count)
         mpctx->video_out->control(VOCTRL_RESUME, NULL); // resume video
     (void)GetRelativeTime(); // ignore time that passed during pause
-    setwatchdogcounter(WATCH_TIMEOUT);
 #ifdef CONFIG_GUI
     if (use_gui) {
         if (guiIntfStruct.Playing == guiSetStop)
@@ -3039,7 +3033,6 @@ static void edl_update(MPContext *mpctx)
 // return -1 if seek failed (non-seekable stream?), 0 otherwise
 static int seek(MPContext *mpctx, double amount, int style)
 {
-	setwatchdogcounter(-1);
     current_module = "seek";
     if (demux_seek(mpctx->demuxer, amount, audio_delay, style) == 0)
 	return -1;
@@ -3089,7 +3082,6 @@ static int seek(MPContext *mpctx, double amount, int style)
     drop_frame_cnt = 0;
 
     current_module = NULL;
-    setwatchdogcounter(WATCH_TIMEOUT);
     return 0;
 }
 static int error_playing;
@@ -3411,7 +3403,6 @@ current_module = NULL;
 // ******************* Now, let's see the per-file stuff ********************
 
 play_next_file:
-setwatchdogcounter(-1);
   // init global sub numbers
   mpctx->global_sub_size = 0;
   memset(mpctx->sub_counts, 0, sizeof(mpctx->sub_counts));
@@ -3662,7 +3653,6 @@ while (player_idle_mode && !filename) {
 #endif
   //end rodries
 #endif
-setwatchdogcounter(-1);
   mpctx->stream=open_stream(filename,0,&mpctx->file_format);
   if(!mpctx->stream) { // error...
     mpctx->eof = libmpdemux_was_interrupted(PT_NEXT_ENTRY);
@@ -4360,7 +4350,6 @@ mpctx->eof=0;
 while(!mpctx->eof){
     double aq_sleep_time=0;
 //init_while:
-setwatchdogcounter(WATCH_TIMEOUT);
 
 if(dvd_last_chapter>0) {
   int cur_chapter = demuxer_get_current_chapter(mpctx->demuxer);
@@ -4702,7 +4691,6 @@ if(rel_seek_secs || abs_seek_pos){
 #endif /* CONFIG_GUI */
 
 } // while(!mpctx->eof)
-setwatchdogcounter(-1);
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);
 #ifdef CONFIG_STREAM_CACHE
 error_playing=stream_error(mpctx->stream);
