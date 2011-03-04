@@ -70,8 +70,6 @@
 #include "libavutil/avstring.h"
 #include "edl.h"
 
-#define ROUND(x) ((int)((x)<0 ? (x)-0.5 : (x)+0.5))
-
 static void rescale_input_coordinates(int ix, int iy, double *dx, double *dy)
 {
     //remove the borders, if any, and rescale to the range [0,1],[0,1]
@@ -1942,6 +1940,7 @@ static int mp_property_sub_scale(m_option_t *prop, int action, void *arg,
 #endif
             text_font_scale_factor = *(float *) arg;
             force_load_font = 1;
+            vo_osd_changed(OSDTYPE_SUBTITLE);
             return M_PROPERTY_OK;
         case M_PROPERTY_STEP_UP:
         case M_PROPERTY_STEP_DOWN:
@@ -1957,6 +1956,7 @@ static int mp_property_sub_scale(m_option_t *prop, int action, void *arg,
               (action == M_PROPERTY_STEP_UP ? 1.0 : -1.0);
             M_PROPERTY_CLAMP(prop, text_font_scale_factor);
             force_load_font = 1;
+            vo_osd_changed(OSDTYPE_SUBTITLE);
             return M_PROPERTY_OK;
         default:
 #ifdef CONFIG_ASS

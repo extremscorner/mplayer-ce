@@ -46,20 +46,6 @@
 #endif
 #endif
 
-
-/**
- * Mark a variable as used and prevent the compiler from optimizing it away.
- * This is useful for asm that accesses varibles in ways that the compiler does not
- * understand
- */
-#ifndef attribute_used
-#if AV_GCC_VERSION_AT_LEAST(3,1)
-#    define attribute_used __attribute__((used))
-#else
-#    define attribute_used
-#endif
-#endif
-
 #ifndef INT16_MIN
 #define INT16_MIN       (-0x7fff - 1)
 #endif
@@ -222,6 +208,17 @@
     __asm__ (".symver ff_" #name "," EXTERN_PREFIX #name "@" ver);      \
     type ff_##name args;                                                \
     type ff_##name args
+#endif
+
+/**
+ * Returns NULL if a threading library has not been enabled.
+ * Used to disable threading functions in AVCodec definitions
+ * when not needed.
+ */
+#if HAVE_THREADS
+#   define ONLY_IF_THREADS_ENABLED(x) x
+#else
+#   define ONLY_IF_THREADS_ENABLED(x) NULL
 #endif
 
 #endif /* AVUTIL_INTERNAL_H */

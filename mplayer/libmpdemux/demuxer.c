@@ -630,8 +630,7 @@ int ds_fill_buffer(demux_stream_t *ds)
         free_demux_packet(ds->current);
     ds->current = NULL;
     if(demux==NULL) return 0;
-    if (mp_msg_test(MSGT_DEMUXER, MSGL_DBG3)) 
-	{
+    if (mp_msg_test(MSGT_DEMUXER, MSGL_DBG3)) {
         if (ds == demux->audio)
             mp_dbg(MSGT_DEMUXER, MSGL_DBG3,
                    "ds_fill_buffer(d_audio) called\n");
@@ -650,6 +649,8 @@ int ds_fill_buffer(demux_stream_t *ds)
     while (1) {
         if (ds->packs) {
             demux_packet_t *p = ds->first;
+            // obviously not yet EOF after all
+            ds->eof = 0;
 #if 0
             if (demux->reference_clock != MP_NOPTS_VALUE) {
                 if (   p->pts != MP_NOPTS_VALUE
@@ -684,6 +685,9 @@ int ds_fill_buffer(demux_stream_t *ds)
             --ds->packs;
             return 1;
         }
+        // avoid printing the "too many ..." message over and over
+        if (ds->eof)
+            break;
         if (demux->audio->packs >= MAX_PACKS
             || demux->audio->bytes >= MAX_PACK_BYTES) {
             mp_msg(MSGT_DEMUXER, MSGL_ERR, MSGTR_TooManyAudioInBuffer,

@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#if !HAVE_WINSOCK2_H && !GEKKO
+#if !HAVE_WINSOCK2_H && !defined(GEKKO)
 #include <sys/socket.h>
 #endif
 
@@ -72,7 +72,8 @@ typedef struct mp_net_stream_opened_st {
 // CLOSE return nothing
 #define NET_STREAM_ERROR 129
 // Data is the error message (if any ;)
-#ifndef GEKKO
+
+#if !defined(GEKKO)
 static int net_read(int fd, char* buf, int len) {
   int r = 0;
   while(len) {
@@ -123,7 +124,8 @@ static mp_net_stream_packet_t* read_packet(int fd) {
   //  printf ("Read packet %d %d %d\n",fd,pack->cmd,pack->len);
   return pack;
 }
-#ifndef GEKKO
+
+#if !defined(GEKKO)
 static int net_write(int fd, char* buf, int len) {
   int w;
   while(len) {

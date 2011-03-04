@@ -58,45 +58,6 @@ SRCS_COMMON-$(DVDREAD_INTERNAL)      += libdvdread4/bitreader.c \
                                         libdvdread4/nav_read.c \
 
 SRCS_COMMON-$(FAAD)                  += libmpcodecs/ad_faad.c
-SRCS_COMMON-$(FAAD_INTERNAL)         += libfaad2/bits.c \
-                                        libfaad2/cfft.c \
-                                        libfaad2/common.c \
-                                        libfaad2/decoder.c \
-                                        libfaad2/drc.c \
-                                        libfaad2/drm_dec.c \
-                                        libfaad2/error.c \
-                                        libfaad2/filtbank.c \
-                                        libfaad2/hcr.c \
-                                        libfaad2/huffman.c \
-                                        libfaad2/ic_predict.c \
-                                        libfaad2/is.c \
-                                        libfaad2/lt_predict.c \
-                                        libfaad2/mdct.c \
-                                        libfaad2/mp4.c \
-                                        libfaad2/ms.c \
-                                        libfaad2/output.c \
-                                        libfaad2/pns.c \
-                                        libfaad2/ps_dec.c \
-                                        libfaad2/ps_syntax.c  \
-                                        libfaad2/pulse.c \
-                                        libfaad2/rvlc.c \
-                                        libfaad2/sbr_dct.c \
-                                        libfaad2/sbr_dec.c \
-                                        libfaad2/sbr_e_nf.c \
-                                        libfaad2/sbr_fbt.c \
-                                        libfaad2/sbr_hfadj.c \
-                                        libfaad2/sbr_hfgen.c \
-                                        libfaad2/sbr_huff.c \
-                                        libfaad2/sbr_qmf.c \
-                                        libfaad2/sbr_syntax.c \
-                                        libfaad2/sbr_tf_grid.c \
-                                        libfaad2/specrec.c \
-                                        libfaad2/ssr.c \
-                                        libfaad2/ssr_fb.c \
-                                        libfaad2/ssr_ipqf.c \
-                                        libfaad2/syntax.c \
-                                        libfaad2/tns.c \
-
 SRCS_COMMON-$(FASTMEMCPY)            += libvo/aclib.c
 SRCS_COMMON-$(FFMPEG)                += av_opts.c                   \
                                         libaf/af_lavcresample.c     \
@@ -340,6 +301,7 @@ SRCS_COMMON = asxparser.c \
               m_option.c \
               m_struct.c \
               mp_msg.c \
+              mp_strings.c \
               mpcommon.c \
               parser-cfg.c \
               path.c \
@@ -741,7 +703,6 @@ SRCS_MENCODER = mencoder.c \
 
 COMMON_LIBS-$(FFMPEG_A) += ffmpeg/libavformat/libavformat.a \
                            ffmpeg/libavcodec/libavcodec.a   \
-                           ffmpeg/libavcore/libavcore.a     \
                            ffmpeg/libavutil/libavutil.a     \
                            ffmpeg/libpostproc/libpostproc.a \
                            ffmpeg/libswscale/libswscale.a
@@ -777,7 +738,6 @@ DIRS =  . \
         ffmpeg/libavcodec/sh4 \
         ffmpeg/libavcodec/sparc \
         ffmpeg/libavcodec/x86 \
-        ffmpeg/libavcore \
         ffmpeg/libavformat \
         ffmpeg/libavutil \
         ffmpeg/libavutil/arm \
@@ -807,7 +767,6 @@ DIRS =  . \
         libdvdnav \
         libdvdnav/vm \
         libdvdread4 \
-        libfaad2 \
         libmenu \
         libmpcodecs \
         libmpcodecs/native \
@@ -836,7 +795,6 @@ ADD_ALL_DIRS    = $(call ADDSUFFIXES,$(1),$(DIRS))
 ADD_ALL_EXESUFS = $(1) $(call ADDSUFFIXES,$(EXESUFS_ALL),$(1))
 
 FFMPEGPARTS = libavcodec \
-              libavcore \
               libavformat \
               libavutil \
               libpostproc \
@@ -883,13 +841,6 @@ mencoder$(EXESUF) mplayer$(EXESUF):
 codec-cfg$(EXESUF): codec-cfg.c codec-cfg.h help_mp.h
 	$(HOST_CC) -O -DCODECS2HTML -I. -Iffmpeg -o $@ $<
 
-#TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(filter-out %mencoder.o,$(OBJS_MENCODER)) $(OBJS_COMMON) $(COMMON_LIBS)
-#	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS_MENCODER) $(COMMON_LDFLAGS)
-
-
-#codec-cfg$(EXESUF): codec-cfg.c help_mp.h
-#	$(HOST_CC) -O -DCODECS2HTML -I. -o $@ $<
-
 #codecs.conf.h: codec-cfg$(EXESUF) etc/codecs.conf
 #	./$^ > $@
 
@@ -933,7 +884,6 @@ gui/%: CFLAGS += -Wno-strict-prototypes
 libdvdcss/%:   CFLAGS := -Ilibdvdcss -D_GNU_SOURCE -DVERSION=\"1.2.10\" $(CFLAGS_LIBDVDCSS) $(CFLAGS)
 libdvdnav/%:   CFLAGS := -Ilibdvdnav -D_GNU_SOURCE -DHAVE_CONFIG_H -DVERSION=\"MPlayer-custom\" $(CFLAGS)
 libdvdread4/%: CFLAGS := -Ilibdvdread4 -D_GNU_SOURCE $(CFLAGS_LIBDVDCSS_DVDREAD) $(CFLAGS)
-libfaad2/%:    CFLAGS := -Ilibfaad2 -DHAVE_CONFIG_H $(CFLAGS_FAAD_FIXED) $(CFLAGS)
 
 loader/%: CFLAGS += -fno-omit-frame-pointer $(CFLAGS_NO_OMIT_LEAF_FRAME_POINTER)
 #loader/%: CFLAGS += -Ddbg_printf=__vprintf -DTRACE=__vprintf -DDETAILED_OUT

@@ -27,31 +27,60 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#define ff_neterrno() (-WSAGetLastError())
-#define FF_NETERROR(err) (-WSA##err)
-#define WSAEAGAIN WSAEWOULDBLOCK
+#define EPROTONOSUPPORT WSAEPROTONOSUPPORT
+#define ETIMEDOUT       WSAETIMEDOUT
+#define ECONNREFUSED    WSAECONNREFUSED
+#define EINPROGRESS     WSAEINPROGRESS
+
+static inline int ff_neterrno() {
+    int err = WSAGetLastError();
+    switch (err) {
+    case WSAEWOULDBLOCK:
+        return AVERROR(EAGAIN);
+    case WSAEINTR:
+        return AVERROR(EINTR);
+    }
+    return -err;
+}
 #else
-#ifndef GEKKO
 #include <sys/types.h>
+#if !defined(GEKKO)
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #else
 #include <network.h>
-#define INADDR_LOOPBACK    ((unsigned long) 0x7f000001)  /* 127.0.0.1 */
-#define send net_send
-#define sendto net_sendto
-#define recv net_recv
-#define select net_select
-#define socket net_socket
-#define gethostbyname net_gethostbyname
-#define setsockopt net_setsockopt
-#define bind net_bind
-#define connect net_connect
+
+#define INADDR_LOOPBACK 0x7f000001
+
+static inline int _net_result(s32 ret)
+{
+	if (ret < 0) errno = AVUNERROR(ret);
+	return ret < 0 ? SOCKET_ERROR : ret;
+}
+
+#define socket(domain, type, protocol) \
+	_net_result(net_socket(domain, type, IPPROTO_IP))
+#define bind(sockfd, my_addr, addrlen) \
+	_net_result(net_bind(sockfd, my_addr, addrlen))
+#define connect(sockfd, serv_addr, addrlen) \
+	_net_result(net_connect(sockfd, serv_addr, addrlen))
+#define send(s, buf, len, flags) \
+	_net_result(net_send(s, buf, len, flags))
+#define sendto(s, buf, len, flags, to, tolen) \
+	_net_result(net_sendto(s, buf, len, flags, to, tolen))
+#define recv(s, buf, len, flags) \
+	_net_result(net_recv(s, buf, len, flags))
+#define closesocket(sockfd) \
+	_net_result(net_close(sockfd))
+#define setsockopt(s, level, optname, optval, optlen) \
+	_net_result(net_setsockopt(s, level, optname, optval, optlen))
+#define poll(fds, nfds, timeout) \
+	_net_result(net_poll((struct pollsd *)fds, nfds, timeout))
+#define gethostbyname(name) net_gethostbyname(name)
 #endif
 
 #define ff_neterrno() AVERROR(errno)
-#define FF_NETERROR(err) AVERROR(err)
 #endif
 
 #if HAVE_ARPA_INET_H

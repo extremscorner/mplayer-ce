@@ -129,7 +129,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Codec de audio forzado: %s\n"
 #define MSGTR_Video_NoVideo "Vídeo: no hay video!\n"
 #define MSGTR_NotInitializeVOPorVO "\nFATAL: No fue posible inicializar los filtros (-vf) o la salida de video (-vo)!\n"
-#define MSGTR_Paused "\n  =====  PAUSA  =====\r"
+#define MSGTR_Paused "  =====  PAUSA  ====="
 #define MSGTR_PlaylistLoadUnable "\nNo fue posible cargar la lista de reproducción %s.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer se detuvo por una 'Instrucción Ilegal'.\n"\
@@ -206,7 +206,6 @@ static const char help_text[]=
 #define MSGTR_EdloutBadStop "EDL skip cancelado, último comienzo > parada\n"
 #define MSGTR_EdloutStartSkip "EDL skip comenzado, presione 'i' denuevo para terminar con el bloque.\n"
 #define MSGTR_EdloutEndSkip "EDL skip terminado, operación guardada.\n"
-#define MSGTR_MPEndposNoSizeBased "La opción -endpos en MPlayer aun no soporta unidades de tamaño.\n"
 
 // mplayer.c OSD
 #define MSGTR_OSDenabled "habilitado"
@@ -583,9 +582,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[skin] error en configuración de skin en la línea %d: %s"
-#define MSGTR_SKIN_WARNING1 "[skin] advertencia en archivo de configuración en la línea %d:\n control (%s) encontrado pero no se encontro \"section\" antes"
-#define MSGTR_SKIN_WARNING2 "[skin] advertencia en archivo de configuración en la línea %d:\n control (%s) encontrado pero no se encontro \"subsection\" antes"
-#define MSGTR_SKIN_WARNING3 "[skin] advertencia en archivo de configuración en la linea %d:\nesta subsección no esta soportada por control (%s)"
 #define MSGTR_SKIN_SkinFileNotFound "[skin] no se encontró archivo ( %s ).\n"
 #define MSGTR_SKIN_SkinFileNotReadable "[skin] file no leible ( %s ).\n"
 #define MSGTR_SKIN_BITMAP_16bit  "Mapa de bits de 16 bits o menos no soportado (%s).\n"

@@ -39,9 +39,6 @@ FOR THE NEXT RELEASE:
 FOR THE v1.00 RELEASE:
 ~~~~~~~~~~~~~~~~~~~~~~
 
-cruft removal:
-- remove support for skins directories using the obsolete name 'Skin'
-
 DVB:
 - display OSD and subtitles using DVB card's OSD
 
@@ -90,4 +87,3 @@ remove externals:
 - remove tremor when ffvorbis has integer-only decoder.
 - remove libmpeg2 when ffmpeg12 is faster
 - remove mp3lib when ffmp3 is faster
-- remove libfaad2 after soc aac is 100%

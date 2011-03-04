@@ -17,6 +17,10 @@ MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
 
+MMX-OBJS-$(CONFIG_AC3_ENCODER)         += x86/ac3dsp_mmx.o
+MMX-OBJS-$(CONFIG_AC3_FIXED_ENCODER)   += x86/ac3dsp_mmx.o
+YASM-OBJS-$(CONFIG_AC3_ENCODER)        += x86/ac3dsp.o
+YASM-OBJS-$(CONFIG_AC3_FIXED_ENCODER)  += x86/ac3dsp.o
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
 MMX-OBJS-$(CONFIG_MP1FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
 MMX-OBJS-$(CONFIG_MP2FLOAT_DECODER)    += x86/mpegaudiodec_mmx.o
@@ -39,6 +43,7 @@ YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
 MMX-OBJS-$(CONFIG_VP8_DECODER)         += x86/vp8dsp-init.o
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           x86/deinterlace.o             \
+                                          x86/fmtconvert.o              \
                                           x86/h264_chromamc.o           \
                                           $(YASM-OBJS-yes)
 
@@ -47,6 +52,7 @@ MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
 OBJS-$(HAVE_MMX)                       += x86/dnxhd_mmx.o               \
                                           x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
+                                          x86/fmtconvert_mmx.o          \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
                                           x86/motion_est_mmx.o          \

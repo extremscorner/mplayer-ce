@@ -118,7 +118,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Forcerad audiocodec: %s\n"
 #define MSGTR_Video_NoVideo "Video: ingen video\n"
 #define MSGTR_NotInitializeVOPorVO "\nFATALT: Kunde inte initiera videofilter (-vf) eller video-ut (-vo).\n"
-#define MSGTR_Paused "\n  =====  PAUSE  =====\r" // no more than 23 characters (status line for audio files)
+#define MSGTR_Paused "  =====  PAUSE  =====" // no more than 23 characters (status line for audio files)
 #define MSGTR_PlaylistLoadUnable "\nOförmögen att ladda spellista %s.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer krachade av en 'Illegal Instruction'.\n"\
@@ -600,9 +600,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[skin] fel i skinkonfigureringsfil på rad %d: %s"
-#define MSGTR_SKIN_WARNING1 "[skin] varning i konfigurationsfil på rad %d:\nwidget (%s) funnen, men ingen \"section\" funnen före"
-#define MSGTR_SKIN_WARNING2 "[skin] varning i konfigurationsfil på rad %d:\nwidget (%s) funnen, men ingen \"subsection\" funnen före"
-#define MSGTR_SKIN_WARNING3 "[skin] varning i konfigurationsfil på rad %d:\ndenna undersektion stödjs inte av widget (%s)"
 #define MSGTR_SKIN_BITMAP_16bit  "16-bitar eller lägre bitmappar stödjs inte (%s).\n"
 #define MSGTR_SKIN_BITMAP_FileNotFound  "fil ej funnen (%s)\n"
 #define MSGTR_SKIN_BITMAP_BMPReadError "BMP läsfel (%s)\n"

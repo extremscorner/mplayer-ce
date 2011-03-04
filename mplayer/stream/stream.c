@@ -30,6 +30,8 @@
 #ifndef GEKKO
 #include <strings.h>
 #endif
+#include <assert.h>
+
 #include "config.h"
 
 #if HAVE_WINSOCK2_H
@@ -93,15 +95,13 @@ static const stream_info_t* const auto_open_streams[] = {
   &stream_info_cdda,
 #endif
 #ifdef CONFIG_NETWORKING
-  #if !defined(GEKKO)
   &stream_info_netstream,
-  #endif
   &stream_info_http1,
   &stream_info_asf,
   &stream_info_pnm,
-  #if !defined(GEKKO)
+#if !defined(GEKKO)
   &stream_info_rtsp,
-  #endif
+#endif
 #ifdef CONFIG_LIVE555
   &stream_info_sdp,
   &stream_info_rtsp_sip,
@@ -287,8 +287,9 @@ void stream_capture_do(stream_t *s)
 
 int stream_read_internal(stream_t *s, void *buf, int len)
 {
-  static int try=0;
-  if (/*s->fd == NULL ||*/ s->eof) { s->buf_pos = s->buf_len = 0; return 0; }
+  static int _try=0;
+  int orig_len = len;
+  // we will retry even if we already reached EOF previously.
   switch(s->type){
   case STREAMTYPE_STREAM:
 #ifdef CONFIG_NETWORKING
@@ -309,9 +310,38 @@ int stream_read_internal(stream_t *s, void *buf, int len)
   default:
     len= s->fill_buffer ? s->fill_buffer(s, buf, len) : 0;
   }
-  if(len==0){ if(try>3)s->eof=1; try++; s->buf_pos=s->buf_len=0; return 0; }
-  if(len<0) { s->eof=1; s->buf_pos=s->buf_len=0;/*printf("errno: %i\n",errno);*/if(s->error==0 && errno==EIO )s->error=1;return 0; } 
+  if(len==0)
+  {
+    if(_try>3)
+      s->eof=1;
+    else if(_try == 0)
+    {
+      off_t pos = s->pos;
+      stream_reset(s);
+      stream_seek_internal(s, pos);
+    }
+    _try++;
+    s->buf_pos=s->buf_len=0;
+    return 0;
+  }
+  if(len<0)
+  {
+    s->eof=1;
+    s->buf_pos=s->buf_len=0;
+    if(s->error==0 && (errno==EIO || errno==ENOSYS))
+    {
+      s->error=1;
+      off_t pos = s->pos;
+      stream_reset(s);
+      stream_seek_internal(s, pos);
+    }
+    return 0;
+  }
+  // When reading succeeded we are obviously not at eof.
+  // This e.g. avoids issues with eof getting stuck when lavf seeks in MPEG-TS
+  s->eof=0;
   s->pos+=len;
+  _try=0;
   return len;
 }
 
@@ -335,6 +365,7 @@ int stream_write_buffer(stream_t *s, unsigned char *buf, int len) {
   if(rd < 0)
     return -1;
   s->pos += rd;
+  assert(rd == len && "stream_write_buffer(): unexpected short write");
   return rd;
 }
 

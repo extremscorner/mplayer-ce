@@ -76,6 +76,10 @@ int vcd_seek_to_track(void *vcd, int track);
 guiInterface_t guiIntfStruct;
 int guiWinID=-1;
 
+char *skinName;
+char *skinDirInHome;
+char *skinMPlayerDir;
+
 int gstrcmp( const char * a,const char * b )
 {
  if ( !a && !b ) return 0;
@@ -159,6 +163,8 @@ void guiInit( void )
  guiIntfStruct.Balance=50.0f;
  guiIntfStruct.StreamType=-1;
 
+ appResetStruct();
+
  memset( &gtkEquChannels,0,sizeof( gtkEquChannels ) );
 #ifdef CONFIG_DXR3
  if ( !gtkDXR3Device ) gtkDXR3Device=strdup( "/dev/em8300-0" );
@@ -179,13 +185,9 @@ void guiInit( void )
  wsXInit( (void *)mDisplay );
 // --- load skin
  skinDirInHome=get_path("skins");
- skinDirInHome_obsolete=get_path("Skin");
  skinMPlayerDir=MPLAYER_DATADIR "/skins";
- skinMPlayerDir_obsolete=MPLAYER_DATADIR "/Skin";
  mp_msg( MSGT_GPLAYER,MSGL_V,"SKIN dir 1: '%s'\n",skinDirInHome);
- mp_msg( MSGT_GPLAYER,MSGL_V,"SKIN dir 1 (obsolete): '%s'\n",skinDirInHome_obsolete);
  mp_msg( MSGT_GPLAYER,MSGL_V,"SKIN dir 2: '%s'\n",skinMPlayerDir);
- mp_msg( MSGT_GPLAYER,MSGL_V,"SKIN dir 2 (obsolete): '%s'\n",skinMPlayerDir_obsolete);
  if ( !skinName ) skinName=strdup( "default" );
  i = skinRead( skinName );
  if ((i == -1) && strcmp(skinName,"default"))
@@ -441,14 +443,24 @@ void guiLoadSubtitle( char * name )
 
 static void add_vf( char * str )
 {
- mp_msg( MSGT_GPLAYER,MSGL_STATUS,MSGTR_AddingVideoFilter,str );
+ void *p;
+
  if ( vf_settings )
   {
    int i = 0;
    while ( vf_settings[i].name ) if ( !gstrcmp( vf_settings[i++].name,str ) ) { i=-1; break; }
    if ( i != -1 )
-     { vf_settings=realloc( vf_settings,( i + 2 ) * sizeof( m_obj_settings_t ) ); vf_settings[i].name=strdup( str );vf_settings[i].attribs = NULL; vf_settings[i+1].name=NULL; }
-  } else { vf_settings=malloc( 2 * sizeof(  m_obj_settings_t ) ); vf_settings[0].name=strdup( str );vf_settings[0].attribs = NULL; vf_settings[1].name=NULL; }
+    {
+     if ( !( p=realloc( vf_settings,( i + 2 ) * sizeof( m_obj_settings_t ) ) ) ) return;
+     vf_settings=p;
+     vf_settings[i].name=strdup( str );
+     vf_settings[i].attribs = NULL;
+     vf_settings[i+1].name=NULL;
+    }
+  }
+ else { vf_settings=malloc( 2 * sizeof(  m_obj_settings_t ) ); vf_settings[0].name=strdup( str );vf_settings[0].attribs = NULL; vf_settings[1].name=NULL; }
+
+ mp_msg( MSGT_GPLAYER,MSGL_STATUS,MSGTR_AddingVideoFilter,str );
 }
 
 static void remove_vf( char * str )

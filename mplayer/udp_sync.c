@@ -68,9 +68,14 @@ static void set_blocking(int fd, int blocking)
     sock_flags = blocking;
     ioctlsocket(fd, FIONBIO, &sock_flags);
 #else
+#if defined(GEKKO)
+    sock_flags = !blocking;
+    net_ioctl(fd, FIONBIO, &sock_flags);
+#else
     sock_flags = fcntl(fd, F_GETFL, 0);
     sock_flags = blocking ? sock_flags & ~O_NONBLOCK : sock_flags | O_NONBLOCK;
     fcntl(fd, F_SETFL, sock_flags);
+#endif
 #endif /* HAVE_WINSOCK2_H */
 }
 

@@ -28,6 +28,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
+#include "internal.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
 
@@ -252,12 +253,19 @@ vorbis_header (AVFormatContext * s, int idx)
 
         if (srate > 0) {
             st->codec->sample_rate = srate;
-            st->time_base.num = 1;
-            st->time_base.den = srate;
+            av_set_pts_info(st, 64, 1, srate);
         }
     } else if (os->buf[os->pstart] == 3) {
-        if (os->psize > 8)
-            ff_vorbis_comment (s, &st->metadata, os->buf + os->pstart + 7, os->psize - 8);
+        if (os->psize > 8 &&
+            ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7, os->psize - 8) >= 0) {
+            // drop all metadata we parsed and which is not required by libvorbis
+            unsigned new_len = 7 + 4 + AV_RL32(priv->packet[1] + 7) + 4 + 1;
+            if (new_len >= 16 && new_len < os->psize) {
+                AV_WL32(priv->packet[1] + new_len - 5, 0);
+                priv->packet[1][new_len - 1] = 1;
+                priv->len[1] = new_len;
+            }
+        }
     } else {
         st->codec->extradata_size =
             fixup_vorbis_headers(s, priv, &st->codec->extradata);

@@ -38,7 +38,7 @@
 #include "libvo/video_out.h"
 #include "cpudetect.h"
 #include "libswscale/swscale.h"
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "libmpcodecs/vf_scale.h"
 #include "mp_msg.h"
 #include "help_mp.h"
@@ -839,7 +839,7 @@ void wsConvert( wsTWindow * win,unsigned char * Image,unsigned int Size )
   switch (win->xImage->bits_per_pixel) {
     case 32:
     {
-      uint32_t *d = win->ImageData;
+      uint32_t *d = (uint32_t *) win->ImageData;
       for (i = 0; i < win->xImage->width * win->xImage->height; i++)
         d[i] = bswap_32(d[i]);
       break;
@@ -847,7 +847,7 @@ void wsConvert( wsTWindow * win,unsigned char * Image,unsigned int Size )
     case 16:
     case 15:
     {
-      uint16_t *d = win->ImageData;
+      uint16_t *d = (uint16_t *) win->ImageData;
       for (i = 0; i < win->xImage->width * win->xImage->height; i++)
         d[i] = bswap_16(d[i]);
       break;

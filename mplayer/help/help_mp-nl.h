@@ -116,7 +116,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Gedwongen audio codec: %s\n"
 #define MSGTR_Video_NoVideo "Video: geen video!!!\n"
 #define MSGTR_NotInitializeVOPorVO "\nFATAAL: Kon de video filters (-vf) of de video uitvoer (-vo) niet initialiseren!\n"
-#define MSGTR_Paused "\n------ GEPAUZEERD -------\r"
+#define MSGTR_Paused "------ GEPAUZEERD -------"
 #define MSGTR_PlaylistLoadUnable "\nKon de playlist %s niet laden\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer crashte door een 'Illegale Instructie'.\n"\
@@ -585,9 +585,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[skin] fout in skin configuratie bestand op regel %d: %s"
-#define MSGTR_SKIN_WARNING1 "[skin] waarschuwing in skin configuratie bestand op regel %d: widget gevonden maar voordien \"section\" niet gevonden (%s)"
-#define MSGTR_SKIN_WARNING2 "[skin] waarschuwing in skin configuratie bestand op regel %d: widget gevonden maar voordien \"subsection\" niet gevonden (%s)"
-#define MSGTR_SKIN_WARNING3 "[skin] waarschuwing in skin configuratie bestand op regel %d: deze onderverdeling is niet ondersteund door deze widget (%s)"
 #define MSGTR_SKIN_BITMAP_16bit  "16 bits of minder kleurendiepte bitmap niet ondersteund (%s).\n"
 #define MSGTR_SKIN_BITMAP_FileNotFound  "bestand niet gevonden (%s)\n"
 #define MSGTR_SKIN_BITMAP_BMPReadError "BMP lees fout (%s)\n"

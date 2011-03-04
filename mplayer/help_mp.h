@@ -4,7 +4,7 @@
 #ifndef MPLAYER_HELP_MP_H
 #define MPLAYER_HELP_MP_H
 
-// $Revision: 32526 $
+// $Revision: 32964 $
 // MASTER FILE. Use this file as base for translations.
 // Translated files should be sent to the mplayer-DOCS mailing list or
 // to the help messages maintainer, see DOCS/tech/MAINTAINERS.
@@ -129,7 +129,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Forced audio codec: %s\n"
 #define MSGTR_Video_NoVideo "Video: no video\n"
 #define MSGTR_NotInitializeVOPorVO "\nFATAL: Could not initialize video filters (-vf) or video output (-vo).\n"
-#define MSGTR_Paused "\n  =====  PAUSE  =====\r" // no more than 23 characters (status line for audio files)
+#define MSGTR_Paused "  =====  PAUSE  =====" // no more than 23 characters (status line for audio files)
 #define MSGTR_PlaylistLoadUnable "\nUnable to load playlist %s.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer crashed by an 'Illegal Instruction'.\n"\
@@ -205,7 +205,6 @@ static const char help_text[]=
 #define MSGTR_EdloutBadStop "EDL skip canceled, last start > stop\n"
 #define MSGTR_EdloutStartSkip "EDL skip start, press 'i' again to end block.\n"
 #define MSGTR_EdloutEndSkip "EDL skip end, line written.\n"
-#define MSGTR_MPEndposNoSizeBased "Option -endpos in MPlayer does not yet support size units.\n"
 
 // mplayer.c OSD
 #define MSGTR_OSDenabled "enabled"
@@ -582,12 +581,12 @@ static const char help_text[]=
 #define MSGTR_UNKNOWNWINDOWTYPE "Unknown window type found ..."
 
 // --- skin loader error messages
-#define MSGTR_SKIN_ERRORMESSAGE "[skin] error in skin config file on line %d: %s"
-#define MSGTR_SKIN_WARNING1 "[skin] warning: in config file line %d:\nwidget (%s) found but no \"section\" found before"
-#define MSGTR_SKIN_WARNING2 "[skin] warning: in config file line %d:\nwidget (%s) found but no \"subsection\" found before"
-#define MSGTR_SKIN_WARNING3 "[skin] warning: in config file line %d:\nthis subsection is not supported by widget (%s)"
-#define MSGTR_SKIN_SkinFileNotFound "[skin] file ( %s ) not found.\n"
-#define MSGTR_SKIN_SkinFileNotReadable "[skin] file ( %s ) not readable.\n"
+#define MSGTR_SKIN_ERRORMESSAGE "Error in skin config file on line %d: %s"
+#define MSGTR_SKIN_ERROR_SECTION "No section specified for '%s'.\n"
+#define MSGTR_SKIN_ERROR_WINDOW "No window specified for '%s'.\n"
+#define MSGTR_SKIN_ERROR_IN_WINDOW "This item is not supported by '%s'.\n"
+#define MSGTR_SKIN_SkinFileNotFound "Skin file %s not found.\n"
+#define MSGTR_SKIN_SkinFileNotReadable "Skin file %s not readable.\n"
 #define MSGTR_SKIN_BITMAP_16bit  "Bitmaps of 16 bits or less depth not supported (%s).\n"
 #define MSGTR_SKIN_BITMAP_FileNotFound  "File not found (%s)\n"
 #define MSGTR_SKIN_BITMAP_BMPReadError "BMP read error (%s)\n"
@@ -604,7 +603,7 @@ static const char help_text[]=
 #define MSGTR_SKIN_FONT_NonExistentFontID "non-existent font identifier (%s)\n"
 #define MSGTR_SKIN_UnknownParameter "unknown parameter (%s)\n"
 #define MSGTR_SKIN_SKINCFG_SkinNotFound "Skin not found (%s).\n"
-#define MSGTR_SKIN_SKINCFG_SelectedSkinNotFound "Selected skin ( %s ) not found, trying 'default'...\n"
+#define MSGTR_SKIN_SKINCFG_SelectedSkinNotFound "Selected skin '%s' not found, trying skin 'default'...\n"
 #define MSGTR_SKIN_SKINCFG_SkinCfgReadError "skin config file read error (%s)\n"
 #define MSGTR_SKIN_LABEL "Skins:"
 

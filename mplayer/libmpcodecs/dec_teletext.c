@@ -88,7 +88,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#ifdef HAVE_PTHREADS
+#if HAVE_PTHREADS
 // pthreads are needed for async updates from v4l(2)
 // FIXME: try to avoid using pthread calls when running only a single
 // thread as e.g. with DVB teletext
@@ -97,11 +97,11 @@
 #ifdef GEKKO
 #define HAVE_PTHREADS 1
 #include <ogc/mutex.h>
-#define pthread_mutex_init(a, b) LWP_MutexInit(a,false)
+typedef mutex_t pthread_mutex_t;
+#define pthread_mutex_init(a, b) LWP_MutexInit(a, false)
 #define pthread_mutex_lock(a)    LWP_MutexLock(*a)
 #define pthread_mutex_unlock(a)  LWP_MutexUnlock(*a)
 #define pthread_mutex_destroy(a) LWP_MutexDestroy(*a)
-#define pthread_mutex_t          mutex_t
 #else
 #define pthread_mutex_init(m, p)
 #define pthread_mutex_destroy(m)
@@ -158,7 +158,7 @@ typedef struct {
     int pll_fixed;
     /// vbi stream properties (buffer size,bytes per line, etc)
     tt_stream_props* ptsp;
-#ifdef HAVE_PTHREADS
+#if HAVE_PTHREADS
     pthread_mutex_t buffer_mutex;
 #endif
 

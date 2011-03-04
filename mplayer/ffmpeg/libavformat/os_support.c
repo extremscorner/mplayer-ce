@@ -179,7 +179,7 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
         return EAI_NONAME;
 
     if (host && hostlen > 0) {
-    #ifndef GEKKO
+#if !defined(GEKKO)
         struct hostent *ent = NULL;
         uint32_t a;
         if (!(flags & NI_NUMERICHOST))
@@ -196,17 +196,17 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
                      ((a >> 24) & 0xff), ((a >> 16) & 0xff),
                      ((a >>  8) & 0xff), ( a        & 0xff));
         }
-    #else
+#else
         uint32_t a;
         a = ntohl(sin->sin_addr.s_addr);
         snprintf(host, hostlen, "%d.%d.%d.%d",
                  ((a >> 24) & 0xff), ((a >> 16) & 0xff),
                  ((a >>  8) & 0xff), ( a        & 0xff));
-    #endif
+#endif
     }
 
     if (serv && servlen > 0) {
-    #ifndef GEKKO
+#if !defined(GEKKO)
         struct servent *ent = NULL;
         if (!(flags & NI_NUMERICSERV))
             ent = getservbyport(sin->sin_port, flags & NI_DGRAM ? "udp" : "tcp");
@@ -214,7 +214,7 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
         if (ent) {
             snprintf(serv, servlen, "%s", ent->s_name);
         } else
-    #endif
+#endif
             snprintf(serv, servlen, "%d", ntohs(sin->sin_port));
     }
 
@@ -238,14 +238,18 @@ int ff_socket_nonblock(int socket, int enable)
 #if HAVE_WINSOCK2_H
    return ioctlsocket(socket, FIONBIO, &enable);
 #else
+#if defined(GEKKO)
+   return net_ioctl(socket, FIONBIO, &enable);
+#else
    if (enable)
       return fcntl(socket, F_SETFL, fcntl(socket, F_GETFL) | O_NONBLOCK);
    else
       return fcntl(socket, F_SETFL, fcntl(socket, F_GETFL) & ~O_NONBLOCK);
 #endif
+#endif
 }
 
-#if !HAVE_POLL_H
+#if !HAVE_POLL_H && !defined(GEKKO)
 int poll(struct pollfd *fds, nfds_t numfds, int timeout)
 {
     fd_set read_set;
@@ -302,7 +306,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     if (rc < 0)
         return rc;
 
-    for(i = 0; i < (nfds_t) n; i++) {
+    for(i = 0; i < numfds; i++) {
         fds[i].revents = 0;
 
         if (FD_ISSET(fds[i].fd, &read_set))      fds[i].revents |= POLLIN;

@@ -196,6 +196,9 @@ void set_codec_path(const char *path)
     needs_free = 1;
 }
 
+/**
+ * @brief Returns the basename substring of a path.
+ */
 const char *mp_basename(const char *path)
 {
     char *s;
@@ -213,12 +216,12 @@ const char *mp_basename(const char *path)
 }
 
 /**
- * \brief Allocates a new buffer containing the directory name
- * \param path Original path. Must be a valid string.
+ * @brief Allocates a new buffer containing the directory name
+ * @param path Original path. Must be a valid string.
  *
- * The path returned always contains a trailing slash '/'.
- * On systems supporting DOS paths, '\' is also considered as a directory
- * separator in addition to the '/'.
+ * @note The path returned always contains a trailing slash '/'.
+ *       On systems supporting DOS paths, '\' is also considered as a directory
+ *       separator in addition to the '/'.
  */
 char *mp_dirname(const char *path)
 {
@@ -234,4 +237,71 @@ char *mp_dirname(const char *path)
     strncpy(dirname, path, len);
     dirname[len] = '\0';
     return dirname;
+}
+
+/**
+ * @brief Join two paths if path is not absolute.
+ * @param base File or directory base path.
+ * @param path Path to concatenate with the base.
+ * @return New allocated string with the path, or NULL in case of error.
+ * @warning Do not forget the trailing path separator at the end of the base
+ *          path if it is a directory: since file paths are also supported,
+ *          this separator will make the distinction.
+ * @note Paths of the form c:foo, /foo or \foo will still depends on the
+ *       current directory on Windows systems, even though they are considered
+ *       as absolute paths in this function.
+ */
+char *mp_path_join(const char *base, const char *path)
+{
+    char *ret, *tmp;
+
+#if HAVE_DOS_PATHS
+    if ((path[0] && path[1] == ':') || path[0] == '\\' || path[0] == '/')
+#else
+    if (path[0] == '/')
+#endif
+        return strdup(path);
+
+    ret = mp_dirname(base);
+    if (!ret)
+        return NULL;
+    tmp = realloc(ret, strlen(ret) + strlen(path) + 1);
+    if (!tmp) {
+        free(ret);
+        return NULL;
+    }
+    ret = tmp;
+    strcat(ret, path);
+    return ret;
+}
+
+/**
+ * @brief Same as mp_path_join but always treat the first parameter as a
+ *        directory.
+ * @param dir Directory base path.
+ * @param append Right part to append to dir.
+ * @return New allocated string with the path, or NULL in case of error.
+ */
+char *mp_dir_join(const char *dir, const char *append)
+{
+    char *tmp, *ret;
+    size_t dirlen = strlen(dir);
+    size_t i      = dirlen - 1;
+
+#if HAVE_DOS_PATHS
+    if ((dirlen == 2 && dir[0] && dir[1] == ':') // "X:" only
+        || dirlen == 0 || dir[i] == '\\' || dir[i] == '/')
+#else
+    if (dirlen == 0 || dir[i] == '/')
+#endif
+        return mp_path_join(dir, append);
+
+    tmp = malloc(dirlen + 2);
+    if (!tmp)
+        return NULL;
+    strcpy(tmp, dir);
+    strcpy(tmp + dirlen, "/");
+    ret = mp_path_join(tmp, append);
+    free(tmp);
+    return ret;
 }

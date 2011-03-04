@@ -123,7 +123,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "鎖定的音頻編解碼器: %s\n"
 #define MSGTR_Video_NoVideo "視頻: 没視頻\n"
 #define MSGTR_NotInitializeVOPorVO "\n致命錯誤: 無法初始化 (-vf) 視頻過濾器或 (-vo) 視頻輸出。\n"
-#define MSGTR_Paused "\n  =====  暫停  =====\r" // no more than 23 characters (status line for audio files)
+#define MSGTR_Paused "  =====  暫停  =====" // no more than 23 characters (status line for audio files)
 #define MSGTR_PlaylistLoadUnable "\n無法裝載播放列表 %s\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- “非法指令”導致 MPlayer 崩潰。\n"\
@@ -193,7 +193,6 @@ static const char help_text[]=
 #define MSGTR_EdloutBadStop "EDL 跳躍已取消, 上次開始位置 > 停止位置\n"
 #define MSGTR_EdloutStartSkip "EDL 跳躍開始, 再按鍵 'i' 以停止。\n"
 #define MSGTR_EdloutEndSkip "EDL 跳躍結束, 綫已寫入。\n"
-#define MSGTR_MPEndposNoSizeBased "MPlayer 的選項 -endpos 還不支持大小單位。\n"
 
 // mplayer.c OSD
 
@@ -730,9 +729,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[skin] 皮膚配置文件的 %d: %s行出錯"
-#define MSGTR_SKIN_WARNING1 "[skin] 警告: 在配置文件的 %d行:\n找到組件 (%s) 但在這之前没有找到 \"section\""
-#define MSGTR_SKIN_WARNING2 "[skin] 警告: 在配置文件的 %d行:\n找到組件 (%s) 但在這之前没有找到 \"subsection\""
-#define MSGTR_SKIN_WARNING3 "[skin] 警告: 在配置文件的 %d行:\n組件 (%s) 不支持此 subsection"
 #define MSGTR_SKIN_SkinFileNotFound "[skin] 文件 (%s) 没找到。\n"
 #define MSGTR_SKIN_SkinFileNotReadable "[skin] 文件 (%s) 不可讀。\n"
 #define MSGTR_SKIN_BITMAP_16bit  "不支持少于 16 比特色深的位圖 (%s)。\n"

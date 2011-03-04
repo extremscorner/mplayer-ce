@@ -183,13 +183,15 @@ char *lavc_param_audio_avopt = NULL;
 
 #include "m_option.h"
 
+#define MAX_BITRATE 100000000 /* 100Mbit */
+
 const m_option_t lavcopts_conf[]={
 	{"acodec", &lavc_param_acodec, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"abitrate", &lavc_param_abitrate, CONF_TYPE_INT, CONF_RANGE, 1, 1000000, NULL},
 	{"atag", &lavc_param_atag, CONF_TYPE_INT, CONF_RANGE, 0, 0xffff, NULL},
 	{"vcodec", &lavc_param_vcodec, CONF_TYPE_STRING, 0, 0, 0, NULL},
-	{"vbitrate", &lavc_param_vbitrate, CONF_TYPE_INT, CONF_RANGE, 4, 24000000, NULL},
-	{"vratetol", &lavc_param_vrate_tolerance, CONF_TYPE_INT, CONF_RANGE, 4, 24000000, NULL},
+	{"vbitrate", &lavc_param_vbitrate, CONF_TYPE_INT, CONF_RANGE, 4, MAX_BITRATE, NULL},
+	{"vratetol", &lavc_param_vrate_tolerance, CONF_TYPE_INT, CONF_RANGE, 4, MAX_BITRATE, NULL},
 	{"vhq", &lavc_param_mb_decision, CONF_TYPE_FLAG, 0, 0, 1, NULL},
 	{"mbd", &lavc_param_mb_decision, CONF_TYPE_INT, CONF_RANGE, 0, 9, NULL},
 	{"v4mv", &lavc_param_v4mv, CONF_TYPE_FLAG, 0, 0, 1, NULL},
@@ -227,9 +229,9 @@ const m_option_t lavcopts_conf[]={
 	{"vqmod_freq", &lavc_param_rc_qmod_freq, CONF_TYPE_INT, 0, 0, 0, NULL},
 	{"vrc_eq", &lavc_param_rc_eq, CONF_TYPE_STRING, 0, 0, 0, NULL},
 	{"vrc_override", &lavc_param_rc_override_string, CONF_TYPE_STRING, 0, 0, 0, NULL},
-	{"vrc_maxrate", &lavc_param_rc_max_rate, CONF_TYPE_INT, CONF_RANGE, 0, 24000000, NULL},
-	{"vrc_minrate", &lavc_param_rc_min_rate, CONF_TYPE_INT, CONF_RANGE, 0, 24000000, NULL},
-	{"vrc_buf_size", &lavc_param_rc_buffer_size, CONF_TYPE_INT, CONF_RANGE, 4, 24000000, NULL},
+	{"vrc_maxrate", &lavc_param_rc_max_rate, CONF_TYPE_INT, CONF_RANGE, 0, MAX_BITRATE, NULL},
+	{"vrc_minrate", &lavc_param_rc_min_rate, CONF_TYPE_INT, CONF_RANGE, 0, MAX_BITRATE, NULL},
+	{"vrc_buf_size", &lavc_param_rc_buffer_size, CONF_TYPE_INT, CONF_RANGE, 4, MAX_BITRATE, NULL},
 	{"vrc_buf_aggressivity", &lavc_param_rc_buffer_aggressivity, CONF_TYPE_FLOAT, CONF_RANGE, 0.0, 99.0, NULL},
 	{"vrc_init_cplx", &lavc_param_rc_initial_cplx, CONF_TYPE_FLOAT, CONF_RANGE, 0.0, 9999999.0, NULL},
 	{"vrc_init_occupancy", &lavc_param_rc_initial_buffer_occupancy, CONF_TYPE_FLOAT, CONF_RANGE, 0.0, 1.0, NULL},
@@ -810,6 +812,13 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
 	out_size = avcodec_encode_video(lavc_venc_context, mux_v->buffer, mux_v->buffer_size,
 	    pic);
 
+    /* store stats if there are any */
+    if(lavc_venc_context->stats_out && stats_file) {
+        fprintf(stats_file, "%s", lavc_venc_context->stats_out);
+        /* make sure we can't accidentally store the same stats twice */
+        lavc_venc_context->stats_out[0] = 0;
+    }
+
     if(pts != MP_NOPTS_VALUE)
         dts= pts - lavc_venc_context->delay * av_q2d(lavc_venc_context->time_base);
     else
@@ -887,9 +896,6 @@ static int encode_frame(struct vf_instance *vf, AVFrame *pic, double pts){
             pict_type_char[lavc_venc_context->coded_frame->pict_type]
             );
     }
-    /* store stats if there are any */
-    if(lavc_venc_context->stats_out && stats_file)
-        fprintf(stats_file, "%s", lavc_venc_context->stats_out);
     return out_size;
 }
 
@@ -1036,7 +1042,7 @@ static int vf_open(vf_instance_t *vf, char* args){
 
     vf->priv->pic = avcodec_alloc_frame();
     vf->priv->context = avcodec_alloc_context();
-    vf->priv->context->codec_type = CODEC_TYPE_VIDEO;
+    vf->priv->context->codec_type = AVMEDIA_TYPE_VIDEO;
     vf->priv->context->codec_id = vf->priv->codec->id;
 
     return 1;

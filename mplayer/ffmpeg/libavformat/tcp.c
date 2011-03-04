@@ -72,13 +72,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
     if (ret < 0) {
         struct pollfd p = {fd, POLLOUT, 0};
-        if (ff_neterrno() == FF_NETERROR(EINTR)) {
+        if (ff_neterrno() == AVERROR(EINTR)) {
             if (url_interrupt_cb())
                 goto fail1;
             goto redo;
         }
-        if (ff_neterrno() != FF_NETERROR(EINPROGRESS) &&
-            ff_neterrno() != FF_NETERROR(EAGAIN))
+        if (ff_neterrno() != AVERROR(EINPROGRESS) &&
+            ff_neterrno() != AVERROR(EAGAIN))
             goto fail;
 
         /* wait until we are connected or until abort */
@@ -87,22 +87,31 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
                 ret = AVERROR(EINTR);
                 goto fail1;
             }
+#if defined(GEKKO)
+            usleep(1000);
+            connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
+            if (ff_neterrno() != AVERROR(EALREADY))
+                break;
+#else
             ret = poll(&p, 1, 100);
             if (ret > 0)
                 break;
+#endif
         }
 
-#if !defined(GEKKO)
         /* test error */
+#if defined(GEKKO)
+        if (ff_neterrno() != AVERROR(EISCONN)) {
+#else
         optlen = sizeof(ret);
         getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen);
         if (ret != 0) {
+#endif
             av_log(NULL, AV_LOG_ERROR,
                    "TCP connection to %s:%d failed: %s\n",
                    hostname, port, strerror(ret));
             goto fail;
         }
-#endif
     }
     s = av_malloc(sizeof(TCPContext));
     if (!s) {
@@ -131,59 +140,46 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     return ret;
 }
 
+static int tcp_wait_fd(int fd, int write)
+{
+    int ev = write ? POLLOUT : POLLIN;
+    struct pollfd p = { .fd = fd, .events = ev, .revents = 0 };
+    int ret;
+
+    ret = poll(&p, 1, 100);
+    return ret < 0 ? ff_neterrno() : p.revents & ev ? 0 : AVERROR(EAGAIN);
+}
+
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    struct pollfd p = {s->fd, POLLIN, 0};
-    int len, ret;
+    int ret;
 
-    for (;;) {
-        if (url_interrupt_cb())
-            return AVERROR(EINTR);
-        ret = poll(&p, 1, 100);
-        if (ret == 1 && p.revents & POLLIN) {
-            len = recv(s->fd, buf, size, 0);
-            if (len < 0) {
-                if (ff_neterrno() != FF_NETERROR(EINTR) &&
-                    ff_neterrno() != FF_NETERROR(EAGAIN))
-                    return ff_neterrno();
-            } else return len;
-        } else if (ret < 0) {
-            if (ff_neterrno() == FF_NETERROR(EINTR))
-                continue;
-            return -1;
-        }
+#if !defined(GEKKO)
+    if (!(h->flags & URL_FLAG_NONBLOCK)) {
+        ret = tcp_wait_fd(s->fd, 0);
+        if (ret < 0)
+            return ret;
     }
+#endif
+    ret = recv(s->fd, buf, size, 0);
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int tcp_write(URLContext *h, const uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int ret, size1, len;
-    struct pollfd p = {s->fd, POLLOUT, 0};
+    int ret;
 
-    size1 = size;
-    while (size > 0) {
-        if (url_interrupt_cb())
-            return AVERROR(EINTR);
-        ret = poll(&p, 1, 100);
-        if (ret == 1 && p.revents & POLLOUT) {
-            len = send(s->fd, buf, size, 0);
-            if (len < 0) {
-                if (ff_neterrno() != FF_NETERROR(EINTR) &&
-                    ff_neterrno() != FF_NETERROR(EAGAIN))
-                    return ff_neterrno();
-                continue;
-            }
-            size -= len;
-            buf += len;
-        } else if (ret < 0) {
-            if (ff_neterrno() == FF_NETERROR(EINTR))
-                continue;
-            return -1;
-        }
+#if !defined(GEKKO)
+    if (!(h->flags & URL_FLAG_NONBLOCK)) {
+        ret = tcp_wait_fd(s->fd, 1);
+        if (ret < 0)
+            return ret;
     }
-    return size1 - size;
+#endif
+    ret = send(s->fd, buf, size, 0);
+    return ret < 0 ? ff_neterrno() : ret;
 }
 
 static int tcp_close(URLContext *h)
