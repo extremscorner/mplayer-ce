@@ -804,7 +804,6 @@ dvb_config_t *dvb_get_config(void)
 				free(conf_file);
 				conf_file = (char*)malloc(sizeof(char)*200);
 				sprintf(conf_file,"%s%s",MPLAYER_CONFDIR,"/channels.conf");
-				//conf_file = strdup(MPLAYER_CONFDIR "/channels.conf");
 			}
 		}
 

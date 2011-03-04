@@ -36,8 +36,7 @@
 #include "imgconvert.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/pixdesc.h"
-#include "libavcore/imgutils.h"
-#include "libavcore/internal.h"
+#include "libavutil/imgutils.h"
 
 #if ARCH_PPC
 #include "ppc/deinterlace.h"

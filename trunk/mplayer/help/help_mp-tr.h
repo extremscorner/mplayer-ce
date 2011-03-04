@@ -121,7 +121,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Ses kodeği zorlandı: %s\n"
 #define MSGTR_Video_NoVideo "Video: video yok!!!\n"
 #define MSGTR_NotInitializeVOPorVO "\nHATA: Video filtreleri (-vf) veya video çıkışı (-vo) başlatılamadı!\n"
-#define MSGTR_Paused "\n--------   DURAKLADI   --------\r"
+#define MSGTR_Paused "--------   DURAKLADI   --------"
 #define MSGTR_PlaylistLoadUnable "\n%s çalma listesi yüklenemedi.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- 'Geçersiz Komut' nedeniyle MPlayer çöktü.\n"\
@@ -194,7 +194,6 @@ static const char help_text[]=
 #define MSGTR_EdloutStartSkip "EDL atlaması başlangıcı, bloğu bitirmek için\n"\
 "'i' tuşuna tekrar basın.\n"
 #define MSGTR_EdloutEndSkip "EDL atlaması sonu, satır yazıldı.\n"
-#define MSGTR_MPEndposNoSizeBased "MPlayer'da -endpos seçeneği henüz boyut birimlerini desteklemiyor.\n"
 
 // mplayer.c OSD
 
@@ -757,9 +756,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[arayüz] Hata : arayüz ayar dosyası %d satırı: %s"
-#define MSGTR_SKIN_WARNING1 "[arayüz] Uyarı: arayüz ayar dosyası %d satırı: widget (%s) bulundu ama \"section\" bulunamadı"
-#define MSGTR_SKIN_WARNING2 "[arayüz] Uyarı: arayüz ayar dosyası %d satırı: widget (%s) bulundu ama \"subsection\" bulunamadı "
-#define MSGTR_SKIN_WARNING3 "[arayüz] Uyarı: Ayar dosyasında satır %d\nbu altseçenek widget (%s) tarafından desteklenmiyor."
 #define MSGTR_SKIN_SkinFileNotFound "[arayüz] ( %s ) dosyası bulunamadı.\n"
 #define MSGTR_SKIN_SkinFileNotReadable "[arayüz] ( %s ) dosyası okunabilir değil.\n"
 #define MSGTR_SKIN_BITMAP_16bit  "16 bit veya daha az derinlikteki bitmap desteklenmiyor (%s).\n"

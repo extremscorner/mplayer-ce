@@ -116,7 +116,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Εξαναγκασμός χρήσης του codec ήχου: %s\n"
 #define MSGTR_Video_NoVideo "Βίντεο: δεν υπάρχει βίντεο!!!\n"
 #define MSGTR_NotInitializeVOPorVO "\n Σφάλμα: Αδύνατη η αρχικοποίηση του φίλτρου βίντεο (-vf) ή της εξόδου βίντεο (-vo)!\n"
-#define MSGTR_Paused "\n  =====  ΠΑΥΣΗ  =====\r"
+#define MSGTR_Paused "  =====  ΠΑΥΣΗ  ====="
 #define MSGTR_PlaylistLoadUnable "\n Αδύνατη η φόρτωση  της λίστας αναπαραγωγής %s\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- Το MPlayer κατέρρευσε από ένα 'Illegal Instruction'.\n"\
@@ -376,9 +376,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[skin] σφάλμα στο αρχείο προτιμήσεων του skin στη γραμμή %d: %s"
-#define MSGTR_SKIN_WARNING1 "[skin] προειδοποίηση στο αρχείο προτιμήσεων του skin στη γραμμή %d: το widget βρέθηκε αλλά πριν το \"section\" δεν βρέθηκε (%s)"
-#define MSGTR_SKIN_WARNING2 "[skin] προειδοποίηση στο αρχείο προτιμήσεων του skin στη γραμμή %d: το widget βρέθηκε αλλά πριν το \"subsection\" δεν βρέθηκε (%s)"
-#define MSGTR_SKIN_WARNING3 "[skin] προειδοποίηση στο αρχείο προτιμήσεων του skin στη γραμμή %d: αυτό το subsection δεν υποστηρίζεται από αυτό το widget (%s)"
 #define MSGTR_SKIN_BITMAP_16bit  "το βάθος χρώματος εικόνας των 16 bits ή λιγότερο δεν υποστηρίζεται (%s).\n"
 #define MSGTR_SKIN_BITMAP_FileNotFound  "το αρχείο (%s) δεν βρέθηκε\n"
 #define MSGTR_SKIN_BITMAP_BMPReadError "σφάλμα κατά την ανάγνωση του BMP (%s)\n"

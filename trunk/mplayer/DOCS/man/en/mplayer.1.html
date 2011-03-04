@@ -1,5 +1,5 @@
 <!-- Creator     : groff version 1.21 -->
-<!-- CreationDate: Sat Jan 29 03:26:18 2011 -->
+<!-- CreationDate: Fri Mar  4 00:18:48 2011 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -478,37 +478,6 @@ PAUSE</p>
 
 <p style="margin-left:29%;">Seek backward/forward 1
 minute.</p>
-
-<p style="margin-left:22%; margin-top: 1em">(The following
-keys are only valid if GUI support is compiled in and will
-take precedence over the keys defined above.) <br>
-ENTER</p>
-
-<p style="margin-left:29%;">Start playing.</p>
-
-<p style="margin-left:22%;">ESC&nbsp;&nbsp;</p>
-
-<p style="margin-left:29%;">Stop playing.</p>
-
-<p style="margin-left:22%;">l&nbsp;&nbsp;&nbsp;&nbsp;</p>
-
-<p style="margin-left:29%;">Load file.</p>
-
-<p style="margin-left:22%;">t&nbsp;&nbsp;&nbsp;&nbsp;</p>
-
-<p style="margin-left:29%;">Load subtitle.</p>
-
-<p style="margin-left:22%;">c&nbsp;&nbsp;&nbsp;&nbsp;</p>
-
-<p style="margin-left:29%;">Open skin browser.</p>
-
-<p style="margin-left:22%;">p&nbsp;&nbsp;&nbsp;&nbsp;</p>
-
-<p style="margin-left:29%;">Open playlist.</p>
-
-<p style="margin-left:22%;">r&nbsp;&nbsp;&nbsp;&nbsp;</p>
-
-<p style="margin-left:29%;">Open preferences.</p>
 
 <p style="margin-left:22%; margin-top: 1em">(The following
 keys are only valid if you compiled with TV or DVB input
@@ -3410,6 +3379,52 @@ file loading.</p>
 <p style="margin-left:22%;">Set the duration of the OSD
 messages in ms (default: 1000).</p>
 
+<p style="margin-left:11%;"><b>&minus;osd&minus;fractions
+&lt;0&minus;2&gt;</b></p>
+
+<p style="margin-left:22%;">Set how fractions of seconds of
+the current timestamp are printed on the OSD:</p>
+
+<table width="100%" border="0" rules="none" frame="void"
+       cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="26%"></td>
+<td width="2%">
+
+
+<p>0</p></td>
+<td width="6%"></td>
+<td width="66%">
+
+
+<p>Do not display fractions (default).</p></td></tr>
+<tr valign="top" align="left">
+<td width="26%"></td>
+<td width="2%">
+
+
+<p>1</p></td>
+<td width="6%"></td>
+<td width="66%">
+
+
+<p>Show the first two decimals.</p></td></tr>
+<tr valign="top" align="left">
+<td width="26%"></td>
+<td width="2%">
+
+
+<p>2</p></td>
+<td width="6%"></td>
+<td width="66%">
+
+
+<p>Show approximated frame count within current second.
+This frame count is not accurate but only an approximation.
+For variable fps, the approximation is known to be far off
+the correct frame count.</p></td></tr>
+</table>
+
 <p style="margin-left:11%;"><b>&minus;osdlevel
 &lt;0&minus;3&gt; (MPlayer only)</b></p>
 
@@ -3709,12 +3724,10 @@ searching for subtitles:</p>
 
 <p>0</p></td>
 <td width="6%"></td>
-<td width="60%">
+<td width="66%">
 
 
-<p>exact match</p></td>
-<td width="6%">
-</td></tr>
+<p>exact match</p></td></tr>
 <tr valign="top" align="left">
 <td width="26%"></td>
 <td width="2%">
@@ -3722,12 +3735,10 @@ searching for subtitles:</p>
 
 <p>1</p></td>
 <td width="6%"></td>
-<td width="60%">
+<td width="66%">
 
 
-<p>Load all subs containing movie name.</p></td>
-<td width="6%">
-</td></tr>
+<p>Load all subs containing movie name.</p></td></tr>
 <tr valign="top" align="left">
 <td width="26%"></td>
 <td width="2%">
@@ -3735,12 +3746,11 @@ searching for subtitles:</p>
 
 <p>2</p></td>
 <td width="6%"></td>
-<td width="60%">
+<td width="66%">
 
 
-<p>Load all subs in the current directory.</p></td>
-<td width="6%">
-</td></tr>
+<p>Load all subs in the current and &minus;sub&minus;paths
+directories.</p> </td></tr>
 </table>
 
 
@@ -3841,6 +3851,25 @@ detection fails.</p>
 
 <p style="margin-left:34%;">Guess the encoding for Polish,
 fall back on cp1250.</p>
+
+<p style="margin-left:11%;"><b>&minus;sub&minus;paths
+&lt;path1,path2,...&gt;</b></p>
+
+<p style="margin-left:22%;">Specify extra subtitle paths to
+track in the media directory.</p>
+
+
+<p style="margin-left:22%; margin-top: 1em"><i>EXAMPLE:</i>
+Assuming that /path/to/movie/movie.avi is played and
+&minus;sub&minus;paths sub,subtitles,/tmp/subs is specified,
+MPlayer searches for subtitle files in these
+directories:</p>
+
+<p style="margin-left:26%;">/path/to/movie/ <br>
+/path/to/movie/sub/ <br>
+/path/to/movie/subtitles/ <br>
+/tmp/subs/ <br>
+~/.mplayer/sub/</p>
 
 <p style="margin-left:11%;"><b>&minus;subdelay
 &lt;sec&gt;</b></p>
@@ -6758,6 +6787,11 @@ level. 0 is no compression, 9 is maximum compression.</p>
 
 <p style="margin-left:34%;">Specify the directory to save
 the PNG files to (default: ./).</p>
+
+<p style="margin-left:26%;">prefix=&lt;prefix&gt;</p>
+
+<p style="margin-left:34%;">Specify the prefix to be used
+for the PNG filenames (default: no prefix).</p>
 
 <p style="margin-left:26%;">alpha</p>
 
@@ -17689,9 +17723,17 @@ settings</p>
 
 <p style="margin-left:22%;">GUI configuration file</p>
 
+<p style="margin-left:11%;">~/.mplayer/gui.history</p>
+
+<p style="margin-left:22%;">GUI directory history</p>
+
 <p style="margin-left:11%;">~/.mplayer/gui.pl</p>
 
 <p style="margin-left:22%;">GUI playlist</p>
+
+<p style="margin-left:11%;">~/.mplayer/gui.url</p>
+
+<p style="margin-left:22%;">GUI URL list</p>
 
 <p style="margin-left:11%;">~/.mplayer/font/</p>
 
@@ -17701,14 +17743,6 @@ font.desc file and files with .RAW extension.)</p>
 <p style="margin-left:11%;">~/.mplayer/DVDkeys/</p>
 
 <p style="margin-left:22%;">cached CSS keys</p>
-
-<p style="margin-left:11%;">Assuming that
-/path/to/movie.avi is played, MPlayer searches for sub <br>
-files</p>
-
-<p style="margin-left:22%;">in this order: <br>
-/path/to/movie.sub <br>
-~/.mplayer/sub/movie.sub</p>
 
 <h2>EXAMPLES OF MPLAYER USAGE
 <a name="EXAMPLES OF MPLAYER USAGE"></a>

@@ -121,7 +121,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Kényszerített audio codec: %s\n"
 #define MSGTR_Video_NoVideo "Video: nincs video!!!\n"
 #define MSGTR_NotInitializeVOPorVO "\nHIBA: Nem sikerült a video filterek (-vf) vagy a video kimenet (-vo) inicializálása!\n"
-#define MSGTR_Paused "\n  =====  SZÜNET  =====\r"
+#define MSGTR_Paused "  =====  SZÜNET  ====="
 #define MSGTR_PlaylistLoadUnable "\nLejátszási lista (%s) betöltése sikertelen.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- Az MPlayer egy 'illegális utasítást' hajtott végre.\n"\
@@ -199,7 +199,6 @@ static const char help_text[]=
 #define MSGTR_EdloutBadStop "EDL skip visszavonva, az utolsó start > stop\n"
 #define MSGTR_EdloutStartSkip "EDL skip eleje, nyomd meg az 'i'-t a blokk befejezéséhez.\n"
 #define MSGTR_EdloutEndSkip "EDL skip vége, a sor kiírva.\n"
-#define MSGTR_MPEndposNoSizeBased "Az MPlayer -endpos opciója jelenleg még nem támogatja a méretbeli megadást.\n"
 
 // mplayer.c OSD
 #define MSGTR_OSDenabled "bekapcsolva"
@@ -577,9 +576,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[skin] hiba a skin konfigurációs fájljának %d. sorában: %s"
-#define MSGTR_SKIN_WARNING1 "[skin] figyelmeztetés: a skin konfigurációs fájljának %d. sorában: widget (%s) megvan, de nincs előtte \"section\""
-#define MSGTR_SKIN_WARNING2 "[skin] figyelmeztetés: a skin konfigurációs fájljának %d. sorában: widget (%s) megvan, de nincs előtte \"subsection\""
-#define MSGTR_SKIN_WARNING3 "[skin] figyelmeztetés: a skin konfigurációs fájljának %d. sorában: ez az elem nem használható ebben az alrészben (%s)"
 #define MSGTR_SKIN_SkinFileNotFound "[skin] a fájl ( %s ) nem található.\n"
 #define MSGTR_SKIN_SkinFileNotReadable "[skin] fájl ( %s ) nem olvasható.\n"
 #define MSGTR_SKIN_BITMAP_16bit  "16 vagy kevesebb bites bitmap nem támogatott (%s).\n"

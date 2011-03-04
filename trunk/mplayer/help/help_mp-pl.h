@@ -120,7 +120,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Wymuszam kodek audio: %s\n"
 #define MSGTR_Video_NoVideo "Wideo: brak obrazu\n"
 #define MSGTR_NotInitializeVOPorVO "\nBłąd krytyczny: Nie mogę zainicjalizować filtrów (-vf) lub wyjścia video (-vo).\n"
-#define MSGTR_Paused "\n  =====  PAUZA  =====\r" // no more than 23 characters (status line for audio files)
+#define MSGTR_Paused "  =====  PAUZA  =====" // no more than 23 characters (status line for audio files)
 #define MSGTR_PlaylistLoadUnable "\nNie mogę wczytać listy odtwarzania %s.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer zakończył prace z powodu błędu 'Niedozwolona Instrukcja'.\n"\
@@ -189,7 +189,6 @@ static const char help_text[]=
 #define MSGTR_EdloutBadStop "Pominięcie EDL odwołane, ostatni start > stop\n"
 #define MSGTR_EdloutStartSkip "Pominięcie EDL rozpoczęte, wciśnij ponownie 'i' by zakończyć blok.\n"
 #define MSGTR_EdloutEndSkip "Pominięcie EDL zakończone, wiersz zapisany.\n"
-#define MSGTR_MPEndposNoSizeBased "Opcja MPlayer -endpos nie obsługuje jeszcze jednostek rozmiaru.\n"
 
 // mplayer.c OSD
 

@@ -123,7 +123,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Codec audio forcé : %s\n"
 #define MSGTR_Video_NoVideo "Vidéo : pas de vidéo\n"
 #define MSGTR_NotInitializeVOPorVO "\nFATAL : impossible d'initialiser filtres vidéo (-vf) ou sortie vidéo (-vo).\n"
-#define MSGTR_Paused "\n  =====  PAUSE  =====\r" // pas plus de 23 caractères (ligne pour les fichiers audio)
+#define MSGTR_Paused "  =====  PAUSE  =====" // pas plus de 23 caractères (ligne pour les fichiers audio)
 #define MSGTR_PlaylistLoadUnable "\nImpossible de charger la liste de lecture %s.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer a planté à cause d'une 'Instruction Illégale'.\n"\
@@ -194,7 +194,6 @@ static const char help_text[]=
 #define MSGTR_EdloutBadStop "Saut EDL annulé, dernier début > arrêt\n"
 #define MSGTR_EdloutStartSkip "EDL saute le début, presse 'i' encore une fois pour fin du bloc.\n"
 #define MSGTR_EdloutEndSkip "EDL saute la fin, ligne écrite.\n"
-#define MSGTR_MPEndposNoSizeBased "Option -endpos dans MPlayer ne supporte pas encore les unités de taille.\n"
 
 
 // mplayer.c OSD
@@ -746,9 +745,6 @@ static const char help_text[]=
 
 // --- messages d'erreurs du chargement de peau ---
 #define MSGTR_SKIN_ERRORMESSAGE "[Peau] erreur à la ligne %d du fichier de config de peau : %s"
-#define MSGTR_SKIN_WARNING1 "[Peau] attention à la ligne %d du fichier de config de peau : Widget (%s) trouvé mais aucune \"section\" trouvé avant lui."
-#define MSGTR_SKIN_WARNING2 "[Peau] attention à la ligne %d du fichier de config de peau : Widget (%s) trouvé mais aucune \"subsection\" trouvé avant lui."
-#define MSGTR_SKIN_WARNING3 "[Peau] attention à la ligne %d du fichier de config de peau : cette sous-section n'est pas supporté par le widget (%s)"
 #define MSGTR_SKIN_SkinFileNotFound "[peau] fichier ( %s ) non trouvé.\n"
 #define MSGTR_SKIN_SkinFileNotReadable "[peau] fichier ( %s ) non lisible.\n"
 #define MSGTR_SKIN_BITMAP_16bit  "les images bitmaps 16 bits ou moins ne sont pas supportées ( %s ).\n"

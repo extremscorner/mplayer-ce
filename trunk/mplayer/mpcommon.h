@@ -25,6 +25,9 @@
 #include "libmpdemux/demuxer.h"
 #include "sub/ass_mp.h"
 
+#define ROUND(x) ((int)((x) < 0 ? (x) - 0.5 : (x) + 0.5))
+
+struct sh_audio;
 struct sh_video;
 
 extern double sub_last_pts;
@@ -35,6 +38,7 @@ extern int sub_auto;
 extern float sub_delay;
 extern float sub_fps;
 extern char **sub_name;
+extern char **sub_paths;
 extern char  *font_name;
 extern char  *sub_font_name;
 extern char  *audio_lang;
@@ -70,5 +74,7 @@ void set_osd_subtitle(subtitle *subs);
 
 void common_preinit(void);
 int common_init(void);
+
+double calc_a_pts(struct sh_audio *sh_audio, demux_stream_t *d_audio);
 
 #endif /* MPLAYER_MPCOMMON_H */

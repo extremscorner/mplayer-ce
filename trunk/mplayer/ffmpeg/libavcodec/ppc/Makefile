@@ -21,6 +21,7 @@ ALTIVEC-OBJS-$(CONFIG_FFT)             += ppc/fft_altivec.o             \
 OBJS-$(HAVE_ALTIVEC)                   += ppc/dsputil_altivec.o         \
                                           ppc/fdct_altivec.o            \
                                           ppc/float_altivec.o           \
+                                          ppc/fmtconvert_altivec.o      \
                                           ppc/gmc_altivec.o             \
                                           ppc/idct_altivec.o            \
                                           ppc/int_altivec.o             \
@@ -37,4 +38,5 @@ PAIRED-OBJS-$(CONFIG_RDFT)             += ppc/rdft_paired.o
 
 OBJS-$(HAVE_PAIRED)                    += ppc/dsputil_paired.o          \
                                           ppc/float_paired.o            \
+                                          ppc/fmtconvert_paired.o       \
                                           $(PAIRED-OBJS-yes)

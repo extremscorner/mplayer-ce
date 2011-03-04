@@ -64,6 +64,7 @@ struct pollfd {
     short revents; /* events that occurred */
 };
 
+#if !defined(GEKKO)
 /* events & revents */
 #define POLLIN     0x0001  /* any readable data available */
 #define POLLOUT    0x0002  /* file descriptor is writeable */
@@ -80,6 +81,7 @@ struct pollfd {
 
 
 int poll(struct pollfd *fds, nfds_t numfds, int timeout);
+#endif
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_NETWORK */
 

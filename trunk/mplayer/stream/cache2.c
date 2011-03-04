@@ -84,9 +84,6 @@ static void *gekko_stack = NULL;
 #endif
 #endif
 
-int stream_fill_buffer(stream_t *s);
-int stream_seek_long(stream_t *s,off_t pos);
-
 typedef struct {
   // constats:
   unsigned char *buffer;      // base pointer of the allocated buffer memory
@@ -149,7 +146,7 @@ static int cache_read(cache_vars_t *s, unsigned char *buf, int size)
 	if(s->eof) break;
 	if (s->max_filepos == last_max) {
 	    if (sleep_count++ == 10)
-	        mp_msg(MSGT_CACHE, MSGL_WARN, "Cache not filling!\n");
+	        mp_msg(MSGT_CACHE, MSGL_WARN, "Cache not filling, consider increasing -cache and/or -cache-min!\n");
 	} else {
 	    last_max = s->max_filepos;
 	    sleep_count = 0;
@@ -282,7 +279,7 @@ static int cache_fill(cache_vars_t *s)
 	{
 		s->stream->error++; //count read error
 		
-		if(s->stream->error>1000) //num retries
+		if(s->stream->error>500) //num retries
 		{
 			//s->stream->error=0;
 			s->eof=1;
@@ -420,17 +417,14 @@ static cache_vars_t* cache_init(int size,int sector){
   s->buffer=AR_GetBaseAddress()+(AR_GetInternalSize()-s->buffer_size-0x4000);
 
   if((u32)s->buffer < AR_GetBaseAddress()){
-    shared_free(s, sizeof(cache_vars_t));
-    return NULL;
-  }
 #else
   s->buffer=shared_alloc(s->buffer_size);
 
   if(s->buffer == NULL){
+#endif
     shared_free(s, sizeof(cache_vars_t));
     return NULL;
   }
-#endif
 
   s->fill_limit=8*sector;
 #ifdef GEKKO

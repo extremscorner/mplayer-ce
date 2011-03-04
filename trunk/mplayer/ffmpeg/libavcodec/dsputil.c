@@ -27,7 +27,7 @@
  * DSP utils
  */
 
-#include "libavcore/imgutils.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "simple_idct.h"
@@ -437,8 +437,8 @@ static void diff_pixels_c(DCTELEM *restrict block, const uint8_t *s1,
 }
 
 
-static void put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
-                                 int line_size)
+void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
+                             int line_size)
 {
     int i;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -493,9 +493,9 @@ static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
     }
 }
 
-static void put_signed_pixels_clamped_c(const DCTELEM *block,
-                                        uint8_t *restrict pixels,
-                                        int line_size)
+void ff_put_signed_pixels_clamped_c(const DCTELEM *block,
+                                    uint8_t *restrict pixels,
+                                    int line_size)
 {
     int i, j;
 
@@ -535,8 +535,8 @@ static void put_pixels_nonclamped_c(const DCTELEM *block, uint8_t *restrict pixe
     }
 }
 
-static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
-                          int line_size)
+void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
+                             int line_size)
 {
     int i;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -1599,54 +1599,6 @@ H264_CHROMA_MC(put_       , op_put)
 H264_CHROMA_MC(avg_       , op_avg)
 #undef op_avg
 #undef op_put
-
-static void put_no_rnd_vc1_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y){
-    const int A=(8-x)*(8-y);
-    const int B=(  x)*(8-y);
-    const int C=(8-x)*(  y);
-    const int D=(  x)*(  y);
-    int i;
-
-    assert(x<8 && y<8 && x>=0 && y>=0);
-
-    for(i=0; i<h; i++)
-    {
-        dst[0] = (A*src[0] + B*src[1] + C*src[stride+0] + D*src[stride+1] + 32 - 4) >> 6;
-        dst[1] = (A*src[1] + B*src[2] + C*src[stride+1] + D*src[stride+2] + 32 - 4) >> 6;
-        dst[2] = (A*src[2] + B*src[3] + C*src[stride+2] + D*src[stride+3] + 32 - 4) >> 6;
-        dst[3] = (A*src[3] + B*src[4] + C*src[stride+3] + D*src[stride+4] + 32 - 4) >> 6;
-        dst[4] = (A*src[4] + B*src[5] + C*src[stride+4] + D*src[stride+5] + 32 - 4) >> 6;
-        dst[5] = (A*src[5] + B*src[6] + C*src[stride+5] + D*src[stride+6] + 32 - 4) >> 6;
-        dst[6] = (A*src[6] + B*src[7] + C*src[stride+6] + D*src[stride+7] + 32 - 4) >> 6;
-        dst[7] = (A*src[7] + B*src[8] + C*src[stride+7] + D*src[stride+8] + 32 - 4) >> 6;
-        dst+= stride;
-        src+= stride;
-    }
-}
-
-static void avg_no_rnd_vc1_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y){
-    const int A=(8-x)*(8-y);
-    const int B=(  x)*(8-y);
-    const int C=(8-x)*(  y);
-    const int D=(  x)*(  y);
-    int i;
-
-    assert(x<8 && y<8 && x>=0 && y>=0);
-
-    for(i=0; i<h; i++)
-    {
-        dst[0] = avg2(dst[0], ((A*src[0] + B*src[1] + C*src[stride+0] + D*src[stride+1] + 32 - 4) >> 6));
-        dst[1] = avg2(dst[1], ((A*src[1] + B*src[2] + C*src[stride+1] + D*src[stride+2] + 32 - 4) >> 6));
-        dst[2] = avg2(dst[2], ((A*src[2] + B*src[3] + C*src[stride+2] + D*src[stride+3] + 32 - 4) >> 6));
-        dst[3] = avg2(dst[3], ((A*src[3] + B*src[4] + C*src[stride+3] + D*src[stride+4] + 32 - 4) >> 6));
-        dst[4] = avg2(dst[4], ((A*src[4] + B*src[5] + C*src[stride+4] + D*src[stride+5] + 32 - 4) >> 6));
-        dst[5] = avg2(dst[5], ((A*src[5] + B*src[6] + C*src[stride+5] + D*src[stride+6] + 32 - 4) >> 6));
-        dst[6] = avg2(dst[6], ((A*src[6] + B*src[7] + C*src[stride+6] + D*src[stride+7] + 32 - 4) >> 6));
-        dst[7] = avg2(dst[7], ((A*src[7] + B*src[8] + C*src[stride+7] + D*src[stride+8] + 32 - 4) >> 6));
-        dst+= stride;
-        src+= stride;
-    }
-}
 
 #define QPEL_MC(r, OPNAME, RND, OP) \
 static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
@@ -3776,7 +3728,9 @@ static void vector_fmul_add_c(float *dst, const float *src0, const float *src1, 
         dst[i] = src0[i] * src1[i] + src2[i];
 }
 
-void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, const float *win, float add_bias, int len){
+static void vector_fmul_window_c(float *dst, const float *src0,
+                                 const float *src1, const float *win, int len)
+{
     int i,j;
     dst += len;
     win += len;
@@ -3786,8 +3740,8 @@ void ff_vector_fmul_window_c(float *dst, const float *src0, const float *src1, c
         float s1 = src1[j];
         float wi = win[i];
         float wj = win[j];
-        dst[i] = s0*wj - s1*wi + add_bias;
-        dst[j] = s0*wi + s1*wj + add_bias;
+        dst[i] = s0*wj - s1*wi;
+        dst[j] = s0*wi + s1*wj;
     }
 }
 
@@ -3865,12 +3819,6 @@ static float scalarproduct_float_c(const float *v1, const float *v2, int len)
     return p;
 }
 
-static void int32_to_float_fmul_scalar_c(float *dst, const int *src, float mul, int len){
-    int i;
-    for(i=0; i<len; i++)
-        dst[i] = src[i] * mul;
-}
-
 static inline uint32_t clipf_c_one(uint32_t a, uint32_t mini,
                    uint32_t maxi, uint32_t maxisign)
 {
@@ -3913,30 +3861,6 @@ static void vector_clipf_c(float *dst, const float *src, float min, float max, i
             dst[i + 6] = av_clipf(src[i + 6], min, max);
             dst[i + 7] = av_clipf(src[i + 7], min, max);
         }
-    }
-}
-
-static av_always_inline int float_to_int16_one(const float *src){
-    return av_clip_int16(lrintf(*src));
-}
-
-static void ff_float_to_int16_c(int16_t *dst, const float *src, long len){
-    int i;
-    for(i=0; i<len; i++)
-        dst[i] = float_to_int16_one(src+i);
-}
-
-static void ff_float_to_int16_interleave_c(int16_t *dst, const float **src, long len, int channels){
-    int i,j,c;
-    if(channels==2){
-        for(i=0; i<len; i++){
-            dst[2*i]   = float_to_int16_one(src[0]+i);
-            dst[2*i+1] = float_to_int16_one(src[1]+i);
-        }
-    }else{
-        for(c=0; c<channels; c++)
-            for(i=0, j=c; i<len; i++, j+=channels)
-                dst[j] = float_to_int16_one(src[c]+i);
     }
 }
 
@@ -4037,22 +3961,22 @@ void ff_wmv2_idct_c(short * block){
 static void ff_wmv2_idct_put_c(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_wmv2_idct_c(block);
-    put_pixels_clamped_c(block, dest, line_size);
+    ff_put_pixels_clamped_c(block, dest, line_size);
 }
 static void ff_wmv2_idct_add_c(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_wmv2_idct_c(block);
-    add_pixels_clamped_c(block, dest, line_size);
+    ff_add_pixels_clamped_c(block, dest, line_size);
 }
 static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct (block);
-    put_pixels_clamped_c(block, dest, line_size);
+    ff_put_pixels_clamped_c(block, dest, line_size);
 }
 static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct (block);
-    add_pixels_clamped_c(block, dest, line_size);
+    ff_add_pixels_clamped_c(block, dest, line_size);
 }
 
 static void ff_jref_idct4_put(uint8_t *dest, int line_size, DCTELEM *block)
@@ -4211,10 +4135,10 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     c->get_pixels = get_pixels_c;
     c->diff_pixels = diff_pixels_c;
-    c->put_pixels_clamped = put_pixels_clamped_c;
-    c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
+    c->put_pixels_clamped = ff_put_pixels_clamped_c;
+    c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_c;
     c->put_pixels_nonclamped = put_pixels_nonclamped_c;
-    c->add_pixels_clamped = add_pixels_clamped_c;
+    c->add_pixels_clamped = ff_add_pixels_clamped_c;
     c->add_pixels8 = add_pixels8_c;
     c->add_pixels4 = add_pixels4_c;
     c->sum_abs_dctelem = sum_abs_dctelem_c;
@@ -4329,16 +4253,11 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_c;
     c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_c;
     c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_c;
-    c->put_no_rnd_vc1_chroma_pixels_tab[0]= put_no_rnd_vc1_chroma_mc8_c;
-    c->avg_no_rnd_vc1_chroma_pixels_tab[0]= avg_no_rnd_vc1_chroma_mc8_c;
 
     c->draw_edges = draw_edges_c;
 
 #if CONFIG_MLP_DECODER || CONFIG_TRUEHD_DECODER
     ff_mlp_init(c, avctx);
-#endif
-#if CONFIG_VC1_DECODER
-    ff_vc1dsp_init(c,avctx);
 #endif
 #if CONFIG_WMV2_DECODER || CONFIG_VC1_DECODER
     ff_intrax8dsp_init(c,avctx);
@@ -4434,11 +4353,8 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_fmul = vector_fmul_c;
     c->vector_fmul_reverse = vector_fmul_reverse_c;
     c->vector_fmul_add = vector_fmul_add_c;
-    c->vector_fmul_window = ff_vector_fmul_window_c;
-    c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
+    c->vector_fmul_window = vector_fmul_window_c;
     c->vector_clipf = vector_clipf_c;
-    c->float_to_int16 = ff_float_to_int16_c;
-    c->float_to_int16_interleave = ff_float_to_int16_interleave_c;
     c->scalarproduct_int16 = scalarproduct_int16_c;
     c->scalarproduct_and_madd_int16 = scalarproduct_and_madd_int16_c;
     c->scalarproduct_float = scalarproduct_float_c;

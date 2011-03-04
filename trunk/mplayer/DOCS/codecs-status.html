@@ -674,7 +674,7 @@
 <!--  -->
         <tr>
           <td align=center><b>FFmpeg H.264</b></td>
-          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>AVC1<br>davc<br>DAVC<br>vvvc<br></b></td>
+          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>AVC1<br>davc<br>DAVC<br>vvvc<br>ai55<br>ai15<br>ai1q<br>ai5q<br></b></td>
           <td align=center><b>h264</b></td>
           <td align=center><b>YV12<br>I420<br>IYUV</b></td>
           <td align=center colspan=2><b>-</b></td>
@@ -682,7 +682,7 @@
 <!--  -->
         <tr>
           <td align=center><b>FFmpeg H.264 (VDPAU)</b></td>
-          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>AVC1<br>davc<br>DAVC<br></b></td>
+          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>AVC1<br>davc<br>DAVC<br>ai55<br>ai15<br>ai1q<br>ai5q<br></b></td>
           <td align=center><b>h264_vdpau</b></td>
           <td align=center><b>VDPAU_H264</b></td>
           <td align=center colspan=2><b>-</b></td>
@@ -690,7 +690,7 @@
 <!--  -->
         <tr>
           <td align=center><b>CoreAVC H.264 for x86 - http://corecodec.org/</b></td>
-          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>davc<br>DAVC<br>VSSH<br></b></td>
+          <td align=center><b>H264<br>h264<br>X264<br>x264<br>avc1<br>davc<br>DAVC<br>VSSH<br>ai55<br>ai15<br>ai1q<br>ai5q<br></b></td>
           <td align=center><b>CoreAVCDecoder.ax</b></td>
           <td align=center><b>YV12<br>IYUV<br>I420<br>YUY2</b></td>
           <td align=center colspan=2><b>this codec will only work after purchasing it</b></td>
@@ -1906,7 +1906,7 @@
 <!--  -->
         <tr>
           <td align=center><b>Apple ProRes 422 (HQ) decoder</b></td>
-          <td align=center><b>apch<br>apcn<br>apcs</b></td>
+          <td align=center><b>apch<br>apcn<br>apcs<br>apco<br>ap4h</b></td>
           <td align=center><b>AppleProResDecoder.qtx</b></td>
           <td align=center><b>YUY2</b></td>
           <td align=center colspan=2><b>-</b></td>
@@ -2085,6 +2085,14 @@
           <td align=center><b>Xxan</b></td>
           <td align=center><b>xanlib.dll</b></td>
           <td align=center><b>BGR24<br>BGR15<br>BGR8</b></td>
+          <td align=center colspan=2><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr>
+          <td align=center><b>FFmpeg XAN wc4</b></td>
+          <td align=center><b>Xxan</b></td>
+          <td align=center><b>xan_wc4</b></td>
+          <td align=center><b>YV12</b></td>
           <td align=center colspan=2><b>-</b></td>
         </tr>
 <!--  -->
@@ -3240,9 +3248,9 @@
 <!--  -->
         <tr>
           <td align=center><b>FFmpeg XAN DPCM audio</b></td>
-          <td align=center><b>0x6E617841</b></td>
+          <td align=center><b>0x6E617841<br>0x594A</b></td>
           <td align=center><b>xan_dpcm</b></td>
-          <td align=center colspan=3><b>only works with libavformat demuxer</b></td>
+          <td align=center colspan=3><b>Wing Commander 4 files only work with libavformat demuxer</b></td>
         </tr>
 <!--  -->
         <tr>
@@ -3550,6 +3558,13 @@
           <td align=center><b>Blu-ray LPCM</b></td>
           <td align=center><b>0x4D435042</b></td>
           <td align=center><b>pcm_bluray</b></td>
+          <td align=center colspan=3><b>-</b></td>
+        </tr>
+<!--  -->
+        <tr>
+          <td align=center><b>Leitch/Harris PCM</b></td>
+          <td align=center><b>0x46584C50</b></td>
+          <td align=center><b>pcm_lxf</b></td>
           <td align=center colspan=3><b>-</b></td>
         </tr>
 <!--  -->

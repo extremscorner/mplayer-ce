@@ -377,30 +377,6 @@ Im Minutenschritt zurück-/\:vorwärts spulen.
 .PD 1
 .PP
 .RS
-(Die folgenden Tasten sind nur gültig, falls MPlayer mit GUI-Unterstützung
-übersetzt wurde und haben Vorrang vor den oben definierten Tasten.)
-.RE
-.PP
-.PD 0
-.RSs
-.IPs ENTER
-Startet Wiedergabe.
-.IPs "ESC\ \ "
-Beendet die Wiedergabe.
-.IPs "l\ \ \ \ "
-Datei laden.
-.IPs "t\ \ \ \ "
-Untertitel laden.
-.IPs "c\ \ \ \ "
-Skinbrowser öffnen.
-.IPs "p\ \ \ \ "
-Playlist öffnen.
-.IPs "r\ \ \ \ "
-Konfigurationsdialog öffnen.
-.RE
-.PD 1
-.PP
-.RS
 (Die folgenden Tasten sind nur gültig, falls MPlayer mit Unterstützung
 für TV-Karten oder DVB-Input übersetzt wurde und haben Vorrang vor den oben
 definierten Tasten.)
@@ -2414,6 +2390,24 @@ Deaktiviert das automatische Laden von Untertiteln.
 .TP
 .B \-osd\-duration <Zeit> (nur bei MPlayer)
 Setzt die Anzeigedauer der OSD-Meldungen in ms (Standard: 1000).
+.
+.TP
+.B \-osd\-fractions <0\-2>
+Setzt die Art der Anzeige von Nachkommastellen des aktuellen Zeitstempels im
+OSD:
+.PD 0
+.RSs
+.IPs 0
+Keine Anzeige der Nachkommastellen (Standard).
+.IPs 1
+Zeige die ersten beiden Nachkommastellen.
+.IPs 2
+Zeige genäherte Framezahl an.
+Die angezeigte Framezahl ist nicht exakt, sondern nur genähert.
+Für variable FPS ist die Näherung weit von der tatsächlichen Framezahl
+entfernt.
+.RE
+.PD 1
 .
 .TP
 .B \-osdlevel <0\-3> (nur bei MPlayer)
@@ -11265,8 +11259,20 @@ Eingabebelegungen (siehe '\-input keylist' für eine vollständige Auflistung
 aller Tastennamen)
 .
 .TP
+~/.mplayer/\:gui.conf
+Konfigurationsdatei für die GUI
+.
+.TP
+~/.mplayer/\:gui.history
+Verzeichnis-Verlaufsdatei für die GUI
+.
+.TP
 ~/.mplayer/\:gui.pl
 Playlist für die GUI
+.
+.TP
+~/.mplayer/\:gui.url
+URL-Liste für die GUI
 .
 .TP
 ~/.mplayer/\:font/

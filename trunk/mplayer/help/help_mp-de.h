@@ -131,7 +131,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Erzwungener Audiocodec: %s\n"
 #define MSGTR_Video_NoVideo "Video: kein Video\n"
 #define MSGTR_NotInitializeVOPorVO "\nFATAL: Konnte Videofilter (-vf) oder -ausgabetreiber (-vo) nicht initialisieren.\n"
-#define MSGTR_Paused "\n  =====  PAUSE  =====\r"
+#define MSGTR_Paused "  =====  PAUSE  ====="
 #define MSGTR_PlaylistLoadUnable "\nKann Playlist %s nicht laden.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer stürzte aufgrund einer 'ungültigen Anweisung' ab.\n"\
@@ -207,7 +207,6 @@ static const char help_text[]=
 #define MSGTR_EdloutBadStop "EDL-Sprung abgebrochen, letzter Start > Stop\n"
 #define MSGTR_EdloutStartSkip "EDL-Sprung begonnen, drücke 'i' erneut, um den Block zu beenden.\n"
 #define MSGTR_EdloutEndSkip "EDL-Sprung beendet, Zeile geschrieben.\n"
-#define MSGTR_MPEndposNoSizeBased "Die Option -endpos unterstützt für MPlayer noch keine Größenangaben.\n"
 
 // mplayer.c OSD
 #define MSGTR_OSDenabled "aktiviert"
@@ -773,12 +772,12 @@ static const char help_text[]=
 #define MSGTR_UNKNOWNWINDOWTYPE "Unbekannten Fenstertyp gefunden ..."
 
 // --- skin loader error messages
-#define MSGTR_SKIN_ERRORMESSAGE "[Skin] Fehler in Skin-Konfigurationsdatei in Zeile %d: %s"
-#define MSGTR_SKIN_WARNING1 "[Skin] Warnung: in Skin-Konfigurationsdatei in Zeile %d:\nWidget (%s) gefunden, aber davor wurde \"section\" nicht gefunden"
-#define MSGTR_SKIN_WARNING2 "[Skin] Warnung: in Skin-Konfigurationsdatei in Zeile %d:\nWidget (%s) gefunden, aber davor wurde \"subsection\" nicht gefunden."
-#define MSGTR_SKIN_WARNING3 "[skin] Warnung: in Skin-Konfigurationsdatei in Zeile %d:\nDiese Untersektion wird vom Widget nicht unterstützt (%s)."
-#define MSGTR_SKIN_SkinFileNotFound "[skin] Datei ( %s ) nicht gefunden.\n"
-#define MSGTR_SKIN_SkinFileNotReadable "[skin] Datei ( %s ) nicht lesbar.\n"
+#define MSGTR_SKIN_ERRORMESSAGE "Fehler in Skin-Konfigurationsdatei in Zeile %d: %s"
+#define MSGTR_SKIN_ERROR_SECTION "Für '%s' wurde kein Abschnitt angegeben.\n"
+#define MSGTR_SKIN_ERROR_WINDOW "Für '%s' wurde kein Fenster angegeben.\n"
+#define MSGTR_SKIN_ERROR_IN_WINDOW "Dieses Element wird in '%s' nicht unterstützt.\n"
+#define MSGTR_SKIN_SkinFileNotFound "Skin-Datei %s nicht gefunden.\n"
+#define MSGTR_SKIN_SkinFileNotReadable "Skin-Datei %s nicht lesbar.\n"
 #define MSGTR_SKIN_BITMAP_16bit  "Bitmaps mit 16 Bits oder weniger werden nicht unterstützt (%s).\n"
 #define MSGTR_SKIN_BITMAP_FileNotFound  "Datei nicht gefunden (%s)\n"
 #define MSGTR_SKIN_BITMAP_BMPReadError "BMP-Lesefehler (%s)\n"
@@ -795,7 +794,7 @@ static const char help_text[]=
 #define MSGTR_SKIN_FONT_NonExistentFontID "nicht existierende Schriftbezeichnung (%s)\n"
 #define MSGTR_SKIN_UnknownParameter "unbekannter Parameter (%s)\n"
 #define MSGTR_SKIN_SKINCFG_SkinNotFound "Skin nicht gefunden (%s).\n"
-#define MSGTR_SKIN_SKINCFG_SelectedSkinNotFound "Ausgewähltes Skin ( %s ) wurde nicht gefunden, versuche 'Standard'...\n"
+#define MSGTR_SKIN_SKINCFG_SelectedSkinNotFound "Ausgewähltes Skin '%s' nicht gefunden, Skin 'default' wird versucht ...\n"
 #define MSGTR_SKIN_SKINCFG_SkinCfgReadError "Skin-Konfigurationsdatei: Lesefehler (%s)\n"
 #define MSGTR_SKIN_LABEL "Skins:"
 
@@ -2175,7 +2174,7 @@ static const char help_text[]=
 #define MSGTR_TVI_DS_UnableTerminateVPPin "tvi_dshow: Kann VideoPort-Pin mit keinem Filter des Graphen terminieren. Fehler:0x%x\n"
 #define MSGTR_TVI_DS_UnableBuildVideoSubGraph "tvi_dshow: Kann Videokette des Capture-Graphen nicht erstellen. Fehler:0x%x\n"
 #define MSGTR_TVI_DS_UnableBuildAudioSubGraph "tvi_dshow: Kann Audiokette des Capture-Graphen nicht erstellen. Fehler:0x%x\n"
-#define MSGTR_TVI_DS_UnableBuildVBISubGraph "tvi_dshow: Kann VBI-Kette des Capture-Graphen nicht erstellen. Fehler:0x%x\n""
+#define MSGTR_TVI_DS_UnableBuildVBISubGraph "tvi_dshow: Kann VBI-Kette des Capture-Graphen nicht erstellen. Fehler:0x%x\n"
 #define MSGTR_TVI_DS_GraphInitFailure "tvi_dshow: Initialisierung des Directshow-Graph fehlgeschlagen.\n"
 #define MSGTR_TVI_DS_NoVideoCaptureDevice "tvi_dshow: Kein Gerät für Videoerfassung gefunden\n"
 #define MSGTR_TVI_DS_NoAudioCaptureDevice "tvi_dshow: Kein Gerät für Audioerfassung gefunden\n"

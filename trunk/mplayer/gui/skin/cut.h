@@ -19,9 +19,11 @@
 #ifndef MPLAYER_GUI_CUT_H
 #define MPLAYER_GUI_CUT_H
 
-void  cutItem( char * in, char * out, char sep, int num );
-int   cutItemToInt( char * in, char sep, int num );
-float cutItemToFloat( char * in, char sep, int num );
-void  cutChunk( char * in, char * s1 );
+#include <stddef.h>
+
+#define cutItem(in, out, sep, num) cutItemString(in, out, sep, num, sizeof(out))
+
+void cutItemString(char *, char *, char, int, size_t);
+int cutItemToInt(char *, char, int);
 
 #endif /* MPLAYER_GUI_CUT_H */

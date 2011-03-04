@@ -1001,6 +1001,7 @@ font_desc_t* read_font_desc_ft(const char *fname, int face_index, int movie_widt
     } else {
 	unicode = 0;
     }
+
     desc = init_font_desc();
     if(!desc) goto err_out;
 

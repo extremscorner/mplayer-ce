@@ -247,9 +247,9 @@ int m_config_parse_config_file(m_config_t* config, const char *conffile)
 		if (tmp < 0) {
 			PRINT_LINENUM;
 			if(tmp == M_OPT_UNKNOWN) {
-				#ifndef GEKKO
+#ifndef GEKKO
 				mp_msg(MSGT_CFGPARSER,MSGL_WARN,"Warning unknown option %s at line %d\n", opt,line_num);
-				#endif
+#endif
 				continue;
 			}
 			mp_msg(MSGT_CFGPARSER,MSGL_ERR,"Error parsing option %s=%s at line %d\n",opt,param,line_num);

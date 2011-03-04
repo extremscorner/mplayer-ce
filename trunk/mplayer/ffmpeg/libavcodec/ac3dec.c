@@ -193,6 +193,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     ff_mdct_init(&s->imdct_512, 9, 1, 1.0);
     ff_kbd_window_init(s->window, 5.0, 256);
     dsputil_init(&s->dsp, avctx);
+    ff_fmt_convert_init(&s->fmt_conv, avctx);
     av_lfg_init(&s->dith_state, 0);
 
     /* set scale value for float to int16 conversion */
@@ -628,13 +629,13 @@ static inline void do_imdct(AC3DecodeContext *s, int channels)
             for(i=0; i<128; i++)
                 x[i] = s->transform_coeffs[ch][2*i];
             ff_imdct_half(&s->imdct_256, s->tmp_output, x);
-            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 128);
             for(i=0; i<128; i++)
                 x[i] = s->transform_coeffs[ch][2*i+1];
             ff_imdct_half(&s->imdct_256, s->delay[ch-1], x);
         } else {
             ff_imdct_half(&s->imdct_512, s->tmp_output, s->transform_coeffs[ch]);
-            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 0, 128);
+            s->dsp.vector_fmul_window(s->output[ch-1], s->delay[ch-1], s->tmp_output, s->window, 128);
             memcpy(s->delay[ch-1], s->tmp_output+128, 128*sizeof(float));
         }
     }
@@ -1255,7 +1256,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
         } else {
             gain *= s->dynamic_range[0];
         }
-        s->dsp.int32_to_float_fmul_scalar(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
+        s->fmt_conv.int32_to_float_fmul_scalar(s->transform_coeffs[ch], s->fixed_coeffs[ch], gain, 256);
     }
 
     /* apply spectral extension to high frequency bins */
@@ -1407,7 +1408,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
             err = 1;
         }
-        s->dsp.float_to_int16_interleave(out_samples, output, 256, s->out_channels);
+        s->fmt_conv.float_to_int16_interleave(out_samples, output, 256, s->out_channels);
         out_samples += 256 * s->out_channels;
     }
     *data_size = s->num_blocks * 256 * avctx->channels * sizeof (int16_t);

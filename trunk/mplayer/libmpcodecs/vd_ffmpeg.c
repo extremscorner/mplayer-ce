@@ -198,10 +198,10 @@ static void mp_msp_av_log_callback(void *ptr, int level, const char *fmt,
         if(!strcmp(avc->class_name, "AVCodecContext")){
             AVCodecContext *s= ptr;
             if(s->codec){
-                if(s->codec->type == CODEC_TYPE_AUDIO){
+                if(s->codec->type == AVMEDIA_TYPE_AUDIO){
                     if(s->codec->decode)
                         type= MSGT_DECAUDIO;
-                }else if(s->codec->type == CODEC_TYPE_VIDEO){
+                }else if(s->codec->type == AVMEDIA_TYPE_VIDEO){
                     if(s->codec->decode)
                         type= MSGT_DECVIDEO;
                 }
@@ -283,7 +283,7 @@ static int init(sh_video_t *sh){
     if(vd_use_slices && (lavc_codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND) && !do_vis_debug)
         ctx->do_slices=1;
 
-    if(lavc_codec->capabilities&CODEC_CAP_DR1 && !do_vis_debug && lavc_codec->id != CODEC_ID_H264 && lavc_codec->id != CODEC_ID_INTERPLAY_VIDEO && lavc_codec->id != CODEC_ID_ROQ && lavc_codec->id != CODEC_ID_VP8)
+    if(lavc_codec->capabilities&CODEC_CAP_DR1 && !do_vis_debug && lavc_codec->id != CODEC_ID_H264 && lavc_codec->id != CODEC_ID_INTERPLAY_VIDEO && lavc_codec->id != CODEC_ID_ROQ && lavc_codec->id != CODEC_ID_VP8 && lavc_codec->id != CODEC_ID_LAGARITH)
         ctx->do_dr1=1;
     ctx->b_age= ctx->ip_age[0]= ctx->ip_age[1]= 256*256*256*64;
     ctx->ip_count= ctx->b_count= 0;
@@ -292,7 +292,7 @@ static int init(sh_video_t *sh){
     ctx->avctx = avcodec_alloc_context();
     avctx = ctx->avctx;
     avctx->opaque = sh;
-    avctx->codec_type = CODEC_TYPE_VIDEO;
+    avctx->codec_type = AVMEDIA_TYPE_VIDEO;
     avctx->codec_id = lavc_codec->id;
 
 #if CONFIG_VDPAU
@@ -834,7 +834,7 @@ static mp_image_t *decode(sh_video_t *sh, void *data, int len, int flags){
     pkt.data = data;
     pkt.size = len;
     // HACK: make PNGs decode normally instead of as CorePNG delta frames
-    pkt.flags = PKT_FLAG_KEY;
+    pkt.flags = AV_PKT_FLAG_KEY;
     ret = avcodec_decode_video2(avctx, pic, &got_picture, &pkt);
 
     dr1= ctx->do_dr1;

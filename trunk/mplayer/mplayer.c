@@ -30,6 +30,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <assert.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -111,6 +112,7 @@
 #include "mp_core.h"
 #include "mp_fifo.h"
 #include "mp_msg.h"
+#include "mp_strings.h"
 #include "mpcommon.h"
 #include "mplayer.h"
 #include "osdep/getch2.h"
@@ -145,12 +147,8 @@ int player_idle_mode=0;
 int quiet=0;
 int enable_mouse_movements=0;
 float start_volume = -1;
-float mplayer_volume = -1;
 double start_pts = MP_NOPTS_VALUE;
 char *heartbeat_cmd;
-
-#define ROUND(x) ((int)((x)<0 ? (x)-0.5 : (x)+0.5))
-
 
 #ifdef GEKKO
 #include "osdep/plat_gekko.h"
@@ -221,6 +219,8 @@ int osd_level=1;
 // if nonzero, hide current OSD contents when GetTimerMS() reaches this
 unsigned int osd_visible;
 int osd_duration = 1000;
+int osd_fractions = 0; // determines how fractions of seconds are displayed
+                       // on OSD
 
 int term_osd = 1;
 static char* term_osd_esc = "\x1b[A\r\x1b[K";
@@ -269,8 +269,8 @@ int file_filter=1;
 float stream_cache_min_percent=20.0;
 float stream_cache_seek_min_percent=50.0;
 #endif
-#ifdef GEKKO
 
+#ifdef GEKKO
 static bool InternetStream()
 {
 	if(!strncmp(filename,"http:",5)) return true;
@@ -485,6 +485,7 @@ char *font_name=NULL;
 char *sub_font_name=NULL;
 float font_factor=0.75;
 char **sub_name=NULL;
+char **sub_paths = NULL;
 float sub_delay=0;
 float sub_fps=0;
 int   sub_auto = 1;
@@ -589,22 +590,18 @@ static int is_valid_metadata_type (metadata_t type) {
   case META_VIDEO_CODEC:
   case META_VIDEO_BITRATE:
   case META_VIDEO_RESOLUTION:
-  {
     //geexbox bgvideo patch
     if (!mpctx->sh_video || (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh))
       return 0;
     break;
-  }
 
   /* check for valid audio stream */
   case META_AUDIO_CODEC:
   case META_AUDIO_BITRATE:
   case META_AUDIO_SAMPLES:
-  {
     if (!mpctx->sh_audio)
       return 0;
     break;
-  }
 
   /* check for valid demuxer */
   case META_INFO_TITLE:
@@ -614,11 +611,9 @@ static int is_valid_metadata_type (metadata_t type) {
   case META_INFO_COMMENT:
   case META_INFO_TRACK:
   case META_INFO_GENRE:
-  {
     if (!mpctx->demuxer)
       return 0;
     break;
-  }
 
   default:
     break;
@@ -642,7 +637,6 @@ static char *get_demuxer_info (char *tag) {
 }
 
 char *get_metadata (metadata_t type) {
-  char meta[128];
   sh_audio_t * const sh_audio = mpctx->sh_audio;
   sh_video_t * const sh_video = mpctx->sh_video;
 
@@ -664,18 +658,14 @@ char *get_metadata (metadata_t type) {
     else if (sh_video->format == 0x10000005)
       return strdup("h264");
     else if (sh_video->format >= 0x20202020)
-      snprintf(meta, sizeof(meta), "%.4s", (char *) &sh_video->format);
-    else
-      snprintf(meta, sizeof(meta), "0x%08X", sh_video->format);
-    return strdup(meta);
+      return mp_asprintf("%.4s", (char *)&sh_video->format);
+    return mp_asprintf("0x%08X", sh_video->format);
 
   case META_VIDEO_BITRATE:
-    snprintf(meta, sizeof(meta), "%d kbps", (int) (sh_video->i_bps * 8 / 1024));
-    return strdup(meta);
+    return mp_asprintf("%d kbps", (int)(sh_video->i_bps * 8 / 1024));
 
   case META_VIDEO_RESOLUTION:
-    snprintf(meta, sizeof(meta), "%d x %d", sh_video->disp_w, sh_video->disp_h);
-    return strdup(meta);
+    return mp_asprintf("%d x %d", sh_video->disp_w, sh_video->disp_h);
 
   case META_AUDIO_CODEC:
     if (sh_audio->codec && sh_audio->codec->name)
@@ -683,12 +673,10 @@ char *get_metadata (metadata_t type) {
     break;
 
   case META_AUDIO_BITRATE:
-    snprintf(meta, sizeof(meta), "%d kbps", (int)(sh_audio->i_bps * 8 / 1000));
-    return strdup(meta);
+    return mp_asprintf("%d kbps", (int)(sh_audio->i_bps * 8 / 1000));
 
   case META_AUDIO_SAMPLES:
-    snprintf(meta, sizeof(meta), "%d Hz, %d ch.", sh_audio->samplerate, sh_audio->channels);
-    return strdup(meta);
+    return mp_asprintf("%d Hz, %d ch.", sh_audio->samplerate, sh_audio->channels);
 
   /* check for valid demuxer */
   case META_INFO_TITLE:
@@ -1212,16 +1200,16 @@ static int libmpdemux_was_interrupted(int eof) {
        switch(cmd->id) {
        case MP_CMD_QUIT:
 	 exit_player_with_rc(EXIT_QUIT, (cmd->nargs > 0)? cmd->args[0].v.i : 0);
-       case MP_CMD_PLAY_TREE_STEP: {
+       case MP_CMD_PLAY_TREE_STEP:
 	 eof = (cmd->args[0].v.i > 0) ? PT_NEXT_ENTRY : PT_PREV_ENTRY;
 	 mpctx->play_tree_step = (cmd->args[0].v.i == 0) ? 1 : cmd->args[0].v.i;
-       } break;
-       case MP_CMD_PLAY_TREE_UP_STEP: {
+         break;
+       case MP_CMD_PLAY_TREE_UP_STEP:
 	 eof = (cmd->args[0].v.i > 0) ? PT_UP_NEXT : PT_UP_PREV;
-       } break;
-       case MP_CMD_PLAY_ALT_SRC_STEP: {
+         break;
+       case MP_CMD_PLAY_ALT_SRC_STEP:
 	 eof = (cmd->args[0].v.i > 0) ?  PT_NEXT_SRC : PT_PREV_SRC;
-       } break;
+         break;
        }
        mp_cmd_free(cmd);
   }
@@ -1307,6 +1295,22 @@ void add_subtitles(char *filename, float fps, int noerr)
     ++mpctx->set_of_sub_size;
     mp_msg(MSGT_CPLAYER, MSGL_INFO, MSGTR_AddedSubtitleFile, mpctx->set_of_sub_size,
 	    filename_recode(filename));
+}
+
+static int add_vob_subtitle(const char *vobname, const char * const ifo, int force, void *spu)
+{
+    if (!vobname)
+        return 0;
+
+    assert(!vo_vobsub);
+
+    vo_vobsub = vobsub_open(vobname, ifo, force, spu);
+
+    if (!vo_vobsub && force)
+        mp_msg(MSGT_CPLAYER, MSGL_ERR, MSGTR_CantLoadSub,
+               filename_recode(vobname));
+
+    return !!vo_vobsub;
 }
 
 // FIXME: if/when the GUI calls this, global sub numbering gets (potentially) broken.
@@ -1787,6 +1791,7 @@ void update_osd_msg(void) {
             int len = demuxer_get_time_length(mpctx->demuxer);
             int percentage = -1;
             char percentage_text[10];
+            char fractions_text[4];
             int pts = demuxer_get_current_time(mpctx->demuxer);
 
             //geexbox bgvideo patch
@@ -1802,34 +1807,59 @@ void update_osd_msg(void) {
             else
                 percentage_text[0] = 0;
 
+            if (osd_fractions==1) {
+                //print fractions as sub-second timestamp
+                snprintf(fractions_text, sizeof(fractions_text), ".%02d",
+                         (int)( (mpctx->sh_video->pts - pts)* 100 + 0.5)
+                         % 100);
+            } else if (osd_fractions==2) {
+                //print fractions by estimating the frame count within the
+                //second
+
+                //rounding or cutting off numbers after the decimal point
+                //causes problems because of float's precision and movies,
+                //whose first frame is not exactly at timestamp 0. Therefore,
+                //we add 0.2 and cut off at the decimal point, which proved
+                //as good heuristic
+                snprintf(fractions_text, sizeof(fractions_text), ".%02d",
+                         (int) ( ( mpctx->sh_video->pts - pts ) *
+                         mpctx->sh_video->fps + 0.2 ) );
+            } else {
+                //do not print fractions
+                fractions_text[0] = 0;
+            }
+
             if (osd_level >= 3) {
-				if (osd_level == 4)
+                if (osd_level == 4)
 #ifdef HW_RVL
-					snprintf(osd_text_timer, 63,
-							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f) m2(%.2f)",
-							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
-							len/3600,(len/60)%60,len%60,percentage_text, (int)cache_fill_status,
-								((float)((u32)SYS_GetArena1Hi() - (u32)SYS_GetArena1Lo())
-										/ ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0,
-								((float)((u32)SYS_GetArena2Hi() - (u32)SYS_GetArena2Lo())
-										/ ((u32)__Arena2Hi - (u32)__Arena2Lo)) * 100.0);
+                    snprintf(osd_text_timer, 63,
+                            "%c %02d:%02d:%02d%s / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f) m2(%.2f)",
+                            mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
+                            fractions_text,len/3600,(len/60)%60,len%60,
+                            percentage_text,(int)cache_fill_status,
+                            ((float)((u32)SYS_GetArena1Hi() - (u32)SYS_GetArena1Lo())
+                                    / ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0,
+                            ((float)((u32)SYS_GetArena2Hi() - (u32)SYS_GetArena2Lo())
+                                    / ((u32)__Arena2Hi - (u32)__Arena2Lo)) * 100.0);
 #else
 					snprintf(osd_text_timer, 63,
-							"%c %02d:%02d:%02d / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f)",
+							"%c %02d:%02d:%02d%s / %02d:%02d:%02d%s  cache(%02d%%) m1(%.2f)",
 							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
-							len/3600,(len/60)%60,len%60,percentage_text, (int)cache_fill_status,
-								((float)((u32)SYS_GetArena1Hi() - (u32)SYS_GetArena1Lo())
-										/ ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0);
+							fractions_text,len/3600,(len/60)%60,len%60,
+                            percentage_text,(int)cache_fill_status,
+                            ((float)((u32)SYS_GetArena1Hi() - (u32)SYS_GetArena1Lo())
+                                    / ((u32)__Arena1Hi - (u32)__Arena1Lo)) * 100.0);
 #endif
-				else
-					snprintf(osd_text_timer, 63,
-							"%c %02d:%02d:%02d / %02d:%02d:%02d%s",
-							mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
-							len/3600,(len/60)%60,len%60,percentage_text);
+                else
+                    snprintf(osd_text_timer, 63,
+                            "%c %02d:%02d:%02d%s / %02d:%02d:%02d%s",
+                            mpctx->osd_function,pts/3600,(pts/60)%60,pts%60,
+                            fractions_text,len/3600,(len/60)%60,len%60,
+                            percentage_text);
             } else
-                snprintf(osd_text_timer, 63, "%c %02d:%02d:%02d%s",
+                snprintf(osd_text_timer, 63, "%c %02d:%02d:%02d%s%s",
                          mpctx->osd_function,pts/3600,(pts/60)%60,
-                         pts%60,percentage_text);
+                         pts%60,fractions_text,percentage_text);
         } else
             osd_text_timer[0]=0;
 
@@ -1945,31 +1975,7 @@ static double written_audio_pts(sh_audio_t *sh_audio, demux_stream_t *d_audio)
 {
     double buffered_output;
     // first calculate the end pts of audio that has been output by decoder
-    double a_pts = sh_audio->pts;
-    if (a_pts != MP_NOPTS_VALUE)
-	// Good, decoder supports new way of calculating audio pts.
-	// sh_audio->pts is the timestamp of the latest input packet with
-	// known pts that the decoder has decoded. sh_audio->pts_bytes is
-	// the amount of bytes the decoder has written after that timestamp.
-	a_pts += sh_audio->pts_bytes / (double) sh_audio->o_bps;
-    else {
-	// Decoder doesn't support new way of calculating pts (or we're
-	// being called before it has decoded anything with known timestamp).
-	// Use the old method of audio pts calculation: take the timestamp
-	// of last packet with known pts the decoder has read data from,
-	// and add amount of bytes read after the beginning of that packet
-	// divided by input bps. This will be inaccurate if the input/output
-	// ratio is not constant for every audio packet or if it is constant
-	// but not accurately known in sh_audio->i_bps.
-
-	a_pts = d_audio->pts;
-	// ds_tell_pts returns bytes read after last timestamp from
-	// demuxing layer, decoder might use sh_audio->a_in_buffer for bytes
-	// it has read but not decoded
-	if (sh_audio->i_bps)
-	    a_pts += (ds_tell_pts(d_audio) - sh_audio->a_in_buffer_len) /
-		(double)sh_audio->i_bps;
-    }
+    double a_pts = calc_a_pts(sh_audio, d_audio);
     // Now a_pts hopefully holds the pts for end of audio from decoder.
     // Substract data in buffers between decoder and audio out.
 
@@ -2582,13 +2588,12 @@ int reinit_video_chain(void) {
   eosd_init(sh_video->vfilter);
 
 #ifdef GEKKO
-  codecs_t *expected = find_video_codec(sh_video->format, sh_video->bih ? ((unsigned int *)&sh_video->bih->biCompression) : NULL, sh_video->codec, 0);
   int dominant_axis = sh_video->disp_w > sh_video->disp_h ? sh_video->disp_w : sh_video->disp_h;
   
-  if (dominant_axis > 1024)
-  {
-    if ((strncmp(expected->name, "ffmpeg", 6) == 0) || (expected->name == "ffodivx"))
-    {
+  if (dominant_axis > 1024) {
+    codecs_t *expected = find_video_codec(sh_video->format, sh_video->bih ? ((unsigned int *)&sh_video->bih->biCompression) : NULL, sh_video->codec, 0);
+    
+    if ((strncmp(expected->name, "ffmpeg", 6) == 0) || (expected->name == "ffodivx")) {
       if (dominant_axis > 4096)
         m_config_set_option(mconfig, "lavdopts", "lowres=3");
       else if (dominant_axis > 2048)
@@ -2597,9 +2602,7 @@ int reinit_video_chain(void) {
         m_config_set_option(mconfig, "lavdopts", "lowres=1");
 	  
       frame_dropping = 1;
-    }
-    else
-    {
+    } else {
       m_config_set_option(mconfig, "lavdopts", "skipframe=nonref:skiploopfilter=all");
       frame_dropping = 0;
     }
@@ -3403,6 +3406,7 @@ current_module = NULL;
 // ******************* Now, let's see the per-file stuff ********************
 
 play_next_file:
+
   // init global sub numbers
   mpctx->global_sub_size = 0;
   memset(mpctx->sub_counts, 0, sizeof(mpctx->sub_counts));
@@ -3561,42 +3565,14 @@ while (player_idle_mode && !filename) {
 		set_osd_msg(OSD_MSG_TEXT, 1, 80000, "Loading vobsub subtitles...");
 		force_osd();
 	}
-    if (vobsub_name){
-      vo_vobsub=vobsub_open(vobsub_name,spudec_ifo,1,&vo_spudec);
-      if(vo_vobsub==NULL)
-        mp_msg(MSGT_CPLAYER,MSGL_ERR,MSGTR_CantLoadSub,
-		filename_recode(vobsub_name));
-    } else if (sub_auto && filename){
-      /* try to autodetect vobsub from movie filename ::atmos */
-      char *buf = strdup(filename), *psub;
-      char *pdot = strrchr(buf, '.');
-      char *pslash = strrchr(buf, '/');
-#if defined(__MINGW32__) || defined(__CYGWIN__)
-      if (!pslash) pslash = strrchr(buf, '\\');
-#endif
-      if (pdot && (!pslash || pdot > pslash))
-        *pdot = '\0';
-      vo_vobsub=vobsub_open(buf,spudec_ifo,0,&vo_spudec);
-      /* try from ~/.mplayer/sub */
-      if(!vo_vobsub && (psub = get_path( "sub/" ))) {
-          const char *bname = mp_basename(buf);
-          int l;
-          l = strlen(psub) + strlen(bname) + 1;
-          psub = realloc(psub,l);
-          strcat(psub,bname);
-          vo_vobsub=vobsub_open(psub,spudec_ifo,0,&vo_spudec);
-          free(psub);
-      }
-      free(buf);
-    }
+    load_vob_subtitle(filename, spudec_ifo, &vo_spudec, add_vob_subtitle);
     if(vo_vobsub){
       set_osd_msg(OSD_MSG_TEXT, 1, 1000, "Vobsub subtitles loaded");
 	  force_osd();
 
       initialized_flags|=INITIALIZED_VOBSUB;
       vobsub_set_from_lang(vo_vobsub, dvdsub_lang);
-      // check if vobsub requested only to display forced subtitles /** rodries review **/
-      //mp_property_do("sub_forced_only", M_PROPERTY_SET, &forced_subs_only, mpctx);
+      mp_property_do("sub_forced_only", M_PROPERTY_SET, &forced_subs_only, mpctx);
 
       // setup global sub numbering
       mpctx->sub_counts[SUB_SOURCE_VOBSUB] = vobsub_get_indexes_count(vo_vobsub);
@@ -4036,21 +4012,7 @@ if(1 || mpctx->sh_video) {
 // check .sub
   double fps = mpctx->sh_video ? mpctx->sh_video->fps : 25;
   current_module="read_subtitles_file";
-  if(sub_name){
-    for (i = 0; sub_name[i] != NULL; ++i)
-        add_subtitles (sub_name[i], fps, 0);
-  }
-  if(sub_auto) { // auto load sub file ...
-    char *psub = get_path( "sub/" );
-    char **tmp = sub_filenames((psub ? psub : ""), filename);
-    int i = 0;
-    free(psub); // release the buffer created by get_path() above
-    while (tmp[i]) {
-        add_subtitles (tmp[i], fps, 1);
-        free(tmp[i++]);
-    }
-    free(tmp);
-  }
+  load_subtitles(filename, fps, add_subtitles);
   if (mpctx->set_of_sub_size > 0)
       mpctx->sub_counts[SUB_SOURCE_SUBS] = mpctx->set_of_sub_size;
 }
@@ -4079,24 +4041,20 @@ if (select_subtitle(mpctx)) {
       }
   }
 
-if(!mpctx->sh_video) goto main; // audio-only
+  if (mpctx->sh_video)
+      reinit_video_chain();
 
-if(!reinit_video_chain()) {
-  if(!mpctx->sh_video){
-    if(!mpctx->sh_audio) goto goto_next_file;
-    goto main; // exit_player(MSGTR_Exit_error);
-  }
-}
-
-   if(vo_flags & 0x08 && vo_spudec)
-      spudec_set_hw_spu(vo_spudec,mpctx->video_out);
+      if (mpctx->sh_video) {
+          if (vo_flags & 0x08 && vo_spudec)
+              spudec_set_hw_spu(vo_spudec, mpctx->video_out);
 
 #ifdef CONFIG_FREETYPE
-   //force_load_font = 1;
+          //force_load_font = 1;
 #endif
+      } else if (!mpctx->sh_audio)
+          goto goto_next_file;
 
 //================== MAIN: ==========================
-main:
 current_module="main";
 
     if(playing_msg) {
@@ -4136,9 +4094,6 @@ if(mpctx->sh_video){
     audio_delay += mpctx->sh_video->stream_delay;
 }
 if(mpctx->sh_audio){
-  if (mplayer_volume >= 0)
-    mixer_setvolume(&mpctx->mixer, mplayer_volume, mplayer_volume);
-
   if (start_volume >= 0)
     mixer_setvolume(&mpctx->mixer, start_volume, start_volume);
   if (! ignore_start)
@@ -4210,11 +4165,6 @@ if (seek_to_sec) {
 }
 #endif
 
-if (end_at.type == END_AT_SIZE) {
-    mp_msg(MSGT_CPLAYER, MSGL_WARN, MSGTR_MPEndposNoSizeBased);
-    end_at.type = END_AT_NONE;
-}
-
 #ifdef CONFIG_DVDNAV
 mp_dvdnav_context_free(mpctx);
 if (mpctx->stream->type == STREAMTYPE_DVDNAV) {
@@ -4259,14 +4209,11 @@ if(!mpctx->sh_video || !strncmp(filename,"dvd",3))first_frame=true;
 	force_osd();
 	}
 */
-seek_to_sec=restore_seek;
-{
- if(seek_to_sec && strncmp(fileplaying,"dvd:",4) != 0 && strncmp(fileplaying,"dvdnav:",7) != 0)
- {
- 	//printf("seek\n");
+if (seek_to_sec) {
+    if (restore_seek && strncmp(fileplaying,"dvd:",4) != 0 && strncmp(fileplaying,"dvdnav:",7) != 0)
+        seek_to_sec=restore_seek;
     seek(mpctx, seek_to_sec, SEEK_ABSOLUTE);
     end_at.pos += seek_to_sec;
- }
 }
 
 
@@ -4349,7 +4296,6 @@ total_time_usage_start=GetTimer();
 mpctx->eof=0;
 while(!mpctx->eof){
     double aq_sleep_time=0;
-//init_while:
 
 if(dvd_last_chapter>0) {
   int cur_chapter = demuxer_get_current_chapter(mpctx->demuxer);
@@ -4385,7 +4331,8 @@ if(!mpctx->sh_video) {
   if(!quiet)
     print_status(a_pos, 0, 0);
 
-  if(end_at.type == END_AT_TIME && end_at.pos < a_pos)
+  if(end_at.type == END_AT_TIME && end_at.pos < a_pos ||
+     end_at.type == END_AT_SIZE && end_at.pos < stream_tell(mpctx->stream))
     mpctx->eof = PT_NEXT_ENTRY;
   update_subtitles(NULL, a_pos, mpctx->d_sub, 0);
   update_osd_msg();
@@ -4415,7 +4362,11 @@ if(!mpctx->sh_video) {
 	  mp_msg(MSGT_CPLAYER,MSGL_FATAL, MSGTR_NotInitializeVOPorVO);
 	  mpctx->eof = 1; goto goto_next_file;
       }
-      if (frame_time < 0)
+      if (frame_time < 0) {
+          // if we have no more video, sleep some arbitrary time
+          frame_time = 1.0/20.0;
+          // only stop playing when audio is at end as well
+          if (!mpctx->sh_audio || mpctx->d_audio->eof)
       //geexbox bgvideo patch
        if (mpctx->bg_demuxer && mpctx->bg_demuxer->video && mpctx->bg_demuxer->video->sh && mpctx->sh_video == mpctx->bg_demuxer->video->sh) {
     	   demux_seek(mpctx->bg_demuxer,0,0,1);
@@ -4424,7 +4375,7 @@ if(!mpctx->sh_video) {
         }
         else
 	  mpctx->eof = 1;
-      else {
+      } else {
 	  // might return with !eof && !blit_frame if !correct_pts
 	  mpctx->num_buffered_frames += blit_frame;
 	  mpctx->time_frame += frame_time / playback_speed;  // for nosound
@@ -4460,6 +4411,7 @@ if(!mpctx->sh_video) {
         }
     }
 #endif
+
     frame_time_remaining = sleep_until_update(&mpctx->time_frame, &aq_sleep_time);
 
 //====================== FLIP PAGE (VIDEO BLT): =========================
@@ -4504,10 +4456,9 @@ if(auto_quality>0){
      if (play_n_frames <= 0) mpctx->eof = PT_NEXT_ENTRY;
  }
 
-
-// FIXME: add size based support for -endpos
- if (end_at.type == END_AT_TIME &&
-         !frame_time_remaining && end_at.pos <= mpctx->sh_video->pts)
+ if (!frame_time_remaining &&
+     ((end_at.type == END_AT_TIME &&       mpctx->sh_video->pts >= end_at.pos) ||
+      (end_at.type == END_AT_SIZE && stream_tell(mpctx->stream) >= end_at.pos)))
      mpctx->eof = PT_NEXT_ENTRY;
 
 } // end if(mpctx->sh_video)
@@ -4691,6 +4642,7 @@ if(rel_seek_secs || abs_seek_pos){
 #endif /* CONFIG_GUI */
 
 } // while(!mpctx->eof)
+
 mp_msg(MSGT_GLOBAL,MSGL_V,"EOF code: %d  \n",mpctx->eof);
 #ifdef CONFIG_STREAM_CACHE
 error_playing=stream_error(mpctx->stream);
@@ -4829,7 +4781,7 @@ while(mpctx->playtree_iter != NULL) {
         if(play_tree_iter_step(mpctx->playtree_iter,mpctx->eof,0) != PLAY_TREE_ITER_ENTRY) {
             play_tree_iter_free(mpctx->playtree_iter);
             mpctx->playtree_iter = NULL;
-        };
+        }
     } else
         break;
 }

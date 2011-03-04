@@ -54,6 +54,7 @@ static inline void TranslateFilename( int c,char * tmp,size_t tmplen )
 {
  int i;
  char * p;
+ size_t len;
 
  switch ( guiIntfStruct.StreamType )
   {
@@ -67,8 +68,10 @@ static inline void TranslateFilename( int c,char * tmp,size_t tmplen )
               av_strlcpy(tmp, p + 1, tmplen);
             else
               av_strlcpy(tmp, guiIntfStruct.Filename, tmplen);
-            if ( tmp[strlen( tmp ) - 4] == '.' ) tmp[strlen( tmp ) - 4]=0;
-            if ( tmp[strlen( tmp ) - 5] == '.' ) tmp[strlen( tmp ) - 5]=0;
+            len=strlen( tmp );
+            if ( ( len > 3 )&&( tmp[len - 3] == '.' ) ) tmp[len - 3]=0;
+            else if ( ( len > 4 )&&( tmp[len - 4] == '.' ) ) tmp[len - 4]=0;
+            else if ( ( len > 5 )&&( tmp[len - 5] == '.' ) ) tmp[len - 5]=0;
            } else av_strlcpy( tmp,MSGTR_NoFileLoaded,tmplen );
           break;
 #ifdef CONFIG_DVDREAD
@@ -259,7 +262,7 @@ void Render( wsTWindow * window,wItem * Items,int nrItems,char * db,int size )
 {
  wItem    * item;
  txSample * image = NULL;
- int        i;
+ int        i, ofs;
 
  image_buffer=db;
  image_width=window->Width;
@@ -267,38 +270,63 @@ void Render( wsTWindow * window,wItem * Items,int nrItems,char * db,int size )
  for( i=0;i < nrItems + 1;i++ )
   {
    item=&Items[i];
+   ofs = (item->pressed == btnPressed ? 0 : (item->pressed == btnReleased ? 1 : 2));
    switch( item->type )
     {
      case itButton:
-          PutImage( &item->Bitmap,item->x,item->y,3,item->pressed );
+          PutImage( &item->Bitmap,item->x,item->y,3,ofs );
           break;
      case itPotmeter:
-          if (item->phases == 1)SimplePotmeterPutImage( &item->Bitmap,item->x,item->y, item->value / 100.0f );
-          else PutImage( &item->Bitmap,item->x,item->y,item->phases,( item->phases - 1 ) * ( item->value / 100.0f ) );
+          if (item->numphases == 1)SimplePotmeterPutImage( &item->Bitmap,item->x,item->y, item->value / 100.0f );
+          else PutImage( &item->Bitmap,item->x,item->y,item->numphases,( item->numphases - 1 ) * ( item->value / 100.0f ) );
           break;
      case itHPotmeter:
-          if (item->phases == 1)SimplePotmeterPutImage( &item->Bitmap,item->x,item->y, item->value / 100.0f );
-          else PutImage( &item->Bitmap,item->x,item->y,item->phases,( item->phases - 1 ) * ( item->value / 100.0f ) );
-          PutImage( &item->Mask,item->x + (int)( ( item->width - item->psx ) * item->value / 100.0f ),item->y,3,item->pressed );
+          if (item->numphases == 1)SimplePotmeterPutImage( &item->Bitmap,item->x,item->y, item->value / 100.0f );
+          else PutImage( &item->Bitmap,item->x,item->y,item->numphases,( item->numphases - 1 ) * ( item->value / 100.0f ) );
+          PutImage( &item->Mask,item->x + (int)( ( item->width - item->pwidth ) * item->value / 100.0f ),item->y,3,ofs );
           break;
      case itVPotmeter:
           PutImage( &item->Bitmap,
 	    item->x,item->y,
-	    item->phases,
-	    item->phases * ( 1. - item->value / 100.0f ) );
+	    item->numphases,
+	    item->numphases * ( 1. - item->value / 100.0f ) );
           PutImage( &item->Mask,
-	    item->x,item->y + (int)( ( item->height - item->psy ) * ( 1. - item->value / 100.0f ) ),
-	    3,item->pressed );
+	    item->x,item->y + (int)( ( item->height - item->pheight ) * ( 1. - item->value / 100.0f ) ),
+	    3,ofs );
           break;
      case itSLabel:
-          image=fntRender( item,0,"%s",item->label );
+          image=fntRender( item,0,item->label );
           if ( image ) PutImage( image,item->x,item->y,1,0 );
      case itDLabel:
           {
+           int x;
+           unsigned int d;
            char * t = Translate( item->label );
-           int    l = fntTextWidth( item->fontid,t );
-           l=(l?l:item->width);
-           image=fntRender( item,l-(GetTimerMS() / 20)%l,"%s",t );
+           if ( g_strcmp0( item->text, t ) != 0 )
+            {
+             g_free( item->text );
+             item->text = g_strdup( t );
+             item->textwidth = fntTextWidth( item->fontid, t );
+             item->starttime = GetTimerMS();
+             item->last_x = 0;
+            }
+           d = GetTimerMS() - item->starttime;
+           if ( d < DELAYTIME ) x = item->last_x;   // don't scroll yet
+           else
+            {
+             int l;
+             char c[2];
+             l = (item->textwidth ? item->textwidth : item->width);
+             x = l - ((d - DELAYTIME) / 20) % l - 1;
+             c[0] = *item->text;
+             c[1] = '\0';
+             if ( x < (fntTextWidth( item->fontid, c ) + 1) >> 1)
+              {
+               item->starttime = GetTimerMS();   // stop again
+               item->last_x = x;                 // at current x pos
+              }
+            }
+           image = fntRender( item, x, t );
 	  }
           if ( image ) PutImage( image,item->x,item->y,1,0 );
           break;

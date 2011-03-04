@@ -115,7 +115,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "강제로 사용된 오디오 코덱: %s\n"
 #define MSGTR_Video_NoVideo "비디오: 비디오 없음\n"
 #define MSGTR_NotInitializeVOPorVO "\n치명적 오류: 비디오 필터(-vf) 또는 비디오 출력(-vo)을 초기화할 수 없습니다.\n"
-#define MSGTR_Paused "\n  =====  잠시멈춤  =====\r"
+#define MSGTR_Paused "  =====  잠시멈춤  ====="
 #define MSGTR_PlaylistLoadUnable "\n재생목록 %s을(를) 열 수 없습니다.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer가 '잘못된 연산'으로 종료되었습니다.\n"\
@@ -369,9 +369,6 @@ static const char help_text[]=
 
 // --- skin loader error messages
 #define MSGTR_SKIN_ERRORMESSAGE "[스킨] 스킨 설정파일의 %d번째 줄에 오류가 있습니다.: %s"
-#define MSGTR_SKIN_WARNING1 "[스킨] 설정파일의 %d번째 줄 경고:\n위젯(%s)을 찾았지만 그 앞에 \"section\"을 찾을 수 없습니다."
-#define MSGTR_SKIN_WARNING2 "[스킨] 설정파일의 %d번째 줄 경고:\n위젯(%s)을 찾았지만 그 앞에 \"subsection\"을 찾을 수 없습니다."
-#define MSGTR_SKIN_WARNING3 "[스킨] 설정파일의 %d번째 줄 경고:\n이 subsection은 현재 위젯에서 지원되지 않습니다. (%s)"
 #define MSGTR_SKIN_BITMAP_16bit  "16 비트 혹은 더 낮은 품질의 비트맵은 지원되지 않습니다. (%s)\n"
 #define MSGTR_SKIN_BITMAP_FileNotFound  "파일을 찾을 수 없습니다. (%s)\n"
 #define MSGTR_SKIN_BITMAP_BMPReadError "BMP 읽기 오류입니다. (%s)\n"

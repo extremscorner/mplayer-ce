@@ -34,6 +34,8 @@
 #include <malloc.h>
 #endif
 
+#include "libavutil/mem.h"
+
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
@@ -350,7 +352,7 @@ static int config(struct vf_instance *vf,
     int h= (height+16+15)&(~15);
 
     vf->priv->temp_stride= (width+16+15)&(~15);
-    vf->priv->src = memalign(8, vf->priv->temp_stride*(h+8)*sizeof(uint8_t));
+    vf->priv->src = av_malloc(vf->priv->temp_stride*(h+8)*sizeof(uint8_t));
 
     return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
@@ -410,7 +412,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 static void uninit(struct vf_instance *vf){
     if(!vf->priv) return;
 
-    free(vf->priv->src);
+    av_free(vf->priv->src);
     vf->priv->src= NULL;
 
     free(vf->priv);
@@ -458,10 +460,10 @@ static int vf_open(vf_instance_t *vf, char *args){
     init_thres2();
 
     switch(vf->priv->mode){
-	case 0: requantize= hardthresh_c; break;
-	case 1: requantize= softthresh_c; break;
+        case 0: requantize= hardthresh_c; break;
+        case 1: requantize= softthresh_c; break;
         default:
-	case 2: requantize= mediumthresh_c; break;
+        case 2: requantize= mediumthresh_c; break;
     }
 
 #if HAVE_MMX
@@ -471,10 +473,10 @@ static int vf_open(vf_instance_t *vf, char *args){
 #endif
 #if 0
     if(gCpuCaps.hasMMX){
-	switch(vf->priv->mode){
-	    case 0: requantize= hardthresh_mmx; break;
-	    case 1: requantize= softthresh_mmx; break;
-	}
+        switch(vf->priv->mode){
+            case 0: requantize= hardthresh_mmx; break;
+            case 1: requantize= softthresh_mmx; break;
+        }
     }
 #endif
 

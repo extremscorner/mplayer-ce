@@ -116,7 +116,7 @@ static const char help_text[]=
 #define MSGTR_ForcedAudioCodec "Присилен аудио кодек: %s\n"
 #define MSGTR_Video_NoVideo "Видео: нема слика\n"
 #define MSGTR_NotInitializeVOPorVO "\nФАТАЛНО: Не може да ги иницијализира видео филтерите (-vf) или видео излезот (-vo).\n"
-#define MSGTR_Paused "\n  =====  ПАУЗА =====\r" // не повеќе од 23 карактери (статус линија за аудио датотеките)
+#define MSGTR_Paused "  =====  ПАУЗА =====" // не повеќе од 23 карактери (статус линија за аудио датотеките)
 #define MSGTR_PlaylistLoadUnable "\nНе може да ја вчита плејлистата %s.\n"
 #define MSGTR_Exit_SIGILL_RTCpuSel \
 "- MPlayer падна од 'Нелегална Инструкција'.\n"\
@@ -367,9 +367,6 @@ static const char help_text[]=
 
 // --- пораки со грешка при вчитување на скинови
 #define MSGTR_SKIN_ERRORMESSAGE "[скин] грешка во конфигурационата датотека за скинови, линија %d: %s"
-#define MSGTR_SKIN_WARNING1 "[скин] предупредување во конфигурационата датотека за скинови, линија %d: пронајден е widget но не е пронајден пред \"секцијата\" ( %s )"
-#define MSGTR_SKIN_WARNING2 "[скин] предупредување во конфигурационата датотека за скинови, линија %d: пронајден е widget но не е пронајден пред \"под секцијата\" (%s)"
-#define MSGTR_SKIN_WARNING3 "[скин] предупредување во конфигурационата датотека за скинови, линија %d: оваа под секција не е подржана од овој widget (%s)"
 #define MSGTR_SKIN_BITMAP_16bit  "Не е подржана 16 битна или помала длабочина на битмапата ( %s ).\n"
 #define MSGTR_SKIN_BITMAP_FileNotFound  "датотеката не е пронајдена ( %s )\n"
 #define MSGTR_SKIN_BITMAP_BMPReadError "BMP грешка во читањето ( %s )\n"

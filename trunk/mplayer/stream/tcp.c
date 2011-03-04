@@ -217,7 +217,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 		closesocket(socket_server_fd);
 		return TCP_ERROR_PORT;
 	}
-	net_fcntl(socket_server_fd, F_SETFL, net_fcntl(socket_server_fd, F_GETFL, 0) & ~IOS_O_NONBLOCK);		
+	net_fcntl(socket_server_fd, F_SETFL, net_fcntl(socket_server_fd, F_GETFL, 0) & ~IOS_O_NONBLOCK);
 #else
 #if !HAVE_WINSOCK2_H
 	fcntl( socket_server_fd, F_SETFL, fcntl(socket_server_fd, F_GETFL) | O_NONBLOCK );
@@ -225,9 +225,6 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 	val = 1;
 	ioctlsocket( socket_server_fd, FIONBIO, &val );
 #endif
-#endif
-
-#if !defined(GEKKO)
 	if( connect( socket_server_fd, (struct sockaddr*)&server_address, server_address_size )==-1 ) {
 #if !HAVE_WINSOCK2_H
 		if( errno!=EINPROGRESS ) {
@@ -278,7 +275,7 @@ connect2Server_with_af(char *host, int port, int af,int verb) {
 		mp_msg(MSGT_NETWORK,MSGL_ERR,MSGTR_MPDEMUX_NW_ConnectError,strerror(err));
 		return TCP_ERROR_PORT;
 	}
-#endif	
+#endif
 	return socket_server_fd;
 }
 
