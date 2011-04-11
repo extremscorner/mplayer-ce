@@ -27,9 +27,9 @@ INSTALL = install
 INSTALLSTRIP = -s
 WINDRES = windres
 
-CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
-CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
-CC_DEPFLAGS = -MD -MP -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer
+CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
+CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
+CC_DEPFLAGS = -MD -MP -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math
 
 CFLAGS_DHAHELPER         = 
 CFLAGS_LIBDVDCSS         = 
@@ -40,7 +40,7 @@ CFLAGS_STACKREALIGN      =
 CFLAGS_SVGALIB_HELPER    = 
 CFLAGS_TREMOR_LOW        = 
 
-EXTRALIBS          = -Wl,-z,noexecstack  -mogc -ffast-math   -lfreetype -liconv -lfribidi -laesnd -ltinysmb -lbba -lfat -logc -static -L$(DEVKITPRO)/libogc/lib/cube -L$(DEVKITPRO)/portlibs/ppc/lib  -lm
+EXTRALIBS          = -mogc -ffast-math   -lfreetype -liconv -lfribidi -laesnd -ltinysmb -lbba -lfat -logc -static -L$(DEVKITPRO)/libogc/lib/cube -L$(DEVKITPRO)/portlibs/ppc/lib  -lm
 EXTRALIBS_MPLAYER  = -specs=mplayer.spec 
 EXTRALIBS_MENCODER = 
 
@@ -240,7 +240,7 @@ FFMPEG     = yes
 FFMPEG_A   = yes
 
 ASFLAGS    = $(CFLAGS)
-AS_DEPFLAGS= -MD -MP -O2 -meabi -mogc -mcpu=750 -mtune=750 -mhard-float -mdouble-float -mpaired -pipe -g -ffast-math -fomit-frame-pointer
+AS_DEPFLAGS= -MD -MP -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math
 HOSTCC     = $(HOST_CC)
 HOSTCFLAGS = -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112 -O3
 HOSTLIBS   = -lm
