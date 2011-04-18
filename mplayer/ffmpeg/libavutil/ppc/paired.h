@@ -21,6 +21,12 @@
 
 #include <paired.h>
 
+typedef float vec_f32_t __attribute__((vector_size(8)));
+typedef unsigned char vec_u8_t __attribute__((vector_size(2)));
+typedef unsigned short vec_u16_t __attribute__((vector_size(4)));
+typedef signed char vec_s8_t __attribute__((vector_size(2)));
+typedef signed short vec_s16_t __attribute__((vector_size(4)));
+
 #define psq_l(d, rA, W, I) ({																\
 	vector float frD;																		\
 	asm volatile("psq_l	%0,%1(%2),%3,%4" : "=f"(frD) : "i"(d), "b"(rA), "i"(W), "i"(I));	\
