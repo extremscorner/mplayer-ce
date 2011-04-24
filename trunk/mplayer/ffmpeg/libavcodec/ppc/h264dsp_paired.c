@@ -23,15 +23,13 @@
 #include "util_paired.h"
 #include "libavutil/ppc/paired.h"
 
-#define CHROMAMC_VEC_OP {									\
-	const float scalar = 0.015625;							\
-	vec_s16_t iAB = {(8-x)*(8-y),(  x)*(8-y)};				\
-	vec_s16_t iCD = {(8-x)*(  y),(  x)*(  y)};				\
-	asm volatile("psq_l %0,%1,0,7" : "=f"(fAB) : "o"(iAB));	\
-	asm volatile("psq_l %0,%1,0,7" : "=f"(fCD) : "o"(iCD));	\
-	fAB = ps_mul(fAB, scalar);								\
-	fCD = ps_mul(fCD, scalar);								\
-}															\
+#define CHROMAMC_VEC_OP {							\
+	FAST_LSCALE(6, GQR_TYPE_S16);					\
+	vec_s16_t iAB = {(8-x)*(8-y),(  x)*(8-y)};		\
+	vec_s16_t iCD = {(8-x)*(  y),(  x)*(  y)};		\
+	asm("psq_l %0,%1,0,1" : "=f"(fAB) : "o"(iAB));	\
+	asm("psq_l %0,%1,0,1" : "=f"(fCD) : "o"(iCD));	\
+}													\
 
 static void put_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y)
 {
@@ -1071,7 +1069,7 @@ static void weight_h264_pixels ## W ## x ## H ## _paired(uint8_t *block, int str
 	 \
 	FAST_LSCALE(log2_denom, GQR_TYPE_S16); \
 	int16_t weighti = weight; \
-	register float weightf; \
+	vector float weightf; \
 	asm("psq_l %0,%1,1,1" : "=f"(weightf) : "o"(weighti)); \
 	 \
 	int16_t offseti = offset; \
