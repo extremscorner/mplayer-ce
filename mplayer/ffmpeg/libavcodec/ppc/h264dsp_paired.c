@@ -46,9 +46,8 @@ static void put_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 	uint8_t *src1 = src - stride;
 	uint8_t *src2 = src;
 	
-	int i;
 	if (!paired_cmpu1(EQ, fCD, zero)) {
-		for (i = 0; i < h; i++) {
+		do {
 			pair[0] = psq_lux(src1,stride,0,4);
 			pair[1] = psq_l(2,src1,0,4);
 			
@@ -69,12 +68,12 @@ static void put_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 			result = ps_madds0(pair[3], fCD, result);
 			result = ps_madds1(paired_merge10(pair[3], pair[2]), fCD, result);
 			psq_st(result,2,dst,0,4);
-		}
+		} while (--h);
 	} else {
 		fAB = paired_sum1(fCD, fAB, fAB);
 		
 		if (!paired_cmpu0(EQ, fCD, zero)) {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[2] = psq_lux(src2,stride,0,4);
 				
@@ -88,9 +87,9 @@ static void put_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[0], fAB, half);
 				result = ps_madds1(pair[2], fAB, result);
 				psq_st(result,2,dst,0,4);
-			}
+			} while (--h);
 		} else {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_l(2,src1,0,4);
 				
@@ -103,7 +102,7 @@ static void put_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[1], fAB, half);
 				result = ps_madds1(paired_merge10(pair[1], pair[0]), fAB, result);
 				psq_st(result,2,dst,0,4);
-			}
+			} while (--h);
 		}
 	}
 }
@@ -123,9 +122,8 @@ static void put_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 	uint8_t *src1 = src - stride;
 	uint8_t *src2 = src;
 	
-	int i;
 	if (!paired_cmpu1(EQ, fCD, zero)) {
-		for (i = 0; i < h; i++) {
+		do {
 			pair[0] = psq_lux(src1,stride,0,4);
 			pair[1] = psq_l(2,src1,0,4);
 			
@@ -164,12 +162,12 @@ static void put_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 			result = ps_madds0(pair[3], fCD, result);
 			result = ps_madds1(paired_merge10(pair[3], pair[2]), fCD, result);
 			psq_st(result,6,dst,0,4);
-		}
+		} while (--h);
 	} else {
 		fAB = paired_sum1(fCD, fAB, fAB);
 		
 		if (!paired_cmpu0(EQ, fCD, zero)) {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[2] = psq_lux(src2,stride,0,4);
 				
@@ -197,9 +195,9 @@ static void put_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[0], fAB, half);
 				result = ps_madds1(pair[2], fAB, result);
 				psq_st(result,6,dst,0,4);
-			}
+			} while (--h);
 		} else {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_l(2,src1,0,4);
 				
@@ -224,7 +222,7 @@ static void put_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[1], fAB, half);
 				result = ps_madds1(paired_merge10(pair[1], pair[0]), fAB, result);
 				psq_st(result,6,dst,0,4);
-			}
+			} while (--h);
 		}
 	}
 }
@@ -244,9 +242,8 @@ static void avg_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 	uint8_t *src1 = src - stride;
 	uint8_t *src2 = src;
 	
-	int i;
 	if (!paired_cmpu1(EQ, fCD, zero)) {
-		for (i = 0; i < h; i++) {
+		do {
 			pair[0] = psq_lux(src1,stride,0,4);
 			pair[1] = psq_l(2,src1,0,4);
 			
@@ -271,12 +268,12 @@ static void avg_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 			result = ps_madds0(pair[3], fCD, result);
 			result = ps_madds1(paired_merge10(pair[3], pair[2]), fCD, result);
 			psq_st(ps_madd(result, half, half),2,dst,0,4);
-		}
+		} while (--h);
 	} else {
 		fAB = paired_sum1(fCD, fAB, fAB);
 		
 		if (!paired_cmpu0(EQ, fCD, zero)) {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_lux(src2,stride,0,4);
 				
@@ -294,9 +291,9 @@ static void avg_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[0], fAB, result);
 				result = ps_madds1(pair[1], fAB, result);
 				psq_st(ps_madd(result, half, half),2,dst,0,4);
-			}
+			} while (--h);
 		} else {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_l(2,src1,0,4);
 				
@@ -312,7 +309,7 @@ static void avg_h264_chroma_mc4_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[1], fAB, result);
 				result = ps_madds1(paired_merge10(pair[1], pair[0]), fAB, result);
 				psq_st(ps_madd(result, half, half),2,dst,0,4);
-			}
+			} while (--h);
 		}
 	}
 }
@@ -332,9 +329,8 @@ static void avg_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 	uint8_t *src1 = src - stride;
 	uint8_t *src2 = src;
 	
-	int i;
 	if (!paired_cmpu1(EQ, fCD, zero)) {
-		for (i = 0; i < h; i++) {
+		do {
 			pair[0] = psq_lux(src1,stride,0,4);
 			pair[1] = psq_l(2,src1,0,4);
 			
@@ -381,12 +377,12 @@ static void avg_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 			result = ps_madds0(pair[3], fCD, result);
 			result = ps_madds1(paired_merge10(pair[3], pair[2]), fCD, result);
 			psq_st(ps_madd(result, half, half),6,dst,0,4);
-		}
+		} while (--h);
 	} else {
 		fAB = paired_sum1(fCD, fAB, fAB);
 		
 		if (!paired_cmpu0(EQ, fCD, zero)) {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_lux(src2,stride,0,4);
 				
@@ -422,9 +418,9 @@ static void avg_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[0], fAB, result);
 				result = ps_madds1(pair[1], fAB, result);
 				psq_st(ps_madd(result, half, half),6,dst,0,4);
-			}
+			} while (--h);
 		} else {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_l(2,src1,0,4);
 				
@@ -454,7 +450,7 @@ static void avg_h264_chroma_mc8_paired(uint8_t *dst, uint8_t *src, int stride, i
 				result = ps_madds0(pair[1], fAB, result);
 				result = ps_madds1(paired_merge10(pair[1], pair[0]), fAB, result);
 				psq_st(ps_madd(result, half, half),6,dst,0,4);
-			}
+			} while (--h);
 		}
 	}
 }
@@ -474,9 +470,8 @@ void ff_put_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 	uint8_t *src1 = src - stride;
 	uint8_t *src2 = src;
 	
-	int i;
 	if (!paired_cmpu1(EQ, fCD, zero)) {
-		for (i = 0; i < h; i++) {
+		do {
 			pair[0] = psq_lux(src1,stride,0,4);
 			pair[1] = psq_l(2,src1,0,4);
 			
@@ -515,12 +510,12 @@ void ff_put_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 			result = ps_madds0(pair[3], fCD, result);
 			result = ps_madds1(paired_merge10(pair[3], pair[2]), fCD, result);
 			psq_st(result,6,dst,0,4);
-		}
+		} while (--h);
 	} else {
 		fAB = paired_sum1(fCD, fAB, fAB);
 		
 		if (!paired_cmpu0(EQ, fCD, zero)) {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[2] = psq_lux(src2,stride,0,4);
 				
@@ -548,9 +543,9 @@ void ff_put_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 				result = ps_madds0(pair[0], fAB, offset);
 				result = ps_madds1(pair[2], fAB, result);
 				psq_st(result,6,dst,0,4);
-			}
+			} while (--h);
 		} else {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_l(2,src1,0,4);
 				
@@ -575,7 +570,7 @@ void ff_put_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 				result = ps_madds0(pair[1], fAB, offset);
 				result = ps_madds1(paired_merge10(pair[1], pair[0]), fAB, result);
 				psq_st(result,6,dst,0,4);
-			}
+			} while (--h);
 		}
 	}
 }
@@ -596,9 +591,8 @@ void ff_avg_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 	uint8_t *src1 = src - stride;
 	uint8_t *src2 = src;
 	
-	int i;
 	if (!paired_cmpu1(EQ, fCD, zero)) {
-		for (i = 0; i < h; i++) {
+		do {
 			pair[0] = psq_lux(src1,stride,0,4);
 			pair[1] = psq_l(2,src1,0,4);
 			
@@ -645,12 +639,12 @@ void ff_avg_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 			result = ps_madds0(pair[3], fCD, result);
 			result = ps_madds1(paired_merge10(pair[3], pair[2]), fCD, result);
 			psq_st(ps_madd(result, half, offset),6,dst,0,4);
-		}
+		} while (--h);
 	} else {
 		fAB = paired_sum1(fCD, fAB, fAB);
 		
 		if (!paired_cmpu0(EQ, fCD, zero)) {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_lux(src2,stride,0,4);
 				
@@ -686,9 +680,9 @@ void ff_avg_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 				result = ps_madds0(pair[0], fAB, result);
 				result = ps_madds1(pair[1], fAB, result);
 				psq_st(ps_madd(result, half, offset),6,dst,0,4);
-			}
+			} while (--h);
 		} else {
-			for (i = 0; i < h; i++) {
+			do {
 				pair[0] = psq_lux(src1,stride,0,4);
 				pair[1] = psq_l(2,src1,0,4);
 				
@@ -718,7 +712,7 @@ void ff_avg_vc1_chroma_mc8_paired_nornd(uint8_t *dst, uint8_t *src, int stride, 
 				result = ps_madds0(pair[1], fAB, result);
 				result = ps_madds1(paired_merge10(pair[1], pair[0]), fAB, result);
 				psq_st(ps_madd(result, half, offset),6,dst,0,4);
-			}
+			} while (--h);
 		}
 	}
 }
