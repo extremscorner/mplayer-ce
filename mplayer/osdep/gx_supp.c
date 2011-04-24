@@ -98,6 +98,8 @@ static f32 UVtexcoords[] ATTRIBUTE_ALIGN(32) = {
 	0.0, 1.0,
 };
 
+void DCBlockFlush(void *);
+
 void mpviSetup(int video_mode, bool overscan)
 {
 	VIDEO_Init();
@@ -457,7 +459,7 @@ void mpgxUpdateSquare()
 	mysquare[5] -= m_screenbottom_shift * 100.0;
 	mysquare[7] -= m_screenbottom_shift * 100.0;
 	
-	DCFlushRange(mysquare, sizeof(mysquare));
+	DCBlockFlush(mysquare);
 	GX_SetArray(GX_VA_POS, mysquare, sizeof(f32) * 2);
 	GX_InvVtxCache();
 }
@@ -516,11 +518,8 @@ void mpgxConfigYUVp(u32 luma_width, u32 luma_height, u32 chroma_width, u32 chrom
 	Ytexcoords[5] = Ytexcoords[7] = YtexcoordT;
 	UVtexcoords[5] = UVtexcoords[7] = UVtexcoordT;
 	
-	DCFlushRange(Ytexcoords, sizeof(Ytexcoords));
-	DCFlushRange(UVtexcoords, sizeof(UVtexcoords));
-	
-	GX_SetArray(GX_VA_TEX0, Ytexcoords, sizeof(f32) * 2);
-	GX_SetArray(GX_VA_TEX1, UVtexcoords, sizeof(f32) * 2);
+	DCBlockFlush(Ytexcoords);
+	DCBlockFlush(UVtexcoords);
 	
 	//init YUV texture objects
 	GX_InitTexObj(&YtexObj, Ytexture, Ywidth, Yheight, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -620,9 +619,6 @@ void mpgxCopyYUVp(u8 *buffer[3], int stride[3])
 
 void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char *srca, int stride)
 {
-	u8 *Isrc = src;
-	u8 *Asrc = srca;
-	
 	s16 pitch = stride - w;
 	
 	u8 *Ycached = MEM_K1_TO_K0(Ytexture);
@@ -630,19 +626,19 @@ void mpgxBlitOSD(int x0, int y0, int w, int h, unsigned char *src, unsigned char
 	
 	for (int y = 0; y < h; y++) {
 		for (int x = 0; x < w; x++) {
-			if (*Asrc) {
+			if (*srca) {
 				int dxs = x + x0;
 				int dys = y + y0;
 				
 				u8 *Ydst = Ycached + ((dys & (~3)) * Ywidth) + ((dxs & (~7)) << 2) + ((dys & 3) << 3) + (dxs & 7);
-				*Ydst = (((*Ydst) * (*Asrc)) >> 8) + (*Isrc);
+				*Ydst = (((*Ydst) * (*srca)) >> 8) + (*src);
 			}
 			
-			Isrc++; Asrc++;
+			src++; srca++;
 		}
 		
-		Isrc += pitch;
-		Asrc += pitch;
+		src += pitch;
+		srca += pitch;
 	}
 	
 	DCFlushRange(Ycached, Ytexsize);
