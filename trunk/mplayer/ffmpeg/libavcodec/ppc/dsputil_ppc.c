@@ -3,20 +3,20 @@
  * Copyright (c) 2002 Dieter Shirley
  * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
  *
- * This file is part of FFmpeg.
+ * This file is part of Libav.
  *
- * FFmpeg is free software; you can redistribute it and/or
+ * Libav is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * FFmpeg is distributed in the hope that it will be useful,
+ * Libav is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with FFmpeg; if not, write to the Free Software
+ * License along with Libav; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -152,52 +152,7 @@ static void prefetch_ppc(void *mem, int stride, int h)
     } while(--h);
 }
 
-#ifdef GEKKO
-static void bswap_buf_gekko(uint32_t *dst, const uint32_t *src, int w)
-{
-	int i;
-	uint32_t word;
-	
-	for (i=0; i<w*4-31; i+=4) {
-		asm volatile(
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			"addi	%1,%1,4\n"
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			"addi	%1,%1,4\n"
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			"addi	%1,%1,4\n"
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			"addi	%1,%1,4\n"
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			"addi	%1,%1,4\n"
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			"addi	%1,%1,4\n"
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			"addi	%1,%1,4\n"
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			: "=r"(word)
-			: "r"(i), "b"(src), "b"(dst)
-		);
-	}
-	
-	for (; i<w*4; i+=4) {
-		asm volatile(
-			"lwzx	%0,%1,%2\n"
-			"stwbrx	%0,%1,%3\n"
-			: "=r"(word)
-			: "r"(i), "b"(src), "b"(dst)
-		);
-	}
-}
-
+#if defined(GEKKO)
 static void fill_block16_gekko(uint8_t *block, uint8_t value, int line_size, int h)
 {
 	uint32_t word = value;
@@ -206,8 +161,8 @@ static void fill_block16_gekko(uint8_t *block, uint8_t value, int line_size, int
 	
 	block -= line_size;
 	
-	while (h--) {
-		asm volatile(
+	do {
+		__asm__ volatile (
 			"stwux	%2,%0,%1\n"
 			"stw	%2,4(%0)\n"
 			"stw	%2,8(%0)\n"
@@ -215,7 +170,7 @@ static void fill_block16_gekko(uint8_t *block, uint8_t value, int line_size, int
 			: "+b"(block)
 			: "r"(line_size), "r"(word)
 		);
-	}
+	} while (--h);
 }
 
 static void fill_block8_gekko(uint8_t *block, uint8_t value, int line_size, int h)
@@ -226,16 +181,16 @@ static void fill_block8_gekko(uint8_t *block, uint8_t value, int line_size, int 
 	
 	block -= line_size;
 	
-	while (h--) {
-		asm volatile(
+	do {
+		__asm__ volatile (
 			"stwux	%2,%0,%1\n"
 			"stw	%2,4(%0)\n"
 			: "+b"(block)
 			: "r"(line_size), "r"(word)
 		);
-	}
+	} while (--h);
 }
-#endif
+#endif /* GEKKO */
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
@@ -252,8 +207,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
             break;
     }
 
-#ifdef GEKKO
-    c->bswap_buf = bswap_buf_gekko;
+#if defined(GEKKO)
     c->fill_block_tab[0] = fill_block16_gekko;
     c->fill_block_tab[1] = fill_block8_gekko;
 #endif
