@@ -26,4 +26,15 @@
 	gqr = (((power) << 8) | (type)) << 16; \
 	asm volatile("mtspr 913,%0" : : "r"(gqr)); })
 
+#define FAST_STSCALE(power, type) \
+({	register uint32_t gqr; \
+	gqr = ((power) << 8) | (type); \
+	asm volatile("mtspr 913,%0" : : "r"(gqr)); })
+
+#define QUANT_REVERSE(power, type) \
+({	register uint32_t gqr; \
+	gqr  = (64 - (power) << 8) | (type); \
+	gqr |= (gqr << 16); \
+	asm volatile("mtspr 913,%0" : : "r"(gqr)); })
+
 #endif /* AVCODEC_PPC_UTIL_PAIRED_H */
