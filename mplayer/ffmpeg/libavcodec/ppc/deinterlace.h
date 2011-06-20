@@ -32,7 +32,7 @@ static void ff_deinterlace_line_paired(uint8_t *dst, const uint8_t *lum_m4, cons
 	
 	vector float pair, result;
 	
-	for (int i = 0; i < size-1; i += 2) {
+	for (int i = 0; i < size; i += 2) {
 		pair = psq_lx(i,lum_m4,0,4);
 		result = paired_neg(pair);
 		
@@ -61,7 +61,7 @@ static void ff_deinterlace_line_inplace_paired(uint8_t *lum_m4, uint8_t *lum_m3,
 	
 	vector float pair, result;
 	
-	for (int i = 0; i < size-1; i += 2) {
+	for (int i = 0; i < size; i += 2) {
 		pair = psq_lx(i,lum_m4,0,4);
 		result = paired_neg(pair);
 		

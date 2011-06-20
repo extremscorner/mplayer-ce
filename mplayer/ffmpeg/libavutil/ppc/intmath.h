@@ -26,8 +26,8 @@
 static inline av_const int FASTDIV(int a, int b)
 {
     int r;
-    __asm__ volatile("mulhwu  %0, %1, %2"
-                     : "=r"(r) : "r"(a), "r"(ff_inverse[b]));
+    __asm__ ("mulhwu  %0, %1, %2"
+             : "=r"(r) : "r"(a), "r"(ff_inverse[b]));
     return r;
 }
 

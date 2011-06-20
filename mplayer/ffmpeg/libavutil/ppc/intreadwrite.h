@@ -117,18 +117,6 @@ static av_always_inline void AV_COPY64(void *d, const void *s)
              : "m"(*(const uint64_t*)s));
 }
 
-#define AV_COPY128 AV_COPY128
-static av_always_inline void AV_COPY128(void *d, const void *s)
-{
-    register double v[2];
-    __asm__ ("lfd%X4   %0, %4  \n\t"
-             "lfd%X5   %1, %5  \n\t"
-             "stfd%X2  %0, %2  \n\t"
-             "stfd%X3  %1, %3  \n\t"
-             : "=d"(v[0]), "=d"(v[1]), "=m"(*(uint64_t*)d), "=m"(*((uint64_t*)d+1))
-             : "m"(*(const uint64_t*)s), "m"(*((const uint64_t*)s+1)));
-}
-
 #define AV_SWAP64 AV_SWAP64
 static av_always_inline void AV_SWAP64(void *a, void *b)
 {
