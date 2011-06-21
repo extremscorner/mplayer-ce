@@ -27,8 +27,8 @@ INSTALL = install
 INSTALLSTRIP = -s
 WINDRES = windres
 
-CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math -frename-registers -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
-CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math -frename-registers -DGEKKO -DHW_DOL -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
+CFLAGS   = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls -Wmissing-prototypes -Wdisabled-optimization -Wno-pointer-sign -Wdeclaration-after-statement -std=gnu99  -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math -frename-registers -DGEKKO -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
+CXXFLAGS = -Wundef -Wall -Wno-switch -Wno-parentheses -Wpointer-arith -Wredundant-decls  -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math -frename-registers -DGEKKO -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -I$(DEVKITPRO)/portlibs/ppc/include -I$(DEVKITPRO)/libogc/include -I. -Iffmpeg  -DFF_API_MAX_STREAMS=0
 CC_DEPFLAGS = -MD -MP -O2 -mcpu=750 -meabi -mogc -msdata -mpaired -mmultiple -mstring -pipe -g -ffast-math -frename-registers
 
 CFLAGS_DHAHELPER         = 
