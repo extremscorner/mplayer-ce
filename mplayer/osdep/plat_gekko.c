@@ -656,6 +656,7 @@ void plat_init(int *argc, char **argv[])
 	ARQ_Init();
 	ARQ_Reset();
 #elif defined(HW_RVL)
+	L2Enhance();
 	bool ehci = false;
 	
 	if (FindIOS(202)) {
