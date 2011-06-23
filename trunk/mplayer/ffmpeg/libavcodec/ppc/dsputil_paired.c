@@ -145,10 +145,9 @@ static void vorbis_inverse_coupling_paired(float *mag, float *ang, int blocksize
 		negv = paired_neg(selv);
 		selv = paired_sel(pair[1], negv, selv);
 		selv = paired_add(pair[0], selv);
-		result[0] = result[1] = pair[0];
 		
-		result[0] = paired_sel(pair[1], result[0], selv);
-		result[1] = paired_sel(pair[1], selv, result[1]);
+		result[0] = paired_sel(pair[1], pair[0], selv);
+		result[1] = paired_sel(pair[1], selv, pair[0]);
 		
 		paired_stx(result[0], i, mag);
 		paired_stx(result[1], i, ang);
