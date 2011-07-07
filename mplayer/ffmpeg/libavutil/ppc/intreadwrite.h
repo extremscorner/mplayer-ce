@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2008 Mans Rullgard <mans@mansr.com>
+ * Copyright (c) 2011 Extrems <metaradil@gmail.com>
  *
  * This file is part of Libav.
  *

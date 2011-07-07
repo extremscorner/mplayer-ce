@@ -2,6 +2,7 @@
  * Copyright (c) 2002 Brian Foley
  * Copyright (c) 2002 Dieter Shirley
  * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
+ * Copyright (c) 2010-2011 Extrems <metaradil@gmail.com>
  *
  * This file is part of Libav.
  *
