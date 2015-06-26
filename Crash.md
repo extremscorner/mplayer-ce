@@ -1,0 +1,3 @@
+# Filing a Bug Report #
+
+MPlayer struggles playing HD videos along with RM and WMV, so don't be surprised if they don't work properly, but you can still contribute to the relevant issue on the [Issues](http://code.google.com/p/mplayer-ce/issues/list) page.  For any crash resulting in a code dump please include the STACK DUMP values, that is the middle section of the code dump screen, to aid in debugging.  Please include all relevant information in your bug report, including the version of MPlayer CE you are running and detailed information about the video file that causes the crash.  Please ensure all bugs are reproducible.
